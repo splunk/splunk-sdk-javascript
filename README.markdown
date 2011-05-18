@@ -1,3 +1,10 @@
+Summary
+-------
+Quick and dirty Javascript data layer for interfacing with Splunk. This requires
+the OData JSON app that is currently hosted in p4 at //splunk/applications/old_english/...
+
+
+
 Usage
 -----
     
