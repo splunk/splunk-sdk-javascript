@@ -3,6 +3,7 @@ Summary
 Quick and dirty Javascript data layer for interfacing with Splunk. This requires
 the OData JSON app that is currently hosted in p4 at //splunk/applications/old_english/...
 
+Requires: Jquery 1.6 and the simple class inheritance in jquery.class.js
 
 
 Usage
