@@ -1,5 +1,8 @@
-window.splunk = window.splunk || {};
-window.splunk.service = window.splunk.service || {};
+(function(){
+
+var splunk = {};
+splunk.service = splunk.service || {};
+this.splunk = splunk;
 
 // no-op the console calls on other browsers
 if (console === undefined) {
@@ -33,7 +36,7 @@ splunk.service.Service = Class.extend({
         ns = ns || this.DEFAULT_NS;
         owner = owner || this.DEFAULT_OWNER;
         if (path.charAt(0) !== '/') {
-            throw new Error('path argument must start with a / relative to /services');
+            throw new Error('path argument must start with a / relative to /services; ' + path);
         }
         if (useNS === false) {
             return [this.basePath, path.substring(1)].join('/');
@@ -190,7 +193,7 @@ splunk.service.Service = Class.extend({
                 console.error('did not receive SID from server');
                 return false;
             }
-            console.debug('dispatch success: got sid=' + odata.results.sid);
+            console.debug('[service] dispatched sid=' + odata.results.sid);
             return odata.results.sid;
         };
         
@@ -327,31 +330,14 @@ splunk.service.Job = Class.extend({
     _state: null,
     _metadata: {},
     _properties: {},
-    
-    // dispatch state; 1-99=nominal; 100+=unavailable
-    _states: {
-        JOB_INITIALIZED: 0,
-        JOB_QUEUED: 10,
-        JOB_PARSING: 12,
-        JOB_RUNNING: 20,
-        JOB_PAUSING: 22,
-        JOB_PAUSED: 24,
-        JOB_UNPAUSING: 26,
-        JOB_FINALIZING: 30,
-        JOB_DONE: 40,
-        JOB_CANCELING: 100,
-        JOB_CANCELED: 102,
-        JOB_FAILED: 104,
-        JOB_ZOMBIED: 106,
-        JOB_UNKNOWN: 200,
-    },
+
     
     init: function(sid, ns, owner, service) {
         this._id = sid;
         this._ns = ns;
         this._owner = owner;
         this._service = service;
-        this._state = this.JOB_INITIALIZED;
+        this._state = splunk.service.JobStates.INITIALIZED;
         
         this._uri = service.buildUri(
             service.JOB_ENDPOINT + '/' + encodeURIComponent(sid),
@@ -367,22 +353,22 @@ splunk.service.Job = Class.extend({
         this._properties = properties;
         switch (properties.dispatchState) {
             case 'QUEUED':
-                this._setState(this._states.JOB_QUEUED);
+                this._setState(splunk.service.JobStates.QUEUED);
                 break;
             case 'PARSING':
-                this._setState(this._states.JOB_PARSING);
+                this._setState(splunk.service.JobStates.PARSING);
                 break;
             case 'RUNNING':
-                this._setState(this._states.JOB_RUNNING);
+                this._setState(splunk.service.JobStates.RUNNING);
                 break;
             case 'FINALIZING':
-                this._setState(this._states.JOB_FINALIZING);
+                this._setState(splunk.service.JobStates.FINALIZING);
                 break;
             case 'DONE':
-                this._setState(this._states.JOB_DONE);
+                this._setState(splunk.service.JobStates.DONE);
                 break;
             case 'FAILED':
-                this._setState(this._states.JOB_FAILED);
+                this._setState(splunk.service.JobStates.FAILED);
                 break;
             default:
                 console.warn('unrecognized dispatchState: ' + properties.dispatchState);
@@ -392,13 +378,14 @@ splunk.service.Job = Class.extend({
     
     _setState: function(state) {
         var k;
-        for (k in this._states) {
-            if (this._states.hasOwnProperty(k) && this._states[k] === state) {
+        for (k in splunk.service.JobStates) {
+            if (splunk.service.JobStates[k] === state) {
                 if (this._state === state) {
                     return false; // no change
                 }
                 this._state = state;
-                console.debug('job state set to: ' + k);
+                console.debug('[job: ' + this._id + '] state=' + k);
+                $(this).trigger('stateChange', [state]);
                 return true;
             }
         }
@@ -429,16 +416,50 @@ splunk.service.Job = Class.extend({
             if (odata.results.__metadata) {
                 this._metadata = odata.results.__metadata;
             }
-            console.debug('updated job info; ttl=' + this.get('ttl'));
-            return true;
+            console.debug('[job: ' + this._id + '] properties updated; ttl=' + this.get('ttl'));
+            $(this).trigger('propertiesUpdate');
+            return this;
         }, this);
         var deferredError = $.proxy(function(errorResponse) {
-            console.warn('error updating job properties');
-            this._setState(this._states.JOB_UNKNOWN);
-            return true;
+            console.warn('[job: ' + this._id + '] error updating job properties');
+            this._setState(splunk.service.JobStates.UNKNOWN);
+            return this;
         }, this)
         return deferred.pipe(deferredSuccess, deferredError);
     },
+    
+    toJSON: function() {
+        return this._properties;
+    },
+    
+    
+    
+    //
+    // simple poller; TODO: needs to be refactored into global poller
+    //
+    
+    _pollTimer: null,
+
+    _poller: function() {
+        if (this._state >= splunk.service.JobStates.DONE) {
+            console.debug('[job: ' + this._id + '] auto-canceling poller');
+            return;
+        }
+        this.updateProperties();
+        this._pollTimer = setTimeout($.proxy(this._poller, this), 1000);
+    },
+    
+    startPoll: function() {
+        this._poller();
+        $(this).trigger('pollerStart');
+    },
+    
+    stopPoll: function() {
+        console.debug('[job: ' + this._id + '] stopping poller');
+        $(this).trigger('pollerStop');
+        clearTimeout(this._pollTimer);
+    },
+    
     
     
     // data
@@ -481,13 +502,44 @@ splunk.service.Job = Class.extend({
         throw new Error('Not implemented'); // TODO
     },
     
-    fetchFullResults: function(params, usePreview) {
-        var asset = (usePreview === false ? 'preview' : 'results_preview');
-        return this.fetchLinkedAsset(asset, params);
+    fetchFullResults: function(params, usePreview, returnShallowData) {
+        var asset = (usePreview === false ? 'results' : 'results_preview');
+        var deferred = this.fetchLinkedAsset(asset, params);
+        var deferredSuccess = $.proxy(function(results) {
+            if (returnShallowData) {
+                var fieldOrder = results.field_list;
+            } else {
+                var fieldOrder = results.field_list;
+            }
+            console.debug('results field list: ' + fieldOrder.join(', '));
+            var output = [];
+            var i,L,j,M,item,key;
+            for (i=0,L=results.data.length; i<L; i++) {
+                item = [];
+                for (j=0,M=fieldOrder.length; j<M; j++) {
+                    key = fieldOrder[j];
+                    if (results.data[i].hasOwnProperty(key)) {
+                        if (returnShallowData === true) {
+                            item.push(results.data[i][key][0].value);
+                        } else {
+                            item.push(results.data[i][key]);
+                        }
+                    } else {
+                        item.push(null);
+                    }
+                }
+                output.push(item);
+            }
+            return {
+                fieldList: fieldOrder,
+                data: output
+            }
+        }, this);
+        return deferred.pipe(deferredSuccess);
     },
     
     fetchShallowResults: function(params, usePreview) {
-        throw new Error('Not implemented'); // TODO
+        return this.fetchFullResults(params, usePreview, true);
     },
         
     
@@ -545,3 +597,25 @@ splunk.service.Job = Class.extend({
     }
    
 });
+    
+// dispatch state; 1-99=nominal; 100+=unavailable
+splunk.service.JobStates = {
+    INITIALIZED: 0,
+    ACKED: 2,
+    QUEUED: 10,
+    PARSING: 12,
+    RUNNING: 20,
+    PAUSING: 22,
+    PAUSED: 24,
+    UNPAUSING: 26,
+    FINALIZING: 30,
+    DONE: 40,
+    CANCELING: 100,
+    CANCELED: 102,
+    FAILED: 104,
+    ZOMBIED: 106,
+    UNKNOWN: 200
+};
+
+
+})();
