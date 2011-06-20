@@ -5,6 +5,6 @@
     root.Paths = {
         job: "search/jobs/",
         jobs: "search/jobs",
-        login: "/auth/login",   
+        login: "/auth/login"
     };
 })();

@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>browser-require example</title>
+  </head>
+  <body>
+    <script>
+      // What is this?
+      i18n_register = function(){}
+    </script>
+    <script type="text/javascript" src="../build/splunk.js"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.js"></script>
+    <script>
+      var Splunk = require('splunk/splunk');
+      var JQueryHttp = require('utils/jquery_http').JQueryHttp;
+
+      http = new JQueryHttp();
+      svc = new Splunk.Service(http, { 
+          scheme: "http",
+          host: "Saladin.local",
+          port: "8000",
+          username: "admin",
+          password: "MacGyver0",
+      });
+  
+      svc.login(function(success) {   
+        console.log("success: " + success); 
+        var jobs = svc.jobs();
+        jobs.list(function(list) {
+          for(var i = 0; i < list.length; i++) {
+            console.log("  job: "  + list[i].sid);
+          }
+        });
+      });
+
+    </script>
+  </body>
+</html>

@@ -11,7 +11,7 @@
                 url: url,
                 method: message.method,
                 headers: message.headers,
-                body: message.body,
+                body: message.body
             };
 
             console.log("URL: " + request_options.url);
@@ -21,5 +21,9 @@
                 callback(complete_response);
             }));
         },
+
+        parseJSON: function(json) {
+            return JSON.parse(json);  
+        }
     });
 })();

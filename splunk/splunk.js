@@ -44,7 +44,7 @@
     // functionality (get/post/delete), as well as a utility function to build
     // a uniform response object.
     //
-    // Base classes should only override 'request'.
+    // Base classes should only override 'request' and 'parseJSON'.
     root.Http = Class.extend({
         init: function() {
             // We perform the bindings so that every function works 
@@ -61,7 +61,7 @@
             var message = {
                 method: "GET",
                 headers: headers,
-                timeout: timeout,  
+                timeout: timeout
             };
             this.request(url, message, callback);
         },
@@ -72,7 +72,7 @@
                 method: "POST",
                 headers: headers,
                 timeout: timeout,
-                body: encode(params),
+                body: encode(params)
             };
             this.request(url, message, callback);
         },
@@ -82,7 +82,7 @@
             var message = {
                 method: "DELETE",
                 headers: headers,
-                timeout: timeout,  
+                timeout: timeout
             };
 
             this.request(url, message, callback);
@@ -92,10 +92,14 @@
             throw "UNDEFINED FUNCTION - OVERRIDE REQUIRED";  
         },
 
+        parseJson: function(json) {
+            throw "UNDEFINED FUNCTION - OVERRIDE REQUIRED";
+        },
+
         _buildResponse: function(error, response, data) {
             // Parse the JSON data and build the OData response
             // object.
-            var json = JSON.parse(data);
+            var json = this.parseJson(data);
             var odata = root.ODataResponse.fromJson(json);  
 
             // Print any messages that came with the response
@@ -104,11 +108,11 @@
             var complete_response = {
                 status: (response ? response.statusCode : 0),
                 odata: odata,
-                error: error,
+                error: error
             };
 
             return complete_response;
-        },
+        }
     });
 
     // Our basic class to represent an OData resposne object.
@@ -126,7 +130,7 @@
 
         isCollection: function() {
             return this.results instanceof Array;
-        },
+        }
     });
 
     // A static utility function to convert an object derived from JSON
@@ -220,7 +224,7 @@
         _headers: function () {
             return {
                 Authorization: "Splunk " + this.sessionKey,
-                "X-SessionKey": this.sessionKey,  
+                "X-SessionKey": this.sessionKey
             };
         },
 
@@ -294,7 +298,7 @@
                 0,
                 callback
             );  
-        },
+        }
     });
 
     // From here on we start the definition of a client-level API.
@@ -316,7 +320,7 @@
 
         jobs: function() {
             return new root.Jobs(this);  
-        },
+        }
     });
 
     // An endpoint is the basic handler. It is associated with an instance
@@ -389,7 +393,7 @@
                     }
                 })
             );
-        },
+        }
     });
 
     // A collection is just another type of endpoint that represents
@@ -450,7 +454,7 @@
                 // If we didn't find anything, let the callback now.
                 callback(false);
             });
-        },
+        }
     });
 
     // An endpoint for an instance of a specific search job. Allows us to perform
@@ -528,6 +532,6 @@
 
         unpause: function(callback) {
             this.post("control", {action: "unpause"}, callback);  
-        },
+        }
     });
 })();
