@@ -119,16 +119,4 @@
             fs.writeFileSync(compiledPackagePath, js);
             console.log("Compiled " + compiledPackagePath);
         });
-
-    //var js = bundle.source();
-
-    // Write out to disk
-    //fs.writeFileSync(compiledPackagePath, js);//, function(err) {
-    //    if (err) {
-    //        throw err;
-    //    } 
-    //    
-    //    console.log("Compiled " + compiledPackagePath);
-    //});
-    //console.log("Compiled " + compiledPackagePath);
 })();
