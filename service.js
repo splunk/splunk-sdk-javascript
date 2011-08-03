@@ -44,6 +44,13 @@ splunk.service.Service = Class.extend({
             return [this.basePath, owner, ns, path.substring(1)].join('/');
         }
     },
+
+    /**
+     * Required. This is to be proxy-safe.
+     */
+    doubleEncode: function(uriComponent) {
+        return encodeURIComponent(uriComponent.replace(/\//g, '%2F'));
+    },
     
     request: function(url, ajaxArgs) {
         ajaxArgs = ajaxArgs || {};
@@ -116,7 +123,7 @@ splunk.service.Service = Class.extend({
     
     fetchEntry: function(path, name, ns, owner, extraParams) {
         var deferred = this.request(
-            this.buildUri(path + '/' + encodeURIComponent(name), ns, owner),
+            this.buildUri(path + '/' + this.doubleEncode(name), ns, owner),
             {
                 type: 'GET',
                 data: extraParams
@@ -167,10 +174,64 @@ splunk.service.Service = Class.extend({
                 return false;
             }
             splunk.service.ODataResponse.printMessages(odata);
+            if (odata.count != odata.results.length) {
+                console.warn('OData __count (' + odata.count + ') property does not match actual results length (' + odata.results.length + ')');
+            }
             return odata.results;
         }, this);
         
         return deferred.pipe(deferredSuccess);
+    },
+
+    
+    /**
+     * Creates a new entry object
+     */
+    createEntry: function(path, name, ns, owner, properties) {
+        
+        if (!path) {
+            throw new Error('entry path cannot be null');
+        }
+        if (!name) {
+            throw new Error('name cannot be null');
+        }
+
+        // force override of the reserved 'name' property
+        properties = properties || {};
+        properties.name = name;
+
+        var deferred = this.request(
+            this.buildUri(path, ns, owner),
+            {
+                type: 'POST',
+                data: properties
+            }
+        );
+        
+        var deferredSuccess = $.proxy(function(odata) {
+            if (!odata || odata.results === undefined) {
+                console.warn('fetchEntry yielded no data');
+                return false;
+            }
+            var output;
+            if (odata.isCollection()) {
+                output = odata.results[0];
+            } else {
+                output = odata.results;
+            }
+            console.debug('Entry: ' + output.__name);
+            splunk.service.ODataResponse.printMessages(output);
+            return output;
+        }, this);
+        
+        return deferred.pipe(deferredSuccess);
+       
+    },
+
+
+    updateEntry: function(path, name, ns, owner, properties) {
+        // TODO: use doubleEncode
+        throw new Error('Not implemented');
     },
 
     
@@ -476,7 +537,7 @@ splunk.service.Job = Class.extend({
             }
         }
         if (!uri) {
-            console.warn('job asset was not specified in <link>; falling back to manual construction');
+            console.debug('job asset was not specified in <link>; falling back to manual construction');
             uri = this.get('uri') + '/' + encodeURIComponent(asset);
         }
         var deferred = this._service.request(uri, {data:params});
@@ -507,11 +568,11 @@ splunk.service.Job = Class.extend({
         var deferred = this.fetchLinkedAsset(asset, params);
         var deferredSuccess = $.proxy(function(results) {
             if (returnShallowData) {
-                var fieldOrder = results.field_list;
+                var fieldOrder = results.field_list || [];
             } else {
-                var fieldOrder = results.field_list;
+                var fieldOrder = results.field_list || [];
             }
-            console.debug('results field list: ' + fieldOrder.join(', '));
+            console.debug('results field list: ' + fieldOrder);
             var output = [];
             var i,L,j,M,item,key;
             for (i=0,L=results.data.length; i<L; i++) {
