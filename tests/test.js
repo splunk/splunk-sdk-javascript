@@ -1,9 +1,11 @@
 (function() {
-    var Splunk      = require('../splunk/splunk.js'),
-        NodeHttp    = require('../utils/node_http').NodeHttp,
-        __bind      = require('../utils/utils').bind;
-        Class       = require('../lib/jquery.class').Class,
-        Async       = require('../utils/async');
+    var Splunk      = require('../splunk/splunk.js');
+    var NodeHttp    = require('../utils/node_http').NodeHttp;
+    var __bind      = require('../utils/utils').bind;
+    var Class       = require('../lib/jquery.class').Class;
+    var Async       = require('../utils/async');
+    var minitest    = require('../external/minitest');
+    var assert      = require('assert');
 
     http = new NodeHttp();
     svc = new Splunk.Service(http, { 
