@@ -22,8 +22,8 @@
             }));
         },
 
-        parseJSON: function(json) {
-            return JSON.parse(json);  
+        parseJson: function(json) {
+            return JSON.parse(json);
         }
     });
 })();
