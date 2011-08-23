@@ -1,14 +1,27 @@
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
 (function() {
-    var Splunk      = require('../splunk/splunk.js');
-    var NodeHttp    = require('../utils/node_http').NodeHttp;
-    var __bind      = require('../utils/utils').bind;
-    var Class       = require('../lib/jquery.class').Class;
-    var Async       = require('../utils/async');
+    var Splunk      = require('../splunk').Splunk;
+    var NodeHttp    = require('../platform/node/node_http').NodeHttp;
     var minitest    = require('../external/minitest');
     var assert      = require('assert');
+    var Async       = Splunk.Async;
+    var utils       = Splunk.Utils; 
 
-    http = new NodeHttp();
-    svc = new Splunk.Service(http, { 
+    var http = new NodeHttp();
+    var svc = new Splunk.Client.Service(http, { 
         scheme: "http",
         host: "localhost",
         port: "8000",
@@ -19,7 +32,7 @@
     svc.login(function(success) {   
         console.log("success: " + success); 
         var jobs = svc.jobs();
-        jobs.create('search index=twitter | head 1', {}, __bind(this, function(job) {           
+        jobs.create('search index=twitter | head 1', {}, utils.bind(this, function(job) {           
             // job.setTTL(1600, function() {
             //     jobs.list(function(list) {
             //         list = list || [];

@@ -3,7 +3,7 @@
 (function(){
     var browserify      = require('browserify'),
         fs              = require('fs'),
-        OptionParser    = require('./node_lib/parseopt').OptionParser;
+        OptionParser    = require('./external/parseopt').OptionParser;
 
     var parser = new OptionParser({
         strings: { help: 'N/A', metavars: { integer: 'INT' } },
