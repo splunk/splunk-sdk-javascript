@@ -48,9 +48,16 @@
 
             this.assertion("Create job", function(test) {
                 this.service.jobs().create('search index=twitter | head 1', {}, Splunk.Utils.bind(this, function(job) {   
-                    //console.log(job);
                     assert.ok(job)
                     test.finished();
+                })); 
+            });
+
+            this.assertion("Cancel job", function(test) {
+                this.service.jobs().create('search index=twitter | head 1', {}, Splunk.Utils.bind(this, function(job) {   
+                    job.cancel(function() {
+                        test.finished();
+                    });
                 })); 
             });
 
