@@ -776,7 +776,7 @@ require.modules["/lib/client.js"] = function () {
     var Paths   = require('./paths').Paths;
     var Class   = require('./jquery.class').Class;
     var utils   = require('./utils');
-
+    
     var root = exports || this;
 
     // From here on we start the definition of a client-level API.
