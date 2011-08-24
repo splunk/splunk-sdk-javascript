@@ -1235,7 +1235,7 @@ require.modules["/lib/odata.js"] = function () {
     // into an ODataResponse
     root.ODataResponse.fromJson = function(json) {
         if (!json || !json.d) {
-            console.log('Invalid JSON object passed; cannot parse into OData');
+            console.log('Invalid JSON object passed; cannot parse into OData.');
             return null;
         }
 
