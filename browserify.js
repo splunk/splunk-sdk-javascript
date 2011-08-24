@@ -22,31 +22,10 @@
                 }
             },
             {
-                names: ["-s", '--shim'],
-                target: "shim",
-                type: 'flag',
-                help: "Add Ecmascript 5 shim for browsers that don't support it",
-                default: false,
-            },
-            {
-                names: ["-b", '--builtins'],
-                target: "builtins",
-                type: 'flag',
-                help: "Add builtin modules (EventEmitters, vm, path, etc)",
-                default: true,
-            },
-            {
                 names: ["-u", '--uglify'],
                 target: "uglify",
                 type: 'flag',
                 help: "Minify using UglifyJS",
-                default: false,
-            },
-            {
-                names: ["-w", '--watch'],
-                target: "watch",
-                type: 'flag',
-                help: "Watch for file changes",
                 default: false,
             },
             {
@@ -83,14 +62,7 @@
 
     // Compile/combine all the files into the package
     var bundle = browserify({
-        base: {
-            lib: __dirname      + "/lib",
-            utils: __dirname    + "/utils",
-            splunk: __dirname   + "/splunk",
-        },
-        watch: (cmdline.options.watch ? { persistent: true, interval: 500 } : false),
-        shim: cmdline.options.shim,
-        builtins: cmdline.options.builtins,
+        entry: "browser_entry.js",
         filter: function(code) {
             if (cmdline.options.uglify) {
                 var uglifyjs = require("uglify-js"),
@@ -108,15 +80,7 @@
         },
     });
 
-    bundle
-        .on("ready", function(file) {
-            var js = bundle.source();
-            fs.writeFileSync(compiledPackagePath, js);
-            console.log("Compiled " + compiledPackagePath);
-        })
-        .on("change", function(file) {
-            var js = bundle.source();
-            fs.writeFileSync(compiledPackagePath, js);
-            console.log("Compiled " + compiledPackagePath);
-        });
+    var js = bundle.bundle();
+    fs.writeFileSync(compiledPackagePath, js);
+    console.log("Compiled " + compiledPackagePath);
 })();

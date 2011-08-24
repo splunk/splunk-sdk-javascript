@@ -1,3 +1,4 @@
+
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -30,7 +31,6 @@
     });
 
     svc.login(function(success) {   
-        console.log("success: " + success); 
         var jobs = svc.jobs();
         jobs.create('search index=twitter | head 1', {}, utils.bind(this, function(job) {           
             // job.setTTL(1600, function() {

@@ -1,3 +1,4 @@
+
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -43,6 +44,14 @@
             this.assertion("Login succeeded", function(test) {
                 assert.ok(this.service.sessionKey);
                 test.finished();
+            });
+
+            this.assertion("Create job", function(test) {
+                this.service.jobs().create('search index=twitter | head 1', {}, Splunk.Utils.bind(this, function(job) {   
+                    //console.log(job);
+                    assert.ok(job)
+                    test.finished();
+                })); 
             });
 
             this.assertion("List jobs", function(test) {

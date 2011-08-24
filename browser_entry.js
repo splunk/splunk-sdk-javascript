@@ -13,17 +13,9 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-(function() {
-    var root = exports || this
+// This file is the entry point for client-side code, so it "exports" the
+// important functionality to the "window", such that others can easily
+// include it.
 
-    root.Splunk = {
-        Binding        : require('./lib/binding'),
-        Client         : require('./lib/client'),
-        Http           : require('./lib/http').Http,
-        ODataResponse  : require('./lib/odata').ODataResponse,
-        Utils          : require('./lib/utils'),
-        Async          : require('./lib/async'),
-        Paths          : require('./lib/paths').Paths,
-        Class          : require('./lib/jquery.class').Class,
-    };
-})();
+window.Splunk = require('./splunk').Splunk
+window.Splunk.JQueryHttp = require('./platform/client/jquery_http').JQueryHttp;

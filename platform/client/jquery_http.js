@@ -1,3 +1,4 @@
+
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -25,15 +26,22 @@
                 type: message.method,
                 headers: message.headers,
                 data: message.body,
-                success: utils.bind(this, function (data, error, res) {
+                dataType: "json",
+                success: utils.bind(this, function(data, error, res) {
                     var response = {
                         statusCode: res.status
                     };
 
                     var complete_response = this._buildResponse(error, response, data);
                     callback(complete_response);
-                })
-                
+                }),
+                error: utils.bind(this, function(xhr, textStatus, errorThrown) {
+                    console.log("error!");
+                         
+                    console.log("xhr: ", xhr);
+                    console.log("status: ", textStatus);
+                    console.log("error: ", errorThrown);
+                }),
             };
 
             console.log("URL: " + params.url);
@@ -43,7 +51,7 @@
 
         parseJson: function(json) {
             // JQuery does this for us
-            return json;
+            return json
         }
     });
 })();
