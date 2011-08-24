@@ -17,13 +17,14 @@
     var root = exports || this
 
     root.Splunk = {
-        Binding        : require('./lib/binding'),
-        Client         : require('./lib/client'),
-        Http           : require('./lib/http').Http,
-        ODataResponse  : require('./lib/odata').ODataResponse,
-        Utils          : require('./lib/utils'),
-        Async          : require('./lib/async'),
-        Paths          : require('./lib/paths').Paths,
-        Class          : require('./lib/jquery.class').Class,
+        Binding         : require('./lib/binding'),
+        Client          : require('./lib/client'),
+        Http            : require('./lib/http').Http,
+        ODataResponse   : require('./lib/odata').ODataResponse,
+        Utils           : require('./lib/utils'),
+        Async           : require('./lib/async'),
+        Paths           : require('./lib/paths').Paths,
+        Class           : require('./lib/jquery.class').Class,
+        Promise         : require('./lib/promise').Promise,
     };
 })();
