@@ -19,8 +19,8 @@
     var minitest    = require('../external/minitest');
     var assert      = require('assert');
 
-    http = new NodeHttp();
-    svc = new Splunk.Client.Service(http, { 
+    var http = new NodeHttp();
+    var svc = new Splunk.Client.Service(http, { 
         scheme: "http",
         host: "localhost",
         port: "8000",
@@ -48,7 +48,7 @@
 
             this.assertion("Create job", function(test) {
                 this.service.jobs().create('search index=twitter | head 1', {}, Splunk.Utils.bind(this, function(job) {   
-                    assert.ok(job)
+                    assert.ok(job);
                     test.finished();
                 })); 
             });
@@ -68,6 +68,6 @@
                     test.finished();
                 });
             });
-        })      
+        });
     });
 })();

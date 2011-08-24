@@ -344,7 +344,7 @@ require.modules["/splunk.js"] = function () {
 // under the License.
 
 (function() {
-    var root = exports || this
+    var root = exports || this;
 
     root.Splunk = {
         Binding         : require('./lib/binding'),
@@ -355,7 +355,7 @@ require.modules["/splunk.js"] = function () {
         Async           : require('./lib/async'),
         Paths           : require('./lib/paths').Paths,
         Class           : require('./lib/jquery.class').Class,
-        Promise         : require('./lib/promise').Promise,
+        Promise         : require('./lib/promise').Promise
     };
 })();;
     }).call(module.exports);
@@ -409,14 +409,14 @@ require.modules["/lib/binding.js"] = function () {
     root.Context = Class.extend({
         init: function(http, params) {
             this.http = http;
-            this.scheme = params["scheme"] || "https";
-            this.host = params["host"] || "localhost";
-            this.port = params["port"] || 8000;
-            this.username = params["username"] || null;  
-            this.password = params["password"] || null;  
-            this.owner = params["owner"] || "-";  
-            this.namespace = params["namespace"] || "-";  
-            this.sessionKey = params["sessionKey"] || "";
+            this.scheme = params.scheme || "https";
+            this.host = params.host || "localhost";
+            this.port = params.port || 8000;
+            this.username = params.username || null;  
+            this.password = params.password || null;  
+            this.owner = params.owner || "-";  
+            this.namespace = params.namespace || "-";  
+            this.sessionKey = params.sessionKey || "";
             
             // Store our full prefix, which is just combining together
             // the scheme with the host
@@ -476,7 +476,7 @@ require.modules["/lib/binding.js"] = function () {
                    return;
                }
                else {
-                   this.sessionKey = response.odata.results["sessionKey"]; 
+                   this.sessionKey = response.odata.results.sessionKey;
                    callback(true);
                }
             }));
@@ -586,8 +586,7 @@ require.modules["/lib/jquery.class.js"] = function () {
     __require.modules["/lib/jquery.class.js"]._cached = module.exports;
     
     (function () {
-        
-// Copyright 2011 Splunk, Inc.
+        // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
 // not use this file except in compliance with the License. You may obtain
@@ -607,64 +606,65 @@ require.modules["/lib/jquery.class.js"] = function () {
  */
 // Inspired by base2 and Prototype
 (function(){
-  var root = exports || this;
+    var root = exports || this;
 
-  var initializing = false, fnTest = /xyz/.test(function(){xyz;}) ? /\b_super\b/ : /.*/;
-  // The base Class implementation (does nothing)
-  root.Class = function(){};
-  
-  // Create a new Class that inherits from this class
-  root.Class.extend = function(prop) {
-    var _super = this.prototype;
+    var initializing = false;
+    var fnTest = (/xyz/.test(function() { return xyz; }) ? /\b_super\b/ : /.*/);
+    // The base Class implementation (does nothing)
+    root.Class = function(){};
     
-    // Instantiate a base class (but only create the instance,
-    // don't run the init constructor)
-    initializing = true;
-    var prototype = new this();
-    initializing = false;
-    
-    // Copy the properties over onto the new prototype
-    for (var name in prop) {
-      // Check if we're overwriting an existing function
-      prototype[name] = typeof prop[name] == "function" && 
-        typeof _super[name] == "function" && fnTest.test(prop[name]) ?
-        (function(name, fn){
-          return function() {
-            var tmp = this._super;
-            
-            // Add a new ._super() method that is the same method
-            // but on the super-class
-            this._super = _super[name];
-            
-            // The method only need to be bound temporarily, so we
-            // remove it when we're done executing
-            var ret = fn.apply(this, arguments);        
-            this._super = tmp;
-            
-            return ret;
-          };
-        })(name, prop[name]) :
-        prop[name];
-    }
-    
-    // The dummy class constructor
-    function Class() {
-      // All construction is actually done in the init method
-      if ( !initializing && this.init )
-        this.init.apply(this, arguments);
-    }
-    
-    // Populate our constructed prototype object
-    Class.prototype = prototype;
-    
-    // Enforce the constructor to be what we expect
-    Class.constructor = Class;
+    // Create a new Class that inherits from this class
+    root.Class.extend = function(prop) {
+      var _super = this.prototype;
+      
+      // Instantiate a base class (but only create the instance,
+      // don't run the init constructor)
+      initializing = true;
+      var prototype = new this();
+      initializing = false;
+      
+      // Copy the properties over onto the new prototype
+      for (var name in prop) {
+        // Check if we're overwriting an existing function
+        prototype[name] = typeof prop[name] == "function" && 
+          typeof _super[name] == "function" && fnTest.test(prop[name]) ?
+          (function(name, fn){
+            return function() {
+              var tmp = this._super;
+              
+              // Add a new ._super() method that is the same method
+              // but on the super-class
+              this._super = _super[name];
+              
+              // The method only need to be bound temporarily, so we
+              // remove it when we're done executing
+              var ret = fn.apply(this, arguments);        
+              this._super = tmp;
+              
+              return ret;
+            };
+          })(name, prop[name]) :
+          prop[name];
+      }
+      
+      // The dummy class constructor
+      function Class() {
+        // All construction is actually done in the init method
+        if ( !initializing && this.init )
+          this.init.apply(this, arguments);
+      }
+      
+      // Populate our constructed prototype object
+      Class.prototype = prototype;
+      
+      // Enforce the constructor to be what we expect
+      Class.constructor = Class;
 
-    // And make this class extendable
-    Class.extend = arguments.callee;
-    
-    return Class;
-  };
+      // And make this class extendable
+      Class.extend = arguments.callee;
+       
+      return Class;
+    };
 })();;
     }).call(module.exports);
     
@@ -827,7 +827,7 @@ require.modules["/lib/client.js"] = function () {
         },
 
         get: function(relpath, params, callback) {
-            url = this.path;
+            var url = this.path;
 
             // If we have a relative path, we will append it with a preceding
             // slash.
@@ -851,7 +851,7 @@ require.modules["/lib/client.js"] = function () {
         },
 
         post: function(relpath, params, callback) {
-            url = this.path;
+            var url = this.path;
 
             // If we have a relative path, we will append it with a preceding
             // slash.
@@ -901,7 +901,7 @@ require.modules["/lib/client.js"] = function () {
                 throw "Must provide a query to create a search job";
             }
 
-            params["search"] = query;  
+            params.search = query;  
             this.post("", params, utils.bind(this, function(response) {
                 var job = new root.Job(this.service, response.odata.results.sid);
                 callback(job);
@@ -911,7 +911,7 @@ require.modules["/lib/client.js"] = function () {
          // List all search jobs
         list: function(callback) {
             this.get("", {}, utils.bind(this, function(response) {
-                job_list = response.odata.results;
+                var job_list = response.odata.results;
                 callback(job_list);
             }));
         },
@@ -1090,7 +1090,7 @@ require.modules["/lib/http.js"] = function () {
                     encodedStr = encodedStr + key + "=" + encodeURIComponent(value);
                 }
             }
-        };
+        }
 
         return encodedStr;
     };
@@ -1112,13 +1112,13 @@ require.modules["/lib/http.js"] = function () {
         },
 
         get: function(url, headers, params, timeout, callback) {
-            var url = url + "?" + encode(params);
+            var encoded_url = url + "?" + encode(params);
             var message = {
                 method: "GET",
                 headers: headers,
                 timeout: timeout
             };
-            this.request(url, message, callback);
+            this.request(encoded_url, message, callback);
         },
 
         post: function(url, headers, params, timeout, callback) {
@@ -1133,14 +1133,14 @@ require.modules["/lib/http.js"] = function () {
         },
 
         del: function(url, headers, params, timeout, callback) {
-            var url = url + "?" + encode(params);
+            var encoded_url = url + "?" + encode(params);
             var message = {
                 method: "DELETE",
                 headers: headers,
                 timeout: timeout
             };
 
-            this.request(url, message, callback);
+            this.request(encoded_url, message, callback);
         },
 
         request: function(url, message, callback) {
@@ -1344,7 +1344,7 @@ require.modules["/lib/async.js"] = function () {
             else {
                 obj.done();
             }
-        }
+        };
 })();;
     }).call(module.exports);
     
@@ -1405,7 +1405,7 @@ require.modules["/lib/promise.js"] = function () {
                     var listener = {
                         success: successCallbacks,
                         failure: failureCallbacks,
-                        resolver: newResolver,
+                        resolver: newResolver
                     };
                     resolver.addListener(listener);
 
@@ -1424,7 +1424,7 @@ require.modules["/lib/promise.js"] = function () {
             this.whenFailed = utils.bind(this, function(/* f1, f2, ... */) {
                 return this.when.apply(this, [[], _.toArray(arguments)]);
             });
-        },
+        }
     });
 
     root.Promise.join = function(/* p1, p2, ... */) {
@@ -1455,11 +1455,11 @@ require.modules["/lib/promise.js"] = function () {
                 function(failedWith) {
                     resolver.fail(failedWith);  
                 }
-            )
-        }
+            );
+        };
 
         for(var i = 0; i < args.length; i++) {
-            var val = args[i]
+            var val = args[i];
             var isPromise = val instanceof root.Promise;
             if (isPromise) {
                 promiseCount++;
@@ -1474,7 +1474,7 @@ require.modules["/lib/promise.js"] = function () {
             }
         }
 
-        if (promiseCount == 0) {
+        if (promiseCount === 0) {
             resolver.resolve.apply(resolver, values);
         }
 
@@ -1510,12 +1510,12 @@ require.modules["/lib/promise.js"] = function () {
                 // If it is, and it was resolved, then we will re-resolve once
                 // we push the new listeners
                 if (this.isResolved) {
-                    finalizedInvoke = function() { this.resolve.apply(this, this.resolvedWith); }
+                    finalizedInvoke = function() { this.resolve.apply(this, this.resolvedWith); };
                 }
                 else if (this.isFailed) {
                     // And if it is failed, we will re-fail once
                     // we push the new listeners
-                    finalizedInvoke = function() { this.fail.apply(this, this.failedWith); }
+                    finalizedInvoke = function() { this.fail.apply(this, this.failedWith); };
                 }
 
                 // We mark it as "unfinalized" to not hit our "asserts".
@@ -1529,7 +1529,7 @@ require.modules["/lib/promise.js"] = function () {
             finalizedInvoke.apply(this, null);
         },
 
-        resolve: function() {            
+        resolve: function() {                    
             if (!this.isFinalized) {
                 this.isFinalized = this.isResolved = true;
                 this.resolvedWith = _.toArray(arguments);
@@ -1539,7 +1539,7 @@ require.modules["/lib/promise.js"] = function () {
 
                     // Store all the values returned by the registered success
                     // callbacks on this listener
-                    values = [];
+                    var values = [];
                     if (_.isArray(listener.success)) {
                         for(var i = 0; i < listener.success.length; i++) {
                             var successCallback = listener.success[i];
@@ -1550,8 +1550,7 @@ require.modules["/lib/promise.js"] = function () {
                     }
                     else if (_.isFunction(listener.success)) {
                         // Push the success value
-                        args = _.toArray(arguments);
-                        values.push(listener.success.apply(null, args));
+                        values.push(listener.success.apply(null, arguments));
                     }
 
                     // We resolve the downchain resolver using all the values
@@ -1598,7 +1597,7 @@ require.modules["/lib/promise.js"] = function () {
 
                 if (this.canceller) {
                     // Cancel the downchain promise
-                    canceller.cancel(reason);
+                    this.canceller.cancel(reason);
                 }
 
                 this.fail(reason);
@@ -1606,8 +1605,8 @@ require.modules["/lib/promise.js"] = function () {
             else {
                 throw "Trying to cancel a finalized resolver";
             }
-        },
-    })
+        }
+    });
 })();;
     }).call(module.exports);
     
@@ -2555,7 +2554,7 @@ require.modules["/platform/client/jquery_http.js"] = function () {
 
         parseJson: function(json) {
             // JQuery does this for us
-            return json
+            return json;
         }
     });
 })();;
@@ -2595,6 +2594,6 @@ process.nextTick(function () {
 // important functionality to the "window", such that others can easily
 // include it.
 
-window.Splunk = require('./splunk').Splunk
+window.Splunk = require('./splunk').Splunk;
 window.Splunk.JQueryHttp = require('./platform/client/jquery_http').JQueryHttp;;
 });

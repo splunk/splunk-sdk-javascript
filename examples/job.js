@@ -38,8 +38,8 @@
     // This function will create a set of options for command line parsing
     // and then parse the arguments to the command we're running.
     var _makeCommandLine = function(program, argv, flags, search_required) {
-        var flags = flags || [];
         var opts = {};
+        flags = flags || [];
 
         // Create the parser and add some help information
         var parser = new OptionParser({
@@ -71,9 +71,10 @@
 
         // Try and parse, and if we fail, print out the error message
         // and the usage information
+        var cmdline = null;
         try {
-            var cmdline = parser.parse(argv);
-            delete cmdline.options["help"];
+            cmdline = parser.parse(argv);
+            delete cmdline.options.help;
         }
         catch(e) {
             console.log(e.message);
@@ -84,8 +85,8 @@
     };
 
     var _check_sids = function(command, sids) {
-        if (!sids || sids.length == 0) {
-            throw "'" + command + "' requires at least one SID"
+        if (!sids || sids.length === 0) {
+            throw "'" + command + "' requires at least one SID";
         }
     };
 
@@ -138,13 +139,7 @@
 
             // If we don't have any command, notify the user.
             if (!command) {
-                console.error("You must supply a command to run. Options are:")
-                for(var command in commands) {
-                    if (commands.hasOwnProperty(command)) {
-                        console.error("  " + command);
-                    }
-                }
-
+                console.error("You must supply a command to run. Options are:");
                 return;
             }
 
@@ -173,8 +168,6 @@
 
         // Retrieve events for the specified search jobs
         events: function(argv, callback) {
-            _check_sids('events', sids);
-
             // Create the command line for the event command and parse it
             var cmdline = _makeCommandLine("events", argv, FLAGS_EVENTS, false);
 
@@ -183,7 +176,7 @@
                 console.log("Job " + job.sid + ": "); 
 
                 job.events(cmdline.options, function(data) {
-                    events = data.data || [];
+                    var events = data.data || [];
                     for(var i = 0; i < events.length; i++) {
                         console.log("  " + events[i]._raw[0].value[0]);
                     }
@@ -208,7 +201,7 @@
             // search parameter
             var query = cmdline.options.search;
             var params = cmdline.options;
-            delete params["search"];
+            delete params.search;
 
             // Create the job
             this.service.jobs().create(query, params, function(job) {
@@ -220,13 +213,13 @@
         // List all current search jobs if no jobs specified, otherwise
         // list the properties of the specified jobs.
         list: function(sids, callback) {
-            var sids = sids || [];
+            sids = sids || [];
 
             if (sids.length === 0) {
                 // If no job SIDs are provided, we list all jobs.
                 var jobs = this.service.jobs();
                 jobs.list(function(list) {
-                    var list = list || [];
+                    list = list || [];
                     for(var i = 0; i < list.length; i++) {
                         console.log("  Job " + (i + 1) + " sid: "+ list[i].sid);
                     }
@@ -335,8 +328,9 @@
     });
 
     // Try and parse the command line
+    var cmdline = null;
     try {
-        var cmdline = parser.parse();
+        cmdline = parser.parse();
     }
     catch(e) {
         // If we failed, then we print out the error message, and then the usage

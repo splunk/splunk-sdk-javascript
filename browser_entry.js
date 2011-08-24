@@ -17,5 +17,5 @@
 // important functionality to the "window", such that others can easily
 // include it.
 
-window.Splunk = require('./splunk').Splunk
+window.Splunk = require('./splunk').Splunk;
 window.Splunk.JQueryHttp = require('./platform/client/jquery_http').JQueryHttp;

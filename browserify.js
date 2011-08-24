@@ -40,8 +40,9 @@
     });
 
     // Try and parse the command line
+    var cmdline = null;
     try {
-        var cmdline = parser.parse();
+        cmdline = parser.parse();
     }
     catch(e) {
         // If we failed, then we print out the error message, and then the usage
@@ -54,7 +55,7 @@
         return;
     }
 
-    if (cmdline.arguments.length == 0) {
+    if (cmdline.arguments.length === 0) {
         cmdline.arguments.push(cmdline.options.dir + "splunk" + (cmdline.options.uglify ? ".min." : ".") + "js");        
     }
 

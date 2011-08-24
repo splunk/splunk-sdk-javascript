@@ -14,7 +14,7 @@
 // under the License.
 
 (function() {
-    var root = exports || this
+    var root = exports || this;
 
     root.Splunk = {
         Binding         : require('./lib/binding'),
@@ -25,6 +25,6 @@
         Async           : require('./lib/async'),
         Paths           : require('./lib/paths').Paths,
         Class           : require('./lib/jquery.class').Class,
-        Promise         : require('./lib/promise').Promise,
+        Promise         : require('./lib/promise').Promise
     };
 })();

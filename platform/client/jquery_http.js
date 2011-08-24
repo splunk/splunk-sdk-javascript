@@ -51,7 +51,7 @@
 
         parseJson: function(json) {
             // JQuery does this for us
-            return json
+            return json;
         }
     });
 })();

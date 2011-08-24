@@ -1,0 +1,6 @@
+lib/jquery.class.js
+node_modules
+.git
+build
+client
+external
