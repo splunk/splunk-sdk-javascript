@@ -13,12 +13,10 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-(function() {
+exports.run = (function() {
     var Promise      = require('../splunk').Splunk.Promise;
     var minitest    = require('../external/minitest');
     var assert      = require('assert');
-
-    minitest.setupListeners();
 
     minitest.context("Promise Tests", function() {
         this.setup(function() {
@@ -264,5 +262,68 @@
                 },
             ]);
         });
+        
+        this.assertion("Simple promise#join immediate + promise", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+
+            var pJoined = Promise.join(5, p1);
+
+            pJoined.when(
+                function(v1, v2) {
+                    assert.strictEqual(v1 + v2, 15);
+                    test.finished(); 
+                }
+            );
+
+            resolver.resolve(10);
+        });
+        
+        this.assertion("Simple promise#join fail one", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+
+            var pJoined = Promise.join(p1);
+
+            pJoined.when(
+                function(v1, v2) {
+                    assert.ok(false);
+                },
+                function(v1) {
+                    assert.strictEqual(v1, 10);
+                    test.finished();
+                }
+            );
+
+            resolver.fail(10);
+        });
+        
+        this.assertion("Simple promise#join fail two", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+
+            var resolver2 = new Promise.Resolver();
+            var p2 = resolver2.promise;
+
+            var pJoined = Promise.join(p1, p2);
+
+            pJoined.when(
+                function(v1, v2) {
+                    test.ok(false);
+                },
+                function(reason) {
+                    assert.strictEqual(reason, 4);
+                    test.finished();
+                }
+            );
+
+            resolver.fail(4);
+            resolver2.fail(8);
+        });
     });
-})();
+});
+
+if (module == require.main) {
+    require('../external/minitest').setupListeners();
+    exports.run();
+}

@@ -13,7 +13,7 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-(function() {
+exports.run = (function() {
     var Splunk      = require('../splunk').Splunk;
     var NodeHttp    = require('../platform/node/node_http').NodeHttp;
     var minitest    = require('../external/minitest');
@@ -28,9 +28,7 @@
         password: "changeme",
     });
 
-    minitest.setupListeners();
-
-    svc.login(function(success) {   
+    svc.login(function(success) {
         minitest.context("Basic Tests", function() {
             this.setup(function() {
                 this.service = svc;
@@ -70,4 +68,9 @@
             });
         });
     });
-})();
+}); 
+
+if (module == require.main) {
+    require('../external/minitest').setupListeners();
+    exports.run();
+}
