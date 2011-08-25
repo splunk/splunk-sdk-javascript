@@ -20,40 +20,8 @@ exports.run = (function() {
 
     minitest.context("Promise Tests", function() {
         this.setup(function() {
+
         });       
-
-        /*this.assertion("Simple promise#sleep chain", function(test) {
-            var resolver = new Promise.Resolver();
-            var p1 = resolver.promise;
-
-            var mySleep = function(duration) {
-                var sleepResolver = new Promise.Resolver();
-                setTimeout(function() { sleepResolver.resolve(); }, duration);
-                return sleepResolver.promise;
-            }
-
-            var p2 = p1.whenResolved(
-                function() {
-                    console.log("Before 1: ", new Date());
-                    return mySleep(100).whenResolved(
-                        function() {
-                            console.log("After 1: ", new Date());
-                            return 5;
-                        }
-                    )
-                }
-            );
-
-            p2.whenResolved(
-                function(v1) {
-                    assert.ok(v1 === 5);
-                    console.log("Final: ", new Date());
-                    test.finished();
-                }
-            )
-
-            resolver.resolve(5);
-        });*/
         
         this.assertion("Simple promise#when resolve", function(test) {
             var resolver = new Promise.Resolver();
@@ -697,10 +665,30 @@ exports.run = (function() {
             resolver.fail();
         });
         
-        this.assertion("Simple promise#chain fail succeed", function(test) {
+        this.assertion("Simple promise#sleep", function(test) {
             Promise.sleep(500).whenResolved(function() { test.finished(); });
+        });
+        
+        this.assertion("Simple promise#sleep chaining", function(test) {
+            var originalDate = new Date();
+            var doneP = Promise.sleep(500).whenResolved(
+                function() { 
+                    return Promise.sleep(500).whenResolved(
+                        function() {
+                            return Promise.sleep(500);
+                        }
+                    );
+                }
+            );
 
-            resolver.fail();
+            doneP.whenResolved(
+                function() {
+                    var newDate = new Date();
+                    var delta = newDate - originalDate;
+                    assert.ok(delta > 1300);
+                    test.finished();
+                }
+            );
         });
     });
 });
