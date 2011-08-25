@@ -696,6 +696,12 @@ exports.run = (function() {
 
             resolver.fail();
         });
+        
+        this.assertion("Simple promise#chain fail succeed", function(test) {
+            Promise.sleep(500).whenResolved(function() { test.finished(); });
+
+            resolver.fail();
+        });
     });
 });
 
