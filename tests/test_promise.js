@@ -651,6 +651,27 @@ exports.run = (function() {
             resolver.fail();
         });
         
+        this.assertion("Simple promise#chain fail2", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+
+            var p2 = p1.whenFailed(function(reason) {
+                return Promise.Failure(4);
+            });
+
+            p2.when(
+                function() {
+                    assert.ok(false);
+                },
+                function(v1) {
+                    assert.strictEqual(v1, 4);
+                    test.finished();
+                }
+            );
+
+            resolver.fail();
+        });
+        
         this.assertion("Simple promise#chain fail succeed", function(test) {
             var resolver = new Promise.Resolver("a");
             var p1 = resolver.promise;
