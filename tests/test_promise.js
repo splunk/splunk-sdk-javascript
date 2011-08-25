@@ -20,7 +20,40 @@ exports.run = (function() {
 
     minitest.context("Promise Tests", function() {
         this.setup(function() {
-        });
+        });       
+
+        /*this.assertion("Simple promise#sleep chain", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+
+            var mySleep = function(duration) {
+                var sleepResolver = new Promise.Resolver();
+                setTimeout(function() { sleepResolver.resolve(); }, duration);
+                return sleepResolver.promise;
+            }
+
+            var p2 = p1.whenResolved(
+                function() {
+                    console.log("Before 1: ", new Date());
+                    return mySleep(100).whenResolved(
+                        function() {
+                            console.log("After 1: ", new Date());
+                            return 5;
+                        }
+                    )
+                }
+            );
+
+            p2.whenResolved(
+                function(v1) {
+                    assert.ok(v1 === 5);
+                    console.log("Final: ", new Date());
+                    test.finished();
+                }
+            )
+
+            resolver.resolve(5);
+        });*/
         
         this.assertion("Simple promise#when resolve", function(test) {
             var resolver = new Promise.Resolver();
@@ -38,7 +71,7 @@ exports.run = (function() {
             );
 
             resolver.resolve(5);
-        });
+        }); 
         
         this.assertion("Simple promise#when fail", function(test) {
             var resolver = new Promise.Resolver();
@@ -168,7 +201,7 @@ exports.run = (function() {
             resolver.fail(4);
         });
         
-        this.assertion("Simple promise#when chain", function(test) {
+        this.assertion("Simple promise#when resolve chain", function(test) {
             var resolver = new Promise.Resolver();
             var p1 = resolver.promise;
 
@@ -191,6 +224,31 @@ exports.run = (function() {
             );
 
             resolver.resolve(5);
+        });
+        
+        this.assertion("Simple promise#when fail chain", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+
+            var p2 = p1.when(
+                function(myInt) {
+                    assert.ok(false);
+                },
+                function(v1) {
+                    assert.strictEqual(v1, 4);
+
+                    return v1 * 2;
+                }
+            );
+
+            p2.whenFailed(
+                function(anotherInt) {
+                    assert.strictEqual(anotherInt, 8);
+                    test.finished();
+                }
+            );
+
+            resolver.fail(4);
         });
         
         this.assertion("Simple promise#join one", function(test) {
@@ -279,6 +337,29 @@ exports.run = (function() {
             resolver.resolve(10);
         });
         
+        this.assertion("Simple promise#join mixed results", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+
+            var resolver2 = new Promise.Resolver();
+            var p2 = resolver2.promise;
+
+            var resolver3 = new Promise.Resolver();
+            var p3 = resolver3.promise;
+
+            var pJoined = Promise.join(p1, p2, p3);
+
+            pJoined.when(function(v1, v2, v3) {
+                assert.strictEqual(v3, undefined);
+                assert.strictEqual(v1 + v2[0] + v2[1], 35);
+                test.finished();
+            });
+
+            resolver.resolve(5);
+            resolver2.resolve(10, 20);
+            resolver3.resolve();
+        });
+        
         this.assertion("Simple promise#join fail one", function(test) {
             var resolver = new Promise.Resolver();
             var p1 = resolver.promise;
@@ -320,10 +401,285 @@ exports.run = (function() {
             resolver.fail(4);
             resolver2.fail(8);
         });
+        
+        this.assertion("Simple promise#already resolved", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+            resolver.resolve(5);
+
+            p1.when(
+                function(v1) {
+                    assert.strictEqual(v1, 5);
+                    test.finished();
+                },
+                function() {
+                    assert.ok(false);
+                }
+            );
+        });
+        
+        this.assertion("Simple promise#already failed", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+            resolver.fail(4);
+
+            p1.when(
+                function() {
+                    assert.ok(false);
+                },
+                function(v1) {
+                    assert.strictEqual(v1, 4);
+                    test.finished();
+                }
+            );
+        });
+        
+        this.assertion("Simple promise#done", function(test) {
+            var pDone = Promise.Done;
+
+            pDone.when(
+                function() {
+                    test.finished();
+                },
+                function() {
+                    assert.ok(false);
+                }
+            );
+        });
+        
+        this.assertion("Simple promise#neverdone", function(test) {
+            var pNever = Promise.NeverDone;
+
+            pNever.when(
+                function() {
+                    assert.ok(false);
+                },
+                function() {
+                    assert.ok(false);
+                }
+            );
+
+            // This is a bit bogus - there's no way to know
+            // that the never done promise will never be done,
+            // but this is the closest I can get.
+            setTimeout(function() { test.finished(); }, 100);
+        });
+        
+        this.assertion("Simple promise#chain with promise", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+
+            var pWhen = p1.when(
+                function(v1) {
+                    assert.strictEqual(v1, 5);
+
+                    var resolver2 = new Promise.Resolver();
+                    var p2 = resolver2.promise;
+
+                    setTimeout(function() { resolver2.resolve(v1 * 2); }, 500);
+
+                    return p2;
+                },
+                function(v1) {
+                    assert.ok(false);
+                }
+            );
+
+            pWhen.when(
+                function(v1) {
+                    assert.strictEqual(v1, 10);
+                    test.finished();  
+                },
+                function() {
+                    assert.ok(false);
+                }
+            );
+
+            resolver.resolve(5);
+        });
+        
+        this.assertion("Simple promise#chain with mixed", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+
+            var pWhen = p1.when(
+                [
+                    function(v1) {
+                        assert.strictEqual(v1, 5);
+                        
+                        var resolver2 = new Promise.Resolver();
+                        var p2 = resolver2.promise;
+                        
+                        setTimeout(function() { resolver2.resolve(v1 * 2); }, 500);
+                        
+                        return p2;
+                    },
+                    function(v1) {
+                        assert.strictEqual(v1, 5);
+
+                        return [v1 * 3, v1 * 4];
+                    }
+                ],
+                function(v1) {
+                    assert.ok(false);
+                }
+            );
+
+            pWhen.when(
+                function(v1, v2) {
+                    assert.strictEqual(v1 + v2[0] + v2[1], 45);
+                    test.finished();  
+                },
+                function() {
+                    assert.ok(false);
+                }
+            );
+
+            resolver.resolve(5);
+        });
+        
+        this.assertion("Simple promise#chain with promise failure", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+
+            var pWhen = p1.when(
+                function(v1) {
+                    assert.strictEqual(v1, 5);
+
+                    var resolver2 = new Promise.Resolver();
+                    var p2 = resolver2.promise;
+
+                    setTimeout(function() { resolver2.fail(v1 * 2); }, 500);
+
+                    return p2;
+                },
+                function() {
+                    assert.ok(false);
+                }
+            );
+
+            pWhen.when(
+                function() {
+                    assert.ok(false);
+                },
+                function(v1) {
+                    assert.strictEqual(v1, 10);
+                    test.finished();  
+                }
+            );
+
+            resolver.resolve(5);
+        });
+        
+        this.assertion("Simple promise#resolve multiple values", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+
+            p1.when(
+                function(v1, v2, v3, v4) {
+                    assert.strictEqual(v1 + v2 + v3 + v4, 10);
+                    test.finished();
+                },
+                function() {
+                    assert.ok(false);
+                }
+            );
+
+            resolver.resolve(1,2,3,4);
+        });
+        
+        this.assertion("Simple promise#fail multiple values", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+
+            p1.when(
+                function() {
+                    assert.ok(false);
+                },
+                function(v1, v2, v3, v4) {
+                    assert.strictEqual(v1 + v2 + v3 + v4, 10);
+                    test.finished();
+                }
+            );
+
+            resolver.fail(1,2,3,4);
+        });
+        
+        this.assertion("Simple promise#join multiple with multiple resolved values", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+
+            var resolver2 = new Promise.Resolver();
+            var p2 = resolver2.promise;
+
+            Promise.join(p1, p2).when(
+                function(v1, v2) {
+                    assert.strictEqual(v1[0] + v1[1] + v2[0] + v2[1], 10);
+                    test.finished();
+                },
+                function() {
+                    assert.ok(false);
+                }
+            );
+
+            resolver.resolve(1,2);
+            resolver2.resolve(3,4);
+        });
+        
+        this.assertion("Simple promise#chain fail", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+
+            var p2 = p1.whenFailed(function(reason) {
+               var resolverFail = new Promise.Resolver();
+               var pFail = resolverFail.promise;
+
+               resolverFail.fail(4);
+               return pFail;
+            });
+
+            p2.when(
+                function() {
+                    assert.ok(false);
+                },
+                function(v1) {
+                    assert.strictEqual(v1, 4);
+                    test.finished();
+                }
+            );
+
+            resolver.fail();
+        });
+        
+        this.assertion("Simple promise#chain fail succeed", function(test) {
+            var resolver = new Promise.Resolver("a");
+            var p1 = resolver.promise;
+
+            var p2 = p1.whenFailed(function(reason) {
+                var resolverSuccess = new Promise.Resolver("b");
+                var pSuccess = resolverSuccess.promise;
+
+                resolverSuccess.resolve(5);
+                return pSuccess;
+            });
+
+            p2.when(
+                function(v1) {
+                    assert.strictEqual(v1, 5);
+                    test.finished();
+                },
+                function() {
+                    assert.ok(false);
+                }
+            );
+
+            resolver.fail();
+        });
     });
 });
 
-if (module == require.main) {
+if (module === require.main) {
     require('../external/minitest').setupListeners();
     exports.run();
 }
+

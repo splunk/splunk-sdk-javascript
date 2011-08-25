@@ -9,10 +9,10 @@ function Suite () {
 Suite.prototype.report = function () {
   var suite = this;
   this.contexts.forEach(function(context, index) {
-    sys.puts(context.contextHeader());
+    console.log(context.contextHeader());
     context.report();
     if (suite.contexts.length === index) {
-      sys.puts("");
+      console.log("");
     };
   });
 };
@@ -74,9 +74,9 @@ Test.prototype.failed = function (error) {
 
 Test.prototype.report = function () {
   if (this.result) {
-    sys.puts(this.result);
+    console.log(this.result);
   } else {
-    sys.puts(this.reportNotFinished());
+    console.log(this.reportNotFinished());
   };
 };
 

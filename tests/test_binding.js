@@ -70,7 +70,7 @@ exports.run = (function() {
     });
 }); 
 
-if (module == require.main) {
+if (module === require.main) {
     require('../external/minitest').setupListeners();
     exports.run();
 }
