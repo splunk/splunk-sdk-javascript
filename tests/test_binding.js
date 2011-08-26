@@ -44,26 +44,276 @@ exports.run = (function() {
                 test.finished();
             });
 
-            this.assertion("Create job", function(test) {
-                this.service.jobs().create('search index=twitter | head 1', {}, Splunk.Utils.bind(this, function(job) {   
-                    assert.ok(job);
-                    test.finished();
-                })); 
-            });
-
-            this.assertion("Cancel job", function(test) {
-                this.service.jobs().create('search index=twitter | head 1', {}, Splunk.Utils.bind(this, function(job) {   
-                    job.cancel(function() {
+            this.assertion("Promise#get", function(test) { 
+                var jobsP = this.service.get("search/jobs", {count: 2});
+                jobsP.when(
+                    function(res) {
+                        assert.strictEqual(res.odata.offset, 0);
+                        assert.ok(res.odata.count <= res.odata.total_count);
+                        assert.strictEqual(res.odata.count, 2);
+                        assert.strictEqual(res.odata.count, res.odata.results.length);
+                        assert.ok(res.odata.results[0].sid);
                         test.finished();
-                    });
-                })); 
+                    }
+                );
             });
 
-            this.assertion("List jobs", function(test) {
-                this.service.jobs().list(function(jobs) {
-                    assert.ok(jobs);
-                    assert.ok(jobs.length > 0);
-                    test.finished();
+            this.assertion("Callback#get", function(test) { 
+                var jobsP = this.service.get("search/jobs", {count: 2}, function(res) {
+                        assert.strictEqual(res.odata.offset, 0);
+                        assert.ok(res.odata.count <= res.odata.total_count);
+                        assert.strictEqual(res.odata.count, 2);
+                        assert.strictEqual(res.odata.count, res.odata.results.length);
+                        assert.ok(res.odata.results[0].sid);
+                        test.finished();
+                    }
+                );
+            });
+
+            this.assertion("Promise#get error", function(test) { 
+                var jobsP = this.service.get("search/jobs/1234_nosuchjob");
+                jobsP.when(
+                    function(res) {
+                        assert.ok(false);
+                    },
+                    function(res) {
+                        assert.strictEqual(res.status, 404);
+                        test.finished();
+                    }
+                );
+            });
+
+            this.assertion("Callback#get error", function(test) { 
+                var jobsP = this.service.get("search/jobs/1234_nosuchjob", {}, {
+                        success: function(res) {
+                            assert.ok(false);  
+                        },
+                        error: function(res) {
+                            assert.strictEqual(res.status, 404);
+                            test.finished();
+                        }
+                    }
+                );
+            });
+
+            this.assertion("Promise#post", function(test) { 
+                var service = this.service;
+                var jobsP = this.service.post("search/jobs", {search: "search index=_internal | head 1"});
+                jobsP.when(
+                    function(res) {
+                        var sid = res.odata.results.sid;
+                        assert.ok(sid);
+
+                        var endpoint = "search/jobs/" + sid + "/control";
+                        var cancelP = service.post(endpoint, {action: "cancel"});
+                        return cancelP.when(
+                            function(res) {
+                                test.finished();
+                            }
+                        );
+                    }
+                );
+            });
+
+            this.assertion("Callback#post", function(test) { 
+                var service = this.service;
+                var jobsP = this.service.post("search/jobs", {search: "search index=_internal | head 1"}, function(res) {
+                        var sid = res.odata.results.sid;
+                        assert.ok(sid);
+
+                        var endpoint = "search/jobs/" + sid + "/control";
+                        var cancelP = service.post(endpoint, {action: "cancel"}, function(res) {
+                                test.finished();
+                            }
+                        );
+                    }
+                );
+            });
+
+            this.assertion("Promise#post error", function(test) { 
+                var jobsP = this.service.post("search/jobs", {search: "index_internal | head 1"});
+                jobsP.when(
+                    function(res) {
+                        assert.ok(false);
+                    },
+                    function(res) {
+                        assert.strictEqual(res.status, 400);
+                        test.finished();
+                    }
+                );
+            });
+
+            this.assertion("Callback#post error", function(test) { 
+                var jobsP = this.service.post("search/jobs", {search: "index_internal | head 1"}, {
+                        success: function(res) {
+                            assert.ok(false);  
+                        },
+                        error: function(res) {
+                            assert.strictEqual(res.status, 400);
+                            test.finished();
+                        }
+                    }
+                );
+            });
+
+            this.assertion("Promise#delete", function(test) { 
+                var service = this.service;
+                var jobsP = this.service.post("search/jobs", {search: "search index=_internal | head 1"});
+                jobsP.when(
+                    function(res) {
+                        var sid = res.odata.results.sid;
+                        assert.ok(sid);
+
+                        var endpoint = "search/jobs/" + sid;
+                        var deleteP = service.del(endpoint, {});
+                        return deleteP.when(
+                            function(res) {
+                                test.finished();
+                            }
+                        );
+                    }
+                );
+            });
+
+            this.assertion("Callback#delete", function(test) { 
+                var service = this.service;
+                var jobsP = this.service.post("search/jobs", {search: "search index=_internal | head 1"}, function(res) {
+                        var sid = res.odata.results.sid;
+                        assert.ok(sid);
+
+                        var endpoint = "search/jobs/" + sid;
+                        var deleteP = service.del(endpoint, {}, function(res) {
+                                test.finished();
+                            }
+                        );
+                    }
+                );
+            });
+
+            this.assertion("Promise#delete error", function(test) { 
+                var jobsP = this.service.del("search/jobs/1234_nosuchjob", {});
+                jobsP.when(
+                    function(res) {
+                        assert.ok(false);
+                    },
+                    function(res) {
+                        assert.strictEqual(res.status, 404);
+                        test.finished();
+                    }
+                );
+            });
+
+            this.assertion("Callback#delete error", function(test) { 
+                var jobsP = this.service.del("search/jobs/1234_nosuchjob", {}, {
+                        success: function(res) {
+                            assert.ok(false);  
+                        },
+                        error: function(res) {
+                            assert.strictEqual(res.status, 404);
+                            test.finished();
+                        }
+                    }
+                );
+            });
+
+            this.assertion("Promise#request get", function(test) { 
+                var jobsP = this.service.request("search/jobs?count=2", "GET", {"X-TestHeader": 1}, "");
+                jobsP.when(
+                    function(res) {
+                        assert.strictEqual(res.odata.offset, 0);
+                        assert.ok(res.odata.count <= res.odata.total_count);
+                        assert.strictEqual(res.odata.count, 2);
+                        assert.strictEqual(res.odata.count, res.odata.results.length);
+                        assert.ok(res.odata.results[0].sid);
+
+                        assert.strictEqual(res.response.request.headers["X-TestHeader"], 1);
+
+                        test.finished();
+                    }
+                );
+            });
+
+            this.assertion("Promise#request post", function(test) { 
+                var body = "search="+encodeURIComponent("search index=_internal | head 1");
+                var headers = {
+                    "Content-Type": "application/x-www-form-urlencoded"  
+                };
+                var service = this.service;
+                var jobsP = this.service.request("search/jobs", "POST", headers, body);
+                jobsP.when(
+                    function(res) {
+                        var sid = res.odata.results.sid;
+                        assert.ok(sid);
+
+                        var endpoint = "search/jobs/" + sid + "/control";
+                        var cancelP = service.post(endpoint, {action: "cancel"});
+                        return cancelP.when(
+                            function(res) {
+                                test.finished();
+                            }
+                        );
+                    }
+                );
+            });
+
+            this.assertion("Callback#request get", function(test) { 
+                var jobsP = this.service.request("search/jobs?count=2", "GET", {"X-TestHeader": 1}, "", function(res) {
+                        assert.strictEqual(res.odata.offset, 0);
+                        assert.ok(res.odata.count <= res.odata.total_count);
+                        assert.strictEqual(res.odata.count, 2);
+                        assert.strictEqual(res.odata.count, res.odata.results.length);
+                        assert.ok(res.odata.results[0].sid);
+
+                        assert.strictEqual(res.response.request.headers["X-TestHeader"], 1);
+
+                        test.finished();
+                    }
+                );
+            });
+
+            this.assertion("Callback#request post", function(test) { 
+                var body = "search="+encodeURIComponent("search index=_internal | head 1");
+                var headers = {
+                    "Content-Type": "application/x-www-form-urlencoded"  
+                };
+                var service = this.service;
+                var jobsP = this.service.request("search/jobs", "POST", headers, body, function(res) {
+                        var sid = res.odata.results.sid;
+                        assert.ok(sid);
+
+                        var endpoint = "search/jobs/" + sid + "/control";
+                        var cancelP = service.post(endpoint, {action: "cancel"}, function(res) {
+                                test.finished();
+                            }
+                        );
+                    }
+                );
+            });
+
+            this.assertion("Promise#request error", function(test) { 
+                var jobsP = this.service.request("search/jobs/1234_nosuchjob", "GET", {"X-TestHeader": 1}, "count=2");
+                jobsP.when(
+                    function(res) {
+                        assert.ok(false);
+                    },
+                    function(res) {
+                        assert.strictEqual(res.response.request.headers["X-TestHeader"], 1);
+                        assert.strictEqual(res.status, 404);
+                        test.finished();
+                    }
+                );
+            });
+
+            this.assertion("Callback#request error", function(test) { 
+                var jobsP = this.service.request("search/jobs/1234_nosuchjob", "GET", {"X-TestHeader": 1}, "count=2", {
+                    success: function(res) {
+                        assert.ok(false);
+                    },
+                    error: function(res) {
+                        assert.strictEqual(res.response.request.headers["X-TestHeader"], 1);
+                        assert.strictEqual(res.status, 404);
+                        test.finished();
+                    }
                 });
             });
         });
