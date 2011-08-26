@@ -700,11 +700,11 @@ exports.run = (function() {
         });
         
         this.assertion("Simple promise#chain fail succeed", function(test) {
-            var resolver = new Promise.Resolver("a");
+            var resolver = new Promise.Resolver();
             var p1 = resolver.promise;
 
             var p2 = p1.whenFailed(function(reason) {
-                var resolverSuccess = new Promise.Resolver("b");
+                var resolverSuccess = new Promise.Resolver();
                 var pSuccess = resolverSuccess.promise;
 
                 resolverSuccess.resolve(5);
@@ -748,6 +748,100 @@ exports.run = (function() {
                     test.finished();
                 }
             );
+        });
+        
+        this.assertion("Simple promise#progress once", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+
+            p1.onProgress(
+                function(prg) {
+                    assert.strictEqual(prg.percent, 0.5);
+                },
+                function(prg) {
+                    assert.strictEqual(prg.percent, 0.5);
+                }
+            );
+
+            p1.when(
+                function() {
+                    test.finished();
+                },
+                function() {
+                    assert.ok(false);
+                }
+            );
+
+            resolver.progress({percent: 0.5});
+            resolver.resolve();
+        });
+        
+        this.assertion("Simple promise#progress multiple", function(test) {
+            // Set start and end times
+            var start = new Date();
+            var end = new Date(start);
+            end.setMilliseconds(start.getMilliseconds() + 1000);
+
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+
+            var progressReports = 0;
+            p1.onProgress(
+                function(prg) {
+                    assert.ok(prg.percent < 1.0);
+                    progressReports++;
+                }
+            );
+
+            var timer = setInterval(function() {
+                var now = new Date();
+                var pct = (now - start) / (end - start);
+
+                var success = resolver.progress({percent: pct});
+                assert.ok(success);
+            }, 100);
+
+            p1.when(
+                function() {
+                    clearInterval(timer);
+                    assert.ok(progressReports > 1);
+                    test.finished();
+                },
+                function() {
+                    assert.ok(false);
+                }
+            );
+
+            Promise.sleep(800).whenResolved(
+                function() {
+                    resolver.resolve();
+                }
+            );
+        });
+        
+        this.assertion("Simple promise#progress fail", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+
+            p1.onProgress(
+                function(prg) { 
+                    assert.ok(false);
+                }
+            );
+
+            p1.when(
+                function() {
+                    test.finished();
+                },
+                function() {
+                    assert.ok(false);
+                }
+            );
+
+            resolver.resolve();
+
+            var reported = resolver.progress({percent: 0.5});
+            assert.ok(!reported);
         });
     });
 });
