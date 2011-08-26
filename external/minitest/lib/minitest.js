@@ -142,7 +142,7 @@ function setupUncaughtExceptionListener () {
   // so we could just set test.result, so everything would be
   // reported properly on the correct place, not in the middle of tests
   process.addListener("uncaughtException", function (error) {
-    sys.puts(Test.prototype.reportError(error));
+    console.log(Test.prototype.reportError(error));
   });
 };
 
