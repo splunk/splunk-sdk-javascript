@@ -858,7 +858,7 @@ exports.run = (function() {
                 function() {
                     test.finished();
                 }
-            )
+            );
 
             resolver.fail();
         });

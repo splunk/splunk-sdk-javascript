@@ -68,7 +68,8 @@ exports.run = (function() {
             var headers = {
                 "X-Test1": 1,
                 "X-Test2": "a/b/c"
-            }
+            };
+
             var getP = this.http.get("http://httpbin.org/get", headers, {}, 0);
             getP.when(
                 function(res) {
@@ -89,7 +90,8 @@ exports.run = (function() {
             var headers = {
                 "X-Test1": 1,
                 "X-Test2": "a/b/c"
-            }
+            };
+
             var getP = this.http.get("http://httpbin.org/get", headers, { a: 1, b: 2, c: [1,2,3], d: "a/b"}, 0);
             getP.when(
                 function(res) {
@@ -168,7 +170,8 @@ exports.run = (function() {
             var headers = {
                 "X-Test1": 1,
                 "X-Test2": "a/b/c"
-            }
+            };
+
             var getP = this.http.get("http://httpbin.org/get", headers, {}, 0, function(res) {
                     var returnedHeaders = res.json.headers;
                     for(var headerName in headers) {
@@ -187,7 +190,8 @@ exports.run = (function() {
             var headers = {
                 "X-Test1": 1,
                 "X-Test2": "a/b/c"
-            }
+            };
+
             var getP = this.http.get("http://httpbin.org/get", headers, { a: 1, b: 2, c: [1,2,3], d: "a/b"}, 0, function(res) {
                     var returnedHeaders = res.json.headers;
                     for(var headerName in headers) {
@@ -211,7 +215,7 @@ exports.run = (function() {
             var headers = {
                 "X-Test1": 1,
                 "X-Test2": "a/b/c"
-            }
+            };
 
             var callbackCount = 0;
             var callback = function(res) {
@@ -239,7 +243,7 @@ exports.run = (function() {
                     assert.strictEqual(callbackCount, 2);
                     test.finished();
                 }
-            )
+            );
         });
     });
 
@@ -290,7 +294,8 @@ exports.run = (function() {
             var headers = {
                 "X-Test1": 1,
                 "X-Test2": "a/b/c"
-            }
+            };
+
             var postP = this.http.post("http://httpbin.org/post", headers, {}, 0);
             postP.when(
                 function(res) {
@@ -311,7 +316,8 @@ exports.run = (function() {
             var headers = {
                 "X-Test1": 1,
                 "X-Test2": "a/b/c"
-            }
+            };
+
             var postP = this.http.post("http://httpbin.org/post", headers, { a: 1, b: 2, c: [1,2,3], d: "a/b"}, 0);
             postP.when(
                 function(res) {
@@ -390,7 +396,8 @@ exports.run = (function() {
             var headers = {
                 "X-Test1": 1,
                 "X-Test2": "a/b/c"
-            }
+            };
+
             var postP = this.http.post("http://httpbin.org/post", headers, {}, 0, function(res) {
                     var returnedHeaders = res.json.headers;
                     for(var headerName in headers) {
@@ -409,7 +416,8 @@ exports.run = (function() {
             var headers = {
                 "X-Test1": 1,
                 "X-Test2": "a/b/c"
-            }
+            };
+
             var postP = this.http.post("http://httpbin.org/post", headers, { a: 1, b: 2, c: [1,2,3], d: "a/b"}, 0, function(res) {
                     var returnedHeaders = res.json.headers;
                     for(var headerName in headers) {
@@ -433,7 +441,7 @@ exports.run = (function() {
             var headers = {
                 "X-Test1": 1,
                 "X-Test2": "a/b/c"
-            }
+            };
 
             var callbackCount = 0;
             var callback = function(res) {
@@ -461,7 +469,7 @@ exports.run = (function() {
                     assert.strictEqual(callbackCount, 2);
                     test.finished();
                 }
-            )
+            );
         });
     });
 
@@ -507,7 +515,8 @@ exports.run = (function() {
             var headers = {
                 "X-Test1": 1,
                 "X-Test2": "a/b/c"
-            }
+            };
+
             var deleteP = this.http.del("http://httpbin.org/delete", headers, {}, 0);
             deleteP.when(
                 function(res) {
@@ -528,7 +537,8 @@ exports.run = (function() {
             var headers = {
                 "X-Test1": 1,
                 "X-Test2": "a/b/c"
-            }
+            };
+
             var deleteP = this.http.del("http://httpbin.org/delete", headers, { a: 1, b: 2, c: [1,2,3], d: "a/b"}, 0);
             deleteP.when(
                 function(res) {
@@ -597,7 +607,8 @@ exports.run = (function() {
             var headers = {
                 "X-Test1": 1,
                 "X-Test2": "a/b/c"
-            }
+            };
+
             var deleteP = this.http.del("http://httpbin.org/delete", headers, {}, 0, function(res) {
                     var returnedHeaders = res.json.headers;
                     for(var headerName in headers) {
@@ -616,7 +627,8 @@ exports.run = (function() {
             var headers = {
                 "X-Test1": 1,
                 "X-Test2": "a/b/c"
-            }
+            };
+
             var deleteP = this.http.del("http://httpbin.org/delete", headers, { a: 1, b: 2, c: [1,2,3], d: "a/b"}, 0, function(res) {
                     var returnedHeaders = res.json.headers;
                     for(var headerName in headers) {
@@ -635,7 +647,7 @@ exports.run = (function() {
             var headers = {
                 "X-Test1": 1,
                 "X-Test2": "a/b/c"
-            }
+            };
 
             var callbackCount = 0;
             var callback = function(res) {
@@ -658,7 +670,7 @@ exports.run = (function() {
                     assert.strictEqual(callbackCount, 2);
                     test.finished();
                 }
-            )
+            );
         });
     });
 }); 
