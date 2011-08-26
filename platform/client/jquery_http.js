@@ -20,12 +20,16 @@
     var root = exports || this;
 
     root.JQueryHttp = Splunk.Http.extend({
-        request: function(url, message, callback) {
+        init: function(isSplunk) {
+            this._super(isSplunk);
+        },
+
+        makeRequest: function(url, message, callback) {
             var params = {
                 url: url,
                 type: message.method,
                 headers: message.headers,
-                data: message.body,
+                data: message.body || "",
                 dataType: "json",
                 success: utils.bind(this, function(data, error, res) {
                     var response = {

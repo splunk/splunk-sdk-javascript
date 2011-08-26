@@ -15,6 +15,7 @@
 
 (function() {
     require('../external/minitest').setupListeners();
+    require('./test_http').run();
     require('./test_binding').run();
     require('./test_promise').run();
 })();
