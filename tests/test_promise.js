@@ -843,6 +843,25 @@ exports.run = (function() {
             var reported = resolver.progress({percent: 0.5});
             assert.ok(!reported);
         });
+        
+        this.assertion("Simple promise#when no fail callback", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+
+            p1.when(
+                function() {
+                    assert.ok(false);
+                }
+            );
+
+            p1.whenFailed(
+                function() {
+                    test.finished();
+                }
+            )
+
+            resolver.fail();
+        });
     });
 });
 
