@@ -592,6 +592,65 @@ exports.run = (function() {
 
             resolver.resolve(1,2);
             resolver2.resolve(3,4);
+        });        
+
+        this.assertion("Simple promise#chain multiple", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+
+            var p2 = p1.when(
+                [
+                    function(v1) {
+                        return Promise.Success(v1 * 2, v1 * 3);
+                    },
+                    function(v1) { 
+                        return Promise.Success(v1 * 2, v1 * 3);
+                    }
+                ],
+                function() {
+                    assert.ok(false);
+                }
+            );
+
+            p2.when(
+                function(v1, v2) {
+                    assert.strictEqual(v1[0] + v1[1] + v2[0] + v2[1], 100);
+                    test.finished();
+                }
+            );
+
+            resolver.resolve(10);
+        });        
+
+        this.assertion("Simple promise#chain multiple mixed", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+
+            var p2 = p1.when(
+                [
+                    function(v1) {
+                        return Promise.Success(v1 * 2, v1 * 3);
+                    },
+                    function(v1) { 
+                        return Promise.Failure(v1 * 3, v1 * 4);
+                    }
+                ],
+                function() {
+                    assert.ok(false);
+                }
+            );
+
+            p2.when(
+                function() {
+                    assert.ok(false);
+                },
+                function(v1) {
+                    assert.strictEqual(v1[0] + v1[1], 70);
+                    test.finished();
+                }
+            );
+
+            resolver.resolve(10);
         });
         
         this.assertion("Simple promise#chain fail", function(test) {
