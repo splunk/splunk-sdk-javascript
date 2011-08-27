@@ -59,6 +59,26 @@ exports.run = (function() {
             resolver.fail(4);
         });
         
+        this.assertion("Simple promise#when fail chain no handler", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+
+            var p2 = p1.when(
+                function(myInt) {
+                    assert.ok(false);
+                }
+            );
+
+            p2.whenFailed(
+                function(v1) {
+                    assert.strictEqual(v1, 4);
+                    test.finished();
+                } 
+            );
+
+            resolver.fail(4);
+        });
+        
         this.assertion("Simple promise#whenResolved", function(test) {
             var resolver = new Promise.Resolver();
             var p1 = resolver.promise;
