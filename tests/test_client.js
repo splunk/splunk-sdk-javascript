@@ -29,7 +29,7 @@ exports.run = (function() {
     });
 
     svc.login(function(success) {
-        minitest.context("Basic Tests", function() {
+        minitest.context("Client Tests", function() {
             this.setup(function() {
                 this.service = svc;
             });

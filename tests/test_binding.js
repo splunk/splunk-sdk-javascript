@@ -29,7 +29,7 @@ exports.run = (function() {
     });
 
     svc.login(function(success) {
-        minitest.context("Basic Tests", function() {
+        minitest.context("Binding Tests", function() {
             this.setup(function() {
                 this.service = svc;
             });
@@ -42,6 +42,80 @@ exports.run = (function() {
             this.assertion("Login succeeded", function(test) {
                 assert.ok(this.service.sessionKey);
                 test.finished();
+            });
+
+            this.assertion("Login promise", function(test) {
+                var newService = new Splunk.Client.Service(http, { 
+                    scheme: "http",
+                    host: "localhost",
+                    port: "8000",
+                    username: "itay",
+                    password: "changeme",
+                });
+
+                var loginP = newService.login();
+                loginP.when(
+                    function(loginSuccess) {
+                        assert.ok(loginSuccess);
+                        test.finished();
+                    },
+                    function(loginSuccess) {
+                        assert.ok(false);
+                    }
+                );
+            });
+
+            this.assertion("Login promise fail", function(test) {
+                var newService = new Splunk.Client.Service(http, { 
+                    scheme: "http",
+                    host: "localhost",
+                    port: "8000",
+                    username: "itay",
+                    password: "changeme_wrongpassword",
+                });
+
+                var loginP = newService.login();
+                loginP.when(
+                    function(loginSuccess) {
+                        assert.ok(false);
+                    },
+                    function(loginSuccess) {
+                        assert.ok(!loginSuccess);
+                        test.finished();
+                    }
+                );
+            });
+
+            this.assertion("Login callback", function(test) {
+                var newService = new Splunk.Client.Service(http, { 
+                    scheme: "http",
+                    host: "localhost",
+                    port: "8000",
+                    username: "itay",
+                    password: "changeme",
+                });
+
+                var loginP = newService.login(function(loginSuccess) {
+                        assert.ok(loginSuccess);
+                        test.finished();
+                    }
+                );
+            });
+
+            this.assertion("Login callback fail", function(test) {
+                var newService = new Splunk.Client.Service(http, { 
+                    scheme: "http",
+                    host: "localhost",
+                    port: "8000",
+                    username: "itay",
+                    password: "changeme_wrongpassword",
+                });
+
+                var loginP = newService.login(function(loginSuccess) {
+                        assert.ok(!loginSuccess);
+                        test.finished();
+                    }
+                );
             });
 
             this.assertion("Promise#get", function(test) { 

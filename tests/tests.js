@@ -15,7 +15,12 @@
 
 (function() {
     require('../external/minitest').setupListeners();
+
+    // Building block tests
     require('./test_http').run();
-    require('./test_binding').run();
     require('./test_promise').run();
+
+    // Splunk tests
+    require('./test_binding').run();
+    require('./test_client').run();
 })();
