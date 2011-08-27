@@ -902,6 +902,46 @@ exports.run = (function() {
 
             resolver.fail();
         });
+        
+        this.assertion("Simple promise#while success", function(test) {
+            var counter = 0;
+
+            var whileP = Promise.while({
+                condition: function() { return counter < 10; },
+                body: function() {
+                    counter++;
+
+                    return Promise.sleep(10);
+                }
+            });
+
+            whileP.whenResolved(function() {
+                assert.strictEqual(counter, 10);
+                test.finished();
+            });
+        });
+        
+        this.assertion("Simple promise#while fail", function(test) {
+            var counter = 0;
+
+            var whileP = Promise.while({
+                condition: function() { return counter < 10; },
+                body: function(iteration) {
+                    assert.strictEqual(iteration, counter);
+                    counter++;
+
+                    if (counter === 2) {
+                        return Promise.Failure(3);
+                    }
+                }
+            });
+
+            whileP.whenFailed(function(v1) {
+                assert.strictEqual(counter, 2);
+                assert.strictEqual(v1, 3);
+                test.finished();
+            });
+        });
     });
 });
 

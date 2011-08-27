@@ -19,6 +19,7 @@ exports.run = (function() {
     var minitest    = require('../external/minitest');
     var assert      = require('assert');
     var utils       = Splunk.Utils;
+    var Promise     = Splunk.Promise;
 
     var http = new NodeHttp();
     var svc = new Splunk.Client.Service(http, { 
@@ -146,6 +147,40 @@ exports.run = (function() {
                         });
                     });
                 })); 
+            });
+
+            this.assertion("Promise#job results", function(test) {
+                var sid = getNextId();
+                var jobP = this.service.jobs().create('search index=_internal | head 1 | stats count', {id: sid});
+                var service = this.service;
+                jobP.when(
+                    function(job) {
+                        var properties = {};
+                        var jobDoneP = Promise.while({
+                            condition: function() { return properties.dispatchState !== "DONE"; },
+                            body: function() {
+                                return job.read().whenResolved(function(response) {
+                                    properties = response.odata.results;
+
+                                    return Promise.sleep(1000);
+                                });
+                            }
+                        });
+
+                        var resultsP = jobDoneP.whenResolved(function() {
+                             return job.results();
+                        });
+
+                        resultsP.whenResolved(function(results) {
+                            assert.strictEqual(results.data.length, 1);
+                            assert.strictEqual(results.field_list.length, 1);
+                            assert.strictEqual(results.field_list[0], "count");
+                            assert.strictEqual(results.data[0].count[0].value, "1");
+                            
+                            job.cancel().whenResolved(function() { test.finished(); });
+                        });
+                    }
+                );
             });
         });
     });
