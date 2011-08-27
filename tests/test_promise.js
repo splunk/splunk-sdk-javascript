@@ -79,6 +79,26 @@ exports.run = (function() {
             resolver.fail(4);
         });
         
+        this.assertion("Simple promise#when return arguments", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+
+            var p2 = p1.when(
+                function() {
+                    return arguments;
+                }
+            );
+
+            p2.when(
+                function(v1, v2) {
+                    assert.strictEqual(v1 + v2, 10);
+                    test.finished();
+                }
+            );
+
+            resolver.resolve(2, 8);
+        });
+        
         this.assertion("Simple promise#whenResolved", function(test) {
             var resolver = new Promise.Resolver();
             var p1 = resolver.promise;

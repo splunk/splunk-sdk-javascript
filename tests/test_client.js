@@ -18,6 +18,7 @@ exports.run = (function() {
     var NodeHttp    = require('../platform/node/node_http').NodeHttp;
     var minitest    = require('../external/minitest');
     var assert      = require('assert');
+    var utils       = Splunk.Utils;
 
     var http = new NodeHttp();
     var svc = new Splunk.Client.Service(http, { 
@@ -27,6 +28,11 @@ exports.run = (function() {
         username: "itay",
         password: "changeme",
     });
+
+    var idCounter = 0;
+    var getNextId = function() {
+        return "id" + (idCounter++);
+    };
 
     svc.login(function(success) {
         minitest.context("Client Tests", function() {
@@ -44,27 +50,112 @@ exports.run = (function() {
                 test.finished();
             });
 
-            this.assertion("Create job", function(test) {
-                this.service.jobs().create('search index=twitter | head 1', {}, Splunk.Utils.bind(this, function(job) {   
-                    assert.ok(job);
-                    test.finished();
-                })); 
+            this.assertion("Promise#Create+cancel job", function(test) {
+                var sid = getNextId();
+                var jobP = this.service.jobs().create('search index=_internal | head 1', {id: sid});
+                jobP.when(
+                    utils.bind(this, function(job) {   
+                        assert.ok(job);
+                        assert.strictEqual(job.sid, sid);
+
+                        var cancelP = job.cancel();
+                        cancelP.when(
+                            function() {
+                                test.finished();
+                            }
+                        );
+                    })
+                );
             });
 
-            this.assertion("Cancel job", function(test) {
-                this.service.jobs().create('search index=twitter | head 1', {}, Splunk.Utils.bind(this, function(job) {   
+            this.assertion("Callback#Create+cancel job", function(test) {
+                var sid = getNextId();
+                this.service.jobs().create('search index=_internal | head 1', {id: sid}, utils.bind(this, function(job) {   
+                    assert.ok(job);
+                    assert.strictEqual(job.sid, sid);
+
                     job.cancel(function() {
                         test.finished();
                     });
                 })); 
             });
 
-            this.assertion("List jobs", function(test) {
+            this.assertion("Promise#Create job error", function(test) {
+                var sid = getNextId();
+                var jobP = this.service.jobs().create('index=_internal | head 1', {id: sid});
+                jobP.whenFailed(
+                    function() {
+                        test.finished();
+                    }
+                );
+            });
+
+            this.assertion("Callback#Create job error", function(test) {
+                var sid = getNextId();
+                this.service.jobs().create('index=_internal | head 1', {id: sid}, {
+                    success: function () { assert.ok(false); },
+                    error: function() { test.finished(); },
+                });
+            });
+
+            this.assertion("Promise#List jobs", function(test) {
+                var jobListP = this.service.jobs().list();
+                jobListP.when(
+                    function(jobs) {
+                        assert.ok(jobs);
+                        assert.ok(jobs.length > 0);
+                        test.finished();
+                    }
+                );
+            });
+
+            this.assertion("Callback#List jobs", function(test) {
                 this.service.jobs().list(function(jobs) {
                     assert.ok(jobs);
                     assert.ok(jobs.length > 0);
                     test.finished();
                 });
+            });
+
+            this.assertion("Promise#Contains job", function(test) {
+                var sid = getNextId();
+                var jobP = this.service.jobs().create('search index=_internal | head 1', {id: sid});
+                jobP.when(
+                    utils.bind(this, function(job) {   
+                        assert.ok(job);
+                        assert.strictEqual(job.sid, sid);
+
+                        var containsP = this.service.jobs().contains(sid);
+                        containsP.when(
+                            function(contains) {
+                                assert.ok(contains);
+
+                                var cancelP = job.cancel();
+                                cancelP.when(
+                                    function() {
+                                        test.finished();
+                                    }
+                                );
+                            }
+                        );
+                    })
+                );
+            });
+
+            this.assertion("Callback#Contains job", function(test) {
+                var sid = getNextId();
+                this.service.jobs().create('search index=_internal | head 1', {id: sid}, utils.bind(this, function(job) {   
+                    assert.ok(job);
+                    assert.strictEqual(job.sid, sid);
+
+                    this.service.jobs().contains(sid, function(contains) {
+                        assert.ok(contains);
+
+                        job.cancel(function() {
+                            test.finished();
+                        });
+                    });
+                })); 
             });
         });
     });
