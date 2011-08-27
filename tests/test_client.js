@@ -35,19 +35,9 @@ exports.run = (function() {
     };
 
     svc.login(function(success) {
-        minitest.context("Client Tests", function() {
+        minitest.context("Job Tests", function() {
             this.setup(function() {
                 this.service = svc;
-            });
-
-            this.assertion("Service exists", function(test) {
-                assert.ok(this.service);
-                test.finished();
-            });
-
-            this.assertion("Login succeeded", function(test) {
-                assert.ok(this.service.sessionKey);
-                test.finished();
             });
 
             this.assertion("Promise#Create+cancel job", function(test) {
