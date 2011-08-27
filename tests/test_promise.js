@@ -14,9 +14,10 @@
 // under the License.
 
 exports.run = (function() {
-    var Promise      = require('../splunk').Splunk.Promise;
-    var minitest    = require('../external/minitest');
-    var assert      = require('assert');
+    var Promise  = require('../splunk').Splunk.Promise;
+    var minitest = require('../external/minitest');
+    var assert   = require('assert');
+    var _        = require('../external/underscore.js');
 
     minitest.context("Promise Tests", function() {
         this.setup(function() {
@@ -90,8 +91,32 @@ exports.run = (function() {
             );
 
             p2.when(
-                function(v1, v2) {
-                    assert.strictEqual(v1 + v2, 10);
+                function(args) {
+                    assert.ok(_.isArguments(args));
+                    args = _.toArray(args);
+                    assert.strictEqual(args[0] + args[1], 10);
+                    test.finished();
+                }
+            );
+
+            resolver.resolve(2, 8);
+        });
+        
+        this.assertion("Simple promise#when return arguments promise", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+
+            var p2 = p1.when(
+                function() {
+                    return Promise.Success(arguments);
+                }
+            );
+
+            p2.when(
+                function(args) {
+                    assert.ok(_.isArguments(args));
+                    args = _.toArray(args);
+                    assert.strictEqual(args[0] + args[1], 10);
                     test.finished();
                 }
             );
@@ -941,6 +966,205 @@ exports.run = (function() {
                 assert.strictEqual(v1, 3);
                 test.finished();
             });
+        });      
+
+        
+        this.assertion("Simple promise#join two", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+
+            var resolver2 = new Promise.Resolver();
+            var p2 = resolver2.promise;
+
+            var pJoined = Promise.join(p1, p2);
+
+            pJoined.when(function(v1, v2) {
+                assert.strictEqual(v1 + v2, 15);
+                test.finished();
+            });
+
+            resolver.resolve(5);
+            resolver2.resolve(10);
+        });
+        
+        this.assertion("Simple promise#chain join two", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+
+            var p2 = p1.when(
+                function() {
+                    return Promise.join(1, 2);
+                }
+            );
+
+            p2.when(function(v1, v2) {
+                assert.strictEqual(v1 + v2, 3);
+                test.finished();
+            });
+
+            resolver.resolve(5);
+        });
+        
+        this.assertion("Simple promise#chain join none", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+
+            var p2 = p1.when(
+                function() {
+                    return Promise.join();
+                }
+            );
+
+            p2.when(function(v1, v2) {
+                assert.ok(!v1);
+                assert.ok(!v2);
+                test.finished();
+            });
+
+            resolver.resolve(5);
+        });
+        
+        this.assertion("Simple promise#chain join one", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+
+            var p2 = p1.when(
+                function() {
+                    return Promise.join(1);
+                }
+            );
+
+            p2.when(function(v1) {
+                assert.strictEqual(v1, 1);
+                test.finished();
+            });
+
+            resolver.resolve(5);
+        });
+        
+        this.assertion("Simple promise#chain join array", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+
+            var p2 = p1.when(
+                function() {
+                    return Promise.join([10]);
+                }
+            );
+
+            p2.when(function(v1) {
+                assert.strictEqual(v1[0], 10);
+                test.finished();
+            });
+
+            resolver.resolve(5);
+        });
+        
+        this.assertion("Simple promise#chain join promise array", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+
+            var p2 = p1.when(
+                function() {
+                    return Promise.join(Promise.Success(10));
+                }
+            );
+
+            p2.when(function(v1) {
+                assert.deepEqual(v1, 10);
+                test.finished();
+            });
+
+            resolver.resolve(5);
+        });
+        
+        this.assertion("Simple promise#chain join array", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+
+            var p2 = p1.when(
+                function() {
+                    return Promise.join([[10]]);
+                }
+            );
+
+            p2.when(function(v1) {
+                assert.strictEqual(v1[0][0], 10);
+                test.finished();
+            });
+
+            resolver.resolve(5);
+        });
+        
+        this.assertion("Simple promise#chain join chain", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+
+            var p2 = p1.when(
+                function(v1) {
+                    return Promise.join(Promise.join(Promise.join(Promise.join(Promise.Success(v1)))));
+                }
+            );
+
+            p2.when(function(v1, v2) {
+                assert.strictEqual(v1, 5);
+                assert.ok(!v2);
+                test.finished();
+            });
+
+            resolver.resolve(5);
+        });
+        
+        this.assertion("Simple promise#chain join multiple results", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+
+            var p2 = p1.whenResolved(
+                function(v1) {
+                    return Promise.join(Promise.join(Promise.join(Promise.join(Promise.Success(v1)))));
+                },
+                function(v1) {
+                    return v1 * 2;
+                }
+            );
+
+            p2.when(function(v1, v2) {
+                assert.strictEqual(v1, 5);
+                assert.strictEqual(v2, 10);
+                test.finished();
+            });
+
+            resolver.resolve(5);
+        });
+        
+        this.assertion("Simple promise#chain join multiple promises", function(test) {
+            var resolver = new Promise.Resolver();
+            var p1 = resolver.promise;
+
+            var p2 = p1.whenResolved(
+                function(v1) {
+                    return Promise.join(Promise.join(Promise.join(Promise.join(Promise.Success(v1)))));
+                },
+                function(v1) {
+                    return Promise.join(v1 * 2);
+                },
+                function(v1) {
+                    return Promise.Success(v1 * 3)
+                },
+                function(v1) {
+                    return Promise.join(v1, v1);
+                }
+            );
+
+            p2.when(function(v1, v2, v3, v4) {
+                assert.strictEqual(v1, 5);
+                assert.strictEqual(v2, 10);
+                assert.strictEqual(v3, 15);
+                assert.strictEqual(v4[0] + v4[1], 10);
+                test.finished();
+            });
+
+            resolver.resolve(5);
         });
     });
 });
