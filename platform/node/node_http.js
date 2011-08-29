@@ -33,7 +33,7 @@
                 body: message.body || ""
             };
 
-            console.log("URL", request_options.method, ":", request_options.url);
+            //console.log("URL", request_options.method, ":", request_options.url);
 
             request(request_options, utils.bind(this, function (error, res, data) {
                 var complete_response = this._buildResponse(error, res, data);

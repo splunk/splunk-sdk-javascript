@@ -20,6 +20,7 @@ exports.run = (function() {
     var assert      = require('assert');
     var utils       = Splunk.Utils;
     var Promise     = Splunk.Promise;
+    var Async       = Splunk.Async;
 
     var http = new NodeHttp();
     var svc = new Splunk.Client.Service(http, { 
@@ -32,7 +33,7 @@ exports.run = (function() {
 
     var idCounter = 0;
     var getNextId = function() {
-        return "id" + (idCounter++);
+        return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
     };
 
     svc.login(function(success) {
@@ -40,7 +41,6 @@ exports.run = (function() {
             this.setup(function() {
                 this.service = svc;
             });
-
             this.assertion("Promise#Create+cancel job", function(test) {
                 var sid = getNextId();
                 var jobP = this.service.jobs().create('search index=_internal | head 1', {id: sid});
@@ -110,27 +110,21 @@ exports.run = (function() {
 
             this.assertion("Promise#Contains job", function(test) {
                 var sid = getNextId();
+
                 var jobP = this.service.jobs().create('search index=_internal | head 1', {id: sid});
-                jobP.when(
-                    utils.bind(this, function(job) {   
-                        assert.ok(job);
-                        assert.strictEqual(job.sid, sid);
-
-                        var containsP = this.service.jobs().contains(sid);
-                        containsP.when(
-                            function(contains) {
-                                assert.ok(contains);
-
-                                var cancelP = job.cancel();
-                                cancelP.when(
-                                    function() {
-                                        test.finished();
-                                    }
-                                );
-                            }
-                        );
-                    })
-                );
+                var containsP = jobP.when(utils.bind(this, function(job) {   
+                    assert.ok(job);
+                    assert.strictEqual(job.sid, sid);
+                    console.log("looking for: " + sid);
+                    return Promise.join(job, this.service.jobs().contains(sid));
+                }));
+                var cancelP = containsP.when(function(job, contains) {
+                    assert.ok(contains);
+                    return job.cancel();
+                });
+                cancelP.when(function() {
+                    test.finished(); 
+                });
             });
 
             this.assertion("Callback#Contains job", function(test) {
@@ -147,40 +141,69 @@ exports.run = (function() {
                         });
                     });
                 })); 
-            });
+            });         
 
             this.assertion("Promise#job results", function(test) {
                 var sid = getNextId();
-                var jobP = this.service.jobs().create('search index=_internal | head 1 | stats count', {id: sid});
                 var service = this.service;
-                jobP.when(
-                    function(job) {
-                        var properties = {};
-                        var jobDoneP = Promise.while({
+                var job = null;
+
+                var jobP = this.service.jobs().create('search index=_internal | head 1 | stats count', {id: sid});
+                var doneP = jobP.when(function(createdJob) {
+                    job = createdJob;
+                    var properties = {};
+                    return Promise.while({
+                        condition: function() { return properties.dispatchState !== "DONE"; },
+                        body: function() {
+                            return job.read().whenResolved(function(response) {
+                                properties = response.odata.results;
+                                
+                                return Promise.sleep(1000);
+                            });
+                        }
+                    });
+                });
+                var resultsP = doneP.whenResolved(function(job) {
+                    return job.results(); 
+                });
+                var finishedP = resultsP.whenResolved(function(results) {
+                    assert.strictEqual(results.data.length, 1);
+                    assert.strictEqual(results.field_list.length, 1);
+                    assert.strictEqual(results.field_list[0], "count");
+                    assert.strictEqual(results.data[0].count[0].value, "1");
+                    
+                    job.cancel().whenResolved(function() { test.finished(); });
+                });
+            });
+
+            this.assertion("Callback#job results", function(test) {
+                var sid = getNextId();
+                var service = this.service;
+                this.service.jobs().create('search index=_internal | head 1 | stats count', {id: sid}, function(job) {
+                    var properties = {};
+
+                    Async.while(
+                        {
                             condition: function() { return properties.dispatchState !== "DONE"; },
-                            body: function() {
-                                return job.read().whenResolved(function(response) {
+                            body: function(iterationDone) {
+                                job.read(function(response) {
                                     properties = response.odata.results;
-
-                                    return Promise.sleep(1000);
+                                    Async.sleep(1000, iterationDone); 
                                 });
-                            }
-                        });
+                            },
+                        },
+                        function() {
+                            job.results({}, function(results) {
+                                assert.strictEqual(results.data.length, 1);
+                                assert.strictEqual(results.field_list.length, 1);
+                                assert.strictEqual(results.field_list[0], "count");
+                                assert.strictEqual(results.data[0].count[0].value, "1");
 
-                        var resultsP = jobDoneP.whenResolved(function() {
-                             return job.results();
-                        });
-
-                        resultsP.whenResolved(function(results) {
-                            assert.strictEqual(results.data.length, 1);
-                            assert.strictEqual(results.field_list.length, 1);
-                            assert.strictEqual(results.field_list[0], "count");
-                            assert.strictEqual(results.data[0].count[0].value, "1");
-                            
-                            job.cancel().whenResolved(function() { test.finished(); });
-                        });
-                    }
-                );
+                                job.cancel(function() { test.finished(); });
+                            });
+                        }
+                    );
+                });
             });
         });
     });
