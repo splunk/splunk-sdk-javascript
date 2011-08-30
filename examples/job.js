@@ -86,7 +86,7 @@
 
     var _check_sids = function(command, sids) {
         if (!sids || sids.length === 0) {
-            throw "'" + command + "' requires at least one SID";
+            throw new Error("'" + command + "' requires at least one SID");
         }
     };
 
@@ -149,7 +149,7 @@
             // If there is no handler (because the user specified an invalid command,
             // then we notify the user as an error.
             if (!handler) {
-                throw "Unrecognized command: " + command;
+                throw new Error("Unrecognized command: " + command);
             }
 
             // Invoke the command

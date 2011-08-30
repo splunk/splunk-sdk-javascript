@@ -400,6 +400,7 @@ require.modules["/lib/binding.js"] = function () {
 (function() {
     var Paths   = require('./paths').Paths;
     var Class   = require('./jquery.class').Class;
+    var Promise   = require('./promise').Promise;
     var utils   = require('./utils');
 
     var root = exports || this;
@@ -434,11 +435,12 @@ require.modules["/lib/binding.js"] = function () {
         },
 
         // Return any session-specific headers (such as authorization).
-        _headers: function () {
-            return {
-                Authorization: "Splunk " + this.sessionKey,
-                "X-SessionKey": this.sessionKey
-            };
+        _headers: function (headers) {
+            headers = headers || {};
+            headers["Authorization"] = "Splunk " + this.sessionKey;
+            headers["X-SessionKey"] = this.sessionKey;
+
+            return headers;
         },
 
         // Convert any partial path into a full path containing the full
@@ -469,21 +471,38 @@ require.modules["/lib/binding.js"] = function () {
             var url = Paths.login;
             var params = { username: this.username, password: this.password };
 
-            this.post(url, params, utils.bind(this, function(response) {
-               if (response.status >= 400) {
-                   console.log("Error getting login info");
-                   callback(false);
-                   return;
-               }
-               else {
-                   this.sessionKey = response.odata.results.sessionKey;
-                   callback(true);
-               }
-            }));
+            var successCallback = utils.bind(this, function(response) {
+
+                this.sessionKey = response.odata.results.sessionKey;
+
+                if (callback) {
+                    return callback(true);
+                }
+                else {
+                    return Promise.Success(true);
+                }
+            });
+            var errorCallback = function(response) {
+                console.log("Error getting login info.");
+
+                if (callback) {
+                    return callback(false);
+                }
+                else {
+                    return Promise.Failure(false);
+                }
+            };
+
+            // We have to handel the case of both promises or callbacks
+            // being used, so we register all the callbacks and handle the promise
+            // return values.
+            var loginP = this.post(url, params);
+
+            return loginP.when(successCallback, errorCallback);
         },
 
         get: function(path, params, callback) {
-            this.http.get(
+            return this.http.get(
                 this.urlify(path),
                 this._headers(),
                 params,
@@ -493,7 +512,7 @@ require.modules["/lib/binding.js"] = function () {
         },
 
         del: function(path, params, callback) {
-            this.http.del(
+            return this.http.del(
                 this.urlify(path),
                 this._headers(),
                 params,
@@ -503,13 +522,26 @@ require.modules["/lib/binding.js"] = function () {
         },
 
         post: function(path, params, callback) {
-            this.http.post(
+            return this.http.post(
                 this.urlify(path),
                 this._headers(),
                 params,
                 0,
                 callback
             );  
+        },
+
+        request: function(path, method, headers, body, callback) {
+            return this.http.request(
+                this.urlify(path),    
+                {
+                    method: method,
+                    headers: this._headers(headers),
+                    body: body,
+                    timeout: 0
+                },
+                callback
+            );
         }
     });
 })();;
@@ -672,6 +704,500 @@ require.modules["/lib/jquery.class.js"] = function () {
     return module.exports;
 };
 
+require.modules["/lib/promise.js"] = function () {
+    var module = { exports : {} };
+    var exports = module.exports;
+    var __dirname = "/lib";
+    var __filename = "/lib/promise.js";
+    
+    var require = function (file) {
+        return __require(file, "/lib");
+    };
+    
+    require.resolve = function (file) {
+        return __require.resolve(name, "/lib");
+    };
+    
+    require.modules = __require.modules;
+    __require.modules["/lib/promise.js"]._cached = module.exports;
+    
+    (function () {
+        
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+(function() {
+    var Class   = require('./jquery.class').Class;
+    var utils   = require('./utils');
+    var _       = require('../external/underscore.js');
+
+    var root = exports || this;
+
+    var resolverIdCounter = 0;
+    var resolverIdGenerator = function() {
+        var id = "Promise.Resolver " + resolverIdCounter;
+        resolverIdCounter++;
+        return id;
+    };
+
+    // OVERALL NOTES
+    // 1.   The implementation allows for "varargs" in most places, and so no
+    //      explicit parameters are used. As such, many invocations are done using
+    //      'apply' rather than direct invocation.
+
+    // The core promise object. It only allows additive operations, and disallows
+    // all introspection. Management of it should be done using the Promise.Resolver
+    // class. You should never create your own Promise instance.
+    root.Promise = Class.extend({
+        init: function(resolver) {
+            this.name = resolver.name + " -- Promise";
+
+            this.when = utils.bind(this, function(successCallbacks, failureCallbacks) {
+                // We create a new resolver
+                var newResolver = new root.Promise.Resolver();
+                
+                // Add a listener with all the parameters to the current
+                // promise
+                var listener = {
+                    success: successCallbacks ? successCallbacks : [],
+                    failure: failureCallbacks ? failureCallbacks : [],
+                    resolver: newResolver
+                };
+                resolver._addListener(listener);
+                
+                // And return the new promise
+                return newResolver.promise;
+            });
+
+            this.whenResolved = utils.bind(this, function(/* f1, f2, ... */) {
+                return this.when.apply(this, [_.toArray(arguments), []]);
+            });
+            
+            this.whenFailed = utils.bind(this, function(/* f1, f2, ... */) {
+                return this.when.apply(this, [[], _.toArray(arguments)]);
+            });
+
+            this.onProgress = utils.bind(this, function(/* cb1, cb2, ... */) {
+                resolver._addProgressListener.apply(resolver, arguments);
+            });
+        }
+    });
+
+    // This is a utility function to handle the completion (either resolution or 
+    // failure) of a resolver. Since both are essentially identical (with the exception
+    // of the callback list and what to do with the downchain resolver), we hoist
+    // this logic into a separate function.
+    var handleCompletion = function(callbacks, completedWith, resolver, complete) {
+        // The callbacks will either return immediate values or promises,
+        // and we'll store them accordingly.
+        var values   = [];
+        var promises = [];
+        var promiseCount = 0;
+        var callback;
+        var val;
+        
+        // We always work with arrays of callbacks.
+        callbacks = _.isArray(callbacks) ? callbacks : [callbacks];
+        
+        // For each callback, we execute it, and then store
+        // the returned value appropriately, depending on whether
+        // it is a promise or an immediate value.
+        for(var i = 0; i < callbacks.length; i++) {
+            callback = callbacks[i];
+            val = callback.apply(null, completedWith);
+            
+            if (root.Promise.isPromise(val)) {
+                promises[i] = val;
+                values[i] = undefined;
+            }
+            else {
+                values[i] = val;
+            }
+        }
+
+        var getValue = function(originalValues) {            
+            if (originalValues.length === 0) {
+                return completedWith;
+            }
+
+            return originalValues;
+        };
+        
+        if (values.length === 1 && promises.length === 1) {
+            // If we only have a single value, and it is a promise,
+            // then we can do a special case. There's no need to join
+            // on the promise (which would return an array of results),
+            // instead we can just when on the individual promise
+            // and forward the results.
+            promises[0].when(
+                function() {
+                    resolver.resolve.apply(resolver, arguments);
+                },
+                function() {
+                    resolver.fail.apply(resolver, arguments);
+                }
+            );
+        }
+        else if (promises.length > 0) {
+            // If any of the returned values are promises,
+            // then we have to wait until they are all resolved
+            // before we can call the downchain resolver.
+            root.Promise.join.apply(null, promises).when(
+                function() {
+                    // If all the promises were successful, then we can
+                    // resolve the downchain resolver. Before we do that
+                    // though, we need to meld together the results
+                    // of each individual promise and all previous 
+                    // immediate values.
+                    var results = _.toArray(arguments);
+                    for(var i = 0; i < results.length; i++) {
+                        if (results[i] !== undefined) {
+                            values[i] = results[i];
+                        }
+                    }
+                    
+                    resolver.resolve.apply(resolver, values);
+                },
+                function() {
+                    // If any of the promises fail, then that is enough
+                    // for us to fail the downchain resolver.
+                    resolver.fail.apply(resolver, arguments);
+                }
+            );
+        }
+        else {
+            // All returned values were immediate values, so
+            // we can immediately complete the downchain resolver.
+
+            // We do proper extraction for the 0/1-length
+            // case.
+            values = getValue(values);
+
+            complete.apply(resolver, values);
+        }
+    };
+
+    // The "management" counterpart the Promise class. A resolver is what
+    // creates an accompanying promise, and allows you to resolve/fail/report
+    // progress to whomever holds the promise. Note that this is a one way
+    // relationship - a resolver has a link to its promise, but not the
+    // the other way around.
+    root.Promise.Resolver = Class.extend({
+        init: function() {
+            this.name = resolverIdGenerator();
+
+            this.addListener = utils.bind(this, this.addListener);
+            this.resolve     = utils.bind(this, this.resolve);
+            this.fail        = utils.bind(this, this.fail);
+
+            // Now, we create our internal promise
+            this.promise           = new root.Promise(this);
+            this.isResolved        = false;
+            this.isFailed          = false;
+            this.isFinalized       = false;
+            this.resolvedWith      = null;
+            this.failedWith        = null;
+            this.listeners         = [];
+            this.progressListeners = [];
+        },
+
+        // An internal only function to add a resolve/fail listener
+        // to the resolver.
+        _addListener: function(listener) {
+            var finalizedInvoke = function() {};
+            
+            // We check to see if it is already finalized
+            if (this.isFinalized) {
+                // If it is, and it was resolved, then we will re-resolve once
+                // we push the new listeners
+                if (this.isResolved) {
+                    finalizedInvoke = function() { this.resolve.apply(this, this.resolvedWith); };
+                }
+                else if (this.isFailed) {
+                    // And if it is failed, we will re-fail once
+                    // we push the new listeners
+                    finalizedInvoke = function() { this.fail.apply(this, this.failedWith); };
+                }
+
+                // We mark it as "unfinalized" to not hit our "asserts".
+                this.isFinalized = false;
+            }
+
+            // Push the listener
+            this.listeners.push(listener);
+
+            // And invoke the finalization case.
+            finalizedInvoke.apply(this, null);
+        },
+
+        // An internal only function to add a progress report listener
+        // to the resolver
+        _addProgressListener: function() {
+            // We always store the callbacks in an array, even if there is only one.
+            this.progressListeners = _.toArray(arguments);
+        },
+
+        // Resolve the promise. Allows any number of values as the 
+        // "resolved" result of the promise.
+        resolve: function() {                    
+            if (!this.isFinalized) {
+                // Change our state, and store the values for future listeners
+                this.isFinalized = this.isResolved = true;
+                this.resolvedWith = _.toArray(arguments);
+
+                while (this.listeners[0]) {
+                    var listener = this.listeners.shift();
+                    handleCompletion(listener.success, this.resolvedWith, listener.resolver, listener.resolver.resolve);
+                }
+            }
+            else {
+                throw new Error("Trying to resolve a finalized resolver: " + this.name);
+            }
+        },
+
+        // Fail the promise. Allows any number of values as the 
+        // "failed" result of the promise.
+        fail: function() {
+            if (!this.isFinalized) {
+                // Change our state, and store the values for future listeners
+                this.isFinalized = this.isFailed = true;
+                this.failedWith = _.toArray(arguments);
+
+                while (this.listeners[0]) {
+                    var listener = this.listeners.shift();
+                    handleCompletion(listener.failure, this.failedWith, listener.resolver, listener.resolver.fail);
+                }
+            }
+            else {
+                throw new Error("Trying to fail a finalized resolver: " + this.name);
+            }
+        },
+
+        // Report progress. Allows any number of arguments
+        // as the "progress report".
+        progress: function() {
+            if (!this.isFinalized) {
+                var callbacks = this.progressListeners;
+
+                for(var i = 0; i < callbacks.length; i++) {
+                    callbacks[i].apply(null, arguments);
+                } 
+                
+                // Report that we did execute the progress listeners.
+                return true;
+            }
+            else {
+                // We do not allow progress reports on finalized resolvers, so 
+                // we return that we did not execute the progress listeners.
+                return false;
+            }
+        }
+    });
+
+    // A factory for a failed promise.
+    root.Promise.Failure = function() {
+        var failureResolver = new root.Promise.Resolver();
+        var failurePromise = failureResolver.promise;
+        
+        failureResolver.fail.apply(failureResolver, arguments);
+        
+        return failurePromise;
+    };
+
+    // A factory for a successful promise.
+    root.Promise.Success = function() {
+        var successResolver = new root.Promise.Resolver();
+        var successPromise = successResolver.promise;
+        
+        successResolver.resolve.apply(successResolver, arguments);
+        
+        return successPromise;
+    };
+
+    // A promise that is implicitly resolved
+    root.Promise.Done = root.Promise.Success();
+
+    // A promise that will never be resolved.
+    root.Promise.NeverDone = (function() {
+        var resolver = new root.Promise.Resolver("neverdone");
+
+        // We are essentially losing the resolver, so
+        // this promise can never be resolved.
+        return resolver.promise;
+    })();
+
+    // Join any number of promises and return a promise that will
+    // get resolved when all the passed in promises are resolved,
+    // or failed as soon as one of them is failed.
+    //
+    // NOTE: You can pass in non-promise values as well, and they
+    // will be treated as if they are already resolved promises.
+    // NOTE: In the success case, all resolved results from each
+    // of the promises will get passed to the resolved callbacks
+    // of the joined promise.
+    // NOTE: In the failure case, only the failed result of the
+    // specific failed promise will be passed to the failed 
+    // callbacks of the joined promise.
+    root.Promise.join = function(/* p1, p2, ... */) {
+        // Create a new resolver/promise pair for the joined
+        // promise.
+        var resolver = new root.Promise.Resolver();
+        var joinPromise = resolver.promise;
+
+        var args = arguments;
+        var promiseCount = 0;
+        var hasPromises = false;
+        var values = [];
+        var promises = [];
+
+        // A helper to get the completion value of a promise.
+        // If it is a single value, we'll return it as such,
+        // but if there are multiple, we will return it as an
+        // array
+        var getValue = function() {
+            var value;
+
+            var returnedResults = _.toArray(arguments);
+            if (returnedResults.length === 1) {
+                return returnedResults[0];
+            }
+            else if (returnedResults.length > 1) {
+                return returnedResults;
+            }
+
+            return value;
+        };
+
+        // A helper to allow us to register resolved/failed callbacks
+        // on each of the individual promises.
+        var addWhen = function(promise, index) {
+            promise.when(              
+                function() {                
+                    // If the promise resolves successfully,
+                    // We'll decrement the count and store the value
+                    promiseCount--;
+                    values[index] = getValue.apply(null, arguments);
+                    
+                    // If this is the last promise to resolve, then
+                    // we can just resolve the master resolver.
+                    if (promiseCount === 0) {
+                        resolver.resolve.apply(resolver, values);
+                    } 
+                },
+                
+                function() {
+                    // If the promise failed, we immediately fail
+                    // the master resolver.
+                    if (resolver !== null) {
+                        resolver.fail(getValue.apply(null, arguments)); 
+                        resolver = null;
+                    }
+                }
+            );
+        };
+
+        // We iterate over all the passed in alleged promises, and figure
+        // out whether they are promises or not.
+        for(var i = 0; i < args.length; i++) {
+            var val = args[i];
+            if (root.Promise.isPromise(val)) {
+                promiseCount++;
+                var index = i;
+
+                // We can't add the "when" handlers immediately,
+                // because they may fire promptly. So we queue them.
+                // This lets us get a full count of how many promises
+                // we are dealing with, so the counter can go up to N.
+                promises.push({index: index, promise: val});
+            }
+            else {
+                // If this isn't a promise, then we just store
+                // the final value.
+                values[i] = val;
+            }
+        }
+
+        // If all the values are prompt, we can simply resolve
+        // right away.
+        if (promiseCount === 0) {
+            resolver.resolve.apply(resolver, values);
+        }
+
+        // For each promise, we add the "when" handler.
+        for (i = 0; i < promises.length; i++) {
+            addWhen(promises[i].promise, promises[i].index);
+        }
+
+        // Return the promise that represents the join.
+        return joinPromise;
+    };
+
+    // Checks whether the passed in value is a promise
+    root.Promise.isPromise = function(allegedPromise) {
+        return allegedPromise instanceof root.Promise;
+    };
+
+    // A wrapper around setInterval to return a promise.
+    root.Promise.sleep = function(duration) {
+        var sleepResolver = new root.Promise.Resolver();
+        var sleepP = sleepResolver.promise;
+
+        setTimeout(function() { sleepResolver.resolve(); }, duration);
+
+        return sleepP;
+    };
+
+    root.Promise.while = function(whileObj) {
+        var iteration = whileObj.iteration || 0;
+
+        // We could keep chaining promises, but at some point we are going
+        // to hit the stack limit. As such, we keep passing the resolver
+        // to each iteration, so that we're only ever dealing with one promise.
+        whileObj.resolver = whileObj.resolver || new root.Promise.Resolver();
+
+        if (whileObj.condition()) {
+            whileObj.iteration = iteration + 1;
+
+            // Get the result of executing the body, and conver it
+            // into a promise if it isn't already.
+            var bodyResult = whileObj.body(iteration);
+            var resultP = root.Promise.isPromise(bodyResult) ? bodyResult : root.Promise.Success(bodyResult);
+
+            // As long as it is not a failed promise, we'll keep executing.
+            resultP.when(
+                function() {
+                    root.Promise["while"](whileObj);
+                },
+                function() {
+                    whileObj.resolver.fail.apply(whileObj.resolver, arguments);
+                }
+            );
+            
+        }
+        else {
+            whileObj.resolver.resolve();
+        }
+
+        return whileObj.resolver.promise;
+    };
+})();;
+    }).call(module.exports);
+    
+    __require.modules["/lib/promise.js"]._cached = module.exports;
+    return module.exports;
+};
+
 require.modules["/lib/utils.js"] = function () {
     var module = { exports : {} };
     var exports = module.exports;
@@ -732,885 +1258,19 @@ require.modules["/lib/utils.js"] = function () {
         var matches = original.match(str + "$");
         return matches && matches.length > 0 && matches[0] === str;  
     };
+
+    root.callbackToObject = function(callback) {
+        callback = callback || function() {};
+
+        return {
+            success: callback.success ? callback.success : callback,
+            error: callback.error ? callback.error : callback
+        };
+    };
 })();;
     }).call(module.exports);
     
     __require.modules["/lib/utils.js"]._cached = module.exports;
-    return module.exports;
-};
-
-require.modules["/lib/client.js"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = "/lib";
-    var __filename = "/lib/client.js";
-    
-    var require = function (file) {
-        return __require(file, "/lib");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, "/lib");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["/lib/client.js"]._cached = module.exports;
-    
-    (function () {
-        
-// Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-(function() {
-    var binding = require('./binding');
-    var Paths   = require('./paths').Paths;
-    var Class   = require('./jquery.class').Class;
-    var utils   = require('./utils');
-    
-    var root = exports || this;
-
-    // From here on we start the definition of a client-level API.
-    // It is still stateless, but provides reasonable convenience methods
-    // in order to access higher-level Splunk functionality (such as
-    // jobs and indices).
-
-    // A service is the root of context for the Splunk RESTful API.
-    // It defines the host and login information, and makes all the 
-    // request using that context.
-    root.Service = binding.Context.extend({
-        init: function() {
-            this._super.apply(this, arguments);
-
-            // We perform the bindings so that every function works 
-            // properly when it is passed as a callback.
-            this.jobs       = utils.bind(this, this.jobs);
-        },
-
-        jobs: function() {
-            return new root.Jobs(this);  
-        }
-    });
-
-    // An endpoint is the basic handler. It is associated with an instance
-    // of a Service and a path (such as /search/jobs/{SID}/), and
-    // provide the relevant functionality.
-    root.Endpoint = Class.extend({
-        init: function(service, path) {
-            if (!service) {
-                console.log("Passed in a null Service.");
-                return;
-            }
-
-            if (!path) {
-                console.log("Passed in an empty path.");
-                return;
-            }
-
-            this.service = service;
-            this.path = path;
-
-            // We perform the bindings so that every function works 
-            // properly when it is passed as a callback.
-            this.get    = utils.bind(this, this.get);
-            this.post   = utils.bind(this, this.post);
-        },
-
-        get: function(relpath, params, callback) {
-            var url = this.path;
-
-            // If we have a relative path, we will append it with a preceding
-            // slash.
-            if (relpath) {
-                url = url + "/" + relpath;    
-            }
-
-            this.service.get(
-                url,
-                params,
-                utils.bind(this, function(response) {
-                    if (response.status !== 200) {
-                        console.log("Received error status " + response.status + " for URL: " + url);
-                        callback(null);
-                    }
-                    else {
-                        callback(response);
-                    }
-                })
-            );
-        },
-
-        post: function(relpath, params, callback) {
-            var url = this.path;
-
-            // If we have a relative path, we will append it with a preceding
-            // slash.
-            if (relpath) {
-                url = url + "/" + relpath;    
-            }
-
-            this.service.post(
-                url,
-                params,
-                utils.bind(this, function(response) {
-                    if (response.status !== 200 && response.status !== 201) {
-                        console.log("Received error status " + response.status + " for URL: " + url);
-                        callback(null);
-                    }
-                    else {
-                        callback(response);
-                    }
-                })
-            );
-        }
-    });
-
-    // A collection is just another type of endpoint that represents
-    // a collection of entities
-    root.Collection = root.Endpoint.extend({
-        
-    });
-
-    // An endpoint for all the jobs running on the current Splunk instance,
-    // allowing us to create and list jobs
-    root.Jobs = root.Collection.extend({
-        init: function(service) {
-            this._super(service, Paths.jobs);
-
-            // We perform the bindings so that every function works 
-            // properly when it is passed as a callback.
-            this.create     = utils.bind(this, this.create);
-            this.list       = utils.bind(this, this.list);
-            this.contains   = utils.bind(this, this.contains);
-         },
-
-        
-        // Create a search job with the given query and parameters
-        create: function(query, params, callback) {
-            if (!query) {
-                throw "Must provide a query to create a search job";
-            }
-
-            params.search = query;  
-            this.post("", params, utils.bind(this, function(response) {
-                var job = new root.Job(this.service, response.odata.results.sid);
-                callback(job);
-            }));
-         },
-
-         // List all search jobs
-        list: function(callback) {
-            this.get("", {}, utils.bind(this, function(response) {
-                var job_list = response.odata.results;
-                callback(job_list);
-            }));
-        },
-
-        // Find whether a certain job exists
-        contains: function(sid, callback) {
-            // Get a list of all the current jobs
-            this.list(function(list) {
-                list = list || [];
-                for(var i = 0; i < list.length; i++) {
-                    // If the job is the same, then call the callback,
-                    // and return
-                    if (list[i].sid === sid) {
-                        callback(true);
-                        return;
-                    }
-                }
-
-                // If we didn't find anything, let the callback now.
-                callback(false);
-            });
-        }
-    });
-
-    // An endpoint for an instance of a specific search job. Allows us to perform
-    // control operations on that job (such as cancelling, pausing, setting priority),
-    // as well as read the job properties, results and events
-    root.Job = root.Endpoint.extend({
-        init: function(service, sid) {
-            this._super(service, Paths.job + sid);
-            this.sid = sid;
-
-            // We perform the bindings so that every function works 
-            // properly when it is passed as a callback.
-            this.read = utils.bind(this, this.read);
-        },
-
-        cancel: function(callback) {
-            this.post("control", {action: "cancel"}, callback);  
-        },
-
-        disablePreview: function(callback) {
-            this.post("control", {action: "disablepreview"}, callback);  
-        },
-
-        enablePreview: function(callback) {
-            this.post("control", {action: "enablepreview"}, callback);  
-        },
-
-        events: function(params, callback) {
-            this.get("events", params, function(response) { callback(response.odata.results); });
-        },
-
-        finalize: function(callback) {
-            this.post("control", {action: "finalize"}, callback);  
-        },
-
-        pause: function(callback) {
-            this.post("control", {action: "pause"}, callback);  
-        },
-
-        preview: function(params, callback) {
-            this.get("results_preview", params, function(response) { callback(response.odata.results); });
-        },
-
-        read: function(callback) {
-            this.get("", {}, callback);
-        },
-
-        results: function(params, callback) {
-            this.get("results", params, function(response) { callback(response.odata.results); });
-        },
-
-        searchlog: function(params, callback) {
-            this.get("search.log", params, function(response) { callback(response.odata.results); });
-        },
-
-        setPriority: function(value, callback) {
-            this.post("control", {action: "setpriority", priority: value}, callback);  
-        },
-
-        setTTL: function(value, callback) {
-            this.post("control", {action: "setttl", ttl: value}, callback);  
-        },
-
-        summary: function(params, callback) {
-            this.get("summary", params, function(response) { callback(response.odata.results); });
-        },
-
-        timeline: function(params, callback) {
-            this.get("timeline", params, function(response) { callback(response.odata.results); });
-        },
-
-        touch: function(callback) {
-            this.post("control", {action: "touch"}, callback);  
-        },
-
-        unpause: function(callback) {
-            this.post("control", {action: "unpause"}, callback);  
-        }
-    });
-})();;
-    }).call(module.exports);
-    
-    __require.modules["/lib/client.js"]._cached = module.exports;
-    return module.exports;
-};
-
-require.modules["/lib/http.js"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = "/lib";
-    var __filename = "/lib/http.js";
-    
-    var require = function (file) {
-        return __require(file, "/lib");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, "/lib");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["/lib/http.js"]._cached = module.exports;
-    
-    (function () {
-        
-// Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-(function() {
-    var Class           = require('./jquery.class').Class;
-    var ODataResponse   = require('./odata').ODataResponse;
-    var utils           = require('./utils');
-
-    var root = exports || this;
-    
-    // This is a utility function to encode an object into a URI-compliant
-    // URI. It will convert objects into '&key=value' pairs, and arrays into
-    // `&key=value1&key=value2...'
-    var encode = function(params) {
-        var encodedStr = "";
-
-        // We loop over all the keys so we encode them.
-        for (var key in params) {
-            if (params.hasOwnProperty(key)) {
-                // Only append the ampersand if we already have
-                // something encdoed
-                if (encodedStr) {
-                    encodedStr = encodedStr + "&";
-                }
-                    
-                // Get the value
-                var value = params[key];
-
-                // If it's an array, we loop over each value
-                // and encode it in the form &key=value[i]
-                if (value instanceof Array) {
-                    for (var item in value) {
-                        encodedStr = encodedStr + key + "=" + encodeURIComponent(item);
-                    }
-                }
-                else {
-                    // If it's not an array, we just encode it
-                    encodedStr = encodedStr + key + "=" + encodeURIComponent(value);
-                }
-            }
-        }
-
-        return encodedStr;
-    };
-
-    // This is our base class for HTTP implementations. It provides the basic 
-    // functionality (get/post/delete), as well as a utility function to build
-    // a uniform response object.
-    //
-    // Base classes should only override 'request' and 'parseJSON'.
-    root.Http = Class.extend({
-        init: function() {
-            // We perform the bindings so that every function works 
-            // properly when it is passed as a callback.
-            this.get                = utils.bind(this, this.get);
-            this.del                = utils.bind(this, this.del);
-            this.post               = utils.bind(this, this.post);
-            this.request            = utils.bind(this, this.request);
-            this._buildResponse     = utils.bind(this, this._buildResponse);
-        },
-
-        get: function(url, headers, params, timeout, callback) {
-            var encoded_url = url + "?" + encode(params);
-            var message = {
-                method: "GET",
-                headers: headers,
-                timeout: timeout
-            };
-            this.request(encoded_url, message, callback);
-        },
-
-        post: function(url, headers, params, timeout, callback) {
-            headers["Content-Type"] = "application/x-www-form-urlencoded";
-            var message = {
-                method: "POST",
-                headers: headers,
-                timeout: timeout,
-                body: encode(params)
-            };
-            this.request(url, message, callback);
-        },
-
-        del: function(url, headers, params, timeout, callback) {
-            var encoded_url = url + "?" + encode(params);
-            var message = {
-                method: "DELETE",
-                headers: headers,
-                timeout: timeout
-            };
-
-            this.request(encoded_url, message, callback);
-        },
-
-        request: function(url, message, callback) {
-            throw "UNDEFINED FUNCTION - OVERRIDE REQUIRED";  
-        },
-
-        parseJson: function(json) {
-            throw "UNDEFINED FUNCTION - OVERRIDE REQUIRED";
-        },
-
-        _buildResponse: function(error, response, data) {
-            // Parse the JSON data and build the OData response
-            // object.
-            var json = this.parseJson(data);
-            var odata = ODataResponse.fromJson(json);  
-
-            // Print any messages that came with the response
-            ODataResponse.printMessages(odata);
-
-            var complete_response = {
-                status: (response ? response.statusCode : 0),
-                odata: odata,
-                error: error
-            };
-
-            return complete_response;
-        }
-    });
-})();;
-    }).call(module.exports);
-    
-    __require.modules["/lib/http.js"]._cached = module.exports;
-    return module.exports;
-};
-
-require.modules["/lib/odata.js"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = "/lib";
-    var __filename = "/lib/odata.js";
-    
-    var require = function (file) {
-        return __require(file, "/lib");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, "/lib");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["/lib/odata.js"]._cached = module.exports;
-    
-    (function () {
-        
-// Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-(function() {
-    var Class   = require('./jquery.class').Class;
-
-    var root = exports || this;
-
-    // Our basic class to represent an OData resposne object.
-    root.ODataResponse = Class.extend({
-        offset: 0,
-        count: 0,
-        totalCount: 0,
-        messages: [],
-        timings: [],
-        results: null,
-
-        init: function() {
-
-        },
-
-        isCollection: function() {
-            return this.results instanceof Array;
-        }
-    });
-
-    // A static utility function to convert an object derived from JSON
-    // into an ODataResponse
-    root.ODataResponse.fromJson = function(json) {
-        if (!json || !json.d) {
-            console.log('Invalid JSON object passed; cannot parse into OData.');
-            return null;
-        }
-
-        var d = json.d;
-        
-        var output = new root.ODataResponse();
-
-        // Look for our special keys, and add them to the results
-        var prefixedKeys = ['messages', 'offset', 'count', 'timings', 'total_count'];
-        for (var i=0; i < prefixedKeys.length; i++) {
-            if (d.hasOwnProperty('__' + prefixedKeys[i])) {
-                output[prefixedKeys[i]] = d['__' + prefixedKeys[i]];
-            }
-        }
-
-        if (d.results) {
-            output.results = d.results;
-        }
-
-        return output;
-    };
-
-    // Print any messages that came with the response, as encoded
-    // in the ODataResponse.
-    root.ODataResponse.printMessages = function(struct) {
-        var list = struct.messages || struct.__messages || [];
-
-        if (list) {
-            for (var i = 0; i < list.length; i++) {
-                var msg = '[SPLUNKD] ' + list[i].text;
-                switch (list[i].type) {
-                    case 'FATAL':
-                    case 'ERROR':
-                        console.error(msg);
-                        break;
-                    case 'WARN':
-                        console.warn(msg);
-                        break;
-                    case 'INFO':
-                        console.info(msg);
-                        break;
-                    case 'HTTP':
-                        break;
-                    default:
-                        console.info('[SPLUNKD] ' + list[i].type + ' - ' + msg);
-                        break;
-                }
-            }
-        }
-
-        return list;  
-    };
-})();;
-    }).call(module.exports);
-    
-    __require.modules["/lib/odata.js"]._cached = module.exports;
-    return module.exports;
-};
-
-require.modules["/lib/async.js"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = "/lib";
-    var __filename = "/lib/async.js";
-    
-    var require = function (file) {
-        return __require(file, "/lib");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, "/lib");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["/lib/async.js"]._cached = module.exports;
-    
-    (function () {
-        
-// Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-(function() {
-    var root = exports || this;
-
-    // A definition for an asynchronous while loop. The "complexity" comes from the
-    // fact thathat we allow asynchronisity both in the condition and in the body. The function takes three parameters:
-    // * A condition function, which takes a callback, whose only parameter is whether the condition was met or not.
-    // * A body function, which takes a no-parameter callback. The callback should be invoked when the body of the loop has finished.
-    // * A done function, which takesno parameter, and will be invoked when the loop has finished.
-    root["while"] = function(obj) {
-            if (obj.condition()) {
-                obj.body( function() { root["while"](obj); });
-            }
-            else {
-                obj.done();
-            }
-        };
-})();;
-    }).call(module.exports);
-    
-    __require.modules["/lib/async.js"]._cached = module.exports;
-    return module.exports;
-};
-
-require.modules["/lib/promise.js"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = "/lib";
-    var __filename = "/lib/promise.js";
-    
-    var require = function (file) {
-        return __require(file, "/lib");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, "/lib");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["/lib/promise.js"]._cached = module.exports;
-    
-    (function () {
-        
-// Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-(function() {
-    var Class   = require('./jquery.class').Class;
-    var utils   = require('./utils');
-    var _       = require('../external/underscore.js');
-
-    var root = exports || this;
-
-    root.Promise = Class.extend({
-        init: function(resolver) {
-            this.when = utils.bind(this, function(successCallbacks, failureCallbacks) {
-                if (!resolver.isCancelled) {
-
-                    // We create a new resolver
-                    var newResolver = new root.Promise.Resolver();
-
-                    // Add a listener with all the parameters to the current
-                    // promise
-                    var listener = {
-                        success: successCallbacks,
-                        failure: failureCallbacks,
-                        resolver: newResolver
-                    };
-                    resolver.addListener(listener);
-
-                    // And return the new promise
-                    return newResolver.promise;
-                }
-                else {
-                    throw "Promise is cancelled";
-                }
-            });            
-
-            this.whenResolved = utils.bind(this, function(/* f1, f2, ... */) {
-                return this.when.apply(this, [_.toArray(arguments), []]);
-            });
-            
-            this.whenFailed = utils.bind(this, function(/* f1, f2, ... */) {
-                return this.when.apply(this, [[], _.toArray(arguments)]);
-            });
-        }
-    });
-
-    root.Promise.join = function(/* p1, p2, ... */) {
-        var resolver = new root.Promise.Resolver();
-
-        var args = arguments;
-        var promiseCount = 0;
-        var values = [];
-        var promises = [];
-
-        var addWhen = function(promise, index) {
-            promise.when(              
-                // If the promise resolves successfully
-                function(resolvedVal) {               
-                    // We'll decrement the count and store the value
-                    promiseCount--;
-                    values[index] = resolvedVal;
-                    
-                    // If this is the last promise to resolve, then
-                    // we can just resolve the master resolver.
-                    if (promiseCount === 0) {
-                        resolver.resolve.apply(resolver, values);
-                    } 
-                },
-                
-                // If the promise failed, we immediately fail
-                // the master resolver.
-                function(failedWith) {
-                    resolver.fail(failedWith);  
-                }
-            );
-        };
-
-        for(var i = 0; i < args.length; i++) {
-            var val = args[i];
-            var isPromise = val instanceof root.Promise;
-            if (isPromise) {
-                promiseCount++;
-                var index = i;
-
-                addWhen(val, index);
-            }
-            else {
-                // If this isn't a promise, then we just store
-                // the final value.
-                values[i] = val;
-            }
-        }
-
-        if (promiseCount === 0) {
-            resolver.resolve.apply(resolver, values);
-        }
-
-        return resolver.promise;
-    };
-
-    root.Promise.Resolver = Class.extend({
-
-        init: function(canceller) {
-            this.canceller = canceller;  
-
-            this.addListener    = utils.bind(this, this.addListener);
-            this.resolve        = utils.bind(this, this.resolve);
-            this.fail           = utils.bind(this, this.fail);
-            this.cancel         = utils.bind(this, this.cancel);
-
-            // Now, we create our internal promise
-            this.promise    = new root.Promise(this);
-            this.isResolved      = false;
-            this.isFailed        = false;
-            this.isFinalized     = false;
-            this.resolvedWith    = null;
-            this.failedWith      = null;
-            this.listeners       = [];
-        },
-
-        addListener: function(listener) {
-            var finalizedInvoke = function() {};
-            
-            // We check to see if it is already finalized
-            if (this.isFinalized) {
-
-                // If it is, and it was resolved, then we will re-resolve once
-                // we push the new listeners
-                if (this.isResolved) {
-                    finalizedInvoke = function() { this.resolve.apply(this, this.resolvedWith); };
-                }
-                else if (this.isFailed) {
-                    // And if it is failed, we will re-fail once
-                    // we push the new listeners
-                    finalizedInvoke = function() { this.fail.apply(this, this.failedWith); };
-                }
-
-                // We mark it as "unfinalized" to not hit our "asserts".
-                this.isFinalized = false;
-            }
-
-            // Push the listener
-            this.listeners.push(listener);
-
-            // And invoke the finalization case.
-            finalizedInvoke.apply(this, null);
-        },
-
-        resolve: function() {                    
-            if (!this.isFinalized) {
-                this.isFinalized = this.isResolved = true;
-                this.resolvedWith = _.toArray(arguments);
-
-                while (this.listeners[0]) {
-                    var listener = this.listeners.shift();
-
-                    // Store all the values returned by the registered success
-                    // callbacks on this listener
-                    var values = [];
-                    if (_.isArray(listener.success)) {
-                        for(var i = 0; i < listener.success.length; i++) {
-                            var successCallback = listener.success[i];
-
-                            // Push the success value
-                            values.push(successCallback.apply(null, arguments));
-                        }
-                    }
-                    else if (_.isFunction(listener.success)) {
-                        // Push the success value
-                        values.push(listener.success.apply(null, arguments));
-                    }
-
-                    // We resolve the downchain resolver using all the values
-                    // we accumulated from the registered success callbacks.
-                    listener.resolver.resolve.apply(listener.resolver, values);
-                }
-            }
-            else {
-                throw "Trying to resolve a finalized resolver: ";
-            }
-        },
-
-        fail: function(value) {
-            if (!this.isFinalized) {
-                this.isFinalized = this.isFailed = true;
-                this.failedWith = value;
-
-                while (this.listeners[0]) {
-                    var listener = this.listeners.shift();
-
-                    if (_.isArray(listener.failure)) {
-                        for(var i = 0; i < listener.failure.length; i++) {
-                            var failureCallback = listener.failure[i];
-                            failureCallback(value);
-                        }
-                    }
-                    else if (_.isFunction(listener.failure)) {
-                        listener.failure(value);
-                    }
-
-                    // Note that we do *not* forward the return values
-                    // of the registered failure callbacks.
-                    listener.resolver.fail(value);
-                }
-            }
-            else {
-                throw "Trying to fail a finalized resolver";
-            }
-        },
-
-        cancel: function(reason) {
-            if (!this.isFinalized) {
-                this.isCancelled = true;
-
-                if (this.canceller) {
-                    // Cancel the downchain promise
-                    this.canceller.cancel(reason);
-                }
-
-                this.fail(reason);
-            }
-            else {
-                throw "Trying to cancel a finalized resolver";
-            }
-        }
-    });
-})();;
-    }).call(module.exports);
-    
-    __require.modules["/lib/promise.js"]._cached = module.exports;
     return module.exports;
 };
 
@@ -2483,6 +2143,725 @@ require.modules["/external/underscore.js"] = function () {
     return module.exports;
 };
 
+require.modules["/lib/client.js"] = function () {
+    var module = { exports : {} };
+    var exports = module.exports;
+    var __dirname = "/lib";
+    var __filename = "/lib/client.js";
+    
+    var require = function (file) {
+        return __require(file, "/lib");
+    };
+    
+    require.resolve = function (file) {
+        return __require.resolve(name, "/lib");
+    };
+    
+    require.modules = __require.modules;
+    __require.modules["/lib/client.js"]._cached = module.exports;
+    
+    (function () {
+        
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+(function() {
+    var binding = require('./binding');
+    var Paths   = require('./paths').Paths;
+    var Class   = require('./jquery.class').Class;
+    var utils   = require('./utils');
+    
+    var root = exports || this;
+
+    // All our error callbacks follow this pattern
+    var generalErrorHandler = function(callbackObj) {
+        return function() {
+            callbackObj.error.apply(null, arguments);
+            return arguments;      
+        };
+    };
+
+    // From here on we start the definition of a client-level API.
+    // It is still stateless, but provides reasonable convenience methods
+    // in order to access higher-level Splunk functionality (such as
+    // jobs and indices).
+
+    // A service is the root of context for the Splunk RESTful API.
+    // It defines the host and login information, and makes all the 
+    // request using that context.
+    root.Service = binding.Context.extend({
+        init: function() {
+            this._super.apply(this, arguments);
+
+            // We perform the bindings so that every function works 
+            // properly when it is passed as a callback.
+            this.jobs       = utils.bind(this, this.jobs);
+        },
+
+        jobs: function() {
+            return new root.Jobs(this);  
+        }
+    });
+
+    // An endpoint is the basic handler. It is associated with an instance
+    // of a Service and a path (such as /search/jobs/{SID}/), and
+    // provide the relevant functionality.
+    root.Endpoint = Class.extend({
+        init: function(service, path) {
+            if (!service) {
+                console.log("Passed in a null Service.");
+                return;
+            }
+
+            if (!path) {
+                console.log("Passed in an empty path.");
+                return;
+            }
+
+            this.service = service;
+            this.path = path;
+
+            // We perform the bindings so that every function works 
+            // properly when it is passed as a callback.
+            this.get    = utils.bind(this, this.get);
+            this.post   = utils.bind(this, this.post);
+        },
+
+        get: function(relpath, params, callback) {
+            var url = this.path;
+
+            // If we have a relative path, we will append it with a preceding
+            // slash.
+            if (relpath) {
+                url = url + "/" + relpath;    
+            }
+
+            return this.service.get(
+                url,
+                params,
+                callback
+            );
+        },
+
+        post: function(relpath, params, callback) {
+            var url = this.path;
+
+            // If we have a relative path, we will append it with a preceding
+            // slash.
+            if (relpath) {
+                url = url + "/" + relpath;    
+            }
+
+            return this.service.post(
+                url,
+                params,
+                callback
+            );
+        }
+    });
+
+    // A collection is just another type of endpoint that represents
+    // a collection of entities
+    root.Collection = root.Endpoint.extend({
+        
+    });
+
+    // An endpoint for all the jobs running on the current Splunk instance,
+    // allowing us to create and list jobs
+    root.Jobs = root.Collection.extend({
+        init: function(service) {
+            this._super(service, Paths.jobs);
+
+            // We perform the bindings so that every function works 
+            // properly when it is passed as a callback.
+            this.create     = utils.bind(this, this.create);
+            this.list       = utils.bind(this, this.list);
+            this.contains   = utils.bind(this, this.contains);
+         },
+
+        
+        // Create a search job with the given query and parameters
+        create: function(query, params, callback) {
+            if (!query) {
+                throw new Error("Must provide a query to create a search job");
+            }
+
+            callback = utils.callbackToObject(callback);
+
+            params.search = query;  
+
+            return this.post("", params).when(
+                utils.bind(this, function(response) {
+                    var job = new root.Job(this.service, response.odata.results.sid);
+                    callback.success(job);
+                    return job;
+                }),
+                generalErrorHandler(callback)
+            );
+         },
+
+         // List all search jobs
+        list: function(callback) {
+            callback = utils.callbackToObject(callback);
+
+            return this.get("", {}).when(
+                function(response) {
+                    var job_list = response.odata.results;
+                    callback.success(job_list);
+                    return job_list;
+                },
+                generalErrorHandler(callback)
+            );
+        },
+
+        // Find whether a certain job exists
+        contains: function(sid, callback) {
+            callback = utils.callbackToObject(callback);
+
+            return this.list().when(
+                function(list) {
+                    list = list || [];
+                    var found = false;
+                    for(var i = 0; i < list.length; i++) {
+                        // If the job is the same, then call the callback,
+                        // and return
+                        if (list[i].sid === sid) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    
+                    // If we didn't find anything, let the callback now.
+                    callback.success(found);
+                    return found;
+                },
+                generalErrorHandler(callback)
+            );
+        }
+    });
+
+    // An endpoint for an instance of a specific search job. Allows us to perform
+    // control operations on that job (such as cancelling, pausing, setting priority),
+    // as well as read the job properties, results and events
+    root.Job = root.Endpoint.extend({
+        init: function(service, sid) {
+            this._super(service, Paths.job + sid);
+            this.sid = sid;
+
+            // We perform the bindings so that every function works 
+            // properly when it is passed as a callback.
+            this.read = utils.bind(this, this.read);
+        },
+
+        cancel: function(callback) {
+            return this.post("control", {action: "cancel"}, callback);
+        },
+
+        disablePreview: function(callback) {
+            return this.post("control", {action: "disablepreview"}, callback);  
+        },
+
+        enablePreview: function(callback) {
+            return this.post("control", {action: "enablepreview"}, callback);  
+        },
+
+        events: function(params, callback) {
+            return this.get("events", params, function(response) { callback(response.odata.results); });
+        },
+
+        finalize: function(callback) {
+            return this.post("control", {action: "finalize"}, callback);  
+        },
+
+        pause: function(callback) {
+            return this.post("control", {action: "pause"}, callback);  
+        },
+
+        preview: function(params, callback) {
+            callback = utils.callbackToObject(callback);
+            return this.get("results_preview", params).when(
+                function(response) {
+                    callback.success(response.odata.results);
+                    return response.odata.results;
+                },
+                generalErrorHandler(callback)
+            );
+        },
+
+        read: function(callback) {
+            return this.get("", {}, callback);
+        },
+
+        results: function(params, callback) {
+            callback = utils.callbackToObject(callback);
+            return this.get("results", params).when(
+                function(response) {
+                    callback.success(response.odata.results);
+                    return response.odata.results;
+                },
+                generalErrorHandler(callback)
+            );
+        },
+
+        searchlog: function(params, callback) {
+            callback = utils.callbackToObject(callback);
+            return this.get("search.log", params).when(
+                function(response) {
+                    callback.success(response.odata.results);
+                    return response.odata.results;
+                },
+                generalErrorHandler(callback)
+            );
+        },
+
+        setPriority: function(value, callback) {
+            return this.post("control", {action: "setpriority", priority: value}, callback);  
+        },
+
+        setTTL: function(value, callback) {
+            return this.post("control", {action: "setttl", ttl: value}, callback);  
+        },
+
+        summary: function(params, callback) {
+            return this.get("summary", params).when(
+                function(response) {
+                    callback.success(response.odata.results);
+                    return response.odata.results;
+                },
+                generalErrorHandler(callback)
+            );
+        },
+
+        timeline: function(params, callback) {
+            callback = utils.callbackToObject(callback);
+            return this.get("timeline", params).when(
+                function(response) {
+                    callback.success(response.odata.results);
+                    return response.odata.results;
+                },
+                generalErrorHandler(callback)
+            );
+        },
+
+        touch: function(callback) {
+            return this.post("control", {action: "touch"}, callback);  
+        },
+
+        unpause: function(callback) {
+            return this.post("control", {action: "unpause"}, callback);  
+        }
+    });
+})();;
+    }).call(module.exports);
+    
+    __require.modules["/lib/client.js"]._cached = module.exports;
+    return module.exports;
+};
+
+require.modules["/lib/http.js"] = function () {
+    var module = { exports : {} };
+    var exports = module.exports;
+    var __dirname = "/lib";
+    var __filename = "/lib/http.js";
+    
+    var require = function (file) {
+        return __require(file, "/lib");
+    };
+    
+    require.resolve = function (file) {
+        return __require.resolve(name, "/lib");
+    };
+    
+    require.modules = __require.modules;
+    __require.modules["/lib/http.js"]._cached = module.exports;
+    
+    (function () {
+        
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+(function() {
+    var Promise         = require('./promise').Promise;
+    var Class           = require('./jquery.class').Class;
+    var ODataResponse   = require('./odata').ODataResponse;
+    var utils           = require('./utils');
+    var _               = require('../external/underscore.js');
+
+    var root = exports || this;
+    
+    // This is a utility function to encode an object into a URI-compliant
+    // URI. It will convert objects into '&key=value' pairs, and arrays into
+    // `&key=value1&key=value2...'
+    var encode = function(params) {
+        var encodedStr = "";
+
+        // We loop over all the keys so we encode them.
+        for (var key in params) {
+            if (params.hasOwnProperty(key)) {
+                // Only append the ampersand if we already have
+                // something encoded, and the last character isn't
+                // already an ampersand
+                if (encodedStr && encodedStr[encodedStr.length - 1] !== "&") {
+                    encodedStr = encodedStr + "&";
+                }
+                    
+                // Get the value
+                var value = params[key];
+
+                // If it's an array, we loop over each value
+                // and encode it in the form &key=value[i]
+                if (value instanceof Array) {
+                    for (var i = 0; i < value.length; i++) {
+                        encodedStr = encodedStr + key + "=" + encodeURIComponent(value[i]) + "&";
+                    }
+                }
+                else {
+                    // If it's not an array, we just encode it
+                    encodedStr = encodedStr + key + "=" + encodeURIComponent(value);
+                }
+            }
+        }
+
+        return encodedStr;
+    };
+
+    // This is our base class for HTTP implementations. It provides the basic 
+    // functionality (get/post/delete), as well as a utility function to build
+    // a uniform response object.
+    //
+    // Base classes should only override 'request' and 'parseJSON'.
+    root.Http = Class.extend({
+        init: function(isSplunk) {
+            // Whether or not this HTTP provider is talking to Splunk or not
+            this.isSplunk = (isSplunk === undefined ? true : isSplunk);
+
+            // We perform the bindings so that every function works 
+            // properly when it is passed as a callback.
+            this.get                = utils.bind(this, this.get);
+            this.del                = utils.bind(this, this.del);
+            this.post               = utils.bind(this, this.post);
+            this.request            = utils.bind(this, this.request);
+            this._buildResponse     = utils.bind(this, this._buildResponse);
+        },
+
+        get: function(url, headers, params, timeout, callback) {
+            var encoded_url = url + "?" + encode(params);
+            var message = {
+                method: "GET",
+                headers: headers,
+                timeout: timeout
+            };
+
+            return this.request(encoded_url, message, callback);
+        },
+
+        post: function(url, headers, params, timeout, callback) {
+            headers["Content-Type"] = "application/x-www-form-urlencoded";
+            var message = {
+                method: "POST",
+                headers: headers,
+                timeout: timeout,
+                body: encode(params)
+            };
+
+            return this.request(url, message, callback);
+        },
+
+        del: function(url, headers, params, timeout, callback) {
+            var encoded_url = url + "?" + encode(params);
+            var message = {
+                method: "DELETE",
+                headers: headers,
+                timeout: timeout
+            };
+
+            return this.request(encoded_url, message, callback);
+        },
+
+        request: function(url, message, callback) {
+            var requestResolver = new Promise.Resolver();
+            var requestP = requestResolver.promise;
+
+            message.headers["Content-Length"] = message.body ? message.body.length : 0;
+            message.headers["Accept"] = "*/*";
+
+            // We wrap the original callback with one that will also
+            // resolve the promise.
+            var callbackWithPromise = function(response) {
+                var callbackObj = utils.callbackToObject(callback);
+
+                if (response.status < 400) {
+                    callbackObj.success(response);
+                    requestResolver.resolve(response);
+                }
+                else {
+                    callbackObj.error(response);
+                    requestResolver.fail(response);
+                }
+            };
+
+            // Now we can invoke the user-provided HTTP class,
+            // passing in our "wrapped" callback
+            this.makeRequest(url, message, callbackWithPromise);
+
+            return requestP;
+        },
+
+        makeRequest: function(url, message, callback) {
+            throw new Error("UNDEFINED FUNCTION - OVERRIDE REQUIRED"); 
+        },
+
+        parseJson: function(json) {
+            throw new Error("UNDEFINED FUNCTION - OVERRIDE REQUIRED");
+        },
+
+        _buildResponse: function(error, response, data) {
+            var complete_response, json, odata;
+
+            // Parse the JSON data and build the OData response
+            // object.
+            if (this.isSplunk) {
+                json = this.parseJson(data);
+                odata = ODataResponse.fromJson(json);  
+
+                // Print any messages that came with the response
+                ODataResponse.printMessages(odata);
+
+                complete_response = {
+                    response: response,
+                    status: (response ? response.statusCode : 0),
+                    odata: odata,
+                    error: error,
+                };
+            }
+            else {
+                json = "";
+
+                // We only try to parse JSON if the headers say it is JSON
+                if (response && response.headers["content-type"] === "application/json") {
+                    json = this.parseJson(data);
+                }
+
+                complete_response = {
+                    response: response,
+                    status: (response ? response.statusCode : 0),
+                    json: json,
+                    error: error
+                };
+            }
+
+            return complete_response;
+        }
+    });
+})();;
+    }).call(module.exports);
+    
+    __require.modules["/lib/http.js"]._cached = module.exports;
+    return module.exports;
+};
+
+require.modules["/lib/odata.js"] = function () {
+    var module = { exports : {} };
+    var exports = module.exports;
+    var __dirname = "/lib";
+    var __filename = "/lib/odata.js";
+    
+    var require = function (file) {
+        return __require(file, "/lib");
+    };
+    
+    require.resolve = function (file) {
+        return __require.resolve(name, "/lib");
+    };
+    
+    require.modules = __require.modules;
+    __require.modules["/lib/odata.js"]._cached = module.exports;
+    
+    (function () {
+        
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+(function() {
+    var Class   = require('./jquery.class').Class;
+
+    var root = exports || this;
+
+    // Our basic class to represent an OData resposne object.
+    root.ODataResponse = Class.extend({
+        offset: 0,
+        count: 0,
+        totalCount: 0,
+        messages: [],
+        timings: [],
+        results: null,
+
+        init: function() {
+
+        },
+
+        isCollection: function() {
+            return this.results instanceof Array;
+        }
+    });
+
+    // A static utility function to convert an object derived from JSON
+    // into an ODataResponse
+    root.ODataResponse.fromJson = function(json) {
+        if (!json || !json.d) {
+            console.log('Invalid JSON object passed; cannot parse into OData.');
+            return null;
+        }
+
+        var d = json.d;
+        
+        var output = new root.ODataResponse();
+
+        // Look for our special keys, and add them to the results
+        var prefixedKeys = ['messages', 'offset', 'count', 'timings', 'total_count'];
+        for (var i=0; i < prefixedKeys.length; i++) {
+            if (d.hasOwnProperty('__' + prefixedKeys[i])) {
+                output[prefixedKeys[i]] = d['__' + prefixedKeys[i]];
+            }
+        }
+
+        if (d.results) {
+            output.results = d.results;
+        }
+
+        return output;
+    };
+
+    // Print any messages that came with the response, as encoded
+    // in the ODataResponse.
+    root.ODataResponse.printMessages = function(struct) {
+        var list = struct.messages || struct.__messages || [];
+
+        if (list) {
+            for (var i = 0; i < list.length; i++) {
+                var msg = '[SPLUNKD] ' + list[i].text;
+                switch (list[i].type) {
+                    case 'FATAL':
+                    case 'ERROR':
+                        console.error(msg);
+                        break;
+                    case 'WARN':
+                        console.warn(msg);
+                        break;
+                    case 'INFO':
+                        console.info(msg);
+                        break;
+                    case 'HTTP':
+                        break;
+                    default:
+                        console.info('[SPLUNKD] ' + list[i].type + ' - ' + msg);
+                        break;
+                }
+            }
+        }
+
+        return list;  
+    };
+})();;
+    }).call(module.exports);
+    
+    __require.modules["/lib/odata.js"]._cached = module.exports;
+    return module.exports;
+};
+
+require.modules["/lib/async.js"] = function () {
+    var module = { exports : {} };
+    var exports = module.exports;
+    var __dirname = "/lib";
+    var __filename = "/lib/async.js";
+    
+    var require = function (file) {
+        return __require(file, "/lib");
+    };
+    
+    require.resolve = function (file) {
+        return __require.resolve(name, "/lib");
+    };
+    
+    require.modules = __require.modules;
+    __require.modules["/lib/async.js"]._cached = module.exports;
+    
+    (function () {
+        
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+(function() {
+    var root = exports || this;
+
+    // A definition for an asynchronous while loop. The "complexity" comes from the
+    // fact thathat we allow asynchronisity both in the condition and in the body. The function takes three parameters:
+    // * A condition function, which takes a callback, whose only parameter is whether the condition was met or not.
+    // * A body function, which takes a no-parameter callback. The callback should be invoked when the body of the loop has finished.
+    // * A done function, which takes no parameter, and will be invoked when the loop has finished.
+    root.while = function(obj, done) {
+            if (obj.condition()) {
+                obj.body( function() { root.while(obj, done); });
+            }
+            else {
+                done();
+            }
+        };
+
+    root.sleep = function(timeout, callback) {
+        setTimeout(callback, timeout);
+    };
+})();;
+    }).call(module.exports);
+    
+    __require.modules["/lib/async.js"]._cached = module.exports;
+    return module.exports;
+};
+
 require.modules["/platform/client/jquery_http.js"] = function () {
     var module = { exports : {} };
     var exports = module.exports;
@@ -2523,12 +2902,16 @@ require.modules["/platform/client/jquery_http.js"] = function () {
     var root = exports || this;
 
     root.JQueryHttp = Splunk.Http.extend({
-        request: function(url, message, callback) {
+        init: function(isSplunk) {
+            this._super(isSplunk);
+        },
+
+        makeRequest: function(url, message, callback) {
             var params = {
                 url: url,
                 type: message.method,
                 headers: message.headers,
-                data: message.body,
+                data: message.body || "",
                 dataType: "json",
                 success: utils.bind(this, function(data, error, res) {
                     var response = {
