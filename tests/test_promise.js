@@ -13,35 +13,28 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-exports.run = (function() {
+(function() {
     var Promise  = require('../splunk').Splunk.Promise;
     var minitest = require('../external/minitest');
-    var assert   = require('assert');
     var _        = require('../external/underscore.js');
 
-    minitest.setupListeners();
-
     minitest.context("Promise Tests", function() {
-        this.setup(function() {
-
-        });
-        
         this.assertion("Simple promise#when resolve", function(test) {
             var resolver = new Promise.Resolver();
             var p1 = resolver.promise;
 
             p1.when(
                 function(myInt) {
-                    assert.strictEqual(myInt, 5);
+                    test.assert.strictEqual(myInt, 5);
                     test.finished();
                 },
                 function(myInt) {
-                    assert.strictEqual(myInt, 4);
+                    test.assert.strictEqual(myInt, 4);
                     test.finished();
                 }
             );
 
-            resolver.resolve(5);
+            setTimeout(function() { resolver.resolve(5); }, 1); 
         }); 
         
         this.assertion("Simple promise#when fail", function(test) {
@@ -50,11 +43,11 @@ exports.run = (function() {
 
             p1.when(
                 function(myInt) {
-                    assert.strictEqual(myInt, 5);
+                    test.assert.strictEqual(myInt, 5);
                     test.finished();
                 },
                 function(myInt) {
-                    assert.strictEqual(myInt, 4);
+                    test.assert.strictEqual(myInt, 4);
                     test.finished();
                 }
             );
@@ -68,13 +61,13 @@ exports.run = (function() {
 
             var p2 = p1.when(
                 function(myInt) {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 }
             );
 
             p2.whenFailed(
                 function(v1) {
-                    assert.strictEqual(v1, 4);
+                    test.assert.strictEqual(v1, 4);
                     test.finished();
                 } 
             );
@@ -94,9 +87,9 @@ exports.run = (function() {
 
             p2.when(
                 function(args) {
-                    assert.ok(_.isArguments(args));
+                    test.assert.ok(_.isArguments(args));
                     args = _.toArray(args);
-                    assert.strictEqual(args[0] + args[1], 10);
+                    test.assert.strictEqual(args[0] + args[1], 10);
                     test.finished();
                 }
             );
@@ -116,9 +109,9 @@ exports.run = (function() {
 
             p2.when(
                 function(args) {
-                    assert.ok(_.isArguments(args));
+                    test.assert.ok(_.isArguments(args));
                     args = _.toArray(args);
-                    assert.strictEqual(args[0] + args[1], 10);
+                    test.assert.strictEqual(args[0] + args[1], 10);
                     test.finished();
                 }
             );
@@ -132,7 +125,7 @@ exports.run = (function() {
 
             p1.whenResolved(
                 function(myInt) {
-                    assert.strictEqual(myInt, 5);
+                    test.assert.strictEqual(myInt, 5);
                     test.finished();
                 }
             );
@@ -146,7 +139,7 @@ exports.run = (function() {
 
             p1.whenFailed(
                 function(myInt) {
-                    assert.strictEqual(myInt, 4);
+                    test.assert.strictEqual(myInt, 4);
                     test.finished();
                 }
             );
@@ -165,29 +158,29 @@ exports.run = (function() {
                     function(myInt) {
                         resolveCount++;
 
-                        assert.strictEqual(myInt, 5);
+                        test.assert.strictEqual(myInt, 5);
                     },
                     function(myInt) {
                         resolveCount++;
 
-                        assert.strictEqual(myInt, 5);
+                        test.assert.strictEqual(myInt, 5);
                     },
                     function(myInt) {
                         resolveCount++;
 
-                        assert.strictEqual(myInt, 5);
+                        test.assert.strictEqual(myInt, 5);
                     },
                     function(myInt) {
                         resolveCount++;
 
-                        assert.strictEqual(myInt, 5);
-                        assert.strictEqual(resolveCount, 4);
+                        test.assert.strictEqual(myInt, 5);
+                        test.assert.strictEqual(resolveCount, 4);
 
                         test.finished();
                     }
                 ],
                 function(myInt) {
-                    assert.strictEqual(myInt, 4);
+                    test.assert.strictEqual(myInt, 4);
                     test.finished();
                 }
             );
@@ -203,30 +196,30 @@ exports.run = (function() {
 
             p1.when(
                 function(myInt) {
-                    assert.strictEqual(myInt, 5);
+                    test.assert.strictEqual(myInt, 5);
                     test.finished();
                 },
                 [
                     function(myInt) {
                         failCount++;
 
-                        assert.strictEqual(myInt, 4);
+                        test.assert.strictEqual(myInt, 4);
                     },
                     function(myInt) {
                         failCount++;
 
-                        assert.strictEqual(myInt, 4);
+                        test.assert.strictEqual(myInt, 4);
                     },
                     function(myInt) {
                         failCount++;
 
-                        assert.strictEqual(myInt, 4);
+                        test.assert.strictEqual(myInt, 4);
                     },
                     function(myInt) {
                         failCount++;
 
-                        assert.strictEqual(myInt, 4);
-                        assert.strictEqual(failCount, 4);
+                        test.assert.strictEqual(myInt, 4);
+                        test.assert.strictEqual(failCount, 4);
 
                         test.finished();
                     }
@@ -242,18 +235,18 @@ exports.run = (function() {
 
             var p2 = p1.when(
                 function(myInt) {
-                    assert.strictEqual(myInt, 5);
+                    test.assert.strictEqual(myInt, 5);
 
                     return myInt + 5;
                 },
                 function(myInt) {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 }
             );
 
             p2.whenResolved(
                 function(anotherInt) {
-                    assert.strictEqual(anotherInt, 10);
+                    test.assert.strictEqual(anotherInt, 10);
                     test.finished();
                 }
             );
@@ -267,10 +260,10 @@ exports.run = (function() {
 
             var p2 = p1.when(
                 function(myInt) {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 },
                 function(v1) {
-                    assert.strictEqual(v1, 4);
+                    test.assert.strictEqual(v1, 4);
 
                     return v1 * 2;
                 }
@@ -278,7 +271,7 @@ exports.run = (function() {
 
             p2.whenFailed(
                 function(anotherInt) {
-                    assert.strictEqual(anotherInt, 8);
+                    test.assert.strictEqual(anotherInt, 8);
                     test.finished();
                 }
             );
@@ -293,7 +286,7 @@ exports.run = (function() {
             var pJoined = Promise.join(p1);
 
             pJoined.when(function(v1) {
-                assert.strictEqual(v1, 15);
+                test.assert.strictEqual(v1, 15);
                 test.finished();
             });
 
@@ -310,7 +303,7 @@ exports.run = (function() {
             var pJoined = Promise.join(p1, p2);
 
             pJoined.when(function(v1, v2) {
-                assert.strictEqual(v1 + v2, 15);
+                test.assert.strictEqual(v1 + v2, 15);
                 test.finished();
             });
 
@@ -323,7 +316,7 @@ exports.run = (function() {
 
             pJoined.when(
                 function(v1, v2) {
-                    assert.strictEqual(v1 + v2, 15);
+                    test.assert.strictEqual(v1 + v2, 15);
                     test.finished(); 
                 }
             );
@@ -335,22 +328,22 @@ exports.run = (function() {
 
             pJoined.when([
                 function(v1, v2) {
-                    assert.strictEqual(v1 + v2, 15);
+                    test.assert.strictEqual(v1 + v2, 15);
                     resolveCount++;
                 },
                 function(v1, v2) {
-                    assert.strictEqual((v1 + v2) * 2, 30);
+                    test.assert.strictEqual((v1 + v2) * 2, 30);
                     resolveCount++;
                 },
                 function(v1, v2) {
-                    assert.strictEqual((v1 + v2) * 3, 45);
+                    test.assert.strictEqual((v1 + v2) * 3, 45);
                     resolveCount++;
                 },
                 function(v1, v2) {
-                    assert.strictEqual((v1 + v2) * 4, 60);
+                    test.assert.strictEqual((v1 + v2) * 4, 60);
                     resolveCount++;
 
-                    assert.strictEqual(resolveCount, 4);
+                    test.assert.strictEqual(resolveCount, 4);
                     test.finished(); 
                 },
             ]);
@@ -364,7 +357,7 @@ exports.run = (function() {
 
             pJoined.when(
                 function(v1, v2) {
-                    assert.strictEqual(v1 + v2, 15);
+                    test.assert.strictEqual(v1 + v2, 15);
                     test.finished(); 
                 }
             );
@@ -385,8 +378,8 @@ exports.run = (function() {
             var pJoined = Promise.join(p1, p2, p3);
 
             pJoined.when(function(v1, v2, v3) {
-                assert.strictEqual(v3, undefined);
-                assert.strictEqual(v1 + v2[0] + v2[1], 35);
+                test.assert.strictEqual(v3, undefined);
+                test.assert.strictEqual(v1 + v2[0] + v2[1], 35);
                 test.finished();
             });
 
@@ -403,10 +396,10 @@ exports.run = (function() {
 
             pJoined.when(
                 function(v1, v2) {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 },
                 function(v1) {
-                    assert.strictEqual(v1, 10);
+                    test.assert.strictEqual(v1, 10);
                     test.finished();
                 }
             );
@@ -428,7 +421,7 @@ exports.run = (function() {
                     test.ok(false);
                 },
                 function(reason) {
-                    assert.strictEqual(reason, 4);
+                    test.assert.strictEqual(reason, 4);
                     test.finished();
                 }
             );
@@ -444,11 +437,11 @@ exports.run = (function() {
 
             p1.when(
                 function(v1) {
-                    assert.strictEqual(v1, 5);
+                    test.assert.strictEqual(v1, 5);
                     test.finished();
                 },
                 function() {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 }
             );
         });
@@ -460,10 +453,10 @@ exports.run = (function() {
 
             p1.when(
                 function() {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 },
                 function(v1) {
-                    assert.strictEqual(v1, 4);
+                    test.assert.strictEqual(v1, 4);
                     test.finished();
                 }
             );
@@ -477,7 +470,7 @@ exports.run = (function() {
                     test.finished();
                 },
                 function() {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 }
             );
         });
@@ -487,10 +480,10 @@ exports.run = (function() {
 
             pNever.when(
                 function() {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 },
                 function() {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 }
             );
 
@@ -506,7 +499,7 @@ exports.run = (function() {
 
             var pWhen = p1.when(
                 function(v1) {
-                    assert.strictEqual(v1, 5);
+                    test.assert.strictEqual(v1, 5);
 
                     var resolver2 = new Promise.Resolver();
                     var p2 = resolver2.promise;
@@ -516,17 +509,17 @@ exports.run = (function() {
                     return p2;
                 },
                 function(v1) {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 }
             );
 
             pWhen.when(
                 function(v1) {
-                    assert.strictEqual(v1, 10);
+                    test.assert.strictEqual(v1, 10);
                     test.finished();  
                 },
                 function() {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 }
             );
 
@@ -540,7 +533,7 @@ exports.run = (function() {
             var pWhen = p1.when(
                 [
                     function(v1) {
-                        assert.strictEqual(v1, 5);
+                        test.assert.strictEqual(v1, 5);
                         
                         var resolver2 = new Promise.Resolver();
                         var p2 = resolver2.promise;
@@ -550,23 +543,23 @@ exports.run = (function() {
                         return p2;
                     },
                     function(v1) {
-                        assert.strictEqual(v1, 5);
+                        test.assert.strictEqual(v1, 5);
 
                         return [v1 * 3, v1 * 4];
                     }
                 ],
                 function(v1) {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 }
             );
 
             pWhen.when(
                 function(v1, v2) {
-                    assert.strictEqual(v1 + v2[0] + v2[1], 45);
+                    test.assert.strictEqual(v1 + v2[0] + v2[1], 45);
                     test.finished();  
                 },
                 function() {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 }
             );
 
@@ -579,7 +572,7 @@ exports.run = (function() {
 
             var pWhen = p1.when(
                 function(v1) {
-                    assert.strictEqual(v1, 5);
+                    test.assert.strictEqual(v1, 5);
 
                     var resolver2 = new Promise.Resolver();
                     var p2 = resolver2.promise;
@@ -589,16 +582,16 @@ exports.run = (function() {
                     return p2;
                 },
                 function() {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 }
             );
 
             pWhen.when(
                 function() {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 },
                 function(v1) {
-                    assert.strictEqual(v1, 10);
+                    test.assert.strictEqual(v1, 10);
                     test.finished();  
                 }
             );
@@ -612,11 +605,11 @@ exports.run = (function() {
 
             p1.when(
                 function(v1, v2, v3, v4) {
-                    assert.strictEqual(v1 + v2 + v3 + v4, 10);
+                    test.assert.strictEqual(v1 + v2 + v3 + v4, 10);
                     test.finished();
                 },
                 function() {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 }
             );
 
@@ -629,10 +622,10 @@ exports.run = (function() {
 
             p1.when(
                 function() {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 },
                 function(v1, v2, v3, v4) {
-                    assert.strictEqual(v1 + v2 + v3 + v4, 10);
+                    test.assert.strictEqual(v1 + v2 + v3 + v4, 10);
                     test.finished();
                 }
             );
@@ -649,11 +642,11 @@ exports.run = (function() {
 
             Promise.join(p1, p2).when(
                 function(v1, v2) {
-                    assert.strictEqual(v1[0] + v1[1] + v2[0] + v2[1], 10);
+                    test.assert.strictEqual(v1[0] + v1[1] + v2[0] + v2[1], 10);
                     test.finished();
                 },
                 function() {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 }
             );
 
@@ -675,13 +668,13 @@ exports.run = (function() {
                     }
                 ],
                 function() {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 }
             );
 
             p2.when(
                 function(v1, v2) {
-                    assert.strictEqual(v1[0] + v1[1] + v2[0] + v2[1], 100);
+                    test.assert.strictEqual(v1[0] + v1[1] + v2[0] + v2[1], 100);
                     test.finished();
                 }
             );
@@ -703,16 +696,16 @@ exports.run = (function() {
                     }
                 ],
                 function() {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 }
             );
 
             p2.when(
                 function() {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 },
                 function(v1) {
-                    assert.strictEqual(v1[0] + v1[1], 70);
+                    test.assert.strictEqual(v1[0] + v1[1], 70);
                     test.finished();
                 }
             );
@@ -734,10 +727,10 @@ exports.run = (function() {
 
             p2.when(
                 function() {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 },
                 function(v1) {
-                    assert.strictEqual(v1, 4);
+                    test.assert.strictEqual(v1, 4);
                     test.finished();
                 }
             );
@@ -755,10 +748,10 @@ exports.run = (function() {
 
             p2.when(
                 function() {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 },
                 function(v1) {
-                    assert.strictEqual(v1, 4);
+                    test.assert.strictEqual(v1, 4);
                     test.finished();
                 }
             );
@@ -780,11 +773,11 @@ exports.run = (function() {
 
             p2.when(
                 function(v1) {
-                    assert.strictEqual(v1, 5);
+                    test.assert.strictEqual(v1, 5);
                     test.finished();
                 },
                 function() {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 }
             );
 
@@ -811,7 +804,7 @@ exports.run = (function() {
                 function() {
                     var newDate = new Date();
                     var delta = newDate - originalDate;
-                    assert.ok(delta > 1300);
+                    test.assert.ok(delta > 1300);
                     test.finished();
                 }
             );
@@ -823,10 +816,10 @@ exports.run = (function() {
 
             p1.onProgress(
                 function(prg) {
-                    assert.strictEqual(prg.percent, 0.5);
+                    test.assert.strictEqual(prg.percent, 0.5);
                 },
                 function(prg) {
-                    assert.strictEqual(prg.percent, 0.5);
+                    test.assert.strictEqual(prg.percent, 0.5);
                 }
             );
 
@@ -835,7 +828,7 @@ exports.run = (function() {
                     test.finished();
                 },
                 function() {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 }
             );
 
@@ -855,7 +848,7 @@ exports.run = (function() {
             var progressReports = 0;
             p1.onProgress(
                 function(prg) {
-                    assert.ok(prg.percent < 1.0);
+                    test.assert.ok(prg.percent < 1.0);
                     progressReports++;
                 }
             );
@@ -865,17 +858,17 @@ exports.run = (function() {
                 var pct = (now - start) / (end - start);
 
                 var success = resolver.progress({percent: pct});
-                assert.ok(success);
+                test.assert.ok(success);
             }, 100);
 
             p1.when(
                 function() {
                     clearInterval(timer);
-                    assert.ok(progressReports > 1);
+                    test.assert.ok(progressReports > 1);
                     test.finished();
                 },
                 function() {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 }
             );
 
@@ -892,7 +885,7 @@ exports.run = (function() {
 
             p1.onProgress(
                 function(prg) { 
-                    assert.ok(false);
+                    test.assert.ok(false);
                 }
             );
 
@@ -901,14 +894,14 @@ exports.run = (function() {
                     test.finished();
                 },
                 function() {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 }
             );
 
             resolver.resolve();
 
             var reported = resolver.progress({percent: 0.5});
-            assert.ok(!reported);
+            test.assert.ok(!reported);
         });
         
         this.assertion("Simple promise#when no fail callback", function(test) {
@@ -917,7 +910,7 @@ exports.run = (function() {
 
             p1.when(
                 function() {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 }
             );
 
@@ -943,7 +936,7 @@ exports.run = (function() {
             });
 
             whileP.whenResolved(function() {
-                assert.strictEqual(counter, 10);
+                test.assert.strictEqual(counter, 10);
                 test.finished();
             });
         });
@@ -954,7 +947,7 @@ exports.run = (function() {
             var whileP = Promise.while({
                 condition: function() { return counter < 10; },
                 body: function(iteration) {
-                    assert.strictEqual(iteration, counter);
+                    test.assert.strictEqual(iteration, counter);
                     counter++;
 
                     if (counter === 2) {
@@ -964,8 +957,8 @@ exports.run = (function() {
             });
 
             whileP.whenFailed(function(v1) {
-                assert.strictEqual(counter, 2);
-                assert.strictEqual(v1, 3);
+                test.assert.strictEqual(counter, 2);
+                test.assert.strictEqual(v1, 3);
                 test.finished();
             });
         });
@@ -981,7 +974,7 @@ exports.run = (function() {
             );
 
             p2.when(function(v1, v2) {
-                assert.strictEqual(v1 + v2, 3);
+                test.assert.strictEqual(v1 + v2, 3);
                 test.finished();
             });
 
@@ -999,8 +992,8 @@ exports.run = (function() {
             );
 
             p2.when(function(v1, v2) {
-                assert.ok(!v1);
-                assert.ok(!v2);
+                test.assert.ok(!v1);
+                test.assert.ok(!v2);
                 test.finished();
             });
 
@@ -1018,7 +1011,7 @@ exports.run = (function() {
             );
 
             p2.when(function(v1) {
-                assert.strictEqual(v1, 1);
+                test.assert.strictEqual(v1, 1);
                 test.finished();
             });
 
@@ -1036,7 +1029,7 @@ exports.run = (function() {
             );
 
             p2.when(function(v1) {
-                assert.strictEqual(v1[0], 10);
+                test.assert.strictEqual(v1[0], 10);
                 test.finished();
             });
 
@@ -1054,7 +1047,7 @@ exports.run = (function() {
             );
 
             p2.when(function(v1) {
-                assert.deepEqual(v1, 10);
+                test.assert.deepEqual(v1, 10);
                 test.finished();
             });
 
@@ -1072,7 +1065,7 @@ exports.run = (function() {
             );
 
             p2.when(function(v1) {
-                assert.strictEqual(v1[0][0], 10);
+                test.assert.strictEqual(v1[0][0], 10);
                 test.finished();
             });
 
@@ -1090,8 +1083,8 @@ exports.run = (function() {
             );
 
             p2.when(function(v1, v2) {
-                assert.strictEqual(v1, 5);
-                assert.ok(!v2);
+                test.assert.strictEqual(v1, 5);
+                test.assert.ok(!v2);
                 test.finished();
             });
 
@@ -1112,8 +1105,8 @@ exports.run = (function() {
             );
 
             p2.when(function(v1, v2) {
-                assert.strictEqual(v1, 5);
-                assert.strictEqual(v2, 10);
+                test.assert.strictEqual(v1, 5);
+                test.assert.strictEqual(v2, 10);
                 test.finished();
             });
 
@@ -1140,19 +1133,19 @@ exports.run = (function() {
             );
 
             p2.when(function(v1, v2, v3, v4) {
-                assert.strictEqual(v1, 5);
-                assert.strictEqual(v2, 10);
-                assert.strictEqual(v3, 15);
-                assert.strictEqual(v4[0] + v4[1], 10);
+                test.assert.strictEqual(v1, 5);
+                test.assert.strictEqual(v2, 10);
+                test.assert.strictEqual(v3, 15);
+                test.assert.strictEqual(v4[0] + v4[1], 10);
                 test.finished();
             });
 
             resolver.resolve(5);
         });
     });
-});
 
-if (module === require.main) {
-    exports.run();
-}
+    if (module === require.main) {
+        minitest.run();
+    }
+})();
 

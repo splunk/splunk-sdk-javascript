@@ -13,26 +13,24 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-exports.run = (function() {
+(function() {
     var Splunk      = require('../splunk').Splunk;
     var NodeHttp    = require('../platform/node/node_http').NodeHttp;
     var minitest    = require('../external/minitest');
-    var assert      = require('assert');
-
-    minitest.setupListeners();
 
     var http = new NodeHttp(false);
 
     minitest.context("HTTP GET Tests", function() {
-        this.setup(function() {
+        this.setupTest(function(done) {
             this.http = http;
+            done();
         });
         
         this.assertion("Promise#no args", function(test) {
             var getP = this.http.get("http://httpbin.org/get", [], {}, 0);
             getP.when(
                 function(res) {
-                    assert.strictEqual(res.json.url, "http://httpbin.org/get");
+                    test.assert.strictEqual(res.json.url, "http://httpbin.org/get");
                     test.finished();
                 }
             );
@@ -42,10 +40,10 @@ exports.run = (function() {
             var getP = this.http.get("http://httpbin.org/status/404", [], {}, 0);
             getP.when(
                 function(res) {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 },
                 function(res) {
-                    assert.strictEqual(res.status, 404);
+                    test.assert.strictEqual(res.status, 404);
                     test.finished();
                 }
             );
@@ -56,11 +54,11 @@ exports.run = (function() {
             getP.when(
                 function(res) {
                     var args = res.json.args;
-                    assert.strictEqual(args.a, "1");
-                    assert.strictEqual(args.b, "2");
-                    assert.strictEqual(args.c, "1");
-                    assert.strictEqual(args.d, "a/b");
-                    assert.strictEqual(res.json.url, "http://httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
+                    test.assert.strictEqual(args.a, "1");
+                    test.assert.strictEqual(args.b, "2");
+                    test.assert.strictEqual(args.c, "1");
+                    test.assert.strictEqual(args.d, "a/b");
+                    test.assert.strictEqual(res.json.url, "http://httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
                     test.finished();
                 }
             );
@@ -79,10 +77,10 @@ exports.run = (function() {
                     for(var headerName in headers) {
                         if (headers.hasOwnProperty(headerName)) {
                             // We have to make the header values into strings
-                            assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
+                            test.assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
                         }
                     }
-                    assert.strictEqual(res.json.url, "http://httpbin.org/get");
+                    test.assert.strictEqual(res.json.url, "http://httpbin.org/get");
                     test.finished();
                 }
             );
@@ -101,15 +99,15 @@ exports.run = (function() {
                     for(var headerName in headers) {
                         if (headers.hasOwnProperty(headerName)) {
                             // We have to make the header values into strings
-                            assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
+                            test.assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
                         }
                     }
                     var args = res.json.args;
-                    assert.strictEqual(args.a, "1");
-                    assert.strictEqual(args.b, "2");
-                    assert.strictEqual(args.c, "1");
-                    assert.strictEqual(args.d, "a/b");
-                    assert.strictEqual(res.json.url, "http://httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
+                    test.assert.strictEqual(args.a, "1");
+                    test.assert.strictEqual(args.b, "2");
+                    test.assert.strictEqual(args.c, "1");
+                    test.assert.strictEqual(args.d, "a/b");
+                    test.assert.strictEqual(res.json.url, "http://httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
                     test.finished();
                 }
             );
@@ -117,7 +115,7 @@ exports.run = (function() {
         
         this.assertion("Callback#no args", function(test) {
             var getP = this.http.get("http://httpbin.org/get", [], {}, 0, function(res) {
-                    assert.strictEqual(res.json.url, "http://httpbin.org/get");
+                    test.assert.strictEqual(res.json.url, "http://httpbin.org/get");
                     test.finished();
                 }
             );
@@ -126,18 +124,18 @@ exports.run = (function() {
         this.assertion("Callback#success success+error", function(test) {
             var getP = this.http.get("http://httpbin.org/get", [], {}, 0, {
                 success: function(res) {
-                    assert.strictEqual(res.json.url, "http://httpbin.org/get");
+                    test.assert.strictEqual(res.json.url, "http://httpbin.org/get");
                     test.finished();
                 },
                 error: function(res) {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 }
             });
         });
         
         this.assertion("Callback#error all", function(test) {
             var getP = this.http.get("http://httpbin.org/status/404", [], {}, 0, function(res) {
-                    assert.strictEqual(res.status, 404);
+                    test.assert.strictEqual(res.status, 404);
                     test.finished();
                 }
             );
@@ -146,10 +144,10 @@ exports.run = (function() {
         this.assertion("Callback#error success+error", function(test) {
             var getP = this.http.get("http://httpbin.org/status/404", [], {}, 0, {
                 success: function(res) {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 },
                 error: function(res) {
-                        assert.strictEqual(res.status, 404);
+                        test.assert.strictEqual(res.status, 404);
                         test.finished();   
                 }
             });
@@ -158,11 +156,11 @@ exports.run = (function() {
         this.assertion("Callback#args", function(test) {
             var getP = this.http.get("http://httpbin.org/get", [], { a: 1, b: 2, c: [1,2,3], d: "a/b"}, 0, function(res) {
                     var args = res.json.args;
-                    assert.strictEqual(args.a, "1");
-                    assert.strictEqual(args.b, "2");
-                    assert.strictEqual(args.c, "1");
-                    assert.strictEqual(args.d, "a/b");
-                    assert.strictEqual(res.json.url, "http://httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
+                    test.assert.strictEqual(args.a, "1");
+                    test.assert.strictEqual(args.b, "2");
+                    test.assert.strictEqual(args.c, "1");
+                    test.assert.strictEqual(args.d, "a/b");
+                    test.assert.strictEqual(res.json.url, "http://httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
                     test.finished();
                 }
             );
@@ -179,10 +177,10 @@ exports.run = (function() {
                     for(var headerName in headers) {
                         if (headers.hasOwnProperty(headerName)) {
                             // We have to make the header values into strings
-                            assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
+                            test.assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
                         }
                     }
-                    assert.strictEqual(res.json.url, "http://httpbin.org/get");
+                    test.assert.strictEqual(res.json.url, "http://httpbin.org/get");
                     test.finished();
                 }
             );
@@ -199,15 +197,15 @@ exports.run = (function() {
                     for(var headerName in headers) {
                         if (headers.hasOwnProperty(headerName)) {
                             // We have to make the header values into strings
-                            assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
+                            test.assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
                         }
                     }
                     var args = res.json.args;
-                    assert.strictEqual(args.a, "1");
-                    assert.strictEqual(args.b, "2");
-                    assert.strictEqual(args.c, "1");
-                    assert.strictEqual(args.d, "a/b");
-                    assert.strictEqual(res.json.url, "http://httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
+                    test.assert.strictEqual(args.a, "1");
+                    test.assert.strictEqual(args.b, "2");
+                    test.assert.strictEqual(args.c, "1");
+                    test.assert.strictEqual(args.d, "a/b");
+                    test.assert.strictEqual(res.json.url, "http://httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
                     test.finished();
                 }
             );
@@ -225,15 +223,15 @@ exports.run = (function() {
                 for(var headerName in headers) {
                     if (headers.hasOwnProperty(headerName)) {
                         // We have to make the header values into strings
-                        assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
+                        test.assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
                     }
                 }
                 var args = res.json.args;
-                assert.strictEqual(args.a, "1");
-                assert.strictEqual(args.b, "2");
-                assert.strictEqual(args.c, "1");
-                assert.strictEqual(args.d, "a/b");
-                assert.strictEqual(res.json.url, "http://httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
+                test.assert.strictEqual(args.a, "1");
+                test.assert.strictEqual(args.b, "2");
+                test.assert.strictEqual(args.c, "1");
+                test.assert.strictEqual(args.d, "a/b");
+                test.assert.strictEqual(res.json.url, "http://httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
 
                 callbackCount++;
             };
@@ -242,7 +240,7 @@ exports.run = (function() {
             getP.when(
                 function(res) {
                     callback(res);
-                    assert.strictEqual(callbackCount, 2);
+                    test.assert.strictEqual(callbackCount, 2);
                     test.finished();
                 }
             );
@@ -250,15 +248,16 @@ exports.run = (function() {
     });
 
     minitest.context("HTTP POST Tests", function() {
-        this.setup(function() {
+        this.setupTest(function(done) {
             this.http = http;
+            done();
         });
         
         this.assertion("Promise#no args", function(test) {
             var postP = this.http.post("http://httpbin.org/post", {}, {}, 0);
             postP.when(
                 function(res) {
-                    assert.strictEqual(res.json.url, "http://httpbin.org/post");
+                    test.assert.strictEqual(res.json.url, "http://httpbin.org/post");
                     test.finished();
                 }
             );
@@ -268,10 +267,10 @@ exports.run = (function() {
             var postP = this.http.post("http://httpbin.org/status/405", {}, {}, 0);
             postP.when(
                 function(res) {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 },
                 function(res) {
-                    assert.strictEqual(res.status, 405);
+                    test.assert.strictEqual(res.status, 405);
                     test.finished();
                 }
             );
@@ -282,11 +281,11 @@ exports.run = (function() {
             postP.when(
                 function(res) {
                     var args = res.json.form;
-                    assert.strictEqual(args.a, "1");
-                    assert.strictEqual(args.b, "2");
-                    assert.strictEqual(args.c, "1");
-                    assert.strictEqual(args.d, "a/b");
-                    assert.strictEqual(res.json.url, "http://httpbin.org/post");
+                    test.assert.strictEqual(args.a, "1");
+                    test.assert.strictEqual(args.b, "2");
+                    test.assert.strictEqual(args.c, "1");
+                    test.assert.strictEqual(args.d, "a/b");
+                    test.assert.strictEqual(res.json.url, "http://httpbin.org/post");
                     test.finished();
                 }
             );
@@ -305,10 +304,10 @@ exports.run = (function() {
                     for(var headerName in headers) {
                         if (headers.hasOwnProperty(headerName)) {
                             // We have to make the header values into strings
-                            assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
+                            test.assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
                         }
                     }
-                    assert.strictEqual(res.json.url, "http://httpbin.org/post");
+                    test.assert.strictEqual(res.json.url, "http://httpbin.org/post");
                     test.finished();
                 }
             );
@@ -327,15 +326,15 @@ exports.run = (function() {
                     for(var headerName in headers) {
                         if (headers.hasOwnProperty(headerName)) {
                             // We have to make the header values into strings
-                            assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
+                            test.assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
                         }
                     }
                     var args = res.json.form;
-                    assert.strictEqual(args.a, "1");
-                    assert.strictEqual(args.b, "2");
-                    assert.strictEqual(args.c, "1");
-                    assert.strictEqual(args.d, "a/b");
-                    assert.strictEqual(res.json.url, "http://httpbin.org/post");
+                    test.assert.strictEqual(args.a, "1");
+                    test.assert.strictEqual(args.b, "2");
+                    test.assert.strictEqual(args.c, "1");
+                    test.assert.strictEqual(args.d, "a/b");
+                    test.assert.strictEqual(res.json.url, "http://httpbin.org/post");
                     test.finished();
                 }
             );
@@ -343,7 +342,7 @@ exports.run = (function() {
         
         this.assertion("Callback#no args", function(test) {
             var postP = this.http.post("http://httpbin.org/post", {}, {}, 0, function(res) {
-                    assert.strictEqual(res.json.url, "http://httpbin.org/post");
+                    test.assert.strictEqual(res.json.url, "http://httpbin.org/post");
                     test.finished();
                 }
             );
@@ -352,18 +351,18 @@ exports.run = (function() {
         this.assertion("Callback#success success+error", function(test) {
             var postP = this.http.post("http://httpbin.org/post", {}, {}, 0, {
                 success: function(res) {
-                    assert.strictEqual(res.json.url, "http://httpbin.org/post");
+                    test.assert.strictEqual(res.json.url, "http://httpbin.org/post");
                     test.finished();
                 },
                 error: function(res) {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 }
             });
         });
         
         this.assertion("Callback#error all", function(test) {
             var postP = this.http.post("http://httpbin.org/status/405", {}, {}, 0, function(res) {
-                    assert.strictEqual(res.status, 405);
+                    test.assert.strictEqual(res.status, 405);
                     test.finished();
                 }
             );
@@ -372,10 +371,10 @@ exports.run = (function() {
         this.assertion("Callback#error success+error", function(test) {
             var postP = this.http.post("http://httpbin.org/status/405", {}, {}, 0, {
                 success: function(res) {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 },
                 error: function(res) {
-                        assert.strictEqual(res.status, 405);
+                        test.assert.strictEqual(res.status, 405);
                         test.finished();   
                 }
             });
@@ -384,11 +383,11 @@ exports.run = (function() {
         this.assertion("Callback#args", function(test) {
             var postP = this.http.post("http://httpbin.org/post", {}, { a: 1, b: 2, c: [1,2,3], d: "a/b"}, 0, function(res) {
                     var args = res.json.form;
-                    assert.strictEqual(args.a, "1");
-                    assert.strictEqual(args.b, "2");
-                    assert.strictEqual(args.c, "1");
-                    assert.strictEqual(args.d, "a/b");
-                    assert.strictEqual(res.json.url, "http://httpbin.org/post");
+                    test.assert.strictEqual(args.a, "1");
+                    test.assert.strictEqual(args.b, "2");
+                    test.assert.strictEqual(args.c, "1");
+                    test.assert.strictEqual(args.d, "a/b");
+                    test.assert.strictEqual(res.json.url, "http://httpbin.org/post");
                     test.finished();
                 }
             );
@@ -405,10 +404,10 @@ exports.run = (function() {
                     for(var headerName in headers) {
                         if (headers.hasOwnProperty(headerName)) {
                             // We have to make the header values into strings
-                            assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
+                            test.assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
                         }
                     }
-                    assert.strictEqual(res.json.url, "http://httpbin.org/post");
+                    test.assert.strictEqual(res.json.url, "http://httpbin.org/post");
                     test.finished();
                 }
             );
@@ -425,15 +424,15 @@ exports.run = (function() {
                     for(var headerName in headers) {
                         if (headers.hasOwnProperty(headerName)) {
                             // We have to make the header values into strings
-                            assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
+                            test.assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
                         }
                     }
                     var args = res.json.form;
-                    assert.strictEqual(args.a, "1");
-                    assert.strictEqual(args.b, "2");
-                    assert.strictEqual(args.c, "1");
-                    assert.strictEqual(args.d, "a/b");
-                    assert.strictEqual(res.json.url, "http://httpbin.org/post");
+                    test.assert.strictEqual(args.a, "1");
+                    test.assert.strictEqual(args.b, "2");
+                    test.assert.strictEqual(args.c, "1");
+                    test.assert.strictEqual(args.d, "a/b");
+                    test.assert.strictEqual(res.json.url, "http://httpbin.org/post");
                     test.finished();
                 }
             );
@@ -451,15 +450,15 @@ exports.run = (function() {
                 for(var headerName in headers) {
                     if (headers.hasOwnProperty(headerName)) {
                         // We have to make the header values into strings
-                        assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
+                        test.assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
                     }
                 }
                 var args = res.json.form;
-                assert.strictEqual(args.a, "1");
-                assert.strictEqual(args.b, "2");
-                assert.strictEqual(args.c, "1");
-                assert.strictEqual(args.d, "a/b");
-                assert.strictEqual(res.json.url, "http://httpbin.org/post");
+                test.assert.strictEqual(args.a, "1");
+                test.assert.strictEqual(args.b, "2");
+                test.assert.strictEqual(args.c, "1");
+                test.assert.strictEqual(args.d, "a/b");
+                test.assert.strictEqual(res.json.url, "http://httpbin.org/post");
 
                 callbackCount++;
             };
@@ -468,7 +467,7 @@ exports.run = (function() {
             postP.when(
                 function(res) {
                     callback(res);
-                    assert.strictEqual(callbackCount, 2);
+                    test.assert.strictEqual(callbackCount, 2);
                     test.finished();
                 }
             );
@@ -476,15 +475,16 @@ exports.run = (function() {
     });
 
     minitest.context("HTTP DELETE Tests", function() {
-        this.setup(function() {
+        this.setupTest(function(done) {
             this.http = http;
+            done();
         });
         
         this.assertion("Promise#no args", function(test) {
             var deleteP = this.http.del("http://httpbin.org/delete", {}, {}, 0);
             deleteP.when(
                 function(res) {
-                    assert.strictEqual(res.json.url, "http://httpbin.org/delete");
+                    test.assert.strictEqual(res.json.url, "http://httpbin.org/delete");
                     test.finished();
                 }
             );
@@ -494,10 +494,10 @@ exports.run = (function() {
             var deleteP = this.http.del("http://httpbin.org/status/405", {}, {}, 0);
             deleteP.when(
                 function(res) {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 },
                 function(res) {
-                    assert.strictEqual(res.status, 405);
+                    test.assert.strictEqual(res.status, 405);
                     test.finished();
                 }
             );
@@ -507,7 +507,7 @@ exports.run = (function() {
             var deleteP = this.http.del("http://httpbin.org/delete", [], { a: 1, b: 2, c: [1,2,3], d: "a/b"}, 0);
             deleteP.when(
                 function(res) {
-                    assert.strictEqual(res.json.url, "http://httpbin.org/delete?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
+                    test.assert.strictEqual(res.json.url, "http://httpbin.org/delete?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
                     test.finished();
                 }
             );
@@ -526,10 +526,10 @@ exports.run = (function() {
                     for(var headerName in headers) {
                         if (headers.hasOwnProperty(headerName)) {
                             // We have to make the header values into strings
-                            assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
+                            test.assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
                         }
                     }
-                    assert.strictEqual(res.json.url, "http://httpbin.org/delete");
+                    test.assert.strictEqual(res.json.url, "http://httpbin.org/delete");
                     test.finished();
                 }
             );
@@ -548,10 +548,10 @@ exports.run = (function() {
                     for(var headerName in headers) {
                         if (headers.hasOwnProperty(headerName)) {
                             // We have to make the header values into strings
-                            assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
+                            test.assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
                         }
                     }
-                    assert.strictEqual(res.json.url, "http://httpbin.org/delete?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
+                    test.assert.strictEqual(res.json.url, "http://httpbin.org/delete?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
                     test.finished();
                 }
             );
@@ -559,7 +559,7 @@ exports.run = (function() {
         
         this.assertion("Callback#no args", function(test) {
             var deleteP = this.http.del("http://httpbin.org/delete", [], {}, 0, function(res) {
-                    assert.strictEqual(res.json.url, "http://httpbin.org/delete");
+                    test.assert.strictEqual(res.json.url, "http://httpbin.org/delete");
                     test.finished();
                 }
             );
@@ -568,18 +568,18 @@ exports.run = (function() {
         this.assertion("Callback#success success+error", function(test) {
             var deleteP = this.http.del("http://httpbin.org/delete", [], {}, 0, {
                 success: function(res) {
-                    assert.strictEqual(res.json.url, "http://httpbin.org/delete");
+                    test.assert.strictEqual(res.json.url, "http://httpbin.org/delete");
                     test.finished();
                 },
                 error: function(res) {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 }
             });
         });
         
         this.assertion("Callback#error all", function(test) {
             var deleteP = this.http.del("http://httpbin.org/status/405", [], {}, 0, function(res) {
-                    assert.strictEqual(res.status, 405);
+                    test.assert.strictEqual(res.status, 405);
                     test.finished();
                 }
             );
@@ -588,10 +588,10 @@ exports.run = (function() {
         this.assertion("Callback#error success+error", function(test) {
             var deleteP = this.http.del("http://httpbin.org/status/405", [], {}, 0, {
                 success: function(res) {
-                    assert.ok(false);
+                    test.assert.ok(false);
                 },
                 error: function(res) {
-                        assert.strictEqual(res.status, 405);
+                        test.assert.strictEqual(res.status, 405);
                         test.finished();   
                 }
             });
@@ -599,7 +599,7 @@ exports.run = (function() {
         
         this.assertion("Callback#args", function(test) {
             var deleteP = this.http.del("http://httpbin.org/delete", [], { a: 1, b: 2, c: [1,2,3], d: "a/b"}, 0, function(res) {
-                    assert.strictEqual(res.json.url, "http://httpbin.org/delete?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
+                    test.assert.strictEqual(res.json.url, "http://httpbin.org/delete?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
                     test.finished();
                 }
             );
@@ -616,10 +616,10 @@ exports.run = (function() {
                     for(var headerName in headers) {
                         if (headers.hasOwnProperty(headerName)) {
                             // We have to make the header values into strings
-                            assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
+                            test.assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
                         }
                     }
-                    assert.strictEqual(res.json.url, "http://httpbin.org/delete");
+                    test.assert.strictEqual(res.json.url, "http://httpbin.org/delete");
                     test.finished();
                 }
             );
@@ -636,10 +636,10 @@ exports.run = (function() {
                     for(var headerName in headers) {
                         if (headers.hasOwnProperty(headerName)) {
                             // We have to make the header values into strings
-                            assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
+                            test.assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
                         }
                     }
-                    assert.strictEqual(res.json.url, "http://httpbin.org/delete?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
+                    test.assert.strictEqual(res.json.url, "http://httpbin.org/delete?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
                     test.finished();
                 }
             );
@@ -657,10 +657,10 @@ exports.run = (function() {
                 for(var headerName in headers) {
                     if (headers.hasOwnProperty(headerName)) {
                         // We have to make the header values into strings
-                        assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
+                        test.assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
                     }
                 }
-                assert.strictEqual(res.json.url, "http://httpbin.org/delete?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
+                test.assert.strictEqual(res.json.url, "http://httpbin.org/delete?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
 
                 callbackCount++;
             };
@@ -669,14 +669,14 @@ exports.run = (function() {
             deleteP.when(
                 function(res) {
                     callback(res);
-                    assert.strictEqual(callbackCount, 2);
+                    test.assert.strictEqual(callbackCount, 2);
                     test.finished();
                 }
             );
         });
     });
-}); 
 
-if (module === require.main) {
-    exports.run();
-}
+    if (module === require.main) {
+        minitest.run();
+    }
+})();

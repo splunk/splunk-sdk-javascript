@@ -2,7 +2,7 @@ var sys = require("sys");
 var colours = require("./colours");
 var fs = require('fs')
 var util = require('util')
-
+var assert = require('assert');
 
 /* suite */
 function Suite () {
@@ -24,6 +24,18 @@ Suite.prototype.register = function (context) {
   this.contexts.push(context);
 };
 
+Suite.prototype.run = function(context) {
+  if (context) {
+    assert.ok(this.contexts.indexOf(context) > -1);
+    context.run();
+  }
+  else {
+    this.contexts.forEach(function(context, index) {
+      context.run();
+    });
+  }
+}
+
 // there is only one suite instance
 var suite = exports.suite = new Suite();
 
@@ -32,10 +44,21 @@ function Context (description, block) {
   this.tests = [];
   this.block = block;
   this.description = description;
+  this.setupContextBlock = function(done) { done(); }
+  this.teardownContextBlock = function(done) { done(); }
+  this.setupTestBlock = function(done) { done(); }
+  this.teardownTestBlock = function(done) { done(); }
 };
 
 Context.prototype.run = function () {
-  this.block.call(this);
+  var context = this;
+  context.block.call(context);
+
+  context.setupContextBlock.call(context, function() {
+    context.tests.forEach(function(test) {
+      test.run();
+    })
+  });
 };
 
 Context.prototype.register = function (test) {
@@ -48,31 +71,69 @@ Context.prototype.report = function () {
   });
 };
 
+Context.prototype.assertion = function (description, block) {
+  var test = new Test(this, description, block, this.setupTestBlock, this.teardownTestBlock);
+  this.register(test);
+};
+
+Context.prototype.setupContext = function (block) {
+  this.setupContextBlock = block;
+};
+
+Context.prototype.teardownContext = function(block) {
+  this.teardownContextBlock = block;
+}
+
+Context.prototype.setupTest = function (block) {
+  this.setupTestBlock = block;
+};
+
+Context.prototype.teardownTest = function(block) {
+  this.teardownTestBlock = block;
+}
+
 /* test */
-function Test (description, block, setupBlock) {
+function Test (context, description, block, setupBlock, teardownBlock) {
+  this.context = context;
   this.description = description;
   this.block = block;
   this.setupBlock = setupBlock;
+  this.teardownBlock = teardownBlock;
+  this.assert = setupAsserts(this);
 };
 
 Test.prototype.run = function () {
-  try {
-    if (this.setupBlock) {
-      this.setupBlock.call(this);
-    };
+  var test = this;
+  var runTest = function() {
+    try {
+      test.block.call(test, test);
+    }
+    catch (error) {
+      test.failed(error);
+    }
+  };
 
-    this.block.call(this, this);
+  try {
+    this.setupBlock.call(this, function() {
+      runTest();
+    });
   } catch(error) {
     this.failed(error);
   };
 };
 
 Test.prototype.finished = function () {
-  this.result = this.reportSuccess();
+  var test = this;
+  this.teardownBlock.call(this, function() {
+    test.result = test.reportSuccess();
+  });
 };
 
 Test.prototype.failed = function (error) {
-  this.result = this.reportError(error);
+  var test = this;
+  this.teardownBlock.call(this, function() {
+    test.result = test.reportError(error);
+  });
 };
 
 Test.prototype.report = function () {
@@ -110,7 +171,6 @@ Test.prototype.reportNotFinished = function () {
 function context (description, block) {
   var context = new Context(description, block);
   suite.register(context);
-  context.run();
 };
 
 /*
@@ -124,15 +184,6 @@ function context (description, block) {
       });
     });
 */
-Context.prototype.assertion = function (description, block) {
-  var test = new Test(description, block, this.setupBlock);
-  this.register(test);
-  test.run();
-};
-
-Context.prototype.setup = function (block) {
-  this.setupBlock = block;
-};
 
 function runAtExit () {
   process.addListener("exit", function () {
@@ -147,7 +198,13 @@ function setupUncaughtExceptionListener () {
   // so we could just set test.result, so everything would be
   // reported properly on the correct place, not in the middle of tests
   process.addListener("uncaughtException", function (error) {
-    console.log(Test.prototype.reportError(error));
+    if (!error.__test) {
+      console.log(Test.prototype.reportError(error));
+    }
+    else {
+      var test = error.__test;
+      test.failed(error);
+    }
   });
 };
 
@@ -221,6 +278,34 @@ var patchedConsoleLog = function() {
     consoleFlush(str);
 }
 
+var setupAsserts = function(test) {
+  var newAssert = {};
+  for(var key in assert) {
+    if (assert.hasOwnProperty(key) && key !== "AssertionError") {
+      (function() {
+        var keyName = key;
+        newAssert[keyName] = function() {
+          try {
+            assert[keyName].apply(assert, arguments);
+          }
+          catch (err) {
+            err.__test = test;
+            throw err;
+          }
+        }
+      })();
+    }
+  }
+
+  return newAssert;
+};
+
+var run = function() {
+  setupListeners();
+
+  suite.run();
+}
+
 /* exports */
 exports.Context = Context;
 exports.Test = Test;
@@ -228,3 +313,4 @@ exports.context = context;
 exports.runAtExit = runAtExit;
 exports.setupUncaughtExceptionListener = setupUncaughtExceptionListener;
 exports.setupListeners = setupListeners;
+exports.run = run;

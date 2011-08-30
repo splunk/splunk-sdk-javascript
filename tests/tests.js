@@ -18,17 +18,18 @@
     var fs = require('fs');
     var runforcover = require("../external/runforcover");
     var minitest = require('../external/minitest');
-
-    minitest.setupListeners();
+    
     var coverage = runforcover.cover();
 
     // Building block tests
-    require('./test_http').run();
-    require('./test_promise').run();
+    require('./test_http');
+    require('./test_promise');
 
     // Splunk tests
-    require('./test_binding').run();
-    require('./test_client').run();
+    require('./test_binding');
+    require('./test_client');
+
+    minitest.run();
 
     // Delete a directory recursively
     var rmdirRecursiveSync = function(dirPath) {
