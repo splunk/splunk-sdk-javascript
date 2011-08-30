@@ -19,6 +19,8 @@ exports.run = (function() {
     var minitest    = require('../external/minitest');
     var assert      = require('assert');
 
+    minitest.setupListeners();
+
     var http = new NodeHttp(false);
 
     minitest.context("HTTP GET Tests", function() {
@@ -676,6 +678,5 @@ exports.run = (function() {
 }); 
 
 if (module === require.main) {
-    require('../external/minitest').setupListeners();
     exports.run();
 }

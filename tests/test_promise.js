@@ -19,6 +19,8 @@ exports.run = (function() {
     var assert   = require('assert');
     var _        = require('../external/underscore.js');
 
+    minitest.setupListeners();
+
     minitest.context("Promise Tests", function() {
         this.setup(function() {
 
@@ -1151,7 +1153,6 @@ exports.run = (function() {
 });
 
 if (module === require.main) {
-    require('../external/minitest').setupListeners();
     exports.run();
 }
 

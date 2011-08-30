@@ -151,9 +151,13 @@ function setupUncaughtExceptionListener () {
   });
 };
 
+var areListenersSetup = false;
 function setupListeners () {
-  setupUncaughtExceptionListener();
-  runAtExit();
+  if (!areListenersSetup) {
+    setupUncaughtExceptionListener();
+    runAtExit();
+    areListenersSetup = true;
+  }
 };
 
 /* Monkey patching */

@@ -22,6 +22,8 @@ exports.run = (function() {
     var Promise     = Splunk.Promise;
     var Async       = Splunk.Async;
 
+    minitest.setupListeners();
+
     var http = new NodeHttp();
     var svc = new Splunk.Client.Service(http, { 
         scheme: "http",
@@ -209,6 +211,5 @@ exports.run = (function() {
 }); 
 
 if (module === require.main) {
-    require('../external/minitest').setupListeners();
     exports.run();
 }
