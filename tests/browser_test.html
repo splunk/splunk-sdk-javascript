@@ -23,14 +23,28 @@
           password: "changeme",
       });
   
-      svc.login(function(success) {   
-        var jobs = svc.jobs();
-        jobs.list(function(list) {
-          for(var i = 0; i < list.length; i++) {
-            console.log("  job: "  + list[i].sid);
+      var loginP = svc.login();
+      loginP.whenResolved(function() {
+        var jobP = svc.get("search/jobs/1234_nosuchjob");
+        jobP.when(
+          function() {
+            console.log("Success: ", arguments);
+          },
+          function() {
+            console.log("Failure: ", arguments);
           }
-        });
+        );
       });
+      /*var jobsP = loginP.whenResolved(function() { return svc.jobs(); });
+      var finalP = jobsP.whenResolved(function(list) {
+        for(var i = 0; i < list.length; i++) {
+          console.log("  job: "  + list[i].sid);
+        }
+      });
+
+      finalP.whenFailed(function() {
+        console.log("Failure: ", arguments);
+      });*/
       
     </script>
   </body>

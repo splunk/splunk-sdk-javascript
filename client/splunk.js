@@ -2220,13 +2220,11 @@ require.modules["/lib/client.js"] = function () {
     root.Endpoint = Class.extend({
         init: function(service, path) {
             if (!service) {
-                console.log("Passed in a null Service.");
-                return;
+                throw new Error("Passed in a null Service.");
             }
 
             if (!path) {
-                console.log("Passed in an empty path.");
-                return;
+                throw new Error("Passed in an empty path.");
             }
 
             this.service = service;
@@ -2901,6 +2899,19 @@ require.modules["/platform/client/jquery_http.js"] = function () {
 
     var root = exports || this;
 
+    var getHeaders = function(headersString) {
+        var headers = {};
+        var headerLines = headersString.split("\n");
+        for(var i = 0; i < headerLines.length; i++) {
+            if (headerLines[i].trim() !== "") {
+                var headerParts = headerLines[i].split(": ");
+                headers[headerParts[0]] = headerParts[1];
+            }
+        }
+
+        return headers;
+    }
+
     root.JQueryHttp = Splunk.Http.extend({
         init: function(isSplunk) {
             this._super(isSplunk);
@@ -2915,18 +2926,23 @@ require.modules["/platform/client/jquery_http.js"] = function () {
                 dataType: "json",
                 success: utils.bind(this, function(data, error, res) {
                     var response = {
-                        statusCode: res.status
+                        statusCode: res.status,
+                        headers: getHeaders(res.getAllResponseHeaders())
                     };
 
                     var complete_response = this._buildResponse(error, response, data);
                     callback(complete_response);
                 }),
-                error: utils.bind(this, function(xhr, textStatus, errorThrown) {
-                    console.log("error!");
-                         
-                    console.log("xhr: ", xhr);
-                    console.log("status: ", textStatus);
-                    console.log("error: ", errorThrown);
+                error: utils.bind(this, function(res, data, error) {
+                    var response = {
+                        statusCode: res.status,
+                        headers: getHeaders(res.getAllResponseHeaders())
+                    };
+
+                    var json = JSON.parse(res.responseText);
+
+                    var complete_response = this._buildResponse(error, response, json);
+                    callback(complete_response);
                 }),
             };
 
