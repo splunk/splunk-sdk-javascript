@@ -22,7 +22,7 @@ exports.run = (function() {
     minitest.context("Promise Tests", function() {
         this.setup(function() {
 
-        });       
+        });
         
         this.assertion("Simple promise#when resolve", function(test) {
             var resolver = new Promise.Resolver();
@@ -509,7 +509,7 @@ exports.run = (function() {
                     var resolver2 = new Promise.Resolver();
                     var p2 = resolver2.promise;
 
-                    setTimeout(function() { resolver2.resolve(v1 * 2); }, 500);
+                    setTimeout(function() { resolver2.resolve(v1 * 2); }, 200);
 
                     return p2;
                 },
@@ -966,25 +966,6 @@ exports.run = (function() {
                 assert.strictEqual(v1, 3);
                 test.finished();
             });
-        });      
-
-        
-        this.assertion("Simple promise#join two", function(test) {
-            var resolver = new Promise.Resolver();
-            var p1 = resolver.promise;
-
-            var resolver2 = new Promise.Resolver();
-            var p2 = resolver2.promise;
-
-            var pJoined = Promise.join(p1, p2);
-
-            pJoined.when(function(v1, v2) {
-                assert.strictEqual(v1 + v2, 15);
-                test.finished();
-            });
-
-            resolver.resolve(5);
-            resolver2.resolve(10);
         });
         
         this.assertion("Simple promise#chain join two", function(test) {
@@ -1078,7 +1059,7 @@ exports.run = (function() {
             resolver.resolve(5);
         });
         
-        this.assertion("Simple promise#chain join array", function(test) {
+        this.assertion("Simple promise#chain join array array", function(test) {
             var resolver = new Promise.Resolver();
             var p1 = resolver.promise;
 

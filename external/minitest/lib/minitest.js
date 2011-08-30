@@ -1,5 +1,8 @@
 var sys = require("sys");
 var colours = require("./colours");
+var fs = require('fs')
+var util = require('util')
+
 
 /* suite */
 function Suite () {
@@ -133,7 +136,9 @@ Context.prototype.setup = function (block) {
 
 function runAtExit () {
   process.addListener("exit", function () {
+    console.log = patchedConsoleLog;
     suite.report();
+    console.log = originalConsoleLog;
   });
 };
 
@@ -150,6 +155,67 @@ function setupListeners () {
   setupUncaughtExceptionListener();
   runAtExit();
 };
+
+/* Monkey patching */
+if (!util.format) {
+  var formatRegExp = /%[sdj%]/g;
+  util.format = function(f) {
+    if (typeof f !== 'string') {
+      var objects = [];
+      for (var i = 0; i < arguments.length; i++) {
+        objects.push(inspect(arguments[i]));
+      }
+      return objects.join(' ');
+    }
+
+    var i = 1;
+    var args = arguments;
+    var len = args.length;
+    var str = String(f).replace(formatRegExp, function(x) {
+      if (i >= len) return x;
+      switch (x) {
+        case '%s': return String(args[i++]);
+        case '%d': return Number(args[i++]);
+        case '%j': return JSON.stringify(args[i++]);
+        case '%%': return '%';
+        default:
+          return x;
+      }
+    });
+    for (var x = args[i]; i < len; x = args[++i]) {
+      if (x === null || typeof x !== 'object') {
+        str += ' ' + x;
+      } else {
+        str += ' ' + inspect(x);
+      }
+    }
+    return str;
+  }
+}
+
+var consoleFlush = function(data) {
+  if (!Buffer.isBuffer(data)) {
+    data= new Buffer(''+ data);
+  }
+  
+  if (data.length) {
+    var written= 0;
+    do {
+      try {
+        var len = data.length- written;
+        written += fs.writeSync(process.stdout.fd, data, written, len, -1);
+      }
+      catch (e) {
+      }
+    } while(written < data.length);
+  }
+}
+
+var originalConsoleLog = console.log;
+var patchedConsoleLog = function() {
+    var str = util.format.apply(null, arguments) + "\n";
+    consoleFlush(str);
+}
 
 /* exports */
 exports.Context = Context;

@@ -152,7 +152,7 @@ exports.run = (function() {
                 var doneP = jobP.when(function(createdJob) {
                     job = createdJob;
                     var properties = {};
-                    return Promise.while({
+                    return Promise.join(job, Promise.while({
                         condition: function() { return properties.dispatchState !== "DONE"; },
                         body: function() {
                             return job.read().whenResolved(function(response) {
@@ -161,7 +161,7 @@ exports.run = (function() {
                                 return Promise.sleep(1000);
                             });
                         }
-                    });
+                    }));
                 });
                 var resultsP = doneP.whenResolved(function(job) {
                     return job.results(); 
