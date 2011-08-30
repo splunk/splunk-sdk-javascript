@@ -1130,7 +1130,7 @@ exports.run = (function() {
                     return Promise.join(v1 * 2);
                 },
                 function(v1) {
-                    return Promise.Success(v1 * 3)
+                    return Promise.Success(v1 * 3);
                 },
                 function(v1) {
                     return Promise.join(v1, v1);

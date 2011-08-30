@@ -115,7 +115,6 @@ exports.run = (function() {
                 var containsP = jobP.when(utils.bind(this, function(job) {   
                     assert.ok(job);
                     assert.strictEqual(job.sid, sid);
-                    console.log("looking for: " + sid);
                     return Promise.join(job, this.service.jobs().contains(sid));
                 }));
                 var cancelP = containsP.when(function(job, contains) {
