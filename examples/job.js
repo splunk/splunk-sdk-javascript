@@ -14,12 +14,13 @@
 // under the License.
 
 (function() {
-    var Splunk          = require('../lib/client.js');
+    var Splunk          = require('../splunk').Splunk;
     var Class           = require('../lib/jquery.class').Class;
     var utils           = require('../lib/utils');
     var Async           = require('../lib/async');
     var OptionParser    = require('../external/parseopt').OptionParser;
     var NodeHttp        = require('../platform/node/node_http').NodeHttp;
+    var Promise         = Splunk.Promise;
 
     var FLAGS_CREATE = [
         "search", "earliest_time", "latest_time", "now", "time_format",
@@ -108,18 +109,21 @@
             // we check whether it is the job we're looking for.
             // If it is, we wrap it up in a Splunk.Job object, and invoke
             // our function on it.
-            this.service.jobs().list(utils.bind(this, function(list) {
-                list = list || [];
+            return this.service.jobs().list().whenResolved(utils.bind(this, function(list) {
+                var list = list || [];
+                var promises = []
                 for(var i = 0; i < list.length; i++) {
                     if (utils.contains(sids, list[i].sid)) {
-                        var job = new Splunk.Job(this.service, list[i].sid);
-                        fn(job);
+                        var job = new Splunk.Client.Job(this.service, list[i].sid);
+                        promises.push(fn(job));
                     }
                 }
+                
+                return Promise.join.apply(null, promises);
             }));
         },
 
-        run: function(command, args, callback) {
+        run: function(command, args) {
             var commands = {
                 'cancel':       this.cancel,
                 'create':       this.create,
@@ -158,7 +162,7 @@
             }
 
             // Invoke the command
-            handler(args, callback);
+            return handler(args);
         },
 
         // Cancel the specified search jobs
@@ -166,8 +170,8 @@
             _check_sids('cancel', sids);
 
             // For each of the supplied sids, cancel the job.
-            this._foreach(sids, function(job) {
-                job.cancel(function () { console.log("  Job " + job.sid + " cancelled"); }, callback);
+            return this._foreach(sids, function(job) {
+                return job.cancel(function () { console.log("  Job " + job.sid + " cancelled"); });
             });
         },
 
@@ -177,16 +181,16 @@
             var cmdline = _makeCommandLine("events", argv, FLAGS_EVENTS, false);
 
             // For each of the passed in sids, get the relevant events
-            this._foreach(cmdline.arguments, function(job) {
+            return this._foreach(cmdline.arguments, function(job) {
                 console.log("Job " + job.sid + ": "); 
 
-                job.events(cmdline.options, function(data) {
+                return job.events(cmdline.options, function(data) {
                     var events = data.data || [];
                     for(var i = 0; i < events.length; i++) {
                         console.log("  " + events[i]._raw[0].value[0]);
                     }
 
-                    callback(events);  
+                    return events;
                 });
             });
         },
@@ -198,7 +202,6 @@
 
             // If nothing was passed in, terminate
             if (!cmdline) {
-                callback();
                 return;
             }
 
@@ -209,9 +212,9 @@
             delete params.search;
 
             // Create the job
-            this.service.jobs().create(query, params, function(job) {
+            return this.service.jobs().create(query, params, function(job) {
                 console.log("Created job " + job.sid);
-                callback(job);
+                return job;
             });
         },
 
@@ -223,20 +226,20 @@
             if (sids.length === 0) {
                 // If no job SIDs are provided, we list all jobs.
                 var jobs = this.service.jobs();
-                jobs.list(function(list) {
+                return jobs.list(function(list) {
                     list = list || [];
                     for(var i = 0; i < list.length; i++) {
                         console.log("  Job " + (i + 1) + " sid: "+ list[i].sid);
                     }
 
-                    callback();
+                    return list;
                 });
             }
             else {
                 // If certain job SIDs are provided,
                 // then we simply read the properties of those jobs
-                this._foreach(sids, function(job) {
-                    job.read(function(response) {
+                return this._foreach(sids, function(job) {
+                    return job.read(function(response) {
                         console.log("Job " + job.sid + ": ");
                         var properties = response.odata.results;
                         for(var key in properties) {
@@ -248,7 +251,7 @@
                             console.log("  " + key + ": ", properties[key]);
                         }
                         
-                        callback(); 
+                        return properties;
                     });
                 });
             }
@@ -352,20 +355,27 @@
     var http = new NodeHttp();
 
     // Create our service context using the information from the command line
-    var svc = new Splunk.Service(http, { 
+    var svc = new Splunk.Client.Service(http, { 
         scheme: cmdline.options.scheme,
         host: cmdline.options.host,
         port: cmdline.options.port,
         username: cmdline.options.username,
         password: cmdline.options.password,
     });
-
-    svc.login(function(success) {
+    
+    var loginP = svc.login();
+    var doneP = loginP.whenResolved(function() {
         var program = new Program(svc);
         
-        // Now that we're logged in, we can execute the command and its arguments        
-        program.run(cmdline.arguments[0], cmdline.arguments.slice(1), function() {
-            console.log("done");
-        });
+        return program.run(cmdline.arguments[0], cmdline.arguments.slice(1)); 
     });
+    
+    doneP.when(
+        function() {
+            console.log("======================");
+        },
+        function() {
+            console.log("Error: ", arguments); 
+        }
+    );
 })();
