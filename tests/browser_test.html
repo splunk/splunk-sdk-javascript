@@ -11,7 +11,6 @@
     <script type="text/javascript" src="../build/splunk.js"></script>
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.js"></script>
     <script>
-      console.log(Splunk);
       var JQueryHttp = Splunk.JQueryHttp;
 
       http = new JQueryHttp();
@@ -23,7 +22,21 @@
           password: "changeme",
       });
   
+      // Login and list jobs
       var loginP = svc.login();
+      var jobsP = loginP.whenResolved(function() { return svc.jobs(); });
+      var finalP = jobsP.whenResolved(function(list) {
+        for(var i = 0; i < list.length; i++) {
+          console.log("  job: "  + list[i].sid);
+        }
+      });
+
+      // In case any of the requests fail
+      finalP.whenFailed(function() {
+        console.log("Failure: ", arguments);
+      });
+
+      // Show failure case
       loginP.whenResolved(function() {
         var jobP = svc.get("search/jobs/1234_nosuchjob");
         jobP.when(
@@ -35,16 +48,6 @@
           }
         );
       });
-      /*var jobsP = loginP.whenResolved(function() { return svc.jobs(); });
-      var finalP = jobsP.whenResolved(function(list) {
-        for(var i = 0; i < list.length; i++) {
-          console.log("  job: "  + list[i].sid);
-        }
-      });
-
-      finalP.whenFailed(function() {
-        console.log("Failure: ", arguments);
-      });*/
       
     </script>
   </body>
