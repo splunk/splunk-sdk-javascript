@@ -140,6 +140,11 @@
             // If we don't have any command, notify the user.
             if (!command) {
                 console.error("You must supply a command to run. Options are:");
+                for(var key in commands) {
+                    if (commands.hasOwnProperty(key)) {
+                        console.error("  " + key);
+                    }
+                }
                 return;
             }
 
