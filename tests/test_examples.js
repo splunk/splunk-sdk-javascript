@@ -14,6 +14,7 @@
 // under the License.
 
 exports.run = (function() {
+    var Promise     = require('../splunk').Splunk.Promise;
     var minitest    = require('../external/minitest');
     var fs          = require('fs');
     
@@ -125,6 +126,30 @@ exports.run = (function() {
                 return test.run("cancel", [create.id]);
             }).whenResolved(function() { 
                 test.finished(); 
+            });
+        });
+        
+        this.assertion("Create+list multiple jobs", function(test) {
+            var creates = [];
+            for(var i = 0; i < 3; i++) {
+                creates[i] = {
+                    search: "search index=_internal | head 1",
+                    id: getNextId()
+                };
+            }
+            var sids = creates.map(function(create) { return create.id; });
+            
+            var promises = [];
+            for(var i = 0; i < creates.length; i++) {
+                promises[i] = this.run("create", [], creates[i]);
+            }
+            
+            Promise.join.apply(null, promises).whenResolved(function() {
+                return test.run("list", sids);  
+            }).whenResolved(function() {
+                return test.run("cancel", sids);
+            }).whenResolved(function() {
+                test.finished();
             });
         });
     });

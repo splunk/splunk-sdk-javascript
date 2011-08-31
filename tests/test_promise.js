@@ -34,7 +34,7 @@
                 }
             );
 
-            setTimeout(function() { resolver.resolve(5); }, 1); 
+            process.nextTick(function() { resolver.resolve(5); }); 
         }); 
         
         this.assertion("Simple promise#when fail", function(test) {
@@ -490,7 +490,7 @@
             // This is a bit bogus - there's no way to know
             // that the never done promise will never be done,
             // but this is the closest I can get.
-            setTimeout(function() { test.finished(); }, 100);
+            process.nextTick(function() { test.finished(); });
         });
         
         this.assertion("Simple promise#chain with promise", function(test) {
@@ -504,7 +504,7 @@
                     var resolver2 = new Promise.Resolver();
                     var p2 = resolver2.promise;
 
-                    setTimeout(function() { resolver2.resolve(v1 * 2); }, 200);
+                    process.nextTick(function() { resolver2.resolve(v1 * 2); });
 
                     return p2;
                 },
@@ -538,7 +538,7 @@
                         var resolver2 = new Promise.Resolver();
                         var p2 = resolver2.promise;
                         
-                        setTimeout(function() { resolver2.resolve(v1 * 2); }, 500);
+                        process.nextTick(function() { resolver2.resolve(v1 * 2); });
                         
                         return p2;
                     },
@@ -577,7 +577,7 @@
                     var resolver2 = new Promise.Resolver();
                     var p2 = resolver2.promise;
 
-                    setTimeout(function() { resolver2.fail(v1 * 2); }, 500);
+                    process.nextTick(function() { resolver2.fail(v1 * 2); });
 
                     return p2;
                 },
@@ -785,16 +785,16 @@
         });
         
         this.assertion("Simple promise#sleep", function(test) {
-            Promise.sleep(500).whenResolved(function() { test.finished(); });
+            Promise.sleep(100).whenResolved(function() { test.finished(); });
         });
         
         this.assertion("Simple promise#sleep chaining", function(test) {
             var originalDate = new Date();
-            var doneP = Promise.sleep(500).whenResolved(
+            var doneP = Promise.sleep(100).whenResolved(
                 function() { 
-                    return Promise.sleep(500).whenResolved(
+                    return Promise.sleep(100).whenResolved(
                         function() {
-                            return Promise.sleep(500);
+                            return Promise.sleep(100);
                         }
                     );
                 }
@@ -804,7 +804,7 @@
                 function() {
                     var newDate = new Date();
                     var delta = newDate - originalDate;
-                    test.assert.ok(delta > 1300);
+                    test.assert.ok(delta > 200);
                     test.finished();
                 }
             );
@@ -837,34 +837,33 @@
         });
         
         this.assertion("Simple promise#progress multiple", function(test) {
-            // Set start and end times
-            var start = new Date();
-            var end = new Date(start);
-            end.setMilliseconds(start.getMilliseconds() + 2000);
-
             var resolver = new Promise.Resolver();
             var p1 = resolver.promise;
+            
+            var reports = [0.25, 0.5];
+            var numReports = reports.length;
 
             var progressReports = 0;
             p1.onProgress(
                 function(prg) {
-                    test.assert.ok(prg.percent < 1.0);
+                    var expectedPercent = reports.shift();
+                    test.assert.strictEqual(prg.percent, expectedPercent);
                     progressReports++;
                 }
             );
-
-            var timer = setInterval(function() {
-                var now = new Date();
-                var pct = (now - start) / (end - start);
-
-                var success = resolver.progress({percent: pct});
-                test.assert.ok(success);
-            }, 100);
+            
+            for(var i = 0; i < reports.length; i++) {
+                (function(index) {
+                    var reportsCopy = reports.slice();
+                    process.nextTick(function() { 
+                        var success = resolver.progress({percent: reportsCopy[index]});
+                        test.assert.ok(success);
+                    })})(i);
+            }
 
             p1.when(
                 function() {
-                    clearInterval(timer);
-                    test.assert.ok(progressReports > 1);
+                    test.assert.strictEqual(progressReports, numReports);
                     test.finished();
                 },
                 function() {
@@ -872,7 +871,7 @@
                 }
             );
 
-            Promise.sleep(800).whenResolved(
+            process.nextTick(
                 function() {
                     resolver.resolve();
                 }
