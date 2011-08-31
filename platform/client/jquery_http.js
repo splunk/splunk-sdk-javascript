@@ -63,7 +63,7 @@
 
                     var complete_response = this._buildResponse(error, response, json);
                     callback(complete_response);
-                }),
+                })
             };
 
             console.log("URL: " + params.url);
