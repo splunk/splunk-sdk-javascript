@@ -30,7 +30,7 @@
         }
 
         return headers;
-    }
+    };
 
     root.JQueryHttp = Splunk.Http.extend({
         init: function(isSplunk) {

@@ -110,8 +110,8 @@
             // If it is, we wrap it up in a Splunk.Job object, and invoke
             // our function on it.
             return this.service.jobs().list().whenResolved(utils.bind(this, function(list) {
-                var list = list || [];
-                var promises = []
+                list = list || [];
+                var promises = [];
                 for(var i = 0; i < list.length; i++) {
                     if (utils.contains(sids, list[i].sid)) {
                         var job = new Splunk.Client.Job(this.service, list[i].sid);

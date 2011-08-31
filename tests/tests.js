@@ -58,7 +58,7 @@
         }
 
         // Make the 'html' directory again
-        fs.mkdirSync(htmlDirPath, 0755);
+        fs.mkdirSync(htmlDirPath, "0755");
 
         coverage(function(coverageData) { 
             var files = [];   
