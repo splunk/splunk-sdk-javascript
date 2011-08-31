@@ -184,7 +184,7 @@
             return this._foreach(cmdline.arguments, function(job) {
                 console.log("Job " + job.sid + ": "); 
 
-                return job.events(cmdline.options, function(data) {
+                return job.events(cmdline.options).whenResolved(function(data) {
                     var events = data.data || [];
                     for(var i = 0; i < events.length; i++) {
                         console.log("  " + events[i]._raw[0].value[0]);
@@ -212,7 +212,7 @@
             delete params.search;
 
             // Create the job
-            return this.service.jobs().create(query, params, function(job) {
+            return this.service.jobs().create(query, params).whenResolved(function(job) {
                 console.log("Created job " + job.sid);
                 return job;
             });
@@ -226,7 +226,7 @@
             if (sids.length === 0) {
                 // If no job SIDs are provided, we list all jobs.
                 var jobs = this.service.jobs();
-                return jobs.list(function(list) {
+                return jobs.list().whenResolved(function(list) {
                     list = list || [];
                     for(var i = 0; i < list.length; i++) {
                         console.log("  Job " + (i + 1) + " sid: "+ list[i].sid);
