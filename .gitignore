@@ -4,3 +4,4 @@
 tests/html/*
 *.out
 *DS_Store
+*.sublime-*

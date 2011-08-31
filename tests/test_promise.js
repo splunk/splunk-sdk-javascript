@@ -840,7 +840,7 @@
             // Set start and end times
             var start = new Date();
             var end = new Date(start);
-            end.setMilliseconds(start.getMilliseconds() + 1000);
+            end.setMilliseconds(start.getMilliseconds() + 2000);
 
             var resolver = new Promise.Resolver();
             var p1 = resolver.promise;
@@ -1141,6 +1141,17 @@
             });
 
             resolver.resolve(5);
+        });
+        
+        this.assertion("Simple promise#promise failure value", function(test) {
+            var p1 = Promise.Failure(4);
+
+            p1.whenFailed(
+                function(reason) {
+                    test.assert.strictEqual(reason, 4);
+                    test.finished();
+                }
+            );
         });
     });
 

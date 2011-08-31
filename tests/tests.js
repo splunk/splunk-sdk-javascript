@@ -28,6 +28,7 @@
     // Splunk tests
     require('./test_binding');
     require('./test_client');
+    require('./test_examples');
 
     minitest.run();
 

@@ -149,7 +149,8 @@
                         console.error("  " + key);
                     }
                 }
-                return;
+                
+                return Promise.Failure("No command was specified.");
             }
 
             // Get the handler
@@ -158,7 +159,7 @@
             // If there is no handler (because the user specified an invalid command,
             // then we notify the user as an error.
             if (!handler) {
-                throw new Error("Unrecognized command: " + command);
+                Promise.Failure("Unrecognized command: " + command);
             }
 
             // Invoke the command
@@ -335,47 +336,54 @@
 
     });
 
-    // Try and parse the command line
-    var cmdline = null;
-    try {
-        cmdline = parser.parse();
-    }
-    catch(e) {
-        // If we failed, then we print out the error message, and then the usage
-        console.log(e.message);
-        parser.usage();
-    }
-
-    // If there is no command line, we should return
-    if (!cmdline) {
-        return;
-    }
-
-    // Create our HTTP request class for node.js
-    var http = new NodeHttp();
-
-    // Create our service context using the information from the command line
-    var svc = new Splunk.Client.Service(http, { 
-        scheme: cmdline.options.scheme,
-        host: cmdline.options.host,
-        port: cmdline.options.port,
-        username: cmdline.options.username,
-        password: cmdline.options.password,
-    });
-    
-    var loginP = svc.login();
-    var doneP = loginP.whenResolved(function() {
-        var program = new Program(svc);
-        
-        return program.run(cmdline.arguments[0], cmdline.arguments.slice(1)); 
-    });
-    
-    doneP.when(
-        function() {
-            console.log("======================");
-        },
-        function() {
-            console.log("Error: ", arguments); 
+    exports.main = function(argv) {        
+        // Try and parse the command line
+        var cmdline = null;
+        try {
+            cmdline = parser.parse(argv);
         }
-    );
+        catch(e) {
+            // If we failed, then we print out the error message, and then the usage
+            console.log(e.message);
+            parser.usage();
+        }
+        
+        // If there is no command line, we should return
+        if (!cmdline) {
+            return Promise.Failure("Error in parsing command line parameters");
+        }
+        
+        // Create our HTTP request class for node.js
+        var http = new NodeHttp();
+        
+        // Create our service context using the information from the command line
+        var svc = new Splunk.Client.Service(http, { 
+            scheme: cmdline.options.scheme,
+            host: cmdline.options.host,
+            port: cmdline.options.port,
+            username: cmdline.options.username,
+            password: cmdline.options.password,
+        });
+        
+        var loginP = svc.login();
+        var doneP = loginP.whenResolved(function() {
+            var program = new Program(svc);
+            
+            return program.run(cmdline.arguments[0], cmdline.arguments.slice(1)); 
+        });
+        
+        return doneP.when(
+            function() {
+                console.log("======================");
+            },
+            function(reason) {
+                console.log("Error: " + reason); 
+                return Promise.Failure();
+            }
+        );
+    };
+    
+    if (module === require.main) {
+        exports.main();
+    }
 })();
