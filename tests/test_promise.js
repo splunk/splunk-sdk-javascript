@@ -1152,6 +1152,28 @@
                 }
             );
         });
+        
+        this.assertion("Simple promise#while progress", function(test) {
+            var count = 0;
+            var whileP = Promise.while({
+                condition: function() { return count < 5; },
+                body: function() {
+                    count++;
+                },
+                progress: function(index) {
+                    test.assert.strictEqual(index + 1, count);
+                    return count;
+                }
+            });
+            
+            whileP.onProgress(function(v) {
+                test.assert.strictEqual(v, count);
+            });
+            
+            whileP.whenResolved(function() {
+                test.finished(); 
+            });
+        });
     });
 
     if (module === require.main) {
