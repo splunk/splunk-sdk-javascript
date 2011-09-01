@@ -355,7 +355,8 @@ require.modules["/splunk.js"] = function () {
         Async           : require('./lib/async'),
         Paths           : require('./lib/paths').Paths,
         Class           : require('./lib/jquery.class').Class,
-        Promise         : require('./lib/promise').Promise
+        Promise         : require('./lib/promise').Promise,
+        Searcher        : require('./lib/searcher.js')
     };
 })();;
     }).call(module.exports);
@@ -1164,6 +1165,7 @@ require.modules["/lib/promise.js"] = function () {
         // to hit the stack limit. As such, we keep passing the resolver
         // to each iteration, so that we're only ever dealing with one promise.
         whileObj.resolver = whileObj.resolver || new root.Promise.Resolver();
+        whileObj.progress = whileObj.progress || function() {};
 
         if (whileObj.condition()) {
             whileObj.iteration = iteration + 1;
@@ -1176,6 +1178,10 @@ require.modules["/lib/promise.js"] = function () {
             // As long as it is not a failed promise, we'll keep executing.
             resultP.when(
                 function() {
+                    // Then a progress report
+                    whileObj.resolver.progress(whileObj.progress(iteration));
+                    
+                    // And do the next iteration
                     root.Promise["while"](whileObj);
                 },
                 function() {
@@ -1185,6 +1191,10 @@ require.modules["/lib/promise.js"] = function () {
             
         }
         else {
+            // Report progress one more time
+            whileObj.resolver.progress(whileObj.progress(iteration));
+            
+            // And resolve the promise;
             whileObj.resolver.resolve();
         }
 
@@ -1267,12 +1277,14 @@ require.modules["/lib/utils.js"] = function () {
         };
     };
     
+    root.toString = Object.prototype.toString;
+    
     root.toArray = function(iterable) {
         return Array.prototype.slice.call(iterable);
-    }  
+    };
     
     root.isArray = Array.isArray || function(obj) {
-        return toString.call(obj) === '[object Array]';
+        return root.toString.call(obj) === '[object Array]';
     };
 })();;
     }).call(module.exports);
@@ -1497,7 +1509,22 @@ require.modules["/lib/client.js"] = function () {
 
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
-            this.read = utils.bind(this, this.read);
+            this.cancel         = utils.bind(this, this.cancel);
+            this.disablePreview = utils.bind(this, this.disablePreview);
+            this.enablePreview  = utils.bind(this, this.enablePreview);
+            this.events         = utils.bind(this, this.events);
+            this.finalize       = utils.bind(this, this.finalize);
+            this.pause          = utils.bind(this, this.pause);
+            this.preview        = utils.bind(this, this.preview);
+            this.read           = utils.bind(this, this.read);
+            this.results        = utils.bind(this, this.results);
+            this.searchlog      = utils.bind(this, this.searchlog);
+            this.setPriority    = utils.bind(this, this.setPriority);
+            this.setTTL         = utils.bind(this, this.setTTL);
+            this.summary        = utils.bind(this, this.summary);
+            this.timeline       = utils.bind(this, this.timeline);
+            this.touch          = utils.bind(this, this.touch);
+            this.unpause        = utils.bind(this, this.unpause);
         },
 
         cancel: function(callback) {
@@ -1513,7 +1540,14 @@ require.modules["/lib/client.js"] = function () {
         },
 
         events: function(params, callback) {
-            return this.get("events", params, function(response) { callback(response.odata.results); });
+            callback = utils.callbackToObject(callback);
+            return this.get("events", params).when(
+                function(response) { 
+                    callback.success(response.odata.results); 
+                    return response.odata.results;
+                },
+                generalErrorHandler(callback)
+            );
         },
 
         finalize: function(callback) {
@@ -1997,6 +2031,140 @@ require.modules["/lib/async.js"] = function () {
     return module.exports;
 };
 
+require.modules["/lib/searcher.js"] = function () {
+    var module = { exports : {} };
+    var exports = module.exports;
+    var __dirname = "/lib";
+    var __filename = "/lib/searcher.js";
+    
+    var require = function (file) {
+        return __require(file, "/lib");
+    };
+    
+    require.resolve = function (file) {
+        return __require.resolve(name, "/lib");
+    };
+    
+    require.modules = __require.modules;
+    __require.modules["/lib/searcher.js"]._cached = module.exports;
+    
+    (function () {
+        
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+(function() {
+    var client  = require('./client');
+    var Class   = require('./jquery.class').Class;
+    var Promise = require('./promise').Promise;
+    
+    var root = exports || this;
+
+    // An endpoint is the basic handler. It is associated with an instance
+    // of a Service and a path (such as /search/jobs/{SID}/), and
+    // provide the relevant functionality.
+    root.JobManager = Class.extend({
+        init: function(service, job) {
+            this.service = service;
+            this.job = job;
+            this.isJobDone = false;
+        },
+        
+        done: function() {
+            if (this.donePromise) {
+                return this.donePromise;
+            }
+            
+            var manager = this;
+            var job = this.job;
+            var properties = {};
+            this.donePromise = Promise.while({
+                condition: function() { return properties.dispatchState !== "DONE"; },
+                body: function(index) {
+                    return job.read().whenResolved(function(response) {
+                        properties = response.odata.results;
+                        return Promise.sleep(1000); 
+                    });
+                },
+                progress: function(index) {
+                    return properties;
+                }
+            });
+            
+            this.donePromise.when(
+                function() {
+                    manager.isJobDone = true;
+                },
+                function() {
+                    manager.isJobDone = true;
+                }
+            );
+            
+            return this.donePromise;
+        },
+        
+        isDone: function() {
+            return this.isJobDone;
+        },
+        
+        eventsIterator: function(resultsPerPage) {
+            return new root.Iterator(this, this.job.events, resultsPerPage);  
+        },
+        
+        resultsIterator: function(resultsPerPage) {
+            return new root.Iterator(this, this.job.results, resultsPerPage);  
+        },
+        
+        previewIterator: function(resultsPerPage) {
+            return new root.Iterator(this, this.job.preview, resultsPerPage);  
+        }
+    });
+    
+    root.Iterator = Class.extend({
+        init: function(manager, endpoint, resultsPerPage) {
+            this.manager = manager;
+            this.endpoint = endpoint;
+            this.resultsPerPage = resultsPerPage || 0;
+            this.currentOffset = 0;
+        },
+        
+        next: function() {
+            var iterator = this;
+            var params = {
+                count: this.resultsPerPage,
+                offset: this.currentOffset
+            }
+            
+            return this.endpoint(params).whenResolved(function(results) {
+                var numResults = (results.data ? results.data.length : 0);
+                iterator.currentOffset += numResults;
+                
+                return Promise.Success(numResults > 0, results);
+            });
+        },
+        
+        reset: function() {
+            this.currentOffset = 0;
+        }
+    });
+})();;
+    }).call(module.exports);
+    
+    __require.modules["/lib/searcher.js"]._cached = module.exports;
+    return module.exports;
+};
+
 require.modules["/platform/client/jquery_http.js"] = function () {
     var module = { exports : {} };
     var exports = module.exports;
@@ -2047,7 +2215,7 @@ require.modules["/platform/client/jquery_http.js"] = function () {
         }
 
         return headers;
-    }
+    };
 
     root.JQueryHttp = Splunk.Http.extend({
         init: function(isSplunk) {
