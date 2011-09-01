@@ -25,6 +25,7 @@
         Async           : require('./lib/async'),
         Paths           : require('./lib/paths').Paths,
         Class           : require('./lib/jquery.class').Class,
-        Promise         : require('./lib/promise').Promise
+        Promise         : require('./lib/promise').Promise,
+        Searcher        : require('./lib/searcher.js')
     };
 })();
