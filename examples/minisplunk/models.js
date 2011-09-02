@@ -22,7 +22,7 @@ var performSearch = function(svc, query) {
     query = "search " + query;
   }
   
-  var jobP = svc.jobs().create(query);
+  var jobP = svc.jobs().create(query, {rf: "*"});
   
   return jobP.whenResolved(function(createdJob) {      
     job = createdJob;
@@ -48,7 +48,7 @@ var Event = Backbone.Model.extend({
 
 var Events = Backbone.Collection.extend({
   model: Event,
-  resultsPerPage: 5,
+  resultsPerPage: 100,
   
   initialize: function() {
     _.bindAll(this, "getResults", "setSearcher");
@@ -83,10 +83,25 @@ var Events = Backbone.Collection.extend({
       var baseOffset = page * this.resultsPerPage;
       var rows = [];
       for(var i = 0; i < data.length; i++) {
+        var index = parseInt(data[i]["__offset"]) + 1;
+        var timestamp = new Date(Date.parse(data[i]["_time"][0].value)).format("m/d/yy h:MM:ss.l TT");
+        var event = data[i]["_raw"][0].value[0];
+        var properties = [];
+        
+        for(var property in data[i]) {
+          if (data[i].hasOwnProperty(property) && !Splunk.Utils.startsWith(property, "_")) {
+            properties.push({
+              key: property,
+              value: data[i][property][0].value
+            });
+          }
+        }
+        
         var rowData = new Event({
-          index: parseInt(data[i]["__offset"]) + 1,
-          timestamp: new Date(Date.parse(data[i]["_time"][0].value)).format("m/d/yy h:MM:ss.l TT"),
-          event: data[i]["_raw"][0].value[0]
+          index: index,
+          timestamp: timestamp,
+          event: event,
+          properties: properties
         });
         
         rows.push(rowData);

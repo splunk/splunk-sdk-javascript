@@ -21,11 +21,11 @@ var templates = {
 }
 
 var EventView = Backbone.View.extend({
-  tagName: "tr",
+  tagName: "li",
   initialize: function() {
     this.template = templates.eventRow;
     
-    _.bindAll(this, "render", "showInfo");
+    _.bindAll(this, "render", "toggleInfo", "hideInfo");
   },
   
   render: function() {
@@ -36,11 +36,23 @@ var EventView = Backbone.View.extend({
   },
   
   events: {
-    "click" : "showInfo"
+    "click tr.result-data" : "toggleInfo",
+    "click a.close" : "hideInfo",
   },
   
-  showInfo: function() {
-    console.log("Show Info: ", this.model.get("index")); 
+  toggleInfo: function() {
+    var resultInfoCell = this.$("td.result-info");
+    if (resultInfoCell.hasClass("hidden")) {
+      App.events.trigger("event:info", this);
+      resultInfoCell.toggleClass("hidden");
+    }
+    else {
+      this.hideInfo();
+    }
+  },
+
+  hideInfo: function() {
+    this.$("td.result-info").addClass("hidden");
   }
 });
 
@@ -52,12 +64,13 @@ var EventsView = Backbone.View.extend({
   initialize: function() {
     this.template = templates.events;
     
-    _.bindAll(this, "render", "add", "reset", "hide", "show");
+    _.bindAll(this, "render", "add", "reset", "hide", "show", "eventInfo");
     
     this.collection.bind("add", this.add);
     this.collection.bind("reset", this.reset);
     
     App.events.bind("search:new", this.hide);
+    App.events.bind("event:info", this.eventInfo);
     
     this.renderedEvents = [];
     this.eventsContainer = this.options.container;
@@ -109,6 +122,14 @@ var EventsView = Backbone.View.extend({
   
   show: function() {
     $(this.el).removeClass("hidden");
+  },
+  
+  eventInfo: function(view) {
+    if (this.expandedEventView) {
+      this.expandedEventView.hideInfo();
+    }
+    
+    this.expandedEventView = view;
   }
 });
 
@@ -326,7 +347,7 @@ var SearchView = Backbone.View.extend({
     this.events = new Events();
     
     this.searchFormView = new SearchFormView({service: this.options.service});
-    this.eventsView = new EventsView({collection: this.events, container: "#results-table > tbody:last"});
+    this.eventsView = new EventsView({collection: this.events, container: "#results-list"});
     this.searchStatsView = new SearchStatsView({collection: this.events});
     this.paginationView = new PaginationView({collection: this.events});
   },

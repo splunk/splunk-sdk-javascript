@@ -8,9 +8,25 @@
     <meta name="author" content=""> 
  
     <script id="eventRowTemplate" type="text/x-jquery-tmpl">
-      <td>${index}</td>
-      <td>${timestamp}</td>
-      <td>${event}</td>
+      <table>
+        <tbody> 
+          <tr class="result-data">
+            <td class="id-cell">${index}</td>
+            <td class="date-cell">${timestamp}</td>
+            <td class="event-cell">${event}</td>
+          </tr>
+          <tr>
+            <td colspan="3" class="result-info hidden">
+              <a class="close" href="#">×</a>
+              <ul>
+              {{each properties}}
+                <li>${$value.key}: ${$value.value}</li>
+              {{/each}}
+              </ul>
+            </td>
+          </tr>
+        </tbody>
+      </table>
     </script>
  
     <script id="searchFormTemplate" type="text/x-jquery-tmpl">
@@ -51,18 +67,22 @@
     </script>
     
     <script id="eventsTemplate" type="text/x-jquery-tmpl">
-      <div class="span16 offset0"> 
-        <table id="results-table">
-          <thead> 
-            <tr> 
-              <th class="id-cell">#</th> 
-              <th class="date-cell">Date</th> 
-              <th class="event-cell">Event</th> 
-            </tr> 
-          </thead> 
-          <tbody> 
-          </tbody>
-        </table>        
+      <div class="span16 offset0">      
+        <ul class="results" id="results-header">
+          <li>
+            <table>
+              <thead> 
+                <tr> 
+                  <th class="id-cell">#</th> 
+                  <th class="date-cell">Date</th> 
+                  <th class="event-cell">Event</th> 
+                </tr> 
+              </thead> 
+            </table>
+          </li>
+        </ul>     
+        <ul class="results" id="results-list">
+        </ul>
       </div> 
     </script>
  
@@ -131,29 +151,69 @@
         display: none;
       }
       
-      #results-table td {
-        vertical-align: text-top;
-      }
-      
-      #results-table th.id-cell {
-      }
-      
-      #results-table th.date-cell {
-        width: 120px;
-      }
-      
-      #results-table th.event-cell {
-        white-space: wrap;
-      }
-      
       #results {
-        /*table-layout: fixed;*/
         overflow-x: auto;
         height: 80%;
       }
       
       div#pagination-row div.pagination {
         margin: 0px auto;
+      }
+      
+      ul.results {
+        list-style-type: none;
+        padding: 0px;
+        margin: 0px;
+      }
+      
+      .results td {
+        vertical-align: text-top;
+      }
+      
+      .results table {
+        table-layout: fixed;
+      }
+      
+      .results .id-cell {
+        width: 50px;
+        min-width: 50px;
+        max-width: 50px;
+      }
+      
+      .results .date-cell {
+        width: 120px;
+        min-width: 120px;
+        max-width: 120px;
+      }
+      
+      .results .event-cell {
+        white-space: wrap;
+      }
+      
+      .results td.result-info {
+        background: whiteSmoke;
+      }
+      
+      .results td.result-info .close {
+        float: right;
+        margin-top: -2px;
+        color: #000000;
+        font-size: 20px;
+        font-weight: bold;
+        text-shadow: 0 1px 0 #ffffff;
+        filter: alpha(opacity=20);
+        -khtml-opacity: 0.2;
+        -moz-opacity: 0.2;
+        opacity: 0.2;
+      }
+      
+      .results td.result-info .close:hover {
+        color: #000000;
+        text-decoration: none;
+        filter: alpha(opacity=40);
+        -khtml-opacity: 0.4;
+        -moz-opacity: 0.4;
+        opacity: 0.4;
       }
     </style>
   </head> 
@@ -173,9 +233,7 @@
     </div> 
  
     <div class="container" id="container"> 
-
-      <!-- Example row of columns --> 
-    </div> <!-- /container --> 
+    </div>
     
     <div class="container" id="footer-container">
       <footer> 

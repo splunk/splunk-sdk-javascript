@@ -926,7 +926,7 @@
             var counter = 0;
 
             var whileP = Promise.while({
-                condition: function() { return counter < 10; },
+                condition: function() { return counter < 1000; },
                 body: function() {
                     counter++;
 
@@ -935,7 +935,7 @@
             });
 
             whileP.whenResolved(function() {
-                test.assert.strictEqual(counter, 10);
+                test.assert.strictEqual(counter, 1000);
                 test.finished();
             });
         });
