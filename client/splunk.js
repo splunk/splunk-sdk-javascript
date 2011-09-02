@@ -2091,7 +2091,7 @@ require.modules["/lib/searcher.js"] = function () {
             var job = this.job;
             var properties = {};
             this.donePromise = Promise.while({
-                condition: function() { return properties.dispatchState !== "DONE"; },
+                condition: function() { return properties.dispatchState !== "DONE" && !manager.isJobDone; },
                 body: function(index) {
                     return job.read().whenResolved(function(response) {
                         properties = response.odata.results;
@@ -2113,6 +2113,11 @@ require.modules["/lib/searcher.js"] = function () {
             );
             
             return this.donePromise;
+        },
+        
+        cancel: function() {
+            this.job.cancel();
+            this.isJobDone = true;
         },
         
         isDone: function() {
@@ -2299,6 +2304,6 @@ process.nextTick(function () {
 // important functionality to the "window", such that others can easily
 // include it.
 
-this.Splunk = require('./splunk').Splunk;
-this.Splunk.JQueryHttp = require('./platform/client/jquery_http').JQueryHttp;;
+window.Splunk = require('./splunk').Splunk;
+window.Splunk.JQueryHttp = require('./platform/client/jquery_http').JQueryHttp;;
 });

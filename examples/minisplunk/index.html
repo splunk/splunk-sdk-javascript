@@ -33,6 +33,20 @@
         <span>Scanned: </span><strong id="scan-count">${scanCount}</strong>
       </div>
     </script>
+    
+    <script id="paginationTemplate" type="text/x-jquery-tmpl">
+      <div class="span16 offset0">  
+        <div class="pagination">
+          <ul>
+            <li class="prev {{if isPrevDisabled}}disabled{{/if}}"><a href="#">← Previous</a></li>
+          {{each items}}
+            <li class="number {{if $value.isDisabled}}disabled{{/if}} {{if $value.isCurrent}}active{{/if}}"><a href="#">${$value.number}</a></li>
+          {{/each}}
+            <li class="next {{if isNextDisabled}}disabled{{/if}}"><a href="#">Next →</a></li>
+          </ul>
+        </div>
+      </div> 
+    </script>
  
     <!-- Le HTML5 shim, for IE6-8 support of HTML elements --> 
     <!--[if lt IE 9]>
@@ -115,6 +129,11 @@
       #results {
         /*table-layout: fixed;*/
         overflow-x: auto;
+        height: 80%;
+      }
+      
+      div#pagination-row div.pagination {
+        margin: 0px auto;
       }
     </style>
   </head> 
@@ -142,7 +161,10 @@
       </div> 
       
       <div class="row" id="stats-row"> 
-      </div> 
+      </div>
+      
+      <div class="row" id="pagination-row"> 
+      </div>  
       
       <div class="row hidden" id="results"> 
         <div class="span16 offset0"> 
@@ -159,6 +181,7 @@
           </table>        
         </div> 
       </div> 
+      
       <footer> 
         <p>&copy; Splunk 2011</p> 
       </footer> 
