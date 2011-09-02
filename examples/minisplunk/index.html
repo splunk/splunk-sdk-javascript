@@ -14,15 +14,17 @@
     </script>
  
     <script id="searchFormTemplate" type="text/x-jquery-tmpl">
-      <form action class="form-stacked" id="search-form">
-        <div class="clearfix highlight">
-          <label for="searchbox">Search</label>
-          <div class="input-append">
-            <input id="searchbox" class="xxxlarge" name="searchbox" type="text">
-            <a href="" id="submit-search" class="add-on btn small primary">Search</a>
+      <div class="span16 offset0"> 
+        <form action class="form-stacked" id="search-form">
+          <div class="clearfix highlight">
+            <label for="searchbox">Search</label>
+            <div class="input-append">
+              <input id="searchbox" class="xxxlarge" name="searchbox" type="text">
+              <a href="" id="submit-search" class="add-on btn small primary">Search</a>
+            </div>
           </div>
-        </div>
-      </form>
+        </form>
+      </div> 
     </script>
  
     <script id="searchStatsTemplate" type="text/x-jquery-tmpl">
@@ -47,6 +49,22 @@
         </div>
       </div> 
     </script>
+    
+    <script id="eventsTemplate" type="text/x-jquery-tmpl">
+      <div class="span16 offset0"> 
+        <table id="results-table">
+          <thead> 
+            <tr> 
+              <th class="id-cell">#</th> 
+              <th class="date-cell">Date</th> 
+              <th class="event-cell">Event</th> 
+            </tr> 
+          </thead> 
+          <tbody> 
+          </tbody>
+        </table>        
+      </div> 
+    </script>
  
     <!-- Le HTML5 shim, for IE6-8 support of HTML elements --> 
     <!--[if lt IE 9]>
@@ -63,6 +81,8 @@
     <script type="text/javascript" src="date.format.js"></script>
     <script type="text/javascript" src="underscore.js"></script>
     <script type="text/javascript" src="backbone.js"></script>
+    <script type="text/javascript" src="models.js"></script>
+    <script type="text/javascript" src="views.js"></script>
     <script type="text/javascript" src="site.js"></script>
  
     <!-- Le fav and touch icons --> 
@@ -152,41 +172,16 @@
       </div> 
     </div> 
  
-    <div class="container"> 
+    <div class="container" id="container"> 
 
       <!-- Example row of columns --> 
-      <div class="row"> 
-        <div class="span16 offset0" id="search-row"> 
-        </div> 
-      </div> 
-      
-      <div class="row" id="stats-row"> 
-      </div>
-      
-      <div class="row" id="pagination-row"> 
-      </div>  
-      
-      <div class="row hidden" id="results"> 
-        <div class="span16 offset0"> 
-          <table id="results-table">
-            <thead> 
-              <tr> 
-                <th class="id-cell">#</th> 
-                <th class="date-cell">Date</th> 
-                <th class="event-cell">Event</th> 
-              </tr> 
-            </thead> 
-            <tbody> 
-            </tbody>
-          </table>        
-        </div> 
-      </div> 
-      
+    </div> <!-- /container --> 
+    
+    <div class="container" id="footer-container">
       <footer> 
         <p>&copy; Splunk 2011</p> 
       </footer> 
- 
-    </div> <!-- /container --> 
+    </div>
  
   </body> 
 </html> 
