@@ -1,0 +1,169 @@
+
+<!DOCTYPE html> 
+<html lang="en"> 
+  <head> 
+    <meta charset="utf-8"> 
+    <title>Bootstrap, from Twitter</title> 
+    <meta name="description" content=""> 
+    <meta name="author" content=""> 
+ 
+    <script id="eventRowTemplate" type="text/x-jquery-tmpl">
+      <td>${index}</td>
+      <td>${timestamp}</td>
+      <td>${event}</td>
+    </script>
+ 
+    <script id="searchFormTemplate" type="text/x-jquery-tmpl">
+      <form action class="form-stacked" id="search-form">
+        <div class="clearfix highlight">
+          <label for="searchbox">Search</label>
+          <div class="input-append">
+            <input id="searchbox" class="xxxlarge" name="searchbox" type="text">
+            <a href="" id="submit-search" class="add-on btn small primary">Search</a>
+          </div>
+        </div>
+      </form>
+    </script>
+ 
+    <script id="searchStatsTemplate" type="text/x-jquery-tmpl">
+      <div class="span3 offset0"> 
+        <span>Events: </span><strong id="event-count">${eventCount}</strong>
+      </div> 
+      <div class="span3 offset0"> 
+        <span>Scanned: </span><strong id="scan-count">${scanCount}</strong>
+      </div>
+    </script>
+ 
+    <!-- Le HTML5 shim, for IE6-8 support of HTML elements --> 
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]--> 
+ 
+    <!-- Le styles --> 
+    <link rel="stylesheet" type="text/css" href="../../../bootstrap/bootstrap-1.1.1.css">
+    
+    <!-- Le splunk -->
+    <script type="text/javascript" src="../../build/splunk.js"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.js"></script>
+    <script src="http://ajax.microsoft.com/ajax/jquery.templates/beta1/jquery.tmpl.js"></script>
+    <script type="text/javascript" src="date.format.js"></script>
+    <script type="text/javascript" src="underscore.js"></script>
+    <script type="text/javascript" src="backbone.js"></script>
+    <script type="text/javascript" src="site.js"></script>
+ 
+    <!-- Le fav and touch icons --> 
+    <link rel="shortcut icon" href="images/favicon.ico"> 
+    <link rel="apple-touch-icon" href="images/apple-touch-icon.png"> 
+    <link rel="apple-touch-icon" sizes="72x72" href="images/apple-touch-icon-72x72.png"> 
+    <link rel="apple-touch-icon" sizes="114x114" href="images/apple-touch-icon-114x114.png"> 
+    
+    <style>
+      body {
+        padding-top: 40px;
+      }
+      
+      #searchInput {
+      }
+      
+      form div.highlight {
+        background-color: #EDEDE7;
+        padding: 10px 0;
+        margin: -10px 0 10px;
+        -webkit-border-radius: 4px;
+        -moz-border-radius: 4px;
+        border-radius: 4px;
+      }
+      
+      .form-stacked div.highlight {
+        padding-top: 10px;
+        padding-bottom: 10px;
+        padding-left: 10px;
+        margin-top: 0;
+        margin-left: -20px;
+      }
+      
+      input.xxxlarge {
+        width: 840px;
+        height: 24px;
+      }
+      
+      div.separator {
+        border-top: 1px solid #eee;
+        margin-top: 5px;
+        padding-top: 5px;
+      }
+      
+      .hidden {
+        display: none;
+      }
+      
+      #results-table td {
+        vertical-align: text-top;
+      }
+      
+      #results-table th.id-cell {
+      }
+      
+      #results-table th.date-cell {
+        width: 120px;
+      }
+      
+      #results-table th.event-cell {
+        white-space: wrap;
+      }
+      
+      #results {
+        /*table-layout: fixed;*/
+        overflow-x: auto;
+      }
+    </style>
+  </head> 
+ 
+  <body> 
+ 
+    <div class="topbar"> 
+      <div class="fill"> 
+        <div class="container"> 
+          <h3><a href="#">Mini Splunk</a></h3> 
+          <ul> 
+            <li class="active"><a href="#">Search</a></li> 
+            <li><a href="#about">Jobs</a></li> 
+          </ul> 
+        </div> 
+      </div> 
+    </div> 
+ 
+    <div class="container"> 
+
+      <!-- Example row of columns --> 
+      <div class="row"> 
+        <div class="span16 offset0" id="search-row"> 
+        </div> 
+      </div> 
+      
+      <div class="row" id="stats-row"> 
+      </div> 
+      
+      <div class="row hidden" id="results"> 
+        <div class="span16 offset0"> 
+          <table id="results-table">
+            <thead> 
+              <tr> 
+                <th class="id-cell">#</th> 
+                <th class="date-cell">Date</th> 
+                <th class="event-cell">Event</th> 
+              </tr> 
+            </thead> 
+            <tbody> 
+            </tbody>
+          </table>        
+        </div> 
+      </div> 
+      <footer> 
+        <p>&copy; Splunk 2011</p> 
+      </footer> 
+ 
+    </div> <!-- /container --> 
+ 
+  </body> 
+</html> 

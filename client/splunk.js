@@ -1444,6 +1444,7 @@ require.modules["/lib/client.js"] = function () {
             if (!query) {
                 throw new Error("Must provide a query to create a search job");
             }
+            params = params || {};
 
             callback = utils.callbackToObject(callback);
 
@@ -2298,6 +2299,6 @@ process.nextTick(function () {
 // important functionality to the "window", such that others can easily
 // include it.
 
-window.Splunk = require('./splunk').Splunk;
-window.Splunk.JQueryHttp = require('./platform/client/jquery_http').JQueryHttp;;
+this.Splunk = require('./splunk').Splunk;
+this.Splunk.JQueryHttp = require('./platform/client/jquery_http').JQueryHttp;;
 });
