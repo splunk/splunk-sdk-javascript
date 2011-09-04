@@ -17,19 +17,44 @@ var SearchApp = Backbone.Router.extend({
     window.App = this;
     
     this.events = _.extend({}, Backbone.Events);
-    this.searchView = new SearchView({el: "#container", service: svc});
+    this.searchView = new SearchView({service: svc});
+    this.jobsView = new JobManagerView({service: svc});
     
-    _.bindAll(this, "search");
+    _.bindAll(this, "search", "jobs");
+    
+    this.searchView.render();
+    this.jobsView.render();
   },
   
   routes: {
     "" : "search",
-    "search" : "search"
+    "search" : "search",
+    "jobs": "jobs"
   },
   
   search : function() {
-    this.searchView.render();
+    this.setNavigationHighlight("search");
+    $("#container").detach();
+    $(this.searchView.el).insertAfter("div#navbar");
   },
+  
+  jobs : function() {
+    this.setNavigationHighlight("jobs");
+    this.jobsView.jobs.fetch();
+    
+    $("#container").detach();
+    $(this.jobsView.el).insertAfter("div#navbar");
+  },
+  
+  setNavigationHighlight: function(view) {
+    $("#navbar li").each(function(index, elem) {
+      $(elem).removeClass("active");
+      
+      if ($(elem).children("a").attr("href").substring(1) === view) {
+        $(elem).addClass("active") 
+      }
+    });
+  }
 });
 
 $(document).ready(function() {  
@@ -40,13 +65,11 @@ $(document).ready(function() {
       port: "8000",
       username: "itay",
       password: "changeme",
-  });
-  
+  });      
     
   var loginP = svc.login();
   var doneP = loginP.whenResolved(function() {
     var app = new SearchApp(svc);
     Backbone.history.start();
   });
-  
 });

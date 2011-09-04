@@ -1466,7 +1466,7 @@ require.modules["/lib/client.js"] = function () {
 
             return this.get("", {}).when(
                 function(response) {
-                    var job_list = response.odata.results;
+                    var job_list = response.odata.results || [];
                     callback.success(job_list);
                     return job_list;
                 },

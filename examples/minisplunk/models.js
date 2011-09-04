@@ -112,3 +112,41 @@ var Events = Backbone.Collection.extend({
     });
   }
 });
+
+var Job = Backbone.Model.extend({
+  initialize: function() {
+  },
+  
+  save: function() {
+    
+  },
+});
+
+var Jobs = Backbone.Collection.extend({
+  model: Job,
+  
+  initialize: function(models, options) {
+    this.service = options.service;
+    
+    _.bindAll(this, "fetch");
+    
+    App.events.bind("job:modified", this.fetch);
+  },
+  
+  fetch: function() {
+    var jobs = this;
+    var listP = this.service.jobs().list();
+    listP.whenResolved(function(list) {
+      var models = [];
+      for(var i = 0; i < list.length; i++) {
+        var properties = list[i];
+        var job = new Splunk.Client.Job(jobs.service, properties["sid"]);
+        var jobModel = new Job({job: job, properties: properties});
+        
+        models.push(jobModel);
+      }
+      
+      jobs.reset(models);
+    });
+  },
+})

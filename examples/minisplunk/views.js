@@ -17,8 +17,50 @@ var templates = {
   searchForm: $("#searchFormTemplate"),
   searchStats: $("#searchStatsTemplate"),
   pagination: $("#paginationTemplate"),
-  events: $("#eventsTemplate")
+  events: $("#eventsTemplate"),
+  job: $("#jobRowTemplate"),
+  jobs: $("#jobsTemplate")
 }
+
+var propertiesToActions = function(properties) {  
+  if (properties.isPaused) {
+    return ["Unpause", "Finalize", "Delete"];
+  }
+  
+  if (properties.isDone) {
+    return ["Delete"];
+  }
+  
+  if (properties.isFinalized) {
+    return ["Delete"];
+  }
+  
+  if (properties.dispatchState === "RUNNING") {
+    return ["Pause", "Finalize", "Delete"];
+  }
+  
+  return [];
+};
+
+var propertiesToState = function(properties) {
+  if (properties.isPaused) {
+    return "Paused";
+  }
+  
+  if (properties.isFinalized) {
+    return "Finalized";
+  }
+  
+  if (properties.isFailed) {
+    return "Failed";
+  }
+  
+  if (properties.isDone) {
+    return "Done";
+  }
+  
+  return "Running";
+};
 
 var EventView = Backbone.View.extend({
   tagName: "li",
@@ -40,7 +82,9 @@ var EventView = Backbone.View.extend({
     "click a.close" : "hideInfo",
   },
   
-  toggleInfo: function() {
+  toggleInfo: function(e) {
+    e.preventDefault();
+    
     var resultInfoCell = this.$("td.result-info");
     if (resultInfoCell.hasClass("hidden")) {
       App.events.trigger("event:info", this);
@@ -51,7 +95,8 @@ var EventView = Backbone.View.extend({
     }
   },
 
-  hideInfo: function() {
+  hideInfo: function(e) {
+    e.preventDefault();
     this.$("td.result-info").addClass("hidden");
   }
 });
@@ -167,7 +212,6 @@ var PaginationView = Backbone.View.extend({
   
   next: function(e) {
     e.preventDefault();
-    console.log(e);
     if ($(e.target).parent().hasClass("disabled")) {
       return;
     }
@@ -340,7 +384,106 @@ var SearchFormView = Backbone.View.extend({
   }
 });
 
+var JobView = Backbone.View.extend({
+  tagName: "tbody",
+  
+  initialize: function() {
+    this.template = templates.job;
+    _.bindAll(this, "render", "unpause", "pause", "del", "finalize");
+  },
+  
+  events: {
+    "click a.unpause" : "unpause",
+    "click a.pause" : "pause",
+    "click a.delete" : "del",
+    "click a.finalize" : "finalize",
+  },
+  
+  unpause: function(e) {
+    e.preventDefault();
+    this.model.get("job").unpause();
+    App.events.trigger("job:modified");
+  },
+  
+  pause: function(e) {
+    e.preventDefault();
+    this.model.get("job").pause();
+    App.events.trigger("job:modified");
+  },
+  
+  del: function(e) {
+    e.preventDefault();
+    this.model.get("job").cancel();
+    App.events.trigger("job:modified");
+  },
+  
+  finalize: function(e) {
+    e.preventDefault();
+    this.model.get("job").finalize();
+    App.events.trigger("job:modified");
+  },
+  
+  render: function() {
+    var properties = this.model.get("properties");
+    
+    var expires = new Date();
+    expires = new Date(expires.valueOf() + properties.ttl * 1000);
+    runtime = new Date(parseFloat(properties.runDuration) * 1000 - (16 * 60 * 60 * 1000));
+    
+    var templateData = {
+      dispatchedAt: new Date(Date.parse(properties.published)).format("m/d/yy h:MM:ss TT"),
+      owner: properties.author,
+      application: properties.__metadata.acl.app,
+      size: (properties.diskUsage / 1000000).toFixed(2) + "MB",
+      events: properties.eventCount,
+      runtime: runtime.format("HH:MM:ss.l"),
+      expires: expires.format("m/d/yy h:MM:ss TT"),
+      status: propertiesToState(properties),
+      query: properties.label || properties.__name,
+      actions: propertiesToActions(properties),
+    };
+    var content = this.template.tmpl(templateData);
+    
+    $(this.el).html(content);
+    
+    return this;
+  }
+});
+
+var JobsView = Backbone.View.extend({
+  tagName: "div",
+  class: "row",
+  
+  initialize: function() {
+    this.template = templates.jobs;
+    this.jobsContainer = this.options.container;
+    _.bindAll(this, "render");
+    this.collection.bind("add", this.render);
+    this.collection.bind("remove", this.render);
+    this.collection.bind("reset", this.render);
+  },
+  
+  render: function() {
+    this.$(this.jobsContainer).empty();
+    
+    var els = [];
+    this.collection.each(function(model){
+      var view = new JobView({model : model});
+        els.push(view.render().el);
+    });
+    
+    $(this.el).html(this.template.tmpl());
+    
+    this.$(this.jobsContainer).append(els);
+    
+    return this;
+  }
+});
+
 var SearchView = Backbone.View.extend({
+  tagName: "div",
+  className: "container",
+  id: "container",
   
   initialize: function() {
     _.bindAll(this, "render");
@@ -352,12 +495,37 @@ var SearchView = Backbone.View.extend({
     this.paginationView = new PaginationView({collection: this.events});
   },
   
-  render: function() {
-    $(this.el).html("");
+  render: function() {    
+    $(this.el).empty();
     
     $(this.el).append(this.searchFormView.render().el);
     $(this.el).append(this.searchStatsView.render().el);
     $(this.el).append(this.paginationView.render().el);
     $(this.el).append(this.eventsView.render().el);
+    
+    return this;
   },
+});
+
+var JobManagerView = Backbone.View.extend({
+  tagName: "div",
+  className: "container",
+  id: "container",
+  
+  initialize: function() {
+    _.bindAll(this, "render");
+    
+    this.jobs = new Jobs([], {service: this.options.service});
+    this.jobsView = new JobsView({collection: this.jobs, container: "#jobs-list"});
+    
+    this.jobs.fetch();
+  },
+  
+  render: function() {
+    $(this.el).empty();
+    
+    $(this.el).append(this.jobsView.render().el);
+    
+    return this;
+  }
 });

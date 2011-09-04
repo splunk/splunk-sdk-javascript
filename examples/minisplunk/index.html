@@ -85,6 +85,47 @@
         </ul>
       </div> 
     </script>
+    
+    <script id="jobRowTemplate" type="text/x-jquery-tmpl">
+      <tr class="job-data toprow">
+        <td class="">${dispatchedAt}</td>
+        <td class="">${owner}</td>
+        <td class="">${application}</td>
+        <td class="">${size}</td>
+        <td class="">${events}</td>
+        <td class="">${runtime}</td>
+        <td class="">${expires}</td>
+        <td class="capitalize">${status}</td>
+        <td class="">
+        {{each actions}}
+          <a href="#" class="${$value.toLowerCase()}">${$value}</a>{{if ($index+1) !== actions.length}} | {{/if}}
+        {{/each}}
+        </td>
+      </tr>
+      <tr class="job-name bottomrow">
+        <td colspan="9" class=""><strong>${query}</strong></td>
+      </tr>
+    </script>
+    
+    <script id="jobsTemplate" type="text/x-jquery-tmpl">
+      <div class="span16 offset0">      
+        <table class="jobs" id="jobs-list">
+          <thead> 
+            <tr> 
+              <th class="">Dispatched at</th> 
+              <th class="">Owner</th> 
+              <th class="">Application</th> 
+              <th class="">Size</th> 
+              <th class="">Events</th> 
+              <th class="">Run time</th> 
+              <th class="">Expires</th> 
+              <th class="">Status</th> 
+              <th class="">Actions</th> 
+            </tr> 
+          </thead> 
+        </table>
+      </div> 
+    </script>
  
     <!-- Le HTML5 shim, for IE6-8 support of HTML elements --> 
     <!--[if lt IE 9]>
@@ -117,6 +158,10 @@
       }
       
       #searchInput {
+      }
+      
+      .capitalize {
+        text-transform: capitalize;
       }
       
       form div.highlight {
@@ -215,31 +260,41 @@
         -moz-opacity: 0.4;
         opacity: 0.4;
       }
+      
+      tr.toprow td {
+        border-bottom: 0px;
+      }
+      
+      .jobs tr.job-data {
+        font-size: 11px;
+      }
+      .jobs tr.job-name {
+        font-size: 12px;
+      }
     </style>
+    
+    <script>
+
+    </script>
   </head> 
  
   <body> 
- 
-    <div class="topbar"> 
+    <div class="topbar" id="navbar"> 
       <div class="fill"> 
         <div class="container"> 
           <h3><a href="#">Mini Splunk</a></h3> 
           <ul> 
-            <li class="active"><a href="#">Search</a></li> 
-            <li><a href="#about">Jobs</a></li> 
+            <li class="active"><a href="#search">Search</a></li> 
+            <li><a href="#jobs">Jobs</a></li> 
           </ul> 
         </div> 
       </div> 
     </div> 
- 
-    <div class="container" id="container"> 
-    </div>
     
     <div class="container" id="footer-container">
       <footer> 
         <p>&copy; Splunk 2011</p> 
       </footer> 
     </div>
- 
   </body> 
 </html> 
