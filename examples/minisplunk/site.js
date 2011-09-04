@@ -41,7 +41,6 @@ var SearchApp = Backbone.Router.extend({
   
   jobs : function() {
     this.setNavigationHighlight("jobs");
-    this.jobsView.jobs.fetch();
     
     $("#content").detach();
     $("#content-container").append(this.jobsView.el);

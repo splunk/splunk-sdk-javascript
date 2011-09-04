@@ -13,37 +13,9 @@
 // under the License.
 
 var JQueryHttp = window.Splunk.JQueryHttp;
-
-var performSearch = function(svc, query) {          
-  var job = null;
-  var searcher = null;
-  
-  if (!Splunk.Utils.startsWith(query.trim(), "search")) {
-    query = "search " + query;
-  }
-  
-  var jobP = svc.jobs().create(query, {rf: "*"});
-  
-  return jobP.whenResolved(function(createdJob) {      
-    job = createdJob;
-    searcher = new Splunk.Searcher.JobManager(svc, job);
-    
-    var searchDoneP = searcher.done();
-    
-    searchDoneP.onProgress(function(properties) {
-      App.events.trigger("search:stats", properties);
-    });
-    
-    return searchDoneP.whenResolved(function() {
-      return searcher;
-    });
-  });
-};
+var Promise = window.Splunk.Promise;
 
 var Event = Backbone.Model.extend({
-  save: function() {
-    // do nothing
-  }
 });
 
 var Events = Backbone.Collection.extend({
@@ -114,11 +86,31 @@ var Events = Backbone.Collection.extend({
 });
 
 var Job = Backbone.Model.extend({
-  initialize: function() {
+  initialize: function(attr, options) {
+    _.bindAll(this, "unpause", "del", "finalize");
+    this.job = options.job;
   },
   
-  save: function() {
-    
+  unpause: function() {
+    this.set({isPaused: false});
+    this.job.unpause();
+  },
+  
+  pause: function() {
+    this.set({isPaused: true});
+    this.job.pause();
+  },
+  
+  del: function() {
+    var job = this;
+    this.job.cancel().whenResolved(function() {
+      job.destroy();
+    });
+  },
+  
+  finalize: function() {
+    this.set({isFinalized: true});
+    this.job.finalize();
   },
 });
 
@@ -128,25 +120,34 @@ var Jobs = Backbone.Collection.extend({
   initialize: function(models, options) {
     this.service = options.service;
     
-    _.bindAll(this, "fetch");
-    
-    App.events.bind("job:modified", this.fetch);
+    _.bindAll(this, "fetch", "continuousFetch");
   },
   
   fetch: function() {
     var jobs = this;
     var listP = this.service.jobs().list();
-    listP.whenResolved(function(list) {
+    return listP.whenResolved(function(list) {
       var models = [];
       for(var i = 0; i < list.length; i++) {
         var properties = list[i];
         var job = new Splunk.Client.Job(jobs.service, properties["sid"]);
-        var jobModel = new Job({job: job, properties: properties});
+        var jobModel = new Job(properties, {job: job});
         
         models.push(jobModel);
       }
       
       jobs.reset(models);
+    });
+  },
+  
+  continuousFetch: function() {
+    var jobs = this;
+    Promise.while({
+      condition: function() { return true; },
+      body: function() {
+        var fetchP = jobs.fetch();
+        return Promise.join(fetchP, Promise.sleep(10000));
+      }
     });
   },
 })

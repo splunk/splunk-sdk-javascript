@@ -20,7 +20,35 @@ var templates = {
   events: $("#eventsTemplate"),
   job: $("#jobRowTemplate"),
   jobs: $("#jobsTemplate")
-}
+};
+
+var performSearch = function(svc, query) {          
+  var job = null;
+  var searcher = null;
+  
+  if (!Splunk.Utils.startsWith(query.trim(), "search")) {
+    query = "search " + query;
+  }
+  
+  var jobP = svc.jobs().create(query, {rf: "*"});
+  
+  return jobP.whenResolved(function(createdJob) {      
+    App.events.trigger("search:new");
+      
+    job = createdJob;
+    searcher = new Splunk.Searcher.JobManager(svc, job);
+    
+    var searchDoneP = searcher.done();
+    
+    searchDoneP.onProgress(function(properties) {
+      App.events.trigger("search:stats", properties);
+    });
+    
+    return searchDoneP.whenResolved(function() {     
+      App.events.trigger("search:done", searcher);
+    });
+  });
+};
 
 var propertiesToActions = function(properties) {  
   if (properties.isPaused) {
@@ -35,11 +63,13 @@ var propertiesToActions = function(properties) {
     return ["Delete"];
   }
   
-  if (properties.dispatchState === "RUNNING") {
+  var okStates = ["INITIALIZED", "ACKED", "QUEUED", "PARSING", "RUNNING"];
+  
+  if (okStates.indexOf(properties.dispatchState) > -1) {
     return ["Pause", "Finalize", "Delete"];
   }
   
-  return [];
+  return ["Delete"];
 };
 
 var propertiesToState = function(properties) {
@@ -367,11 +397,7 @@ var SearchFormView = Backbone.View.extend({
     var query = $("#searchbox").val().trim();
     
     if (query !== "") {
-      performSearch(this.options.service, query).whenResolved(function(searcher) {
-        App.events.trigger("search:done", searcher);
-      });
-      
-      App.events.trigger("search:new");
+      performSearch(this.options.service, query);
     }
     
     e.preventDefault();
@@ -390,6 +416,7 @@ var JobView = Backbone.View.extend({
   initialize: function() {
     this.template = templates.job;
     _.bindAll(this, "render", "unpause", "pause", "del", "finalize");
+    this.model.bind("change", this.render);
   },
   
   events: {
@@ -401,30 +428,26 @@ var JobView = Backbone.View.extend({
   
   unpause: function(e) {
     e.preventDefault();
-    this.model.get("job").unpause();
-    App.events.trigger("job:modified");
+    this.model.unpause();
   },
   
   pause: function(e) {
     e.preventDefault();
-    this.model.get("job").pause();
-    App.events.trigger("job:modified");
+    this.model.pause();
   },
   
   del: function(e) {
     e.preventDefault();
-    this.model.get("job").cancel();
-    App.events.trigger("job:modified");
+    this.model.del();
   },
   
   finalize: function(e) {
     e.preventDefault();
-    this.model.get("job").finalize();
-    App.events.trigger("job:modified");
+    this.model.finalize();
   },
   
   render: function() {
-    var properties = this.model.get("properties");
+    var properties = this.model.toJSON();
     
     var expires = new Date();
     expires = new Date(expires.valueOf() + properties.ttl * 1000);
@@ -518,7 +541,9 @@ var JobManagerView = Backbone.View.extend({
     this.jobs = new Jobs([], {service: this.options.service});
     this.jobsView = new JobsView({collection: this.jobs, container: "#jobs-list"});
     
-    this.jobs.fetch();
+    App.events.bind("search:new", this.jobs.fetch);
+    
+    this.jobs.continuousFetch();
   },
   
   render: function() {
