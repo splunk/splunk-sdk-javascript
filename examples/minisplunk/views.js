@@ -483,7 +483,7 @@ var JobsView = Backbone.View.extend({
 var SearchView = Backbone.View.extend({
   tagName: "div",
   className: "container",
-  id: "container",
+  id: "content",
   
   initialize: function() {
     _.bindAll(this, "render");
@@ -510,7 +510,7 @@ var SearchView = Backbone.View.extend({
 var JobManagerView = Backbone.View.extend({
   tagName: "div",
   className: "container",
-  id: "container",
+  id: "content",
   
   initialize: function() {
     _.bindAll(this, "render");

@@ -34,16 +34,17 @@ var SearchApp = Backbone.Router.extend({
   
   search : function() {
     this.setNavigationHighlight("search");
-    $("#container").detach();
-    $(this.searchView.el).insertAfter("div#navbar");
+    
+    $("#content").detach();
+    $("#content-container").append(this.searchView.el);
   },
   
   jobs : function() {
     this.setNavigationHighlight("jobs");
     this.jobsView.jobs.fetch();
     
-    $("#container").detach();
-    $(this.jobsView.el).insertAfter("div#navbar");
+    $("#content").detach();
+    $("#content-container").append(this.jobsView.el);
   },
   
   setNavigationHighlight: function(view) {
