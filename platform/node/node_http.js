@@ -29,9 +29,11 @@
             var request_options = {
                 url: url,
                 method: message.method,
-                headers: message.headers,
+                headers: message.headers || {},
                 body: message.body || ""
             };
+            
+            request_options.headers["Content-Length"] = request_options.body.length;
 
             //console.log("URL", request_options.method, ":", request_options.url);
 
