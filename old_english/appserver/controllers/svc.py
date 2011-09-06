@@ -58,7 +58,7 @@ class ODataController(controllers.BaseController):
         timings = []
         messages = []
         serverResponse = None
-        responseCode = None./r
+        responseCode = None
         
         # translate odata args
         if '$skip' in kwargs:
