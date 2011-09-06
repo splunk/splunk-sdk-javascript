@@ -852,13 +852,16 @@
                 }
             );
             
+            var progressChecker = function(index) {
+                var reportsCopy = reports.slice();
+                process.nextTick(function() {
+                    var success = resolver.progress({percent: reportsCopy[index]});
+                    test.assert.ok(success); 
+                });
+            };
+            
             for(var i = 0; i < reports.length; i++) {
-                (function(index) {
-                    var reportsCopy = reports.slice();
-                    process.nextTick(function() { 
-                        var success = resolver.progress({percent: reportsCopy[index]});
-                        test.assert.ok(success);
-                    })})(i);
+                progressChecker(i);
             }
 
             p1.when(
@@ -1159,9 +1162,16 @@
                 condition: function() { return count < 5; },
                 body: function() {
                     count++;
+                    
+                    return Promise.nextTick();
                 },
                 progress: function(index) {
-                    test.assert.strictEqual(index + 1, count);
+                    if (count === 5 && index === 5) {
+                        test.assert.strictEqual(index, count);
+                    }
+                    else {
+                        test.assert.strictEqual(index + 1, count);
+                    }
                     return count;
                 }
             });
@@ -1172,6 +1182,55 @@
             
             whileP.whenResolved(function() {
                 test.finished(); 
+            });
+        });
+        
+        this.assertion("Simple promise#while progress", function(test) {
+            var count = 0;
+            var whileP = Promise.while({
+                condition: function() { return count < 5; },
+                body: function() {
+                    count++;
+                    
+                    return Promise.nextTick();
+                },
+                progress: function(index) {
+                    if (count === 5 && index === 5) {
+                        test.assert.strictEqual(index, count);
+                    }
+                    else {
+                        test.assert.strictEqual(index + 1, count);
+                    }
+                    return count;
+                }
+            });
+            
+            whileP.onProgress(function(v) {
+                test.assert.strictEqual(v, count);
+            });
+            
+            whileP.whenResolved(function() {
+                test.finished(); 
+            });
+        });
+        
+        this.assertion("Simple promise#nextTick", function(test) {
+            var count = 0;
+            var nextTickP = Promise.nextTick();
+            
+            var doneP = nextTickP.whenResolved(function() {
+                test.assert.strictEqual(count, 1);    
+                count++;
+            });
+            
+            Promise.Success().whenResolved(function() {
+                test.assert.strictEqual(count, 0);
+                count++;
+            });
+            
+            doneP.whenResolved(function() {
+                test.assert.strictEqual(count, 2);
+                test.finished();
             });
         });
     });

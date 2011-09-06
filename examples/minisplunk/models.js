@@ -150,4 +150,4 @@ var Jobs = Backbone.Collection.extend({
       }
     });
   },
-})
+});

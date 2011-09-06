@@ -140,8 +140,8 @@ exports.run = (function() {
             var sids = creates.map(function(create) { return create.id; });
             
             var promises = [];
-            for(var i = 0; i < creates.length; i++) {
-                promises[i] = this.run("create", [], creates[i]);
+            for(var j = 0; j < creates.length; j++) {
+                promises[j] = this.run("create", [], creates[j]);
             }
             
             Promise.join.apply(null, promises).whenResolved(function() {

@@ -51,7 +51,7 @@ var SearchApp = Backbone.Router.extend({
       $(elem).removeClass("active");
       
       if ($(elem).children("a").attr("href").substring(1) === view) {
-        $(elem).addClass("active") 
+        $(elem).addClass("active");
       }
     });
   }
