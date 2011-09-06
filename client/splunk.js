@@ -1158,6 +1158,16 @@ require.modules["/lib/promise.js"] = function () {
         return sleepP;
     };
 
+    // A wrapper around nextTick to return a promise.
+    root.Promise.nextTick = function(duration) {
+        var tickResolver = new root.Promise.Resolver();
+        var tickP = tickResolver.promise;
+
+        process.nextTick(function() { tickResolver.resolve(); });
+
+        return tickP;
+    };
+
     root.Promise["while"] = function(whileObj) {
         var iteration = whileObj.iteration || 0;
 
@@ -2150,7 +2160,7 @@ require.modules["/lib/searcher.js"] = function () {
             var params = {
                 count: this.resultsPerPage,
                 offset: this.currentOffset
-            }
+            };
             
             return this.endpoint(params).whenResolved(function(results) {
                 var numResults = (results.data ? results.data.length : 0);
