@@ -1752,6 +1752,7 @@ require.modules["/lib/http.js"] = function () {
                 method: "GET",
                 headers: headers,
                 timeout: timeout,
+                raw_params: params
             };
 
             return this.request(encoded_url, message, callback);
@@ -1776,6 +1777,7 @@ require.modules["/lib/http.js"] = function () {
                 method: "DELETE",
                 headers: headers,
                 timeout: timeout,
+                raw_params: params
             };
 
             return this.request(encoded_url, message, callback);
@@ -2320,7 +2322,7 @@ require.modules["/platform/client/easyxdm_http.js"] = function () {
 
 (function() {
     var Splunk  = require('../../splunk').Splunk;
-    var xdm     = require('../../external/easyXDM/easyXDM.min');
+    var xdm = require('../../external/easyXDM/easyXDM.min');
     var utils   = Splunk.Utils;
 
     var root = exports || this;
@@ -2359,7 +2361,7 @@ require.modules["/platform/client/easyxdm_http.js"] = function () {
 
         makeRequest: function(url, message, callback) {
             var params = {
-                url: url,
+                url: url.substring(0, url.indexOf("?") < 0 ? url.length : url.indexOf("?")),
                 method: message.method,
                 headers: message.headers,
                 data: message.raw_params,

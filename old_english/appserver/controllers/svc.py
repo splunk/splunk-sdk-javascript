@@ -34,29 +34,10 @@ class ODataController(controllers.BaseController):
     OData JSON proxy for splunkd
     '''
 
-    def set_crossdomain_headers(self):
-        cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
-        cherrypy.response.headers["Access-Control-Allow-Methods"] = "PUT, POST, GET, DELETE, OPTIONS"
-        cherrypy.response.headers["Access-Control-Allow-Headers"] = "X-SessionKey, Authorization, Content-Type, Content-Length"
-
-    def handle_options(self):
-        self.set_crossdomain_headers()
-        cherrypy.response.status = 200
-
-    @route('/=auth/=login', methods = ["POST", "OPTIONS", "GET"])
+    @route('/=auth/=login')
     @expose_page(must_login=False)
     def auth(self, username=None, password=None):
-        log = open('/Users/itay/output.log', 'w')
-        log.write("auth!!!!!\n")
-        log.flush()
         sessionKey = None
-
-        self.set_crossdomain_headers()
-
-        if cherrypy.request.method == "OPTIONS":
-           self.handle_options()
-           return ""
-
         try:
             sessionKey = splunk.auth.getSessionKey(username, password)
         except splunk.AuthenticationFailed:
@@ -69,20 +50,15 @@ class ODataController(controllers.BaseController):
                 'text': 'login failed'
             })
             cherrypy.response.status = 401
-
         return self.render_odata(result)
-
-    @route('/:owner/:namespace/*path', methods = ["POST", "OPTIONS", "GET"])
+        
+    @route('/:owner/:namespace/*path')
     @expose_page(must_login=False)
     def eai(self, owner='-', namespace='-', path=None, **kwargs):
-        if cherrypy.request.method == "OPTIONS":
-            self.handle_options()
-            return ""
-        
         timings = []
         messages = []
         serverResponse = None
-        responseCode = None
+        responseCode = None./r
         
         # translate odata args
         if '$skip' in kwargs:
@@ -140,16 +116,13 @@ class ODataController(controllers.BaseController):
         # dump output
         odata = self.atom2odata(serverResponse, entity_class=path, timings=timings, messages=messages)
         cherrypy.response.status = responseCode
-        self.set_crossdomain_headers()
         return self.render_odata(odata)
-        
-        
         
     #
     # search job management
     #
 
-    @route('/:owner/:namespace/=search/=jobs', methods = ["POST", "OPTIONS", "GET"])
+    @route('/:owner/:namespace/=search/=jobs')
     @expose_page(must_login=False)
     def list_jobs(self, owner='-', namespace='-', **kwargs):
         '''
@@ -162,11 +135,7 @@ class ODataController(controllers.BaseController):
         /search/jobs/log
         /search/jobs/control
         
-        '''
-        if cherrypy.request.method == "OPTIONS":
-            self.handle_options()
-            return ""
-        
+        '''        
         if cherrypy.request.method == 'POST':
             return self.dispatch_job(owner=owner, namespace=namespace, kwargs=kwargs)
             
@@ -236,7 +205,7 @@ class ODataController(controllers.BaseController):
         cherrypy.response.status = responseCode
         return self.render_odata(output)
         
-    @route('/:owner/:namespace/=search/=jobs/:sid', methods = ["POST", "OPTIONS", "GET", "DELETE"])
+    @route('/:owner/:namespace/=search/=jobs/:sid', methods = ["GET", "DELETE"])
     @expose_page(must_login=False)
     def job_info(self, owner, namespace, sid, **kwargs):
         if cherrypy.request.method == "DELETE":
@@ -245,15 +214,9 @@ class ODataController(controllers.BaseController):
         return self.eai(p='', owner=owner, namespace=namespace, path=('search/jobs/%s' % sid), **kwargs)
 
 
-    @route('/:owner/:namespace/=search/=jobs/:sid/:data_source', methods = ["POST", "OPTIONS", "GET"])
+    @route('/:owner/:namespace/=search/=jobs/:sid/:data_source')
     @expose_page(must_login=False)
     def job_data(self, owner, namespace, sid, data_source, **kwargs):
-        if cherrypy.request.method == "OPTIONS":
-            self.handle_options()
-            return ""
-
-        self.set_crossdomain_headers();
-
         # redirect on control
         if data_source == 'control':
             return self.job_control(owner, namespace, sid, **kwargs)
@@ -563,15 +526,4 @@ class ODataController(controllers.BaseController):
             kw['sessionKey'] = sessionKey
 
         response, content = splunk.rest.simpleRequest(*a, **kw)
-
-        cherrypy.response.headers["Access-Control-Allow-Origin"] = "*"
-        cherrypy.response.headers["Access-Control-Allow-Methods"] = "PUT, POST, GET, DELETE, OPTIONS"
-        cherrypy.response.headers["Access-Control-Allow-Headers"] = "X-SessionKey, Authorization, Content-Type"
-
-        log = open('/Users/itay/output.log', 'w')
-        log.write(str(cherrypy.response.headers))
-        log.write("\n\n\n")
-        log.write(str(response) + "\n")
-        log.flush()
-        
         return response, content
