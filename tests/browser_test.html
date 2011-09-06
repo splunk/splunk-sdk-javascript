@@ -12,8 +12,9 @@
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.js"></script>
     <script>
       var JQueryHttp = Splunk.JQueryHttp;
+      var XdmHttp = Splunk.XdmHttp;
 
-      http = new JQueryHttp();
+      http = new XdmHttp(true, "http://localhost:8000");
       svc = new Splunk.Client.Service(http, { 
           scheme: "http",
           host: "localhost",
@@ -24,7 +25,8 @@
   
       // Login and list jobs
       var loginP = svc.login();
-      var jobsP = loginP.whenResolved(function() { return svc.jobs(); });
+      
+      var jobsP = loginP.whenResolved(function() { return svc.jobs().list(); });
       var finalP = jobsP.whenResolved(function(list) {
         for(var i = 0; i < list.length; i++) {
           console.log("  job: "  + list[i].sid);

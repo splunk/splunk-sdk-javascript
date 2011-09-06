@@ -19,3 +19,4 @@
 
 window.Splunk = require('./splunk').Splunk;
 window.Splunk.JQueryHttp = require('./platform/client/jquery_http').JQueryHttp;
+window.Splunk.XdmHttp = require('./platform/client/easyxdm_http').XdmHttp;
