@@ -133,10 +133,17 @@
     <![endif]--> 
  
     <!-- Le styles --> 
-    <link rel="stylesheet" type="text/css" href="../../../bootstrap/bootstrap-1.1.1.css">
+    <link rel="stylesheet" type="text/css" href="bootstrap-1.1.1.css">
     
     <!-- Le splunk -->
-    <script type="text/javascript" src="../../build/splunk.js"></script>
+    <script type="text/javascript" src="../../build/splunk.js"></script> 
+    <script>
+      process.nextTick(function() {
+        window.XdmHttp = window.Splunk.XdmHttp;
+        window.Promise = window.Splunk.Promise;
+      });
+    </script>
+    
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.js"></script>
     <script src="http://ajax.microsoft.com/ajax/jquery.templates/beta1/jquery.tmpl.js"></script>
     <script type="text/javascript" src="date.format.js"></script>

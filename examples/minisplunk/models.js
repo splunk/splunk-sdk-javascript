@@ -12,9 +12,6 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-var JQueryHttp = window.Splunk.JQueryHttp;
-var Promise = window.Splunk.Promise;
-
 var Event = Backbone.Model.extend({
 });
 
@@ -51,7 +48,7 @@ var Events = Backbone.Collection.extend({
     var resultsP = this.searcher.job.results({count: this.resultsPerPage, offset: (page * this.resultsPerPage)});
     
     return resultsP.whenResolved(function(results) {
-      var data = results.data;
+      var data = results.data || [];
       var baseOffset = page * this.resultsPerPage;
       var rows = [];
       for(var i = 0; i < data.length; i++) {

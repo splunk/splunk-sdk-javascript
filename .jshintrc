@@ -20,7 +20,8 @@
     "predef"        : [         // Custom globals.
         //"exampleVar",
         //"anotherCoolGlobal",
-        //"iLoveDouglas"
+        //"iLoveDouglas",
+        "easyXDM"
     ],
 
 

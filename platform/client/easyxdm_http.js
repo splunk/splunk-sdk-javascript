@@ -15,7 +15,7 @@
 
 (function() {
     var Splunk  = require('../../splunk').Splunk;
-    var easyXDM = require('../../external/easyXDM/easyXDM.min');
+    var xdm = require('../../external/easyXDM/easyXDM.min');
     var utils   = Splunk.Utils;
 
     var root = exports || this;
@@ -54,7 +54,7 @@
 
         makeRequest: function(url, message, callback) {
             var params = {
-                url: url,
+                url: url.substring(0, url.indexOf("?") < 0 ? url.length : url.indexOf("?")),
                 method: message.method,
                 headers: message.headers,
                 data: message.raw_params,

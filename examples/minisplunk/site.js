@@ -58,7 +58,7 @@ var SearchApp = Backbone.Router.extend({
 });
 
 $(document).ready(function() {  
-  var http = new JQueryHttp();
+  var http = new XdmHttp(true, "http://localhost:8000");
   var svc = new Splunk.Client.Service(http, { 
       scheme: "http",
       host: "localhost",
