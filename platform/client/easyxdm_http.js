@@ -95,7 +95,14 @@
         },
 
         parseJson: function(json) {
-            return JSON.parse(json);
+            try {
+                return JSON.parse(json);
+            }
+            catch (err) {
+                console.log(err);
+                console.log(err.stack);
+                console.log(json);
+            }
         }
     });
 })();

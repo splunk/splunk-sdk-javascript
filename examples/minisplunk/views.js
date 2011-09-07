@@ -33,22 +33,31 @@ var performSearch = function(svc, query) {
   
   var jobP = svc.jobs().create(query, {rf: "*"});
   
-  return jobP.whenResolved(function(createdJob) {      
-    App.events.trigger("search:new");
+  return jobP.when(
+    function(createdJob) {      
+      App.events.trigger("search:new");
+        
+      job = createdJob;
+      searcher = new Splunk.Searcher.JobManager(svc, job);
       
-    job = createdJob;
-    searcher = new Splunk.Searcher.JobManager(svc, job);
-    
-    var searchDoneP = searcher.done();
-    
-    searchDoneP.onProgress(function(properties) {
-      App.events.trigger("search:stats", properties);
-    });
-    
-    return searchDoneP.whenResolved(function() {     
-      App.events.trigger("search:done", searcher);
-    });
-  });
+      var searchDoneP = searcher.done();
+      
+      searchDoneP.onProgress(function(properties) {
+        App.events.trigger("search:stats", properties);
+      });
+      
+      return searchDoneP.whenResolved(function() {     
+        App.events.trigger("search:done", searcher);
+      });
+    },
+    function(args) {
+      var response = args[0];
+      var messages = {};
+      var message = response.odata.messages[1];
+      messages[message.type.toLowerCase()] = [message.text];
+      App.events.trigger("search:failed", query, messages);
+    }
+  );
 };
 
 var propertiesToActions = function(properties) {  
@@ -377,6 +386,13 @@ var SearchStatsView = Backbone.View.extend({
   }
 });
 
+var messageMappings = {
+  "warn": "warning",
+  "fatal": "error",
+  "error": "error",
+  "info": "info"
+}
+
 var SearchFormView = Backbone.View.extend({
   tagName: "div",
   className: "row",
@@ -387,8 +403,9 @@ var SearchFormView = Backbone.View.extend({
     this.alertTemplate = templates.alert;
     this.messages = {};
     
-    _.bindAll(this, "search", "render", "stats");
+    _.bindAll(this, "search", "render", "stats", "failed");
     App.events.bind("search:stats", this.stats);
+    App.events.bind("search:failed", this.failed);
   },
   
   events: {
@@ -398,6 +415,11 @@ var SearchFormView = Backbone.View.extend({
   
   stats: function(properties) {
     this.messages = properties.messages || {};
+    this.render();
+  },
+  
+  failed: function(query, messages) {
+    this.messages = messages || {};
     this.render();
   },
   
@@ -425,9 +447,7 @@ var SearchFormView = Backbone.View.extend({
     var messageElements = [];
     var alertTemplate = this.alertTemplate;
     _.each(this.messages, function(value, key) {
-      if (key === "warn") {
-        key = "warning";
-      }
+      key = messageMappings[key];
       
       _.each(value, function(text) {
         var el = alertTemplate.tmpl({

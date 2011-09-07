@@ -2101,10 +2101,11 @@ require.modules["/lib/searcher.js"] = function () {
             var job = this.job;
             var properties = {};
             this.donePromise = Promise.while({
-                condition: function() { return properties.dispatchState !== "DONE" && !manager.isJobDone; },
+                condition: function() { return !properties.isDone && !manager.isJobDone; },
                 body: function(index) {
                     return job.read().whenResolved(function(response) {
                         properties = response.odata.results;
+                        console.log("isDone: ", properties.isDone);
                         return Promise.sleep(1000); 
                     });
                 },
@@ -2399,7 +2400,14 @@ require.modules["/platform/client/easyxdm_http.js"] = function () {
         },
 
         parseJson: function(json) {
-            return JSON.parse(json);
+            try {
+                return JSON.parse(json);
+            }
+            catch (err) {
+                console.log(err);
+                console.log(err.stack);
+                console.log(json);
+            }
         }
     });
 })();;
