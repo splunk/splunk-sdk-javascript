@@ -34,7 +34,7 @@
                 type: 'string',
                 metavar: "DIRECTORY",
                 help: "Base directory for browserified files ",
-                default: "build/",
+                default: "client/",
             },
         ],
     });

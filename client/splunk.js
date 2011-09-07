@@ -2383,7 +2383,6 @@ require.modules["/platform/client/easyxdm_http.js"] = function () {
                 var status = res.data.status;
                 var message = res.message;
                 var headers = res.data.headers;
-                console.log(headers);
                 
                 var response = {
                     statusCode: status,
