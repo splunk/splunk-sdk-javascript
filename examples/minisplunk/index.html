@@ -30,9 +30,9 @@
     </script>
  
     <script id="searchFormTemplate" type="text/x-jquery-tmpl">
-      <div class="span16 offset0"> 
+      <div class="span16 offset0 highlight"> 
         <form action class="form-stacked" id="search-form">
-          <div class="clearfix highlight">
+          <div class="clearfix">
             <label for="searchbox">Search</label>
             <div class="input-append">
               <input id="searchbox" class="xxxlarge" name="searchbox" type="text">
@@ -40,7 +40,17 @@
             </div>
           </div>
         </form>
+        <div id="messages">
+        </div>
       </div> 
+    </script>
+    
+    <script id="alertTemplate" type="text/x-jquery-tmpl">
+      <div class="alert-message ${messageClass}">
+        <p>
+          ${text}
+        </p>
+      </div>
     </script>
  
     <script id="searchStatsTemplate" type="text/x-jquery-tmpl">
@@ -171,13 +181,21 @@
         text-transform: capitalize;
       }
       
-      form div.highlight {
+      div.highlight {
         background-color: #EDEDE7;
         padding: 10px 0;
         margin: -10px 0 10px;
         -webkit-border-radius: 4px;
         -moz-border-radius: 4px;
         border-radius: 4px;
+      }
+      
+      div.highlight #messages {
+        margin: 0px 16px 0px 20px;
+      }
+      
+      div.highlight #messages .alert-message {
+        margin: 0px 0px 5px 0px;
       }
       
       .form-stacked div.highlight {

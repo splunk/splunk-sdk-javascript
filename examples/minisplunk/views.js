@@ -19,7 +19,8 @@ var templates = {
   pagination: $("#paginationTemplate"),
   events: $("#eventsTemplate"),
   job: $("#jobRowTemplate"),
-  jobs: $("#jobsTemplate")
+  jobs: $("#jobsTemplate"),
+  alert: $("#alertTemplate")
 };
 
 var performSearch = function(svc, query) {          
@@ -383,13 +384,21 @@ var SearchFormView = Backbone.View.extend({
   
   initialize : function() {
     this.template = templates.searchForm;
+    this.alertTemplate = templates.alert;
+    this.messages = {};
     
-    _.bindAll(this, "search", "render");
+    _.bindAll(this, "search", "render", "stats");
+    App.events.bind("search:stats", this.stats);
   },
   
   events: {
     "submit #search-form": "search",
     "click #submit-search": "search"
+  },
+  
+  stats: function(properties) {
+    this.messages = properties.messages || {};
+    this.render();
   },
   
   search: function(e) {
@@ -404,8 +413,34 @@ var SearchFormView = Backbone.View.extend({
   },
   
   render: function() {
+    var query = $("#searchbox").val() || "";
+    
     var content = this.template.tmpl();
     $(this.el).html(content);
+    
+    // Set values
+    $("#searchbox").val(query);
+    
+    // Render any alerts
+    var messageElements = [];
+    var alertTemplate = this.alertTemplate;
+    _.each(this.messages, function(value, key) {
+      if (key === "warn") {
+        key = "warning";
+      }
+      
+      _.each(value, function(text) {
+        var el = alertTemplate.tmpl({
+          messageClass: key,
+          text: text
+        });
+        
+        messageElements.push(el[0]);
+      });
+    });
+    
+    $("#messages").append(messageElements);
+    
     return this;
   }
 });
