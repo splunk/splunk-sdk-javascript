@@ -73,31 +73,24 @@
                     easyXDM.apply(config, {
                         method: "POST",
                         headers: {
-                            "Content-Type": "application/x-www-form-urlencoded",
                             "X-Requested-With": "XMLHttpRequest"
                         },
                         success: Function.prototype,
                         error: function(msg){
                             throw new Error(msg);
                         },
-                        data: {},
-                        timeout: 10 * 1000
+                        data: "",
+                        timeout: 0
                     }, true);
                     
                     var isPOST = config.method == "POST";
                     
                     // convert the data into a format we can send to the server 
-                    var pairs = [];
-                    for (var key in config.data) {
-                        if (config.data.hasOwnProperty(key)) {
-                            pairs.push(encodeURIComponent(key) + "=" + encodeURIComponent(config.data[key]));
-                        }
-                    }
-                    var data = pairs.join("&");
+                    var data = config.data;
                     
                     // create the XMLHttpRequest object
                     var req = getXhr();
-                    req.open(config.method, config.url + (isPOST ? "" : "?" + data), true);
+                    req.open(config.method, config.url, true);
                     
                     // apply the request headers
                     for (var prop in config.headers) {
@@ -107,18 +100,21 @@
                     }
                     
                     // set a timeout
-                    var timeout;
-                    timeout = setTimeout(function(){
-                        req.abort();
-                        error({
-                            message: "timeout after " + config.timeout + " second",
-                            status: 0,
-                            data: null,
-                            toString: function(){
-                                return this.message + " Status: " + this.status;
-                            }
-                        }, null);
-                    }, config.timeout);
+                    if (config.timeout) {
+                        var timeout;
+                        timeout = setTimeout(function(){
+                            req.abort();
+                            error({
+                                message: "timeout after " + config.timeout + " second",
+                                status: 0,
+                                data: null,
+                                toString: function(){
+                                    return this.message + " Status: " + this.status;
+                                },
+                                req: req
+                            }, null);
+                        }, config.timeout);
+                    }
                     
                     // check if this origin should always be trusted
                     var alwaysTrusted = false, i = alwaysTrustedOrigins.length;
@@ -150,12 +146,12 @@
                                 else {
                                     error("INVALID_STATUS_CODE", {
                                         status: req.status,
-                                        data: req.responseText
+                                        data: req.responseText,
+                                        headers: headers                            
                                     });
                                 }
                             }
                             else {
-                            
                                 var errorMessage;
                                 if (useAccessControl) {
                                     // normalize the valuse access controls
@@ -179,10 +175,12 @@
                                     error(errorMessage);
                                 }
                                 else {
+                                    console.log(req.status);
                                     success({
                                         data: req.responseText,
                                         status: req.status,
-                                        headers: headers
+                                        headers: headers,
+                                        req: req
                                     });
                                 }
                             }
@@ -193,7 +191,7 @@
                     };
                     
                     // issue the request
-                    req.send(isPOST ? data : "");
+                    req.send(data);
                 }
             }
         });

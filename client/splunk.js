@@ -1751,8 +1751,7 @@ require.modules["/lib/http.js"] = function () {
             var message = {
                 method: "GET",
                 headers: headers,
-                timeout: timeout,
-                raw_params: params
+                timeout: timeout
             };
 
             return this.request(encoded_url, message, callback);
@@ -1764,8 +1763,7 @@ require.modules["/lib/http.js"] = function () {
                 method: "POST",
                 headers: headers,
                 timeout: timeout,
-                body: encode(params),
-                raw_params: params
+                body: encode(params)
             };
 
             return this.request(url, message, callback);
@@ -1776,8 +1774,7 @@ require.modules["/lib/http.js"] = function () {
             var message = {
                 method: "DELETE",
                 headers: headers,
-                timeout: timeout,
-                raw_params: params
+                timeout: timeout
             };
 
             return this.request(encoded_url, message, callback);
@@ -2361,10 +2358,10 @@ require.modules["/platform/client/easyxdm_http.js"] = function () {
 
         makeRequest: function(url, message, callback) {
             var params = {
-                url: url.substring(0, url.indexOf("?") < 0 ? url.length : url.indexOf("?")),
+                url: url,
                 method: message.method,
                 headers: message.headers,
-                data: message.raw_params,
+                data: message.body,
             };
 
             var success = utils.bind(this, function(res) {
@@ -2374,7 +2371,7 @@ require.modules["/platform/client/easyxdm_http.js"] = function () {
                 
                 var response = {
                     statusCode: status,
-                    headers: headers,
+                    headers: headers
                 };
                 
                 var complete_response = this._buildResponse(null, response, data);
@@ -2385,13 +2382,15 @@ require.modules["/platform/client/easyxdm_http.js"] = function () {
                 var data = res.data.data;
                 var status = res.data.status;
                 var message = res.message;
+                var headers = res.data.headers;
+                console.log(headers);
                 
                 var response = {
                     statusCode: status,
-                    headers: {}
+                    headers: headers
                 };
                 
-                var complete_response = this._buildResponse(null, response, data);
+                var complete_response = this._buildResponse(message, response, data);
                 callback(complete_response);
             });
 
@@ -2401,7 +2400,6 @@ require.modules["/platform/client/easyxdm_http.js"] = function () {
         },
 
         parseJson: function(json) {
-            // JQuery does this for us
             return JSON.parse(json);
         }
     });

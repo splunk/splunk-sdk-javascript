@@ -54,10 +54,10 @@
 
         makeRequest: function(url, message, callback) {
             var params = {
-                url: url.substring(0, url.indexOf("?") < 0 ? url.length : url.indexOf("?")),
+                url: url,
                 method: message.method,
                 headers: message.headers,
-                data: message.raw_params,
+                data: message.body,
             };
 
             var success = utils.bind(this, function(res) {
@@ -67,7 +67,7 @@
                 
                 var response = {
                     statusCode: status,
-                    headers: headers,
+                    headers: headers
                 };
                 
                 var complete_response = this._buildResponse(null, response, data);
@@ -78,13 +78,14 @@
                 var data = res.data.data;
                 var status = res.data.status;
                 var message = res.message;
+                var headers = res.data.headers;
                 
                 var response = {
                     statusCode: status,
-                    headers: {}
+                    headers: headers
                 };
                 
-                var complete_response = this._buildResponse(null, response, data);
+                var complete_response = this._buildResponse(message, response, data);
                 callback(complete_response);
             });
 
@@ -94,7 +95,6 @@
         },
 
         parseJson: function(json) {
-            // JQuery does this for us
             return JSON.parse(json);
         }
     });
