@@ -16,7 +16,7 @@
 (function() {
     var Splunk      = require('../splunk').Splunk;
     var NodeHttp    = require('../platform/node/node_http').NodeHttp;
-    var minitest    = require('../external/minitest');
+    var minitest    = require('../contrib/minitest');
 
     var http = new NodeHttp(false);
 

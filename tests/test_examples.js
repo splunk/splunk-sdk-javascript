@@ -15,7 +15,7 @@
 
 exports.run = (function() {
     var Promise     = require('../splunk').Splunk.Promise;
-    var minitest    = require('../external/minitest');
+    var minitest    = require('../contrib/minitest');
     var fs          = require('fs');
     
     var argv = [

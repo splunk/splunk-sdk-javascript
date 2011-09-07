@@ -14,36 +14,25 @@
 // under the License.
 
 (function() {
-    /*var Trailer = require('./external/trailer/Trailer');
     var path    = require('path');
-    var url     = require('url');
-    
-    console.log(path.dirname(__filename));
-    var hitched = Trailer.hitch({
-        root: path.dirname(__filename)
+    var http = require('http');
+    var fs = require('fs');
+    var url = require('url');
+    var staticResource = require('./contrib/static-resource/index');
+
+    // passing where is going to be the document root of resources.
+    var handler = staticResource.createHandler(fs.realpathSync(path.dirname(__filename)));
+
+    var server = http.createServer(function(request, response) {
+        var path = url.parse(request.url).pathname;
+        // handle method returns true if a resource specified with the path
+        // has been handled by handler and returns false otherwise.
+        if(!handler.handle(path, request, response)) {
+            response.writeHead(404);
+            response.write('404');
+            response.end();
+        }
     });
-    
-    hitched.listen(6969);*/
-    
-    var path    = require('path');
-var http = require('http');
-var fs = require('fs');
-var url = require('url');
-var staticResource = require('./external/static-resource/index');
-
-// passing where is going to be the document root of resources.
-var handler = staticResource.createHandler(fs.realpathSync(path.dirname(__filename)));
-
-var server = http.createServer(function(request, response) {
-    var path = url.parse(request.url).pathname;
-    // handle method returns true if a resource specified with the path
-    // has been handled by handler and returns false otherwise.
-    if(!handler.handle(path, request, response)) {
-        response.writeHead(404);
-        response.write('404');
-        response.end();
-    }
-});
-server.listen(6969);
+    server.listen(6969);
 
 })();

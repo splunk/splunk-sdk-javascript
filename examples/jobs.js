@@ -18,7 +18,7 @@
     var Class           = require('../lib/jquery.class').Class;
     var utils           = require('../lib/utils');
     var Async           = require('../lib/async');
-    var OptionParser    = require('../external/parseopt').OptionParser;
+    var OptionParser    = require('../contrib/parseopt').OptionParser;
     var NodeHttp        = require('../platform/node/node_http').NodeHttp;
     var Promise         = Splunk.Promise;
 

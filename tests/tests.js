@@ -16,8 +16,8 @@
 (function() {
     var path = require('path');
     var fs = require('fs');
-    var runforcover = require("../external/runforcover");
-    var minitest = require('../external/minitest');
+    var runforcover = require("../contrib/runforcover");
+    var minitest = require('../contrib/minitest');
     
     var coverage = runforcover.cover();
 

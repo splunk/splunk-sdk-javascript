@@ -15,7 +15,7 @@
 
 (function() {
     var Splunk  = require('../../splunk').Splunk;
-    var xdm = require('../../external/easyXDM/easyXDM.min');
+    var xdm = require('../../contrib/easyXDM/easyXDM.min');
     var utils   = Splunk.Utils;
 
     var root = exports || this;

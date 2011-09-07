@@ -15,8 +15,8 @@
 
 (function() {
     var Promise  = require('../splunk').Splunk.Promise;
-    var minitest = require('../external/minitest');
-    var _        = require('../external/underscore.js');
+    var minitest = require('../contrib/minitest');
+    var _        = require('../contrib/underscore.js');
 
     minitest.context("Promise Tests", function() {
         this.assertion("Simple promise#when resolve", function(test) {
