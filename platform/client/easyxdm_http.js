@@ -57,7 +57,7 @@
                 url: url,
                 method: message.method,
                 headers: message.headers,
-                data: message.body,
+                data: message.body
             };
 
             var success = utils.bind(this, function(res) {

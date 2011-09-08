@@ -2105,7 +2105,6 @@ require.modules["/lib/searcher.js"] = function () {
                 body: function(index) {
                     return job.read().whenResolved(function(response) {
                         properties = response.odata.results;
-                        console.log("isDone: ", properties.isDone);
                         return Promise.sleep(1000); 
                     });
                 },
@@ -2362,7 +2361,7 @@ require.modules["/platform/client/easyxdm_http.js"] = function () {
                 url: url,
                 method: message.method,
                 headers: message.headers,
-                data: message.body,
+                data: message.body
             };
 
             var success = utils.bind(this, function(res) {
