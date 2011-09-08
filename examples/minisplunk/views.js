@@ -136,7 +136,13 @@ var EventView = Backbone.View.extend({
   },
 
   hideInfo: function(e) {
-    e.preventDefault();
+    // Sometimes we need to hide info not in response
+    // to an HTML event, but just because another
+    // view was opened
+    if (e) {
+      e.preventDefault();
+    }
+    
     this.$("td.result-info").addClass("hidden");
   }
 });
