@@ -13,15 +13,19 @@
 // under the License.
 
 var SearchApp = Backbone.Router.extend({
-  initialize: function(svc) {
+  initialize: function() {
     window.App = this;
     
+    _.bindAll(this, "search", "jobs", "signedIn");
+    
     this.events = _.extend({}, Backbone.Events);
-    this.searchView = new SearchView({service: svc});
-    this.jobsView = new JobManagerView({service: svc});
+    this.events.bind("service:login", this.signedIn);
     
-    _.bindAll(this, "search", "jobs");
+    this.searchView = new SearchView();
+    this.jobsView = new JobManagerView();
+    this.navBarView = new NavBarView({el: "#navbar"});
     
+    this.navBarView.render();
     this.searchView.render();
     this.jobsView.render();
   },
@@ -30,6 +34,13 @@ var SearchApp = Backbone.Router.extend({
     "" : "search",
     "search" : "search",
     "jobs": "jobs"
+  },
+  
+  signedIn: function(service) {
+    console.log("signed in:", service);
+    console.log(this);
+    this.service = service;
+    this.jobsView.jobs.fetch();
   },
   
   search : function() {
@@ -50,26 +61,17 @@ var SearchApp = Backbone.Router.extend({
     $("#navbar li").each(function(index, elem) {
       $(elem).removeClass("active");
       
-      if ($(elem).children("a").attr("href").substring(1) === view) {
+      var href = $(elem).children("a").attr("href") || "";
+      if (href.substring(1) === view) {
         $(elem).addClass("active");
       }
     });
   }
 });
 
-$(document).ready(function() {  
-  var http = new XdmHttp(true, "http://localhost:8000");
-  var svc = new Splunk.Client.Service(http, { 
-      scheme: "http",
-      host: "localhost",
-      port: "8000",
-      username: "itay",
-      password: "changeme",
-  });      
-    
-  var loginP = svc.login();
-  var doneP = loginP.whenResolved(function() {
-    var app = new SearchApp(svc);
+$(document).ready(function() {
+  process.nextTick(function() {
+    var app = new SearchApp();
     Backbone.history.start();
-  });
+  });    
 });

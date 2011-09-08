@@ -20,7 +20,9 @@ var templates = {
   events: $("#eventsTemplate"),
   job: $("#jobRowTemplate"),
   jobs: $("#jobsTemplate"),
-  alert: $("#alertTemplate")
+  alert: $("#alertTemplate"),
+  navBar: $("#navBarTemplate"),
+  signin: $("#signinTemplate")
 };
 
 var performSearch = function(svc, query) {          
@@ -434,7 +436,7 @@ var SearchFormView = Backbone.View.extend({
     var query = $("#searchbox").val().trim();
     
     if (query !== "") {
-      performSearch(this.options.service, query);
+      performSearch(App.service, query);
     }
     
     e.preventDefault();
@@ -573,7 +575,7 @@ var SearchView = Backbone.View.extend({
     _.bindAll(this, "render");
     this.events = new Events();
     
-    this.searchFormView = new SearchFormView({service: this.options.service});
+    this.searchFormView = new SearchFormView();
     this.eventsView = new EventsView({collection: this.events, container: "#results-list"});
     this.searchStatsView = new SearchStatsView({collection: this.events});
     this.paginationView = new PaginationView({collection: this.events});
@@ -599,7 +601,7 @@ var JobManagerView = Backbone.View.extend({
   initialize: function() {
     _.bindAll(this, "render");
     
-    this.jobs = new Jobs([], {service: this.options.service});
+    this.jobs = new Jobs([], {});
     this.jobsView = new JobsView({collection: this.jobs, container: "#jobs-list"});
     
     App.events.bind("search:new", this.jobs.fetch);
@@ -611,6 +613,132 @@ var JobManagerView = Backbone.View.extend({
     $(this.el).empty();
     
     $(this.el).append(this.jobsView.render().el);
+    
+    return this;
+  }
+});
+
+var SigninView = Backbone.View.extend({
+  tagName: "div",
+  className: "modal",
+  id: "signin-modal",
+  
+  initialize: function() {
+    this.template = templates.signin;
+    _.bindAll(this, "render", "login", "close", "clear", "submit");
+  },
+  
+  events: {
+    "click a.login": "login",
+    "click a.cancel": "close",
+    "click a.close": "close",
+    "keypress input": "submit",
+  },
+  
+  submit: function(e) {
+    // Submit on enter
+    if (e.keyCode === 13) {
+      this.login(e);
+    }
+  },
+  
+  login: function(e) {
+    e.preventDefault();  
+    
+    var that = this;
+    
+    var username = $("#signin-modal #id_username").val() || "itay";
+    var password = $("#signin-modal #id_password").val() || "changeme";
+    var scheme = $("#signin-modal #id_scheme").val() || "http";
+    var host = $("#signin-modal #id_host").val() || "localhost";
+    var port = $("#signin-modal #id_port").val() || "8000";
+    
+    var base = scheme + "://" + host + ":" + port;
+    
+    var http = new XdmHttp(true, base);
+    var svc = new Splunk.Client.Service(http, { 
+        scheme: scheme,
+        host: host,
+        port: port,
+        username: username,
+        password: password,
+    });
+      
+    var loginP = svc.login();
+    var doneP = loginP.when(
+      function() {
+        that.close(e);
+        App.events.trigger("service:login", svc);
+      },
+      function() {
+        
+        this.$("#login-error p").text("There was an error logging in.").parent().removeClass("hidden");
+      }
+    );
+  },
+  
+  close: function(e) {
+    e.preventDefault();
+    $(this.el).detach();
+  },
+  
+  clear: function() {
+    this.$("input").each(function(index, input) {
+      $(input).val("");
+    });
+    
+    this.$("#login-error").addClass("hidden");
+  },
+  
+  render: function() {
+    $(this.el).empty();
+    
+    $(this.el).append(this.template.tmpl());
+    
+    return this;
+  }
+});
+
+var NavBarView = Backbone.View.extend({
+  initialize: function() {
+    this.template = templates.navBar;
+    
+    _.bindAll(this, "render", "signin", "signedIn", "doNothing");
+    
+    this.signinView = new SigninView();
+    this.signinView.render();
+    
+    App.events.bind("service:login", this.signedIn);
+  },
+  
+  events: {
+    "click button.signin": "signin",
+    "click a#login-info": "doNothing"
+  },
+  
+  doNothing: function(e) {
+    e.preventDefault();
+  },
+  
+  signin: function(e) {
+    e.preventDefault();
+    
+    this.signinView.clear();
+    $(this.signinView.el).detach();
+    $("body").append(this.signinView.el);
+  },
+  
+  signedIn: function(service) {
+    var base = service.scheme + "://" + service.host + ":" + service.port;
+    var username = service.username;
+    
+    var text = username + " @ " + base;
+    this.$("#login-info").text(text);
+  },
+  
+  render: function() {
+    $(this.el).empty();
+    $(this.el).append(this.template.tmpl());
     
     return this;
   }

@@ -114,20 +114,22 @@ var Job = Backbone.Model.extend({
 var Jobs = Backbone.Collection.extend({
   model: Job,
   
-  initialize: function(models, options) {
-    this.service = options.service;
-    
+  initialize: function(models, options) {    
     _.bindAll(this, "fetch", "continuousFetch");
   },
   
   fetch: function() {
+    if (!App.service) {
+      return;
+    }
+    
     var jobs = this;
-    var listP = this.service.jobs().list();
+    var listP = App.service.jobs().list();
     return listP.whenResolved(function(list) {
       var models = [];
       for(var i = 0; i < list.length; i++) {
         var properties = list[i];
-        var job = new Splunk.Client.Job(jobs.service, properties["sid"]);
+        var job = new Splunk.Client.Job(App.service, properties["sid"]);
         var jobModel = new Job(properties, {job: job});
         
         models.push(jobModel);

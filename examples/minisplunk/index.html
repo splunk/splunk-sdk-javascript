@@ -136,7 +136,75 @@
         </table>
       </div> 
     </script>
- 
+    
+    <script id="navBarTemplate" type="text/x-jquery-tmpl">
+      <div class="fill"> 
+        <div class="container"> 
+          <h3><a href="#">Mini Splunk</a></h3> 
+          <ul> 
+            <li class="active"><a href="#search">Search</a></li> 
+            <li><a href="#jobs">Jobs</a></li> 
+          </ul> 
+          <ul class="signin">
+            <li><a href="" id="login-info"></a></li>
+            <li>
+              <button class="signin btn primary small">Sign in</button>
+            <li>
+          </ul>
+        </div> 
+      </div> 
+    </script>
+    
+    <script id="signinTemplate" type="text/x-jquery-tmpl">
+      <div class="modal-header">
+        <h3>Sign In</h3>
+        <a href="#" class="close">×</a>
+      </div>
+      <div class="modal-body">
+        <div class="alert-message error hidden" id="login-error">
+          <p></p>
+        </div>
+        <fieldset>
+            <div class="clearfix ">
+                <label for="id_username">Username</label>
+                <div class="input">
+                    <input id="id_username" type="text" name="username" placeholder="admin"/>
+                </div>
+            </div>
+            <div class="clearfix ">
+                <label for="id_password">Password</label>
+                <div class="input">
+                    <input type="password" name="password" id="id_password" placeholder="changeme">
+                </div>
+            </div>
+            <div class="clearfix ">
+                <label for="id_scheme">Scheme</label>
+                <div class="input">
+                    <input type="text" name="scheme" id="id_scheme" placeholder="http">
+                </div>
+            </div>
+            <div class="clearfix ">
+                <label for="id_host">Host</label>
+                <div class="input">
+                    <input type="text" name="host" id="id_host" placeholder="localhost">
+                </div>
+            </div>
+            <div class="clearfix ">
+                <label for="id_port">Port</label>
+                <div class="input">
+                    <input type="text" name="port" id="id_port" placeholder="8000">
+                </div>
+            </div>
+        </fieldset>
+      </div>
+      <div class="modal-footer">
+        <a href="#" class="btn primary login">Login</a>
+        <a href="#" class="btn secondary cancel">Cancel</a>
+      </div>
+    </script>
+  
+  
+  
     <!-- Le HTML5 shim, for IE6-8 support of HTML elements --> 
     <!--[if lt IE 9]>
       <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
@@ -296,6 +364,24 @@
       .jobs tr.job-name {
         font-size: 12px;
       }
+      
+      button.signin {
+        margin-top: 5px;
+        padding: 10px 10px 11px;
+        float: none;
+      }
+      
+      ul.signin {
+        float:right;
+      }
+      
+      div#signin-modal {
+        position: relative; 
+        top: auto; 
+        left: auto; 
+        margin: 0 auto; 
+        z-index: 1
+      }
     </style>
     
     <script>
@@ -305,15 +391,6 @@
  
   <body> 
     <div class="topbar" id="navbar"> 
-      <div class="fill"> 
-        <div class="container"> 
-          <h3><a href="#">Mini Splunk</a></h3> 
-          <ul> 
-            <li class="active"><a href="#search">Search</a></li> 
-            <li><a href="#jobs">Jobs</a></li> 
-          </ul> 
-        </div> 
-      </div> 
     </div> 
     
     <div id="content-container">
