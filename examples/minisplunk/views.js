@@ -23,7 +23,8 @@ var templates = {
   alert: $("#alertTemplate"),
   navBar: $("#navBarTemplate"),
   signin: $("#signinTemplate"),
-  map: $("#mapTemplate")
+  map: $("#mapTemplate"),
+  eventProperties: $("#eventPropertiesTemplate")
 };
 
 var performSearch = function(svc, query) {          
@@ -434,10 +435,14 @@ var SearchFormView = Backbone.View.extend({
   
   search: function(e) {
     e.preventDefault();
+    if (!App.service()) {
+      return;
+    }
+    
     var query = $("#searchbox").val().trim();
     
     if (query !== "") {
-      performSearch(App.service, query);
+      performSearch(App.service(), query);
     }
     
     e.preventDefault();
@@ -628,7 +633,7 @@ var MapView = Backbone.View.extend({
     this.template = templates.map;
     _.bindAll(this, "render", "searchDone", "stats");
     
-    this.markers = [];
+    this.markers = {};
     
     App.events.bind("search:stats", this.stats);
     App.events.bind("search:done", this.searchDone);
@@ -645,7 +650,7 @@ var MapView = Backbone.View.extend({
   },
   
   getResults: function() {
-    this.markers = [];
+    this.markers = {};
     
     var that = this;
     var iterator = new this.searcher.resultsIterator();
@@ -668,7 +673,17 @@ var MapView = Backbone.View.extend({
                 continue;
               }
               
-              that.addMarker(lat, lng);
+              var properties = [];
+              for(var property in result) {
+                if (result.hasOwnProperty(property) && !Splunk.Utils.startsWith(property, "_")) {
+                  properties.push({
+                    key: property,
+                    value: result[property][0].value
+                  });
+                }
+              }
+              
+              that.addMarker(lat, lng, properties);
             }
           }
         });
@@ -680,8 +695,12 @@ var MapView = Backbone.View.extend({
     });
   },
   
-  addMarker: function(lat, lng) {
-    this.markers.push(lat + "," + lng);
+  addMarker: function(lat, lng, properties) {
+    var key = lat + "," + lng;
+    var marker = this.markers[key] || { lat: lat, lng: lng, count: 0, properties: properties };
+    marker.count++;
+    
+    this.markers[key] = marker;
   },
   
   render: function() {
@@ -694,11 +713,17 @@ var MapView = Backbone.View.extend({
       center: "47.669221800000003,-122.38209860000001",
       zoom: 10
     }).bind('init', function(e, map) {
-      for(var i = 0; i < that.markers.length; i++) {
+      _.each(that.markers, function(marker, key) {
         that.$("#map-canvas").gmap('addMarker', {
-          position: that.markers[i]
+          position: key,
+          value: key
+        }).click(function(e) {
+          var content = templates.eventProperties.tmpl(marker);
+          that.$("#map-canvas").gmap("openInfoWindow", {
+            content: content[0]
+          }, this);
         });
-      }
+      });
     });
     
     return this;
@@ -750,8 +775,9 @@ var BootstrapModalView = Backbone.View.extend({
 
 var SigninView = BootstrapModalView.extend({
   initialize: function() {
+    this.options.template = templates.signin;
     BootstrapModalView.prototype.initialize.call(this);
-    
+     
     _.bindAll(this, "submit", "clear", "login");
     this.events["keypress input"] = "submit";
     this.delegateEvents();
@@ -838,7 +864,7 @@ var NavBarView = Backbone.View.extend({
   signin: function(e) {
     e.preventDefault();
     
-    var signinView = new SigninView({template: templates.signin});
+    var signinView = new SigninView();
     signinView.clear();
     signinView.show();
   },

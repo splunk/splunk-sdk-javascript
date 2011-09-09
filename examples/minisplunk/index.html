@@ -28,6 +28,17 @@
         </tbody>
       </table>
     </script>
+    
+    <script id="eventPropertiesTemplate" type="text/x-jquery-tmpl">
+      <div style="max-height: 200px; overflow-y: auto;">
+        <h3>Count: ${count}</h3>
+        <ul>
+        {{each properties}}
+          <li>${$value.key}: ${$value.value}</li>
+        {{/each}}
+        <ul>
+      </div>
+    </script>
  
     <script id="searchFormTemplate" type="text/x-jquery-tmpl">
       <div class="span16 offset0 highlight"> 

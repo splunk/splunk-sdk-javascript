@@ -16,7 +16,7 @@ var SearchApp = Backbone.Router.extend({
   initialize: function() {
     window.App = this;
     
-    _.bindAll(this, "search", "jobs", "signedIn", "maps");
+    _.bindAll(this, "search", "jobs", "signedIn", "maps", "service");
     
     this.events = _.extend({}, Backbone.Events);
     this.events.bind("service:login", this.signedIn);
@@ -41,8 +41,19 @@ var SearchApp = Backbone.Router.extend({
   signedIn: function(service) {
     console.log("signed in:", service);
     console.log(this);
-    this.service = service;
+    this.svc = service;
     this.jobsView.jobs.fetch();
+  },
+  
+  service: function() {
+    if (this.svc) {
+      return this.svc;
+    }
+    
+    var view = new SigninView();
+    view.show();
+    
+    return false;
   },
   
   search : function() {
