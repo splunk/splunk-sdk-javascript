@@ -16,13 +16,14 @@ var SearchApp = Backbone.Router.extend({
   initialize: function() {
     window.App = this;
     
-    _.bindAll(this, "search", "jobs", "signedIn");
+    _.bindAll(this, "search", "jobs", "signedIn", "maps");
     
     this.events = _.extend({}, Backbone.Events);
     this.events.bind("service:login", this.signedIn);
     
     this.searchView = new SearchView();
     this.jobsView = new JobManagerView();
+    this.mapView = new MapView();
     this.navBarView = new NavBarView({el: "#navbar"});
     
     this.navBarView.render();
@@ -33,7 +34,8 @@ var SearchApp = Backbone.Router.extend({
   routes: {
     "" : "search",
     "search" : "search",
-    "jobs": "jobs"
+    "jobs": "jobs",
+    "maps": "maps"
   },
   
   signedIn: function(service) {
@@ -55,6 +57,14 @@ var SearchApp = Backbone.Router.extend({
     
     $("#content").detach();
     $("#content-container").append(this.jobsView.el);
+  },
+  
+  maps: function() {
+    this.setNavigationHighlight("maps");
+    
+    $("#content").detach();
+    $("#content-container").append(this.mapView.el);
+    this.mapView.render();
   },
   
   setNavigationHighlight: function(view) {
