@@ -22,7 +22,9 @@ var templates = {
   jobs: $("#jobsTemplate"),
   alert: $("#alertTemplate"),
   navBar: $("#navBarTemplate"),
-  signin: $("#signinTemplate")
+  signin: $("#signinTemplate"),
+  map: $("#mapTemplate"),
+  eventProperties: $("#eventPropertiesTemplate")
 };
 
 var performSearch = function(svc, query) {          
@@ -294,14 +296,14 @@ var PaginationView = Backbone.View.extend({
   },
   
   searchNew: function() {
-    this.searchDone = false;
+    this.isSearchDone = false;
     this.resultCount = 0;
     this.currentPage = 0;
     this.render();
   },
   
   searchDone: function() {
-    this.searchDone = true;
+    this.isSearchDone = true;
     this.render();
     this.gotoPage(1);
   },
@@ -433,10 +435,14 @@ var SearchFormView = Backbone.View.extend({
   
   search: function(e) {
     e.preventDefault();
+    if (!App.service()) {
+      return;
+    }
+    
     var query = $("#searchbox").val().trim();
     
     if (query !== "") {
-      performSearch(App.service, query);
+      performSearch(App.service(), query);
     }
     
     e.preventDefault();
@@ -618,21 +624,163 @@ var JobManagerView = Backbone.View.extend({
   }
 });
 
-var SigninView = Backbone.View.extend({
+var MapView = Backbone.View.extend({
   tagName: "div",
-  className: "modal",
-  id: "signin-modal",
+  className: "container",
+  id: "content",
   
   initialize: function() {
-    this.template = templates.signin;
-    _.bindAll(this, "render", "login", "close", "clear", "submit");
+    this.template = templates.map;
+    _.bindAll(this, "render", "searchDone", "stats");
+    
+    this.markers = {};
+    
+    App.events.bind("search:stats", this.stats);
+    App.events.bind("search:done", this.searchDone);
+  },
+  
+  stats: function(properties) {
+    this.properties = properties;
+  },
+  
+  searchDone: function(searcher) {
+    this.searcher = searcher;
+    
+    this.getResults();
+  },
+  
+  getResults: function() {
+    this.markers = {};
+    
+    var that = this;
+    var iterator = new this.searcher.resultsIterator();
+    
+    var hasMore = true;
+    var whileP = Promise.while({
+      condition: function() { return hasMore; },
+      body: function() {
+        return iterator.next().whenResolved(function(more, results) {
+          hasMore = more;
+          
+          if (more) {
+            var data = results.data;
+            for(var i = 0; i < data.length; i++) {
+              var result = data[i];
+              var lat = result["lat"][0].value;
+              var lng = result["lng"][0].value;
+              
+              if (!lat || !lng) {
+                continue;
+              }
+              
+              var properties = [];
+              for(var property in result) {
+                if (result.hasOwnProperty(property) && !Splunk.Utils.startsWith(property, "_")) {
+                  properties.push({
+                    key: property,
+                    value: result[property][0].value
+                  });
+                }
+              }
+              
+              that.addMarker(lat, lng, properties);
+            }
+          }
+        });
+      }
+    });
+    
+    whileP.whenResolved(function() {
+      that.render();
+    });
+  },
+  
+  addMarker: function(lat, lng, properties) {
+    var key = lat + "," + lng;
+    var marker = this.markers[key] || { lat: lat, lng: lng, count: 0, properties: properties };
+    marker.count++;
+    
+    this.markers[key] = marker;
+  },
+  
+  render: function() {
+    var that = this;
+    $(this.el).empty();
+    
+    $(this.el).html(this.template.tmpl());
+    
+    this.$("#map-canvas").gmap({
+      center: "47.669221800000003,-122.38209860000001",
+      zoom: 10
+    }).bind('init', function(e, map) {
+      _.each(that.markers, function(marker, key) {
+        that.$("#map-canvas").gmap('addMarker', {
+          position: key,
+          value: key
+        }).click(function(e) {
+          var content = templates.eventProperties.tmpl(marker);
+          that.$("#map-canvas").gmap("openInfoWindow", {
+            content: content[0]
+          }, this);
+        });
+      });
+    });
+    
+    return this;
+  },
+});  
+
+var BootstrapModalView = Backbone.View.extend({
+  initialize: function() {
+    this.template = this.options.template;
+    this.el = $(this.template.tmpl());
+    this.modal = this.el.modal({
+      backdrop: true,
+      modal: true,
+      closeOnEscape: true
+    });
+    
+    _.bindAll(this, "show", "hide", "primaryClicked", "secondaryClicked");
+    
+    this.delegateEvents();
   },
   
   events: {
-    "click a.login": "login",
-    "click a.cancel": "close",
-    "click a.close": "close",
-    "keypress input": "submit",
+    "click a.button1": "primaryClicked",
+    "click a.button2": "secondaryClicked"
+  },
+  
+  show: function() {
+    this.modal.open();
+  },
+  
+  hide: function(e) {
+    if (e) {
+      e.preventDefault();
+    }
+    
+    this.modal.close();
+  },
+  
+  primaryClicked: function(e) {
+    e.preventDefault();
+    console.log("primary");
+  },
+  
+  secondaryClicked: function(e) {
+    e.preventDefault();
+    console.log("secondary");
+  }
+});
+
+var SigninView = BootstrapModalView.extend({
+  initialize: function() {
+    this.options.template = templates.signin;
+    BootstrapModalView.prototype.initialize.call(this);
+     
+    _.bindAll(this, "submit", "clear", "login");
+    this.events["keypress input"] = "submit";
+    this.delegateEvents();
   },
   
   submit: function(e) {
@@ -641,17 +789,17 @@ var SigninView = Backbone.View.extend({
       this.login(e);
     }
   },
-  
-  login: function(e) {
-    e.preventDefault();  
     
+  login: function(e) {
+    e.preventDefault();    
     var that = this;
     
-    var username = $("#signin-modal #id_username").val() || "itay";
-    var password = $("#signin-modal #id_password").val() || "changeme";
-    var scheme = $("#signin-modal #id_scheme").val() || "http";
-    var host = $("#signin-modal #id_host").val() || "localhost";
-    var port = $("#signin-modal #id_port").val() || "8000";
+    var username = this.$("#id_username").val() || "itay";
+    var password = this.$("#id_password").val() || "changeme";
+    var scheme   = this.$("#id_scheme").val() || "http";
+    var host     = this.$("#id_host").val() || "localhost";
+    var port     = this.$("#id_port").val() || "8000";
+    var app      = this.$("#id_app").val() || "-";
     
     var base = scheme + "://" + host + ":" + port;
     
@@ -662,25 +810,29 @@ var SigninView = Backbone.View.extend({
         port: port,
         username: username,
         password: password,
+        namespace: app,
     });
       
     var loginP = svc.login();
     var doneP = loginP.when(
       function() {
-        that.close(e);
+        that.hide(e);
         App.events.trigger("service:login", svc);
       },
       function() {
-        
         this.$("#login-error p").text("There was an error logging in.").parent().removeClass("hidden");
       }
     );
   },
   
-  close: function(e) {
-    e.preventDefault();
-    $(this.el).detach();
+  primaryClicked: function(e) {
+    this.login(e);
   },
+  
+  secondaryClicked: function(e) {
+    e.preventDefault();
+    this.hide();
+  },  
   
   clear: function() {
     this.$("input").each(function(index, input) {
@@ -689,14 +841,6 @@ var SigninView = Backbone.View.extend({
     
     this.$("#login-error").addClass("hidden");
   },
-  
-  render: function() {
-    $(this.el).empty();
-    
-    $(this.el).append(this.template.tmpl());
-    
-    return this;
-  }
 });
 
 var NavBarView = Backbone.View.extend({
@@ -704,9 +848,6 @@ var NavBarView = Backbone.View.extend({
     this.template = templates.navBar;
     
     _.bindAll(this, "render", "signin", "signedIn", "doNothing");
-    
-    this.signinView = new SigninView();
-    this.signinView.render();
     
     App.events.bind("service:login", this.signedIn);
   },
@@ -723,9 +864,9 @@ var NavBarView = Backbone.View.extend({
   signin: function(e) {
     e.preventDefault();
     
-    this.signinView.clear();
-    $(this.signinView.el).detach();
-    $("body").append(this.signinView.el);
+    var signinView = new SigninView();
+    signinView.clear();
+    signinView.show();
   },
   
   signedIn: function(service) {
