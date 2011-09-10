@@ -2079,6 +2079,7 @@ require.modules["/lib/searcher.js"] = function () {
     var client  = require('./client');
     var Class   = require('./jquery.class').Class;
     var Promise = require('./promise').Promise;
+    var utils   = require('./utils');
     
     var root = exports || this;
 
@@ -2090,6 +2091,13 @@ require.modules["/lib/searcher.js"] = function () {
             this.service = service;
             this.job = job;
             this.isJobDone = false;
+            
+            this.done               = utils.bind(this, this.done);
+            this.cancel             = utils.bind(this, this.done);
+            this.isDone             = utils.bind(this, this.done);
+            this.eventsIterator     = utils.bind(this, this.eventsIterator);
+            this.resultsIterator    = utils.bind(this, this.resultsIterator);
+            this.previewIterator    = utils.bind(this, this.previewIterator);
         },
         
         done: function() {
