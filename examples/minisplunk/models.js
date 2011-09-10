@@ -140,6 +140,15 @@ var Jobs = Backbone.Collection.extend({
   },
   
   continuousFetch: function() {
+    if (!App.service()) {
+      return;
+    }
+    if (this.isFetchingStarted) {
+      return;
+    }
+    
+    this.isFetchingStarted = true;
+    
     var jobs = this;
     Promise.while({
       condition: function() { return true; },
