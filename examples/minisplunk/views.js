@@ -14,10 +14,12 @@
 
 var templates = {
   eventRow: $("#eventRowTemplate"),
+  resultRow: $("#resultRowTemplate"),
   searchForm: $("#searchFormTemplate"),
   searchStats: $("#searchStatsTemplate"),
   pagination: $("#paginationTemplate"),
   events: $("#eventsTemplate"),
+  results: $("#resultsTemplate"),
   job: $("#jobRowTemplate"),
   jobs: $("#jobsTemplate"),
   alert: $("#alertTemplate"),
@@ -110,12 +112,21 @@ var EventView = Backbone.View.extend({
   tagName: "li",
   initialize: function() {
     this.template = templates.eventRow;
-    
     _.bindAll(this, "render", "toggleInfo", "hideInfo");
   },
   
   render: function() {
-    var content = this.template.tmpl(this.model.toJSON());
+    var eventInfo = this.model.get("event");
+    var timestamp = new Date(Date.parse(eventInfo["_time"][0].value)).format("m/d/yy h:MM:ss.l TT");
+    var raw = eventInfo["_raw"][0].value[0];
+    
+    var context = {
+      index: this.model.get("index"),
+      timestamp: timestamp,
+      raw: raw,
+      properties: this.model.get("properties")
+    };
+    var content = this.template.tmpl(context);
     
     $(this.el).html(content);
     return this;
@@ -151,20 +162,41 @@ var EventView = Backbone.View.extend({
   }
 });
 
+var ResultView = Backbone.View.extend({
+  tagName: "tr",
+  className: "result-info",
+  
+  initialize: function() {
+    this.template = templates.resultRow;
+    
+    _.bindAll(this, "render");
+  },
+  
+  render: function() { 
+    $(this.el).empty();
+    
+    $(this.el).html(this.template.tmpl(this.model.toJSON()));
+    
+    return this;
+  }
+});
+
 var EventsView = Backbone.View.extend({
   tagName: "div",
   className: "row",
   id: "results",
   
   initialize: function() {
-    this.template = templates.events;
+    this.eventsTemplate = templates.events;
+    this.resultsTemplate = templates.results;
     
-    _.bindAll(this, "render", "add", "reset", "hide", "show", "eventInfo");
+    _.bindAll(this, "render", "add", "reset", "hide", "show", "eventInfo", "stats");
     
     this.collection.bind("add", this.add);
     this.collection.bind("reset", this.reset);
     
     App.events.bind("search:new", this.hide);
+    App.events.bind("search:stats", this.stats);
     App.events.bind("event:info", this.eventInfo);
     
     this.renderedEvents = [];
@@ -178,7 +210,11 @@ var EventsView = Backbone.View.extend({
     
     renderedEvents = renderedEvents || this.renderedEvents;
     
-    $(this.el).html(this.template.tmpl());
+    var template = this.isTransform ? this.resultsTemplate : this.eventsTemplate;
+    
+    $(this.el).html(template.tmpl({
+      headers: this.headers()
+    }));
     
     this.$(this.eventsContainer).append(renderedEvents);
     
@@ -192,8 +228,22 @@ var EventsView = Backbone.View.extend({
     return this;
   },
   
+  headers: function() {
+    if (this.isTransform) {
+      return this.collection.headers;
+    }
+    else {
+      return ["Date", "Event"];
+    }
+  },
+  
+  stats: function(properties) {
+    var reportSearch = properties.reportSearch;
+    this.isTransform = (reportSearch && reportSearch.trim() !== "");
+  },
+  
   add: function(event) {
-    var view = new EventView({model: event});
+    var view = (this.isTransform ? new ResultView({model: event}) : new EventView({model: event}));
     var el = view.render().el;
     this.renderedEvents.push(el);
     
@@ -201,14 +251,15 @@ var EventsView = Backbone.View.extend({
   },
   
   reset: function(events) {
+    var that = this;
     var renderedEvents = this.renderedEvents = [];
     
     events.each(function(event) {
-      var view = new EventView({model: event});
+      var view = (that.isTransform ? new ResultView({model: event}) : new EventView({model: event}));
       renderedEvents.push(view.render().el);
     });
     
-    this.render();
+    this.render(true);
   },
   
   hide: function() {
@@ -666,12 +717,15 @@ var MapView = Backbone.View.extend({
             var data = results.data;
             for(var i = 0; i < data.length; i++) {
               var result = data[i];
-              var lat = result["lat"][0].value;
-              var lng = result["lng"][0].value;
+              var latVal = result.lat;
+              var lngVal = result.lng;
               
-              if (!lat || !lng) {
+              if (!latVal || !lngVal) {
                 continue;
               }
+              
+              var lat = latVal[0].value;
+              var lng = lngVal[0].value;
               
               var properties = [];
               for(var property in result) {
@@ -764,13 +818,10 @@ var BootstrapModalView = Backbone.View.extend({
   
   primaryClicked: function(e) {
     e.preventDefault();
-    console.log("primary");
   },
   
   secondaryClicked: function(e) {
     e.preventDefault();
-    console.log("secondary");
-  }
 });
 
 var SigninView = BootstrapModalView.extend({

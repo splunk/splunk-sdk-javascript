@@ -39,8 +39,6 @@ var SearchApp = Backbone.Router.extend({
   },
   
   signedIn: function(service) {
-    console.log("signed in:", service);
-    console.log(this);
     this.svc = service;
     this.jobsView.jobs.continuousFetch();
   },

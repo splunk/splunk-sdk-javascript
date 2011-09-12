@@ -13,7 +13,7 @@
           <tr class="result-data">
             <td class="id-cell">${index}</td>
             <td class="date-cell">${timestamp}</td>
-            <td class="event-cell">${event}</td>
+            <td class="event-cell">${raw}</td>
           </tr>
           <tr>
             <td colspan="3" class="result-info hidden">
@@ -28,6 +28,13 @@
         </tbody>
       </table>
     </script>
+ 
+    <script id="resultRowTemplate" type="text/x-jquery-tmpl">
+      <td>${index}</td>
+      {{each properties}}
+      <td>${$value.value}</td>
+      {{/each}}
+    </script>
     
     <script id="eventPropertiesTemplate" type="text/x-jquery-tmpl">
       <div style="max-height: 200px; overflow-y: auto;">
@@ -38,6 +45,42 @@
         {{/each}}
         <ul>
       </div>
+    </script>
+    
+    <script id="eventsTemplate" type="text/x-jquery-tmpl">
+      <div class="span16 offset0">      
+        <ul class="results" id="results-header">
+          <li>
+            <table>
+              <thead> 
+                <tr> 
+                  <th class="id-cell">#</th> 
+                  <th class="date-cell">Date</th> 
+                  <th class="event-cell">Event</th>
+                </tr> 
+              </thead> 
+            </table>
+          </li>
+        </ul>     
+        <ul class="results" id="results-list">
+        </ul>
+      </div> 
+    </script>
+    
+    <script id="resultsTemplate" type="text/x-jquery-tmpl">
+      <div class="span16 offset0">  
+        <table class="results">
+          <thead>
+            <tr> 
+              <th class="id-cell">#</th> 
+              {{each headers }}
+              <th>${$value}</th> 
+              {{/each}}
+            </tr> 
+          </thead>
+          <tbody id="results-list">
+          </tbody>
+      </div> 
     </script>
  
     <script id="searchFormTemplate" type="text/x-jquery-tmpl">
@@ -84,26 +127,6 @@
             <li class="next {{if isNextDisabled}}disabled{{/if}}"><a href="#">Next →</a></li>
           </ul>
         </div>
-      </div> 
-    </script>
-    
-    <script id="eventsTemplate" type="text/x-jquery-tmpl">
-      <div class="span16 offset0">      
-        <ul class="results" id="results-header">
-          <li>
-            <table>
-              <thead> 
-                <tr> 
-                  <th class="id-cell">#</th> 
-                  <th class="date-cell">Date</th> 
-                  <th class="event-cell">Event</th> 
-                </tr> 
-              </thead> 
-            </table>
-          </li>
-        </ul>     
-        <ul class="results" id="results-list">
-        </ul>
       </div> 
     </script>
     
