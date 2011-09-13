@@ -822,6 +822,7 @@ var BootstrapModalView = Backbone.View.extend({
   
   secondaryClicked: function(e) {
     e.preventDefault();
+  }
 });
 
 var SigninView = BootstrapModalView.extend({

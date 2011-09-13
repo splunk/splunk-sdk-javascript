@@ -46,7 +46,11 @@ var Events = Backbone.Collection.extend({
     
     this.headers = [];
     var events = this;
-    var resultsP = this.searcher.job.results({count: this.resultsPerPage, offset: (page * this.resultsPerPage)});
+    var resultsP = this.searcher.job.results({
+      count: this.resultsPerPage, 
+      offset: (page * this.resultsPerPage),
+      show_empty_fields: true
+    });
     
     return resultsP.whenResolved(function(results) {
       var data = results.data || [];
