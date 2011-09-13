@@ -41,7 +41,7 @@ var performSearch = function(svc, query) {
   
   return jobP.when(
     function(createdJob) {      
-      App.events.trigger("search:new");
+      App.events.trigger("search:new", createdJob);
         
       job = createdJob;
       searcher = new Splunk.Searcher.JobManager(svc, job);
@@ -190,14 +190,15 @@ var EventsView = Backbone.View.extend({
     this.eventsTemplate = templates.events;
     this.resultsTemplate = templates.results;
     
-    _.bindAll(this, "render", "add", "reset", "hide", "show", "eventInfo", "stats");
+    _.bindAll(this, "render", "add", "reset", "hide", "show", "eventInfo", "stats", "searchNew", "searchDeleted");
     
     this.collection.bind("add", this.add);
     this.collection.bind("reset", this.reset);
     
-    App.events.bind("search:new", this.hide);
+    App.events.bind("search:new", this.searchNew);
     App.events.bind("search:stats", this.stats);
     App.events.bind("event:info", this.eventInfo);
+    App.events.bind("search:deleted", this.searchDeleted);
     
     this.renderedEvents = [];
     this.eventsContainer = this.options.container;
@@ -234,6 +235,18 @@ var EventsView = Backbone.View.extend({
     }
     else {
       return ["Date", "Event"];
+    }
+  },
+  
+  searchNew: function(job) {
+    this.hide();
+    this.job = job;
+  },
+  
+  searchDeleted: function(job) {
+    if (this.job && this.job.sid === job.sid) {
+      this.job = null;
+      this.hide();
     }
   },
   
@@ -289,11 +302,12 @@ var PaginationView = Backbone.View.extend({
     this.currentPage = 1;
     this.resultCount = 0;
     
-    _.bindAll(this, "stats", "searchNew", "searchDone", "render", "show", "hide", "prev", "next", "page", "gotoPage");
+    _.bindAll(this, "stats", "searchNew", "searchDone", "searchDeleted", "render", "show", "hide", "prev", "next", "page", "gotoPage");
     
     App.events.bind("search:stats", this.stats);
     App.events.bind("search:done", this.searchDone);
     App.events.bind("search:new", this.searchNew);
+    App.events.bind("search:deleted", this.searchDeleted);
   },
   
   events: {
@@ -346,10 +360,11 @@ var PaginationView = Backbone.View.extend({
     this.resultCount = properties.resultCount;
   },
   
-  searchNew: function() {
+  searchNew: function(job) {
     this.isSearchDone = false;
     this.resultCount = 0;
     this.currentPage = 0;
+    this.job = job;
     this.render();
   },
   
@@ -357,6 +372,14 @@ var PaginationView = Backbone.View.extend({
     this.isSearchDone = true;
     this.render();
     this.gotoPage(1);
+  },
+  
+  searchDeleted: function(job) {
+    if (this.job && job.sid === this.job.sid) {
+      this.resultCount = 0;
+      this.isSearchDone = false;
+      this.render();
+    }
   },
   
   render: function() {
@@ -409,10 +432,46 @@ var SearchStatsView = Backbone.View.extend({
   initialize : function() {
     this.template = templates.searchStats;
     
-    _.bindAll(this, "render", "hide", "show", "stats");
+    _.bindAll(this, "render", "hide", "show", "stats", "newJob", "unpause", "pause", "del", "finalize");
     
     App.events.bind("search:new", this.hide);
+    App.events.bind("search:new", this.newJob);
     App.events.bind("search:stats", this.stats);
+    App.events.bind("search:deleted", this.hide);
+  },
+  
+  events: {
+    "click a.unpause" : "unpause",
+    "click a.pause" : "pause",
+    "click a.delete" : "del",
+    "click a.finalize" : "finalize",
+  },
+  
+  newJob: function(job) {
+    this.job = job;
+  },
+  
+  unpause: function(e) {
+    e.preventDefault();
+    this.job.unpause();
+  },
+  
+  pause: function(e) {
+    e.preventDefault();
+    this.job.pause();
+  },
+  
+  del: function(e) {
+    e.preventDefault();
+    console.log(this.job);
+    this.job.cancel();
+    this.hide();
+    App.events.trigger("search:deleted", this.job);
+  },
+  
+  finalize: function(e) {
+    e.preventDefault();
+    this.job.finalize();
   },
   
   render: function(stats) {
@@ -440,7 +499,8 @@ var SearchStatsView = Backbone.View.extend({
   stats: function(properties) {
     var stats = {
       eventCount: properties.eventCount,
-      scanCount: properties.scanCount
+      scanCount: properties.scanCount,
+      actions: propertiesToActions(properties)
     };
     
     this.render(stats);
@@ -464,9 +524,10 @@ var SearchFormView = Backbone.View.extend({
     this.alertTemplate = templates.alert;
     this.messages = {};
     
-    _.bindAll(this, "search", "render", "stats", "failed");
+    _.bindAll(this, "search", "render", "stats", "failed", "deleted");
     App.events.bind("search:stats", this.stats);
     App.events.bind("search:failed", this.failed);
+    App.events.bind("search:deleted", this.deleted);
   },
   
   events: {
@@ -475,6 +536,7 @@ var SearchFormView = Backbone.View.extend({
   },
   
   stats: function(properties) {
+    this.sid = properties.sid;
     this.messages = properties.messages || {};
     this.render();
   },
@@ -482,6 +544,13 @@ var SearchFormView = Backbone.View.extend({
   failed: function(query, messages) {
     this.messages = messages || {};
     this.render();
+  },
+  
+  deleted: function(job) {
+    if (this.sid && this.sid === job.sid) {
+      this.messages = {};
+      this.render();
+    }
   },
   
   search: function(e) {
@@ -559,6 +628,7 @@ var JobView = Backbone.View.extend({
   del: function(e) {
     e.preventDefault();
     this.model.del();
+    App.events.trigger("search:deleted", this.model.job);
   },
   
   finalize: function(e) {

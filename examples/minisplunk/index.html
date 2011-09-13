@@ -114,6 +114,13 @@
       <div class="span3 offset0"> 
         <span>Scanned: </span><strong id="scan-count">${scanCount}</strong>
       </div>
+      <div class="span3 offset7">
+        <div class="pull-right">
+          {{each actions}}
+          <a href="#" class="${$value.toLowerCase()}">${$value}</a>{{if ($index+1) !== actions.length}} | {{/if}}
+          {{/each}}
+        </div>
+      </div> 
     </script>
     
     <script id="paginationTemplate" type="text/x-jquery-tmpl">
@@ -271,7 +278,7 @@
       });
     </script>
     
-    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.js"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.js"></script>
     <script type="text/javascript" src="http://ajax.microsoft.com/ajax/jquery.templates/beta1/jquery.tmpl.js"></script>
     <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?v=3&sensor=true"></script>
     <script type="text/javascript" src="jquery.fn.gmap.js"></script>
@@ -295,6 +302,10 @@
       }
       
       #searchInput {
+      }
+      
+      .pull-right {
+        float: right;
       }
       
       .capitalize {
