@@ -44,18 +44,24 @@ var Events = Backbone.Collection.extend({
       return Splunk.Promise.Success();
     }
     
+    this.headers = [];
     var events = this;
-    var resultsP = this.searcher.job.results({count: this.resultsPerPage, offset: (page * this.resultsPerPage)});
+    var resultsP = this.searcher.job.results({
+      count: this.resultsPerPage, 
+      offset: (page * this.resultsPerPage),
+      show_empty_fields: true
+    });
     
     return resultsP.whenResolved(function(results) {
       var data = results.data || [];
       var baseOffset = page * this.resultsPerPage;
       var rows = [];
       for(var i = 0; i < data.length; i++) {
-        var index = parseInt(data[i]["__offset"]) + 1;
-        var timestamp = new Date(Date.parse(data[i]["_time"][0].value)).format("m/d/yy h:MM:ss.l TT");
-        var event = data[i]["_raw"][0].value[0];
+        var result = data[i];
+        
+        var index = parseInt(result["__offset"]) + 1;
         var properties = [];
+        var headers = {};
         
         for(var property in data[i]) {
           if (data[i].hasOwnProperty(property) && !Splunk.Utils.startsWith(property, "_")) {
@@ -63,15 +69,17 @@ var Events = Backbone.Collection.extend({
               key: property,
               value: data[i][property][0].value
             });
+            
+            headers[property] = true;
           }
         }
         
         var rowData = new Event({
           index: index,
-          timestamp: timestamp,
-          event: event,
+          event: result,
           properties: properties
         });
+        events.headers = _.keys(headers);
         
         rows.push(rowData);
       }
