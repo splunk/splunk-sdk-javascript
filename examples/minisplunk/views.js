@@ -916,12 +916,12 @@ var SigninView = BootstrapModalView.extend({
     e.preventDefault();    
     var that = this;
     
-    var username = this.$("#id_username").val() || "itay";
+    var username = this.$("#id_username").val() || "admin";
     var password = this.$("#id_password").val() || "changeme";
     var scheme   = this.$("#id_scheme").val() || "http";
-    var host     = this.$("#id_host").val() || "localhost";
-    var port     = this.$("#id_port").val() || "8000";
-    var app      = this.$("#id_app").val() || "-";
+    var host     = this.$("#id_host").val() || "ronnie.splunk.com";
+    var port     = this.$("#id_port").val() || "2911";
+    var app      = this.$("#id_app").val() || "foursquare";
     
     var base = scheme + "://" + host + ":" + port;
     
