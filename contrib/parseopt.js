@@ -417,7 +417,7 @@ OptionParser.prototype = {
             }
             else {
                 // foo-bar -> fooBar
-                target = target.split(/[^a-zA-Z0-9]+/);
+                target = target.split(/[^a-zA-Z0-9_]+/);
                 for (var i = 1; i < target.length; ++ i) {
                     var part = target[i];
     
