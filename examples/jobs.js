@@ -33,7 +33,10 @@
     var FLAGS_EVENTS = [
         "offset", "count", "earliest_time", "latest_time", "search",
         "time_format", "output_time_format", "field_list", "f", "max_lines",
-        "truncation_mode", "output_mode", "segmentation"
+        "truncation_mode", "json_mode", "segmentation"
+    ];
+    var FLAGS_RESULTS = [
+        "offset", "count", "search", "field_list", "f", "json_mode"
     ];
 
     // This function will create a set of options for command line parsing
@@ -84,6 +87,34 @@
 
         return cmdline;
     };
+    
+    var printRows = function(data) {
+        var fields = data.fields;
+        var rows = data.rows;
+        for(var i = 0; i < rows.length; i++) {
+            values = rows[i];
+            console.log("Row " + i + ": ");
+            for(var j = 0; j < values.length; j++) {
+                field = fields[j];
+                value = values[j];
+                console.log("  " + field + ": " + value);
+            }
+        }
+    };
+    
+    var printCols = function(data) {
+        var fields = data.fields;
+        var columns = data.columns;
+        for(var i = 0; i < columns.length; i++) {
+            values = columns[i];
+            field = fields[i];
+            console.log("Column " + field + " (" + i + "): ");
+            for(var j = 0; j < values.length; j++) {
+                value = values[j];
+                console.log("  " + value);
+            }
+        }
+    };
 
     var _check_sids = function(command, sids) {
         if (!sids || sids.length === 0) {
@@ -100,6 +131,8 @@
             this.create     = utils.bind(this, this.create);
             this.events     = utils.bind(this, this.events);
             this.list       = utils.bind(this, this.list);   
+            this.preview    = utils.bind(this, this.preview);  
+            this.results    = utils.bind(this, this.results);   
         },
 
         _foreach: function(sids, fn) {
@@ -183,15 +216,22 @@
 
             // For each of the passed in sids, get the relevant events
             return this._foreach(cmdline.arguments, function(job) {
-                console.log("Job " + job.sid + ": "); 
+                console.log("===== EVENTS @ " + job.sid + " ====="); 
 
                 return job.events(cmdline.options).whenResolved(function(data) {
-                    var events = data.data || [];
-                    for(var i = 0; i < events.length; i++) {
-                        console.log("  " + events[i]._raw[0].value[0]);
+                    var json_mode = cmdline.options.json_mode || "rows";
+                    if (json_mode === "rows") {
+                        printRows(data);
+                    }
+                    else if (json_mode === "column") {
+                        console.log(data);
+                        printCols(data);
+                    }
+                    else {
+                        console.log(data);
                     }
 
-                    return events;
+                    return data;
                 });
             });
         },
@@ -258,6 +298,60 @@
             }
         },
 
+        // Retrieve events for the specified search jobs
+        preview: function(argv, callback) {
+            // Create the command line for the results_preview command and parse it
+            var cmdline = _makeCommandLine("results", argv, FLAGS_RESULTS, false);
+
+            // For each of the passed in sids, get the relevant results
+            return this._foreach(cmdline.arguments, function(job) {
+                console.log("===== PREVIEW @ " + job.sid + " ====="); 
+
+                return job.preview(cmdline.options).whenResolved(function(data) {                    
+                    var json_mode = cmdline.options.json_mode || "rows";
+                    if (json_mode === "rows") {
+                        printRows(data);
+                    }
+                    else if (json_mode === "column") {
+                        console.log(data);
+                        printCols(data);
+                    }
+                    else {
+                        console.log(data);
+                    }
+                    
+                    return data;
+                });
+            });
+        },
+
+        // Retrieve events for the specified search jobs
+        results: function(argv, callback) {
+            // Create the command line for the results command and parse it
+            var cmdline = _makeCommandLine("results", argv, FLAGS_RESULTS, false);
+            console.log(cmdline)
+
+            // For each of the passed in sids, get the relevant results
+            return this._foreach(cmdline.arguments, function(job) {
+                console.log("===== RESULTS @ " + job.sid + " ====="); 
+
+                return job.results(cmdline.options).whenResolved(function(data) {                    
+                    var json_mode = cmdline.options.json_mode || "rows";
+                    if (json_mode === "rows") {
+                        printRows(data);
+                    }
+                    else if (json_mode === "column") {
+                        console.log(data);
+                        printCols(data);
+                    }
+                    else {
+                        console.log(data);
+                    }
+                    
+                    return data;
+                });
+            });
+        }
     });
 
     var parser = new OptionParser({
@@ -306,7 +400,7 @@
                 type: 'string',
                 required: false,
                 help: "Port number",
-                default: "8000",
+                default: "8089",
                 metavar: "PORT",
             },
             
@@ -315,7 +409,7 @@
                 type: 'string',
                 required: false,
                 help: "Scheme",
-                default: "http",
+                default: "https",
                 metavar: "SCHEME",
             },
             
