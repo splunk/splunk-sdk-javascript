@@ -413,7 +413,7 @@ require.modules["/lib/binding.js"] = function () {
             this.http = http;
             this.scheme = params.scheme || "https";
             this.host = params.host || "localhost";
-            this.port = params.port || 8000;
+            this.port = params.port || 8089;
             this.username = params.username || null;  
             this.password = params.password || null;  
             this.owner = params.owner || "-";  
@@ -422,7 +422,7 @@ require.modules["/lib/binding.js"] = function () {
             
             // Store our full prefix, which is just combining together
             // the scheme with the host
-            this.prefix = this.scheme + "://" + this.host + ":" + this.port + "/en-US/custom/old_english/svc";
+            this.prefix = this.scheme + "://" + this.host + ":" + this.port + "/services/json/v1";
 
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
@@ -439,7 +439,6 @@ require.modules["/lib/binding.js"] = function () {
         _headers: function (headers) {
             headers = headers || {};
             headers["Authorization"] = "Splunk " + this.sessionKey;
-            headers["X-SessionKey"] = this.sessionKey;
 
             return headers;
         },
@@ -458,7 +457,7 @@ require.modules["/lib/binding.js"] = function () {
             var owner = (this.owner === "*" ? "-" : this.owner);
             var namespace = (this.namespace === "*" ? "-" : this.namespace);
 
-            return "/" + owner + "/" + namespace + "/" + path; 
+            return "/servicesNS/" + owner + "/" + namespace + "/" + path; 
         },
 
         // Given any path, this function will turn it into a fully
@@ -2093,8 +2092,8 @@ require.modules["/lib/searcher.js"] = function () {
             this.isJobDone = false;
             
             this.done               = utils.bind(this, this.done);
-            this.cancel             = utils.bind(this, this.done);
-            this.isDone             = utils.bind(this, this.done);
+            this.cancel             = utils.bind(this, this.cancel);
+            this.isDone             = utils.bind(this, this.isDone);
             this.eventsIterator     = utils.bind(this, this.eventsIterator);
             this.resultsIterator    = utils.bind(this, this.resultsIterator);
             this.previewIterator    = utils.bind(this, this.previewIterator);
@@ -2171,7 +2170,7 @@ require.modules["/lib/searcher.js"] = function () {
             };
             
             return this.endpoint(params).whenResolved(function(results) {
-                var numResults = (results.data ? results.data.length : 0);
+                var numResults = (results.rows ? results.rows.length : 0);
                 iterator.currentOffset += numResults;
                 
                 return Promise.Success(numResults > 0, results);
@@ -2352,9 +2351,9 @@ require.modules["/platform/client/easyxdm_http.js"] = function () {
             this.xhr = new easyXDM.Rpc(
                 {
                     local: "name.html",
-                    swf: remoteServer + "/en-US/static/app/old_english/easyxdm.swf",
-                    remote: remoteServer + "/en-US/static/app/old_english/cors/index.html",
-                    remoteHelper: remoteServer + "/en-US/static/app/old_english/name.html"
+                    swf: remoteServer + "/static/xdm/easyxdm.swf",
+                    remote: remoteServer + "/static/xdm/cors/index.html",
+                    remoteHelper: remoteServer + "/static/xdm/name.html"
                 }, 
                 {
                     remote: {
@@ -2472,7 +2471,7 @@ require.modules["/contrib/easyXDM/easyXDM.min.js"] = function () {
     return module.exports;
 };
 
-process.nextTick(function () {
+(function () {
     var module = { exports : {} };
     var exports = module.exports;
     var __dirname = "/";
@@ -2505,4 +2504,4 @@ process.nextTick(function () {
 window.Splunk = require('./splunk').Splunk;
 window.Splunk.JQueryHttp = require('./platform/client/jquery_http').JQueryHttp;
 window.Splunk.XdmHttp = require('./platform/client/easyxdm_http').XdmHttp;;
-});
+})();

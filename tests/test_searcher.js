@@ -24,9 +24,9 @@ exports.run = (function() {
 
     var http = new NodeHttp();
     var svc = new Splunk.Client.Service(http, { 
-        scheme: "http",
+        scheme: "https",
         host: "localhost",
-        port: "8000",
+        port: "8089",
         username: "itay",
         password: "changeme",
     });
@@ -85,7 +85,7 @@ exports.run = (function() {
                                 
                                 if (more) {
                                     iterationCount++;
-                                    totalResultCount += results.data.length;
+                                    totalResultCount += results.rows.length;
                                 }
                             });
                         }
@@ -137,7 +137,7 @@ exports.run = (function() {
                                 
                                 if (more) {
                                     iterationCount++;
-                                    totalResultCount += results.data.length;
+                                    totalResultCount += results.rows.length;
                                 }
                             });
                         }
@@ -168,20 +168,12 @@ exports.run = (function() {
                 
                 job.enablePreview();
                 
-                var searchDoneP = searcher.done();
-                
-                // Report progress
-                var progressCount = 0;
-                searchDoneP.onProgress(function(properties) {
-                    progressCount++;
-                });
-                
                 var iterationCount = 0;
                 var iterator = searcher.previewIterator(100);
                 var iterateP = Promise.while({
                     condition: function() { return !searcher.isDone(); },
                     body: function(index) {
-                        return iterator.next().whenResolved(function(more, results) {                            
+                        return iterator.next().whenResolved(function(more, results) {
                             iterationCount++;
                             iterator.reset();
                             
@@ -189,7 +181,14 @@ exports.run = (function() {
                         });
                     }
                 });
-                //var iterateP = 0;
+                
+                var searchDoneP = searcher.done();
+                
+                // Report progress
+                var progressCount = 0;
+                searchDoneP.onProgress(function(properties) {
+                    progressCount++;
+                });
                     
                 return Promise.join(iterateP, searchDoneP).whenResolved(function() {
                     test.assert.ok(progressCount > 0);

@@ -23,9 +23,9 @@ exports.run = (function() {
 
     var http = new NodeHttp();
     var svc = new Splunk.Client.Service(http, { 
-        scheme: "http",
+        scheme: "https",
         host: "localhost",
-        port: "8000",
+        port: "8089",
         username: "itay",
         password: "changeme",
     });
@@ -176,10 +176,10 @@ exports.run = (function() {
                 return job.results(); 
             });
             var finishedP = resultsP.whenResolved(function(results) {
-                test.assert.strictEqual(results.data.length, 1);
-                test.assert.strictEqual(results.field_list.length, 1);
-                test.assert.strictEqual(results.field_list[0], "count");
-                test.assert.strictEqual(results.data[0].count[0].value, "1");
+                test.assert.strictEqual(results.rows.length, 1);
+                test.assert.strictEqual(results.fields.length, 1);
+                test.assert.strictEqual(results.fields[0], "count");
+                test.assert.strictEqual(results.rows[0][0], "1");
                 
                 job.cancel().whenResolved(function() { test.finished(); });
             });
@@ -203,10 +203,10 @@ exports.run = (function() {
                     },
                     function() {
                         job.results({}, function(results) {
-                            test.assert.strictEqual(results.data.length, 1);
-                            test.assert.strictEqual(results.field_list.length, 1);
-                            test.assert.strictEqual(results.field_list[0], "count");
-                            test.assert.strictEqual(results.data[0].count[0].value, "1");
+                            test.assert.strictEqual(results.rows.length, 1);
+                            test.assert.strictEqual(results.fields.length, 1);
+                            test.assert.strictEqual(results.fields[0], "count");
+                            test.assert.strictEqual(results.rows[0][0], "1");
 
                             job.cancel(function() { test.finished(); });
                         });

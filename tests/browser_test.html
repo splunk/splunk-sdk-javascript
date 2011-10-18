@@ -14,11 +14,11 @@
       var JQueryHttp = Splunk.JQueryHttp;
       var XdmHttp = Splunk.XdmHttp;
 
-      http = new XdmHttp(true, "http://localhost:8000");
+      http = new XdmHttp(true, "https://localhost:8089");
       svc = new Splunk.Client.Service(http, { 
-          scheme: "http",
+          scheme: "https",
           host: "localhost",
-          port: "8000",
+          port: "8089",
           username: "itay",
           password: "changeme",
       });

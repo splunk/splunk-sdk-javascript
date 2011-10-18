@@ -117,8 +117,11 @@ var EventView = Backbone.View.extend({
   
   render: function() {
     var eventInfo = this.model.get("event");
-    var timestamp = new Date(Date.parse(eventInfo["_time"][0].value)).format("m/d/yy h:MM:ss.l TT");
-    var raw = eventInfo["_raw"][0].value[0];
+    var timestamp = eventInfo[this.model.get("timestampIndex")];
+    var raw = eventInfo[this.model.get("rawIndex")];
+    
+    var timestamp = new Date(Date.parse(timestamp)).format("m/d/yy h:MM:ss.l TT");
+    var raw = raw;
     
     var context = {
       index: this.model.get("index"),
@@ -784,25 +787,38 @@ var MapView = Backbone.View.extend({
           hasMore = more;
           
           if (more) {
-            var data = results.data;
+            var fields = results.fields;
+            var lngIndex, latIndex;
+            
+            for(var i = 0; i < fields.length; i++) {
+              if (fields[i] === "lng") {
+                lngIndex = i;
+              }
+              else if (fields[i] === "lat") {
+                latIndex = i;
+              }
+            }
+            
+            var data = results.rows;
             for(var i = 0; i < data.length; i++) {
               var result = data[i];
-              var latVal = result.lat;
-              var lngVal = result.lng;
+              var latVal = result[latIndex];
+              var lngVal = result[lngIndex];
               
               if (!latVal || !lngVal) {
                 continue;
               }
               
-              var lat = latVal[0].value;
-              var lng = lngVal[0].value;
+              var lat = latVal;
+              var lng = lngVal;
               
               var properties = [];
-              for(var property in result) {
-                if (result.hasOwnProperty(property) && !Splunk.Utils.startsWith(property, "_")) {
+              for (var j = 0; j < fields.length; j++) {
+                property = fields[j];
+                if (!Splunk.Utils.startsWith(property, "_")) {
                   properties.push({
                     key: property,
-                    value: result[property][0].value
+                    value: result[j]
                   });
                 }
               }
@@ -916,11 +932,11 @@ var SigninView = BootstrapModalView.extend({
     e.preventDefault();    
     var that = this;
     
-    var username = this.$("#id_username").val() || "admin";
+    var username = this.$("#id_username").val() || "itay";
     var password = this.$("#id_password").val() || "changeme";
-    var scheme   = this.$("#id_scheme").val() || "http";
-    var host     = this.$("#id_host").val() || "ronnie.splunk.com";
-    var port     = this.$("#id_port").val() || "2911";
+    var scheme   = this.$("#id_scheme").val() || "https";
+    var host     = this.$("#id_host").val() || "localhost";
+    var port     = this.$("#id_port").val() || "8089";
     var app      = this.$("#id_app").val() || "foursquare";
     
     var base = scheme + "://" + host + ":" + port;

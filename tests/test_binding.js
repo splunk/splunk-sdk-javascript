@@ -20,9 +20,9 @@ exports.run = (function() {
 
     var http = new NodeHttp();
     var svc = new Splunk.Client.Service(http, { 
-        scheme: "http",
+        scheme: "https",
         host: "localhost",
-        port: "8000",
+        port: "8089",
         username: "itay",
         password: "changeme",
     });
@@ -55,9 +55,9 @@ exports.run = (function() {
 
         this.assertion("Login promise", function(test) {
             var newService = new Splunk.Client.Service(http, { 
-                scheme: "http",
+                scheme: "https",
                 host: "localhost",
-                port: "8000",
+                port: "8089",
                 username: "itay",
                 password: "changeme",
             });
@@ -76,9 +76,9 @@ exports.run = (function() {
 
         this.assertion("Login promise fail", function(test) {
             var newService = new Splunk.Client.Service(http, { 
-                scheme: "http",
+                scheme: "https",
                 host: "localhost",
-                port: "8000",
+                port: "8089",
                 username: "itay",
                 password: "changeme_wrongpassword",
             });
@@ -97,9 +97,9 @@ exports.run = (function() {
 
         this.assertion("Login callback", function(test) {
             var newService = new Splunk.Client.Service(http, { 
-                scheme: "http",
+                scheme: "https",
                 host: "localhost",
-                port: "8000",
+                port: "8089",
                 username: "itay",
                 password: "changeme",
             });
@@ -113,9 +113,9 @@ exports.run = (function() {
 
         this.assertion("Login callback fail", function(test) {
             var newService = new Splunk.Client.Service(http, { 
-                scheme: "http",
+                scheme: "https",
                 host: "localhost",
-                port: "8000",
+                port: "8089",
                 username: "itay",
                 password: "changeme_wrongpassword",
             });
@@ -374,7 +374,7 @@ exports.run = (function() {
         });
 
         this.assertion("Promise#request error", function(test) { 
-            var jobsP = this.service.request("search/jobs/1234_nosuchjob", "GET", {"X-TestHeader": 1}, "count=2");
+            var jobsP = this.service.request("search/jobs/1234_nosuchjob", "GET", {"X-TestHeader": 1}, "");
             jobsP.when(
                 function(res) {
                     test.assert.ok(false);
@@ -388,7 +388,7 @@ exports.run = (function() {
         });
 
         this.assertion("Callback#request error", function(test) { 
-            var jobsP = this.service.request("search/jobs/1234_nosuchjob", "GET", {"X-TestHeader": 1}, "count=2", {
+            var jobsP = this.service.request("search/jobs/1234_nosuchjob", "GET", {"X-TestHeader": 1}, "", {
                 success: function(res) {
                     test.assert.ok(false);
                 },

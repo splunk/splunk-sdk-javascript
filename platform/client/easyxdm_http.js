@@ -40,9 +40,9 @@
             this.xhr = new easyXDM.Rpc(
                 {
                     local: "name.html",
-                    swf: remoteServer + "/en-US/static/app/old_english/easyxdm.swf",
-                    remote: remoteServer + "/en-US/static/app/old_english/cors/index.html",
-                    remoteHelper: remoteServer + "/en-US/static/app/old_english/name.html"
+                    swf: remoteServer + "/static/xdm/easyxdm.swf",
+                    remote: remoteServer + "/static/xdm/cors/index.html",
+                    remoteHelper: remoteServer + "/static/xdm/name.html"
                 }, 
                 {
                     remote: {
