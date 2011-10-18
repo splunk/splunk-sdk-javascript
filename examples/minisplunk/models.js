@@ -53,21 +53,25 @@ var Events = Backbone.Collection.extend({
     });
     
     return resultsP.whenResolved(function(results) {
-      var data = results.data || [];
-      var baseOffset = page * this.resultsPerPage;
+      var data = results.rows || [];
+      var baseOffset = results.offset
+      var fields = results.fields;
+      var timestampIndex = fields.indexOf("_time");
+      var rawIndex = fields.indexOf("_raw");
       var rows = [];
+      
       for(var i = 0; i < data.length; i++) {
         var result = data[i];
         
-        var index = parseInt(result["__offset"]) + 1;
         var properties = [];
         var headers = {};
         
-        for(var property in data[i]) {
-          if (data[i].hasOwnProperty(property) && !Splunk.Utils.startsWith(property, "_")) {
+        for(var j = 0; j < fields.length; j++) {
+          var property = fields[j]
+          if (!Splunk.Utils.startsWith(property, "_")) {
             properties.push({
               key: property,
-              value: data[i][property][0].value
+              value: result[j]
             });
             
             headers[property] = true;
@@ -75,9 +79,11 @@ var Events = Backbone.Collection.extend({
         }
         
         var rowData = new Event({
-          index: index,
+          index: i + baseOffset + 1,
           event: result,
-          properties: properties
+          properties: properties,
+          timestampIndex: timestampIndex,
+          rawIndex: rawIndex
         });
         events.headers = _.keys(headers);
         
