@@ -22,7 +22,7 @@ SPLUNK_NS = splunk.rest.format.ATOM_NS
 OPENSEARCH_NS = splunk.rest.format.OPENSEARCH_NS
 
 class ResultFormat(object):
-    NONE = 0
+    VERBOSE = 0
     ROW = 1
     COLUMN = 2
 
@@ -158,7 +158,17 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         if serverResponse:
             root = et.fromstring(serverResponse)
             if root.tag in ('events', 'results', 'results_preview'):
-                output.data = self._parseResultData(root, format=ResultFormat.ROW)
+                json_mode = self.request["query"].get("json_mode", "row")
+                if json_mode == "row":
+                    format = ResultFormat.ROW
+                elif json_mode == "column":
+                    format = ResultFormat.COLUMN
+                elif json_mode == "verbose":
+                    format = ResultFormat.VERBOSE
+                else:
+                    format = ResultFormat.ROW
+                    
+                output.data = self._parseResultData(root, format=format)
             elif root.tag == 'timeline':
                 output.data = self._parseTimelineData(root)
             elif root.tag == 'summary':
@@ -384,12 +394,12 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         
         return tmpEntity
         
-    def _parseResultData(self, root, is_preview = False, format=ResultFormat.NONE):
+    def _parseResultData(self, root, format=ResultFormat.ROW):
         '''
         parses job result data
         '''
         results = {}
-        
+                
         field_list = []
         data = []
     
@@ -414,11 +424,15 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
             data.append(row)
             
         
-        if format is ResultFormat.NONE:
+        if format is ResultFormat.VERBOSE:
             results['field_list'] = field_list
             results['data'] = data
         elif format is ResultFormat.ROW:
             results = self._rowify(field_list, data)
+        elif format is ResultFormat.COLUMN:
+            results = self._columnify(field_list, data)
+
+        results["is_preview"] = splunk.util.normalizeBoolean(root.get("preview"))
 
         return results
     
@@ -426,37 +440,56 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         results = {}
         results['fields'] = field_list
         results['rows'] = []
-        results['tags'] = []
         
         for row_data in data:
             row = {
                 "data": [],
-                "tags": []
             }
         
             for field_name in field_list:
-                field_data = row_data.get(field_name, [{ "value": [], "tags": []}])
+                field_data = row_data.get(field_name, [{ "value": []}])
+                values = []
+                
+                for field_datum in field_data:
+                    value = field_datum['value'] or None
+                    if isinstance(value, list) and len(value) == 1:
+                        value = value[0]  
+                        
+                    values.append(value)
+                
+                values = values[0] if len(values) == 1 else values
+                
+                row['data'].append(values or None)
+        
+            results['rows'].append(row['data'])
+            
+        return results
+    
+    def _columnify(self, field_list, data):
+        results = {}
+        results['fields'] = field_list
+        results['columns'] = []
+        
+        for field_name in field_list:
+            def extract(row_data):
+                field_data = row_data.get(field_name, [{ "value": []}])
                 values = []
                 tags = []
                 
                 for field_datum in field_data:
                     value = field_datum['value'] or None
-                    tag = field_datum.get('tags', []) or None
                     if isinstance(value, list) and len(value) == 1:
                         value = value[0]  
                         
                     values.append(value)
-                    tags.append(tag)
-                
+                    
                 values = values[0] if len(values) == 1 else values
-                tags = tags[0] if len(tags) == 1 else tags
                 
-                row['data'].append(values or None)
-                row['tags'].append(tags or None)
-        
-            results['rows'].append(row['data'])
-            results['tags'].append(row['tags'])
+                return values or None
             
+            column_data = map(extract, data)
+            results['columns'].append(column_data)
+        
         return results
         
     def _getInnerText(self, node):
