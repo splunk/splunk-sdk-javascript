@@ -12,11 +12,19 @@ import pprint
 import re
 import urllib
 
+import logging
+logger = logging.getLogger('splunk.queens_english.intercept')
+
 from route import Router, Route
 
 ATOM_NS = splunk.rest.format.ATOM_NS
 SPLUNK_NS = splunk.rest.format.ATOM_NS
 OPENSEARCH_NS = splunk.rest.format.OPENSEARCH_NS
+
+class ResultFormat(object):
+    NONE = 0
+    ROW = 1
+    COLUMN = 2
 
 class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
     def __init__(self, *args, **kwargs):
@@ -150,7 +158,7 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         if serverResponse:
             root = et.fromstring(serverResponse)
             if root.tag in ('events', 'results', 'results_preview'):
-                output.data = self._parseResultData(root)
+                output.data = self._parseResultData(root, format=ResultFormat.ROW)
             elif root.tag == 'timeline':
                 output.data = self._parseTimelineData(root)
             elif root.tag == 'summary':
@@ -376,19 +384,19 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         
         return tmpEntity
         
-    def _parseResultData(self, root):
+    def _parseResultData(self, root, is_preview = False, format=ResultFormat.NONE):
         '''
         parses job result data
         '''
-        results = {
-            'field_list': [],
-            'data': []
-        }
+        results = {}
+        
+        field_list = []
+        data = []
     
         for node in root.findall('meta/fieldOrder/field'):
-            results['field_list'].append(unicode(node.text))
+            field_list.append(unicode(node.text))
         for node in root.findall('result'):
-            data = {
+            row = {
                 '__offset': node.get('offset')
             }
             for field in node.findall('field'):
@@ -402,11 +410,54 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
                     field_struct.append({
                         'value': self._getInnerText(subfield)
                     })
-                data[field.get('k')] = field_struct
-            results['data'].append(data)
+                row[field.get('k')] = field_struct
+            data.append(row)
+            
+        
+        if format is ResultFormat.NONE:
+            results['field_list'] = field_list
+            results['data'] = data
+        elif format is ResultFormat.ROW:
+            results = self._rowify(field_list, data)
 
         return results
+    
+    def _rowify(self, field_list, data):
+        results = {}
+        results['fields'] = field_list
+        results['rows'] = []
+        results['tags'] = []
         
+        for row_data in data:
+            row = {
+                "data": [],
+                "tags": []
+            }
+        
+            for field_name in field_list:
+                field_data = row_data.get(field_name, [{ "value": [], "tags": []}])
+                values = []
+                tags = []
+                
+                for field_datum in field_data:
+                    value = field_datum['value'] or None
+                    tag = field_datum.get('tags', []) or None
+                    if isinstance(value, list) and len(value) == 1:
+                        value = value[0]  
+                        
+                    values.append(value)
+                    tags.append(tag)
+                
+                values = values[0] if len(values) == 1 else values
+                tags = tags[0] if len(tags) == 1 else tags
+                
+                row['data'].append(values or None)
+                row['tags'].append(tags or None)
+        
+            results['rows'].append(row['data'])
+            results['tags'].append(row['tags'])
+            
+        return results
         
     def _getInnerText(self, node):
         '''
