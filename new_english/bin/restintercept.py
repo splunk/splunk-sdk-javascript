@@ -433,6 +433,7 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
             results = self._columnify(field_list, data)
 
         results["is_preview"] = splunk.util.normalizeBoolean(root.get("preview"))
+        results["offset"] = int(data[0]["__offset"] if len(data) else 0)
 
         return results
     
