@@ -24,9 +24,7 @@ Suite.prototype.register = function (context) {
   this.contexts.push(context);
 };
 
-Suite.prototype.run = function(context) {
-  muteConsole();
-  
+Suite.prototype.run = function(context) {  
   if (context) {
     assert.ok(this.contexts.indexOf(context) > -1);
     context.run();
@@ -102,8 +100,6 @@ function Test (context, description, block, setupBlock, teardownBlock) {
   this.setupBlock = setupBlock;
   this.teardownBlock = teardownBlock;
   this.assert = setupAsserts(this);
-  this.log = originalLog;
-  this.error = originalError;
 };
 
 Test.prototype.run = function () {
@@ -191,7 +187,6 @@ function context (description, block) {
 
 function runAtExit () {
   process.addListener("exit", function () {
-    unmuteConsole();
     console.log = patchedConsoleLog;
     suite.report();
     console.log = originalConsoleLog;
@@ -204,9 +199,7 @@ function setupUncaughtExceptionListener () {
   // reported properly on the correct place, not in the middle of tests
   process.addListener("uncaughtException", function (error) {
     if (!error.__test) {
-      unmuteConsole();
       console.log(Test.prototype.reportError(error));
-      muteConsole();
     }
     else {
       var test = error.__test;
@@ -283,24 +276,6 @@ var originalConsoleLog = console.log;
 var patchedConsoleLog = function() {
     var str = util.format.apply(null, arguments) + "\n";
     consoleFlush(str);
-}
-
-var originalLog = console.log;
-var originalError = console.error;
-var originalInfo = console.info;
-var originalWarn = console.warn;
-var muteConsole = function() {
-  console.log = function() {};
-  console.error = function() {};
-  console.info = function() {};
-  console.warn = function() {};
-};
-
-var unmuteConsole = function() {
-  console.log = originalLog;
-  console.error = originalError;
-  console.info = originalInfo;
-  console.warn = originalWarn;
 }
 
 var setupAsserts = function(test) {
