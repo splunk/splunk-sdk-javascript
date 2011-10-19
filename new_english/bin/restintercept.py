@@ -8,9 +8,11 @@ from odata import ODataCollection, ODataResponse, ODataEntity
 import splunk
 import splunk.rest
 import splunk.auth
+import splunk.bundle
 import pprint
 import re
 import urllib
+from urlparse import urlparse
 
 import logging
 logger = logging.getLogger('splunk.queens_english.intercept')
@@ -20,6 +22,7 @@ from route import Router, Route
 ATOM_NS = splunk.rest.format.ATOM_NS
 SPLUNK_NS = splunk.rest.format.ATOM_NS
 OPENSEARCH_NS = splunk.rest.format.OPENSEARCH_NS
+REMOTEORIGIN_HEADER = "x-remoteorigin"
 
 class ResultFormat(object):
     VERBOSE = 0
@@ -38,6 +41,7 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         self.router.add(Route('/search/jobs', {"GET": self.eai, "POST": self.create_job}, 'jobs'))
         self.router.add(Route('/auth/login', {"POST": self.auth}, 'auth'))
         self.router.add(Route('/<:.*>', self.eai, 'eai'))
+        
     
     def extract_path(self):
         self.scrubbed_path = self.request['path'].replace("/services/json/v1", "")
@@ -49,18 +53,54 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         if self.scrubbed_path.endswith("/"):
             self.scrubbed_path = self.scrubbed_path[:-1]
     
+    def extract_sessionKey(self):        
+        self.sessionKey = self.request["headers"].get("authorization", "").replace("Splunk", "").strip() or None
+        
+    def extract_origin(self):
+        if self.request["headers"].has_key(REMOTEORIGIN_HEADER):
+            parsed = urlparse(self.request["headers"][REMOTEORIGIN_HEADER])
+            self.remote_origin = parsed.netloc.replace(":" + str(parsed.port), "")
+        else:
+            self.remote_origin = self.request["remoteAddr"]
+    
+    def get_origin_error(self):
+        output = ODataEntity()
+        output.messages.append({
+            "type": "HTTP",
+            "text": "Origin '%s' is not allowed. Please check json.conf" % self.remote_origin
+        })
+        
+        return 403, self.render_odata(output)
+        
+    
     def handle(self):
-        self.extract_path();
-        handler, args, kwargs = self.router.match(self.scrubbed_path)
+        self.extract_path()
+        self.extract_sessionKey()
+        self.extract_origin()
         
-        if isinstance(handler, dict):
-            if handler.has_key(self.method):
-                handler = handler[self.method]
-            else:
-                self.set_response(404, "")
-                return
+        status = 500
+        content = ""
         
-        status, content = handler(*args, **kwargs)
+        if self.sessionKey:
+            self.settings = splunk.bundle.getConf("json", self.sessionKey)
+            self.allowed_domains = map(lambda s: s.strip(), self.settings.stanzas["settings"]["allowed_domains"].split(","))
+            logger.info(self.allowed_domains)
+        
+        # Check to see if we are in the list of allowed domains
+        logger.info(self.sessionKey)
+        if self.sessionKey and not self.remote_origin in self.allowed_domains: 
+            status, content = self.get_origin_error()        
+        else:
+            handler, args, kwargs = self.router.match(self.scrubbed_path)
+            if isinstance(handler, dict):
+                if handler.has_key(self.method):
+                    handler = handler[self.method]
+                else:
+                    self.set_response(404, "")
+                    return
+            
+            status, content = handler(*args, **kwargs)
+            
         self.set_response(status, content)
     
     def handle_GET(self):
@@ -276,14 +316,13 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
             query_string = "?" + urllib.urlencode(query)
         url = base_url + path + query_string
         method = self.method
-        sessionKey = self.request["headers"].get("authorization", "").replace("Splunk ", "")
         
         return splunk.rest.simpleRequest(
             path, 
             getargs=self.request["query"], 
             postargs=self.request["form"], 
             method=method,
-            sessionKey=self.sessionKey or sessionKey,
+            sessionKey=self.sessionKey,
             raiseAllErrors=True
         )
         

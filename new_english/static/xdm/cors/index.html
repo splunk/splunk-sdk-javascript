@@ -73,7 +73,8 @@
                     easyXDM.apply(config, {
                         method: "POST",
                         headers: {
-                            "X-Requested-With": "XMLHttpRequest"
+                            "X-Requested-With": "XMLHttpRequest",
+                            "X-RemoteOrigin": remote.origin
                         },
                         success: Function.prototype,
                         error: function(msg){
