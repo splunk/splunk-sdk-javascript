@@ -22,6 +22,10 @@ from route import Router, Route
 ATOM_NS = splunk.rest.format.ATOM_NS
 SPLUNK_NS = splunk.rest.format.ATOM_NS
 OPENSEARCH_NS = splunk.rest.format.OPENSEARCH_NS
+
+CONF_FILE = "json"
+SETTINGS_STANZA = "settings"
+ALLOWED_DOMAINS_KEY = "allowed_domains"
 REMOTEORIGIN_HEADER = "x-remoteorigin"
 
 class ResultFormat(object):
@@ -44,7 +48,7 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         
     
     def extract_path(self):
-        self.scrubbed_path = self.request['path'].replace("/services/json/v1", "")
+        self.scrubbed_path = self.request['path'].replace("/services/json/v1", "").replace("/services/json_auth/v1", "")
         if re.match(r"^/servicesNS/[^/]*/[^/]*", self.scrubbed_path):
             self.scrubbed_path = re.sub(r"^(/servicesNS/[^/]*/[^/]*)(/.*)", r"\2", self.scrubbed_path)
         elif re.match(r"^/services/.*", self.scrubbed_path):
@@ -62,6 +66,14 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
             self.remote_origin = parsed.netloc.replace(":" + str(parsed.port), "")
         else:
             self.remote_origin = self.request["remoteAddr"]
+            
+    def extract_allowed_domains(self):
+        self.allowed_domains = None
+        
+        
+        self.settings = splunk.clilib.cli_common.getConfStanza(CONF_FILE, SETTINGS_STANZA)
+        self.allowed_domains = map(lambda s: s.strip(), self.settings.get(ALLOWED_DOMAINS_KEY).split(","))
+        logger.info(self.allowed_domains)
     
     def get_origin_error(self):
         output = ODataEntity()
@@ -71,35 +83,50 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         })
         
         return 403, self.render_odata(output)
-        
     
     def handle(self):
-        self.extract_path()
-        self.extract_sessionKey()
-        self.extract_origin()
-        
+        output = ODataEntity()
         status = 500
-        content = ""
         
-        if self.sessionKey:
-            self.settings = splunk.bundle.getConf("json", self.sessionKey)
-            self.allowed_domains = map(lambda s: s.strip(), self.settings.stanzas["settings"]["allowed_domains"].split(","))
-            logger.info(self.allowed_domains)
+        try:
+            self.extract_path()
+            self.extract_origin()
+            self.extract_allowed_domains()
         
-        # Check to see if we are in the list of allowed domains
-        logger.info(self.sessionKey)
-        if self.sessionKey and not self.remote_origin in self.allowed_domains: 
-            status, content = self.get_origin_error()        
-        else:
+            # Get the appropriate handler
             handler, args, kwargs = self.router.match(self.scrubbed_path)
-            if isinstance(handler, dict):
-                if handler.has_key(self.method):
-                    handler = handler[self.method]
-                else:
-                    self.set_response(404, "")
-                    return
+                
+            # Check to see if we are in the list of allowed domains
+            if not self.remote_origin in self.allowed_domains: 
+                status, content = self.get_origin_error()        
+            else:
+                if isinstance(handler, dict):
+                    if handler.has_key(self.method):
+                        handler = handler[self.method]
+                    else:
+                        self.set_response(404, "")
+                        return
+                
+                status, content = handler(*args, **kwargs)
+        except splunk.RESTException, e:
+            responseCode = e.statusCode
+            output.messages.append({
+                'type': 'HTTP',
+                'text': '%s %s' % (e.statusCode, e.msg)
+            })
+            if hasattr(e, 'extendedMessages') and e.extendedMessages:
+                for message in e.extendedMessages:
+                    output.messages.append(message)
+                    
+            content = self.render_odata(output)
+        except Exception, e:
+            status = 500
+            output.messages.append({
+                'type': 'ERROR',
+                'text': '%s' % e
+            })
             
-            status, content = handler(*args, **kwargs)
+        #     content = self.render_odata(output)
             
         self.set_response(status, content)
     
