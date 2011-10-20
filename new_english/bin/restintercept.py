@@ -13,6 +13,7 @@ import pprint
 import re
 import urllib
 from urlparse import urlparse
+import httplib2
 
 import logging
 logger = logging.getLogger('splunk.queens_english.intercept')
@@ -33,6 +34,9 @@ class ResultFormat(object):
     ROW = 1
     COLUMN = 2
 
+import httplib2
+
+
 class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
     def __init__(self, *args, **kwargs):
         super(JsonProxyRestHandler, self).__init__(*args, **kwargs)
@@ -46,6 +50,21 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         self.router.add(Route('/auth/login', {"POST": self.auth}, 'auth'))
         self.router.add(Route('/<:.*>', self.eai, 'eai'))
         
+    # UNDONE
+    # This allows us to use basic auth, but it's a giant hack. Good for debugging,
+    # though we should probably remove this (and the uses) before shipping
+    def create_http(self):   
+        is_basicauth = self.is_basicauth()
+        basicauth = self.get_authorization()
+        
+        class Http(httplib2.Http):            
+            def request(self, *args, **kwargs):
+                if is_basicauth and kwargs.has_key("headers"):
+                    kwargs["headers"]["Authorization"] = basicauth
+                    
+                return super(Http,self).request(*args, **kwargs)
+                
+        return Http
     
     def extract_path(self):
         self.scrubbed_path = self.request['path'].replace("/services/json/v1", "").replace("/services/json_auth/v1", "")
@@ -73,6 +92,12 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         
         self.settings = splunk.clilib.cli_common.getConfStanza(CONF_FILE, SETTINGS_STANZA)
         self.allowed_domains = map(lambda s: s.strip(), self.settings.get(ALLOWED_DOMAINS_KEY).split(","))
+        
+    def is_basicauth(self):
+        return self.request["headers"].get("authorization", "").startswith("Basic ")
+        
+    def get_authorization(self):
+        return self.request["headers"].get("authorization", "")
     
     def get_origin_error(self):
         output = ODataEntity()
@@ -126,7 +151,7 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
                 'text': '%s' % e
             })
             
-        #     content = self.render_odata(output)
+            content = self.render_odata(output)
             
         self.set_response(status, content)
     
@@ -344,6 +369,7 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         url = base_url + path + query_string
         method = self.method
         
+        httplib2.Http = self.create_http()
         return splunk.rest.simpleRequest(
             path, 
             getargs=self.request["query"], 
