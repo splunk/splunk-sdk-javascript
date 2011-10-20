@@ -73,7 +73,6 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         
         self.settings = splunk.clilib.cli_common.getConfStanza(CONF_FILE, SETTINGS_STANZA)
         self.allowed_domains = map(lambda s: s.strip(), self.settings.get(ALLOWED_DOMAINS_KEY).split(","))
-        logger.info(self.allowed_domains)
     
     def get_origin_error(self):
         output = ODataEntity()
@@ -91,6 +90,7 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         try:
             self.extract_path()
             self.extract_origin()
+            self.extract_sessionKey()
             self.extract_allowed_domains()
         
             # Get the appropriate handler
