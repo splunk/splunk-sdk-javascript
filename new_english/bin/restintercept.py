@@ -67,7 +67,7 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         return Http
     
     def extract_path(self):
-        self.scrubbed_path = self.request['path'].replace("/services/json/v1", "").replace("/services/json_auth/v1", "")
+        self.scrubbed_path = self.request['path'].replace("/services/json/v1", "")
         if re.match(r"^/servicesNS/[^/]*/[^/]*", self.scrubbed_path):
             self.scrubbed_path = re.sub(r"^(/servicesNS/[^/]*/[^/]*)(/.*)", r"\2", self.scrubbed_path)
         elif re.match(r"^/services/.*", self.scrubbed_path):
