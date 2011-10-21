@@ -34,9 +34,6 @@ class ResultFormat(object):
     ROW = 1
     COLUMN = 2
 
-import httplib2
-
-
 class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
     def __init__(self, *args, **kwargs):
         super(JsonProxyRestHandler, self).__init__(*args, **kwargs)
@@ -51,9 +48,11 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         self.router.add(Route('/<:.*>', self.eai, 'eai'))
         
     # UNDONE
-    # This allows us to use basic auth, but it's a giant hack. Good for debugging,
-    # though we should probably remove this (and the uses) before shipping
-    def create_http(self):   
+    # This allows us to use basic auth, but it's not the ideal way to do this.
+    # The problem is that we want to be able to reuse the code in splunk.rest.simpleRequest,
+    # but that code does not allow us to set headers. As such, we have to create this wrapper
+    # class.
+    def wrap_http(self):   
         is_basicauth = self.is_basicauth()
         basicauth = self.get_authorization()
         
@@ -339,11 +338,11 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
     def auth(self):
         sessionKey = None
         try:
-           username = self.request["form"]["username"]
-           password = self.request["form"]["password"]
-           sessionKey = splunk.auth.getSessionKey(username, password)
+            username = self.request["form"]["username"]
+            password = self.request["form"]["password"]
+            sessionKey = splunk.auth.getSessionKey(username, password)
         except splunk.AuthenticationFailed:
-           pass
+            pass
         
         result = ODataEntity()
         result.data['sessionKey'] = sessionKey
@@ -359,6 +358,23 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
     
     ## Helper Functions
     
+    # We have to put a wrapper around httplib2.Http so we can inject
+    # the basic auth header
+    def make_request(self, *args, **kwargs):
+        # Cache the original one
+        originalHttpClass = httplib2.Http
+        
+        # Create and set the wrapper
+        httplib2.Http = self.wrap_http()
+        
+        # Make the actual request
+        result = splunk.rest.simpleRequest(*args, **kwargs)
+        
+        # Reset it to the original one
+        httplib2.Http = originalHttpClass
+        
+        return result
+    
     def forward_request(self):
         base_url = "https://" + self.request['headers']['host'] + "/"
         path = self.request['path'].replace("/services/json/v1", "")
@@ -369,8 +385,7 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         url = base_url + path + query_string
         method = self.method
         
-        httplib2.Http = self.create_http()
-        return splunk.rest.simpleRequest(
+        return self.make_request(
             path, 
             getargs=self.request["query"], 
             postargs=self.request["form"], 
@@ -382,7 +397,10 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
     def set_response(self, status, content):
         self.response.setStatus(status)
         self.response.setHeader('Content-Type', 'application/json')
-            
+        
+        if status == 401:
+            self.response.setHeader("www-authenticate", 'Basic realm="/splunk"')
+        
         self.response.write(content)
 
     def render_odata(self, thing):
