@@ -88,7 +88,6 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
     def extract_allowed_domains(self):
         self.allowed_domains = None
         
-        
         self.settings = splunk.clilib.cli_common.getConfStanza(CONF_FILE, SETTINGS_STANZA)
         self.allowed_domains = map(lambda s: s.strip(), self.settings.get(ALLOWED_DOMAINS_KEY).split(","))
         
@@ -444,6 +443,14 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
                     output.offset = int(root.xpath('o:startIndex', namespaces={'o': OPENSEARCH_NS})[0].text)
                     output.total_count = int(root.xpath('o:totalResults', namespaces={'o': OPENSEARCH_NS})[0].text)
                     output.count = min(output.total_count, len(root.xpath('a:entry', namespaces={'a': ATOM_NS})))
+                    output.id = root.xpath('a:id', namespaces={'a': ATOM_NS})[0].text
+                    
+                    for link in root.xpath('a:link', namespaces={'a': ATOM_NS}):
+                        output.metadata.links.append({
+                            'href': "/services/json/v1" + link.get('href'),
+                            'rel': link.get('rel')
+                        })
+                        
                 except:
                     pass
                 
@@ -488,7 +495,7 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         # pull in all the links
         for link in node.xpath('a:link', namespaces={'a': ATOM_NS}):
             tmpEntity.metadata.links.append({
-                'href': link.get('href'),
+                'href': "/services/json/v1" + link.get('href'),
                 'rel': link.get('rel')
             })
         

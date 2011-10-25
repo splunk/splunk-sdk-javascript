@@ -18,7 +18,9 @@ class ODataResponse(object):
             'd': {
                 'results': self.results.to_json()
             }
-        }
+            }
+        if hasattr(self.results, 'id'):
+            output['d']['__id'] = self.results.id
         if hasattr(self.results, 'total_count'):
             output['d']['__total_count'] = self.results.total_count
         if hasattr(self.results, 'offset'):
@@ -27,6 +29,8 @@ class ODataResponse(object):
             output['d']['__count'] = self.results.count
         if hasattr(self.results, 'messages'):
             output['d']['__messages'] = self.results.messages
+        if hasattr(self.results, 'metadata'):
+            output['d']['__metadata'] = self.results.metadata.to_json()
         if hasattr(self.results, 'timings'):
             output['d']['__timings'] = []
             for i, item in enumerate(self.results.timings):
@@ -38,7 +42,6 @@ class ODataResponse(object):
                     
         return output
 
-
 class ODataCollection(object):
 
     def __init__(self):
@@ -49,6 +52,7 @@ class ODataCollection(object):
         self.count = 0
         self.timings = []
         self.messages = []
+        self.id = ""
 
     def to_json(self):
         # TODO: figure out if metadata is support on collections
