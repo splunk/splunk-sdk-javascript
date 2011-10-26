@@ -220,6 +220,23 @@ exports.run = (function() {
                 );
             });
         });
+    });    
+    
+    minitest.context("App Tests", function() {
+        this.setupContext(function(done) {
+            var context = this;
+            svc.login(function(success) {
+                context.service = svc;
+                context.success = success;
+                done();
+            });
+        });
+
+        this.setupTest(function(done) {
+            this.assert.ok(this.context.success);
+            this.service = this.context.service; 
+            done();
+        });
                
         this.assertion("Promise#list applications", function(test) {
             var apps = this.service.apps();
@@ -229,14 +246,30 @@ exports.run = (function() {
             });
         });
                
+        this.assertion("Callback#list applications", function(test) {
+            var apps = this.service.apps();
+            apps.list(function(appList) {
+                test.assert.ok(appList.length > 0);
+                test.finished();
+            });
+        });
+               
         this.assertion("Promise#contains applications", function(test) {
             var apps = this.service.apps();
-            apps.contains("custom_search").whenResolved(function(found) {
+            apps.contains("search").whenResolved(function(found) {
                 test.assert.ok(found);
                 test.finished();
             });
         });
                
+        this.assertion("Callback#contains applications", function(test) {
+            var apps = this.service.apps();
+            apps.contains("search", function(found) {
+                test.assert.ok(found);
+                test.finished();
+            });
+        });
+        
         this.assertion("Promise#create app", function(test) {
             var name = "jssdk_testapp_" + getNextId();
             var apps = this.service.apps();
