@@ -92,11 +92,11 @@
         var fields = data.fields;
         var rows = data.rows;
         for(var i = 0; i < rows.length; i++) {
-            values = rows[i];
+            var values = rows[i];
             console.log("Row " + i + ": ");
             for(var j = 0; j < values.length; j++) {
-                field = fields[j];
-                value = values[j];
+                var field = fields[j];
+                var value = values[j];
                 console.log("  " + field + ": " + value);
             }
         }
@@ -106,11 +106,11 @@
         var fields = data.fields;
         var columns = data.columns;
         for(var i = 0; i < columns.length; i++) {
-            values = columns[i];
-            field = fields[i];
+            var values = columns[i];
+            var field = fields[i];
             console.log("Column " + field + " (" + i + "): ");
             for(var j = 0; j < values.length; j++) {
-                value = values[j];
+                var value = values[j];
                 console.log("  " + value);
             }
         }
@@ -329,7 +329,6 @@
         results: function(argv, callback) {
             // Create the command line for the results command and parse it
             var cmdline = _makeCommandLine("results", argv, FLAGS_RESULTS, false);
-            console.log(cmdline)
 
             // For each of the passed in sids, get the relevant results
             return this._foreach(cmdline.arguments, function(job) {

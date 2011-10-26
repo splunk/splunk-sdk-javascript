@@ -105,6 +105,11 @@ exports.run = (function() {
                 function(jobs) {
                     test.assert.ok(jobs);
                     test.assert.ok(jobs.length > 0);
+                
+                    for(var i = 0; i < jobs.length; i++) {
+                        test.assert.ok(jobs[i].isValid());
+                    }
+                
                     test.finished();
                 }
             );
@@ -117,7 +122,6 @@ exports.run = (function() {
                 
                 for(var i = 0; i < jobs.length; i++) {
                     test.assert.ok(jobs[i].isValid());
-                    console.log(jobs[i]._id)
                 }
                 
                 test.finished();
