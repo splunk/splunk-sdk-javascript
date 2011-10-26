@@ -142,10 +142,9 @@ var Jobs = Backbone.Collection.extend({
     return listP.whenResolved(function(list) {
       var models = [];
       for(var i = 0; i < list.length; i++) {
-        var properties = list[i];
-        var job = new Splunk.Client.Job(App.service(), properties["sid"]);
+        var job = list[i];
+        var properties = job.properties();
         var jobModel = new Job(properties, {job: job});
-        
         models.push(jobModel);
       }
       

@@ -591,6 +591,7 @@ require.modules["/lib/paths.js"] = function () {
     root.Paths = {
         job: "search/jobs/",
         jobs: "search/jobs",
+        apps: "apps/local",
         login: "/auth/login"
     };
 })();;
@@ -1336,10 +1337,11 @@ require.modules["/lib/client.js"] = function () {
 // under the License.
 
 (function() {
-    var binding = require('./binding');
-    var Paths   = require('./paths').Paths;
-    var Class   = require('./jquery.class').Class;
-    var utils   = require('./utils');
+    var binding     = require('./binding');
+    var Paths       = require('./paths').Paths;
+    var Class       = require('./jquery.class').Class;
+    var utils       = require('./utils');
+    var Promise     = require('./promise.js').Promise;
     
     var root = exports || this;
 
@@ -1370,6 +1372,10 @@ require.modules["/lib/client.js"] = function () {
 
         jobs: function() {
             return new root.Jobs(this);  
+        },
+        
+        apps: function() {
+            return new root.Collection(this, Paths.apps);
         }
     });
 
@@ -1427,27 +1433,283 @@ require.modules["/lib/client.js"] = function () {
             );
         }
     });
+    
+    root.Resource = root.Endpoint.extend({
+        init: function(service, path) {
+            this._super(service, path);
+            this._maybeValid = false;
+            this._actions = null;
+            
+            // We perform the bindings so that every function works 
+            // properly when it is passed as a callback.
+            this._invalidate = utils.bind(this, this._invalidate);
+            this._load       = utils.bind(this, this._load);
+            this._validate   = utils.bind(this, this._validate);
+            this._invoke     = utils.bind(this, this._invoke);
+            this.refresh     = utils.bind(this, this.refresh);
+            this.isValid     = utils.bind(this, this.isValid);
+        },
+        
+        _invalidate: function() {
+            this._maybeValid = false;
+        },
+        
+        _load: function(properties) {
+            this._maybeValid = true;
+            
+            this._id = properties.__id;
+            this._actions = {};
+            var links = properties.__metadata.links || [];
+            for(var i = 0; i < links.length; i++) {
+                var action = links[i].rel;
+                var path = links[i].href;
+                this._actions[action] = path;
+            }
+        },
+        
+        _validate: function() {
+            if (!this._maybeValid) {
+                return this.refresh();
+            }
+            else {
+                return Promise.Done;
+            }
+        },
+        
+        _invoke: function(action, method, args, callback) {
+            callback = utils.callbackToObject(callback);
+            var that = this;
+            
+            var validateP = this._validate();
+            return validateP.when(
+                function() {
+                    path = that._actions[action];
+                    if (!path) {
+                        throw new Error("Invalid action: " + action);
+                    }
+                    
+                    handler = {
+                      "get": that.service.get,
+                      "post": that.service.post,
+                      "delete": that.service.del
+                    }[method.toLowerCase()];
+                    
+                    return handler.apply(that.service, [path, args, callback]);
+                },
+                generalErrorHandler(callback)
+            )
+        },
+        
+        refresh: function() {
+            throw new Error("MUST BE OVERRIDDEN");
+        },
+        
+        isValid: function() {
+            return this._maybeValid;
+        }
+    });
+    
+    root.Entity = root.Resource.extend({
+        init: function(service, path) {
+            this._super(service, path);
+            
+            // We perform the bindings so that every function works 
+            // properly when it is passed as a callback.
+            this._load      = utils.bind(this, this._load);
+            this.refresh    = utils.bind(this, this.refresh);
+            this.properties = utils.bind(this, this.properties);
+            this.read       = utils.bind(this, this.read);
+        },
+        
+        _load: function(properties) {
+            this._super(properties);
+            this._properties = properties;
+        },
+        
+        refresh: function(callback) {
+            callback = utils.callbackToObject(callback);
+            
+            var that = this;
+            var readP = this.get("", {});
+            return readP.when(
+                function(response) {
+                    that._load(response.odata.results);
+                    callback.success(that);
+                    return that;
+                },
+                generalErrorHandler(callback)
+            );
+        },
+        
+        // A prompt way to get the *current* properties of
+        // an entity
+        properties: function(callback) {
+            return this._properties;
+        },
+        
+        // Fetch properties of the object. This will cause
+        // a refresh if we are not currently valid.
+        fetch: function(callback) {
+            callback = utils.callbackToObject(callback);
+            
+            var that = this;
+            return this._validate().when(
+                function() {
+                    callback.success(that._properties);
+                    return that._properties;
+                },
+                generalErrorHandler(callback)
+            );
+        },
+
+        // Force a refesh of the entity, such that the returned
+        // properties are guaranteed current.
+        read: function(callback) {
+            callback = utils.callbackToObject(callback);
+            
+            var that = this;
+            return this.refresh().when(
+                function() {
+                    callback.success(that._properties);
+                    return that._properties;
+                },
+                generalErrorHandler(callback)
+            )
+        },
+        
+        del: function(callback) {
+            return this._invoke("remove", "DELETE", {}, callback);
+        },
+    });
 
     // A collection is just another type of endpoint that represents
     // a collection of entities
-    root.Collection = root.Endpoint.extend({
+    root.Collection = root.Resource.extend({        
+        init: function(service, path, handlers) {
+            this._super(service, path);
+            
+            // We perform the bindings so that every function works 
+            // properly when it is passed as a callback.
+            this._load    = utils.bind(this, this._load);
+            this.refresh  = utils.bind(this, this.refresh);
+            this.create   = utils.bind(this, this.create);
+            this.list     = utils.bind(this, this.list);
+            this.contains = utils.bind(this, this.contains);
+            
+            var that = this;
+            handlers = handlers || {};
+            this._item = handlers.item || function(props) { 
+                return new root.Entity(that.service, that.path + "/" + props.__name);
+            };
+            this._isSame = handlers.isSame || function(entity, id) { return id === entity.properties().__name; };
+        },
         
+        _load: function(properties) {
+            this._super(properties);
+            
+            var entities = [];
+            var entityPropertyList = properties.results || [];
+            for(var i = 0; i < entityPropertyList.length; i++) {
+                var props = entityPropertyList[i];
+                var entity = this._item(props);
+                entity._load(props);
+                entities.push(entity);
+            }
+            this._entities = entities;
+        },
+        
+        refresh: function(callback) {
+            callback = utils.callbackToObject(callback);
+            
+            var that = this;
+            return that.get("", {}).when(
+                function(response) {
+                    that._load(response.odata);
+                    callback.success(that);
+                    return that;
+                },
+                generalErrorHandler(callback)
+            )
+        },
+
+        create: function(params, callback) {
+            callback = utils.callbackToObject(callback);
+            
+            var that = this;
+            return this.post("", params).when(
+                utils.bind(this, function(response) {
+                    var props = response.odata.results;
+                    var entity = that._item(props);
+                    //entity._load(props);
+                    that._invalidate();
+                    
+                    callback.success(entity);
+                    return entity;
+                }),
+                generalErrorHandler(callback)
+            );
+        },
+        
+        list: function(callback) {
+            callback = utils.callbackToObject(callback);
+            
+            var that = this;
+            return this._validate().when(
+                function() {
+                    callback.success(that._entities);
+                    return that._entities;
+                },
+                generalErrorHandler(callback)
+            );
+        },
+
+        // Find whether a certain job exists
+        contains: function(id, callback) {
+            callback = utils.callbackToObject(callback);
+
+            var that = this;
+            return this.list().when(
+                function(list) {
+                    list = list || [];
+                    var found = false;
+                    for(var i = 0; i < list.length; i++) {
+                        // If the job is the same, then call the callback,
+                        // and return
+                        var entity = list[i];
+                        if (that._isSame(entity, id)) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    
+                    // If we didn't find anything, let the callback now.
+                    callback.success(found);
+                    return found;
+                },
+                generalErrorHandler(callback)
+            );
+        }
     });
 
     // An endpoint for all the jobs running on the current Splunk instance,
     // allowing us to create and list jobs
     root.Jobs = root.Collection.extend({
         init: function(service) {
-            this._super(service, Paths.jobs);
+            this._super(service, Paths.jobs, {
+                item: function(props) {
+                    var sid = props.sid;
+                    return new root.Job(service, sid);
+                },
+                isSame: function(entity, sid) {
+                    return entity.sid === sid;
+                }
+            });
 
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
             this.create     = utils.bind(this, this.create);
-            this.list       = utils.bind(this, this.list);
-            this.contains   = utils.bind(this, this.contains);
-         },
+        },
 
-        
         // Create a search job with the given query and parameters
         create: function(query, params, callback) {
             if (!query) {
@@ -1467,52 +1729,13 @@ require.modules["/lib/client.js"] = function () {
                 }),
                 generalErrorHandler(callback)
             );
-         },
-
-         // List all search jobs
-        list: function(callback) {
-            callback = utils.callbackToObject(callback);
-
-            return this.get("", {}).when(
-                function(response) {
-                    var job_list = response.odata.results || [];
-                    callback.success(job_list);
-                    return job_list;
-                },
-                generalErrorHandler(callback)
-            );
-        },
-
-        // Find whether a certain job exists
-        contains: function(sid, callback) {
-            callback = utils.callbackToObject(callback);
-
-            return this.list().when(
-                function(list) {
-                    list = list || [];
-                    var found = false;
-                    for(var i = 0; i < list.length; i++) {
-                        // If the job is the same, then call the callback,
-                        // and return
-                        if (list[i].sid === sid) {
-                            found = true;
-                            break;
-                        }
-                    }
-                    
-                    // If we didn't find anything, let the callback now.
-                    callback.success(found);
-                    return found;
-                },
-                generalErrorHandler(callback)
-            );
         }
     });
 
     // An endpoint for an instance of a specific search job. Allows us to perform
     // control operations on that job (such as cancelling, pausing, setting priority),
     // as well as read the job properties, results and events
-    root.Job = root.Endpoint.extend({
+    root.Job = root.Entity.extend({
         init: function(service, sid) {
             this._super(service, Paths.job + sid);
             this.sid = sid;
@@ -1526,7 +1749,6 @@ require.modules["/lib/client.js"] = function () {
             this.finalize       = utils.bind(this, this.finalize);
             this.pause          = utils.bind(this, this.pause);
             this.preview        = utils.bind(this, this.preview);
-            this.read           = utils.bind(this, this.read);
             this.results        = utils.bind(this, this.results);
             this.searchlog      = utils.bind(this, this.searchlog);
             this.setPriority    = utils.bind(this, this.setPriority);
@@ -1538,20 +1760,29 @@ require.modules["/lib/client.js"] = function () {
         },
 
         cancel: function(callback) {
-            return this.post("control", {action: "cancel"}, callback);
+            var promise = this._invoke("control", "POST", {action: "cancel"}, callback);
+            this._invalidate();
+            
+            return promise;
         },
 
         disablePreview: function(callback) {
-            return this.post("control", {action: "disablepreview"}, callback);  
+            var promise = this._invoke("control", "POST", {action: "disablepreview"}, callback);
+            this._invalidate();
+            
+            return promise;
         },
 
         enablePreview: function(callback) {
-            return this.post("control", {action: "enablepreview"}, callback);  
+            var promise = this._invoke("control", "POST", {action: "enablepreview"}, callback);
+            this._invalidate();
+            
+            return promise;
         },
 
         events: function(params, callback) {
             callback = utils.callbackToObject(callback);
-            return this.get("events", params).when(
+            return this._invoke("events", "GET", params).when(
                 function(response) { 
                     callback.success(response.odata.results); 
                     return response.odata.results;
@@ -1561,16 +1792,22 @@ require.modules["/lib/client.js"] = function () {
         },
 
         finalize: function(callback) {
-            return this.post("control", {action: "finalize"}, callback);  
+            var promise = this._invoke("control", "POST", {action: "finalize"}, callback);
+            this._invalidate();
+            
+            return promise;  
         },
 
         pause: function(callback) {
-            return this.post("control", {action: "pause"}, callback);  
+            var promise = this._invoke("control", "POST", {action: "pause"}, callback);
+            this._invalidate();
+            
+            return promise;  
         },
 
         preview: function(params, callback) {
             callback = utils.callbackToObject(callback);
-            return this.get("results_preview", params).when(
+            return this._invoke("results_preview", "GET", params).when(
                 function(response) {
                     callback.success(response.odata.results);
                     return response.odata.results;
@@ -1579,13 +1816,9 @@ require.modules["/lib/client.js"] = function () {
             );
         },
 
-        read: function(callback) {
-            return this.get("", {}, callback);
-        },
-
         results: function(params, callback) {
             callback = utils.callbackToObject(callback);
-            return this.get("results", params).when(
+            return this._invoke("results", "GET", params).when(
                 function(response) {
                     callback.success(response.odata.results);
                     return response.odata.results;
@@ -1596,7 +1829,7 @@ require.modules["/lib/client.js"] = function () {
 
         searchlog: function(params, callback) {
             callback = utils.callbackToObject(callback);
-            return this.get("search.log", params).when(
+            return this._invoke("log", "GET", params).when(
                 function(response) {
                     callback.success(response.odata.results);
                     return response.odata.results;
@@ -1606,15 +1839,21 @@ require.modules["/lib/client.js"] = function () {
         },
 
         setPriority: function(value, callback) {
-            return this.post("control", {action: "setpriority", priority: value}, callback);  
+            var promise = this._invoke("control", "POST", {action: "setpriority", priority: value}, callback);
+            this._invalidate();
+            
+            return promise;
         },
 
         setTTL: function(value, callback) {
-            return this.post("control", {action: "setttl", ttl: value}, callback);  
+            var promise = this._invoke("control", "POST", {action: "setttl", ttl: value}, callback);
+            this._invalidate();
+            
+            return promise;
         },
 
         summary: function(params, callback) {
-            return this.get("summary", params).when(
+            return this._invoke("summary", params).when(
                 function(response) {
                     callback.success(response.odata.results);
                     return response.odata.results;
@@ -1625,7 +1864,7 @@ require.modules["/lib/client.js"] = function () {
 
         timeline: function(params, callback) {
             callback = utils.callbackToObject(callback);
-            return this.get("timeline", params).when(
+            return this._invoke("timeline", params).when(
                 function(response) {
                     callback.success(response.odata.results);
                     return response.odata.results;
@@ -1635,11 +1874,17 @@ require.modules["/lib/client.js"] = function () {
         },
 
         touch: function(callback) {
-            return this.post("control", {action: "touch"}, callback);  
+            var promise = this._invoke("control", "POST", {action: "touch"}, callback);
+            this._invalidate();
+            
+            return promise; 
         },
 
         unpause: function(callback) {
-            return this.post("control", {action: "unpause"}, callback);  
+            var promise = this._invoke("control", "POST", {action: "unpause"}, callback);
+            this._invalidate();
+            
+            return promise;
         }
     });
 })();;
@@ -1937,6 +2182,7 @@ require.modules["/lib/odata.js"] = function () {
             }
         }
 
+        output["__metadata"] = d["__metadata"];
         if (d.results) {
             output.results = d.results;
         }
@@ -2110,8 +2356,8 @@ require.modules["/lib/searcher.js"] = function () {
             this.donePromise = Promise.while({
                 condition: function() { return !properties.isDone && !manager.isJobDone; },
                 body: function(index) {
-                    return job.read().whenResolved(function(response) {
-                        properties = response.odata.results;
+                    return job.read().whenResolved(function(props) {
+                        properties = props;
                         return Promise.sleep(1000); 
                     });
                 },

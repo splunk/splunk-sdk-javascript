@@ -114,6 +114,12 @@ exports.run = (function() {
             this.service.jobs().list(function(jobs) {
                 test.assert.ok(jobs);
                 test.assert.ok(jobs.length > 0);
+                
+                for(var i = 0; i < jobs.length; i++) {
+                    test.assert.ok(jobs[i].isValid());
+                    console.log(jobs[i]._id)
+                }
+                
                 test.finished();
             });
         });
@@ -150,7 +156,7 @@ exports.run = (function() {
                     });
                 });
             })); 
-        });         
+        });
 
         this.assertion("Promise#job results", function(test) {
             var sid = getNextId();
@@ -164,8 +170,8 @@ exports.run = (function() {
                 return Promise.join(job, Promise.while({
                     condition: function() { return properties.dispatchState !== "DONE"; },
                     body: function() {
-                        return job.read().whenResolved(function(response) {
-                            properties = response.odata.results;
+                        return job.read().whenResolved(function(props) {
+                            properties = props;
                             
                             return Promise.sleep(1000);
                         });
@@ -195,8 +201,8 @@ exports.run = (function() {
                     {
                         condition: function() { return properties.dispatchState !== "DONE"; },
                         body: function(iterationDone) {
-                            job.read(function(response) {
-                                properties = response.odata.results;
+                            job.read(function(props) {
+                                properties = props;
                                 Async.sleep(1000, iterationDone); 
                             });
                         },
@@ -212,6 +218,60 @@ exports.run = (function() {
                         });
                     }
                 );
+            });
+        });
+               
+        this.assertion("Promise#list applications", function(test) {
+            var apps = this.service.apps();
+            apps.list().whenResolved(function(appList) {
+                test.assert.ok(appList.length > 0);
+                test.finished();
+            });
+        });
+               
+        this.assertion("Promise#contains applications", function(test) {
+            var apps = this.service.apps();
+            apps.contains("custom_search").whenResolved(function(found) {
+                test.assert.ok(found);
+                test.finished();
+            });
+        });
+               
+        this.assertion("Promise#create app", function(test) {
+            var name = "jssdk_testapp_" + getNextId();
+            var apps = this.service.apps();
+            
+            apps.create({name: name}).whenResolved(function(app) {
+                test.assert.ok(!app.isValid());
+                return app.refresh();
+            }).whenResolved(function(app) {
+                test.assert.ok(app.isValid());
+                var appName = app.properties().__name;
+                return Promise.join(app, apps.contains(appName));
+            }).whenResolved(function(app, found) {
+                test.assert.ok(found);
+                return app.del();
+            }).whenResolved(function() {
+                test.finished();
+            });
+        });
+        
+        this.assertion("Callback#create app", function(test) {
+            var name = "jssdk_testapp_" + getNextId();
+            var apps = this.service.apps();
+            
+            apps.create({name: name}, function(app) {
+                test.assert.ok(!app.isValid());
+                app.refresh(function(app) {
+                    test.assert.ok(app.isValid());
+                    var appName = app.properties().__name;
+                    apps.contains(appName, function(found) {
+                        test.assert.ok(found);
+                        app.del(function() {
+                            test.finished();
+                        });
+                    });
+                });
             });
         });
     });

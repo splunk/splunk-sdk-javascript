@@ -147,7 +147,7 @@
                 var promises = [];
                 for(var i = 0; i < list.length; i++) {
                     if (utils.contains(sids, list[i].sid)) {
-                        var job = new Splunk.Client.Job(this.service, list[i].sid);
+                        var job = list[i];
                         promises.push(fn(job));
                     }
                 }
@@ -280,9 +280,9 @@
                 // If certain job SIDs are provided,
                 // then we simply read the properties of those jobs
                 return this._foreach(sids, function(job) {
-                    return job.read(function(response) {
+                    return job.read(function(props) {
                         console.log("Job " + job.sid + ": ");
-                        var properties = response.odata.results;
+                        var properties = props;
                         for(var key in properties) {
                             // Skip some keys that make the output hard to read
                             if (utils.contains(["performance"], key)) {
