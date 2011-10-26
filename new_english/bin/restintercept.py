@@ -501,7 +501,7 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         
         # set other randoms
         tmpEntity.id = node.xpath('a:id', namespaces={'a': ATOM_NS})[0].text
-        tmpEntity.name = node.xpath('a:title', namespaces={'a': ATOM_NS})[0].text
+        tmpEntity.name = tmpEntity.data.get("name", node.xpath('a:title', namespaces={'a': ATOM_NS})[0].text)
         
         published_info = node.xpath('a:published', namespaces={'a': ATOM_NS})
         if published_info:

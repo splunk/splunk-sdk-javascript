@@ -18,7 +18,7 @@ class ODataResponse(object):
             'd': {
                 'results': self.results.to_json()
             }
-            }
+        }
         if hasattr(self.results, 'id'):
             output['d']['__id'] = self.results.id
         if hasattr(self.results, 'total_count'):
@@ -56,7 +56,11 @@ class ODataCollection(object):
 
     def to_json(self):
         # TODO: figure out if metadata is support on collections
-        return [x.to_json() for x in self.items]
+        json = [x.to_json() for x in self.items]
+        if len(json) == 1:
+            return json[0]
+        else:
+            return json       
 
 
 class ODataEntity(object):
