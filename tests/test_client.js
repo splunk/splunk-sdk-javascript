@@ -242,9 +242,6 @@ exports.run = (function() {
             var apps = this.service.apps();
             
             apps.create({name: name}).whenResolved(function(app) {
-                test.assert.ok(!app.isValid());
-                return app.refresh();
-            }).whenResolved(function(app) {
                 test.assert.ok(app.isValid());
                 var appName = app.properties().__name;
                 return Promise.join(app, apps.contains(appName));
@@ -261,15 +258,12 @@ exports.run = (function() {
             var apps = this.service.apps();
             
             apps.create({name: name}, function(app) {
-                test.assert.ok(!app.isValid());
-                app.refresh(function(app) {
-                    test.assert.ok(app.isValid());
-                    var appName = app.properties().__name;
-                    apps.contains(appName, function(found) {
-                        test.assert.ok(found);
-                        app.del(function() {
-                            test.finished();
-                        });
+                test.assert.ok(app.isValid());
+                var appName = app.properties().__name;
+                apps.contains(appName, function(found) {
+                    test.assert.ok(found);
+                    app.del(function() {
+                        test.finished();
                     });
                 });
             });
