@@ -1640,11 +1640,9 @@ require.modules["/lib/client.js"] = function () {
                 utils.bind(this, function(response) {
                     var props = response.odata.results;
                     var entity = that._item(props);
-                    //entity._load(props);
                     that._invalidate();
                     
-                    callback.success(entity);
-                    return entity;
+                    return entity.refresh(callback);
                 }),
                 generalErrorHandler(callback)
             );
@@ -1721,11 +1719,11 @@ require.modules["/lib/client.js"] = function () {
 
             params.search = query;  
 
+            var that = this;
             return this.post("", params).when(
                 utils.bind(this, function(response) {
                     var job = new root.Job(this.service, response.odata.results.sid);
-                    callback.success(job);
-                    return job;
+                    return job.refresh(callback);
                 }),
                 generalErrorHandler(callback)
             );
