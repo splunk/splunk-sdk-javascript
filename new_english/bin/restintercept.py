@@ -447,7 +447,7 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
                     
                     for link in root.xpath('a:link', namespaces={'a': ATOM_NS}):
                         output.metadata.links.append({
-                            'href': "/services/json/v1" + link.get('href'),
+                            'href': link.get('href'),
                             'rel': link.get('rel')
                         })
                         
@@ -495,7 +495,7 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         # pull in all the links
         for link in node.xpath('a:link', namespaces={'a': ATOM_NS}):
             tmpEntity.metadata.links.append({
-                'href': "/services/json/v1" + link.get('href'),
+                'href': link.get('href'),
                 'rel': link.get('rel')
             })
         

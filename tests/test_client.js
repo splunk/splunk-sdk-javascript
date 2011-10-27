@@ -306,6 +306,72 @@ exports.run = (function() {
             });
         });
     });
+    
+    minitest.context("Saved Search Tests", function() {
+        this.setupContext(function(done) {
+            var context = this;
+            svc.login(function(success) {
+                context.service = svc;
+                context.success = success;
+                done();
+            });
+        });
+
+        this.setupTest(function(done) {
+            this.assert.ok(this.context.success);
+            this.service = this.context.service; 
+            done();
+        });
+               
+        this.assertion("Promise#list", function(test) {
+            var searches = this.service.savedSearches();
+            searches.list().whenResolved(function(savedSearches) {
+                test.assert.ok(savedSearches.length > 0);
+                
+                for(var i = 0; i < savedSearches.length; i++) {
+                    test.assert.ok(savedSearches[i].isValid());
+                }
+                
+                test.finished();
+            });
+        });
+        
+        this.assertion("Promise#contains", function(test) {
+            var searches = this.service.savedSearches();
+            searches.contains("gentimes").whenResolved(function(found, search) {
+                test.assert.ok(found);
+                test.assert.ok(search.isValid());
+                
+                test.finished();
+            });
+        });
+        
+        this.assertion("Promise#history", function(test) {
+            var searches = this.service.savedSearches();
+            searches.contains("gentimes").whenResolved(function(found, search) {
+                test.assert.ok(found);
+                test.assert.ok(search.isValid());
+                
+                return search.history();
+            }).whenResolved(function(response) {
+                console.log(response.odata);
+                test.finished();
+            });
+        });
+        
+        this.assertion("Promise#suppress", function(test) {
+            var searches = this.service.savedSearches();
+            searches.contains("gentimes").whenResolved(function(found, search) {
+                test.assert.ok(found);
+                test.assert.ok(search.isValid());
+                
+                return search.suppressInfo();
+            }).whenResolved(function(response) {
+                console.log(response.odata);
+                test.finished();
+            });
+        });
+    });
 
     if (module === require.main) {
         minitest.run();
