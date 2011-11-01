@@ -18,7 +18,6 @@ exports.run = (function() {
     var NodeHttp    = require('../platform/node/node_http').NodeHttp;
     var minitest    = require('../contrib/minitest');
     var utils       = Splunk.Utils;
-    var Promise     = Splunk.Promise;
     var Async       = Splunk.Async;
     var Searcher    = Splunk.Searcher;
 
@@ -39,7 +38,7 @@ exports.run = (function() {
     minitest.context("Searcher Tests", function() {
         this.setupContext(function(done) {
             var context = this;
-            svc.login(function(success) {
+            svc.login(function(err, success) {
                 context.service = svc;
                 context.success = success;
                 done();
@@ -52,153 +51,130 @@ exports.run = (function() {
             done();
         });
 
-        this.assertion("Searcher + Results", function(test) {
+        this.assertion("Callback#Searcher + Results", function(test) {
             var sid = getNextId();
-            var jobP = this.service.jobs().create('search index=_internal | head 10', {id: sid});
-            var searcher = null;
-            var job = null;
-            
-            jobP.whenResolved(function(createdJob) {
-                job = createdJob;
+            this.service.jobs().create('search index=_internal | head 10', {id: sid}, function(err, job) {
                 searcher = new Searcher.JobManager(test.service, job);
                 
-                var searchDoneP = searcher.done();
-                
-                // Report progress
-                var progressCount = 0;
-                searchDoneP.onProgress(function(properties) {
-                    progressCount++;
-                });
-                
-                // When the search is done, iterate over the results
-                return searchDoneP.whenResolved(function() {
+                searcher.done(function() {
                     var iterator = searcher.resultsIterator(2);
                     
                     var totalResultCount = 0;
                     var iterationCount = 0;
                     var hasMore = true;
-                    var iterateP = Promise.while({
-                        condition: function() { return hasMore; },
-                        body: function(index) {
-                            return iterator.next().whenResolved(function(more, results) {
-                                hasMore = more;
-                                
-                                if (more) {
-                                    iterationCount++;
-                                    totalResultCount += results.rows.length;
-                                }
-                            });
+                    var iterateP = Async.whilst(
+                        {
+                            condition: function() { return hasMore; },
+                            body: function(done) {
+                                iterator.next(function(err, more, results) {
+                                    hasMore = more;
+                                    
+                                    if (more) {
+                                        iterationCount++;
+                                        totalResultCount += results.rows.length;
+                                    }
+                                    
+                                    done();
+                                });
+                            }
+                        },
+                        function(err) {
+                            test.assert.ok(!err);
+                            test.assert.ok(iterationCount > 0),
+                            test.assert.strictEqual(totalResultCount, 10);
+                            
+                            job.cancel(function(err) {
+                                test.assert.ok(!err);
+                                test.finished();
+                            })
                         }
-                    });
-                    
-                    return iterateP.whenResolved(function() {
-                        test.assert.ok(progressCount > 0);
-                        test.assert.ok(iterationCount > 0);
-                        test.assert.strictEqual(totalResultCount, 10);
-                    });
+                    );
                 });
-            }).whenResolved(function() {
-                return job.cancel();
-            }).whenResolved(function() {
-                test.finished();
-            });
+            })
         });
 
-        this.assertion("Searcher + Events", function(test) {
+        this.assertion("Callback#Searcher + Events", function(test) {
             var sid = getNextId();
-            var jobP = this.service.jobs().create('search index=_internal | head 10', {id: sid});
-            var searcher = null;
-            var job = null;
-            
-            jobP.whenResolved(function(createdJob) {
-                job = createdJob;
+            this.service.jobs().create('search index=_internal | head 10', {id: sid}, function(err, job) {
                 searcher = new Searcher.JobManager(test.service, job);
                 
-                var searchDoneP = searcher.done();
-                
-                // Report progress
-                var progressCount = 0;
-                searchDoneP.onProgress(function(properties) {
-                    progressCount++;
-                });
-                
-                // When the search is done, iterate over the results
-                return searchDoneP.whenResolved(function() {
+                searcher.done(function() {
                     var iterator = searcher.eventsIterator(2);
                     
                     var totalResultCount = 0;
                     var iterationCount = 0;
                     var hasMore = true;
-                    var iterateP = Promise.while({
-                        condition: function() { return hasMore; },
-                        body: function(index) {
-                            return iterator.next().whenResolved(function(more, results) {
-                                hasMore = more;
-                                
-                                if (more) {
-                                    iterationCount++;
-                                    totalResultCount += results.rows.length;
-                                }
-                            });
+                    var iterateP = Async.whilst(
+                        {
+                            condition: function() { return hasMore; },
+                            body: function(done) {
+                                iterator.next(function(err, more, results) {
+                                    hasMore = more;
+                                    
+                                    if (more) {
+                                        iterationCount++;
+                                        totalResultCount += results.rows.length;
+                                    }
+                                    
+                                    done();
+                                });
+                            }
+                        },
+                        function(err) {
+                            test.assert.ok(!err);
+                            test.assert.ok(iterationCount > 0),
+                            test.assert.strictEqual(totalResultCount, 10);
+                            
+                            job.cancel(function(err) {
+                                test.assert.ok(!err);
+                                test.finished();
+                            })
                         }
-                    });
-                    
-                    return iterateP.whenResolved(function() {
-                        test.assert.ok(progressCount > 0);
-                        test.assert.ok(iterationCount > 0);
-                        test.assert.strictEqual(totalResultCount, 10);
-                    });
+                    );
                 });
-            }).whenResolved(function() {
-                return job.cancel();
-            }).whenResolved(function() {
-                test.finished();
-            });
+            })
         });
 
-        this.assertion("Searcher + Preview", function(test) {
+        this.assertion("Callback#Searcher + Preview", function(test) {
             var sid = getNextId();
-            var jobP = this.service.jobs().create('search index=_internal | head 10 | stats count', {id: sid});
-            var searcher = null;
-            var job = null;
-            
-            jobP.whenResolved(function(createdJob) {
-                job = createdJob;
+            this.service.jobs().create('search index=_internal | head 10', {id: sid}, function(err, job) {
                 searcher = new Searcher.JobManager(test.service, job);
                 
-                job.enablePreview();
-                
-                var iterationCount = 0;
-                var iterator = searcher.previewIterator(100);
-                var iterateP = Promise.while({
-                    condition: function() { return !searcher.isDone(); },
-                    body: function(index) {
-                        return iterator.next().whenResolved(function(more, results) {
-                            iterationCount++;
-                            iterator.reset();
-                            
-                            return Promise.sleep(1000);
-                        });
-                    }
-                });
-                
-                var searchDoneP = searcher.done();
-                
-                // Report progress
-                var progressCount = 0;
-                searchDoneP.onProgress(function(properties) {
-                    progressCount++;
-                });
+                searcher.done(function() {
+                    var iterator = searcher.previewIterator(2);
                     
-                return Promise.join(iterateP, searchDoneP).whenResolved(function() {
-                    test.assert.ok(progressCount > 0);
-                    test.assert.ok(iterationCount > 0);
+                    var totalResultCount = 0;
+                    var iterationCount = 0;
+                    var hasMore = true;
+                    var iterateP = Async.whilst(
+                        {
+                            condition: function() { return hasMore; },
+                            body: function(done) {
+                                iterator.next(function(err, more, results) {
+                                    hasMore = more;
+                                    
+                                    if (more) {
+                                        iterationCount++;
+                                        totalResultCount += results.rows.length;
+                                    }
+                                    
+                                    done();
+                                });
+                            }
+                        },
+                        function(err) {
+                            test.assert.ok(!err);
+                            test.assert.ok(iterationCount > 0),
+                            test.assert.strictEqual(totalResultCount, 10);
+                            
+                            job.cancel(function(err) {
+                                test.assert.ok(!err);
+                                test.finished();
+                            })
+                        }
+                    );
                 });
-            }).whenResolved(function() {
-                return job.cancel();
-            }).whenResolved(function() {
-                test.finished();
-            });
+            })
         });
     });
 
