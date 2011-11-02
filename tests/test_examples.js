@@ -14,9 +14,9 @@
 // under the License.
 
 exports.run = (function() {
-    var Promise     = require('../splunk').Splunk.Promise;
     var minitest    = require('../contrib/minitest');
     var fs          = require('fs');
+    var Async       = require('../splunk').Splunk.Async;
     
     var argv = [
         "--username=itay",
@@ -36,7 +36,7 @@ exports.run = (function() {
         
         this.setupTest(function(done) {            
             var test = this;
-            this.run = function(command, args, options) {                
+            this.run = function(command, args, options, callback) {                
                 var combinedArgs = argv.slice();
                 if (command) {
                     combinedArgs.push(command);
@@ -57,20 +57,24 @@ exports.run = (function() {
                     }
                 }
           
-                return test.context.main(combinedArgs);
+                return test.context.main(combinedArgs, callback);
             };
             
             done(); 
         });
         
         this.assertion("help", function(test) {
-            var doneP = test.run();
-            doneP.whenFailed(function() { test.finished(); });
+            test.run(null, null, null, function(err) {
+                test.assert.ok(err);
+                test.finished();
+            });
         });
         
         this.assertion("List jobs", function(test) {
-            var doneP = test.run("list");
-            doneP.whenResolved(function() { test.finished(); });
+            test.run("list", null, null, function(err) {
+                test.assert.ok(!err);
+                test.finished();
+            });
         });
         
         this.assertion("Create job", function(test) {
@@ -79,10 +83,12 @@ exports.run = (function() {
                 id: getNextId()
             };
             
-            this.run("create", [], create).whenResolved(function() {
-                return test.run("cancel", [create.id]);
-            }).whenResolved(function() { 
-                test.finished(); 
+            test.run("create", [], create, function(err) {
+                test.assert.ok(!err);
+                test.run("cancel", [create.id], null, function(err) {
+                    test.assert.ok(!err);
+                    test.finished();
+                });
             });
         });
         
@@ -92,40 +98,48 @@ exports.run = (function() {
                 id: getNextId()
             };
             
-            this.run("create", [], create).whenResolved(function() {
-                return test.run("cancel", [create.id]);
-            }).whenResolved(function() { 
-                test.finished(); 
+            test.run("create", [], create, function(err) {
+                test.assert.ok(!err);
+                test.run("cancel", [create.id], null, function(err) {
+                    test.assert.ok(!err);
+                    test.finished();
+                });
             });
         });
         
-        this.assertion("List job properties", function(test) {
+        this.assertion("List job properties", function(test) {          
             var create = {
                 search: "search index=_internal | head 1",
                 id: getNextId()
             };
-            
-            this.run("create", [], create).whenResolved(function() {
-                return test.run("list", [create.id]);
-            }).whenResolved(function() {
-                return test.run("cancel", [create.id]);
-            }).whenResolved(function() { 
-                test.finished(); 
+              
+            test.run("create", [], create, function(err) {
+                test.assert.ok(!err);
+                test.run("list", [create.id], null, function(err) {
+                    test.assert.ok(!err);
+                    test.run("cancel", [create.id], null, function(err) {
+                        test.assert.ok(!err);
+                        test.finished();
+                    });
+                });
             });
         });
         
-        this.assertion("List job events", function(test) {
+        this.assertion("List job events", function(test) {      
             var create = {
                 search: "search index=_internal | head 1",
                 id: getNextId()
             };
-            
-            this.run("create", [], create).whenResolved(function() {
-                return test.run("events", [create.id]);
-            }).whenResolved(function() {
-                return test.run("cancel", [create.id]);
-            }).whenResolved(function() { 
-                test.finished(); 
+              
+            test.run("create", [], create, function(err) {
+                test.assert.ok(!err);
+                test.run("events", [create.id], null, function(err) {
+                    test.assert.ok(!err);
+                    test.run("cancel", [create.id], null, function(err) {
+                        test.assert.ok(!err);
+                        test.finished();
+                    });
+                });
             });
         });
         
@@ -139,18 +153,31 @@ exports.run = (function() {
             }
             var sids = creates.map(function(create) { return create.id; });
             
-            var promises = [];
-            for(var j = 0; j < creates.length; j++) {
-                promises[j] = this.run("create", [], creates[j]);
-            }
-            
-            Promise.join.apply(null, promises).whenResolved(function() {
-                return test.run("list", sids);  
-            }).whenResolved(function() {
-                return test.run("cancel", sids);
-            }).whenResolved(function() {
-                test.finished();
-            });
+            Async.parallelMap(
+                function(create, done) {
+                    test.run("create", [], create, function(err, job) {
+                        test.assert.ok(!err);
+                        test.assert.ok(job);
+                        test.assert.strictEqual(job.sid, create.id);
+                        done(null, job);
+                    });
+                },
+                creates,
+                function(err, created) {
+                    for(var i = 0; i < created.length; i++) {
+                        test.assert.strictEqual(creates[i].id, created[i].sid);
+                    }
+                    
+                    test.run("list", sids, null, function(err) {
+                        test.assert.ok(!err);
+                        test.run("cancel", sids, null, function(err) {
+                            test.assert.ok(!err);
+                            test.finished();
+                        });
+                    });
+                    
+                }
+            );
         });
     });
 

@@ -267,7 +267,7 @@
             delete params.search;
 
             // Create the job
-            return this.service.jobs().create(query, params, function(err, job) {
+            this.service.jobs().create(query, params, function(err, job) {
                 if (err) {
                     callback(err);
                     return;
@@ -520,7 +520,7 @@
                     callback(err);
                     return;
                 }
-                callback();
+                callback.apply(null, arguments);
             });
         });
     };
