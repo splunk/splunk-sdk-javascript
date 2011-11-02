@@ -22,8 +22,9 @@
     var coverage = runforcover.cover();
 
     // Building block tests
+    require('./test_utils');
+    require('./test_async');
     require('./test_http');
-    require('./test_promise');
 
     // Splunk tests
     require('./test_binding');

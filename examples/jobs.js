@@ -20,7 +20,6 @@
     var Async           = require('../lib/async');
     var OptionParser    = require('../contrib/parseopt').OptionParser;
     var NodeHttp        = require('../platform/node/node_http').NodeHttp;
-    var Promise         = Splunk.Promise;
 
     var FLAGS_CREATE = [
         "search", "earliest_time", "latest_time", "now", "time_format",
@@ -135,28 +134,28 @@
             this.results    = utils.bind(this, this.results);   
         },
 
-        _foreach: function(sids, fn) {
+        _foreach: function(sids, fn, callback) {
             sids = sids || [];
 
             // We get a list of the current jobs, and for each of them,
             // we check whether it is the job we're looking for.
             // If it is, we wrap it up in a Splunk.Job object, and invoke
             // our function on it.
-            return this.service.jobs().list().whenResolved(utils.bind(this, function(list) {
+            var jobs = [];
+            this.service.jobs().list(function(err, list) {
                 list = list || [];
-                var promises = [];
                 for(var i = 0; i < list.length; i++) {
                     if (utils.contains(sids, list[i].sid)) {
                         var job = list[i];
-                        promises.push(fn(job));
+                        jobs.push(job);
                     }
                 }
                 
-                return Promise.join.apply(null, promises);
-            }));
+                Async.parallelMap(fn, jobs, callback);
+            });
         },
 
-        run: function(command, args) {
+        run: function(command, args, callback) {
             var commands = {
                 'cancel':       this.cancel,
                 'create':       this.create,
@@ -183,7 +182,8 @@
                     }
                 }
                 
-                return Promise.Failure("No command was specified.");
+                callback("No command was specified.");
+                return;
             }
 
             // Get the handler
@@ -192,11 +192,12 @@
             // If there is no handler (because the user specified an invalid command,
             // then we notify the user as an error.
             if (!handler) {
-                Promise.Failure("Unrecognized command: " + command);
+                callback("Unrecognized command: " + command);
+                return;
             }
 
             // Invoke the command
-            return handler(args);
+            handler(args, callback);
         },
 
         // Cancel the specified search jobs
@@ -204,9 +205,17 @@
             _check_sids('cancel', sids);
 
             // For each of the supplied sids, cancel the job.
-            return this._foreach(sids, function(job) {
-                return job.cancel(function () { console.log("  Job " + job.sid + " cancelled"); });
-            });
+            this._foreach(sids, function(job, done) {
+                job.cancel(function (err) { 
+                    if (err) {
+                        done(err);
+                        return;
+                    }
+                    
+                    console.log("  Job " + job.sid + " cancelled"); 
+                    done(); 
+                });
+            }, callback);
         },
 
         // Retrieve events for the specified search jobs
@@ -215,10 +224,15 @@
             var cmdline = _makeCommandLine("events", argv, FLAGS_EVENTS, false);
 
             // For each of the passed in sids, get the relevant events
-            return this._foreach(cmdline.arguments, function(job) {
+            this._foreach(cmdline.arguments, function(job, done) {
                 console.log("===== EVENTS @ " + job.sid + " ====="); 
 
-                return job.events(cmdline.options).whenResolved(function(data) {
+                job.events(cmdline.options, function(err, data) {
+                    if (err) {
+                        done(err);
+                        return;
+                    }
+                    
                     var json_mode = cmdline.options.json_mode || "rows";
                     if (json_mode === "rows") {
                         printRows(data);
@@ -231,9 +245,9 @@
                         console.log(data);
                     }
 
-                    return data;
+                    done(null, data);
                 });
-            });
+            }, callback);
         },
 
         // Create a search job
@@ -253,9 +267,14 @@
             delete params.search;
 
             // Create the job
-            return this.service.jobs().create(query, params).whenResolved(function(job) {
+            return this.service.jobs().create(query, params, function(err, job) {
+                if (err) {
+                    callback(err);
+                    return;
+                }
+                
                 console.log("Created job " + job.sid);
-                return job;
+                callback(null, job);
             });
         },
 
@@ -267,20 +286,30 @@
             if (sids.length === 0) {
                 // If no job SIDs are provided, we list all jobs.
                 var jobs = this.service.jobs();
-                return jobs.list().whenResolved(function(list) {
+                jobs.list(function(err, list) {
+                    if (err) {
+                        callback(err);
+                        return;
+                    }
+                    
                     list = list || [];
                     for(var i = 0; i < list.length; i++) {
                         console.log("  Job " + (i + 1) + " sid: "+ list[i].sid);
                     }
 
-                    return list;
+                    callback(null, list);
                 });
             }
             else {
                 // If certain job SIDs are provided,
                 // then we simply read the properties of those jobs
-                return this._foreach(sids, function(job) {
-                    return job.read(function(props) {
+                this._foreach(sids, function(job, done) {
+                    job.read(function(err, props) {
+                        if (err) {
+                            done(err);
+                            return;
+                        }
+                        
                         console.log("Job " + job.sid + ": ");
                         var properties = props;
                         for(var key in properties) {
@@ -292,9 +321,9 @@
                             console.log("  " + key + ": ", properties[key]);
                         }
                         
-                        return properties;
+                        done(null, properties);
                     });
-                });
+                }, callback);
             }
         },
 
@@ -304,10 +333,15 @@
             var cmdline = _makeCommandLine("results", argv, FLAGS_RESULTS, false);
 
             // For each of the passed in sids, get the relevant results
-            return this._foreach(cmdline.arguments, function(job) {
+            this._foreach(cmdline.arguments, function(job, done) {
                 console.log("===== PREVIEW @ " + job.sid + " ====="); 
 
-                return job.preview(cmdline.options).whenResolved(function(data) {                    
+                job.events(cmdline.options, function(err, data) {
+                    if (err) {
+                        done(err);
+                        return;
+                    }
+                    
                     var json_mode = cmdline.options.json_mode || "rows";
                     if (json_mode === "rows") {
                         printRows(data);
@@ -319,10 +353,10 @@
                     else {
                         console.log(data);
                     }
-                    
-                    return data;
+
+                    done(null, data);
                 });
-            });
+            }, callback);
         },
 
         // Retrieve events for the specified search jobs
@@ -331,10 +365,15 @@
             var cmdline = _makeCommandLine("results", argv, FLAGS_RESULTS, false);
 
             // For each of the passed in sids, get the relevant results
-            return this._foreach(cmdline.arguments, function(job) {
+            this._foreach(cmdline.arguments, function(job, done) {
                 console.log("===== RESULTS @ " + job.sid + " ====="); 
 
-                return job.results(cmdline.options).whenResolved(function(data) {                    
+                job.events(cmdline.options, function(err, data) {
+                    if (err) {
+                        done(err);
+                        return;
+                    }
+                    
                     var json_mode = cmdline.options.json_mode || "rows";
                     if (json_mode === "rows") {
                         printRows(data);
@@ -346,10 +385,10 @@
                     else {
                         console.log(data);
                     }
-                    
-                    return data;
+
+                    done(null, data);
                 });
-            });
+            }, callback);
         }
     });
 
@@ -429,7 +468,15 @@
 
     });
 
-    exports.main = function(argv) {        
+    exports.main = function(argv, callback) {        
+        callback = callback || function(err) { 
+            if (err) {
+                console.log(err);
+            }
+            else {
+                console.log("=============="); 
+            }
+        };
         // Try and parse the command line
         var cmdline = null;
         try {
@@ -443,7 +490,8 @@
         
         // If there is no command line, we should return
         if (!cmdline) {
-            return Promise.Failure("Error in parsing command line parameters");
+            callback("Error in parsing command line parameters");
+            return;
         }
         
         // Create our HTTP request class for node.js
@@ -458,22 +506,23 @@
             password: cmdline.options.password,
         });
         
-        var loginP = svc.login();
-        var doneP = loginP.whenResolved(function() {
+        svc.login(function(err, success) {
+            if (err) {
+                console.log("Error: " + err);
+                callback(err);
+                return;
+            }
+            
             var program = new Program(svc);
             
-            return program.run(cmdline.arguments[0], cmdline.arguments.slice(1)); 
+            program.run(cmdline.arguments[0], cmdline.arguments.slice(1), function(err) {
+                if (err) {
+                    callback(err);
+                    return;
+                }
+                callback();
+            });
         });
-        
-        return doneP.when(
-            function() {
-                console.log("======================");
-            },
-            function(reason) {
-                console.log("Error: " + reason); 
-                return Promise.Failure();
-            }
-        );
     };
     
     if (module === require.main) {
