@@ -13,6 +13,7 @@
     <script>
       var JQueryHttp = Splunk.JQueryHttp;
       var XdmHttp = Splunk.XdmHttp;
+      var Async = Splunk.Async;
 
       http = new XdmHttp(true, "https://localhost:8089");
       svc = new Splunk.Client.Service(http, { 
@@ -22,35 +23,57 @@
           username: "itay",
           password: "changeme",
       });
-  
-      // Login and list jobs
-      var loginP = svc.login();
       
-      var jobsP = loginP.whenResolved(function() { return svc.jobs().list(); });
-      var finalP = jobsP.whenResolved(function(list) {
-        for(var i = 0; i < list.length; i++) {
-          console.log("  job: "  + list[i].sid);
-        }
-      });
-
-      // In case any of the requests fail
-      finalP.whenFailed(function() {
-        console.log("Failure: ", arguments);
-      });
-
-      // Show failure case
-      loginP.whenResolved(function() {
-        var jobP = svc.get("search/jobs/1234_nosuchjob");
-        jobP.when(
-          function() {
-            console.log("Success: ", arguments);
-          },
-          function() {
-            console.log("Failure: ", arguments);
+      Async.chain([
+        function(callback) { svc.login(callback); },
+        function(success, callback) { 
+          if (!success) {
+            callback("FAILED TO LOGIN");
           }
-        );
-      });
-      
+          
+          Async.chain([
+            function(callback) { svc.jobs().list(callback); },
+            function(jobs, callback) { 
+              for(var i = 0; i < jobs.length; i++) {
+                console.log("  job: " + jobs[i].sid);
+              }
+              
+              callback();
+            }],
+            function(err) {
+              if (err) {
+                callback("TEST1 ERROR: " + err);
+              }
+              else {
+                callback();
+              }
+            }
+          );
+        },
+        function(callback) {
+          Async.chain([
+            function(callback) {
+              svc.get("search/jobs/1234_nosuchjob", {}, callback);
+            }
+          ],
+          function(err) {
+            if (!err) {
+              callback("TEST2 Error: got a job that shouldn't exist");
+            }
+            else {
+              callback();
+            }
+          });
+        }
+      ],
+      function(err) {
+        if (err) {
+          throw new Error(err);
+        }
+        else {
+          console.log("SUCCESS");
+        }
+      });      
     </script>
   </body>
 </html>
