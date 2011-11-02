@@ -258,6 +258,97 @@
                 }
             );
         });
+        
+        this.assertion("Chain single success", function(test) {
+            Async.chain([
+                function(callback) { 
+                    callback(null, 1);
+                },
+                function(val, callback) {
+                    callback(null, val + 1);
+                },
+                function(val, callback) {
+                    callback(null, val + 1);
+                }],
+                function(err, val) {
+                    test.assert.ok(!err);
+                    test.assert.strictEqual(val, 3);
+                    test.finished();
+                }
+            );
+        });
+        
+        this.assertion("Chain multiple success", function(test) {
+            Async.chain([
+                function(callback) { 
+                    callback(null, 1, 2);
+                },
+                function(val1, val2, callback) {
+                    callback(null, val1 + 1, val2 + 1);
+                },
+                function(val1, val2, callback) {
+                    callback(null, val1 + 1, val2 + 1);
+                }],
+                function(err, val1, val2) {
+                    test.assert.ok(!err);
+                    test.assert.strictEqual(val1, 3);
+                    test.assert.strictEqual(val2, 4);
+                    test.finished();
+                }
+            );
+        });
+        
+        this.assertion("Chain arity change success", function(test) {
+            Async.chain([
+                function(callback) { 
+                    callback(null, 1, 2);
+                },
+                function(val1, val2, callback) {
+                    callback(null, val1 + 1);
+                },
+                function(val1, callback) {
+                    callback(null, val1 + 1, 5);
+                }],
+                function(err, val1, val2) {
+                    test.assert.ok(!err);
+                    test.assert.strictEqual(val1, 3);
+                    test.assert.strictEqual(val2, 5);
+                    test.finished();
+                }
+            );
+        });
+        
+        this.assertion("Chain error", function(test) {
+            Async.chain([
+                function(callback) { 
+                    callback(null, 1, 2);
+                },
+                function(val1, val2, callback) {
+                    callback(5, val1 + 1);
+                },
+                function(val1, callback) {
+                    callback(null, val1 + 1, 5);
+                }],
+                function(err, val1, val2) {
+                    test.assert.ok(err);
+                    test.assert.ok(!val1);
+                    test.assert.ok(!val2);
+                    test.assert.strictEqual(err, 5);
+                    test.finished();
+                }
+            );
+        });
+        
+        this.assertion("Chain no tasks", function(test) {
+            Async.chain([],
+                function(err, val1, val2) {
+                    test.assert.ok(!err);
+                    test.assert.ok(!val1);
+                    test.assert.ok(!val2);
+                    test.finished();
+                }
+            );
+        });
     });
 
     if (module === require.main) {
