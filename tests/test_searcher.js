@@ -53,10 +53,16 @@ exports.run = (function() {
 
         this.assertion("Callback#Searcher + Results", function(test) {
             var sid = getNextId();
-            this.service.jobs().create('search index=_internal | head 10', {id: sid}, function(err, job) {
-                var searcher = new Searcher.JobManager(test.service, job);
-                
-                searcher.done(function() {
+            var that = this;
+            Async.chain([
+                function(callback) {
+                    that.service.jobs().create('search index=_internal | head 10', {id: sid}, callback);
+                },
+                function(job, callback) {
+                    var searcher = new Searcher.JobManager(test.service, job);
+                    searcher.done(callback);
+                },
+                function(searcher, callback) {
                     var iterator = searcher.resultsIterator(2);
                     
                     var totalResultCount = 0;
@@ -83,22 +89,32 @@ exports.run = (function() {
                             test.assert.ok(iterationCount > 0);
                             test.assert.strictEqual(totalResultCount, 10);
                             
-                            searcher.cancel(function(err) {
-                                test.assert.ok(!err);
-                                test.finished();
-                            });
+                            callback(null, searcher);
                         }
                     );
-                });
+                },
+                function(searcher, callback) {
+                    searcher.cancel(callback);
+                }
+            ],
+            function(err) {
+                test.assert.ok(!err);
+                test.finished();  
             });
         });
 
         this.assertion("Callback#Searcher + Events", function(test) {
             var sid = getNextId();
-            this.service.jobs().create('search index=_internal | head 10', {id: sid}, function(err, job) {
-                var searcher = new Searcher.JobManager(test.service, job);
-                
-                searcher.done(function() {
+            var that = this;
+            Async.chain([
+                function(callback) {
+                    that.service.jobs().create('search index=_internal | head 10', {id: sid}, callback);
+                },
+                function(job, callback) {
+                    var searcher = new Searcher.JobManager(test.service, job);
+                    searcher.done(callback);
+                },
+                function(searcher, callback) {
                     var iterator = searcher.eventsIterator(2);
                     
                     var totalResultCount = 0;
@@ -125,22 +141,32 @@ exports.run = (function() {
                             test.assert.ok(iterationCount > 0);
                             test.assert.strictEqual(totalResultCount, 10);
                             
-                            searcher.cancel(function(err) {
-                                test.assert.ok(!err);
-                                test.finished();
-                            });
+                            callback(null, searcher);
                         }
                     );
-                });
+                },
+                function(searcher, callback) {
+                    searcher.cancel(callback);
+                }
+            ],
+            function(err) {
+                test.assert.ok(!err);
+                test.finished();  
             });
         });
 
         this.assertion("Callback#Searcher + Preview", function(test) {
             var sid = getNextId();
-            this.service.jobs().create('search index=_internal | head 10', {id: sid}, function(err, job) {
-                var searcher = new Searcher.JobManager(test.service, job);
-                
-                searcher.done(function() {
+            var that = this;
+            Async.chain([
+                function(callback) {
+                    that.service.jobs().create('search index=_internal | head 10', {id: sid}, callback);
+                },
+                function(job, callback) {
+                    var searcher = new Searcher.JobManager(test.service, job);
+                    searcher.done(callback);
+                },
+                function(searcher, callback) {
                     var iterator = searcher.previewIterator(2);
                     
                     var totalResultCount = 0;
@@ -167,13 +193,17 @@ exports.run = (function() {
                             test.assert.ok(iterationCount > 0);
                             test.assert.strictEqual(totalResultCount, 10);
                             
-                            searcher.cancel(function(err) {
-                                test.assert.ok(!err);
-                                test.finished();
-                            });
+                            callback(null, searcher);
                         }
                     );
-                });
+                },
+                function(searcher, callback) {
+                    searcher.cancel(callback);
+                }
+            ],
+            function(err) {
+                test.assert.ok(!err);
+                test.finished();  
             });
         });
     });
