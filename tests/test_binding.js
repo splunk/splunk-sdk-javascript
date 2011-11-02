@@ -96,16 +96,11 @@ exports.run = (function() {
         });
 
         this.assertion("Callback#get error", function(test) { 
-            var jobsP = this.service.get("search/jobs/1234_nosuchjob", {}, {
-                    success: function(res) {
-                        test.assert.ok(false);  
-                    },
-                    error: function(res) {
-                        test.assert.strictEqual(res.status, 404);
-                        test.finished();
-                    }
-                }
-            );
+            var jobsP = this.service.get("search/jobs/1234_nosuchjob", {}, function(res) {
+                test.assert.ok(!!res);
+                test.assert.strictEqual(res.status, 404);
+                test.finished();
+            });
         });
 
         this.assertion("Callback#post", function(test) { 
@@ -124,16 +119,11 @@ exports.run = (function() {
         });
 
         this.assertion("Callback#post error", function(test) { 
-            var jobsP = this.service.post("search/jobs", {search: "index_internal | head 1"}, {
-                    success: function(res) {
-                        test.assert.ok(false);  
-                    },
-                    error: function(res) {
-                        test.assert.strictEqual(res.status, 400);
-                        test.finished();
-                    }
-                }
-            );
+            var jobsP = this.service.post("search/jobs", {search: "index_internal | head 1"}, function(res) {
+                test.assert.ok(!!res);
+                test.assert.strictEqual(res.status, 400);
+                test.finished();
+            });
         });
 
         this.assertion("Callback#delete", function(test) { 
@@ -152,16 +142,11 @@ exports.run = (function() {
         });
 
         this.assertion("Callback#delete error", function(test) { 
-            var jobsP = this.service.del("search/jobs/1234_nosuchjob", {}, {
-                    success: function(res) {
-                        test.assert.ok(false);  
-                    },
-                    error: function(res) {
-                        test.assert.strictEqual(res.status, 404);
-                        test.finished();
-                    }
-                }
-            );
+            var jobsP = this.service.del("search/jobs/1234_nosuchjob", {}, function(res) {
+                test.assert.ok(!!res);
+                test.assert.strictEqual(res.status, 404);
+                test.finished();
+            });
         });
 
         this.assertion("Callback#request get", function(test) { 
@@ -199,15 +184,11 @@ exports.run = (function() {
         });
 
         this.assertion("Callback#request error", function(test) { 
-            var jobsP = this.service.request("search/jobs/1234_nosuchjob", "GET", {"X-TestHeader": 1}, "", {
-                success: function(res) {
-                    test.assert.ok(false);
-                },
-                error: function(res) {
-                    test.assert.strictEqual(res.response.request.headers["X-TestHeader"], 1);
-                    test.assert.strictEqual(res.status, 404);
-                    test.finished();
-                }
+            var jobsP = this.service.request("search/jobs/1234_nosuchjob", "GET", {"X-TestHeader": 1}, "", function(res) {
+                test.assert.ok(!!res);
+                test.assert.strictEqual(res.response.request.headers["X-TestHeader"], 1);
+                test.assert.strictEqual(res.status, 404);
+                test.finished();
             });
         });
     });

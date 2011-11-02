@@ -25,8 +25,7 @@
         
         this.assertion("Callback#callback to object success", function(test) {
             var successfulFunction = function(callback) {
-                callback = Splunk.Utils.callbackToObject(callback);
-                callback.success("one", "two");
+                callback(null, "one", "two");
             };
             
             successfulFunction(function(err, one, two) {
@@ -38,8 +37,7 @@
         
         this.assertion("Callback#callback to object error - single argument", function(test) {
             var successfulFunction = function(callback) {
-                callback = Splunk.Utils.callbackToObject(callback);
-                callback.error("one")
+                callback("one")
             };
             
             successfulFunction(function(err, one, two) {
@@ -52,8 +50,7 @@
         
         this.assertion("Callback#callback to object error - multi argument", function(test) {
             var successfulFunction = function(callback) {
-                callback = Splunk.Utils.callbackToObject(callback);
-                callback.error("one", "two")
+                callback(["one", "two"])
             };
             
             successfulFunction(function(err, one, two) {

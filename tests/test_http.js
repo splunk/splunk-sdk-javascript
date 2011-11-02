@@ -34,14 +34,10 @@
         });
 
         this.assertion("Callback#success success+error", function(test) {
-            this.http.get("http://httpbin.org/get", [], {}, 0, {
-                success: function(res) {
-                    test.assert.strictEqual(res.json.url, "http://httpbin.org/get");
-                    test.finished();
-                },
-                error: function(res) {
-                    test.assert.ok(false);
-                }
+            this.http.get("http://httpbin.org/get", [], {}, 0, function(err, res) {
+                test.assert.ok(!err);
+                test.assert.strictEqual(res.json.url, "http://httpbin.org/get");
+                test.finished();
             });
         });
         
@@ -53,14 +49,10 @@
         });
         
         this.assertion("Callback#error success+error", function(test) {
-            this.http.get("http://httpbin.org/status/404", [], {}, 0, {
-                success: function(res) {
-                    test.assert.ok(false);
-                },
-                error: function(res) {
-                        test.assert.strictEqual(res.status, 404);
-                        test.finished();   
-                }
+            this.http.get("http://httpbin.org/status/404", [], {}, 0, function(res) {
+                test.assert.ok(res);
+                test.assert.strictEqual(res.status, 404);
+                test.finished();  
             });
         });
         
@@ -136,14 +128,10 @@
         });   
         
         this.assertion("Callback#success success+error", function(test) {
-            this.http.post("http://httpbin.org/post", {}, {}, 0, {
-                success: function(res) {
-                    test.assert.strictEqual(res.json.url, "http://httpbin.org/post");
-                    test.finished();
-                },
-                error: function(res) {
-                    test.assert.ok(false);
-                }
+            this.http.post("http://httpbin.org/post", {}, {}, 0, function(err, res) {
+                test.assert.ok(!err);
+                test.assert.strictEqual(res.json.url, "http://httpbin.org/post");
+                test.finished();
             });
         });
         
@@ -155,14 +143,10 @@
         });
         
         this.assertion("Callback#error success+error", function(test) {
-            this.http.post("http://httpbin.org/status/405", {}, {}, 0, {
-                success: function(res) {
-                    test.assert.ok(false);
-                },
-                error: function(res) {
-                        test.assert.strictEqual(res.status, 405);
-                        test.finished();   
-                }
+            this.http.post("http://httpbin.org/status/405", {}, {}, 0, function(res) {
+                test.assert.ok(!!res);
+                test.assert.strictEqual(res.status, 405);
+                test.finished();   
             });
         });
         
@@ -237,14 +221,10 @@
         });        
 
         this.assertion("Callback#success success+error", function(test) {
-            var deleteP = this.http.del("http://httpbin.org/delete", [], {}, 0, {
-                success: function(res) {
-                    test.assert.strictEqual(res.json.url, "http://httpbin.org/delete");
-                    test.finished();
-                },
-                error: function(res) {
-                    test.assert.ok(false);
-                }
+            var deleteP = this.http.del("http://httpbin.org/delete", [], {}, 0, function(err, res) {
+                test.assert.ok(!err);
+                test.assert.strictEqual(res.json.url, "http://httpbin.org/delete");
+                test.finished();
             });
         });
         
@@ -256,14 +236,10 @@
         });
         
         this.assertion("Callback#error success+error", function(test) {
-            this.http.del("http://httpbin.org/status/405", [], {}, 0, {
-                success: function(res) {
-                    test.assert.ok(false);
-                },
-                error: function(res) {
-                        test.assert.strictEqual(res.status, 405);
-                        test.finished();   
-                }
+            this.http.del("http://httpbin.org/status/405", [], {}, 0, function(res) {
+                test.assert.ok(!!res);
+                test.assert.strictEqual(res.status, 405);
+                test.finished();   
             });
         });
         

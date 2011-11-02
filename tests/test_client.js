@@ -64,9 +64,9 @@ exports.run = (function() {
 
         this.assertion("Callback#Create job error", function(test) {
             var sid = getNextId();
-            this.service.jobs().create('index=_internal | head 1', {id: sid}, {
-                success: function () { test.assert.ok(false); },
-                error: function() { test.finished(); },
+            this.service.jobs().create('index=_internal | head 1', {id: sid}, function(err) { 
+                test.assert.ok(!!err);
+                test.finished(); 
             });
         });
 
