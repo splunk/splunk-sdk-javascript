@@ -24,6 +24,49 @@
             done();
         });
         
+        this.assertion("While success", function(test) {
+            var i = 0;
+            Async.whilst({
+                condition: function() { return i++ < 3; },
+                body: function(done) {
+                    Async.sleep(0, function() { done(); });
+                }
+            },
+            function(err) {
+                test.assert.ok(!err);
+                test.finished();
+            });;
+        });
+        
+        this.assertion("While success deep", function(test) {
+            var i = 0;
+            Async.whilst({
+                condition: function() { return i++ < 10000; },
+                body: function(done) {
+                    Async.sleep(0, function() { done(); });
+                }
+            },
+            function(err) {
+                test.assert.ok(!err);
+                test.finished();
+            });;
+        });
+        
+        this.assertion("While error", function(test) {
+            var i = 0;
+            Async.whilst({
+                condition: function() { return i++ < 10000; },
+                body: function(done) {
+                    Async.sleep(0, function() { done(i === 1000 ? 1 : null); });
+                }
+            },
+            function(err) {
+                test.assert.ok(err);
+                test.assert.strictEqual(err, 1);
+                test.finished();
+            });;
+        });
+        
         this.assertion("Parallel success", function(test) {
             Async.parallel([
                 function(done) {
@@ -152,6 +195,66 @@
                     test.assert.strictEqual(vals[0], 2);
                     test.assert.strictEqual(vals[1], 3);
                     test.assert.strictEqual(vals[2], 4);
+                    test.finished();
+                }
+            );
+        });
+        
+        this.assertion("Parallel map error", function(test) {
+            Async.parallelMap(
+                function(val, done) { 
+                    if (val === 2) {
+                        done(5);
+                    }
+                    else {
+                        done(null, val + 1);
+                    }
+                },
+                [1, 2, 3],
+                function(err, vals) {
+                    test.assert.ok(err);
+                    test.assert.ok(!vals);
+                    test.assert.strictEqual(err, 5);
+                    test.finished();
+                }
+            );
+        });
+        
+        this.assertion("Series map success", function(test) {
+            var keeper = 1;
+            Async.seriesMap(
+                function(val, done) { 
+                    test.assert.strictEqual(keeper++, val);
+                    done(null, val + 1);
+                },
+                [1, 2, 3],
+                function(err, vals) {
+                    test.assert.ok(!err);
+                    test.assert.strictEqual(vals[0], 2);
+                    test.assert.strictEqual(vals[1], 3);
+                    test.assert.strictEqual(vals[2], 4);
+                    test.assert.strictEqual(vals[2], keeper);
+                    test.finished();
+                }
+            );
+        });
+        
+        this.assertion("Series map error", function(test) {
+            Async.seriesMap(
+                function(val, done) { 
+                    if (val === 2) {
+                        done(5);
+                    }
+                    else {
+                        done(null, val + 1);
+                    }
+                },
+                [1, 2, 3],
+                function(err, vals) {
+                    console.log("err: " + err)
+                    test.assert.ok(err);
+                    test.assert.ok(!vals);
+                    test.assert.strictEqual(err, 5);
                     test.finished();
                 }
             );
