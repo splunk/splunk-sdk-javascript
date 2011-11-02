@@ -35,7 +35,7 @@
             function(err) {
                 test.assert.ok(!err);
                 test.finished();
-            });;
+            });
         });
         
         this.assertion("While success deep", function(test) {
@@ -49,7 +49,7 @@
             function(err) {
                 test.assert.ok(!err);
                 test.finished();
-            });;
+            });
         });
         
         this.assertion("While error", function(test) {
@@ -64,16 +64,16 @@
                 test.assert.ok(err);
                 test.assert.strictEqual(err, 1);
                 test.finished();
-            });;
+            });
         });
         
         this.assertion("Parallel success", function(test) {
             Async.parallel([
                 function(done) {
-                    done(null, 1)  
+                    done(null, 1);
                 },
                 function(done) {
-                    done(null, 2, 3)
+                    done(null, 2, 3);
                 }],
                 function(err, one, two) {
                     test.assert.ok(!err);
@@ -91,7 +91,7 @@
                     Async.sleep(1, function() { done(null, 1); });  
                 },
                 function(done) {
-                    done(null, 2, 3)
+                    done(null, 2, 3);
                 }],
                 function(err, one, two) {
                     test.assert.ok(!err);
@@ -106,15 +106,15 @@
         this.assertion("Parallel error", function(test) {
             Async.parallel([
                 function(done) {
-                    done(null, 1)  
+                    done(null, 1);
                 },
                 function(done) {
-                    done(null, 2, 3)
+                    done(null, 2, 3);
                 },
                 function(done) {
                     Async.sleep(0, function() {
                         done("ERROR");
-                    })
+                    });
                 }],
                 function(err, one, two) {
                     test.assert.ok(err === "ERROR");
@@ -128,10 +128,10 @@
         this.assertion("Series success", function(test) {
             Async.series([
                 function(done) {
-                    done(null, 1)  
+                    done(null, 1);
                 },
                 function(done) {
-                    done(null, 2, 3)
+                    done(null, 2, 3);
                 }],
                 function(err, one, two) {
                     test.assert.ok(!err);
@@ -154,7 +154,7 @@
                 },
                 function(done) {
                     test.assert.strictEqual(keeper++, 1);
-                    done(null, 2, 3)
+                    done(null, 2, 3);
                 }],
                 function(err, one, two) {
                     test.assert.ok(!err);
@@ -170,10 +170,10 @@
         this.assertion("Series error", function(test) {
             Async.series([
                 function(done) {
-                    done(null, 1)  
+                    done(null, 1);
                 },
                 function(done) {
-                    done("ERROR", 2, 3)
+                    done("ERROR", 2, 3);
                 }],
                 function(err, one, two) {
                     test.assert.strictEqual(err, "ERROR");
@@ -251,7 +251,6 @@
                 },
                 [1, 2, 3],
                 function(err, vals) {
-                    console.log("err: " + err)
                     test.assert.ok(err);
                     test.assert.ok(!vals);
                     test.assert.strictEqual(err, 5);

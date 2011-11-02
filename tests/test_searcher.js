@@ -80,13 +80,13 @@ exports.run = (function() {
                         },
                         function(err) {
                             test.assert.ok(!err);
-                            test.assert.ok(iterationCount > 0),
+                            test.assert.ok(iterationCount > 0);
                             test.assert.strictEqual(totalResultCount, 10);
                             
                             searcher.cancel(function(err) {
                                 test.assert.ok(!err);
                                 test.finished();
-                            })
+                            });
                         }
                     );
                 });
@@ -122,17 +122,17 @@ exports.run = (function() {
                         },
                         function(err) {
                             test.assert.ok(!err);
-                            test.assert.ok(iterationCount > 0),
+                            test.assert.ok(iterationCount > 0);
                             test.assert.strictEqual(totalResultCount, 10);
                             
                             searcher.cancel(function(err) {
                                 test.assert.ok(!err);
                                 test.finished();
-                            })
+                            });
                         }
                     );
                 });
-            })
+            });
         });
 
         this.assertion("Callback#Searcher + Preview", function(test) {
@@ -164,17 +164,17 @@ exports.run = (function() {
                         },
                         function(err) {
                             test.assert.ok(!err);
-                            test.assert.ok(iterationCount > 0),
+                            test.assert.ok(iterationCount > 0);
                             test.assert.strictEqual(totalResultCount, 10);
                             
                             searcher.cancel(function(err) {
                                 test.assert.ok(!err);
                                 test.finished();
-                            })
+                            });
                         }
                     );
                 });
-            })
+            });
         });
     });
 
