@@ -54,7 +54,7 @@ exports.run = (function() {
         this.assertion("Callback#Searcher + Results", function(test) {
             var sid = getNextId();
             this.service.jobs().create('search index=_internal | head 10', {id: sid}, function(err, job) {
-                searcher = new Searcher.JobManager(test.service, job);
+                var searcher = new Searcher.JobManager(test.service, job);
                 
                 searcher.done(function() {
                     var iterator = searcher.resultsIterator(2);
@@ -83,20 +83,20 @@ exports.run = (function() {
                             test.assert.ok(iterationCount > 0),
                             test.assert.strictEqual(totalResultCount, 10);
                             
-                            job.cancel(function(err) {
+                            searcher.cancel(function(err) {
                                 test.assert.ok(!err);
                                 test.finished();
                             })
                         }
                     );
                 });
-            })
+            });
         });
 
         this.assertion("Callback#Searcher + Events", function(test) {
             var sid = getNextId();
             this.service.jobs().create('search index=_internal | head 10', {id: sid}, function(err, job) {
-                searcher = new Searcher.JobManager(test.service, job);
+                var searcher = new Searcher.JobManager(test.service, job);
                 
                 searcher.done(function() {
                     var iterator = searcher.eventsIterator(2);
@@ -125,7 +125,7 @@ exports.run = (function() {
                             test.assert.ok(iterationCount > 0),
                             test.assert.strictEqual(totalResultCount, 10);
                             
-                            job.cancel(function(err) {
+                            searcher.cancel(function(err) {
                                 test.assert.ok(!err);
                                 test.finished();
                             })
@@ -138,7 +138,7 @@ exports.run = (function() {
         this.assertion("Callback#Searcher + Preview", function(test) {
             var sid = getNextId();
             this.service.jobs().create('search index=_internal | head 10', {id: sid}, function(err, job) {
-                searcher = new Searcher.JobManager(test.service, job);
+                var searcher = new Searcher.JobManager(test.service, job);
                 
                 searcher.done(function() {
                     var iterator = searcher.previewIterator(2);
@@ -167,7 +167,7 @@ exports.run = (function() {
                             test.assert.ok(iterationCount > 0),
                             test.assert.strictEqual(totalResultCount, 10);
                             
-                            job.cancel(function(err) {
+                            searcher.cancel(function(err) {
                                 test.assert.ok(!err);
                                 test.finished();
                             })
