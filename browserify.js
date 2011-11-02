@@ -3,6 +3,7 @@
 (function(){
     var browserify      = require('browserify'),
         fs              = require('fs'),
+        path            = require('path'),
         OptionParser    = require('./contrib/parseopt').OptionParser;
 
     var parser = new OptionParser({
@@ -57,6 +58,10 @@
 
     if (cmdline.arguments.length === 0) {
         cmdline.arguments.push(cmdline.options.dir + "splunk" + (cmdline.options.uglify ? ".min." : ".") + "js");        
+    }
+
+    if (!path.existsSync(cmdline.options.dir)) {
+        fs.mkdirSync(cmdline.options.dir, "755");
     }
 
     var compiledPackagePath = cmdline.arguments[0];
