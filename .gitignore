@@ -6,3 +6,5 @@ tests/html/*
 *DS_Store
 *.sublime-*
 *.pyc
+external-nocheckin/*
+client/splunk.ui.*

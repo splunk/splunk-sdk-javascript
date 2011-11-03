@@ -60,33 +60,42 @@
         cmdline.arguments.push(cmdline.options.dir + "splunk" + (cmdline.options.uglify ? ".min." : ".") + "js");        
     }
 
+    // UI
+    cmdline.arguments.push(cmdline.options.dir + "splunk.ui" + (cmdline.options.uglify ? ".min." : ".") + "js");
+
     if (!path.existsSync(cmdline.options.dir)) {
         fs.mkdirSync(cmdline.options.dir, "755");
     }
 
     var compiledPackagePath = cmdline.arguments[0];
+    var compiledUIPackagePath = cmdline.arguments[1];
 
-    // Compile/combine all the files into the package
-    var bundle = browserify({
-        entry: "browser_entry.js",
-        filter: function(code) {
-            if (cmdline.options.uglify) {
-                var uglifyjs = require("uglify-js"),
-                    parser = uglifyjs.parser,
-                    uglify = uglifyjs.uglify;
-                    
-                var ast = parser.parse(code);
-                ast = uglify.ast_mangle(ast);
-                ast = uglify.ast_squeeze(ast);
-                return uglify.gen_code(ast);
-            }
-            else {
-                return code;
-            }
-        },
-    });
+    var compile = function(entry, path) {
+        // Compile/combine all the files into the package
+        var bundle = browserify({
+            entry: entry,
+            filter: function(code) {
+                if (cmdline.options.uglify) {
+                    var uglifyjs = require("uglify-js"),
+                        parser = uglifyjs.parser,
+                        uglify = uglifyjs.uglify;
+                        
+                    var ast = parser.parse(code);
+                    ast = uglify.ast_mangle(ast);
+                    ast = uglify.ast_squeeze(ast);
+                    return uglify.gen_code(ast);
+                }
+                else {
+                    return code;
+                }
+            },
+        });
 
-    var js = bundle.bundle();
-    fs.writeFileSync(compiledPackagePath, js);
-    console.log("Compiled " + compiledPackagePath);
+        var js = bundle.bundle();
+        fs.writeFileSync(path, js);
+        console.log("Compiled " + path);
+    };
+    
+    compile("browser.entry.js", compiledPackagePath)
+    compile("browser.ui.entry.js", compiledUIPackagePath)
 })();

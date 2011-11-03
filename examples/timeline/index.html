@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Splunk Timeline</title>
+    <link rel="stylesheet" type="text/css" href="../../external-nocheckin/ui.css">
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.js"></script>
+    <script type="text/javascript" src="../../client/splunk.js"></script>
+    <script type="text/javascript" src="../../client/splunk.ui.js"></script>
+    <script>
+    
+      var augment = function(callback) {
+        var args = Array.prototype.slice.call(arguments, 1);
+        return function() {
+          var augmentedArgs = Array.prototype.slice.call(arguments);
+          for(var i = 0; i < args.length; i++) {
+            augmentedArgs.push(args[i]);
+          }
+          
+          callback.apply(null, augmentedArgs);
+        };
+      }
+    
+      $(function() {
+        
+        var XdmHttp = Splunk.XdmHttp;
+        var Async = Splunk.Async;
+
+        http = new XdmHttp(true, "https://localhost:8089");
+        svc = new Splunk.Client.Service(http, { 
+            scheme: "https",
+            host: "localhost",
+            port: "8089",
+            username: "itay",
+            password: "changeme",
+        });
+        
+        var timeline = new SplunkUI.Timeline.Timeline($("#timeline-container"));
+        var searchTerm = "search * | head 100000 | stats count";
+        
+        Async.chain([
+          // Login
+          function(callback) { svc.login(callback); },
+          // Create the job
+          function(success, callback) {
+            svc.jobs().create(searchTerm, {status_buckets: 300}, callback);
+          },
+          // Loop until the job is "done"
+          function(job, callback) {
+            var searcher = new Splunk.Searcher.JobManager(job.service, job);
+            
+            // Queue up timeline displays while we are querying the job
+            searcher.onProgress(function(properties) {
+              job.timeline({}, function(err, data) { 
+                if (!err) timeline.updateWithJSON(data); 
+              });
+            });
+            
+            // Move forward once the search is done
+            searcher.done(callback);
+          },
+          // Get the final timeline data
+          function(searcher, callback) {
+            searcher.job.timeline({}, augment(callback, searcher.job));
+          },
+          // Update the timeline control
+          function(timelineData, job, callback) {
+            timeline.updateWithJSON(timelineData);
+            callback(job);
+          }
+        ],
+        // And we're done, so make sure we had no error, and
+        // cancel the job
+        function(job, err) {
+          if (err) {
+            console.log(err);
+            throw new Error(err);
+          }
+          
+          job.cancel();
+        });
+      });
+    </script>
+    
+    <style>
+      #timeline-container {
+        height: 150px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="timeline-container">
+    
+    </div>
+  </body>
+</html>
