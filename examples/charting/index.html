@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Splunk Charting</title>
+    
+    <link rel="stylesheet" type="text/css" href="../../external-nocheckin/ui.css">
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.js"></script>
+    <script type="text/javascript" src="../../client/splunk.js"></script>
+    <script type="text/javascript" src="../../client/splunk.ui.js"></script>
+    <script>
+    
+      var augment = function(callback) {
+        var args = Array.prototype.slice.call(arguments, 1);
+        return function() {
+          var augmentedArgs = Array.prototype.slice.call(arguments);
+          for(var i = 0; i < args.length; i++) {
+            augmentedArgs.push(args[i]);
+          }
+          
+          callback.apply(null, augmentedArgs);
+        };
+      }
+    
+      $(function() {
+        var XdmHttp = Splunk.XdmHttp;
+        var Async = Splunk.Async;
+
+        http = new XdmHttp(true, "https://localhost:8089");
+        svc = new Splunk.Client.Service(http, { 
+            scheme: "https",
+            host: "localhost",
+            port: "8089",
+            username: "itay",
+            password: "changeme",
+        });
+        
+        var chart = new SplunkUI.Charting.Chart($("#chart-container"), SplunkUI.Charting.ChartType.COLUMN, false);
+        
+        /*var searchTerm = 'search index=foursquare * | head 5000 | eval venue=venue_id+","+venue_name | timechart count by venue | fields - OTHER';*/
+        var searchTerm = 'search index=foursquare * | head 10000 | eval venue=venue_id + "," + venue_name | stats count(eval(user_gender="male")) as MaleCount, count(eval(user_gender="female")) as FemaleCount by venue';
+        Async.chain([
+          // Login
+          function(callback) { svc.login(callback); },
+          // Create the job
+          function(success, callback) {
+            svc.jobs().create(searchTerm, {status_buckets: 300}, callback);
+          },
+          // Loop until the job is "done"
+          function(job, callback) {
+            var searcher = new Splunk.Searcher.JobManager(job.service, job);
+            
+            // Move forward once the search is done
+            searcher.done(callback);
+          },
+          // Get the final results data
+          function(searcher, callback) {
+            searcher.job.results({json_mode: "column"}, augment(callback, searcher.job));
+          },
+          // Update the chart
+          function(results, job, callback) {         
+            chart.setColumnData(results, {
+              "chart.stackMode": "stacked"
+            });
+            chart.draw();
+            callback(job);
+          }
+        ],
+        // And we're done, so make sure we had no error, and
+        // cancel the job
+        function(job, err) {
+          if (err) {
+            console.log(err);
+            throw new Error(err);
+          }
+          
+          job.cancel();
+        });
+      });
+    </script>
+    
+    <style>
+      #chart-container {
+      }
+    </style>
+  </head>
+  <body>
+    <div id="chart-container">
+    
+    </div>
+  </body>
+</html>
