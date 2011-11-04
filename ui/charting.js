@@ -17,7 +17,7 @@
     var utils = require('../lib/utils');
     var Class   = require('../lib/jquery.class').Class;
     
-    this.SplunkCharting = this.SplunkCharting || {}
+    this.SplunkCharting = this.SplunkCharting || {};
     var i18n = require('../external-nocheckin/i18n.js');
     for(var key in i18n) {
         if (i18n.hasOwnProperty(key)) {
@@ -77,8 +77,8 @@
         },
         
         setData: function(series, properties) {
-            fieldInfo = JSCharting.extractFieldInfo({series: series});
-            chartData = JSCharting.extractChartReadyData({series: series}, fieldInfo);
+            var fieldInfo = JSCharting.extractFieldInfo({series: series});
+            var chartData = JSCharting.extractChartReadyData({series: series}, fieldInfo);
             this.chart.prepare(chartData, fieldInfo, properties);
         },
         

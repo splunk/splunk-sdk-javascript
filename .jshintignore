@@ -8,3 +8,4 @@ examples/minisplunk/*
 old_english/*
 new_english/*
 contrib/*
+external-nocheckin/*

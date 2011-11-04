@@ -96,6 +96,6 @@
         console.log("Compiled " + path);
     };
     
-    compile("browser.entry.js", compiledPackagePath)
-    compile("browser.ui.entry.js", compiledUIPackagePath)
+    compile("browser.entry.js", compiledPackagePath);
+    compile("browser.ui.entry.js", compiledUIPackagePath);
 })();
