@@ -8,3 +8,4 @@ tests/html/*
 *.pyc
 external-nocheckin/*
 client/splunk.ui.*
+.idea/*
