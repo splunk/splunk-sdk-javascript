@@ -25,10 +25,10 @@
         var XdmHttp = Splunk.XdmHttp;
         var Async = Splunk.Async;
 
-        http = new XdmHttp(true, "https://localhost:8089");
+        http = new XdmHttp(true, "https://10.80.1.74:8089");
         svc = new Splunk.Client.Service(http, { 
             scheme: "https",
-            host: "localhost",
+            host: "10.80.1.74",
             port: "8089",
             username: "itay",
             password: "changeme",
