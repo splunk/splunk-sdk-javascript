@@ -310,6 +310,31 @@ exports.extname = function(path) {
     return module.exports;
 };
 
+require.modules["/package.json"] = function () {
+    var module = { exports : {} };
+    var exports = module.exports;
+    var __dirname = "/";
+    var __filename = "/package.json";
+    
+    var require = function (file) {
+        return __require(file, "/");
+    };
+    
+    require.resolve = function (file) {
+        return __require.resolve(name, "/");
+    };
+    
+    require.modules = __require.modules;
+    __require.modules["/package.json"]._cached = module.exports;
+    
+    (function () {
+        module.exports = {"name":"splunk-sdk","version":"0.1.0","description":"SDK for usage with the Splunk REST API","homepage":"http://dev.splunk.com","main":"splunk.js","directories":{"example":"examples","lib":"lib","test":"tests"},"repository":{"type":"git","url":"http://github.com/splunk/splunk-sdk-javascript.git"},"keywords":["splunk","data","search","logs","javascript"],"dependencies":{"request":"2.1.x"},"devDependencies":{"browserify":"1.6.x","uglify-js":"1.0.x"},"author":{"name":"Splunk","email":"devinfo@splunk.com","url":"http://dev.splunk.com"},"license":"Apache","engine":{"node":">=0.4.9"},"private":true};
+    }).call(module.exports);
+    
+    __require.modules["/package.json"]._cached = module.exports;
+    return module.exports;
+};
+
 require.modules["/splunk.js"] = function () {
     var module = { exports : {} };
     var exports = module.exports;
@@ -590,11 +615,11 @@ require.modules["/lib/paths.js"] = function () {
         licenseStacks: "licenser/stacks",
         licenses: "licenser/licenses",
         loggers: "server/logger",
-        login: "/auth/login",
+        login: "/services/auth/login",
         messages: "messages",
         passwords: "admin/passwords",
         roles: "authentication/roles",
-        savedSearches: "/services/saved/searches",
+        savedSearches: "saved/searches",
         settings: "server/settings",
         users: "authentication/users"
     };
@@ -1079,6 +1104,8 @@ require.modules["/lib/client.js"] = function () {
         },
         
         _load: function(properties) {
+            properties = utils.isArray(properties) ? properties[0] : properties;
+            
             this._super(properties);
             this._properties = properties;
         },
@@ -1183,7 +1210,7 @@ require.modules["/lib/client.js"] = function () {
             callback = callback || function() {};
             
             var that = this;
-            that.get("", {}, function(err, response) {
+            that.get("", {count: 0}, function(err, response) {
                 if (err) {
                     callback(err);
                 }
@@ -1204,6 +1231,10 @@ require.modules["/lib/client.js"] = function () {
                 }
                 else {
                     var props = response.odata.results;
+                    if (utils.isArray(props)) {
+                        props = props[0];
+                    }
+                    
                     var entity = that._item(that, props);
                     that._invalidate();
                     
@@ -2092,7 +2123,7 @@ require.modules["/lib/searcher.js"] = function () {
             callbacks = callbacks || [];
             for(var i = 0; i < callbacks.length; i++) {
                 var callback = callbacks[i];
-                callback.call(null, properties, this);
+                callback.call(null, null, properties, this);
             }
         },
         

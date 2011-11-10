@@ -57,10 +57,7 @@ class ODataCollection(object):
     def to_json(self):
         # TODO: figure out if metadata is support on collections
         json = [x.to_json() for x in self.items]
-        if len(json) == 1:
-            return json[0]
-        else:
-            return json       
+        return json;   
 
 
 class ODataEntity(object):
