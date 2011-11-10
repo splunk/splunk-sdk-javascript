@@ -72,6 +72,7 @@ exports.run = (function() {
 
         this.assertion("Callback#List jobs", function(test) {
             this.service.jobs().list(function(err, jobs) {
+                test.assert.ok(!err);
                 test.assert.ok(jobs);
                 test.assert.ok(jobs.length > 0);
                 
@@ -129,7 +130,7 @@ exports.run = (function() {
                 );
             });
         });
-    });    
+    });
     
     minitest.context("App Tests", function() {
         this.setupContext(function(done) {
@@ -163,7 +164,7 @@ exports.run = (function() {
             });
         });
         
-        this.assertion("Callback#create app", function(test) {
+        this.assertion("Callback#create + contains app", function(test) {
             var name = "jssdk_testapp_" + getNextId();
             var apps = this.service.apps();
             
