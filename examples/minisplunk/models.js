@@ -36,63 +36,68 @@ var Events = Backbone.Collection.extend({
     this.searcher = searcher;
   },
   
-  getResults: function(page) {
+  getResults: function(page, callback) {
     page = page || 0;
     
     if (this.pages[page]) {
       this.reset(this.pages[page]);
-      return Splunk.Promise.Success();
+      callback();
     }
     
     this.headers = [];
-    var events = this;
-    var resultsP = this.searcher.job.results({
-      count: this.resultsPerPage, 
-      offset: (page * this.resultsPerPage),
-      show_empty_fields: true
-    });
-    
-    return resultsP.whenResolved(function(results) {
-      var data = results.rows || [];
-      var baseOffset = results.offset
-      var fields = results.fields;
-      var timestampIndex = fields.indexOf("_time");
-      var rawIndex = fields.indexOf("_raw");
-      var rows = [];
-      
-      for(var i = 0; i < data.length; i++) {
-        var result = data[i];
+    var that = this;
+    Splunk.Async.chain([
+      function(done) {
+        that.searcher.job.results({
+          count: that.resultsPerPage, 
+          offset: (page * that.resultsPerPage),
+          show_empty_fields: true
+        }, done);
+      },
+      function(results, done) {
+        var data = results.rows || [];
+        var baseOffset = results.init_offset
+        var fields = results.fields;
+        var timestampIndex = fields.indexOf("_time");
+        var rawIndex = fields.indexOf("_raw");
+        var rows = [];
         
-        var properties = [];
-        var headers = {};
-        
-        for(var j = 0; j < fields.length; j++) {
-          var property = fields[j]
-          if (!Splunk.Utils.startsWith(property, "_")) {
-            properties.push({
-              key: property,
-              value: result[j]
-            });
-            
-            headers[property] = true;
+        for(var i = 0; i < data.length; i++) {
+          var result = data[i];
+          
+          var properties = [];
+          var headers = {};
+          
+          for(var j = 0; j < fields.length; j++) {
+            var property = fields[j]
+            if (!Splunk.Utils.startsWith(property, "_")) {
+              properties.push({
+                key: property,
+                value: result[j]
+              });
+              
+              headers[property] = true;
+            }
           }
+          
+          var rowData = new Event({
+            index: i + baseOffset + 1,
+            event: result,
+            properties: properties,
+            timestampIndex: timestampIndex,
+            rawIndex: rawIndex
+          });
+          that.headers = _.keys(headers);
+          
+          rows.push(rowData);
         }
         
-        var rowData = new Event({
-          index: i + baseOffset + 1,
-          event: result,
-          properties: properties,
-          timestampIndex: timestampIndex,
-          rawIndex: rawIndex
-        });
-        events.headers = _.keys(headers);
+        that.pages[page] = rows;
+        that.reset(rows);
         
-        rows.push(rowData);
-      }
-      
-      events.pages[page] = rows;
-      events.reset(rows);
-    });
+        done();
+      }],
+      callback);
   }
 });
 
@@ -102,26 +107,29 @@ var Job = Backbone.Model.extend({
     this.job = options.job;
   },
   
-  unpause: function() {
+  unpause: function(callback) {
     this.set({isPaused: false});
-    this.job.unpause();
+    this.job.unpause(callback);
   },
   
-  pause: function() {
+  pause: function(callback) {
     this.set({isPaused: true});
-    this.job.pause();
+    this.job.pause(callback);
   },
   
-  del: function() {
+  del: function(callback) {
+    callback = callback || function() {}
+    
     var job = this;
-    this.job.cancel().whenResolved(function() {
+    this.job.cancel(function(err) {
       job.destroy();
+      callback();
     });
   },
   
-  finalize: function() {
+  finalize: function(callback) {
     this.set({isFinalized: true});
-    this.job.finalize();
+    this.job.finalize(callback);
   },
 });
 
@@ -132,14 +140,15 @@ var Jobs = Backbone.Collection.extend({
     _.bindAll(this, "fetch", "continuousFetch");
   },
   
-  fetch: function() {
+  fetch: function(callback) {
+    callback = callback || function() {};
+    
     if (!App.service()) {
       return;
     }
     
     var jobs = this;
-    var listP = App.service().jobs().list();
-    return listP.whenResolved(function(list) {
+    App.service().jobs().list(function(err, list) {
       var models = [];
       for(var i = 0; i < list.length; i++) {
         var job = list[i];
@@ -149,6 +158,7 @@ var Jobs = Backbone.Collection.extend({
       }
       
       jobs.reset(models);
+      callback();
     });
   },
   
@@ -163,12 +173,25 @@ var Jobs = Backbone.Collection.extend({
     this.isFetchingStarted = true;
     
     var jobs = this;
-    Promise.while({
-      condition: function() { return true; },
-      body: function() {
-        var fetchP = jobs.fetch();
-        return Promise.join(fetchP, Promise.sleep(10000));
+    Splunk.Async.whilst(
+      {
+        condition: function() { return true; },
+        body: function(iterationDone) {
+          Splunk.Async.chain([
+            function(done) {
+              jobs.fetch(done);
+            },
+            function(done) {
+              Splunk.Async.sleep(10000, done);
+            }
+          ],
+          iterationDone);
+        }  
+      },
+      function(err) {
+        console.log(err);
+        alert("ERR: " + err);
       }
-    });
+    )
   },
 });

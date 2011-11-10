@@ -231,19 +231,19 @@
               <div class="clearfix ">
                   <label for="id_scheme">Scheme</label>
                   <div class="input">
-                      <input type="text" name="scheme" id="id_scheme" placeholder="http">
+                      <input type="text" name="scheme" id="id_scheme" placeholder="https">
                   </div>
               </div>
               <div class="clearfix ">
                   <label for="id_host">Host</label>
                   <div class="input">
-                      <input type="text" name="host" id="id_host" placeholder="ronnie.splunk.com">
+                      <input type="text" name="host" id="id_host" placeholder="localhost">
                   </div>
               </div>
               <div class="clearfix ">
                   <label for="id_port">Port</label>
                   <div class="input">
-                      <input type="text" name="port" id="id_port" placeholder="2911">
+                      <input type="text" name="port" id="id_port" placeholder="8089">
                   </div>
               </div>
               <div class="clearfix ">
@@ -274,7 +274,6 @@
     <script>
       process.nextTick(function() {
         window.XdmHttp = window.Splunk.XdmHttp;
-        window.Promise = window.Splunk.Promise;
       });
     </script>
     

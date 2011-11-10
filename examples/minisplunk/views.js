@@ -29,7 +29,8 @@ var templates = {
   eventProperties: $("#eventPropertiesTemplate")
 };
 
-var performSearch = function(svc, query) {          
+var performSearch = function(svc, query, callback) {
+  callback = callback || function() {};          
   var job = null;
   var searcher = null;
   
@@ -37,33 +38,35 @@ var performSearch = function(svc, query) {
     query = "search " + query;
   }
   
-  var jobP = svc.jobs().create(query, {rf: "*"});
-  
-  return jobP.when(
-    function(createdJob) {      
-      App.events.trigger("search:new", createdJob);
-        
-      job = createdJob;
-      searcher = new Splunk.Searcher.JobManager(svc, job);
-      
-      var searchDoneP = searcher.done();
-      
-      searchDoneP.onProgress(function(properties) {
-        App.events.trigger("search:stats", properties);
-      });
-      
-      return searchDoneP.whenResolved(function() {     
-        App.events.trigger("search:done", searcher);
-      });
-    },
-    function(args) {
+  svc.jobs().create(query, {rf: "*"}, function(err, createdJob) {
+    if (err) {
       var response = args[0];
       var messages = {};
       var message = response.odata.messages[1];
       messages[message.type.toLowerCase()] = [message.text];
       App.events.trigger("search:failed", query, messages);
     }
-  );
+    else {
+      App.events.trigger("search:new", createdJob);
+        
+      job = createdJob;
+      searcher = new Splunk.Searcher.JobManager(svc, job);
+      
+      searcher.onProgress(function(err, properties) {
+        App.events.trigger("search:stats", properties);
+      });
+      
+      searcher.done(function(err) {
+        if (err) {
+          callback(err)
+        }
+        else {
+          App.events.trigger("search:done", searcher);
+          callback();
+        }
+      });
+    }
+  })
 };
 
 var propertiesToActions = function(properties) {  
@@ -354,7 +357,7 @@ var PaginationView = Backbone.View.extend({
     this.currentPage = pageNum;
     
     var pagination = this;
-    this.collection.getResults(pageNum - 1).whenResolved(function() {
+    this.collection.getResults(pageNum - 1, function() {
       pagination.render();
     });
   },
@@ -466,7 +469,6 @@ var SearchStatsView = Backbone.View.extend({
   
   del: function(e) {
     e.preventDefault();
-    console.log(this.job);
     this.job.cancel();
     this.hide();
     App.events.trigger("search:deleted", this.job);
@@ -734,7 +736,10 @@ var JobManagerView = Backbone.View.extend({
     this.jobs = new Jobs([], {});
     this.jobsView = new JobsView({collection: this.jobs, container: "#jobs-list"});
     
-    App.events.bind("search:new", this.jobs.fetch);
+    var that = this;
+    App.events.bind("search:new", function() {
+      that.jobs.fetch();
+    });
     
     this.jobs.continuousFetch();
   },
@@ -780,10 +785,14 @@ var MapView = Backbone.View.extend({
     var iterator = new this.searcher.resultsIterator();
     
     var hasMore = true;
-    var whileP = Promise.while({
+    Splunk.Async.whilst({
       condition: function() { return hasMore; },
-      body: function() {
-        return iterator.next().whenResolved(function(more, results) {
+      body: function(iterationDone) {
+        iterator.next(function(err, more, results) {
+          if (err) {
+            iterationDone(err);
+          }
+          
           hasMore = more;
           
           if (more) {
@@ -826,11 +835,16 @@ var MapView = Backbone.View.extend({
               that.addMarker(lat, lng, properties);
             }
           }
+          
+          iterationDone();
         });
       }
-    });
-    
-    whileP.whenResolved(function() {
+    },
+    function(err) {
+      if (err) {
+        console.log("GEO ERR: " + err);
+        alert("GEOERR!");
+      }
       that.render();
     });
   },
@@ -937,7 +951,7 @@ var SigninView = BootstrapModalView.extend({
     var scheme   = this.$("#id_scheme").val() || "https";
     var host     = this.$("#id_host").val() || "localhost";
     var port     = this.$("#id_port").val() || "8089";
-    var app      = this.$("#id_app").val() || "foursquare";
+    var app      = this.$("#id_app").val() || "search";
     
     var base = scheme + "://" + host + ":" + port;
     
@@ -951,16 +965,15 @@ var SigninView = BootstrapModalView.extend({
         namespace: app,
     });
       
-    var loginP = svc.login();
-    var doneP = loginP.when(
-      function() {
-        that.hide(e);
-        App.events.trigger("service:login", svc);
-      },
-      function() {
-        this.$("#login-error p").text("There was an error logging in.").parent().removeClass("hidden");
-      }
-    );
+    var loginP = svc.login(function(err, success) {
+      if (err || !success) {
+          this.$("#login-error p").text("There was an error logging in.").parent().removeClass("hidden");
+        }
+        else {
+          that.hide(e);
+          App.events.trigger("service:login", svc);
+        }
+      });
   },
   
   primaryClicked: function(e) {
