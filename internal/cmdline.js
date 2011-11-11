@@ -51,7 +51,7 @@
     
     exports.OptionParser = OptionParser;
     exports.parse = function(argv) {
-        argv = argv.slice(2);
+        argv = (argv || []).slice(2);
         var defaults = getDefaults();
         for(var key in defaults) {
             if (defaults.hasOwnProperty(key)) {

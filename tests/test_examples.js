@@ -17,11 +17,6 @@ exports.run = (function() {
     var minitest    = require('../contrib/minitest');
     var fs          = require('fs');
     var Async       = require('../splunk').Splunk.Async;
-    
-    var argv = [
-        "--username=itay",
-        "--password=changeme"
-    ];
 
     var idCounter = 0;
     var getNextId = function() {
@@ -37,7 +32,7 @@ exports.run = (function() {
         this.setupTest(function(done) {            
             var test = this;
             this.run = function(command, args, options, callback) {                
-                var combinedArgs = argv.slice();
+                var combinedArgs = process.argv.slice();
                 if (command) {
                     combinedArgs.push(command);
                 }

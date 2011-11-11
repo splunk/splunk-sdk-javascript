@@ -19,14 +19,24 @@ exports.run = (function() {
     var minitest    = require('../contrib/minitest');
     var utils       = Splunk.Utils;
     var Async       = Splunk.Async;
-
+    var options     = require('../internal/cmdline');
+    
+    var cmdline = options.parse();
+        
+    // If there is no command line, we should return
+    if (!cmdline) {
+        callback("Error in parsing command line parameters");
+        return;
+    }
+    
+    // Create our HTTP request class for node.js
     var http = new NodeHttp();
     var svc = new Splunk.Client.Service(http, { 
-        scheme: "https",
-        host: "localhost",
-        port: "8089",
-        username: "itay",
-        password: "changeme",
+        scheme: cmdline.options.scheme,
+        host: cmdline.options.host,
+        port: cmdline.options.port,
+        username: cmdline.options.username,
+        password: cmdline.options.password,
     });
 
     var idCounter = 0;
