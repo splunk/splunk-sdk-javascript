@@ -23,8 +23,7 @@ exports.run = (function() {
         
     // If there is no command line, we should return
     if (!cmdline) {
-        callback("Error in parsing command line parameters");
-        return;
+        throw new Error("Error in parsing command line parameters");
     }
     
     // Create our HTTP request class for node.js

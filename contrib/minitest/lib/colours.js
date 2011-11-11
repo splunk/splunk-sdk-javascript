@@ -31,5 +31,10 @@ colours = {
 
 // exports
 for (colour in colours) {
-  exports[colour] = colours[colour];
+  exports[colour] = (process.platform === "win32" ? "" : colours[colour]);
 };
+
+exports["bold"] = {};
+for (colour in colours.bold) {
+  exports.bold[colour] = (process.platform === "win32" ? "" : colours[colour]);
+}
