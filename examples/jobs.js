@@ -18,7 +18,8 @@
     var Class           = require('../lib/jquery.class').Class;
     var utils           = require('../lib/utils');
     var Async           = require('../lib/async');
-    var OptionParser    = require('../contrib/parseopt').OptionParser;
+    var options         = require('../internal/cmdline');
+    var OptionParser    = options.OptionParser;
     var NodeHttp        = require('../platform/node/node_http').NodeHttp;
 
     var FLAGS_CREATE = [
@@ -392,81 +393,6 @@
         }
     });
 
-    var parser = new OptionParser({
-        strings: { help: 'N/A', metavars: { integer: 'INT' } },
-        options: [
-            {
-                names: ['--help', '-h'],
-                type: 'flag',
-                help: 'Show this help message.',
-                onOption: function (value) {
-                        if (value) {
-                                parser.usage();
-                        }
-                        // returning true canceles any further option parsing
-                        // and parser.parse() returns null
-                        return value;
-                }
-            },
-            {
-                names: ['--username'],
-                type: 'string',
-                required: true,
-                help: "Username to login with",
-                metavar: "USERNAME",
-            },
-            
-            {
-                names: ['--password'],
-                type: 'string',
-                required: true,
-                help: "Password to login with",
-                metavar: "PASSWORD",
-            },
-            
-            {
-                names: ['--host'],
-                type: 'string',
-                required: false,
-                help: "Host name",
-                default: "localhost",
-                metavar: "HOST",
-            },
-            
-            {
-                names: ['--port'],
-                type: 'string',
-                required: false,
-                help: "Port number",
-                default: "8089",
-                metavar: "PORT",
-            },
-            
-            {
-                names: ['--scheme'],
-                type: 'string',
-                required: false,
-                help: "Scheme",
-                default: "https",
-                metavar: "SCHEME",
-            },
-            
-            {
-                names: ['--config'],
-                type: 'string',
-                help: "Load options from config file",
-                metavar: "CONFIG",
-            },
-            
-            {
-                names: ['--namespace'],
-                type: 'string',
-                help: "",
-                metavar: "NAMESPACE",
-            },
-        ],
-
-    });
 
     exports.main = function(argv, callback) {        
         callback = callback || function(err) { 
@@ -478,15 +404,7 @@
             }
         };
         // Try and parse the command line
-        var cmdline = null;
-        try {
-            cmdline = parser.parse(argv);
-        }
-        catch(e) {
-            // If we failed, then we print out the error message, and then the usage
-            console.log(e.message);
-            parser.usage();
-        }
+        var cmdline = options.parse(argv);
         
         // If there is no command line, we should return
         if (!cmdline) {
@@ -526,6 +444,6 @@
     };
     
     if (module === require.main) {
-        exports.main();
+        exports.main(process.argv);
     }
 })();
