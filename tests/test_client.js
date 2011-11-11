@@ -21,7 +21,7 @@ exports.run = (function() {
     var Async       = Splunk.Async;
     var options     = require('../internal/cmdline');
     
-    var cmdline = options.parse();
+    var cmdline = options.parse(process.argv);
         
     // If there is no command line, we should return
     if (!cmdline) {

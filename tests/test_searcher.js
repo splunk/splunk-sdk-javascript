@@ -22,7 +22,7 @@ exports.run = (function() {
     var Searcher    = Splunk.Searcher;
     var options     = require('../internal/cmdline');
     
-    var cmdline = options.parse();
+    var cmdline = options.parse(process.argv);
         
     // If there is no command line, we should return
     if (!cmdline) {
