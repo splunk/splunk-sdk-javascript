@@ -1028,6 +1028,7 @@ require.modules["/lib/client.js"] = function () {
             this._invoke     = utils.bind(this, this._invoke);
             this.refresh     = utils.bind(this, this.refresh);
             this.isValid     = utils.bind(this, this.isValid);
+            this.properties     = utils.bind(this, this.properties);
         },
         
         _invalidate: function() {
