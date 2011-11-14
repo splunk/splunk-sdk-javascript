@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>browser-require example</title>
+  </head>
+  <body>
+    <script>
+      // What is this?
+      i18n_register = function(){}
+    </script>
+    <script type="text/javascript" src="../client/splunk.js"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.js"></script>
+    <script>
+      var JQueryHttp = Splunk.JQueryHttp;
+      var XdmHttp = Splunk.XdmHttp;
+      var Async = Splunk.Async;
+
+      http = new XdmHttp(true, "https://localhost:8089");
+      svc = new Splunk.Client.Service(http, { 
+          scheme: "https",
+          host: "localhost",
+          port: "8089",
+          username: "itay",
+          password: "changeme",
+      });
+      
+      Async.chain([
+        function(callback) { svc.login(callback); },
+        function(success, callback) { 
+          if (!success) {
+            callback("FAILED TO LOGIN");
+          }
+          
+          Async.chain([
+            function(callback) { svc.jobs().list(callback); },
+            function(jobs, callback) { 
+              for(var i = 0; i < jobs.length; i++) {
+                console.log("  job: " + jobs[i].sid);
+              }
+              
+              callback();
+            }],
+            function(err) {
+              if (err) {
+                callback("TEST1 ERROR: " + err);
+              }
+              else {
+                callback();
+              }
+            }
+          );
+        },
+        function(callback) {
+          Async.chain([
+            function(callback) {
+              svc.get("search/jobs/1234_nosuchjob", {}, callback);
+            }
+          ],
+          function(err) {
+            if (!err) {
+              callback("TEST2 Error: got a job that shouldn't exist");
+            }
+            else {
+              callback();
+            }
+          });
+        }
+      ],
+      function(err) {
+        if (err) {
+          throw new Error(err);
+        }
+        else {
+          console.log("SUCCESS");
+        }
+      });      
+    </script>
+  </body>
+</html>

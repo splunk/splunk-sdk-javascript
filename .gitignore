@@ -1,0 +1,11 @@
+*node_modules
+*build/
+.git
+tests/html/*
+*.out
+*DS_Store
+*.sublime-*
+*.pyc
+external-nocheckin/*
+client/splunk.ui.*
+.idea/*
