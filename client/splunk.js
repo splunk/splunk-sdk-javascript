@@ -328,7 +328,7 @@ require.modules["/package.json"] = function () {
     __require.modules["/package.json"]._cached = module.exports;
     
     (function () {
-        module.exports = {"name":"splunk-sdk","version":"0.1.0","description":"SDK for usage with the Splunk REST API","homepage":"http://dev.splunk.com","main":"splunk.js","directories":{"example":"examples","lib":"lib","test":"tests"},"repository":{"type":"git","url":"http://github.com/splunk/splunk-sdk-javascript.git"},"keywords":["splunk","data","search","logs","javascript"],"dependencies":{"request":"2.1.x"},"devDependencies":{"browserify":"1.6.x","uglify-js":"1.0.x"},"author":{"name":"Splunk","email":"devinfo@splunk.com","url":"http://dev.splunk.com"},"license":"Apache","engine":{"node":">=0.4.9"},"private":true};
+        module.exports = {"name":"splunk-sdk","version":"0.1.0","description":"SDK for usage with the Splunk REST API","homepage":"http://dev.splunk.com","main":"splunk.js","directories":{"example":"examples","lib":"lib","test":"tests"},"repository":{"type":"git","url":"http://github.com/splunk/splunk-sdk-javascript.git"},"keywords":["splunk","data","search","logs","javascript"],"dependencies":{"request":"2.1.x"},"devDependencies":{"browserify":"1.6.x","uglify-js":"1.0.x","nodeunit":"0.6.x"},"author":{"name":"Splunk","email":"devinfo@splunk.com","url":"http://dev.splunk.com"},"license":"Apache","engine":{"node":">=0.4.9"},"private":true};
     }).call(module.exports);
     
     __require.modules["/package.json"]._cached = module.exports;

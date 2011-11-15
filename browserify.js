@@ -76,7 +76,7 @@
         // Compile/combine all the files into the package
         var bundle = browserify({
             entry: entry,
-            ignore: ["../contrib/nodeunit/test_reporter"],
+            ignore: ["../contrib/nodeunit/test_reporter", "../contrib/parseopt"],
             filter: function(code) {
                 if (cmdline.options.uglify) {
                     var uglifyjs = require("uglify-js"),
