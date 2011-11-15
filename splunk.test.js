@@ -16,5 +16,5 @@
 (function() {
     var root = exports || this;
 
-    root.SplunkTest = require('./tests/test.browser.js');
+    root.SplunkTest = require('./tests/tests.browser.js');
 })();
