@@ -13,57 +13,54 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-(function() {
+exports.setup = function() {
     var Splunk      = require('../splunk').Splunk;
-    var minitest    = require('../contrib/minitest');
 
-
-    minitest.context("Utility Function Tests", function() {
-        this.setupTest(function(done) {
-            done();
-        });
-        
-        this.assertion("Callback#callback to object success", function(test) {
+    return {        
+        "Callback#callback to object success": function(test) {
             var successfulFunction = function(callback) {
                 callback(null, "one", "two");
             };
             
             successfulFunction(function(err, one, two) {
-                test.assert.strictEqual(one, "one"); 
-                test.assert.strictEqual(two, "two");
-                test.finished();
+                test.strictEqual(one, "one"); 
+                test.strictEqual(two, "two");
+                test.done();
             });
-        });
+        },
         
-        this.assertion("Callback#callback to object error - single argument", function(test) {
+        "Callback#callback to object error - single argument": function(test) {
             var successfulFunction = function(callback) {
                 callback("one");
             };
             
             successfulFunction(function(err, one, two) {
-                test.assert.strictEqual(err, "one"); 
-                test.assert.ok(!one);
-                test.assert.ok(!two);
-                test.finished();
+                test.strictEqual(err, "one"); 
+                test.ok(!one);
+                test.ok(!two);
+                test.done();
             });
-        });
+        },
         
-        this.assertion("Callback#callback to object error - multi argument", function(test) {
+        "Callback#callback to object error - multi argument": function(test) {
             var successfulFunction = function(callback) {
                 callback(["one", "two"]);
             };
             
             successfulFunction(function(err, one, two) {
-                test.assert.strictEqual(err[0], "one"); 
-                test.assert.strictEqual(err[1], "two");
-                test.assert.ok(!one);
-                test.assert.ok(!two);
-                test.finished();
+                test.strictEqual(err[0], "one"); 
+                test.strictEqual(err[1], "two");
+                test.ok(!one);
+                test.ok(!two);
+                test.done();
             });
-        });
-    });
+        }
+    };
+};
 
-    if (module === require.main) {
-        minitest.run();
-    }
-})();
+if (module === require.main) {
+    var test        = require('../contrib/nodeunit/test_reporter');
+    
+    var suite = exports.setup();
+    test.run([{"Tests": suite}]);
+}

@@ -497,7 +497,7 @@ require.modules["/lib/binding.js"] = function () {
             callback = callback || function() {};
             var wrappedCallback = function(err, response) {
                 if (err) {
-                    callback(false, err);
+                    callback(err, false);
                 }
                 else {
                     that.sessionKey = response.odata.results.sessionKey;
@@ -1675,7 +1675,14 @@ require.modules["/lib/http.js"] = function () {
             // Parse the JSON data and build the OData response
             // object.
             if (this.isSplunk) {
-                json = this.parseJson(data);
+                try {
+                    json = this.parseJson(data);
+                } catch(e) {
+                    console.log("JSON PARSE ERROR");
+                    console.log(e);
+                    console.log(data);
+                    console.log(res);
+                }
                 odata = ODataResponse.fromJson(json);  
 
                 // Print any messages that came with the response
@@ -1693,7 +1700,14 @@ require.modules["/lib/http.js"] = function () {
 
                 // We only try to parse JSON if the headers say it is JSON
                 if (response && response.headers["content-type"] === "application/json") {
-                    json = this.parseJson(data);
+                    try {
+                        json = this.parseJson(data);
+                    } catch(e) {
+                        console.log("JSON PARSE ERROR");
+                        console.log(e);
+                        console.log(data);
+                        console.log(res);
+                    }
                 }
 
                 complete_response = {
@@ -2422,7 +2436,10 @@ require.modules["/platform/client/easyxdm_http.js"] = function () {
                 
                 var response = {
                     statusCode: status,
-                    headers: headers
+                    headers: headers,
+                    request: {
+                        headers: params.headers,
+                    }
                 };
                 
                 var complete_response = this._buildResponse(null, response, data);
@@ -2437,7 +2454,10 @@ require.modules["/platform/client/easyxdm_http.js"] = function () {
                 
                 var response = {
                     statusCode: status,
-                    headers: headers
+                    headers: headers,
+                    request: {
+                        headers: params.headers,
+                    }
                 };
                 
                 var complete_response = this._buildResponse(message, response, data);

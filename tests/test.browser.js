@@ -1,3 +1,4 @@
+
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -13,5 +14,13 @@
 // under the License.
 
 (function() {
-    exports.Client = require('./test_client');
+    var root = exports || this;
+    
+    root.Utils    = require('./test_utils');
+    root.Async    = require('./test_async');
+    root.Http     = require('./test_http');
+    root.Binding  = require('./test_binding');
+    root.Client   = require('./test_client');
+    root.Searcher = require('./test_searcher');
+    root.Examples = require('./test_examples');
 })();

@@ -13,18 +13,14 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-(function() {
+exports.setup = function() {
     var Splunk      = require('../splunk').Splunk;
     var Async       = Splunk.Async;
-    var minitest    = require('../contrib/minitest');
 
+    var isBrowser = typeof "window" !== "undefined";
 
-    minitest.context("Async Function Tests", function() {
-        this.setupTest(function(done) {
-            done();
-        });
-        
-        this.assertion("While success", function(test) {
+    return {        
+        "While success": function(test) {
             var i = 0;
             Async.whilst({
                 condition: function() { return i++ < 3; },
@@ -33,41 +29,41 @@
                 }
             },
             function(err) {
-                test.assert.ok(!err);
-                test.finished();
+                test.ok(!err);
+                test.done();
             });
-        });
+        },
         
-        this.assertion("While success deep", function(test) {
+        "While success deep": function(test) {
             var i = 0;
             Async.whilst({
-                condition: function() { return i++ < 10000; },
+                condition: function() { return i++ < (isBrowser ? 100 : 10000); },
                 body: function(done) {
                     Async.sleep(0, function() { done(); });
                 }
             },
             function(err) {
-                test.assert.ok(!err);
-                test.finished();
+                test.ok(!err);
+                test.done();
             });
-        });
+        },
         
-        this.assertion("While error", function(test) {
+        "While error": function(test) {
             var i = 0;
             Async.whilst({
-                condition: function() { return i++ < 10000; },
+                condition: function() { return i++ < (isBrowser ? 100 : 10000); },
                 body: function(done) {
-                    Async.sleep(0, function() { done(i === 1000 ? 1 : null); });
+                    Async.sleep(0, function() { done(i === (isBrowser ? 50 : 10000) ? 1 : null); });
                 }
             },
             function(err) {
-                test.assert.ok(err);
-                test.assert.strictEqual(err, 1);
-                test.finished();
+                test.ok(err);
+                test.strictEqual(err, 1);
+                test.done();
             });
-        });
+        },
         
-        this.assertion("Parallel success", function(test) {
+        "Parallel success": function(test) {
             Async.parallel([
                 function(done) {
                     done(null, 1);
@@ -76,16 +72,16 @@
                     done(null, 2, 3);
                 }],
                 function(err, one, two) {
-                    test.assert.ok(!err);
-                    test.assert.strictEqual(one, 1);
-                    test.assert.strictEqual(two[0], 2);
-                    test.assert.strictEqual(two[1], 3);
-                    test.finished();
+                    test.ok(!err);
+                    test.strictEqual(one, 1);
+                    test.strictEqual(two[0], 2);
+                    test.strictEqual(two[1], 3);
+                    test.done();
                 }
             );
-        });
+        },
         
-        this.assertion("Parallel success - no reordering", function(test) {
+        "Parallel success - no reordering": function(test) {
             Async.parallel([
                 function(done) {
                     Async.sleep(1, function() { done(null, 1); });  
@@ -94,16 +90,16 @@
                     done(null, 2, 3);
                 }],
                 function(err, one, two) {
-                    test.assert.ok(!err);
-                    test.assert.strictEqual(one, 1);
-                    test.assert.strictEqual(two[0], 2);
-                    test.assert.strictEqual(two[1], 3);
-                    test.finished();
+                    test.ok(!err);
+                    test.strictEqual(one, 1);
+                    test.strictEqual(two[0], 2);
+                    test.strictEqual(two[1], 3);
+                    test.done();
                 }
             );
-        });
+        },
         
-        this.assertion("Parallel error", function(test) {
+        "Parallel error": function(test) {
             Async.parallel([
                 function(done) {
                     done(null, 1);
@@ -117,15 +113,15 @@
                     });
                 }],
                 function(err, one, two) {
-                    test.assert.ok(err === "ERROR");
-                    test.assert.ok(!one);
-                    test.assert.ok(!two);
-                    test.finished();
+                    test.ok(err === "ERROR");
+                    test.ok(!one);
+                    test.ok(!two);
+                    test.done();
                 }
             );
-        });
+        },
         
-        this.assertion("Series success", function(test) {
+        "Series success": function(test) {
             Async.series([
                 function(done) {
                     done(null, 1);
@@ -134,40 +130,40 @@
                     done(null, 2, 3);
                 }],
                 function(err, one, two) {
-                    test.assert.ok(!err);
-                    test.assert.strictEqual(one, 1);
-                    test.assert.strictEqual(two[0], 2);
-                    test.assert.strictEqual(two[1], 3);
-                    test.finished();
+                    test.ok(!err);
+                    test.strictEqual(one, 1);
+                    test.strictEqual(two[0], 2);
+                    test.strictEqual(two[1], 3);
+                    test.done();
                 }
             );
-        });
+        },
         
-        this.assertion("Series reordering success", function(test) {
+        "Series reordering success": function(test) {
             var keeper = 0;
             Async.series([
                 function(done) {
                     Async.sleep(10, function() {
-                        test.assert.strictEqual(keeper++, 0);
+                        test.strictEqual(keeper++, 0);
                         done(null, 1);
                     });
                 },
                 function(done) {
-                    test.assert.strictEqual(keeper++, 1);
+                    test.strictEqual(keeper++, 1);
                     done(null, 2, 3);
                 }],
                 function(err, one, two) {
-                    test.assert.ok(!err);
-                    test.assert.strictEqual(keeper, 2);
-                    test.assert.strictEqual(one, 1);
-                    test.assert.strictEqual(two[0], 2);
-                    test.assert.strictEqual(two[1], 3);
-                    test.finished();
+                    test.ok(!err);
+                    test.strictEqual(keeper, 2);
+                    test.strictEqual(one, 1);
+                    test.strictEqual(two[0], 2);
+                    test.strictEqual(two[1], 3);
+                    test.done();
                 }
             );
-        });
+        },
         
-        this.assertion("Series error", function(test) {
+        "Series error": function(test) {
             Async.series([
                 function(done) {
                     done(null, 1);
@@ -176,31 +172,31 @@
                     done("ERROR", 2, 3);
                 }],
                 function(err, one, two) {
-                    test.assert.strictEqual(err, "ERROR");
-                    test.assert.ok(!one);
-                    test.assert.ok(!two);
-                    test.finished();
+                    test.strictEqual(err, "ERROR");
+                    test.ok(!one);
+                    test.ok(!two);
+                    test.done();
                 }
             );
-        });
+        },
         
-        this.assertion("Parallel map success", function(test) {
+        "Parallel map success": function(test) {
             Async.parallelMap(
                 function(val, done) { 
                     done(null, val + 1);
                 },
                 [1, 2, 3],
                 function(err, vals) {
-                    test.assert.ok(!err);
-                    test.assert.strictEqual(vals[0], 2);
-                    test.assert.strictEqual(vals[1], 3);
-                    test.assert.strictEqual(vals[2], 4);
-                    test.finished();
+                    test.ok(!err);
+                    test.strictEqual(vals[0], 2);
+                    test.strictEqual(vals[1], 3);
+                    test.strictEqual(vals[2], 4);
+                    test.done();
                 }
             );
-        });
+        },
         
-        this.assertion("Parallel map error", function(test) {
+        "Parallel map error": function(test) {
             Async.parallelMap(
                 function(val, done) { 
                     if (val === 2) {
@@ -212,34 +208,34 @@
                 },
                 [1, 2, 3],
                 function(err, vals) {
-                    test.assert.ok(err);
-                    test.assert.ok(!vals);
-                    test.assert.strictEqual(err, 5);
-                    test.finished();
+                    test.ok(err);
+                    test.ok(!vals);
+                    test.strictEqual(err, 5);
+                    test.done();
                 }
             );
-        });
+        },
         
-        this.assertion("Series map success", function(test) {
+        "Series map success": function(test) {
             var keeper = 1;
             Async.seriesMap(
                 function(val, done) { 
-                    test.assert.strictEqual(keeper++, val);
+                    test.strictEqual(keeper++, val);
                     done(null, val + 1);
                 },
                 [1, 2, 3],
                 function(err, vals) {
-                    test.assert.ok(!err);
-                    test.assert.strictEqual(vals[0], 2);
-                    test.assert.strictEqual(vals[1], 3);
-                    test.assert.strictEqual(vals[2], 4);
-                    test.assert.strictEqual(vals[2], keeper);
-                    test.finished();
+                    test.ok(!err);
+                    test.strictEqual(vals[0], 2);
+                    test.strictEqual(vals[1], 3);
+                    test.strictEqual(vals[2], 4);
+                    test.strictEqual(vals[2], keeper);
+                    test.done();
                 }
             );
-        });
+        },
         
-        this.assertion("Series map error", function(test) {
+        "Series map error": function(test) {
             Async.seriesMap(
                 function(val, done) { 
                     if (val === 2) {
@@ -251,15 +247,15 @@
                 },
                 [1, 2, 3],
                 function(err, vals) {
-                    test.assert.ok(err);
-                    test.assert.ok(!vals);
-                    test.assert.strictEqual(err, 5);
-                    test.finished();
+                    test.ok(err);
+                    test.ok(!vals);
+                    test.strictEqual(err, 5);
+                    test.done();
                 }
             );
-        });
+        },
         
-        this.assertion("Chain single success", function(test) {
+        "Chain single success": function(test) {
             Async.chain([
                 function(callback) { 
                     callback(null, 1);
@@ -271,14 +267,14 @@
                     callback(null, val + 1);
                 }],
                 function(err, val) {
-                    test.assert.ok(!err);
-                    test.assert.strictEqual(val, 3);
-                    test.finished();
+                    test.ok(!err);
+                    test.strictEqual(val, 3);
+                    test.done();
                 }
             );
-        });
+        },
         
-        this.assertion("Chain multiple success", function(test) {
+        "Chain multiple success": function(test) {
             Async.chain([
                 function(callback) { 
                     callback(null, 1, 2);
@@ -290,15 +286,15 @@
                     callback(null, val1 + 1, val2 + 1);
                 }],
                 function(err, val1, val2) {
-                    test.assert.ok(!err);
-                    test.assert.strictEqual(val1, 3);
-                    test.assert.strictEqual(val2, 4);
-                    test.finished();
+                    test.ok(!err);
+                    test.strictEqual(val1, 3);
+                    test.strictEqual(val2, 4);
+                    test.done();
                 }
             );
-        });
+        },
         
-        this.assertion("Chain arity change success", function(test) {
+        "Chain arity change success": function(test) {
             Async.chain([
                 function(callback) { 
                     callback(null, 1, 2);
@@ -310,15 +306,15 @@
                     callback(null, val1 + 1, 5);
                 }],
                 function(err, val1, val2) {
-                    test.assert.ok(!err);
-                    test.assert.strictEqual(val1, 3);
-                    test.assert.strictEqual(val2, 5);
-                    test.finished();
+                    test.ok(!err);
+                    test.strictEqual(val1, 3);
+                    test.strictEqual(val2, 5);
+                    test.done();
                 }
             );
-        });
+        },
         
-        this.assertion("Chain error", function(test) {
+        "Chain error": function(test) {
             Async.chain([
                 function(callback) { 
                     callback(null, 1, 2);
@@ -330,28 +326,31 @@
                     callback(null, val1 + 1, 5);
                 }],
                 function(err, val1, val2) {
-                    test.assert.ok(err);
-                    test.assert.ok(!val1);
-                    test.assert.ok(!val2);
-                    test.assert.strictEqual(err, 5);
-                    test.finished();
+                    test.ok(err);
+                    test.ok(!val1);
+                    test.ok(!val2);
+                    test.strictEqual(err, 5);
+                    test.done();
                 }
             );
-        });
+        },
         
-        this.assertion("Chain no tasks", function(test) {
+        "Chain no tasks": function(test) {
             Async.chain([],
                 function(err, val1, val2) {
-                    test.assert.ok(!err);
-                    test.assert.ok(!val1);
-                    test.assert.ok(!val2);
-                    test.finished();
+                    test.ok(!err);
+                    test.ok(!val1);
+                    test.ok(!val2);
+                    test.done();
                 }
             );
-        });
-    });
-
-    if (module === require.main) {
-        minitest.run();
+        }
     }
-})();
+};
+
+if (module === require.main) {
+    var test        = require('../contrib/nodeunit/test_reporter');
+    
+    var suite = exports.setup();
+    test.run([{"Tests": suite}]);
+}

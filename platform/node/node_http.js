@@ -35,8 +35,6 @@
             
             request_options.headers["Content-Length"] = request_options.body.length;
 
-            //console.log("URL", request_options.method, ":", request_options.url);
-
             request(request_options, utils.bind(this, function (error, res, data) {
                 var complete_response = this._buildResponse(error, res, data);
                 callback(complete_response);

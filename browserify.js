@@ -62,6 +62,7 @@
 
     // UI
     cmdline.arguments.push(cmdline.options.dir + "splunk.ui" + (cmdline.options.uglify ? ".min." : ".") + "js");
+    cmdline.arguments.push(cmdline.options.dir + "splunk.test" + (cmdline.options.uglify ? ".min." : ".") + "js");
 
     if (!path.existsSync(cmdline.options.dir)) {
         fs.mkdirSync(cmdline.options.dir, "755");
@@ -69,11 +70,13 @@
 
     var compiledPackagePath = cmdline.arguments[0];
     var compiledUIPackagePath = cmdline.arguments[1];
+    var compiledTestPackagePath = cmdline.arguments[2];
 
     var compile = function(entry, path) {
         // Compile/combine all the files into the package
         var bundle = browserify({
             entry: entry,
+            ignore: ["../contrib/nodeunit/test_reporter"],
             filter: function(code) {
                 if (cmdline.options.uglify) {
                     var uglifyjs = require("uglify-js"),
@@ -97,5 +100,6 @@
     };
     
     compile("browser.entry.js", compiledPackagePath);
-    compile("browser.ui.entry.js", compiledUIPackagePath);
+    //compile("browser.ui.entry.js", compiledUIPackagePath);
+    compile("browser.test.entry.js", compiledTestPackagePath);
 })();

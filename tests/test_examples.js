@@ -13,170 +13,181 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-exports.run = (function() {
-    var minitest    = require('../contrib/minitest');
-    var fs          = require('fs');
+exports.setup = function() {
     var Async       = require('../splunk').Splunk.Async;
+    var JobsMain    = require("../examples/jobs").main;
 
     var idCounter = 0;
     var getNextId = function() {
         return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
     };
         
-    minitest.context("Job Example Tests", function() {        
-        this.setupContext(function(done) {
-            this.main = require("../examples/jobs").main;
-            done();
-        });
-        
-        this.setupTest(function(done) {            
-            var test = this;
-            this.run = function(command, args, options, callback) {                
-                var combinedArgs = process.argv.slice();
-                if (command) {
-                    combinedArgs.push(command);
-                }
+    var process = process || {
+        argv: ["program", "script"] // initialize it with some dummy values
+    };
+      
+    return {  
+        "Jobs Example Tests": {
+            setUp: function(done) {   
+                var context = this;
                 
-                if (args) {
-                    for(var i = 0; i < args.length; i++) {
-                        combinedArgs.push(args[i]);
+                this.main = JobsMain;      
+                this.run = function(command, args, options, callback) {                
+                    var combinedArgs = process.argv.slice();
+                    if (command) {
+                        combinedArgs.push(command);
                     }
-                }
-                
-                if (options) {
-                    combinedArgs.push("--");
-                    for(var key in options) {
-                        if (options.hasOwnProperty(key)) {
-                            combinedArgs.push("--" + key + "=" + options[key]);
+                    
+                    if (args) {
+                        for(var i = 0; i < args.length; i++) {
+                            combinedArgs.push(args[i]);
                         }
                     }
-                }
-          
-                return test.context.main(combinedArgs, callback);
-            };
-            
-            done(); 
-        });
-        
-        this.assertion("help", function(test) {
-            test.run(null, null, null, function(err) {
-                test.assert.ok(err);
-                test.finished();
-            });
-        });
-        
-        this.assertion("List jobs", function(test) {
-            test.run("list", null, null, function(err) {
-                test.assert.ok(!err);
-                test.finished();
-            });
-        });
-        
-        this.assertion("Create job", function(test) {
-            var create = {
-                search: "search index=_internal | head 1",
-                id: getNextId()
-            };
-            
-            test.run("create", [], create, function(err) {
-                test.assert.ok(!err);
-                test.run("cancel", [create.id], null, function(err) {
-                    test.assert.ok(!err);
-                    test.finished();
-                });
-            });
-        });
-        
-        this.assertion("Cancel job", function(test) {
-            var create = {
-                search: "search index=_internal | head 1",
-                id: getNextId()
-            };
-            
-            test.run("create", [], create, function(err) {
-                test.assert.ok(!err);
-                test.run("cancel", [create.id], null, function(err) {
-                    test.assert.ok(!err);
-                    test.finished();
-                });
-            });
-        });
-        
-        this.assertion("List job properties", function(test) {          
-            var create = {
-                search: "search index=_internal | head 1",
-                id: getNextId()
-            };
+                    
+                    if (options) {
+                        combinedArgs.push("--");
+                        for(var key in options) {
+                            if (options.hasOwnProperty(key)) {
+                                combinedArgs.push("--" + key + "=" + options[key]);
+                            }
+                        }
+                    }
               
-            test.run("create", [], create, function(err) {
-                test.assert.ok(!err);
-                test.run("list", [create.id], null, function(err) {
-                    test.assert.ok(!err);
-                    test.run("cancel", [create.id], null, function(err) {
-                        test.assert.ok(!err);
-                        test.finished();
-                    });
+                    return context.main(combinedArgs, callback);
+                };
+                
+                done(); 
+            },
+            
+            "help": function(test) {
+                this.run(null, null, null, function(err) {
+                    test.ok(err);
+                    test.done();
                 });
-            });
-        });
-        
-        this.assertion("List job events", function(test) {      
-            var create = {
-                search: "search index=_internal | head 1",
-                id: getNextId()
-            };
-              
-            test.run("create", [], create, function(err) {
-                test.assert.ok(!err);
-                test.run("events", [create.id], null, function(err) {
-                    test.assert.ok(!err);
-                    test.run("cancel", [create.id], null, function(err) {
-                        test.assert.ok(!err);
-                        test.finished();
-                    });
+            },
+            
+            "List jobs": function(test) {
+                this.run("list", null, null, function(err) {
+                    console.log(err);
+                    test.ok(!err);
+                    test.done();
                 });
-            });
-        });
-        
-        this.assertion("Create+list multiple jobs", function(test) {
-            var creates = [];
-            for(var i = 0; i < 3; i++) {
-                creates[i] = {
+            },
+            
+            "Create job": function(test) {
+                var create = {
                     search: "search index=_internal | head 1",
                     id: getNextId()
                 };
-            }
-            var sids = creates.map(function(create) { return create.id; });
-            
-            Async.parallelMap(
-                function(create, done) {
-                    test.run("create", [], create, function(err, job) {
-                        test.assert.ok(!err);
-                        test.assert.ok(job);
-                        test.assert.strictEqual(job.sid, create.id);
-                        done(null, job);
+                
+                var context = this;
+                context.run("create", [], create, function(err) {
+                    test.ok(!err);
+                    context.run("cancel", [create.id], null, function(err) {
+                        test.ok(!err);
+                        test.done();
                     });
-                },
-                creates,
-                function(err, created) {
-                    for(var i = 0; i < created.length; i++) {
-                        test.assert.strictEqual(creates[i].id, created[i].sid);
-                    }
-                    
-                    test.run("list", sids, null, function(err) {
-                        test.assert.ok(!err);
-                        test.run("cancel", sids, null, function(err) {
-                            test.assert.ok(!err);
-                            test.finished();
+                });
+            },
+            
+            "Cancel job": function(test) {
+                var create = {
+                    search: "search index=_internal | head 1",
+                    id: getNextId()
+                };
+                
+                var context = this;
+                context.run("create", [], create, function(err) {
+                    test.ok(!err);
+                    context.run("cancel", [create.id], null, function(err) {
+                        test.ok(!err);
+                        test.done();
+                    });
+                });
+            },
+            
+            "List job properties": function(test) {          
+                var create = {
+                    search: "search index=_internal | head 1",
+                    id: getNextId()
+                };
+                  
+                var context = this;
+                context.run("create", [], create, function(err) {
+                    test.ok(!err);
+                    context.run("list", [create.id], null, function(err) {
+                        test.ok(!err);
+                        context.run("cancel", [create.id], null, function(err) {
+                            test.ok(!err);
+                            test.done();
                         });
                     });
-                    
+                });
+            },
+            
+            "List job events": function(test) {      
+                var create = {
+                    search: "search index=_internal | head 1",
+                    id: getNextId()
+                };
+                  
+                var context = this;
+                context.run("create", [], create, function(err) {
+                    test.ok(!err);
+                    context.run("events", [create.id], null, function(err) {
+                        test.ok(!err);
+                        context.run("cancel", [create.id], null, function(err) {
+                            test.ok(!err);
+                            test.done();
+                        });
+                    });
+                });
+            },
+            
+            "Create+list multiple jobs": function(test) {
+                var creates = [];
+                for(var i = 0; i < 3; i++) {
+                    creates[i] = {
+                        search: "search index=_internal | head 1",
+                        id: getNextId()
+                    };
                 }
-            );
-        });
-    });
+                var sids = creates.map(function(create) { return create.id; });
+                
+                var context = this;
+                Async.parallelMap(
+                    function(create, done) {
+                        context.run("create", [], create, function(err, job) {
+                            test.ok(!err);
+                            test.ok(job);
+                            test.strictEqual(job.sid, create.id);
+                            done(null, job);
+                        });
+                    },
+                    creates,
+                    function(err, created) {
+                        for(var i = 0; i < created.length; i++) {
+                            test.strictEqual(creates[i].id, created[i].sid);
+                        }
+                        
+                        context.run("list", sids, null, function(err) {
+                            test.ok(!err);
+                            context.run("cancel", sids, null, function(err) {
+                                test.ok(!err);
+                                test.done();
+                            });
+                        });
+                        
+                    }
+                );
+            }
+        }
+    };
+};
 
-    if (module === require.main) {
-        minitest.run();
-    }
-})();
+if (module === require.main) {
+    var test        = require('../contrib/nodeunit/test_reporter');
+    
+    var suite = exports.setup();
+    test.run([{"Tests": suite}]);
+}

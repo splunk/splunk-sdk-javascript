@@ -50,7 +50,8 @@
     };
     
     exports.OptionParser = OptionParser;
-    exports.parse = function(argv) {
+    exports.parse = function(argv, additionalOptions) {
+        additionalOptions = additionalOptions || [];
         argv = (argv || []).slice(2);
         var defaults = getDefaults();
         for(var key in defaults) {
@@ -135,6 +136,11 @@
             ],
 
         });
+        
+        for(var i = 0; i < additionalOptions.length; i++) {
+            var option = additionalOptions[i];
+            parser.add(option.names[0], option);
+        }
         
         // Try and parse the command line
         var cmdline = null;

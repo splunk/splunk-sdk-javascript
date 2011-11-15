@@ -1,79 +1,50 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title>browser-require example</title>
+    <title>Splunk SDK Browser Tests</title>
   </head>
   <body>
     <script>
       // What is this?
       i18n_register = function(){}
     </script>
+    <link rel="stylesheet" type="text/css" href="../contrib/nodeunit/nodeunit.css">
+    <script type="text/javascript" src="../contrib/nodeunit/nodeunit.browser.js"></script>
     <script type="text/javascript" src="../client/splunk.js"></script>
+    <script type="text/javascript" src="../client/splunk.test.js"></script>
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.js"></script>
     <script>
-      var JQueryHttp = Splunk.JQueryHttp;
       var XdmHttp = Splunk.XdmHttp;
-      var Async = Splunk.Async;
-
-      http = new XdmHttp(true, "https://localhost:8089");
-      svc = new Splunk.Client.Service(http, { 
-          scheme: "https",
-          host: "localhost",
-          port: "8089",
-          username: "itay",
-          password: "changeme",
-      });
+      var http = new XdmHttp(true, "https://localhost:8089");
+      var options = {
+        scheme: "https",
+        host: "localhost",
+        port: "8089",
+        username: "itay",
+        password: "changeme",
+      };
       
-      Async.chain([
-        function(callback) { svc.login(callback); },
-        function(success, callback) { 
-          if (!success) {
-            callback("FAILED TO LOGIN");
-          }
+      var svc = new Splunk.Client.Service(http, options);
+      svc.login(function(err, success) {
+        if (err || !success) {
+          console.log(err);
+          alert("Cannot run tests - login failed");
+        }
+        nodeunit.run([{
+          // Note that we cannot run the following tests in the browser,
+          // as they depend on capabilities of node.js:
+          //  - HTTP tests (require cross-domain)
+          //  - Examples Tests (require command line and process capabilities)
           
-          Async.chain([
-            function(callback) { svc.jobs().list(callback); },
-            function(jobs, callback) { 
-              for(var i = 0; i < jobs.length; i++) {
-                console.log("  job: " + jobs[i].sid);
-              }
-              
-              callback();
-            }],
-            function(err) {
-              if (err) {
-                callback("TEST1 ERROR: " + err);
-              }
-              else {
-                callback();
-              }
-            }
-          );
-        },
-        function(callback) {
-          Async.chain([
-            function(callback) {
-              svc.get("search/jobs/1234_nosuchjob", {}, callback);
-            }
-          ],
-          function(err) {
-            if (!err) {
-              callback("TEST2 Error: got a job that shouldn't exist");
-            }
-            else {
-              callback();
-            }
-          });
-        }
-      ],
-      function(err) {
-        if (err) {
-          throw new Error(err);
-        }
-        else {
-          console.log("SUCCESS");
-        }
-      });      
+          "Utils Tests": SplunkTest.Utils.setup(svc),
+          "Async Tests": SplunkTest.Async.setup(svc),
+          "Binding Tests": SplunkTest.Binding.setup(svc),
+          "Client Tests": SplunkTest.Client.setup(svc),
+          "Searcher Tests": SplunkTest.Searcher.setup(svc),
+        }]);
+      });
     </script>
+    
+    <h1 id="nodeunit-header">Splunk SDK Browser Test Suite</h1>
   </body>
 </html>

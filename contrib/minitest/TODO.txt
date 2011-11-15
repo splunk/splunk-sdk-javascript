@@ -1,7 +1,0 @@
-- Fix the unicode issues with Node.js 0.1.90. It does work with Node.js 0.1.33, but in 0.1.90 it just prints first two lines (context description and first successful message) and then don't output anything (but the code is still running and we are even able to inspect these messages which should be outputted via sys.p()).
-
-test.pending("Because I'm too lazy to do it now");
-
-nested contexts (-> nested setup)
-
-context.tearDown();

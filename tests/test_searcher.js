@@ -13,54 +13,24 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-exports.run = (function() {
+exports.setup = function(svc) {
     var Splunk      = require('../splunk').Splunk;
-    var NodeHttp    = require('../platform/node/node_http').NodeHttp;
-    var minitest    = require('../contrib/minitest');
     var utils       = Splunk.Utils;
     var Async       = Splunk.Async;
     var Searcher    = Splunk.Searcher;
-    var options     = require('../internal/cmdline');
     
-    var cmdline = options.parse(process.argv);
-        
-    // If there is no command line, we should return
-    if (!cmdline) {
-        throw new Error("Error in parsing command line parameters");
-    }
-    
-    // Create our HTTP request class for node.js
-    var http = new NodeHttp();
-    var svc = new Splunk.Client.Service(http, { 
-        scheme: cmdline.options.scheme,
-        host: cmdline.options.host,
-        port: cmdline.options.port,
-        username: cmdline.options.username,
-        password: cmdline.options.password,
-    });
-
     var idCounter = 0;
     var getNextId = function() {
         return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
     };
 
-    minitest.context("Searcher Tests", function() {
-        this.setupContext(function(done) {
-            var context = this;
-            svc.login(function(err, success) {
-                context.service = svc;
-                context.success = success;
-                done();
-            });
-        });
-
-        this.setupTest(function(done) {
-            this.assert.ok(this.context.success);
-            this.service = this.context.service; 
+    return {
+        setUp: function(done) {
+            this.service = svc; 
             done();
-        });
+        },
 
-        this.assertion("Callback#Searcher + Results", function(test) {
+        "Callback#Searcher + Results": function(test) {
             var sid = getNextId();
             var that = this;
             Async.chain([
@@ -94,9 +64,9 @@ exports.run = (function() {
                             }
                         },
                         function(err) {
-                            test.assert.ok(!err);
-                            test.assert.ok(iterationCount > 0);
-                            test.assert.strictEqual(totalResultCount, 10);
+                            test.ok(!err);
+                            test.ok(iterationCount > 0);
+                            test.strictEqual(totalResultCount, 10);
                             
                             callback(null, searcher);
                         }
@@ -107,12 +77,12 @@ exports.run = (function() {
                 }
             ],
             function(err) {
-                test.assert.ok(!err);
-                test.finished();  
+                test.ok(!err);
+                test.done();  
             });
-        });
+        },
 
-        this.assertion("Callback#Searcher + Events", function(test) {
+        "Callback#Searcher + Events": function(test) {
             var sid = getNextId();
             var that = this;
             Async.chain([
@@ -146,9 +116,9 @@ exports.run = (function() {
                             }
                         },
                         function(err) {
-                            test.assert.ok(!err);
-                            test.assert.ok(iterationCount > 0);
-                            test.assert.strictEqual(totalResultCount, 10);
+                            test.ok(!err);
+                            test.ok(iterationCount > 0);
+                            test.strictEqual(totalResultCount, 10);
                             
                             callback(null, searcher);
                         }
@@ -159,12 +129,12 @@ exports.run = (function() {
                 }
             ],
             function(err) {
-                test.assert.ok(!err);
-                test.finished();  
+                test.ok(!err);
+                test.done();  
             });
-        });
+        },
 
-        this.assertion("Callback#Searcher + Preview", function(test) {
+        "Callback#Searcher + Preview": function(test) {
             var sid = getNextId();
             var that = this;
             Async.chain([
@@ -198,9 +168,9 @@ exports.run = (function() {
                             }
                         },
                         function(err) {
-                            test.assert.ok(!err);
-                            test.assert.ok(iterationCount > 0);
-                            test.assert.strictEqual(totalResultCount, 10);
+                            test.ok(!err);
+                            test.ok(iterationCount > 0);
+                            test.strictEqual(totalResultCount, 10);
                             
                             callback(null, searcher);
                         }
@@ -211,13 +181,41 @@ exports.run = (function() {
                 }
             ],
             function(err) {
-                test.assert.ok(!err);
-                test.finished();  
+                test.ok(!err);
+                test.done();  
             });
-        });
-    });
+        },
+    };
+};
 
-    if (module === require.main) {
-        minitest.run();
+if (module === require.main) {
+    var Splunk      = require('../splunk').Splunk;
+    var NodeHttp    = require('../platform/node/node_http').NodeHttp;
+    var options     = require('../internal/cmdline');
+    var test        = require('../contrib/nodeunit/test_reporter');
+    
+    var cmdline = options.parse(process.argv);
+        
+    // If there is no command line, we should return
+    if (!cmdline) {
+        throw new Error("Error in parsing command line parameters");
     }
-})();
+    
+    var http = new NodeHttp();
+    var svc = new Splunk.Client.Service(http, { 
+        scheme: cmdline.options.scheme,
+        host: cmdline.options.host,
+        port: cmdline.options.port,
+        username: cmdline.options.username,
+        password: cmdline.options.password,
+    });
+    
+    var suite = exports.setup(svc);
+    
+    svc.login(function(err, success) {
+        if (err || !success) {
+            throw new Error("Login failed - not running tests", err || "");
+        }
+        test.run([{"Tests": suite}]);
+    });
+}
