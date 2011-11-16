@@ -67,7 +67,10 @@
                 
                 var response = {
                     statusCode: status,
-                    headers: headers
+                    headers: headers,
+                    request: {
+                        headers: params.headers,
+                    }
                 };
                 
                 var complete_response = this._buildResponse(null, response, data);
@@ -82,7 +85,10 @@
                 
                 var response = {
                     statusCode: status,
-                    headers: headers
+                    headers: headers,
+                    request: {
+                        headers: params.headers,
+                    }
                 };
                 
                 var complete_response = this._buildResponse(message, response, data);
