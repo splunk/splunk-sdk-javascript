@@ -21,19 +21,20 @@
         "javascript"
     ],
     "dependencies" : {
-        "request" : "2.1.x"
+        "request" : "2.2.x"
     },
     "devDependencies" : {
-        "browserify" : "1.6.x",
-        "uglify-js" : "1.0.x",
-        "nodeunit" : "0.6.x"
+        "browserify" : "1.7.x",
+        "uglify-js" : "1.1.x",
+        "nodeunit" : "0.6.x",
+        "jshint" : "0.5.x"
     },
     "author" : {
         "name" : "Splunk",
         "email" : "devinfo@splunk.com",
         "url" : "http://dev.splunk.com"
     },
-    "license" : "Apache",
+    "license" : "Apache 2.0",
     "engine" : { "node" : ">=0.4.9" },
     "private": true
 }
