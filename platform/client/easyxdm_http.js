@@ -69,7 +69,7 @@
                     statusCode: status,
                     headers: headers,
                     request: {
-                        headers: params.headers,
+                        headers: params.headers
                     }
                 };
                 
@@ -87,7 +87,7 @@
                     statusCode: status,
                     headers: headers,
                     request: {
-                        headers: params.headers,
+                        headers: params.headers
                     }
                 };
                 

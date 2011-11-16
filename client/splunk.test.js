@@ -494,6 +494,8 @@ require.define("/lib/binding.js", function (require, module, exports, __dirname,
 // under the License.
 
 (function() {
+    "use strict";
+    
     var Paths   = require('./paths').Paths;
     var Class   = require('./jquery.class').Class;
     var utils   = require('./utils');
@@ -642,6 +644,8 @@ require.define("/lib/paths.js", function (require, module, exports, __dirname, _
 // under the License.
 
 (function() {
+    "use strict";
+    
     var root = exports || this;
 
     // A list of the Splunk API endpoint paths
@@ -697,6 +701,8 @@ require.define("/lib/jquery.class.js", function (require, module, exports, __dir
  */
 // Inspired by base2 and Prototype
 (function(){
+    "use strict";
+    
     var root = exports || this;
 
     var initializing = false;
@@ -776,6 +782,8 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
 // under the License.
 
 (function() {
+    "use strict";
+    
     var root = exports || this;
 
     root.bind = function(me, fn) { 
@@ -832,6 +840,8 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
 // under the License.
 
 (function() {
+    "use strict";
+    
     var binding     = require('./binding');
     var Paths       = require('./paths').Paths;
     var Class       = require('./jquery.class').Class;
@@ -942,7 +952,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         
         users: function() {
             return new root.Collection(this, Paths.users);
-        },
+        }
         
     });
 
@@ -1153,7 +1163,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         
         del: function(callback) {
             this._invoke("remove", "DELETE", {}, callback);
-        },
+        }
     });
 
     // A collection is just another type of endpoint that represents
@@ -1347,7 +1357,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         suppressInfo: function(callback) {
             this.get("suppress", {}, callback);
             this._invalidate();
-        },
+        }
     });
 
     // An endpoint for an instance of a specific search job. Allows us to perform
@@ -1513,6 +1523,8 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
 // under the License.
 
 (function() {
+    "use strict";
+    
     var Class           = require('./jquery.class').Class;
     var ODataResponse   = require('./odata').ODataResponse;
     var utils           = require('./utils');
@@ -1705,6 +1717,8 @@ require.define("/lib/odata.js", function (require, module, exports, __dirname, _
 // under the License.
 
 (function() {
+    "use strict";
+    
     var Class   = require('./jquery.class').Class;
 
     var root = exports || this;
@@ -1805,6 +1819,8 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
 // under the License.
 
 (function() {
+    "use strict";
+    
     var utils = require('./utils');
     var root = exports || this;
 
@@ -2006,6 +2022,8 @@ require.define("/lib/searcher.js", function (require, module, exports, __dirname
 // under the License.
 
 (function() {
+    "use strict";
+    
     var client  = require('./client');
     var Class   = require('./jquery.class').Class;
     var utils   = require('./utils');
