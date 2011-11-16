@@ -371,7 +371,7 @@ require.modules["/splunk.test.js"] = function () {
 (function() {
     var root = exports || this;
 
-    root.SplunkTest = require('./tests/test.browser.js');
+    root.SplunkTest = require('./tests/tests.browser.js');
 })();;
     }).call(module.exports);
     
@@ -379,11 +379,11 @@ require.modules["/splunk.test.js"] = function () {
     return module.exports;
 };
 
-require.modules["/tests/test.browser.js"] = function () {
+require.modules["/tests/tests.browser.js"] = function () {
     var module = { exports : {} };
     var exports = module.exports;
     var __dirname = "/tests";
-    var __filename = "/tests/test.browser.js";
+    var __filename = "/tests/tests.browser.js";
     
     var require = function (file) {
         return __require(file, "/tests");
@@ -394,7 +394,7 @@ require.modules["/tests/test.browser.js"] = function () {
     };
     
     require.modules = __require.modules;
-    __require.modules["/tests/test.browser.js"]._cached = module.exports;
+    __require.modules["/tests/tests.browser.js"]._cached = module.exports;
     
     (function () {
         
@@ -425,7 +425,7 @@ require.modules["/tests/test.browser.js"] = function () {
 })();;
     }).call(module.exports);
     
-    __require.modules["/tests/test.browser.js"]._cached = module.exports;
+    __require.modules["/tests/tests.browser.js"]._cached = module.exports;
     return module.exports;
 };
 
