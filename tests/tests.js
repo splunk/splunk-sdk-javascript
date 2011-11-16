@@ -34,8 +34,9 @@
         return;
     }
     
+    var coverage = null;
     if (cmdline.options.coverage) {
-        var coverage = runforcover.cover();
+        coverage = runforcover.cover();
     }
     
     var Splunk      = require('../splunk').Splunk;

@@ -7,25 +7,24 @@ var require = function (file, cwd) {
     var res = mod._cached ? mod._cached : mod();
     return res;
 }
-var __require = require;
 
 require.paths = [];
 require.modules = {};
 require.extensions = [".js",".coffee"];
 
+require._core = {
+    'assert': true,
+    'events': true,
+    'fs': true,
+    'path': true,
+    'vm': true
+};
+
 require.resolve = (function () {
-    var core = {
-        'assert': true,
-        'events': true,
-        'fs': true,
-        'path': true,
-        'vm': true
-    };
-    
     return function (x, cwd) {
         if (!cwd) cwd = '/';
         
-        if (core[x]) return x;
+        if (require._core[x]) return x;
         var path = require.modules.path();
         var y = cwd || '.';
         
@@ -130,6 +129,37 @@ require.alias = function (from, to) {
     }
 };
 
+require.define = function (filename, fn) {
+    var dirname = require._core[filename]
+        ? ''
+        : require.modules.path().dirname(filename)
+    ;
+    
+    var require_ = function (file) {
+        return require(file, dirname)
+    };
+    require_.resolve = function (name) {
+        return require.resolve(name, dirname);
+    };
+    require_.modules = require.modules;
+    require_.define = require.define;
+    var module_ = { exports : {} };
+    
+    require.modules[filename] = function () {
+        require.modules[filename]._cached = module_.exports;
+        fn.call(
+            module_.exports,
+            require_,
+            module_,
+            module_.exports,
+            dirname,
+            filename
+        );
+        require.modules[filename]._cached = module_.exports;
+        return module_.exports;
+    };
+};
+
 var Object_keys = Object.keys || function (obj) {
     var res = [];
     for (var key in obj) res.push(key)
@@ -151,25 +181,8 @@ if (!process.binding) process.binding = function (name) {
 
 if (!process.cwd) process.cwd = function () { return '.' };
 
-require.modules["path"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = ".";
-    var __filename = "path";
-    
-    var require = function (file) {
-        return __require(file, ".");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, ".");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["path"]._cached = module.exports;
-    
-    (function () {
-        function filter (xs, fn) {
+require.define("path", function (require, module, exports, __dirname, __filename) {
+    function filter (xs, fn) {
     var res = [];
     for (var i = 0; i < xs.length; i++) {
         if (fn(xs[i], i, xs)) res.push(xs[i]);
@@ -303,57 +316,15 @@ exports.basename = function(path, ext) {
 exports.extname = function(path) {
   return splitPathRe.exec(path)[3] || '';
 };
-;
-    }).call(module.exports);
-    
-    __require.modules["path"]._cached = module.exports;
-    return module.exports;
-};
 
-require.modules["/package.json"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = "/";
-    var __filename = "/package.json";
-    
-    var require = function (file) {
-        return __require(file, "/");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, "/");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["/package.json"]._cached = module.exports;
-    
-    (function () {
-        module.exports = {"name":"splunk-sdk","version":"0.1.0","description":"SDK for usage with the Splunk REST API","homepage":"http://dev.splunk.com","main":"splunk.js","directories":{"example":"examples","lib":"lib","test":"tests"},"repository":{"type":"git","url":"http://github.com/splunk/splunk-sdk-javascript.git"},"keywords":["splunk","data","search","logs","javascript"],"dependencies":{"request":"2.1.x"},"devDependencies":{"browserify":"1.6.x","uglify-js":"1.0.x","nodeunit":"0.6.x"},"author":{"name":"Splunk","email":"devinfo@splunk.com","url":"http://dev.splunk.com"},"license":"Apache","engine":{"node":">=0.4.9"},"private":true};
-    }).call(module.exports);
-    
-    __require.modules["/package.json"]._cached = module.exports;
-    return module.exports;
-};
+});
 
-require.modules["/splunk.test.js"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = "/";
-    var __filename = "/splunk.test.js";
+require.define("/package.json", function (require, module, exports, __dirname, __filename) {
+    module.exports = {"main":"splunk.js"}
+});
+
+require.define("/splunk.test.js", function (require, module, exports, __dirname, __filename) {
     
-    var require = function (file) {
-        return __require(file, "/");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, "/");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["/splunk.test.js"]._cached = module.exports;
-    
-    (function () {
-        
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -372,32 +343,11 @@ require.modules["/splunk.test.js"] = function () {
     var root = exports || this;
 
     root.SplunkTest = require('./tests/tests.browser.js');
-})();;
-    }).call(module.exports);
-    
-    __require.modules["/splunk.test.js"]._cached = module.exports;
-    return module.exports;
-};
+})();
+});
 
-require.modules["/tests/tests.browser.js"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = "/tests";
-    var __filename = "/tests/tests.browser.js";
+require.define("/tests/tests.browser.js", function (require, module, exports, __dirname, __filename) {
     
-    var require = function (file) {
-        return __require(file, "/tests");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, "/tests");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["/tests/tests.browser.js"]._cached = module.exports;
-    
-    (function () {
-        
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -422,32 +372,11 @@ require.modules["/tests/tests.browser.js"] = function () {
     root.Client   = require('./test_client');
     root.Searcher = require('./test_searcher');
     root.Examples = require('./test_examples');
-})();;
-    }).call(module.exports);
-    
-    __require.modules["/tests/tests.browser.js"]._cached = module.exports;
-    return module.exports;
-};
+})();
+});
 
-require.modules["/tests/test_utils.js"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = "/tests";
-    var __filename = "/tests/test_utils.js";
+require.define("/tests/test_utils.js", function (require, module, exports, __dirname, __filename) {
     
-    var require = function (file) {
-        return __require(file, "/tests");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, "/tests");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["/tests/test_utils.js"]._cached = module.exports;
-    
-    (function () {
-        
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -512,32 +441,11 @@ if (module === require.main) {
     
     var suite = exports.setup();
     test.run([{"Tests": suite}]);
-};
-    }).call(module.exports);
-    
-    __require.modules["/tests/test_utils.js"]._cached = module.exports;
-    return module.exports;
-};
+}
+});
 
-require.modules["/splunk.js"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = "/";
-    var __filename = "/splunk.js";
+require.define("/splunk.js", function (require, module, exports, __dirname, __filename) {
     
-    var require = function (file) {
-        return __require(file, "/");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, "/");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["/splunk.js"]._cached = module.exports;
-    
-    (function () {
-        
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -566,32 +474,11 @@ require.modules["/splunk.js"] = function () {
         Class           : require('./lib/jquery.class').Class,
         Searcher        : require('./lib/searcher.js')
     };
-})();;
-    }).call(module.exports);
-    
-    __require.modules["/splunk.js"]._cached = module.exports;
-    return module.exports;
-};
+})();
+});
 
-require.modules["/lib/binding.js"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = "/lib";
-    var __filename = "/lib/binding.js";
+require.define("/lib/binding.js", function (require, module, exports, __dirname, __filename) {
     
-    var require = function (file) {
-        return __require(file, "/lib");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, "/lib");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["/lib/binding.js"]._cached = module.exports;
-    
-    (function () {
-        
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -735,32 +622,11 @@ require.modules["/lib/binding.js"] = function () {
             );
         }
     });
-})();;
-    }).call(module.exports);
-    
-    __require.modules["/lib/binding.js"]._cached = module.exports;
-    return module.exports;
-};
+})();
+});
 
-require.modules["/lib/paths.js"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = "/lib";
-    var __filename = "/lib/paths.js";
+require.define("/lib/paths.js", function (require, module, exports, __dirname, __filename) {
     
-    var require = function (file) {
-        return __require(file, "/lib");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, "/lib");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["/lib/paths.js"]._cached = module.exports;
-    
-    (function () {
-        
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -807,32 +673,11 @@ require.modules["/lib/paths.js"] = function () {
         settings: "server/settings",
         users: "authentication/users"
     };
-})();;
-    }).call(module.exports);
-    
-    __require.modules["/lib/paths.js"]._cached = module.exports;
-    return module.exports;
-};
+})();
+});
 
-require.modules["/lib/jquery.class.js"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = "/lib";
-    var __filename = "/lib/jquery.class.js";
-    
-    var require = function (file) {
-        return __require(file, "/lib");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, "/lib");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["/lib/jquery.class.js"]._cached = module.exports;
-    
-    (function () {
-        // Copyright 2011 Splunk, Inc.
+require.define("/lib/jquery.class.js", function (require, module, exports, __dirname, __filename) {
+    // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
 // not use this file except in compliance with the License. You may obtain
@@ -911,32 +756,11 @@ require.modules["/lib/jquery.class.js"] = function () {
        
       return Class;
     };
-})();;
-    }).call(module.exports);
-    
-    __require.modules["/lib/jquery.class.js"]._cached = module.exports;
-    return module.exports;
-};
+})();
+});
 
-require.modules["/lib/utils.js"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = "/lib";
-    var __filename = "/lib/utils.js";
+require.define("/lib/utils.js", function (require, module, exports, __dirname, __filename) {
     
-    var require = function (file) {
-        return __require(file, "/lib");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, "/lib");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["/lib/utils.js"]._cached = module.exports;
-    
-    (function () {
-        
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -988,32 +812,11 @@ require.modules["/lib/utils.js"] = function () {
     root.isArray = Array.isArray || function(obj) {
         return root.toString.call(obj) === '[object Array]';
     };
-})();;
-    }).call(module.exports);
-    
-    __require.modules["/lib/utils.js"]._cached = module.exports;
-    return module.exports;
-};
+})();
+});
 
-require.modules["/lib/client.js"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = "/lib";
-    var __filename = "/lib/client.js";
+require.define("/lib/client.js", function (require, module, exports, __dirname, __filename) {
     
-    var require = function (file) {
-        return __require(file, "/lib");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, "/lib");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["/lib/client.js"]._cached = module.exports;
-    
-    (function () {
-        
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -1690,32 +1493,11 @@ require.modules["/lib/client.js"] = function () {
             this._invalidate();
         }
     });
-})();;
-    }).call(module.exports);
-    
-    __require.modules["/lib/client.js"]._cached = module.exports;
-    return module.exports;
-};
+})();
+});
 
-require.modules["/lib/http.js"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = "/lib";
-    var __filename = "/lib/http.js";
+require.define("/lib/http.js", function (require, module, exports, __dirname, __filename) {
     
-    var require = function (file) {
-        return __require(file, "/lib");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, "/lib");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["/lib/http.js"]._cached = module.exports;
-    
-    (function () {
-        
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -1861,11 +1643,10 @@ require.modules["/lib/http.js"] = function () {
             if (this.isSplunk) {
                 try {
                     json = this.parseJson(data);
-                } catch(e) {
+                } catch(err1) {
                     console.log("JSON PARSE ERROR");
-                    console.log(e);
+                    console.log(err1);
                     console.log(data);
-                    console.log(res);
                 }
                 odata = ODataResponse.fromJson(json);  
 
@@ -1886,11 +1667,10 @@ require.modules["/lib/http.js"] = function () {
                 if (response && response.headers["content-type"] === "application/json") {
                     try {
                         json = this.parseJson(data);
-                    } catch(e) {
+                    } catch(err2) {
                         console.log("JSON PARSE ERROR");
-                        console.log(e);
+                        console.log(err2);
                         console.log(data);
-                        console.log(res);
                     }
                 }
 
@@ -1905,32 +1685,11 @@ require.modules["/lib/http.js"] = function () {
             return complete_response;
         }
     });
-})();;
-    }).call(module.exports);
-    
-    __require.modules["/lib/http.js"]._cached = module.exports;
-    return module.exports;
-};
+})();
+});
 
-require.modules["/lib/odata.js"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = "/lib";
-    var __filename = "/lib/odata.js";
+require.define("/lib/odata.js", function (require, module, exports, __dirname, __filename) {
     
-    var require = function (file) {
-        return __require(file, "/lib");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, "/lib");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["/lib/odata.js"]._cached = module.exports;
-    
-    (function () {
-        
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -2026,32 +1785,11 @@ require.modules["/lib/odata.js"] = function () {
 
         return list;  
     };
-})();;
-    }).call(module.exports);
-    
-    __require.modules["/lib/odata.js"]._cached = module.exports;
-    return module.exports;
-};
+})();
+});
 
-require.modules["/lib/async.js"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = "/lib";
-    var __filename = "/lib/async.js";
+require.define("/lib/async.js", function (require, module, exports, __dirname, __filename) {
     
-    var require = function (file) {
-        return __require(file, "/lib");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, "/lib");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["/lib/async.js"]._cached = module.exports;
-    
-    (function () {
-        
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -2248,32 +1986,11 @@ require.modules["/lib/async.js"] = function () {
     root.sleep = function(timeout, callback) {
         setTimeout(callback, timeout);
     };
-})();;
-    }).call(module.exports);
-    
-    __require.modules["/lib/async.js"]._cached = module.exports;
-    return module.exports;
-};
+})();
+});
 
-require.modules["/lib/searcher.js"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = "/lib";
-    var __filename = "/lib/searcher.js";
+require.define("/lib/searcher.js", function (require, module, exports, __dirname, __filename) {
     
-    var require = function (file) {
-        return __require(file, "/lib");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, "/lib");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["/lib/searcher.js"]._cached = module.exports;
-    
-    (function () {
-        
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -2423,32 +2140,11 @@ require.modules["/lib/searcher.js"] = function () {
             this.currentOffset = 0;
         }
     });
-})();;
-    }).call(module.exports);
-    
-    __require.modules["/lib/searcher.js"]._cached = module.exports;
-    return module.exports;
-};
+})();
+});
 
-require.modules["/tests/test_async.js"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = "/tests";
-    var __filename = "/tests/test_async.js";
+require.define("/tests/test_async.js", function (require, module, exports, __dirname, __filename) {
     
-    var require = function (file) {
-        return __require(file, "/tests");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, "/tests");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["/tests/test_async.js"]._cached = module.exports;
-    
-    (function () {
-        
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -2795,7 +2491,7 @@ exports.setup = function() {
                 }
             );
         }
-    }
+    };
 };
 
 if (module === require.main) {
@@ -2803,32 +2499,11 @@ if (module === require.main) {
     
     var suite = exports.setup();
     test.run([{"Tests": suite}]);
-};
-    }).call(module.exports);
-    
-    __require.modules["/tests/test_async.js"]._cached = module.exports;
-    return module.exports;
-};
+}
+});
 
-require.modules["/tests/test_http.js"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = "/tests";
-    var __filename = "/tests/test_http.js";
+require.define("/tests/test_http.js", function (require, module, exports, __dirname, __filename) {
     
-    var require = function (file) {
-        return __require(file, "/tests");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, "/tests");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["/tests/test_http.js"]._cached = module.exports;
-    
-    (function () {
-        
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -3115,7 +2790,7 @@ exports.setup = function(http) {
                 });
             }
         }
-    }
+    };
 };
 
 if (module === require.main) {
@@ -3127,32 +2802,11 @@ if (module === require.main) {
     
     var suite = exports.setup(http);
     test.run([{"Tests": suite}]);
-};
-    }).call(module.exports);
-    
-    __require.modules["/tests/test_http.js"]._cached = module.exports;
-    return module.exports;
-};
+}
+});
 
-require.modules["/platform/node/node_http.js"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = "/platform/node";
-    var __filename = "/platform/node/node_http.js";
+require.define("/platform/node/node_http.js", function (require, module, exports, __dirname, __filename) {
     
-    var require = function (file) {
-        return __require(file, "/platform/node");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, "/platform/node");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["/platform/node/node_http.js"]._cached = module.exports;
-    
-    (function () {
-        
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -3199,57 +2853,15 @@ require.modules["/platform/node/node_http.js"] = function () {
             return JSON.parse(json);
         }
     });
-})();;
-    }).call(module.exports);
-    
-    __require.modules["/platform/node/node_http.js"]._cached = module.exports;
-    return module.exports;
-};
+})();
+});
 
-require.modules["/node_modules/request/package.json"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = "/node_modules/request";
-    var __filename = "/node_modules/request/package.json";
-    
-    var require = function (file) {
-        return __require(file, "/node_modules/request");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, "/node_modules/request");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["/node_modules/request/package.json"]._cached = module.exports;
-    
-    (function () {
-        module.exports = {"name":"request","description":"Simplified HTTP request client.","tags":["http","simple","util","utility"],"version":"2.1.1","author":"Mikeal Rogers <mikeal.rogers@gmail.com>","repository":{"type":"git","url":"http://github.com/mikeal/request.git"},"bugs":{"web":"http://github.com/mikeal/request/issues"},"engines":["node >= 0.3.6"],"main":"./main"};
-    }).call(module.exports);
-    
-    __require.modules["/node_modules/request/package.json"]._cached = module.exports;
-    return module.exports;
-};
+require.define("/node_modules/request/package.json", function (require, module, exports, __dirname, __filename) {
+    module.exports = {"main":"./main"}
+});
 
-require.modules["/node_modules/request/main.js"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = "/node_modules/request";
-    var __filename = "/node_modules/request/main.js";
-    
-    var require = function (file) {
-        return __require(file, "/node_modules/request");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, "/node_modules/request");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["/node_modules/request/main.js"]._cached = module.exports;
-    
-    (function () {
-        // Copyright 2010-2011 Mikeal Rogers
+require.define("/node_modules/request/main.js", function (require, module, exports, __dirname, __filename) {
+    // Copyright 2010-2011 Mikeal Rogers
 // 
 //    Licensed under the Apache License, Version 2.0 (the "License");
 //    you may not use this file except in compliance with the License.
@@ -3696,136 +3308,31 @@ request.del = function (options, callback) {
   options.method = 'DELETE'
   return request(options, callback)
 }
-;
-    }).call(module.exports);
-    
-    __require.modules["/node_modules/request/main.js"]._cached = module.exports;
-    return module.exports;
-};
 
-require.modules["http"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = ".";
-    var __filename = "http";
-    
-    var require = function (file) {
-        return __require(file, ".");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, ".");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["http"]._cached = module.exports;
-    
-    (function () {
-        // todo
-;
-    }).call(module.exports);
-    
-    __require.modules["http"]._cached = module.exports;
-    return module.exports;
-};
+});
 
-require.modules["url"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = ".";
-    var __filename = "url";
-    
-    var require = function (file) {
-        return __require(file, ".");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, ".");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["url"]._cached = module.exports;
-    
-    (function () {
-        // todo
-;
-    }).call(module.exports);
-    
-    __require.modules["url"]._cached = module.exports;
-    return module.exports;
-};
+require.define("http", function (require, module, exports, __dirname, __filename) {
+    // todo
 
-require.modules["util"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = ".";
-    var __filename = "util";
-    
-    var require = function (file) {
-        return __require(file, ".");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, ".");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["util"]._cached = module.exports;
-    
-    (function () {
-        // todo
-;
-    }).call(module.exports);
-    
-    __require.modules["util"]._cached = module.exports;
-    return module.exports;
-};
+});
 
-require.modules["stream"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = ".";
-    var __filename = "stream";
-    
-    var require = function (file) {
-        return __require(file, ".");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, ".");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["stream"]._cached = module.exports;
-    
-    (function () {
-        // todo
-;
-    }).call(module.exports);
-    
-    __require.modules["stream"]._cached = module.exports;
-    return module.exports;
-};
+require.define("url", function (require, module, exports, __dirname, __filename) {
+    // todo
 
-require.modules["querystring"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = ".";
-    var __filename = "querystring";
-    
-    var require = function (file) {
-        return __require(file, ".");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, ".");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["querystring"]._cached = module.exports;
-    
-    (function () {
-        var isArray = typeof Array.isArray === 'function'
+});
+
+require.define("util", function (require, module, exports, __dirname, __filename) {
+    // todo
+
+});
+
+require.define("stream", function (require, module, exports, __dirname, __filename) {
+    // todo
+
+});
+
+require.define("querystring", function (require, module, exports, __dirname, __filename) {
+    var isArray = typeof Array.isArray === 'function'
     ? Array.isArray
     : function (xs) {
         return Object.toString.call(xs) === '[object Array]'
@@ -4068,32 +3575,11 @@ function lastBraceInKey(str) {
     if ('=' == c && !brace) return i;
   }
 }
-;
-    }).call(module.exports);
-    
-    __require.modules["querystring"]._cached = module.exports;
-    return module.exports;
-};
 
-require.modules["/node_modules/request/mimetypes.js"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = "/node_modules/request";
-    var __filename = "/node_modules/request/mimetypes.js";
-    
-    var require = function (file) {
-        return __require(file, "/node_modules/request");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, "/node_modules/request");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["/node_modules/request/mimetypes.js"]._cached = module.exports;
-    
-    (function () {
-        // from http://github.com/felixge/node-paperboy
+});
+
+require.define("/node_modules/request/mimetypes.js", function (require, module, exports, __dirname, __filename) {
+    // from http://github.com/felixge/node-paperboy
 exports.types = {
   "aiff":"audio/x-aiff",
   "arj":"application/x-arj-compressed",
@@ -4238,84 +3724,21 @@ exports.lookup = function(ext, defaultType) {
   return (ext in exports.types)
     ? exports.types[ext]
     : defaultType;
-};;
-    }).call(module.exports);
-    
-    __require.modules["/node_modules/request/mimetypes.js"]._cached = module.exports;
-    return module.exports;
 };
+});
 
-require.modules["https"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = ".";
-    var __filename = "https";
-    
-    var require = function (file) {
-        return __require(file, ".");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, ".");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["https"]._cached = module.exports;
-    
-    (function () {
-        // todo
-;
-    }).call(module.exports);
-    
-    __require.modules["https"]._cached = module.exports;
-    return module.exports;
-};
+require.define("https", function (require, module, exports, __dirname, __filename) {
+    // todo
 
-require.modules["tls"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = ".";
-    var __filename = "tls";
-    
-    var require = function (file) {
-        return __require(file, ".");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, ".");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["tls"]._cached = module.exports;
-    
-    (function () {
-        // todo
-;
-    }).call(module.exports);
-    
-    __require.modules["tls"]._cached = module.exports;
-    return module.exports;
-};
+});
 
-require.modules["/tests/test_binding.js"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = "/tests";
-    var __filename = "/tests/test_binding.js";
+require.define("tls", function (require, module, exports, __dirname, __filename) {
+    // todo
+
+});
+
+require.define("/tests/test_binding.js", function (require, module, exports, __dirname, __filename) {
     
-    var require = function (file) {
-        return __require(file, "/tests");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, "/tests");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["/tests/test_binding.js"]._cached = module.exports;
-    
-    (function () {
-        
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -4523,32 +3946,11 @@ if (module === require.main) {
         }
         test.run([{"Tests": suite}]);
     });
-};
-    }).call(module.exports);
-    
-    __require.modules["/tests/test_binding.js"]._cached = module.exports;
-    return module.exports;
-};
+}
+});
 
-require.modules["/internal/cmdline.js"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = "/internal";
-    var __filename = "/internal/cmdline.js";
-    
-    var require = function (file) {
-        return __require(file, "/internal");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, "/internal");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["/internal/cmdline.js"]._cached = module.exports;
-    
-    (function () {
-        // Copyright 2011 Splunk, Inc.
+require.define("/internal/cmdline.js", function (require, module, exports, __dirname, __filename) {
+    // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
 // not use this file except in compliance with the License. You may obtain
@@ -4574,7 +3976,7 @@ require.modules["/internal/cmdline.js"] = function () {
     
     var readDefaultsFile = function(path, defaults) {
         var contents = fs.readFileSync(path, "utf8") || "";
-        var lines = contents.split("\n") || []
+        var lines = contents.split("\n") || [];
         
         for(var i = 0; i < lines.length; i++) {
             var line = lines[i].trim();
@@ -4585,7 +3987,7 @@ require.modules["/internal/cmdline.js"] = function () {
                 defaults[key] = value;
             }
         }
-    }
+    };
     
     var getDefaults = function() {
         var defaults = {};
@@ -4705,58 +4107,16 @@ require.modules["/internal/cmdline.js"] = function () {
         
         return cmdline;
     };
-})();;
-    }).call(module.exports);
-    
-    __require.modules["/internal/cmdline.js"]._cached = module.exports;
-    return module.exports;
-};
+})();
+});
 
-require.modules["fs"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = ".";
-    var __filename = "fs";
-    
-    var require = function (file) {
-        return __require(file, ".");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, ".");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["fs"]._cached = module.exports;
-    
-    (function () {
-        // nothing to see here... no file methods for the browser
-;
-    }).call(module.exports);
-    
-    __require.modules["fs"]._cached = module.exports;
-    return module.exports;
-};
+require.define("fs", function (require, module, exports, __dirname, __filename) {
+    // nothing to see here... no file methods for the browser
 
-require.modules["/tests/test_client.js"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = "/tests";
-    var __filename = "/tests/test_client.js";
+});
+
+require.define("/tests/test_client.js", function (require, module, exports, __dirname, __filename) {
     
-    var require = function (file) {
-        return __require(file, "/tests");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, "/tests");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["/tests/test_client.js"]._cached = module.exports;
-    
-    (function () {
-        
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -4997,32 +4357,11 @@ if (module === require.main) {
         }
         test.run([{"Tests": suite}]);
     });
-};
-    }).call(module.exports);
-    
-    __require.modules["/tests/test_client.js"]._cached = module.exports;
-    return module.exports;
-};
+}
+});
 
-require.modules["/tests/test_searcher.js"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = "/tests";
-    var __filename = "/tests/test_searcher.js";
+require.define("/tests/test_searcher.js", function (require, module, exports, __dirname, __filename) {
     
-    var require = function (file) {
-        return __require(file, "/tests");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, "/tests");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["/tests/test_searcher.js"]._cached = module.exports;
-    
-    (function () {
-        
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -5242,32 +4581,11 @@ if (module === require.main) {
         }
         test.run([{"Tests": suite}]);
     });
-};
-    }).call(module.exports);
-    
-    __require.modules["/tests/test_searcher.js"]._cached = module.exports;
-    return module.exports;
-};
+}
+});
 
-require.modules["/tests/test_examples.js"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = "/tests";
-    var __filename = "/tests/test_examples.js";
+require.define("/tests/test_examples.js", function (require, module, exports, __dirname, __filename) {
     
-    var require = function (file) {
-        return __require(file, "/tests");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, "/tests");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["/tests/test_examples.js"]._cached = module.exports;
-    
-    (function () {
-        
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -5459,32 +4777,11 @@ if (module === require.main) {
     
     var suite = exports.setup();
     test.run([{"Tests": suite}]);
-};
-    }).call(module.exports);
-    
-    __require.modules["/tests/test_examples.js"]._cached = module.exports;
-    return module.exports;
-};
+}
+});
 
-require.modules["/examples/jobs.js"] = function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = "/examples";
-    var __filename = "/examples/jobs.js";
+require.define("/examples/jobs.js", function (require, module, exports, __dirname, __filename) {
     
-    var require = function (file) {
-        return __require(file, "/examples");
-    };
-    
-    require.resolve = function (file) {
-        return __require.resolve(name, "/examples");
-    };
-    
-    require.modules = __require.modules;
-    __require.modules["/examples/jobs.js"]._cached = module.exports;
-    
-    (function () {
-        
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -5932,24 +5229,10 @@ require.modules["/examples/jobs.js"] = function () {
     if (module === require.main) {
         exports.main(process.argv);
     }
-})();;
-    }).call(module.exports);
-    
-    __require.modules["/examples/jobs.js"]._cached = module.exports;
-    return module.exports;
-};
+})();
+});
 
-(function () {
-    var module = { exports : {} };
-    var exports = module.exports;
-    var __dirname = "/";
-    var __filename = "//Users/itay/Work/splunk-sdk-javascript";
-    
-    var require = function (file) {
-        return __require(file, "/");
-    };
-    require.modules = __require.modules;
-    
+require.define("/browser.test.entry.js", function (require, module, exports, __dirname, __filename) {
     
 // Copyright 2011 Splunk, Inc.
 //
@@ -5969,5 +5252,6 @@ require.modules["/examples/jobs.js"] = function () {
 // important functionality to the "window", such that others can easily
 // include it.
 
-window.SplunkTest = require('./splunk.test').SplunkTest;;
-})();
+window.SplunkTest = require('./splunk.test').SplunkTest;
+});
+require("/browser.test.entry.js");

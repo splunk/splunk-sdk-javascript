@@ -345,7 +345,7 @@ exports.setup = function() {
                 }
             );
         }
-    }
+    };
 };
 
 if (module === require.main) {

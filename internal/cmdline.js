@@ -24,7 +24,7 @@
     
     var readDefaultsFile = function(path, defaults) {
         var contents = fs.readFileSync(path, "utf8") || "";
-        var lines = contents.split("\n") || []
+        var lines = contents.split("\n") || [];
         
         for(var i = 0; i < lines.length; i++) {
             var line = lines[i].trim();
@@ -35,7 +35,7 @@
                 defaults[key] = value;
             }
         }
-    }
+    };
     
     var getDefaults = function() {
         var defaults = {};
