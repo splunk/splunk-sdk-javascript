@@ -218,7 +218,7 @@ exports.setup = function(http) {
             },        
 
             "Callback#success success+error": function(test) {
-                var deleteP = this.http.del("http://httpbin.org/delete", [], {}, 0, function(err, res) {
+                this.http.del("http://httpbin.org/delete", [], {}, 0, function(err, res) {
                     test.ok(!err);
                     test.strictEqual(res.json.url, "http://httpbin.org/delete");
                     test.done();

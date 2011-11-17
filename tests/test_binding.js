@@ -38,11 +38,10 @@ exports.setup = function(svc) {
                 password: svc.password
             });
 
-            var loginP = newService.login(function(err, success) {
-                    test.ok(success);
-                    test.done();
-                }
-            );
+            newService.login(function(err, success) {
+                test.ok(success);
+                test.done();
+            });
         },
 
         "Callback#login fail": function(test) {
@@ -78,7 +77,7 @@ exports.setup = function(svc) {
         },
 
         "Callback#get error": function(test) { 
-            var jobsP = this.service.get("search/jobs/1234_nosuchjob", {}, function(res) {
+            this.service.get("search/jobs/1234_nosuchjob", {}, function(res) {
                 test.ok(!!res);
                 test.strictEqual(res.status, 404);
                 test.done();
@@ -87,12 +86,12 @@ exports.setup = function(svc) {
 
         "Callback#post": function(test) { 
             var service = this.service;
-            var jobsP = this.service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
+            this.service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
                     var sid = res.odata.results.sid;
                     test.ok(sid);
 
                     var endpoint = "search/jobs/" + sid + "/control";
-                    var cancelP = service.post(endpoint, {action: "cancel"}, function(err, res) {
+                    service.post(endpoint, {action: "cancel"}, function(err, res) {
                             test.done();
                         }
                     );
@@ -101,7 +100,7 @@ exports.setup = function(svc) {
         },
         
         "Callback#post error": function(test) { 
-            var jobsP = this.service.post("search/jobs", {search: "index_internal | head 1"}, function(res) {
+            this.service.post("search/jobs", {search: "index_internal | head 1"}, function(res) {
                 test.ok(!!res);
                 test.strictEqual(res.status, 400);
                 test.done();
@@ -110,21 +109,19 @@ exports.setup = function(svc) {
 
         "Callback#delete": function(test) { 
             var service = this.service;
-            var jobsP = this.service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
-                    var sid = res.odata.results.sid;
-                    test.ok(sid);
-
-                    var endpoint = "search/jobs/" + sid;
-                    var deleteP = service.del(endpoint, {}, function(err, res) {
-                            test.done();
-                        }
-                    );
-                }
-            );
+            this.service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
+                var sid = res.odata.results.sid;
+                test.ok(sid);
+                
+                var endpoint = "search/jobs/" + sid;
+                service.del(endpoint, {}, function(err, res) {
+                    test.done();
+                });
+            });
         },
 
         "Callback#delete error": function(test) { 
-            var jobsP = this.service.del("search/jobs/1234_nosuchjob", {}, function(res) {
+            this.service.del("search/jobs/1234_nosuchjob", {}, function(res) {
                 test.ok(!!res);
                 test.strictEqual(res.status, 404);
                 test.done();
@@ -132,18 +129,17 @@ exports.setup = function(svc) {
         },
 
         "Callback#request get": function(test) { 
-            var jobsP = this.service.request("search/jobs?count=2", "GET", {"X-TestHeader": 1}, "", function(err, res) {
-                    test.strictEqual(res.odata.offset, 0);
-                    test.ok(res.odata.count <= res.odata.total_count);
-                    test.strictEqual(res.odata.count, 2);
-                    test.strictEqual(res.odata.count, res.odata.results.length);
-                    test.ok(res.odata.results[0].sid);
-
-                    test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
-
-                    test.done();
-                }
-            );
+            this.service.request("search/jobs?count=2", "GET", {"X-TestHeader": 1}, "", function(err, res) {
+                test.strictEqual(res.odata.offset, 0);
+                test.ok(res.odata.count <= res.odata.total_count);
+                test.strictEqual(res.odata.count, 2);
+                test.strictEqual(res.odata.count, res.odata.results.length);
+                test.ok(res.odata.results[0].sid);
+                
+                test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
+                
+                test.done();
+            });
         },
 
         "Callback#request post": function(test) { 
@@ -152,21 +148,19 @@ exports.setup = function(svc) {
                 "Content-Type": "application/x-www-form-urlencoded"  
             };
             var service = this.service;
-            var jobsP = this.service.request("search/jobs", "POST", headers, body, function(err, res) {
-                    var sid = res.odata.results.sid;
-                    test.ok(sid);
-
-                    var endpoint = "search/jobs/" + sid + "/control";
-                    var cancelP = service.post(endpoint, {action: "cancel"}, function(err, res) {
-                            test.done();
-                        }
-                    );
-                }
-            );
+            this.service.request("search/jobs", "POST", headers, body, function(err, res) {
+                var sid = res.odata.results.sid;
+                test.ok(sid);
+                
+                var endpoint = "search/jobs/" + sid + "/control";
+                service.post(endpoint, {action: "cancel"}, function(err, res) {
+                    test.done();
+                });
+            });
         },
 
         "Callback#request error": function(test) { 
-            var jobsP = this.service.request("search/jobs/1234_nosuchjob", "GET", {"X-TestHeader": 1}, "", function(res) {
+            this.service.request("search/jobs/1234_nosuchjob", "GET", {"X-TestHeader": 1}, "", function(res) {
                 test.ok(!!res);
                 test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
                 test.strictEqual(res.status, 404);

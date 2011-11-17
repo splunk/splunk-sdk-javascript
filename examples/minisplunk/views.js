@@ -964,7 +964,7 @@ var SigninView = BootstrapModalView.extend({
         namespace: app,
     });
       
-    var loginP = svc.login(function(err, success) {
+    svc.login(function(err, success) {
       if (err || !success) {
           this.$("#login-error p").text("There was an error logging in.").parent().removeClass("hidden");
         }

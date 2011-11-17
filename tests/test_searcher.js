@@ -47,7 +47,7 @@ exports.setup = function(svc) {
                     var totalResultCount = 0;
                     var iterationCount = 0;
                     var hasMore = true;
-                    var iterateP = Async.whilst(
+                    Async.whilst(
                         function() { return hasMore; },
                         function(done) {
                             iterator.next(function(err, more, results) {
@@ -97,7 +97,7 @@ exports.setup = function(svc) {
                     var totalResultCount = 0;
                     var iterationCount = 0;
                     var hasMore = true;
-                    var iterateP = Async.whilst(
+                    Async.whilst(
                         function() { return hasMore; },
                         function(done) {
                             iterator.next(function(err, more, results) {
@@ -147,7 +147,7 @@ exports.setup = function(svc) {
                     var totalResultCount = 0;
                     var iterationCount = 0;
                     var hasMore = true;
-                    var iterateP = Async.whilst(
+                    Async.whilst(
                         function() { return hasMore; },
                         function(done) {
                             iterator.next(function(err, more, results) {
