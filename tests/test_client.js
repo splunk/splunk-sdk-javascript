@@ -144,7 +144,7 @@ exports.setup = function(svc) {
                     apps.contains(appName, function(err, found, entity) {
                         test.ok(found);
                         test.ok(entity);
-                        app.del(function() {
+                        app.remove(function() {
                             test.done();
                         });
                     });
