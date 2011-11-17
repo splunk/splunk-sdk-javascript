@@ -88,14 +88,12 @@ exports.setup = function(svc) {
                     var properties = {};
 
                     Async.whilst(
-                        {
-                            condition: function() { return properties.dispatchState !== "DONE"; },
-                            body: function(iterationDone) {
-                                job.refresh(function(err, job) {
-                                    properties = job.properties();
-                                    Async.sleep(1000, iterationDone); 
-                                });
-                            },
+                        function() { return properties.dispatchState !== "DONE"; },
+                        function(iterationDone) {
+                            job.refresh(function(err, job) {
+                                properties = job.properties();
+                                Async.sleep(1000, iterationDone); 
+                            });
                         },
                         function() {
                             job.results({}, function(err, results) {
@@ -103,7 +101,7 @@ exports.setup = function(svc) {
                                 test.strictEqual(results.fields.length, 1);
                                 test.strictEqual(results.fields[0], "count");
                                 test.strictEqual(results.rows[0][0], "1");
-
+                                
                                 job.cancel(function() { test.done(); });
                             });
                         }

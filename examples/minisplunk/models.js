@@ -174,19 +174,17 @@ var Jobs = Backbone.Collection.extend({
     
     var jobs = this;
     Splunk.Async.whilst(
-      {
-        condition: function() { return true; },
-        body: function(iterationDone) {
-          Splunk.Async.chain([
-            function(done) {
-              jobs.fetch(done);
-            },
-            function(done) {
-              Splunk.Async.sleep(10000, done);
-            }
-          ],
-          iterationDone);
-        }  
+      function() { return true; },
+      function(iterationDone) {
+        Splunk.Async.chain([
+          function(done) {
+            jobs.fetch(done);
+          },
+          function(done) {
+            Splunk.Async.sleep(10000, done);
+          }
+        ],
+        iterationDone);
       },
       function(err) {
         console.log(err);

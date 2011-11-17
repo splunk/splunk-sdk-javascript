@@ -22,45 +22,45 @@ exports.setup = function() {
     return {        
         "While success": function(test) {
             var i = 0;
-            Async.whilst({
-                condition: function() { return i++ < 3; },
-                body: function(done) {
+            Async.whilst(
+                function() { return i++ < 3; },
+                function(done) {
                     Async.sleep(0, function() { done(); });
+                },
+                function(err) {
+                    test.ok(!err);
+                    test.done();
                 }
-            },
-            function(err) {
-                test.ok(!err);
-                test.done();
-            });
+            );
         },
         
         "While success deep": function(test) {
             var i = 0;
-            Async.whilst({
-                condition: function() { return i++ < (isBrowser ? 100 : 10000); },
-                body: function(done) {
+            Async.whilst(
+                function() { return i++ < (isBrowser ? 100 : 10000); },
+                function(done) {
                     Async.sleep(0, function() { done(); });
+                },
+                function(err) {
+                    test.ok(!err);
+                    test.done();
                 }
-            },
-            function(err) {
-                test.ok(!err);
-                test.done();
-            });
+            );
         },
         
         "While error": function(test) {
             var i = 0;
-            Async.whilst({
-                condition: function() { return i++ < (isBrowser ? 100 : 10000); },
-                body: function(done) {
+            Async.whilst(
+                function() { return i++ < (isBrowser ? 100 : 10000); },
+                function(done) {
                     Async.sleep(0, function() { done(i === (isBrowser ? 50 : 10000) ? 1 : null); });
+                },
+                function(err) {
+                    test.ok(err);
+                    test.strictEqual(err, 1);
+                    test.done();
                 }
-            },
-            function(err) {
-                test.ok(err);
-                test.strictEqual(err, 1);
-                test.done();
-            });
+            );
         },
         
         "Parallel success": function(test) {

@@ -785,9 +785,9 @@ var MapView = Backbone.View.extend({
     var iterator = new this.searcher.resultsIterator();
     
     var hasMore = true;
-    Splunk.Async.whilst({
-      condition: function() { return hasMore; },
-      body: function(iterationDone) {
+    Splunk.Async.whilst(
+      function() { return hasMore; },
+      function(iterationDone) {
         iterator.next(function(err, more, results) {
           if (err) {
             iterationDone(err);
@@ -838,15 +838,14 @@ var MapView = Backbone.View.extend({
           
           iterationDone();
         });
-      }
-    },
-    function(err) {
-      if (err) {
-        console.log("GEO ERR: " + err);
-        alert("GEOERR!");
-      }
-      that.render();
-    });
+      },
+      function(err) {
+        if (err) {
+          console.log("GEO ERR: " + err);
+          alert("GEOERR!");
+        }
+        that.render();
+      });
   },
   
   addMarker: function(lat, lng, properties) {

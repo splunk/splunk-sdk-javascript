@@ -48,20 +48,18 @@ exports.setup = function(svc) {
                     var iterationCount = 0;
                     var hasMore = true;
                     var iterateP = Async.whilst(
-                        {
-                            condition: function() { return hasMore; },
-                            body: function(done) {
-                                iterator.next(function(err, more, results) {
-                                    hasMore = more;
-                                    
-                                    if (more) {
-                                        iterationCount++;
-                                        totalResultCount += results.rows.length;
-                                    }
-                                    
-                                    done();
-                                });
-                            }
+                        function() { return hasMore; },
+                        function(done) {
+                            iterator.next(function(err, more, results) {
+                                hasMore = more;
+                                
+                                if (more) {
+                                    iterationCount++;
+                                    totalResultCount += results.rows.length;
+                                }
+                                
+                                done();
+                            });
                         },
                         function(err) {
                             test.ok(!err);
@@ -100,20 +98,18 @@ exports.setup = function(svc) {
                     var iterationCount = 0;
                     var hasMore = true;
                     var iterateP = Async.whilst(
-                        {
-                            condition: function() { return hasMore; },
-                            body: function(done) {
-                                iterator.next(function(err, more, results) {
-                                    hasMore = more;
-                                    
-                                    if (more) {
-                                        iterationCount++;
-                                        totalResultCount += results.rows.length;
-                                    }
-                                    
-                                    done();
-                                });
-                            }
+                        function() { return hasMore; },
+                        function(done) {
+                            iterator.next(function(err, more, results) {
+                                hasMore = more;
+                                
+                                if (more) {
+                                    iterationCount++;
+                                    totalResultCount += results.rows.length;
+                                }
+                                
+                                done();
+                            });
                         },
                         function(err) {
                             test.ok(!err);
@@ -152,20 +148,18 @@ exports.setup = function(svc) {
                     var iterationCount = 0;
                     var hasMore = true;
                     var iterateP = Async.whilst(
-                        {
-                            condition: function() { return hasMore; },
-                            body: function(done) {
-                                iterator.next(function(err, more, results) {
-                                    hasMore = more;
-                                    
-                                    if (more) {
-                                        iterationCount++;
-                                        totalResultCount += results.rows.length;
-                                    }
-                                    
-                                    done();
-                                });
-                            }
+                        function() { return hasMore; },
+                        function(done) {
+                            iterator.next(function(err, more, results) {
+                                hasMore = more;
+                                
+                                if (more) {
+                                    iterationCount++;
+                                    totalResultCount += results.rows.length;
+                                }
+                                
+                                done();
+                            });
                         },
                         function(err) {
                             test.ok(!err);
