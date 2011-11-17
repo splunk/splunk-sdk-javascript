@@ -580,8 +580,6 @@ require.define("/lib/jquery.class.js", function (require, module, exports, __dir
  */
 // Inspired by base2 and Prototype
 (function(){
-    "use strict";
-    
     var root = exports || this;
 
     var initializing = false;
@@ -887,6 +885,22 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                 params,
                 callback
             );
+        },
+
+        del: function(relpath, params, callback) {
+            var url = this.path;
+
+            // If we have a relative path, we will append it with a preceding
+            // slash.
+            if (relpath) {
+                url = url + "/" + relpath;    
+            }
+
+            this.service.del(
+                url,
+                params,
+                callback
+            );
         }
     });
     
@@ -894,14 +908,12 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         init: function(service, path) {
             this._super(service, path);
             this._maybeValid = false;
-            this._actions = null;
             
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
             this._invalidate = utils.bind(this, this._invalidate);
             this._load       = utils.bind(this, this._load);
             this._validate   = utils.bind(this, this._validate);
-            this._invoke     = utils.bind(this, this._invoke);
             this.refresh     = utils.bind(this, this.refresh);
             this.isValid     = utils.bind(this, this.isValid);
             this.properties     = utils.bind(this, this.properties);
@@ -915,13 +927,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             this._maybeValid = true;
             
             this._id = properties.__id;
-            this._actions = {};
-            var links = properties.__metadata.links || [];
-            for(var i = 0; i < links.length; i++) {
-                var action = links[i].rel;
-                var path = links[i].href;
-                this._actions[action] = path;
-            }
         },
         
         _validate: function(callback) {
@@ -933,30 +938,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             else {
                 callback(null, this);
             }
-        },
-        
-        _invoke: function(action, method, args, callback) {
-            callback = callback || function() {};
-            
-            var that = this;
-            this._validate(function(err) {
-                if (err) {
-                    callback(err);
-                }
-                                    
-                var path = that._actions[action];
-                if (!path) {
-                    callback("Invalid action: " + action);
-                }
-                
-                var handler = {
-                  "get": that.service.get,
-                  "post": that.service.post,
-                  "delete": that.service.del
-                }[method.toLowerCase()];
-                
-                handler.call(that.service, path, args, callback);
-            });
         },
         
         refresh: function() {
@@ -978,6 +959,8 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             this.refresh    = utils.bind(this, this.refresh);
             this.properties = utils.bind(this, this.properties);
             this.read       = utils.bind(this, this.read);
+            this.remove     = utils.bind(this, this.remove);
+            this.update     = utils.bind(this, this.update);
         },
         
         _load: function(properties) {
@@ -1010,7 +993,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         
         // Fetch properties of the object. This will cause
         // a refresh if we are not currently valid.
-        fetch: function(callback) {
+        read: function(callback) {
             callback = callback || function() {};
             
             var that = this;
@@ -1019,29 +1002,29 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                    callback(err);
                } 
                else {
-                   callback(null, that._properties);
+                   callback(null, that);
                }
             });
         },
-
-        // Force a refesh of the entity, such that the returned
-        // properties are guaranteed current.
-        read: function(callback) {
+        
+        remove: function(callback) {
             callback = callback || function() {};
             
             var that = this;
-            this.refresh(function(err) {
-                if (err) {
-                    callback(err);
-                } 
-                else {
-                    callback(null, that._properties);
-                }
+            this.del("", {}, function() {
+                callback();
             });
         },
         
-        del: function(callback) {
-            this._invoke("remove", "DELETE", {}, callback);
+        update: function(props, callback) {
+            callback = callback || function() {};
+            
+            var that = this;
+            this.post("", props, function(err) {
+                callback(err, that);
+            });
+            
+            this._invalidate();
         }
     });
 
@@ -1219,17 +1202,17 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         },
         
         acknowledge: function(callback) {
-            this._invoke("acknowledge", "POST", {}, callback);
+            this.post("acknowledge", {}, callback);
             this._invalidate();
         },
         
         dispatch: function(callback) {
-            this._invoke("dispatch", "POST", {}, callback);
+            this.post("dispatch", {}, callback);
             this._invalidate();
         },
         
         history: function(callback) {
-            this._invoke("history", "GET", {}, callback);
+            this.post("history", {}, callback);
             this._invalidate();
         },
         
@@ -1267,23 +1250,23 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         },
 
         cancel: function(callback) {
-            this._invoke("control", "POST", {action: "cancel"}, callback);
+            this.post("control", {action: "cancel"}, callback);
             this._invalidate();
         },
 
         disablePreview: function(callback) {
-            this._invoke("control", "POST", {action: "disablepreview"}, callback);
+            this.post("control", {action: "disablepreview"}, callback);
             this._invalidate();
         },
 
         enablePreview: function(callback) {
-            this._invoke("control", "POST", {action: "enablepreview"}, callback);
+            this.post("control", {action: "enablepreview"}, callback);
             this._invalidate();
         },
 
         events: function(params, callback) {
             callback = callback || function() {};
-            this._invoke("events", "GET", params, function(err, response) { 
+            this.get("events", params, function(err, response) { 
                 if (err) {
                     callback(err);
                 }
@@ -1294,18 +1277,18 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         },
 
         finalize: function(callback) {
-            this._invoke("control", "POST", {action: "finalize"}, callback);
+            this.post("control", {action: "finalize"}, callback);
             this._invalidate();
         },
 
         pause: function(callback) {
-            this._invoke("control", "POST", {action: "pause"}, callback);
+            this.post("control", {action: "pause"}, callback);
             this._invalidate(); 
         },
 
         preview: function(params, callback) {
             callback = callback || function() {};
-            this._invoke("results_preview", "GET", params, function(err, response) {
+            this.get("results_preview", params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
@@ -1317,7 +1300,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
 
         results: function(params, callback) {
             callback = callback || function() {};
-            this._invoke("results", "GET", params, function(err, response) {
+            this.get("results", params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
@@ -1329,7 +1312,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
 
         searchlog: function(params, callback) {
             callback = callback || function() {};
-            this._invoke("log", "GET", params, function(err, response) {
+            this.get("log", params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
@@ -1340,17 +1323,17 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         },
 
         setPriority: function(value, callback) {
-            this._invoke("control", "POST", {action: "setpriority", priority: value}, callback);
+            this.post("control", {action: "setpriority", priority: value}, callback);
             this._invalidate();
         },
 
         setTTL: function(value, callback) {
-            this._invoke("control", "POST", {action: "setttl", ttl: value}, callback);
+            this.post("control", {action: "setttl", ttl: value}, callback);
             this._invalidate();
         },
 
         summary: function(params, callback) {
-            this._invoke("summary", "GET", params, function(err, response) {
+            this.get("summary", params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
@@ -1362,7 +1345,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
 
         timeline: function(params, callback) {
             callback = callback || function() {};
-            this._invoke("timeline", "GET", params, function(err, response) {
+            this.get("timeline", params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
@@ -1373,12 +1356,12 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         },
 
         touch: function(callback) {
-            this._invoke("control", "POST", {action: "touch"}, callback);
+            this.post("control", {action: "touch"}, callback);
             this._invalidate();
         },
 
         unpause: function(callback) {
-            this._invoke("control", "POST", {action: "unpause"}, callback);
+            this.post("control", {action: "unpause"}, callback);
             this._invalidate();
         }
     });
@@ -1707,19 +1690,22 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
     // * A condition function, which takes a callback, whose only parameter is whether the condition was met or not.
     // * A body function, which takes a no-parameter callback. The callback should be invoked when the body of the loop has finished.
     // * A done function, which takes no parameter, and will be invoked when the loop has finished.
-    root.whilst = function(obj, callback) {        
+    root.whilst = function(condition, body, callback) {  
+        condition = condition || function() { return false; };
+        body = body || function(done) { done(); };
         callback = callback || function() {};
+        
         var iterationDone = function(err) {
             if (err) {
                 callback(err);
             }
             else {
-                root.whilst(obj, callback);
+                root.whilst(condition, body, callback);
             }
         };
         
-        if (obj.condition()) {
-            obj.body(iterationDone);
+        if (condition()) {
+            body(iterationDone);
         }
         else {
             callback(null);
@@ -1727,7 +1713,12 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
     };
     
     root.parallel = function(tasks, callback) {
+        tasks = tasks || [];
         callback = callback || function() {};
+        
+        if (tasks.length === 0) {
+            callback();
+        }
         
         var tasksLeft = tasks.length;
         var results = [];
@@ -1956,24 +1947,22 @@ require.define("/lib/searcher.js", function (require, module, exports, __dirname
             var properties = {};
             var stopLooping = false;
             Async.whilst(
-                {
-                    condition: function() { return !stopLooping; },
-                    body: function(done) {
-                        job.read(function(err, props) {
-                            properties = props;
-                            
-                            // Dispatch for progress
-                            manager._dispatchCallbacks(manager.onProgressCallbacks, properties);
-                            
-                            // Dispatch for failure if necessary
-                            if (properties.isFailed) {
-                                manager._dispatchCallbacks(manager.onFailCallbacks, properties);
-                            }
-                            
-                            stopLooping = properties.isDone || manager.isJobDone || properties.isFailed;
-                            Async.sleep(1000, done);
-                        });
-                    }
+                function() { return !stopLooping; },
+                function(done) {
+                    job.refresh(function(err, job) {
+                        properties = job.properties();
+                        
+                        // Dispatch for progress
+                        manager._dispatchCallbacks(manager.onProgressCallbacks, properties);
+                        
+                        // Dispatch for failure if necessary
+                        if (properties.isFailed) {
+                            manager._dispatchCallbacks(manager.onFailCallbacks, properties);
+                        }
+                        
+                        stopLooping = properties.isDone || manager.isJobDone || properties.isFailed;
+                        Async.sleep(1000, done);
+                    });
                 },
                 function(err) {
                     manager.isJobDone = true;

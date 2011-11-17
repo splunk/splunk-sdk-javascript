@@ -701,8 +701,6 @@ require.define("/lib/jquery.class.js", function (require, module, exports, __dir
  */
 // Inspired by base2 and Prototype
 (function(){
-    "use strict";
-    
     var root = exports || this;
 
     var initializing = false;
@@ -1008,6 +1006,22 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                 params,
                 callback
             );
+        },
+
+        del: function(relpath, params, callback) {
+            var url = this.path;
+
+            // If we have a relative path, we will append it with a preceding
+            // slash.
+            if (relpath) {
+                url = url + "/" + relpath;    
+            }
+
+            this.service.del(
+                url,
+                params,
+                callback
+            );
         }
     });
     
@@ -1015,14 +1029,12 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         init: function(service, path) {
             this._super(service, path);
             this._maybeValid = false;
-            this._actions = null;
             
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
             this._invalidate = utils.bind(this, this._invalidate);
             this._load       = utils.bind(this, this._load);
             this._validate   = utils.bind(this, this._validate);
-            this._invoke     = utils.bind(this, this._invoke);
             this.refresh     = utils.bind(this, this.refresh);
             this.isValid     = utils.bind(this, this.isValid);
             this.properties     = utils.bind(this, this.properties);
@@ -1036,13 +1048,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             this._maybeValid = true;
             
             this._id = properties.__id;
-            this._actions = {};
-            var links = properties.__metadata.links || [];
-            for(var i = 0; i < links.length; i++) {
-                var action = links[i].rel;
-                var path = links[i].href;
-                this._actions[action] = path;
-            }
         },
         
         _validate: function(callback) {
@@ -1054,30 +1059,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             else {
                 callback(null, this);
             }
-        },
-        
-        _invoke: function(action, method, args, callback) {
-            callback = callback || function() {};
-            
-            var that = this;
-            this._validate(function(err) {
-                if (err) {
-                    callback(err);
-                }
-                                    
-                var path = that._actions[action];
-                if (!path) {
-                    callback("Invalid action: " + action);
-                }
-                
-                var handler = {
-                  "get": that.service.get,
-                  "post": that.service.post,
-                  "delete": that.service.del
-                }[method.toLowerCase()];
-                
-                handler.call(that.service, path, args, callback);
-            });
         },
         
         refresh: function() {
@@ -1099,6 +1080,8 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             this.refresh    = utils.bind(this, this.refresh);
             this.properties = utils.bind(this, this.properties);
             this.read       = utils.bind(this, this.read);
+            this.remove     = utils.bind(this, this.remove);
+            this.update     = utils.bind(this, this.update);
         },
         
         _load: function(properties) {
@@ -1131,7 +1114,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         
         // Fetch properties of the object. This will cause
         // a refresh if we are not currently valid.
-        fetch: function(callback) {
+        read: function(callback) {
             callback = callback || function() {};
             
             var that = this;
@@ -1140,29 +1123,29 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                    callback(err);
                } 
                else {
-                   callback(null, that._properties);
+                   callback(null, that);
                }
             });
         },
-
-        // Force a refesh of the entity, such that the returned
-        // properties are guaranteed current.
-        read: function(callback) {
+        
+        remove: function(callback) {
             callback = callback || function() {};
             
             var that = this;
-            this.refresh(function(err) {
-                if (err) {
-                    callback(err);
-                } 
-                else {
-                    callback(null, that._properties);
-                }
+            this.del("", {}, function() {
+                callback();
             });
         },
         
-        del: function(callback) {
-            this._invoke("remove", "DELETE", {}, callback);
+        update: function(props, callback) {
+            callback = callback || function() {};
+            
+            var that = this;
+            this.post("", props, function(err) {
+                callback(err, that);
+            });
+            
+            this._invalidate();
         }
     });
 
@@ -1340,17 +1323,17 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         },
         
         acknowledge: function(callback) {
-            this._invoke("acknowledge", "POST", {}, callback);
+            this.post("acknowledge", {}, callback);
             this._invalidate();
         },
         
         dispatch: function(callback) {
-            this._invoke("dispatch", "POST", {}, callback);
+            this.post("dispatch", {}, callback);
             this._invalidate();
         },
         
         history: function(callback) {
-            this._invoke("history", "GET", {}, callback);
+            this.post("history", {}, callback);
             this._invalidate();
         },
         
@@ -1388,23 +1371,23 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         },
 
         cancel: function(callback) {
-            this._invoke("control", "POST", {action: "cancel"}, callback);
+            this.post("control", {action: "cancel"}, callback);
             this._invalidate();
         },
 
         disablePreview: function(callback) {
-            this._invoke("control", "POST", {action: "disablepreview"}, callback);
+            this.post("control", {action: "disablepreview"}, callback);
             this._invalidate();
         },
 
         enablePreview: function(callback) {
-            this._invoke("control", "POST", {action: "enablepreview"}, callback);
+            this.post("control", {action: "enablepreview"}, callback);
             this._invalidate();
         },
 
         events: function(params, callback) {
             callback = callback || function() {};
-            this._invoke("events", "GET", params, function(err, response) { 
+            this.get("events", params, function(err, response) { 
                 if (err) {
                     callback(err);
                 }
@@ -1415,18 +1398,18 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         },
 
         finalize: function(callback) {
-            this._invoke("control", "POST", {action: "finalize"}, callback);
+            this.post("control", {action: "finalize"}, callback);
             this._invalidate();
         },
 
         pause: function(callback) {
-            this._invoke("control", "POST", {action: "pause"}, callback);
+            this.post("control", {action: "pause"}, callback);
             this._invalidate(); 
         },
 
         preview: function(params, callback) {
             callback = callback || function() {};
-            this._invoke("results_preview", "GET", params, function(err, response) {
+            this.get("results_preview", params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
@@ -1438,7 +1421,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
 
         results: function(params, callback) {
             callback = callback || function() {};
-            this._invoke("results", "GET", params, function(err, response) {
+            this.get("results", params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
@@ -1450,7 +1433,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
 
         searchlog: function(params, callback) {
             callback = callback || function() {};
-            this._invoke("log", "GET", params, function(err, response) {
+            this.get("log", params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
@@ -1461,17 +1444,17 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         },
 
         setPriority: function(value, callback) {
-            this._invoke("control", "POST", {action: "setpriority", priority: value}, callback);
+            this.post("control", {action: "setpriority", priority: value}, callback);
             this._invalidate();
         },
 
         setTTL: function(value, callback) {
-            this._invoke("control", "POST", {action: "setttl", ttl: value}, callback);
+            this.post("control", {action: "setttl", ttl: value}, callback);
             this._invalidate();
         },
 
         summary: function(params, callback) {
-            this._invoke("summary", "GET", params, function(err, response) {
+            this.get("summary", params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
@@ -1483,7 +1466,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
 
         timeline: function(params, callback) {
             callback = callback || function() {};
-            this._invoke("timeline", "GET", params, function(err, response) {
+            this.get("timeline", params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
@@ -1494,12 +1477,12 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         },
 
         touch: function(callback) {
-            this._invoke("control", "POST", {action: "touch"}, callback);
+            this.post("control", {action: "touch"}, callback);
             this._invalidate();
         },
 
         unpause: function(callback) {
-            this._invoke("control", "POST", {action: "unpause"}, callback);
+            this.post("control", {action: "unpause"}, callback);
             this._invalidate();
         }
     });
@@ -1828,19 +1811,22 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
     // * A condition function, which takes a callback, whose only parameter is whether the condition was met or not.
     // * A body function, which takes a no-parameter callback. The callback should be invoked when the body of the loop has finished.
     // * A done function, which takes no parameter, and will be invoked when the loop has finished.
-    root.whilst = function(obj, callback) {        
+    root.whilst = function(condition, body, callback) {  
+        condition = condition || function() { return false; };
+        body = body || function(done) { done(); };
         callback = callback || function() {};
+        
         var iterationDone = function(err) {
             if (err) {
                 callback(err);
             }
             else {
-                root.whilst(obj, callback);
+                root.whilst(condition, body, callback);
             }
         };
         
-        if (obj.condition()) {
-            obj.body(iterationDone);
+        if (condition()) {
+            body(iterationDone);
         }
         else {
             callback(null);
@@ -1848,7 +1834,12 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
     };
     
     root.parallel = function(tasks, callback) {
+        tasks = tasks || [];
         callback = callback || function() {};
+        
+        if (tasks.length === 0) {
+            callback();
+        }
         
         var tasksLeft = tasks.length;
         var results = [];
@@ -2077,24 +2068,22 @@ require.define("/lib/searcher.js", function (require, module, exports, __dirname
             var properties = {};
             var stopLooping = false;
             Async.whilst(
-                {
-                    condition: function() { return !stopLooping; },
-                    body: function(done) {
-                        job.read(function(err, props) {
-                            properties = props;
-                            
-                            // Dispatch for progress
-                            manager._dispatchCallbacks(manager.onProgressCallbacks, properties);
-                            
-                            // Dispatch for failure if necessary
-                            if (properties.isFailed) {
-                                manager._dispatchCallbacks(manager.onFailCallbacks, properties);
-                            }
-                            
-                            stopLooping = properties.isDone || manager.isJobDone || properties.isFailed;
-                            Async.sleep(1000, done);
-                        });
-                    }
+                function() { return !stopLooping; },
+                function(done) {
+                    job.refresh(function(err, job) {
+                        properties = job.properties();
+                        
+                        // Dispatch for progress
+                        manager._dispatchCallbacks(manager.onProgressCallbacks, properties);
+                        
+                        // Dispatch for failure if necessary
+                        if (properties.isFailed) {
+                            manager._dispatchCallbacks(manager.onFailCallbacks, properties);
+                        }
+                        
+                        stopLooping = properties.isDone || manager.isJobDone || properties.isFailed;
+                        Async.sleep(1000, done);
+                    });
                 },
                 function(err) {
                     manager.isJobDone = true;
@@ -2186,45 +2175,45 @@ exports.setup = function() {
     return {        
         "While success": function(test) {
             var i = 0;
-            Async.whilst({
-                condition: function() { return i++ < 3; },
-                body: function(done) {
+            Async.whilst(
+                function() { return i++ < 3; },
+                function(done) {
                     Async.sleep(0, function() { done(); });
+                },
+                function(err) {
+                    test.ok(!err);
+                    test.done();
                 }
-            },
-            function(err) {
-                test.ok(!err);
-                test.done();
-            });
+            );
         },
         
         "While success deep": function(test) {
             var i = 0;
-            Async.whilst({
-                condition: function() { return i++ < (isBrowser ? 100 : 10000); },
-                body: function(done) {
+            Async.whilst(
+                function() { return i++ < (isBrowser ? 100 : 10000); },
+                function(done) {
                     Async.sleep(0, function() { done(); });
+                },
+                function(err) {
+                    test.ok(!err);
+                    test.done();
                 }
-            },
-            function(err) {
-                test.ok(!err);
-                test.done();
-            });
+            );
         },
         
         "While error": function(test) {
             var i = 0;
-            Async.whilst({
-                condition: function() { return i++ < (isBrowser ? 100 : 10000); },
-                body: function(done) {
+            Async.whilst(
+                function() { return i++ < (isBrowser ? 100 : 10000); },
+                function(done) {
                     Async.sleep(0, function() { done(i === (isBrowser ? 50 : 10000) ? 1 : null); });
+                },
+                function(err) {
+                    test.ok(err);
+                    test.strictEqual(err, 1);
+                    test.done();
                 }
-            },
-            function(err) {
-                test.ok(err);
-                test.strictEqual(err, 1);
-                test.done();
-            });
+            );
         },
         
         "Parallel success": function(test) {
@@ -2285,6 +2274,16 @@ exports.setup = function() {
             );
         },
         
+        "Parallel no tasks": function(test) {
+            Async.parallel(
+                [],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                }
+            );
+        },
+        
         "Series success": function(test) {
             Async.series([
                 function(done) {
@@ -2339,6 +2338,16 @@ exports.setup = function() {
                     test.strictEqual(err, "ERROR");
                     test.ok(!one);
                     test.ok(!two);
+                    test.done();
+                }
+            );
+        },
+        
+        "Series no tasks": function(test) {
+            Async.series(
+                [],
+                function(err) {
+                    test.ok(!err);
                     test.done();
                 }
             );
@@ -2741,7 +2750,7 @@ exports.setup = function(http) {
             },        
 
             "Callback#success success+error": function(test) {
-                var deleteP = this.http.del("http://httpbin.org/delete", [], {}, 0, function(err, res) {
+                this.http.del("http://httpbin.org/delete", [], {}, 0, function(err, res) {
                     test.ok(!err);
                     test.strictEqual(res.json.url, "http://httpbin.org/delete");
                     test.done();
@@ -3855,11 +3864,10 @@ exports.setup = function(svc) {
                 password: svc.password
             });
 
-            var loginP = newService.login(function(err, success) {
-                    test.ok(success);
-                    test.done();
-                }
-            );
+            newService.login(function(err, success) {
+                test.ok(success);
+                test.done();
+            });
         },
 
         "Callback#login fail": function(test) {
@@ -3895,7 +3903,7 @@ exports.setup = function(svc) {
         },
 
         "Callback#get error": function(test) { 
-            var jobsP = this.service.get("search/jobs/1234_nosuchjob", {}, function(res) {
+            this.service.get("search/jobs/1234_nosuchjob", {}, function(res) {
                 test.ok(!!res);
                 test.strictEqual(res.status, 404);
                 test.done();
@@ -3904,12 +3912,12 @@ exports.setup = function(svc) {
 
         "Callback#post": function(test) { 
             var service = this.service;
-            var jobsP = this.service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
+            this.service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
                     var sid = res.odata.results.sid;
                     test.ok(sid);
 
                     var endpoint = "search/jobs/" + sid + "/control";
-                    var cancelP = service.post(endpoint, {action: "cancel"}, function(err, res) {
+                    service.post(endpoint, {action: "cancel"}, function(err, res) {
                             test.done();
                         }
                     );
@@ -3918,7 +3926,7 @@ exports.setup = function(svc) {
         },
         
         "Callback#post error": function(test) { 
-            var jobsP = this.service.post("search/jobs", {search: "index_internal | head 1"}, function(res) {
+            this.service.post("search/jobs", {search: "index_internal | head 1"}, function(res) {
                 test.ok(!!res);
                 test.strictEqual(res.status, 400);
                 test.done();
@@ -3927,21 +3935,19 @@ exports.setup = function(svc) {
 
         "Callback#delete": function(test) { 
             var service = this.service;
-            var jobsP = this.service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
-                    var sid = res.odata.results.sid;
-                    test.ok(sid);
-
-                    var endpoint = "search/jobs/" + sid;
-                    var deleteP = service.del(endpoint, {}, function(err, res) {
-                            test.done();
-                        }
-                    );
-                }
-            );
+            this.service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
+                var sid = res.odata.results.sid;
+                test.ok(sid);
+                
+                var endpoint = "search/jobs/" + sid;
+                service.del(endpoint, {}, function(err, res) {
+                    test.done();
+                });
+            });
         },
 
         "Callback#delete error": function(test) { 
-            var jobsP = this.service.del("search/jobs/1234_nosuchjob", {}, function(res) {
+            this.service.del("search/jobs/1234_nosuchjob", {}, function(res) {
                 test.ok(!!res);
                 test.strictEqual(res.status, 404);
                 test.done();
@@ -3949,18 +3955,17 @@ exports.setup = function(svc) {
         },
 
         "Callback#request get": function(test) { 
-            var jobsP = this.service.request("search/jobs?count=2", "GET", {"X-TestHeader": 1}, "", function(err, res) {
-                    test.strictEqual(res.odata.offset, 0);
-                    test.ok(res.odata.count <= res.odata.total_count);
-                    test.strictEqual(res.odata.count, 2);
-                    test.strictEqual(res.odata.count, res.odata.results.length);
-                    test.ok(res.odata.results[0].sid);
-
-                    test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
-
-                    test.done();
-                }
-            );
+            this.service.request("search/jobs?count=2", "GET", {"X-TestHeader": 1}, "", function(err, res) {
+                test.strictEqual(res.odata.offset, 0);
+                test.ok(res.odata.count <= res.odata.total_count);
+                test.strictEqual(res.odata.count, 2);
+                test.strictEqual(res.odata.count, res.odata.results.length);
+                test.ok(res.odata.results[0].sid);
+                
+                test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
+                
+                test.done();
+            });
         },
 
         "Callback#request post": function(test) { 
@@ -3969,21 +3974,19 @@ exports.setup = function(svc) {
                 "Content-Type": "application/x-www-form-urlencoded"  
             };
             var service = this.service;
-            var jobsP = this.service.request("search/jobs", "POST", headers, body, function(err, res) {
-                    var sid = res.odata.results.sid;
-                    test.ok(sid);
-
-                    var endpoint = "search/jobs/" + sid + "/control";
-                    var cancelP = service.post(endpoint, {action: "cancel"}, function(err, res) {
-                            test.done();
-                        }
-                    );
-                }
-            );
+            this.service.request("search/jobs", "POST", headers, body, function(err, res) {
+                var sid = res.odata.results.sid;
+                test.ok(sid);
+                
+                var endpoint = "search/jobs/" + sid + "/control";
+                service.post(endpoint, {action: "cancel"}, function(err, res) {
+                    test.done();
+                });
+            });
         },
 
         "Callback#request error": function(test) { 
-            var jobsP = this.service.request("search/jobs/1234_nosuchjob", "GET", {"X-TestHeader": 1}, "", function(res) {
+            this.service.request("search/jobs/1234_nosuchjob", "GET", {"X-TestHeader": 1}, "", function(res) {
                 test.ok(!!res);
                 test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
                 test.strictEqual(res.status, 404);
@@ -4283,14 +4286,12 @@ exports.setup = function(svc) {
                     var properties = {};
 
                     Async.whilst(
-                        {
-                            condition: function() { return properties.dispatchState !== "DONE"; },
-                            body: function(iterationDone) {
-                                job.read(function(err, props) {
-                                    properties = props;
-                                    Async.sleep(1000, iterationDone); 
-                                });
-                            },
+                        function() { return properties.dispatchState !== "DONE"; },
+                        function(iterationDone) {
+                            job.refresh(function(err, job) {
+                                properties = job.properties();
+                                Async.sleep(1000, iterationDone); 
+                            });
                         },
                         function() {
                             job.results({}, function(err, results) {
@@ -4298,7 +4299,7 @@ exports.setup = function(svc) {
                                 test.strictEqual(results.fields.length, 1);
                                 test.strictEqual(results.fields[0], "count");
                                 test.strictEqual(results.rows[0][0], "1");
-
+                                
                                 job.cancel(function() { test.done(); });
                             });
                         }
@@ -4339,9 +4340,73 @@ exports.setup = function(svc) {
                     apps.contains(appName, function(err, found, entity) {
                         test.ok(found);
                         test.ok(entity);
-                        app.del(function() {
+                        app.remove(function() {
                             test.done();
                         });
+                    });
+                });
+            },
+            
+            "Callback#create + modify app": function(test) {
+                var DESCRIPTION = "TEST DESCRIPTION";
+                var VERSION = "1.1";
+                
+                var name = "jssdk_testapp_" + getNextId();
+                var apps = this.service.apps();
+                
+                Async.chain([
+                    function(callback) {
+                        apps.create({name: name}, callback);     
+                    },
+                    function(app, callback) {
+                        test.ok(app.isValid());
+                        app.update({
+                            description: DESCRIPTION,
+                            version: VERSION
+                        }, callback);
+                    },
+                    function(app, callback) {
+                        test.ok(!!app);
+                        test.ok(!app.isValid());
+                        app.refresh(callback);
+                    },
+                    function(app, callback) {
+                        test.ok(app);
+                        test.ok(app.isValid());
+                        var properties = app.properties();
+                        
+                        test.strictEqual(properties.description, DESCRIPTION);
+                        test.strictEqual(properties.version, VERSION);
+                        
+                        app.remove(callback);
+                    },
+                    function(callback) {
+                        test.done();
+                        callback();
+                    }
+                ]);
+            },
+            
+            "Callback#delete test applications": function(test) {
+                var apps = this.service.apps();
+                apps.list(function(err, appList) {
+                    test.ok(appList.length > 0);
+                    
+                    var deletes = [];
+                    for(var i = 0; i < appList.length; i++) {
+                        var app = appList[i];
+                        if (utils.startsWith(app.properties().__name, "jssdk_")) {
+                            (function(_app) {
+                                deletes.push(function(callback) {
+                                    _app.remove(callback);
+                                })
+                            })(app);  
+                        }
+                    }
+                    
+                    Async.parallel(deletes, function(err) {
+                        test.ok(!err);
+                        test.done();
                     });
                 });
             }
@@ -4487,21 +4552,19 @@ exports.setup = function(svc) {
                     var totalResultCount = 0;
                     var iterationCount = 0;
                     var hasMore = true;
-                    var iterateP = Async.whilst(
-                        {
-                            condition: function() { return hasMore; },
-                            body: function(done) {
-                                iterator.next(function(err, more, results) {
-                                    hasMore = more;
-                                    
-                                    if (more) {
-                                        iterationCount++;
-                                        totalResultCount += results.rows.length;
-                                    }
-                                    
-                                    done();
-                                });
-                            }
+                    Async.whilst(
+                        function() { return hasMore; },
+                        function(done) {
+                            iterator.next(function(err, more, results) {
+                                hasMore = more;
+                                
+                                if (more) {
+                                    iterationCount++;
+                                    totalResultCount += results.rows.length;
+                                }
+                                
+                                done();
+                            });
                         },
                         function(err) {
                             test.ok(!err);
@@ -4539,21 +4602,19 @@ exports.setup = function(svc) {
                     var totalResultCount = 0;
                     var iterationCount = 0;
                     var hasMore = true;
-                    var iterateP = Async.whilst(
-                        {
-                            condition: function() { return hasMore; },
-                            body: function(done) {
-                                iterator.next(function(err, more, results) {
-                                    hasMore = more;
-                                    
-                                    if (more) {
-                                        iterationCount++;
-                                        totalResultCount += results.rows.length;
-                                    }
-                                    
-                                    done();
-                                });
-                            }
+                    Async.whilst(
+                        function() { return hasMore; },
+                        function(done) {
+                            iterator.next(function(err, more, results) {
+                                hasMore = more;
+                                
+                                if (more) {
+                                    iterationCount++;
+                                    totalResultCount += results.rows.length;
+                                }
+                                
+                                done();
+                            });
                         },
                         function(err) {
                             test.ok(!err);
@@ -4591,21 +4652,19 @@ exports.setup = function(svc) {
                     var totalResultCount = 0;
                     var iterationCount = 0;
                     var hasMore = true;
-                    var iterateP = Async.whilst(
-                        {
-                            condition: function() { return hasMore; },
-                            body: function(done) {
-                                iterator.next(function(err, more, results) {
-                                    hasMore = more;
-                                    
-                                    if (more) {
-                                        iterationCount++;
-                                        totalResultCount += results.rows.length;
-                                    }
-                                    
-                                    done();
-                                });
-                            }
+                    Async.whilst(
+                        function() { return hasMore; },
+                        function(done) {
+                            iterator.next(function(err, more, results) {
+                                hasMore = more;
+                                
+                                if (more) {
+                                    iterationCount++;
+                                    totalResultCount += results.rows.length;
+                                }
+                                
+                                done();
+                            });
                         },
                         function(err) {
                             test.ok(!err);
@@ -5165,14 +5224,14 @@ require.define("/examples/jobs.js", function (require, module, exports, __dirnam
                 // If certain job SIDs are provided,
                 // then we simply read the properties of those jobs
                 this._foreach(sids, function(job, done) {
-                    job.read(function(err, props) {
+                    job.refresh(function(err, job) {
                         if (err) {
                             done(err);
                             return;
                         }
                         
                         console.log("Job " + job.sid + ": ");
-                        var properties = props;
+                        var properties = job.properties();
                         for(var key in properties) {
                             // Skip some keys that make the output hard to read
                             if (utils.contains(["performance"], key)) {
