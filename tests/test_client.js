@@ -147,6 +147,70 @@ exports.setup = function(svc) {
                         });
                     });
                 });
+            },
+            
+            "Callback#create + modify app": function(test) {
+                var DESCRIPTION = "TEST DESCRIPTION";
+                var VERSION = "1.1";
+                
+                var name = "jssdk_testapp_" + getNextId();
+                var apps = this.service.apps();
+                
+                Async.chain([
+                    function(callback) {
+                        apps.create({name: name}, callback);     
+                    },
+                    function(app, callback) {
+                        test.ok(app.isValid());
+                        app.update({
+                            description: DESCRIPTION,
+                            version: VERSION
+                        }, callback);
+                    },
+                    function(app, callback) {
+                        test.ok(!!app);
+                        test.ok(!app.isValid());
+                        app.refresh(callback);
+                    },
+                    function(app, callback) {
+                        test.ok(app);
+                        test.ok(app.isValid());
+                        var properties = app.properties();
+                        
+                        test.strictEqual(properties.description, DESCRIPTION);
+                        test.strictEqual(properties.version, VERSION);
+                        
+                        app.remove(callback);
+                    },
+                    function(callback) {
+                        test.done();
+                        callback();
+                    }
+                ]);
+            },
+            
+            "Callback#delete test applications": function(test) {
+                var apps = this.service.apps();
+                apps.list(function(err, appList) {
+                    test.ok(appList.length > 0);
+                    
+                    var deletes = [];
+                    for(var i = 0; i < appList.length; i++) {
+                        var app = appList[i];
+                        if (utils.startsWith(app.properties().__name, "jssdk_")) {
+                            (function(_app) {
+                                deletes.push(function(callback) {
+                                    _app.remove(callback);
+                                })
+                            })(app);  
+                        }
+                    }
+                    
+                    Async.parallel(deletes, function(err) {
+                        test.ok(!err);
+                        test.done();
+                    });
+                });
             }
         },
         
