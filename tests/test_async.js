@@ -121,6 +121,16 @@ exports.setup = function() {
             );
         },
         
+        "Parallel no tasks": function(test) {
+            Async.parallel(
+                [],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                }
+            );
+        },
+        
         "Series success": function(test) {
             Async.series([
                 function(done) {
@@ -175,6 +185,16 @@ exports.setup = function() {
                     test.strictEqual(err, "ERROR");
                     test.ok(!one);
                     test.ok(!two);
+                    test.done();
+                }
+            );
+        },
+        
+        "Series no tasks": function(test) {
+            Async.series(
+                [],
+                function(err) {
+                    test.ok(!err);
                     test.done();
                 }
             );
