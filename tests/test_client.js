@@ -91,8 +91,8 @@ exports.setup = function(svc) {
                         {
                             condition: function() { return properties.dispatchState !== "DONE"; },
                             body: function(iterationDone) {
-                                job.read(function(err, props) {
-                                    properties = props;
+                                job.refresh(function(err, job) {
+                                    properties = job.properties();
                                     Async.sleep(1000, iterationDone); 
                                 });
                             },

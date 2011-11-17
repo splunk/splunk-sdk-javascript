@@ -305,14 +305,14 @@
                 // If certain job SIDs are provided,
                 // then we simply read the properties of those jobs
                 this._foreach(sids, function(job, done) {
-                    job.read(function(err, props) {
+                    job.refresh(function(err, job) {
                         if (err) {
                             done(err);
                             return;
                         }
                         
                         console.log("Job " + job.sid + ": ");
-                        var properties = props;
+                        var properties = job.properties();
                         for(var key in properties) {
                             // Skip some keys that make the output hard to read
                             if (utils.contains(["performance"], key)) {
