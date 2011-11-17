@@ -44,6 +44,7 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         self.router.add(Route('/search/jobs/<sid>/<data_source>', {"GET": self.job_data}, 'job_data'))
         self.router.add(Route('/search/jobs/<sid>', {"GET": self.eai, "DELETE": self.delete_job}, 'job_info'))
         self.router.add(Route('/search/jobs', {"GET": self.eai, "POST": self.create_job}, 'jobs'))
+        self.router.add(Route('/properties/<file>/<stanza>', self.stanza_info, 'properties_stanza_info'))
         self.router.add(Route('/auth/login', {"POST": self.auth}, 'auth'))
         self.router.add(Route('/<:.*>', self.eai, 'eai'))
         
@@ -140,7 +141,7 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
             if hasattr(e, 'extendedMessages') and e.extendedMessages:
                 for message in e.extendedMessages:
                     output.messages.append(message)
-                    
+                  
             content = self.render_odata(output)
         except Exception, e:
             status = 500
@@ -148,8 +149,9 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
                 'type': 'ERROR',
                 'text': '%s' % e
             })
-            
+          
             content = self.render_odata(output)
+            raise e
             
         self.set_response(status, content)
     
@@ -193,6 +195,57 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         
         odata = self.atom2odata(serverResponse, entity_class=self.scrubbed_path, timings=timings, messages=messages)
         return (responseCode, self.render_odata(odata))
+             
+    def stanza_info(self, file, stanza, *args, **kwargs):
+        output = ODataEntity()
+        responseCode = 500
+        serverResponse = None
+        messages = []
+        
+        # fetch data
+        try:
+            serverStatus, serverResponse = self.forward_request()
+            responseCode = serverStatus.status
+        except splunk.RESTException, e:
+            responseCode = e.statusCode
+            messages.append({
+                'type': 'HTTP',
+                'text': '%s %s' % (e.statusCode, e.msg)
+            })
+            if e.extendedMessages:
+                messages.extend(e.extendedMessages)
+        
+        # convert XML to struct
+        if serverResponse:
+            node = et.fromstring(serverResponse)
+            output.data = self._parseStanza(node)
+            
+            output.id = node.xpath('a:id', namespaces={'a': ATOM_NS})[0].text
+            output.name = node.xpath('a:title', namespaces={'a': ATOM_NS})[0].text
+            
+            published_info = node.xpath('a:published', namespaces={'a': ATOM_NS})
+            if published_info:
+                output.published = published_info[0].text
+                
+            updated_info = node.xpath('a:updated', namespaces={'a': ATOM_NS})
+            if updated_info:
+                output.updated = updated_info[0].text
+                
+            author_info = node.xpath('a:author/a:name', namespaces={'a': ATOM_NS})
+            if author_info:
+                output.author = author_info[0].text
+            
+            # service may return messages in the body; try to parse them
+            try:
+                msg = splunk.rest.extractMessages(node)
+                if msg:
+                    messages.append(msg)
+            except:
+                raise
+                
+        # package and return
+        output.messages = messages
+        return responseCode, self.render_odata(output)
                 
     def job_control(self, *args, **kwargs):
         output = ODataEntity()
@@ -440,9 +493,20 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
                 
                 # set collection data
                 try:
-                    output.offset = int(root.xpath('o:startIndex', namespaces={'o': OPENSEARCH_NS})[0].text)
-                    output.total_count = int(root.xpath('o:totalResults', namespaces={'o': OPENSEARCH_NS})[0].text)
-                    output.count = min(output.total_count, len(root.xpath('a:entry', namespaces={'a': ATOM_NS})))
+                    try:
+                        output.offset = int(root.xpath('o:startIndex', namespaces={'o': OPENSEARCH_NS})[0].text)
+                        output.total_count = int(root.xpath('o:totalResults', namespaces={'o': OPENSEARCH_NS})[0].text)
+                    except:
+                        output.total_count = None
+                        pass
+                        
+                    # We might not have a total_count field, so we have to check if it is "none" or actually
+                    # 0, since they are both false-y values
+                    if output.total_count is None:
+                        output.count = len(root.xpath('a:entry', namespaces={'a': ATOM_NS}))
+                    else:
+                        output.count = min(output.total_count, len(root.xpath('a:entry', namespaces={'a': ATOM_NS})))
+                        
                     output.id = root.xpath('a:id', namespaces={'a': ATOM_NS})[0].text
                     
                     for link in root.xpath('a:link', namespaces={'a': ATOM_NS}):
@@ -470,7 +534,12 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         
         tmpEntity = ODataEntity()
         tmpEntity.entity_class = entity_class
-        tmpEntity.data = splunk.rest.format.nodeToPrimitive(node.xpath('a:content', namespaces={'a': ATOM_NS})[0][0])
+        
+        tmpEntity.data = {}
+        content_xpath = node.xpath('a:content', namespaces={'a': ATOM_NS})
+        if (len(content_xpath) > 0):
+            content_node = content_xpath[0][0]
+            tmpEntity.data = splunk.rest.format.nodeToPrimitive(content_node)
     
         # move the metadata around
         if isinstance(tmpEntity.data, dict):
@@ -506,10 +575,29 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         published_info = node.xpath('a:published', namespaces={'a': ATOM_NS})
         if published_info:
             tmpEntity.data["published"] = published_info[0].text
-        tmpEntity.data["updated"] = node.xpath('a:updated', namespaces={'a': ATOM_NS})[0].text
-        tmpEntity.data["author"] = node.xpath('a:author/a:name', namespaces={'a': ATOM_NS})[0].text
+            
+        updated_info = node.xpath('a:updated', namespaces={'a': ATOM_NS})
+        if updated_info:
+            tmpEntity.data["updated"] = updated_info[0].text
+            
+        author_info = node.xpath('a:author/a:name', namespaces={'a': ATOM_NS})
+        if author_info:
+            tmpEntity.data["author"] = author_info[0].text
         
         return tmpEntity
+        
+    def _parseStanza(self, root):
+        content = {}
+        
+        for entry in root.xpath('a:entry', namespaces={'a': ATOM_NS}):
+            try:
+                key = entry.xpath("a:title", namespaces={'a': ATOM_NS})[0].text
+                value = entry.xpath("a:content", namespaces={'a': ATOM_NS})[0].text
+                content[key] = value
+            except:
+                logger.info("Error parsing KV-pair from stanza")
+            
+        return content
         
     def _parseResultData(self, root, format=ResultFormat.ROW):
         '''

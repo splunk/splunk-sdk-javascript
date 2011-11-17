@@ -22,7 +22,7 @@ class ODataResponse(object):
         if hasattr(self.results, 'id'):
             output['d']['__id'] = self.results.id
         if hasattr(self.results, 'total_count'):
-            output['d']['__total_count'] = self.results.total_count
+            output['d']['__total_count'] = self.results.total_count if self.results.total_count else 0
         if hasattr(self.results, 'offset'):
             output['d']['__offset'] = self.results.offset
         if hasattr(self.results, 'count'):
