@@ -28,9 +28,17 @@ class ODataResponse(object):
         if hasattr(self.results, 'count'):
             output['d']['__count'] = self.results.count
         if hasattr(self.results, 'messages'):
-            output['d']['__messages'] = self.results.messages
+            def extract_message(msg):
+                if isinstance(msg, list) and len(msg) == 1:
+                    msg = msg[0]
+                    
+                return msg
+                
+            output['d']['__messages'] = [extract_message(msg) for msg in self.results.messages]
         if hasattr(self.results, 'metadata'):
             output['d']['__metadata'] = self.results.metadata.to_json()
+        if hasattr(self.results, 'name'):
+            output['d']['__name'] = self.results.name
         if hasattr(self.results, 'timings'):
             output['d']['__timings'] = []
             for i, item in enumerate(self.results.timings):

@@ -44,7 +44,7 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         self.router.add(Route('/search/jobs/<sid>/<data_source>', {"GET": self.job_data}, 'job_data'))
         self.router.add(Route('/search/jobs/<sid>', {"GET": self.eai, "DELETE": self.delete_job}, 'job_info'))
         self.router.add(Route('/search/jobs', {"GET": self.eai, "POST": self.create_job}, 'jobs'))
-        self.router.add(Route('/properties/<file>/<stanza>', self.stanza_info, 'properties_stanza_info'))
+        self.router.add(Route('/properties/<file>/<stanza>', self.properties_stanza, 'properties_stanza_info'))
         self.router.add(Route('/auth/login', {"POST": self.auth}, 'auth'))
         self.router.add(Route('/<:.*>', self.eai, 'eai'))
         
@@ -195,8 +195,8 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         
         odata = self.atom2odata(serverResponse, entity_class=self.scrubbed_path, timings=timings, messages=messages)
         return (responseCode, self.render_odata(odata))
-             
-    def stanza_info(self, file, stanza, *args, **kwargs):
+            
+    def properties_stanza(self, file, stanza, *args, **kwargs):
         output = ODataEntity()
         responseCode = 500
         serverResponse = None
@@ -218,22 +218,24 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         # convert XML to struct
         if serverResponse:
             node = et.fromstring(serverResponse)
-            output.data = self._parseStanza(node)
             
-            output.id = node.xpath('a:id', namespaces={'a': ATOM_NS})[0].text
-            output.name = node.xpath('a:title', namespaces={'a': ATOM_NS})[0].text
-            
-            published_info = node.xpath('a:published', namespaces={'a': ATOM_NS})
-            if published_info:
-                output.published = published_info[0].text
+            if self.method == "GET":
+                output.data = self._parseStanza(node)
                 
-            updated_info = node.xpath('a:updated', namespaces={'a': ATOM_NS})
-            if updated_info:
-                output.updated = updated_info[0].text
+                output.id = node.xpath('a:id', namespaces={'a': ATOM_NS})[0].text
+                output.name = node.xpath('a:title', namespaces={'a': ATOM_NS})[0].text
                 
-            author_info = node.xpath('a:author/a:name', namespaces={'a': ATOM_NS})
-            if author_info:
-                output.author = author_info[0].text
+                published_info = node.xpath('a:published', namespaces={'a': ATOM_NS})
+                if published_info:
+                    output.published = published_info[0].text
+                    
+                updated_info = node.xpath('a:updated', namespaces={'a': ATOM_NS})
+                if updated_info:
+                    output.updated = updated_info[0].text
+                    
+                author_info = node.xpath('a:author/a:name', namespaces={'a': ATOM_NS})
+                if author_info:
+                    output.author = author_info[0].text
             
             # service may return messages in the body; try to parse them
             try:
@@ -515,6 +517,7 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
                             'rel': link.get('rel')
                         })
                         
+                    output.name = root.xpath('a:title', namespaces={'a': ATOM_NS})[0].text
                 except:
                     pass
                 
