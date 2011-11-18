@@ -156,7 +156,7 @@ exports.setup = function() {
                 
                 var context = this;
                 Async.parallelMap(
-                    function(create, done) {
+                    function(create, idx, done) {
                         context.run("create", [], create, function(err, job) {
                             test.ok(!err);
                             test.ok(job);

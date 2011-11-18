@@ -206,7 +206,7 @@
             _check_sids('cancel', sids);
 
             // For each of the supplied sids, cancel the job.
-            this._foreach(sids, function(job, done) {
+            this._foreach(sids, function(job, idx, done) {
                 job.cancel(function (err) { 
                     if (err) {
                         done(err);
@@ -225,7 +225,7 @@
             var cmdline = _makeCommandLine("events", argv, FLAGS_EVENTS, false);
 
             // For each of the passed in sids, get the relevant events
-            this._foreach(cmdline.arguments, function(job, done) {
+            this._foreach(cmdline.arguments, function(job, idx, done) {
                 console.log("===== EVENTS @ " + job.sid + " ====="); 
 
                 job.events(cmdline.options, function(err, data) {
@@ -304,7 +304,7 @@
             else {
                 // If certain job SIDs are provided,
                 // then we simply read the properties of those jobs
-                this._foreach(sids, function(job, done) {
+                this._foreach(sids, function(job, idx, done) {
                     job.refresh(function(err, job) {
                         if (err) {
                             done(err);
@@ -334,7 +334,7 @@
             var cmdline = _makeCommandLine("results", argv, FLAGS_RESULTS, false);
 
             // For each of the passed in sids, get the relevant results
-            this._foreach(cmdline.arguments, function(job, done) {
+            this._foreach(cmdline.arguments, function(job, idx, done) {
                 console.log("===== PREVIEW @ " + job.sid + " ====="); 
 
                 job.events(cmdline.options, function(err, data) {
@@ -366,7 +366,7 @@
             var cmdline = _makeCommandLine("results", argv, FLAGS_RESULTS, false);
 
             // For each of the passed in sids, get the relevant results
-            this._foreach(cmdline.arguments, function(job, done) {
+            this._foreach(cmdline.arguments, function(job, idx, done) {
                 console.log("===== RESULTS @ " + job.sid + " ====="); 
 
                 job.events(cmdline.options, function(err, data) {
