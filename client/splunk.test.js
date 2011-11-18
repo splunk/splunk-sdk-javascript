@@ -652,7 +652,7 @@ require.define("/lib/paths.js", function (require, module, exports, __dirname, _
     root.Paths = {
         apps: "apps/local",
         capabilities: "authorization/capabilities",
-        configuration: null,
+        configurations: "configs",
         deploymentClient: "deployment/client",
         deploymentServers: "deployment/server",
         deploymentServerClasses: "deployment/serverclass",
@@ -672,6 +672,7 @@ require.define("/lib/paths.js", function (require, module, exports, __dirname, _
         login: "/services/auth/login",
         messages: "messages",
         passwords: "admin/passwords",
+        properties: "properties",
         roles: "authentication/roles",
         savedSearches: "saved/searches",
         settings: "server/settings",
@@ -818,6 +819,10 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     root.isArray = Array.isArray || function(obj) {
         return root.toString.call(obj) === '[object Array]';
     };
+
+    root.isFunction = function(obj) {
+      return !!(obj && obj.constructor && obj.call && obj.apply);
+    };
 })();
 });
 
@@ -862,14 +867,28 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
             this.jobs       = utils.bind(this, this.jobs);
+            this.clone      = utils.bind(this, this.clone);
         },
         
-        get: function(path) {
-            return this._super.apply(this, arguments);
+        clone: function(owner, namespace) {
+            return new root.Service(this.http, {
+                scheme: this.scheme,
+                host: this.host,   
+                port: this.port,       
+                username: this.username,
+                password: this.password,
+                owner: owner,
+                namespace: namespace, 
+                sessionKey: this.sessionKey
+            });
         },
         
         apps: function() {
             return new root.Collection(this, Paths.apps);
+        },
+        
+        configurations: function() {
+            return new root.Configurations(this);
         },
         
         // Configurations
@@ -926,6 +945,10 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         
         loggers: function() {
             return new root.Collection(this, Paths.loggers);
+        },
+        
+        properties: function() {
+            return new root.Properties(this)
         },
         
         // Messages
@@ -1037,7 +1060,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             this._validate   = utils.bind(this, this._validate);
             this.refresh     = utils.bind(this, this.refresh);
             this.isValid     = utils.bind(this, this.isValid);
-            this.properties     = utils.bind(this, this.properties);
+            this.properties = utils.bind(this, this.properties);
         },
         
         _invalidate: function() {
@@ -1046,8 +1069,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         
         _load: function(properties) {
             this._maybeValid = true;
-            
-            this._id = properties.__id;
+            this._properties = properties;
         },
         
         _validate: function(callback) {
@@ -1067,7 +1089,13 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         
         isValid: function() {
             return this._maybeValid;
-        }
+        },
+        
+        // A prompt way to get the *current* properties of
+        // an entity
+        properties: function(callback) {
+            return this._properties;
+        },
     });
     
     root.Entity = root.Resource.extend({
@@ -1078,7 +1106,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             // properly when it is passed as a callback.
             this._load      = utils.bind(this, this._load);
             this.refresh    = utils.bind(this, this.refresh);
-            this.properties = utils.bind(this, this.properties);
             this.read       = utils.bind(this, this.read);
             this.remove     = utils.bind(this, this.remove);
             this.update     = utils.bind(this, this.update);
@@ -1088,7 +1115,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             properties = utils.isArray(properties) ? properties[0] : properties;
             
             this._super(properties);
-            this._properties = properties;
         },
         
         refresh: function(callback) {
@@ -1104,12 +1130,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                     callback(null, that);
                 }
             });
-        },
-        
-        // A prompt way to get the *current* properties of
-        // an entity
-        properties: function(callback) {
-            return this._properties;
         },
         
         // Fetch properties of the object. This will cause
@@ -1162,6 +1182,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             this.create   = utils.bind(this, this.create);
             this.list     = utils.bind(this, this.list);
             this.contains = utils.bind(this, this.contains);
+            this.item     = utils.bind(this, this.item);
             
             var that = this;
             handlers = handlers || {};
@@ -1169,22 +1190,54 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                 return new root.Entity(collection.service, collection.path + "/" + encodeURIComponent(props.__name));
             };
             this._isSame = handlers.isSame || function(entity, id) { 
-                return id === entity.properties().__name; 
+                return id === entity.properties().__name;
             };
+            this._loadOnCreate = handlers.loadOnCreate || function() { return false; };
+            this._loadOnItem = handlers.loadOnItem || function() { return true; };
+            
         },
         
         _load: function(properties) {
             this._super(properties);
             
             var entities = [];
+            var entitiesByName = {};
             var entityPropertyList = properties.results || [];
             for(var i = 0; i < entityPropertyList.length; i++) {
                 var props = entityPropertyList[i];
                 var entity = this._item(this, props);
                 entity._load(props);
+                
+                // If we don't want to load when we see the item,
+                // we still load it (to get things like ID/name),
+                // and just invalidate it
+                if (!this._loadOnItem()) {
+                    entity._invalidate();
+                }
                 entities.push(entity);
+                entitiesByName[props.__name] = entity;
             }
             this._entities = entities;
+            this._entitiesByName = entitiesByName;
+        },
+        
+        item: function(name, callback) {
+            callback = callback || function() {};
+            var that = this;
+            this._validate(function(err) {
+                if (err) {
+                    callback(err);
+                } 
+                else {            
+                    if (that._entitiesByName.hasOwnProperty(name)) {
+                        callback(null, that._entitiesByName[name]);
+                    }  
+                    else {
+                        callback(new Error("No entity with name: " + name));
+                    }
+                }
+            });
+
         },
         
         refresh: function(callback) {
@@ -1217,9 +1270,15 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                     }
                     
                     var entity = that._item(that, props);
-                    that._invalidate();
+                    entity._load(props);
+                    if (!that._loadOnCreate()) {
+                        that._invalidate();
+                        entity.refresh(callback);
+                    }
+                    else {
+                        callback(null, entity);
+                    }
                     
-                    entity.refresh(callback);
                 }
             });
         },
@@ -1266,6 +1325,104 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                     callback(null, found, foundEntity);
                 }
             });
+        }
+    });
+    
+    root.Properties = root.Collection.extend({
+        init: function(service) {
+           this._super(service, Paths.properties, {
+               item: function(collection, props) {
+                   var name = props.__name;
+                   return new root.PropertyFile(collection.service, name);
+               },
+               loadOnItem: function() { return false; }
+           });  
+        },
+
+        create: function(filename, callback) {
+            callback = callback || function() {};
+            
+            var that = this;
+            this.post("", {__conf: filename}, function(err, response) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    var entity = new root.PropertyFile(that.service, filename);
+                    entity.refresh(callback);
+                }
+            });
+        }
+    });
+    
+    root.PropertyFile = root.Collection.extend({
+        init: function(service, name) {
+            this._super(service, Paths.properties + "/" + encodeURIComponent(name), {
+                loadOnItem: function() { return false; }
+            });
+        },
+        
+        create: function(stanzaName, callback) {
+            callback = callback || function() {};
+            
+            var that = this;
+            this.post("", {__stanza: stanzaName}, function(err, response) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    var entity = new root.Entity(that.service, that.path + "/" + stanzaName);
+                    entity.refresh(callback);
+                }
+            });
+        }
+    });
+    
+    root.Configurations = root.Collection.extend({
+        init: function(service) {
+           this._super(service, Paths.properties, {
+               item: function(collection, props) {
+                   var name = props.__name;
+                   return new root.ConfigurationFile(collection.service, name);
+               },
+               loadOnItem: function() { return false; }
+           });  
+        },
+
+        create: function(filename, callback) {
+            callback = callback || function() {};
+            
+            var that = this;
+            this.post("", {__conf: filename}, function(err, response) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    var entity = new root.ConfigurationFile(that.service, filename);
+                    entity.refresh(callback);
+                }
+            });
+        }
+    });
+    
+    root.ConfigurationFile = root.Collection.extend({
+        init: function(service, name) {
+            var path = Paths.configurations + "/conf-" + encodeURIComponent(name);
+            this._super(service, path, {
+                loadOnCreate: function() { return true; }
+            });
+        },
+        
+        create: function(stanzaName, values, callback) {
+            if (utils.isFunction(values) && !callback) {
+                callback = values;
+                values = {};
+            }
+            
+            values = values || {};
+            values["name"] = stanzaName;
+            
+            this._super(values, callback);
         }
     });
 
@@ -1745,6 +1902,7 @@ require.define("/lib/odata.js", function (require, module, exports, __dirname, _
         }
 
         output["__metadata"] = d["__metadata"];
+        output["__name"] = d["__name"];
         if (d.results) {
             output.results = d.results;
         }
@@ -1910,12 +2068,12 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
         callback = callback || function() {};
         
         var tasks = [];
-        var createTask = function(val) {
-            return function(done) { fn(val, done); };
+        var createTask = function(val, idx) {
+            return function(done) { fn(val, idx, done); };
         };
         
         for(var i = 0; i < vals.length; i++) {
-            tasks.push(createTask(vals[i]));
+            tasks.push(createTask(vals[i], i));
         }
         
         root.parallel(tasks, function(err) {
@@ -1935,12 +2093,12 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
         callback = callback || function() {};
         
         var tasks = [];
-        var createTask = function(val) {
-            return function(done) { fn(val, done); };
+        var createTask = function(val, idx) {
+            return function(done) { fn(val, idx, done); };
         };
         
         for(var i = 0; i < vals.length; i++) {
-            tasks.push(createTask(vals[i]));
+            tasks.push(createTask(vals[i], i));
         }
         
         root.series(tasks, function(err) {
@@ -1952,6 +2110,22 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
                 args.shift();
                 callback(null, args);
             }
+        });
+    };
+    
+    root.parallelEach = function(fn, vals, callback) {
+        callback = callback || function() {};
+        
+        root.parallelMap(fn, vals, function(err, result) {
+            callback(err); 
+        });
+    };
+    
+    root.seriesEach = function(fn, vals, callback) {
+        callback = callback || function() {};
+        
+        root.seriesMap(fn, vals, function(err, result) {
+            callback(err); 
         });
     };
     
@@ -2355,7 +2529,7 @@ exports.setup = function() {
         
         "Parallel map success": function(test) {
             Async.parallelMap(
-                function(val, done) { 
+                function(val, idx, done) { 
                     done(null, val + 1);
                 },
                 [1, 2, 3],
@@ -2369,9 +2543,29 @@ exports.setup = function() {
             );
         },
         
+        "Parallel map reorder success": function(test) {
+            Async.parallelMap(
+                function(val, idx, done) { 
+                    if (val === 2) {
+                        Async.sleep(100, function() { done(null, val+1); });   
+                    }
+                    else {
+                        done(null, val + 1);
+                    }
+                },
+                [1, 2, 3],
+                function(err, vals) {
+                    test.strictEqual(vals[0], 2);
+                    test.strictEqual(vals[1], 3);
+                    test.strictEqual(vals[2], 4);
+                    test.done();
+                }
+            );
+        },
+        
         "Parallel map error": function(test) {
             Async.parallelMap(
-                function(val, done) { 
+                function(val, idx, done) { 
                     if (val === 2) {
                         done(5);
                     }
@@ -2392,7 +2586,7 @@ exports.setup = function() {
         "Series map success": function(test) {
             var keeper = 1;
             Async.seriesMap(
-                function(val, done) { 
+                function(val, idx, done) { 
                     test.strictEqual(keeper++, val);
                     done(null, val + 1);
                 },
@@ -2410,7 +2604,7 @@ exports.setup = function() {
         
         "Series map error": function(test) {
             Async.seriesMap(
-                function(val, done) { 
+                function(val, idx, done) { 
                     if (val === 2) {
                         done(5);
                     }
@@ -2517,7 +2711,50 @@ exports.setup = function() {
                     test.done();
                 }
             );
-        }
+        },
+        
+        "Parallel each reodrder success": function(test) {
+            var total = 0;
+            Async.parallelEach(
+                function(val, idx, done) { 
+                    var go = function() {
+                        total += val;
+                        done();
+                    }
+                    
+                    if (idx == 1) {
+                        Async.sleep(100, go);    
+                    }
+                    else {
+                        go();
+                    }
+                },
+                [1, 2, 3],
+                function(err, vals) {
+                    test.ok(!err);
+                    test.strictEqual(total, 6);
+                    test.done();
+                }
+            );
+        },
+        
+        "Series each success": function(test) {
+            var results = [1, 3, 6];
+            var total = 0;
+            Async.parallelEach(
+                function(val, idx, done) { 
+                    total += val;
+                    test.strictEqual(total, results[idx]);
+                    done();
+                },
+                [1, 2, 3],
+                function(err, vals) {
+                    test.ok(!err);
+                    test.strictEqual(total, 6);
+                    test.done();
+                }
+            );
+        },
     };
 };
 
@@ -2869,6 +3106,8 @@ require.define("/platform/node/node_http.js", function (require, module, exports
             };
             
             request_options.headers["Content-Length"] = request_options.body.length;
+            
+            console.log("URL: " + request_options.url);
 
             request(request_options, utils.bind(this, function (error, res, data) {
                 var complete_response = this._buildResponse(error, res, data);
@@ -4215,6 +4454,7 @@ exports.setup = function(svc) {
     var Splunk      = require('../splunk').Splunk;
     var utils       = Splunk.Utils;
     var Async       = Splunk.Async;
+    var tutils      = require('./utils');
 
     var idCounter = 0;
     var getNextId = function() {
@@ -4464,6 +4704,269 @@ exports.setup = function(svc) {
                     });
                 });
             }
+        },
+        
+        "Properties Tests": {        
+            setUp: function(done) {
+                this.service = svc;
+                done();
+            },
+                   
+            "Callback#list": function(test) {
+                var that = this;
+                
+                Async.chain([
+                    function(done) { that.service.properties().list(done); },
+                    function(files, done) { 
+                        test.ok(files.length > 0);
+                        done();
+                    }
+                ],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+                   
+            "Callback#contains": function(test) {
+                var that = this;
+                
+                Async.chain([
+                    function(done) { that.service.properties().contains("web", done); },
+                    function(found, file, done) { 
+                        test.ok(found);
+                        test.ok(!file.isValid());
+                        file.refresh(done);
+                    },
+                    function(file, done) {
+                        test.ok(file.isValid());
+                        test.strictEqual(file.properties().__name, "web");
+                        done();
+                    }
+                ],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+                   
+            "Callback#contains stanza": function(test) {
+                var that = this;
+                
+                Async.chain([
+                    function(done) { that.service.properties().contains("web", done); },
+                    function(found, file, done) { 
+                        test.ok(found);
+                        test.ok(!file.isValid());
+                        file.refresh(done);
+                    },
+                    function(file, done) {
+                        test.ok(file.isValid());
+                        test.strictEqual(file.properties().__name, "web");
+                        file.contains("settings", done);
+                    },
+                    function(found, stanza, done) {
+                        test.ok(found);
+                        test.ok(stanza);
+                        test.ok(!stanza.isValid());
+                        stanza.refresh(done);
+                    },
+                    function(stanza, done) {
+                        test.ok(stanza.isValid());
+                        test.ok(stanza.properties().hasOwnProperty("httpport"));
+                        done();
+                    }
+                ],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+                   
+            "Callback#create file + create stanza + update stanza": function(test) {
+                var that = this;
+                var fileName = "jssdk_file";
+                var value = "barfoo_" + getNextId();
+                
+                Async.chain([
+                    function(done) {
+                        var properties = that.service.properties(); 
+                        test.ok(!properties.isValid());
+                        properties.refresh(done);
+                    },
+                    function(properties, done) {
+                        test.ok(properties.isValid());
+                        properties.create(fileName, done);
+                    },
+                    function(file, done) {
+                        test.ok(file.isValid());
+                        file.create("stanza", done);
+                    },
+                    function(stanza, done) {
+                        test.ok(stanza.isValid());
+                        stanza.update({"jssdk_foobar": value});
+                        test.ok(!stanza.isValid());
+                        tutils.pollUntil(
+                            stanza, function(s) {
+                                return s.properties()["jssdk_foobar"] !== value;
+                            }, 
+                            10, 
+                            done
+                        );
+                    },
+                    function(stanza, done) {
+                        test.ok(stanza.isValid());
+                        test.strictEqual(stanza.properties()["jssdk_foobar"], value);
+                        done();
+                    },
+                    function(done) {
+                        var file = new Splunk.Client.PropertyFile(svc, fileName);
+                        test.ok(!file.isValid());
+                        file.contains("stanza", done);
+                    },
+                    function(found, stanza, done) {
+                        test.ok(found);
+                        test.ok(stanza);
+                        test.ok(!stanza.isValid());
+                        stanza.remove(done);
+                    }
+                ],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+        },
+        
+        "Configuration Tests": {        
+            setUp: function(done) {
+                this.service = svc;
+                done();
+            },
+                   
+            "Callback#list": function(test) {
+                var that = this;
+                
+                Async.chain([
+                    function(done) { that.service.configurations().list(done); },
+                    function(files, done) { 
+                        test.ok(files.length > 0);
+                        done();
+                    }
+                ],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+                   
+            "Callback#contains": function(test) {
+                var that = this;
+                
+                Async.chain([
+                    function(done) { that.service.configurations().contains("web", done); },
+                    function(found, file, done) { 
+                        test.ok(found);
+                        test.ok(!file.isValid());
+                        file.refresh(done);
+                    },
+                    function(file, done) {
+                        test.ok(file.isValid());
+                        test.strictEqual(file.properties().__name, "conf-web");
+                        done();
+                    }
+                ],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+                   
+            "Callback#contains stanza": function(test) {
+                var that = this;
+                
+                Async.chain([
+                    function(done) { that.service.configurations().contains("web", done); },
+                    function(found, file, done) { 
+                        test.ok(found);
+                        test.ok(!file.isValid());
+                        file.refresh(done);
+                    },
+                    function(file, done) {
+                        test.ok(file.isValid());
+                        test.strictEqual(file.properties().__name, "conf-web");
+                        file.contains("settings", done);
+                    },
+                    function(found, stanza, done) {
+                        test.ok(found);
+                        test.ok(stanza);
+                        test.ok(stanza.isValid());
+                        test.ok(stanza.properties().hasOwnProperty("httpport"));
+                        done();
+                    }
+                ],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+                   
+            "Callback#create file + create stanza + update stanza": function(test) {
+                var that = this;
+                var fileName = "jssdk_file";
+                var value = "barfoo_" + getNextId();
+                
+                // We clone the service to get to a specific namespace
+                var svc = this.service.clone("nobody", "system");
+                
+                Async.chain([
+                    function(done) {
+                        var configs = svc.configurations(); 
+                        test.ok(!configs.isValid());
+                        configs.refresh(done);
+                    },
+                    function(properties, done) {
+                        test.ok(properties.isValid());
+                        properties.create(fileName, done);
+                    },
+                    function(file, done) {
+                        test.ok(file.isValid());
+                        file.create("stanza", done);
+                    },
+                    function(stanza, done) {
+                        test.ok(stanza.isValid());
+                        stanza.update({"jssdk_foobar": value});
+                        test.ok(!stanza.isValid());
+                        tutils.pollUntil(
+                            stanza, function(s) {
+                                return s.properties()["jssdk_foobar"] !== value;
+                            }, 
+                            10, 
+                            done
+                        );
+                    },
+                    function(stanza, done) {
+                        test.ok(stanza.isValid());
+                        test.strictEqual(stanza.properties()["jssdk_foobar"], value);
+                        done();
+                    },
+                    function(done) {
+                        var file = new Splunk.Client.ConfigurationFile(svc, fileName);
+                        test.ok(!file.isValid());
+                        file.contains("stanza", done);
+                    },
+                    function(found, stanza, done) {
+                        test.ok(found);
+                        test.ok(stanza);
+                        test.ok(stanza.isValid());
+                        stanza.remove(done);
+                    }
+                ],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
         }
     };
 
@@ -4500,6 +5003,53 @@ if (module === require.main) {
         test.run([{"Tests": suite}]);
     });
 }
+});
+
+require.define("/tests/utils.js", function (require, module, exports, __dirname, __filename) {
+    // Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+(function() {
+    "use strict";
+    var Async = require('../lib/async');
+    
+    var root = exports || this;
+
+    root.bind = function(me, fn) { 
+        return function() { 
+            return fn.apply(me, arguments); 
+        }; 
+    };
+
+    root.pollUntil = function(obj, condition, iterations, callback) {
+        callback = callback || function() {};
+        
+        var i = 0;
+        var keepGoing = true;
+        Async.whilst(
+            function() { return condition(obj) && (i++ < iterations); },
+            function(done) {
+                Async.sleep(500, function() {
+                    obj.refresh(done); 
+                });
+            },
+            function(err) {
+                callback(err, obj);
+            }
+        );
+    };
+})();
 });
 
 require.define("/tests/test_searcher.js", function (require, module, exports, __dirname, __filename) {
@@ -4879,7 +5429,7 @@ exports.setup = function() {
                 
                 var context = this;
                 Async.parallelMap(
-                    function(create, done) {
+                    function(create, idx, done) {
                         context.run("create", [], create, function(err, job) {
                             test.ok(!err);
                             test.ok(job);
@@ -5125,7 +5675,7 @@ require.define("/examples/jobs.js", function (require, module, exports, __dirnam
             _check_sids('cancel', sids);
 
             // For each of the supplied sids, cancel the job.
-            this._foreach(sids, function(job, done) {
+            this._foreach(sids, function(job, idx, done) {
                 job.cancel(function (err) { 
                     if (err) {
                         done(err);
@@ -5144,7 +5694,7 @@ require.define("/examples/jobs.js", function (require, module, exports, __dirnam
             var cmdline = _makeCommandLine("events", argv, FLAGS_EVENTS, false);
 
             // For each of the passed in sids, get the relevant events
-            this._foreach(cmdline.arguments, function(job, done) {
+            this._foreach(cmdline.arguments, function(job, idx, done) {
                 console.log("===== EVENTS @ " + job.sid + " ====="); 
 
                 job.events(cmdline.options, function(err, data) {
@@ -5223,7 +5773,7 @@ require.define("/examples/jobs.js", function (require, module, exports, __dirnam
             else {
                 // If certain job SIDs are provided,
                 // then we simply read the properties of those jobs
-                this._foreach(sids, function(job, done) {
+                this._foreach(sids, function(job, idx, done) {
                     job.refresh(function(err, job) {
                         if (err) {
                             done(err);
@@ -5253,7 +5803,7 @@ require.define("/examples/jobs.js", function (require, module, exports, __dirnam
             var cmdline = _makeCommandLine("results", argv, FLAGS_RESULTS, false);
 
             // For each of the passed in sids, get the relevant results
-            this._foreach(cmdline.arguments, function(job, done) {
+            this._foreach(cmdline.arguments, function(job, idx, done) {
                 console.log("===== PREVIEW @ " + job.sid + " ====="); 
 
                 job.events(cmdline.options, function(err, data) {
@@ -5285,7 +5835,7 @@ require.define("/examples/jobs.js", function (require, module, exports, __dirnam
             var cmdline = _makeCommandLine("results", argv, FLAGS_RESULTS, false);
 
             // For each of the passed in sids, get the relevant results
-            this._foreach(cmdline.arguments, function(job, done) {
+            this._foreach(cmdline.arguments, function(job, idx, done) {
                 console.log("===== RESULTS @ " + job.sid + " ====="); 
 
                 job.events(cmdline.options, function(err, data) {

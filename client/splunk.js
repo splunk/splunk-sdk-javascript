@@ -531,7 +531,7 @@ require.define("/lib/paths.js", function (require, module, exports, __dirname, _
     root.Paths = {
         apps: "apps/local",
         capabilities: "authorization/capabilities",
-        configuration: null,
+        configurations: "configs",
         deploymentClient: "deployment/client",
         deploymentServers: "deployment/server",
         deploymentServerClasses: "deployment/serverclass",
@@ -551,6 +551,7 @@ require.define("/lib/paths.js", function (require, module, exports, __dirname, _
         login: "/services/auth/login",
         messages: "messages",
         passwords: "admin/passwords",
+        properties: "properties",
         roles: "authentication/roles",
         savedSearches: "saved/searches",
         settings: "server/settings",
@@ -697,6 +698,10 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     root.isArray = Array.isArray || function(obj) {
         return root.toString.call(obj) === '[object Array]';
     };
+
+    root.isFunction = function(obj) {
+      return !!(obj && obj.constructor && obj.call && obj.apply);
+    };
 })();
 });
 
@@ -741,14 +746,28 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
             this.jobs       = utils.bind(this, this.jobs);
+            this.clone      = utils.bind(this, this.clone);
         },
         
-        get: function(path) {
-            return this._super.apply(this, arguments);
+        clone: function(owner, namespace) {
+            return new root.Service(this.http, {
+                scheme: this.scheme,
+                host: this.host,   
+                port: this.port,       
+                username: this.username,
+                password: this.password,
+                owner: owner,
+                namespace: namespace, 
+                sessionKey: this.sessionKey
+            });
         },
         
         apps: function() {
             return new root.Collection(this, Paths.apps);
+        },
+        
+        configurations: function() {
+            return new root.Configurations(this);
         },
         
         // Configurations
@@ -805,6 +824,10 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         
         loggers: function() {
             return new root.Collection(this, Paths.loggers);
+        },
+        
+        properties: function() {
+            return new root.Properties(this)
         },
         
         // Messages
@@ -916,7 +939,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             this._validate   = utils.bind(this, this._validate);
             this.refresh     = utils.bind(this, this.refresh);
             this.isValid     = utils.bind(this, this.isValid);
-            this.properties     = utils.bind(this, this.properties);
+            this.properties = utils.bind(this, this.properties);
         },
         
         _invalidate: function() {
@@ -925,8 +948,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         
         _load: function(properties) {
             this._maybeValid = true;
-            
-            this._id = properties.__id;
+            this._properties = properties;
         },
         
         _validate: function(callback) {
@@ -946,7 +968,13 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         
         isValid: function() {
             return this._maybeValid;
-        }
+        },
+        
+        // A prompt way to get the *current* properties of
+        // an entity
+        properties: function(callback) {
+            return this._properties;
+        },
     });
     
     root.Entity = root.Resource.extend({
@@ -957,7 +985,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             // properly when it is passed as a callback.
             this._load      = utils.bind(this, this._load);
             this.refresh    = utils.bind(this, this.refresh);
-            this.properties = utils.bind(this, this.properties);
             this.read       = utils.bind(this, this.read);
             this.remove     = utils.bind(this, this.remove);
             this.update     = utils.bind(this, this.update);
@@ -967,7 +994,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             properties = utils.isArray(properties) ? properties[0] : properties;
             
             this._super(properties);
-            this._properties = properties;
         },
         
         refresh: function(callback) {
@@ -983,12 +1009,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                     callback(null, that);
                 }
             });
-        },
-        
-        // A prompt way to get the *current* properties of
-        // an entity
-        properties: function(callback) {
-            return this._properties;
         },
         
         // Fetch properties of the object. This will cause
@@ -1041,6 +1061,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             this.create   = utils.bind(this, this.create);
             this.list     = utils.bind(this, this.list);
             this.contains = utils.bind(this, this.contains);
+            this.item     = utils.bind(this, this.item);
             
             var that = this;
             handlers = handlers || {};
@@ -1048,22 +1069,54 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                 return new root.Entity(collection.service, collection.path + "/" + encodeURIComponent(props.__name));
             };
             this._isSame = handlers.isSame || function(entity, id) { 
-                return id === entity.properties().__name; 
+                return id === entity.properties().__name;
             };
+            this._loadOnCreate = handlers.loadOnCreate || function() { return false; };
+            this._loadOnItem = handlers.loadOnItem || function() { return true; };
+            
         },
         
         _load: function(properties) {
             this._super(properties);
             
             var entities = [];
+            var entitiesByName = {};
             var entityPropertyList = properties.results || [];
             for(var i = 0; i < entityPropertyList.length; i++) {
                 var props = entityPropertyList[i];
                 var entity = this._item(this, props);
                 entity._load(props);
+                
+                // If we don't want to load when we see the item,
+                // we still load it (to get things like ID/name),
+                // and just invalidate it
+                if (!this._loadOnItem()) {
+                    entity._invalidate();
+                }
                 entities.push(entity);
+                entitiesByName[props.__name] = entity;
             }
             this._entities = entities;
+            this._entitiesByName = entitiesByName;
+        },
+        
+        item: function(name, callback) {
+            callback = callback || function() {};
+            var that = this;
+            this._validate(function(err) {
+                if (err) {
+                    callback(err);
+                } 
+                else {            
+                    if (that._entitiesByName.hasOwnProperty(name)) {
+                        callback(null, that._entitiesByName[name]);
+                    }  
+                    else {
+                        callback(new Error("No entity with name: " + name));
+                    }
+                }
+            });
+
         },
         
         refresh: function(callback) {
@@ -1096,9 +1149,15 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                     }
                     
                     var entity = that._item(that, props);
-                    that._invalidate();
+                    entity._load(props);
+                    if (!that._loadOnCreate()) {
+                        that._invalidate();
+                        entity.refresh(callback);
+                    }
+                    else {
+                        callback(null, entity);
+                    }
                     
-                    entity.refresh(callback);
                 }
             });
         },
@@ -1145,6 +1204,104 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                     callback(null, found, foundEntity);
                 }
             });
+        }
+    });
+    
+    root.Properties = root.Collection.extend({
+        init: function(service) {
+           this._super(service, Paths.properties, {
+               item: function(collection, props) {
+                   var name = props.__name;
+                   return new root.PropertyFile(collection.service, name);
+               },
+               loadOnItem: function() { return false; }
+           });  
+        },
+
+        create: function(filename, callback) {
+            callback = callback || function() {};
+            
+            var that = this;
+            this.post("", {__conf: filename}, function(err, response) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    var entity = new root.PropertyFile(that.service, filename);
+                    entity.refresh(callback);
+                }
+            });
+        }
+    });
+    
+    root.PropertyFile = root.Collection.extend({
+        init: function(service, name) {
+            this._super(service, Paths.properties + "/" + encodeURIComponent(name), {
+                loadOnItem: function() { return false; }
+            });
+        },
+        
+        create: function(stanzaName, callback) {
+            callback = callback || function() {};
+            
+            var that = this;
+            this.post("", {__stanza: stanzaName}, function(err, response) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    var entity = new root.Entity(that.service, that.path + "/" + stanzaName);
+                    entity.refresh(callback);
+                }
+            });
+        }
+    });
+    
+    root.Configurations = root.Collection.extend({
+        init: function(service) {
+           this._super(service, Paths.properties, {
+               item: function(collection, props) {
+                   var name = props.__name;
+                   return new root.ConfigurationFile(collection.service, name);
+               },
+               loadOnItem: function() { return false; }
+           });  
+        },
+
+        create: function(filename, callback) {
+            callback = callback || function() {};
+            
+            var that = this;
+            this.post("", {__conf: filename}, function(err, response) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    var entity = new root.ConfigurationFile(that.service, filename);
+                    entity.refresh(callback);
+                }
+            });
+        }
+    });
+    
+    root.ConfigurationFile = root.Collection.extend({
+        init: function(service, name) {
+            var path = Paths.configurations + "/conf-" + encodeURIComponent(name);
+            this._super(service, path, {
+                loadOnCreate: function() { return true; }
+            });
+        },
+        
+        create: function(stanzaName, values, callback) {
+            if (utils.isFunction(values) && !callback) {
+                callback = values;
+                values = {};
+            }
+            
+            values = values || {};
+            values["name"] = stanzaName;
+            
+            this._super(values, callback);
         }
     });
 
@@ -1624,6 +1781,7 @@ require.define("/lib/odata.js", function (require, module, exports, __dirname, _
         }
 
         output["__metadata"] = d["__metadata"];
+        output["__name"] = d["__name"];
         if (d.results) {
             output.results = d.results;
         }
@@ -1789,12 +1947,12 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
         callback = callback || function() {};
         
         var tasks = [];
-        var createTask = function(val) {
-            return function(done) { fn(val, done); };
+        var createTask = function(val, idx) {
+            return function(done) { fn(val, idx, done); };
         };
         
         for(var i = 0; i < vals.length; i++) {
-            tasks.push(createTask(vals[i]));
+            tasks.push(createTask(vals[i], i));
         }
         
         root.parallel(tasks, function(err) {
@@ -1814,12 +1972,12 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
         callback = callback || function() {};
         
         var tasks = [];
-        var createTask = function(val) {
-            return function(done) { fn(val, done); };
+        var createTask = function(val, idx) {
+            return function(done) { fn(val, idx, done); };
         };
         
         for(var i = 0; i < vals.length; i++) {
-            tasks.push(createTask(vals[i]));
+            tasks.push(createTask(vals[i], i));
         }
         
         root.series(tasks, function(err) {
@@ -1831,6 +1989,22 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
                 args.shift();
                 callback(null, args);
             }
+        });
+    };
+    
+    root.parallelEach = function(fn, vals, callback) {
+        callback = callback || function() {};
+        
+        root.parallelMap(fn, vals, function(err, result) {
+            callback(err); 
+        });
+    };
+    
+    root.seriesEach = function(fn, vals, callback) {
+        callback = callback || function() {};
+        
+        root.seriesMap(fn, vals, function(err, result) {
+            callback(err); 
         });
     };
     
