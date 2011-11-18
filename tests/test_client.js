@@ -17,6 +17,7 @@ exports.setup = function(svc) {
     var Splunk      = require('../splunk').Splunk;
     var utils       = Splunk.Utils;
     var Async       = Splunk.Async;
+    var tutils      = require('./utils');
 
     var idCounter = 0;
     var getNextId = function() {
@@ -266,6 +267,269 @@ exports.setup = function(svc) {
                     });
                 });
             }
+        },
+        
+        "Properties Tests": {        
+            setUp: function(done) {
+                this.service = svc;
+                done();
+            },
+                   
+            "Callback#list": function(test) {
+                var that = this;
+                
+                Async.chain([
+                    function(done) { that.service.properties().list(done); },
+                    function(files, done) { 
+                        test.ok(files.length > 0);
+                        done();
+                    }
+                ],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+                   
+            "Callback#contains": function(test) {
+                var that = this;
+                
+                Async.chain([
+                    function(done) { that.service.properties().contains("web", done); },
+                    function(found, file, done) { 
+                        test.ok(found);
+                        test.ok(!file.isValid());
+                        file.refresh(done);
+                    },
+                    function(file, done) {
+                        test.ok(file.isValid());
+                        test.strictEqual(file.properties().__name, "web");
+                        done();
+                    }
+                ],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+                   
+            "Callback#contains stanza": function(test) {
+                var that = this;
+                
+                Async.chain([
+                    function(done) { that.service.properties().contains("web", done); },
+                    function(found, file, done) { 
+                        test.ok(found);
+                        test.ok(!file.isValid());
+                        file.refresh(done);
+                    },
+                    function(file, done) {
+                        test.ok(file.isValid());
+                        test.strictEqual(file.properties().__name, "web");
+                        file.contains("settings", done);
+                    },
+                    function(found, stanza, done) {
+                        test.ok(found);
+                        test.ok(stanza);
+                        test.ok(!stanza.isValid());
+                        stanza.refresh(done);
+                    },
+                    function(stanza, done) {
+                        test.ok(stanza.isValid());
+                        test.ok(stanza.properties().hasOwnProperty("httpport"));
+                        done();
+                    }
+                ],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+                   
+            "Callback#create file + create stanza + update stanza": function(test) {
+                var that = this;
+                var fileName = "jssdk_file";
+                var value = "barfoo_" + getNextId();
+                
+                Async.chain([
+                    function(done) {
+                        var properties = that.service.properties(); 
+                        test.ok(!properties.isValid());
+                        properties.refresh(done);
+                    },
+                    function(properties, done) {
+                        test.ok(properties.isValid());
+                        properties.create(fileName, done);
+                    },
+                    function(file, done) {
+                        test.ok(file.isValid());
+                        file.create("stanza", done);
+                    },
+                    function(stanza, done) {
+                        test.ok(stanza.isValid());
+                        stanza.update({"jssdk_foobar": value});
+                        test.ok(!stanza.isValid());
+                        tutils.pollUntil(
+                            stanza, function(s) {
+                                return s.properties()["jssdk_foobar"] !== value;
+                            }, 
+                            10, 
+                            done
+                        );
+                    },
+                    function(stanza, done) {
+                        test.ok(stanza.isValid());
+                        test.strictEqual(stanza.properties()["jssdk_foobar"], value);
+                        done();
+                    },
+                    function(done) {
+                        var file = new Splunk.Client.PropertyFile(svc, fileName);
+                        test.ok(!file.isValid());
+                        file.contains("stanza", done);
+                    },
+                    function(found, stanza, done) {
+                        test.ok(found);
+                        test.ok(stanza);
+                        test.ok(!stanza.isValid());
+                        stanza.remove(done);
+                    }
+                ],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+        },
+        
+        "Configuration Tests": {        
+            setUp: function(done) {
+                this.service = svc;
+                done();
+            },
+                   
+            "Callback#list": function(test) {
+                var that = this;
+                
+                Async.chain([
+                    function(done) { that.service.configurations().list(done); },
+                    function(files, done) { 
+                        test.ok(files.length > 0);
+                        done();
+                    }
+                ],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+                   
+            "Callback#contains": function(test) {
+                var that = this;
+                
+                Async.chain([
+                    function(done) { that.service.configurations().contains("web", done); },
+                    function(found, file, done) { 
+                        test.ok(found);
+                        test.ok(!file.isValid());
+                        file.refresh(done);
+                    },
+                    function(file, done) {
+                        test.ok(file.isValid());
+                        test.strictEqual(file.properties().__name, "conf-web");
+                        done();
+                    }
+                ],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+                   
+            "Callback#contains stanza": function(test) {
+                var that = this;
+                
+                Async.chain([
+                    function(done) { that.service.configurations().contains("web", done); },
+                    function(found, file, done) { 
+                        test.ok(found);
+                        test.ok(!file.isValid());
+                        file.refresh(done);
+                    },
+                    function(file, done) {
+                        test.ok(file.isValid());
+                        test.strictEqual(file.properties().__name, "conf-web");
+                        file.contains("settings", done);
+                    },
+                    function(found, stanza, done) {
+                        test.ok(found);
+                        test.ok(stanza);
+                        test.ok(stanza.isValid());
+                        test.ok(stanza.properties().hasOwnProperty("httpport"));
+                        done();
+                    }
+                ],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+                   
+            "Callback#create file + create stanza + update stanza": function(test) {
+                var that = this;
+                var fileName = "jssdk_file";
+                var value = "barfoo_" + getNextId();
+                
+                // We clone the service to get to a specific namespace
+                var svc = this.service.clone("nobody", "system");
+                
+                Async.chain([
+                    function(done) {
+                        var configs = svc.configurations(); 
+                        test.ok(!configs.isValid());
+                        configs.refresh(done);
+                    },
+                    function(properties, done) {
+                        test.ok(properties.isValid());
+                        properties.create(fileName, done);
+                    },
+                    function(file, done) {
+                        test.ok(file.isValid());
+                        file.create("stanza", done);
+                    },
+                    function(stanza, done) {
+                        test.ok(stanza.isValid());
+                        stanza.update({"jssdk_foobar": value});
+                        test.ok(!stanza.isValid());
+                        tutils.pollUntil(
+                            stanza, function(s) {
+                                return s.properties()["jssdk_foobar"] !== value;
+                            }, 
+                            10, 
+                            done
+                        );
+                    },
+                    function(stanza, done) {
+                        test.ok(stanza.isValid());
+                        test.strictEqual(stanza.properties()["jssdk_foobar"], value);
+                        done();
+                    },
+                    function(done) {
+                        var file = new Splunk.Client.ConfigurationFile(svc, fileName);
+                        test.ok(!file.isValid());
+                        file.contains("stanza", done);
+                    },
+                    function(found, stanza, done) {
+                        test.ok(found);
+                        test.ok(stanza);
+                        test.ok(stanza.isValid());
+                        stanza.remove(done);
+                    }
+                ],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
         }
     };
 
