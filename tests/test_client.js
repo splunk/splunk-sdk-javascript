@@ -24,7 +24,7 @@ exports.setup = function(svc) {
         return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
     };
 
-    return {        
+    return {
         "Job Tests": {
             setUp: function(done) {
                 this.service = svc;
@@ -91,7 +91,7 @@ exports.setup = function(svc) {
                     Async.whilst(
                         function() { return properties.dispatchState !== "DONE"; },
                         function(iterationDone) {
-                            job.refresh(function(err, job) {
+                            job.read(function(err, job) {
                                 properties = job.properties();
                                 Async.sleep(1000, iterationDone); 
                             });
@@ -108,7 +108,34 @@ exports.setup = function(svc) {
                         }
                     );
                 });
-            }
+            },
+
+            "Callback#Enable + disable preview": function(test) {
+                var that = this;
+                var sid = getNextId();
+                
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().create('search index=_internal | head 1', {id: sid}, done);
+                        },
+                        function(job, done) {
+                            job.enablePreview(done);
+                        },
+                        function(job, done) {
+                            test.ok(!job.isValid());
+                            job.disablePreview(done);
+                        },
+                        function(job, done) {
+                            test.ok(!job.isValid());
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
         },
         
         "App Tests": {      
@@ -171,7 +198,7 @@ exports.setup = function(svc) {
                     function(app, callback) {
                         test.ok(!!app);
                         test.ok(!app.isValid());
-                        app.refresh(callback);
+                        app.read(callback);
                     },
                     function(app, callback) {
                         test.ok(app);
@@ -195,19 +222,14 @@ exports.setup = function(svc) {
                 apps.list(function(err, appList) {
                     test.ok(appList.length > 0);
                     
-                    var deletes = [];
-                    for(var i = 0; i < appList.length; i++) {
-                        var app = appList[i];
+                    Async.parallelEach(function(app, idx, callback) {
                         if (utils.startsWith(app.properties().__name, "jssdk_")) {
-                            (function(_app) {
-                                deletes.push(function(callback) {
-                                    _app.remove(callback);
-                                })
-                            })(app);  
+                            app.remove(callback);
                         }
-                    }
-                    
-                    Async.parallel(deletes, function(err) {
+                        else {
+                            callback();
+                        }
+                    }, appList, function(err) {
                         test.ok(!err);
                         test.done();
                     });
@@ -299,7 +321,7 @@ exports.setup = function(svc) {
                     function(found, file, done) { 
                         test.ok(found);
                         test.ok(!file.isValid());
-                        file.refresh(done);
+                        file.read(done);
                     },
                     function(file, done) {
                         test.ok(file.isValid());
@@ -321,7 +343,7 @@ exports.setup = function(svc) {
                     function(found, file, done) { 
                         test.ok(found);
                         test.ok(!file.isValid());
-                        file.refresh(done);
+                        file.read(done);
                     },
                     function(file, done) {
                         test.ok(file.isValid());
@@ -332,7 +354,7 @@ exports.setup = function(svc) {
                         test.ok(found);
                         test.ok(stanza);
                         test.ok(!stanza.isValid());
-                        stanza.refresh(done);
+                        stanza.read(done);
                     },
                     function(stanza, done) {
                         test.ok(stanza.isValid());
@@ -355,23 +377,23 @@ exports.setup = function(svc) {
                     function(done) {
                         var properties = that.service.properties(); 
                         test.ok(!properties.isValid());
-                        properties.refresh(done);
+                        properties.read(done);
                     },
                     function(properties, done) {
                         test.ok(properties.isValid());
                         properties.create(fileName, done);
                     },
                     function(file, done) {
-                        test.ok(file.isValid());
+                        test.ok(!file.isValid());
                         file.create("stanza", done);
                     },
                     function(stanza, done) {
-                        test.ok(stanza.isValid());
+                        test.ok(!stanza.isValid());
                         stanza.update({"jssdk_foobar": value});
                         test.ok(!stanza.isValid());
                         tutils.pollUntil(
                             stanza, function(s) {
-                                return s.properties()["jssdk_foobar"] !== value;
+                                return !s.isValid() || s.properties()["jssdk_foobar"] !== value;
                             }, 
                             10, 
                             done
@@ -431,7 +453,7 @@ exports.setup = function(svc) {
                     function(found, file, done) { 
                         test.ok(found);
                         test.ok(!file.isValid());
-                        file.refresh(done);
+                        file.read(done);
                     },
                     function(file, done) {
                         test.ok(file.isValid());
@@ -453,7 +475,7 @@ exports.setup = function(svc) {
                     function(found, file, done) { 
                         test.ok(found);
                         test.ok(!file.isValid());
-                        file.refresh(done);
+                        file.read(done);
                     },
                     function(file, done) {
                         test.ok(file.isValid());
@@ -486,14 +508,14 @@ exports.setup = function(svc) {
                     function(done) {
                         var configs = svc.configurations(); 
                         test.ok(!configs.isValid());
-                        configs.refresh(done);
+                        configs.read(done);
                     },
-                    function(properties, done) {
-                        test.ok(properties.isValid());
-                        properties.create(fileName, done);
+                    function(configs, done) {
+                        test.ok(configs.isValid());
+                        configs.create(fileName, done);
                     },
                     function(file, done) {
-                        test.ok(file.isValid());
+                        test.ok(!file.isValid());
                         file.create("stanza", done);
                     },
                     function(stanza, done) {
@@ -502,7 +524,7 @@ exports.setup = function(svc) {
                         test.ok(!stanza.isValid());
                         tutils.pollUntil(
                             stanza, function(s) {
-                                return s.properties()["jssdk_foobar"] !== value;
+                                return !s.isValid() || s.properties()["jssdk_foobar"] !== value;
                             }, 
                             10, 
                             done

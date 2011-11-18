@@ -393,9 +393,9 @@ exports.setup = function() {
                     var go = function() {
                         total += val;
                         done();
-                    }
+                    };
                     
-                    if (idx == 1) {
+                    if (idx === 1) {
                         Async.sleep(100, go);    
                     }
                     else {
