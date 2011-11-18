@@ -749,7 +749,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             this.clone      = utils.bind(this, this.clone);
         },
         
-        clone: function(owner, namespace) {
+        specialize: function(owner, namespace) {
             return new root.Service(this.http, {
                 scheme: this.scheme,
                 host: this.host,   
@@ -827,7 +827,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         },
         
         properties: function() {
-            return new root.Properties(this)
+            return new root.Properties(this);
         },
         
         // Messages
@@ -938,8 +938,9 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             this._load       = utils.bind(this, this._load);
             this._validate   = utils.bind(this, this._validate);
             this.refresh     = utils.bind(this, this.refresh);
+            this.read        = utils.bind(this, this.read);
             this.isValid     = utils.bind(this, this.isValid);
-            this.properties = utils.bind(this, this.properties);
+            this.properties  = utils.bind(this, this.properties);
         },
         
         _invalidate: function() {
@@ -975,6 +976,22 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         properties: function(callback) {
             return this._properties;
         },
+        
+        // Fetch properties of the object. This will cause
+        // a refresh if we are not currently valid.
+        read: function(callback) {
+            callback = callback || function() {};
+            
+            var that = this;
+            this._validate(function(err) {
+               if (err) {
+                   callback(err);
+               } 
+               else {
+                   callback(null, that);
+               }
+            });
+        },
     });
     
     root.Entity = root.Resource.extend({
@@ -985,7 +1002,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             // properly when it is passed as a callback.
             this._load      = utils.bind(this, this._load);
             this.refresh    = utils.bind(this, this.refresh);
-            this.read       = utils.bind(this, this.read);
             this.remove     = utils.bind(this, this.remove);
             this.update     = utils.bind(this, this.update);
         },
@@ -1008,22 +1024,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                     that._load(response.odata.results);
                     callback(null, that);
                 }
-            });
-        },
-        
-        // Fetch properties of the object. This will cause
-        // a refresh if we are not currently valid.
-        read: function(callback) {
-            callback = callback || function() {};
-            
-            var that = this;
-            this._validate(function(err) {
-               if (err) {
-                   callback(err);
-               } 
-               else {
-                   callback(null, that);
-               }
             });
         },
         
@@ -1152,12 +1152,9 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                     entity._load(props);
                     if (!that._loadOnCreate()) {
                         that._invalidate();
-                        entity.refresh(callback);
-                    }
-                    else {
-                        callback(null, entity);
                     }
                     
+                    callback(null, entity);
                 }
             });
         },
@@ -1228,7 +1225,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                 }
                 else {
                     var entity = new root.PropertyFile(that.service, filename);
-                    entity.refresh(callback);
+                    callback(null, entity);
                 }
             });
         }
@@ -1251,7 +1248,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                 }
                 else {
                     var entity = new root.Entity(that.service, that.path + "/" + stanzaName);
-                    entity.refresh(callback);
+                    callback(null, entity);
                 }
             });
         }
@@ -1278,7 +1275,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                 }
                 else {
                     var entity = new root.ConfigurationFile(that.service, filename);
-                    entity.refresh(callback);
+                    callback(null, entity);
                 }
             });
         }
@@ -1342,7 +1339,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                 else {
                     that._invalidate();
                     var job = new root.Job(that.service, response.odata.results.sid);
-                    job.refresh(callback);
+                    callback(null, job);
                 }
             });
         }
@@ -1412,12 +1409,22 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         },
 
         disablePreview: function(callback) {
-            this.post("control", {action: "disablepreview"}, callback);
+            callback = callback || function() {};
+            
+            var that = this;
+            this.post("control", {action: "disablepreview"}, function(err) {
+                callback(err, that);
+            });
             this._invalidate();
         },
 
         enablePreview: function(callback) {
-            this.post("control", {action: "enablepreview"}, callback);
+            callback = callback || function() {};
+            
+            var that = this;
+            this.post("control", {action: "enablepreview"}, function(err) {
+                callback(err, that);
+            });
             this._invalidate();
         },
 
@@ -1676,7 +1683,9 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
                     json = this.parseJson(data);
                 } catch(err1) {
                     console.log("JSON PARSE ERROR");
-                    console.log(err1);
+                    console.log(err1.message);
+                    console.log(err1.stack);
+                    console.log(error);
                     console.log(data);
                 }
                 odata = ODataResponse.fromJson(json);  
@@ -1700,7 +1709,9 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
                         json = this.parseJson(data);
                     } catch(err2) {
                         console.log("JSON PARSE ERROR");
-                        console.log(err2);
+                        console.log(err2.message);
+                        console.log(err2.stack);
+                        console.log(error);
                         console.log(data);
                     }
                 }

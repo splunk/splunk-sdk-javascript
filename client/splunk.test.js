@@ -870,7 +870,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             this.clone      = utils.bind(this, this.clone);
         },
         
-        clone: function(owner, namespace) {
+        specialize: function(owner, namespace) {
             return new root.Service(this.http, {
                 scheme: this.scheme,
                 host: this.host,   
@@ -948,7 +948,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         },
         
         properties: function() {
-            return new root.Properties(this)
+            return new root.Properties(this);
         },
         
         // Messages
@@ -1059,8 +1059,9 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             this._load       = utils.bind(this, this._load);
             this._validate   = utils.bind(this, this._validate);
             this.refresh     = utils.bind(this, this.refresh);
+            this.read        = utils.bind(this, this.read);
             this.isValid     = utils.bind(this, this.isValid);
-            this.properties = utils.bind(this, this.properties);
+            this.properties  = utils.bind(this, this.properties);
         },
         
         _invalidate: function() {
@@ -1096,6 +1097,22 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         properties: function(callback) {
             return this._properties;
         },
+        
+        // Fetch properties of the object. This will cause
+        // a refresh if we are not currently valid.
+        read: function(callback) {
+            callback = callback || function() {};
+            
+            var that = this;
+            this._validate(function(err) {
+               if (err) {
+                   callback(err);
+               } 
+               else {
+                   callback(null, that);
+               }
+            });
+        },
     });
     
     root.Entity = root.Resource.extend({
@@ -1106,7 +1123,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             // properly when it is passed as a callback.
             this._load      = utils.bind(this, this._load);
             this.refresh    = utils.bind(this, this.refresh);
-            this.read       = utils.bind(this, this.read);
             this.remove     = utils.bind(this, this.remove);
             this.update     = utils.bind(this, this.update);
         },
@@ -1129,22 +1145,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                     that._load(response.odata.results);
                     callback(null, that);
                 }
-            });
-        },
-        
-        // Fetch properties of the object. This will cause
-        // a refresh if we are not currently valid.
-        read: function(callback) {
-            callback = callback || function() {};
-            
-            var that = this;
-            this._validate(function(err) {
-               if (err) {
-                   callback(err);
-               } 
-               else {
-                   callback(null, that);
-               }
             });
         },
         
@@ -1273,12 +1273,9 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                     entity._load(props);
                     if (!that._loadOnCreate()) {
                         that._invalidate();
-                        entity.refresh(callback);
-                    }
-                    else {
-                        callback(null, entity);
                     }
                     
+                    callback(null, entity);
                 }
             });
         },
@@ -1349,7 +1346,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                 }
                 else {
                     var entity = new root.PropertyFile(that.service, filename);
-                    entity.refresh(callback);
+                    callback(null, entity);
                 }
             });
         }
@@ -1372,7 +1369,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                 }
                 else {
                     var entity = new root.Entity(that.service, that.path + "/" + stanzaName);
-                    entity.refresh(callback);
+                    callback(null, entity);
                 }
             });
         }
@@ -1399,7 +1396,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                 }
                 else {
                     var entity = new root.ConfigurationFile(that.service, filename);
-                    entity.refresh(callback);
+                    callback(null, entity);
                 }
             });
         }
@@ -1463,7 +1460,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                 else {
                     that._invalidate();
                     var job = new root.Job(that.service, response.odata.results.sid);
-                    job.refresh(callback);
+                    callback(null, job);
                 }
             });
         }
@@ -1533,12 +1530,22 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         },
 
         disablePreview: function(callback) {
-            this.post("control", {action: "disablepreview"}, callback);
+            callback = callback || function() {};
+            
+            var that = this;
+            this.post("control", {action: "disablepreview"}, function(err) {
+                callback(err, that);
+            });
             this._invalidate();
         },
 
         enablePreview: function(callback) {
-            this.post("control", {action: "enablepreview"}, callback);
+            callback = callback || function() {};
+            
+            var that = this;
+            this.post("control", {action: "enablepreview"}, function(err) {
+                callback(err, that);
+            });
             this._invalidate();
         },
 
@@ -1797,7 +1804,9 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
                     json = this.parseJson(data);
                 } catch(err1) {
                     console.log("JSON PARSE ERROR");
-                    console.log(err1);
+                    console.log(err1.message);
+                    console.log(err1.stack);
+                    console.log(error);
                     console.log(data);
                 }
                 odata = ODataResponse.fromJson(json);  
@@ -1821,7 +1830,9 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
                         json = this.parseJson(data);
                     } catch(err2) {
                         console.log("JSON PARSE ERROR");
-                        console.log(err2);
+                        console.log(err2.message);
+                        console.log(err2.stack);
+                        console.log(error);
                         console.log(data);
                     }
                 }
@@ -2720,9 +2731,9 @@ exports.setup = function() {
                     var go = function() {
                         total += val;
                         done();
-                    }
+                    };
                     
-                    if (idx == 1) {
+                    if (idx === 1) {
                         Async.sleep(100, go);    
                     }
                     else {
@@ -4461,7 +4472,7 @@ exports.setup = function(svc) {
         return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
     };
 
-    return {        
+    return {
         "Job Tests": {
             setUp: function(done) {
                 this.service = svc;
@@ -4528,7 +4539,7 @@ exports.setup = function(svc) {
                     Async.whilst(
                         function() { return properties.dispatchState !== "DONE"; },
                         function(iterationDone) {
-                            job.refresh(function(err, job) {
+                            job.read(function(err, job) {
                                 properties = job.properties();
                                 Async.sleep(1000, iterationDone); 
                             });
@@ -4545,7 +4556,34 @@ exports.setup = function(svc) {
                         }
                     );
                 });
-            }
+            },
+
+            "Callback#Enable + disable preview": function(test) {
+                var that = this;
+                var sid = getNextId();
+                
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().create('search index=_internal | head 1', {id: sid}, done);
+                        },
+                        function(job, done) {
+                            job.enablePreview(done);
+                        },
+                        function(job, done) {
+                            test.ok(!job.isValid());
+                            job.disablePreview(done);
+                        },
+                        function(job, done) {
+                            test.ok(!job.isValid());
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
         },
         
         "App Tests": {      
@@ -4608,7 +4646,7 @@ exports.setup = function(svc) {
                     function(app, callback) {
                         test.ok(!!app);
                         test.ok(!app.isValid());
-                        app.refresh(callback);
+                        app.read(callback);
                     },
                     function(app, callback) {
                         test.ok(app);
@@ -4632,19 +4670,14 @@ exports.setup = function(svc) {
                 apps.list(function(err, appList) {
                     test.ok(appList.length > 0);
                     
-                    var deletes = [];
-                    for(var i = 0; i < appList.length; i++) {
-                        var app = appList[i];
+                    Async.parallelEach(function(app, idx, callback) {
                         if (utils.startsWith(app.properties().__name, "jssdk_")) {
-                            (function(_app) {
-                                deletes.push(function(callback) {
-                                    _app.remove(callback);
-                                })
-                            })(app);  
+                            app.remove(callback);
                         }
-                    }
-                    
-                    Async.parallel(deletes, function(err) {
+                        else {
+                            callback();
+                        }
+                    }, appList, function(err) {
                         test.ok(!err);
                         test.done();
                     });
@@ -4736,7 +4769,7 @@ exports.setup = function(svc) {
                     function(found, file, done) { 
                         test.ok(found);
                         test.ok(!file.isValid());
-                        file.refresh(done);
+                        file.read(done);
                     },
                     function(file, done) {
                         test.ok(file.isValid());
@@ -4758,7 +4791,7 @@ exports.setup = function(svc) {
                     function(found, file, done) { 
                         test.ok(found);
                         test.ok(!file.isValid());
-                        file.refresh(done);
+                        file.read(done);
                     },
                     function(file, done) {
                         test.ok(file.isValid());
@@ -4769,7 +4802,7 @@ exports.setup = function(svc) {
                         test.ok(found);
                         test.ok(stanza);
                         test.ok(!stanza.isValid());
-                        stanza.refresh(done);
+                        stanza.read(done);
                     },
                     function(stanza, done) {
                         test.ok(stanza.isValid());
@@ -4792,23 +4825,23 @@ exports.setup = function(svc) {
                     function(done) {
                         var properties = that.service.properties(); 
                         test.ok(!properties.isValid());
-                        properties.refresh(done);
+                        properties.read(done);
                     },
                     function(properties, done) {
                         test.ok(properties.isValid());
                         properties.create(fileName, done);
                     },
                     function(file, done) {
-                        test.ok(file.isValid());
+                        test.ok(!file.isValid());
                         file.create("stanza", done);
                     },
                     function(stanza, done) {
-                        test.ok(stanza.isValid());
+                        test.ok(!stanza.isValid());
                         stanza.update({"jssdk_foobar": value});
                         test.ok(!stanza.isValid());
                         tutils.pollUntil(
                             stanza, function(s) {
-                                return s.properties()["jssdk_foobar"] !== value;
+                                return !s.isValid() || s.properties()["jssdk_foobar"] !== value;
                             }, 
                             10, 
                             done
@@ -4868,7 +4901,7 @@ exports.setup = function(svc) {
                     function(found, file, done) { 
                         test.ok(found);
                         test.ok(!file.isValid());
-                        file.refresh(done);
+                        file.read(done);
                     },
                     function(file, done) {
                         test.ok(file.isValid());
@@ -4890,7 +4923,7 @@ exports.setup = function(svc) {
                     function(found, file, done) { 
                         test.ok(found);
                         test.ok(!file.isValid());
-                        file.refresh(done);
+                        file.read(done);
                     },
                     function(file, done) {
                         test.ok(file.isValid());
@@ -4917,20 +4950,20 @@ exports.setup = function(svc) {
                 var value = "barfoo_" + getNextId();
                 
                 // We clone the service to get to a specific namespace
-                var svc = this.service.clone("nobody", "system");
+                var svc = this.service.specialize("nobody", "system");
                 
                 Async.chain([
                     function(done) {
                         var configs = svc.configurations(); 
                         test.ok(!configs.isValid());
-                        configs.refresh(done);
+                        configs.read(done);
                     },
-                    function(properties, done) {
-                        test.ok(properties.isValid());
-                        properties.create(fileName, done);
+                    function(configs, done) {
+                        test.ok(configs.isValid());
+                        configs.create(fileName, done);
                     },
                     function(file, done) {
-                        test.ok(file.isValid());
+                        test.ok(!file.isValid());
                         file.create("stanza", done);
                     },
                     function(stanza, done) {
@@ -4939,7 +4972,7 @@ exports.setup = function(svc) {
                         test.ok(!stanza.isValid());
                         tutils.pollUntil(
                             stanza, function(s) {
-                                return s.properties()["jssdk_foobar"] !== value;
+                                return !s.isValid() || s.properties()["jssdk_foobar"] !== value;
                             }, 
                             10, 
                             done
