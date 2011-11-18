@@ -480,7 +480,7 @@ exports.setup = function(svc) {
                 var value = "barfoo_" + getNextId();
                 
                 // We clone the service to get to a specific namespace
-                var svc = this.service.clone("nobody", "system");
+                var svc = this.service.specialize("nobody", "system");
                 
                 Async.chain([
                     function(done) {
