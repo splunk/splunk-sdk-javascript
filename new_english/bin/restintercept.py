@@ -75,6 +75,9 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
             
         if self.scrubbed_path.endswith("/"):
             self.scrubbed_path = self.scrubbed_path[:-1]
+            
+        if self.scrubbed_path.endswith("?"):
+            self.scrubbed_path = self.scrubbed_path[:-1]
     
     def extract_sessionKey(self):        
         self.sessionKey = self.request["headers"].get("authorization", "").replace("Splunk", "").strip() or None
@@ -301,31 +304,35 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         
         # convert XML to struct
         if serverResponse:
-            root = et.fromstring(serverResponse)
-            if root.tag in ('events', 'results', 'results_preview'):
-                json_mode = self.request["query"].get("json_mode", "row")
-                if json_mode == "row":
-                    format = ResultFormat.ROW
-                elif json_mode == "column":
-                    format = ResultFormat.COLUMN
-                elif json_mode == "verbose":
-                    format = ResultFormat.VERBOSE
-                else:
-                    format = ResultFormat.ROW
-                    
-                output.data = self._parseResultData(root, format=format)
-            elif root.tag == 'timeline':
-                output.data = self._parseTimelineData(root)
-            elif root.tag == 'summary':
-                output.data = self._parseFieldSummary(root)
+            # search.log returns plaintext
+            if data_source == "search.log":
+                output.data = {"log": serverResponse}
+            else:
+                root = et.fromstring(serverResponse)
+                if root.tag in ('events', 'results', 'results_preview'):
+                    json_mode = self.request["query"].get("json_mode", "row")
+                    if json_mode == "row":
+                        format = ResultFormat.ROW
+                    elif json_mode == "column":
+                        format = ResultFormat.COLUMN
+                    elif json_mode == "verbose":
+                        format = ResultFormat.VERBOSE
+                    else:
+                        format = ResultFormat.ROW
+                        
+                    output.data = self._parseResultData(root, format=format)
+                elif root.tag == 'timeline':
+                    output.data = self._parseTimelineData(root)
+                elif root.tag == 'summary':
+                    output.data = self._parseFieldSummary(root)
             
-            # service may return messages in the body; try to parse them
-            try:
-                msg = splunk.rest.extractMessages(root)
-                if msg:
-                    messages.append(msg)
-            except:
-                raise
+                # service may return messages in the body; try to parse them
+                try:
+                    msg = splunk.rest.extractMessages(root)
+                    if msg:
+                        messages.append(msg)
+                except:
+                    raise
                 
         # package and return
         output.messages = messages
