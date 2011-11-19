@@ -1105,12 +1105,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             
             var that = this;
             this._validate(function(err) {
-               if (err) {
-                   callback(err);
-               } 
-               else {
-                   callback(null, that);
-               }
+                callback(err, that);
             });
         },
     });
@@ -1285,12 +1280,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             
             var that = this;
             this._validate(function(err) {
-                if (err) {
-                    callback(err);
-                }
-                else {
-                    callback(null, that._entities);
-                }
+                callback(err, that._entities);
             });
         },
 
@@ -1551,102 +1541,145 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
 
         events: function(params, callback) {
             callback = callback || function() {};
+            
+            var that = this;
             this.get("events", params, function(err, response) { 
                 if (err) {
                     callback(err);
                 }
                 else {
-                    callback(null, response.odata.results); 
+                    callback(null, response.odata.results, that); 
                 }
             });
         },
 
         finalize: function(callback) {
-            this.post("control", {action: "finalize"}, callback);
+            callback = callback || function() {};
+            
+            var that = this;
+            this.post("control", {action: "finalize"}, function(err) {
+                callback(err, that);
+            });
             this._invalidate();
         },
 
         pause: function(callback) {
-            this.post("control", {action: "pause"}, callback);
-            this._invalidate(); 
+            callback = callback || function() {};
+            
+            var that = this;
+            this.post("control", {action: "pause"}, function(err) {
+                callback(err, that);
+            });
+            this._invalidate();
         },
 
         preview: function(params, callback) {
             callback = callback || function() {};
+            
+            var that = this;
             this.get("results_preview", params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
                 else {
-                    callback(null, response.odata.results);
+                    callback(null, response.odata.results, that);
                 }
             });
         },
 
         results: function(params, callback) {
             callback = callback || function() {};
+            
+            var that = this;
             this.get("results", params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
                 else {
-                    callback(null, response.odata.results);
+                    callback(null, response.odata.results, that);
                 }
             });
         },
 
-        searchlog: function(params, callback) {
+        searchlog: function(callback) {
             callback = callback || function() {};
-            this.get("log", params, function(err, response) {
+            
+            var that = this;
+            this.get("search.log", {}, function(err, response) {
                 if (err) {
                     callback(err);
                 }
                 else {
-                    callback(null, response.odata.results);
+                    callback(null, response.odata.results.log, that);
                 }
             });
         },
 
         setPriority: function(value, callback) {
-            this.post("control", {action: "setpriority", priority: value}, callback);
+            callback = callback || function() {};
+            
+            var that = this;
+            this.post("control", {action: "setpriority", priority: value}, function(err) {
+                callback(err, that);
+            });
             this._invalidate();
         },
 
         setTTL: function(value, callback) {
-            this.post("control", {action: "setttl", ttl: value}, callback);
+            callback = callback || function() {};
+            
+            var that = this;
+            this.post("control", {action: "setttl", ttl: value}, function(err) {
+                callback(err, that);
+            });
             this._invalidate();
         },
 
         summary: function(params, callback) {
+            callback = callback || function() {};
+            
+            var that = this;
             this.get("summary", params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
                 else {
-                    callback(null, response.odata.results);
+                    callback(null, response.odata.results, that);
                 }
             });
         },
 
         timeline: function(params, callback) {
             callback = callback || function() {};
+            
+            var that = this;
             this.get("timeline", params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
                 else {
-                    callback(null, response.odata.results);
+                    callback(null, response.odata.results, that);
                 }
             });
         },
 
         touch: function(callback) {
-            this.post("control", {action: "touch"}, callback);
+            callback = callback || function() {};
+            
+            var that = this;
+            this.post("control", {action: "touch"}, function(err) {
+                callback(err, that);
+            });
             this._invalidate();
         },
 
         unpause: function(callback) {
-            this.post("control", {action: "unpause"}, callback);
+            callback = callback || function() {};
+            
+            var that = this;
+            this.post("control", {action: "unpause"}, function(err) {
+                callback(err, that);
+            });
             this._invalidate();
         }
     });
@@ -3118,7 +3151,7 @@ require.define("/platform/node/node_http.js", function (require, module, exports
             
             request_options.headers["Content-Length"] = request_options.body.length;
             
-            console.log("URL: " + request_options.url);
+            console.log("URL (" + message.method + "): " + request_options.url);
 
             request(request_options, utils.bind(this, function (error, res, data) {
                 var complete_response = this._buildResponse(error, res, data);
@@ -4533,41 +4566,128 @@ exports.setup = function(svc) {
             "Callback#job results": function(test) {
                 var sid = getNextId();
                 var service = this.service;
-                this.service.jobs().create('search index=_internal | head 1 | stats count', {id: sid}, function(err, job) {
-                    var properties = {};
-
-                    Async.whilst(
-                        function() { return properties.dispatchState !== "DONE"; },
-                        function(iterationDone) {
-                            job.read(function(err, job) {
-                                properties = job.properties();
-                                Async.sleep(1000, iterationDone); 
-                            });
+                var that = this;
+                
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().create('search index=_internal | head 1 | stats count', {id: sid}, done);
                         },
-                        function() {
-                            job.results({}, function(err, results) {
-                                test.strictEqual(results.rows.length, 1);
-                                test.strictEqual(results.fields.length, 1);
-                                test.strictEqual(results.fields[0], "count");
-                                test.strictEqual(results.rows[0][0], "1");
-                                
-                                job.cancel(function() { test.done(); });
-                            });
+                        function(job, done) {
+                            test.strictEqual(job.sid, sid);
+                            tutils.pollUntil(
+                                job,
+                                function(j) {
+                                    return !j.isValid() || !job.properties()["isDone"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            job.results({}, done);
+                        },
+                        function(results, job, done) {
+                            test.strictEqual(results.rows.length, 1);
+                            test.strictEqual(results.fields.length, 1);
+                            test.strictEqual(results.fields[0], "count");
+                            test.strictEqual(results.rows[0][0], "1");
+                            job.cancel(done);
                         }
-                    );
-                });
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
             },
 
-            "Callback#Enable + disable preview": function(test) {
-                var that = this;
+            "Callback#job events": function(test) {
                 var sid = getNextId();
+                var service = this.service;
+                var that = this;
                 
                 Async.chain([
                         function(done) {
                             that.service.jobs().create('search index=_internal | head 1', {id: sid}, done);
                         },
                         function(job, done) {
+                            test.strictEqual(job.sid, sid);
+                            tutils.pollUntil(
+                                job,
+                                function(j) {
+                                    return !j.isValid() || !job.properties()["isDone"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            job.events({}, done);
+                        },
+                        function(results, job, done) {
+                            test.strictEqual(results.rows.length, 1);
+                            test.strictEqual(results.fields.length, results.rows[0].length);
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#job results preview": function(test) {
+                var sid = getNextId();
+                var service = this.service;
+                var that = this;
+                
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().create('search index=_internal | head 1 | stats count', {id: sid}, done);
+                        },
+                        function(job, done) {
+                            test.strictEqual(job.sid, sid);
+                            tutils.pollUntil(
+                                job,
+                                function(j) {
+                                    return !j.isValid() || !job.properties()["isDone"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            job.preview({}, done);
+                        },
+                        function(results, job, done) {
+                            test.strictEqual(results.rows.length, 1);
+                            test.strictEqual(results.fields.length, 1);
+                            test.strictEqual(results.fields[0], "count");
+                            test.strictEqual(results.rows[0][0], "1");
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#Enable + disable preview": function(test) {
+                var that = this;
+                var sid = getNextId();
+                
+                var service = this.service.specialize("nobody", "new_english");
+                
+                Async.chain([
+                        function(done) {
+                            service.jobs().create('search index=_internal | head 1 | sleep 60', {id: sid}, done);
+                        },
+                        function(job, done) {
                             job.enablePreview(done);
+                            
                         },
                         function(job, done) {
                             test.ok(!job.isValid());
@@ -4575,7 +4695,7 @@ exports.setup = function(svc) {
                         },
                         function(job, done) {
                             test.ok(!job.isValid());
-                            done();
+                            job.cancel(done);
                         }
                     ],
                     function(err) {
@@ -4584,6 +4704,274 @@ exports.setup = function(svc) {
                     }
                 ); 
             },
+
+            "Callback#Pause + unpause + finalize preview": function(test) {
+                var that = this;
+                var sid = getNextId();
+                
+                var service = this.service.specialize("nobody", "new_english");
+                
+                Async.chain([
+                        function(done) {
+                            service.jobs().create('search index=_internal | head 1 | sleep 5', {id: sid}, done);
+                        },
+                        function(job, done) {
+                            job.pause(done);
+                        },
+                        function(job, done) {
+                            test.ok(!job.isValid());
+                            tutils.pollUntil(
+                                job, 
+                                function(j) {
+                                    return !j.isValid() || !j.properties()["isPaused"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            test.ok(job.isValid());
+                            test.ok(job.properties()["isPaused"]);
+                            job.unpause(done);
+                        },
+                        function(job, done) {
+                            test.ok(!job.isValid());
+                            tutils.pollUntil(
+                                job, 
+                                function(j) {
+                                    return !j.isValid() || j.properties()["isPaused"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            test.ok(job.isValid());
+                            test.ok(!job.properties()["isPaused"]);
+                            job.finalize(done);
+                        },
+                        function(job, done) {
+                            test.ok(!job.isValid());
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
+
+            "Callback#Set TTL": function(test) {
+                var sid = getNextId();
+                var originalTTL = 0;
+                var that = this;
+                
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().create('search index=_internal | head 1', {id: sid}, done);
+                        },
+                        function(job, done) {
+                            job.read(done);
+                        },
+                        function(job, done) {
+                            test.ok(job.isValid());
+                            var ttl = originalTTL = job.properties()["ttl"];
+                            job.setTTL(ttl*2, done);
+                        },
+                        function(job, done) {
+                            test.ok(!job.isValid());
+                            job.read(done);
+                        },
+                        function(job, done) {
+                            test.ok(job.isValid());
+                            var ttl = job.properties()["ttl"];
+                            test.ok(ttl > originalTTL);
+                            test.ok(ttl <= (originalTTL*2));
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
+
+            "Callback#Set priority": function(test) {
+                var sid = getNextId();
+                var originalPriority = 0;
+                var that = this;
+                
+                var service = this.service.specialize("nobody", "new_english");
+                
+                Async.chain([
+                        function(done) {
+                            service.jobs().create('search index=_internal | head 1 | sleep 5', {id: sid}, done);
+                        },
+                        function(job, done) {
+                            job.read(done);
+                        },
+                        function(job, done) {
+                            test.ok(job.isValid());
+                            var priority = job.properties()["priority"];
+                            test.ok(priority, 5);
+                            job.setPriority(priority + 1, done);
+                        },
+                        function(job, done) {
+                            test.ok(!job.isValid());
+                            job.read(done);
+                        },
+                        function(job, done) {
+                            test.ok(job.isValid());
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
+
+            "Callback#Search log": function(test) {
+                var sid = getNextId();
+                var that = this;
+                
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().create('search index=_internal | head 1', {id: sid}, done);
+                        },
+                        function(job, done) {
+                            job.searchlog(done);
+                        },
+                        function(log, job, done) {
+                            test.ok(job);
+                            test.ok(log);
+                            test.ok(log.length > 0);
+                            test.ok(log.split("\r\n").length > 0);
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
+
+            "Callback#Search summary": function(test) {
+                var sid = getNextId();
+                var that = this;
+                
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().create(
+                                'search index=_internal | head 1 | eval foo="bar" | fields foo', 
+                                {
+                                    id: sid,
+                                    status_buckets: 300,
+                                    rf: ["foo"]
+                                }, 
+                                done);
+                        },
+                        function(job, done) {
+                            job.summary({}, done);
+                        },
+                        function(summary, job, done) {
+                            test.ok(job);
+                            test.ok(summary);
+                            test.strictEqual(summary.event_count, 1);
+                            test.strictEqual(summary.fields.foo.count, 1);
+                            test.strictEqual(summary.fields.foo.distinct_count, 1);
+                            test.ok(summary.fields.foo.is_exact, 1);
+                            test.strictEqual(summary.fields.foo.name, "foo");
+                            test.strictEqual(summary.fields.foo.modes.length, 1);
+                            test.strictEqual(summary.fields.foo.modes[0].count, 1);
+                            test.strictEqual(summary.fields.foo.modes[0].value, "bar");
+                            test.ok(summary.fields.foo.modes[0].is_exact);
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
+
+            "Callback#Search timeline": function(test) {
+                var sid = getNextId();
+                var that = this;
+                
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().create(
+                                'search index=_internal | head 1 | eval foo="bar" | fields foo', 
+                                {
+                                    id: sid,
+                                    status_buckets: 300,
+                                    rf: ["foo"],
+                                    exec_mode: "blocking"
+                                }, 
+                                done);
+                        },
+                        function(job, done) {
+                            job.timeline({}, done);
+                        },
+                        function(timeline, job, done) {
+                            test.ok(job);
+                            test.ok(timeline);
+                            test.strictEqual(timeline.buckets.length, 1);
+                            test.strictEqual(timeline.event_count, 1);
+                            test.strictEqual(timeline.buckets[0].available_count, 1);
+                            test.strictEqual(timeline.buckets[0].duration, 0.001);
+                            test.strictEqual(timeline.buckets[0].earliest_time_offset, timeline.buckets[0].latest_time_offset);
+                            test.strictEqual(timeline.buckets[0].total_count, 1);
+                            test.ok(timeline.buckets[0].is_finalized);
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
+
+            "Callback#Touch": function(test) {
+                var sid = getNextId();
+                var that = this;
+                var originalTime = "";
+                
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().create('search index=_internal | head 1', {id: sid}, done);
+                        },
+                        function(job, done) {
+                            job.read(done);
+                        },
+                        function(job, done) {
+                            test.ok(job);
+                            test.ok(job.isValid());
+                            originalTime = job.properties().updated;
+                            Async.sleep(1200, function() { job.touch(done); });
+                        },
+                        function(job, done) {
+                            job.read(done);
+                        },
+                        function(job, done) {
+                            test.ok(job.isValid());
+                            test.ok(originalTime !== job.properties().updated);
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            }            
         },
         
         "App Tests": {      

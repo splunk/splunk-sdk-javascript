@@ -984,12 +984,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             
             var that = this;
             this._validate(function(err) {
-               if (err) {
-                   callback(err);
-               } 
-               else {
-                   callback(null, that);
-               }
+                callback(err, that);
             });
         },
     });
@@ -1164,12 +1159,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             
             var that = this;
             this._validate(function(err) {
-                if (err) {
-                    callback(err);
-                }
-                else {
-                    callback(null, that._entities);
-                }
+                callback(err, that._entities);
             });
         },
 
@@ -1430,102 +1420,145 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
 
         events: function(params, callback) {
             callback = callback || function() {};
+            
+            var that = this;
             this.get("events", params, function(err, response) { 
                 if (err) {
                     callback(err);
                 }
                 else {
-                    callback(null, response.odata.results); 
+                    callback(null, response.odata.results, that); 
                 }
             });
         },
 
         finalize: function(callback) {
-            this.post("control", {action: "finalize"}, callback);
+            callback = callback || function() {};
+            
+            var that = this;
+            this.post("control", {action: "finalize"}, function(err) {
+                callback(err, that);
+            });
             this._invalidate();
         },
 
         pause: function(callback) {
-            this.post("control", {action: "pause"}, callback);
-            this._invalidate(); 
+            callback = callback || function() {};
+            
+            var that = this;
+            this.post("control", {action: "pause"}, function(err) {
+                callback(err, that);
+            });
+            this._invalidate();
         },
 
         preview: function(params, callback) {
             callback = callback || function() {};
+            
+            var that = this;
             this.get("results_preview", params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
                 else {
-                    callback(null, response.odata.results);
+                    callback(null, response.odata.results, that);
                 }
             });
         },
 
         results: function(params, callback) {
             callback = callback || function() {};
+            
+            var that = this;
             this.get("results", params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
                 else {
-                    callback(null, response.odata.results);
+                    callback(null, response.odata.results, that);
                 }
             });
         },
 
-        searchlog: function(params, callback) {
+        searchlog: function(callback) {
             callback = callback || function() {};
-            this.get("log", params, function(err, response) {
+            
+            var that = this;
+            this.get("search.log", {}, function(err, response) {
                 if (err) {
                     callback(err);
                 }
                 else {
-                    callback(null, response.odata.results);
+                    callback(null, response.odata.results.log, that);
                 }
             });
         },
 
         setPriority: function(value, callback) {
-            this.post("control", {action: "setpriority", priority: value}, callback);
+            callback = callback || function() {};
+            
+            var that = this;
+            this.post("control", {action: "setpriority", priority: value}, function(err) {
+                callback(err, that);
+            });
             this._invalidate();
         },
 
         setTTL: function(value, callback) {
-            this.post("control", {action: "setttl", ttl: value}, callback);
+            callback = callback || function() {};
+            
+            var that = this;
+            this.post("control", {action: "setttl", ttl: value}, function(err) {
+                callback(err, that);
+            });
             this._invalidate();
         },
 
         summary: function(params, callback) {
+            callback = callback || function() {};
+            
+            var that = this;
             this.get("summary", params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
                 else {
-                    callback(null, response.odata.results);
+                    callback(null, response.odata.results, that);
                 }
             });
         },
 
         timeline: function(params, callback) {
             callback = callback || function() {};
+            
+            var that = this;
             this.get("timeline", params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
                 else {
-                    callback(null, response.odata.results);
+                    callback(null, response.odata.results, that);
                 }
             });
         },
 
         touch: function(callback) {
-            this.post("control", {action: "touch"}, callback);
+            callback = callback || function() {};
+            
+            var that = this;
+            this.post("control", {action: "touch"}, function(err) {
+                callback(err, that);
+            });
             this._invalidate();
         },
 
         unpause: function(callback) {
-            this.post("control", {action: "unpause"}, callback);
+            callback = callback || function() {};
+            
+            var that = this;
+            this.post("control", {action: "unpause"}, function(err) {
+                callback(err, that);
+            });
             this._invalidate();
         }
     });
