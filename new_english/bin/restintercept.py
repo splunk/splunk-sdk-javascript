@@ -665,6 +665,14 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         if atom_root:
             timings.append(('app.xml_parse_start', time.time()))
             root = et.fromstring(atom_root)
+            
+            # service may return messages in the body; try to parse them
+            try:
+                msg = splunk.rest.extractMessages(root)
+                if msg:
+                    messages.extend(msg)
+            except:
+                pass
 
             timings.append(('app.odata_create_start', time.time()))
 
@@ -726,8 +734,12 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         tmpEntity.data = {}
         content_xpath = node.xpath('a:content', namespaces={'a': ATOM_NS})
         if (len(content_xpath) > 0):
-            content_node = content_xpath[0][0]
-            tmpEntity.data = splunk.rest.format.nodeToPrimitive(content_node)
+            if (len(content_xpath[0]) > 0):
+                content_node = content_xpath[0][0]
+                tmpEntity.data = splunk.rest.format.nodeToPrimitive(content_node)
+            else:
+                logger.info(content_xpath[0].text)
+                tmpEntity.data = {"data": content_xpath[0].text}
     
         # move the metadata around
         if isinstance(tmpEntity.data, dict):
