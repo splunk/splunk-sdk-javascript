@@ -45,6 +45,7 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         self.router.add(Route('/search/jobs/<sid>', {"GET": self.eai, "DELETE": self.delete_job}, 'job_info'))
         self.router.add(Route('/search/jobs', {"GET": self.eai, "POST": self.create_job}, 'jobs'))
         self.router.add(Route('/search/parser', self.parse_query, 'parse_query'))
+        self.router.add(Route('/search/typeahead', self.typeahead, 'typeahead'))
         self.router.add(Route('/search/tags/<name>', 
             {
                 "GET": self.eai, 
@@ -129,7 +130,7 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
             self.extract_origin()
             self.extract_sessionKey()
             self.extract_allowed_domains()
-        
+            
             # Get the appropriate handler
             handler, args, kwargs = self.router.match(self.scrubbed_path)
                 
@@ -209,7 +210,7 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         odata = self.atom2odata(serverResponse, entity_class=self.scrubbed_path, timings=timings, messages=messages)
         return (responseCode, self.render_odata(odata))
         
-    def parse_query(self, *args, **kwargs):
+    def typeahead(self, *args, **kwargs):
         output = ODataEntity()
         responseCode = 500
         serverResponse = None
@@ -233,11 +234,70 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         
         # convert to struct
         if serverResponse:
-            output.data = json.loads(serverResponse)
+            res = json.loads(serverResponse)
+            logger.info(res)
+            output.data = {"data": res}
+                                
+        output.messages = messages
+        return responseCode, self.render_odata(output)
+        
+    def parse_query(self, *args, **kwargs):
+        output = ODataEntity()
+        responseCode = 500
+        serverResponse = None
+        messages = []
+        
+        # Always get JSON, that way we don't need to do anything
+        self.request["query"]["output_mode"] = "xml"
+        
+        # fetch data
+        try:
+            serverStatus, serverResponse = self.forward_request()
+            responseCode = serverStatus.status
+        except splunk.RESTException, e:
+            responseCode = e.statusCode
+            messages.append({
+                'type': 'HTTP',
+                'text': '%s %s' % (e.statusCode, e.msg)
+            })
+            if e.extendedMessages:
+                messages.extend(e.extendedMessages)
+        
+        # convert to struct
+        if serverResponse:
+            node = et.fromstring(serverResponse)
+            output.data = self._parseParser(node)
                     
         output.messages = messages
         return responseCode, self.render_odata(output)
         
+    def _parseParser(self, root):
+        result = {}
+        result["commands"] = []
+        
+        for node in root.findall("dict/key"):
+            result[node.get("name")] = node.text or ""
+        
+        for node in root.findall("list/item"):
+            command = {}
+            for key in node.findall("dict/key"):
+                if key.get("name") == "args":
+                    args = {}
+                    for arg_key in key.findall("dict/key"):
+                        if arg_key.get("name") == "search":
+                            search_items = []
+                            for search_item in arg_key.findall("list/item"):
+                                search_items.append(search_item.text or "")
+                            args["search"] = search_items
+                        else:
+                            args[arg_key.get("name")] = arg_key.text or ""
+                    command["args"] = args
+                else:
+                    command[key.get("name")] = key.text or ""
+            result["commands"].append(command)
+        
+        return result
+    
     def modify_or_delete_tag(self, name, *args, **kwargs):
         output = ODataEntity()
         responseCode = 500

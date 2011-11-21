@@ -424,6 +424,14 @@ mappings = {
   "enableRealtimeSearch": "bool", 
   
   "__offset": "number",
+  
+  "eventsStreaming": "bool",
+  "eventsTimeOrdered": "bool",
+  "remoteTimeOrdered": "bool",
+  
+  "data.count": "number",
+  "data.operator": "bool",
+  
 }
 
 bool_regexes = [
