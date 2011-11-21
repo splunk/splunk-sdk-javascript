@@ -44,6 +44,14 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         self.router.add(Route('/search/jobs/<sid>/<data_source>', {"GET": self.job_data}, 'job_data'))
         self.router.add(Route('/search/jobs/<sid>', {"GET": self.eai, "DELETE": self.delete_job}, 'job_info'))
         self.router.add(Route('/search/jobs', {"GET": self.eai, "POST": self.create_job}, 'jobs'))
+        self.router.add(Route('/search/tags/<name>', 
+            {
+                "GET": self.eai, 
+                "DELETE": self.modify_or_delete_tag, 
+                "POST": self.modify_or_delete_tag
+            }, 
+            'tag_info'
+        ))
         self.router.add(Route('/properties/<file>/<stanza>', self.properties_stanza, 'properties_stanza_info'))
         self.router.add(Route('/properties/<file>/<stanza>/<key>', self.properties_stanza_key, 'properties_stanza_key'))
         self.router.add(Route('/auth/login', {"POST": self.auth}, 'auth'))
@@ -199,6 +207,41 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         
         odata = self.atom2odata(serverResponse, entity_class=self.scrubbed_path, timings=timings, messages=messages)
         return (responseCode, self.render_odata(odata))
+        
+    def modify_or_delete_tag(self, name, *args, **kwargs):
+        output = ODataEntity()
+        responseCode = 500
+        serverResponse = None
+        messages = []
+        
+        # fetch data
+        try:
+            serverStatus, serverResponse = self.forward_request()
+            responseCode = serverStatus.status
+        except splunk.RESTException, e:
+            responseCode = e.statusCode
+            messages.append({
+                'type': 'HTTP',
+                'text': '%s %s' % (e.statusCode, e.msg)
+            })
+            if e.extendedMessages:
+                messages.extend(e.extendedMessages)
+        
+        # convert to struct
+        if serverResponse:
+            output.name = name
+            node = et.fromstring(serverResponse)
+            
+            # service may return messages in the body; try to parse them
+            try:
+                msg = splunk.rest.extractMessages(node)
+                if msg:
+                    messages.append(msg)
+            except:
+                raise
+                    
+        output.messages = messages
+        return responseCode, self.render_odata(output)
         
     def properties_stanza_key(self, file, stanza, key, *args, **kwargs):
         output = ODataEntity()
@@ -557,6 +600,7 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
                     # 0, since they are both false-y values
                     if output.total_count is None:
                         output.count = len(root.xpath('a:entry', namespaces={'a': ATOM_NS}))
+                        output.total_count = output.count
                     else:
                         output.count = min(output.total_count, len(root.xpath('a:entry', namespaces={'a': ATOM_NS})))
                         
