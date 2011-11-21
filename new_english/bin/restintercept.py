@@ -44,6 +44,7 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         self.router.add(Route('/search/jobs/<sid>/<data_source>', {"GET": self.job_data}, 'job_data'))
         self.router.add(Route('/search/jobs/<sid>', {"GET": self.eai, "DELETE": self.delete_job}, 'job_info'))
         self.router.add(Route('/search/jobs', {"GET": self.eai, "POST": self.create_job}, 'jobs'))
+        self.router.add(Route('/search/parser', self.parse_query, 'parse_query'))
         self.router.add(Route('/search/tags/<name>', 
             {
                 "GET": self.eai, 
@@ -207,6 +208,35 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         
         odata = self.atom2odata(serverResponse, entity_class=self.scrubbed_path, timings=timings, messages=messages)
         return (responseCode, self.render_odata(odata))
+        
+    def parse_query(self, *args, **kwargs):
+        output = ODataEntity()
+        responseCode = 500
+        serverResponse = None
+        messages = []
+        
+        # Always get JSON, that way we don't need to do anything
+        self.request["query"]["output_mode"] = "json"
+        
+        # fetch data
+        try:
+            serverStatus, serverResponse = self.forward_request()
+            responseCode = serverStatus.status
+        except splunk.RESTException, e:
+            responseCode = e.statusCode
+            messages.append({
+                'type': 'HTTP',
+                'text': '%s %s' % (e.statusCode, e.msg)
+            })
+            if e.extendedMessages:
+                messages.extend(e.extendedMessages)
+        
+        # convert to struct
+        if serverResponse:
+            output.data = json.loads(serverResponse)
+                    
+        output.messages = messages
+        return responseCode, self.render_odata(output)
         
     def modify_or_delete_tag(self, name, *args, **kwargs):
         output = ODataEntity()
