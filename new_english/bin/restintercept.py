@@ -45,6 +45,7 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         self.router.add(Route('/search/jobs/<sid>', {"GET": self.eai, "DELETE": self.delete_job}, 'job_info'))
         self.router.add(Route('/search/jobs', {"GET": self.eai, "POST": self.create_job}, 'jobs'))
         self.router.add(Route('/properties/<file>/<stanza>', self.properties_stanza, 'properties_stanza_info'))
+        self.router.add(Route('/properties/<file>/<stanza>/<key>', self.properties_stanza_key, 'properties_stanza_key'))
         self.router.add(Route('/auth/login', {"POST": self.auth}, 'auth'))
         self.router.add(Route('/<:.*>', self.eai, 'eai'))
         
@@ -198,6 +199,49 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         
         odata = self.atom2odata(serverResponse, entity_class=self.scrubbed_path, timings=timings, messages=messages)
         return (responseCode, self.render_odata(odata))
+        
+    def properties_stanza_key(self, file, stanza, key, *args, **kwargs):
+        output = ODataEntity()
+        responseCode = 500
+        serverResponse = None
+        messages = []
+        
+        # fetch data
+        try:
+            serverStatus, serverResponse = self.forward_request()
+            responseCode = serverStatus.status
+        except splunk.RESTException, e:
+            responseCode = e.statusCode
+            messages.append({
+                'type': 'HTTP',
+                'text': '%s %s' % (e.statusCode, e.msg)
+            })
+            if e.extendedMessages:
+                messages.extend(e.extendedMessages)
+        
+        # convert to struct
+        if serverResponse:
+            value = serverResponse if self.method == "GET" else self.request["form"]["value"]
+            output.name = key
+            output.data = {
+                "key": key,
+                "value": value
+            }
+            
+            # For POST messages, we can get the message
+            if self.method == "POST":
+                node = et.fromstring(serverResponse)
+                
+                # service may return messages in the body; try to parse them
+                try:
+                    msg = splunk.rest.extractMessages(node)
+                    if msg:
+                        messages.append(msg)
+                except:
+                    raise
+                    
+        output.messages = messages
+        return responseCode, self.render_odata(output)
             
     def properties_stanza(self, file, stanza, *args, **kwargs):
         output = ODataEntity()
