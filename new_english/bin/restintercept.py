@@ -56,6 +56,7 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         ))
         self.router.add(Route('/properties/<file>/<stanza>', self.properties_stanza, 'properties_stanza_info'))
         self.router.add(Route('/properties/<file>/<stanza>/<key>', self.properties_stanza_key, 'properties_stanza_key'))
+        self.router.add(Route('/receivers/simple', self.http_simple_input, 'http_simple_input'))
         self.router.add(Route('/auth/login', {"POST": self.auth}, 'auth'))
         self.router.add(Route('/<:.*>', self.eai, 'eai'))
         
@@ -454,6 +455,56 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
 
         return (responseCode, self.render_odata(output))
         
+    def http_simple_input(self, *args, **kwargs):
+        # init
+        output = ODataEntity()
+        responseCode = 500
+        serverResponse = None
+        messages = []
+        
+        # Unfortunately, we can't use the Splunk API for this, so we just do it
+        # ourselves
+        base_url = "https://" + self.request['headers']['host'] + "/"
+        path = self.request['path'].replace("/services/json/v1/", "")
+        query = self.request["query"] 
+        query_string = ""
+        if len(query): 
+            query_string = "?" + urllib.urlencode(query)
+        uri = base_url + path + query_string
+        
+        # fetch data
+        h = httplib2.Http(timeout=splunk.rest.SPLUNKD_CONNECTION_TIMEOUT)
+        serverStatus, serverResponse = h.request(
+            uri, 
+            self.method, 
+            headers=self.request["headers"], 
+            body=self.request["payload"]
+        )
+        responseCode = serverStatus.status
+        
+        # convert XML to struct
+        if serverResponse:
+            root = et.fromstring(serverResponse)
+            result = {}
+            
+            for field in root.findall("results/result/field"):
+                result[field.get("k")] = field.findtext("value/text")
+                
+            output.data = result
+
+            # service may return messages in the body; try to parse them
+            try:
+                msg = splunk.rest.extractMessages(root)
+                if msg:
+                    messages.append(msg)
+            except:
+                raise
+                
+        # package and return
+        output.messages = messages
+        return responseCode, self.render_odata(output) 
+        
+            
     def job_data(self, data_source, *args, **kwargs):
         # init
         output = ODataEntity()
