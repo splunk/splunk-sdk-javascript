@@ -194,9 +194,17 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
             responseCode = serverStatus.status            
         except splunk.RESTException, e:
             responseCode = e.statusCode
+            
+            # Extract the real message
+            msg = e.msg
+            if isinstance(msg, list):
+                msg = msg[0]
+                if isinstance(msg, dict):
+                    msg = msg["text"]
+            
             messages.append({
                 'type': 'HTTP',
-                'text': '%s %s' % (e.statusCode, e.msg)
+                'text': 'HTTP Status %s -- %s' % (e.statusCode, msg)
             })
             if hasattr(e, 'extendedMessages') and e.extendedMessages:
                 for message in e.extendedMessages:
@@ -236,7 +244,6 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         # convert to struct
         if serverResponse:
             res = json.loads(serverResponse)
-            logger.info(res)
             output.data = {"data": res}
                                 
         output.messages = messages
@@ -789,7 +796,6 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
                 content_node = content_xpath[0][0]
                 tmpEntity.data = splunk.rest.format.nodeToPrimitive(content_node)
             else:
-                logger.info(content_xpath[0].text)
                 tmpEntity.data = {"data": content_xpath[0].text}
     
         # move the metadata around
