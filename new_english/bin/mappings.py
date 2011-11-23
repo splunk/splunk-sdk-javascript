@@ -432,6 +432,7 @@ mappings = {
   "data.count": "number",
   "data.operator": "bool",
   
+  "bytes": "number"  
 }
 
 bool_regexes = [
