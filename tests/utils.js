@@ -30,7 +30,7 @@
         var i = 0;
         var keepGoing = true;
         Async.whilst(
-            function() { return condition(obj) && (i++ < iterations); },
+            function() { return !condition(obj) && (i++ < iterations); },
             function(done) {
                 Async.sleep(500, function() {
                     obj.refresh(done); 

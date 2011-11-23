@@ -96,7 +96,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job,
                                 function(j) {
-                                    return !j.isValid() || !job.properties()["isDone"];
+                                    return j.isValid() && job.properties()["isDone"];
                                 },
                                 10,
                                 done
@@ -134,7 +134,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job,
                                 function(j) {
-                                    return !j.isValid() || !job.properties()["isDone"];
+                                    return j.isValid() && job.properties()["isDone"];
                                 },
                                 10,
                                 done
@@ -170,7 +170,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job,
                                 function(j) {
-                                    return !j.isValid() || !job.properties()["isDone"];
+                                    return j.isValid() && job.properties()["isDone"];
                                 },
                                 10,
                                 done
@@ -242,7 +242,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job, 
                                 function(j) {
-                                    return !j.isValid() || !j.properties()["isPaused"];
+                                    return j.isValid() && j.properties()["isPaused"];
                                 },
                                 10,
                                 done
@@ -258,7 +258,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job, 
                                 function(j) {
-                                    return !j.isValid() || j.properties()["isPaused"];
+                                    return j.isValid() && !j.properties()["isPaused"];
                                 },
                                 10,
                                 done
@@ -748,7 +748,7 @@ exports.setup = function(svc) {
                         test.ok(!stanza.isValid());
                         tutils.pollUntil(
                             stanza, function(s) {
-                                return !s.isValid() || s.properties()["jssdk_foobar"] !== value;
+                                return s.isValid() && s.properties()["jssdk_foobar"] === value;
                             }, 
                             10, 
                             done
@@ -879,7 +879,7 @@ exports.setup = function(svc) {
                         test.ok(!stanza.isValid());
                         tutils.pollUntil(
                             stanza, function(s) {
-                                return !s.isValid() || s.properties()["jssdk_foobar"] !== value;
+                                return s.isValid() || s.properties()["jssdk_foobar"] === value;
                             }, 
                             10, 
                             done
@@ -907,7 +907,135 @@ exports.setup = function(svc) {
                     test.done();
                 });
             },
-        }
+        },
+        
+        "Index Tests": {      
+            setUp: function(done) {
+                this.service = svc;
+                
+                // Create the index for everyone to use
+                var name = this.indexName = "sdk-tests";
+                var indexes = this.service.indexes();
+                indexes.create(name, {}, function(err, index) {
+                    if (err && err.status !== 409) {
+                        throw new Error("Index creation failed for an unknown reason");
+                    }
+                    
+                    done();
+                });
+            },
+                         
+            "Callback#list indexes": function(test) {
+                var indexes = this.service.indexes();
+                indexes.list(function(err, indexList) {
+                    test.ok(indexList.length > 0);
+                    test.done();
+                });
+            },
+                   
+            "Callback#contains index": function(test) {
+                var indexes = this.service.indexes();
+                indexes.contains(this.indexName, function(err, found) {
+                    test.ok(found);
+                    test.done();
+                });
+            },
+            
+            "Callback#modify index": function(test) {
+                
+                var name = this.indexName;
+                var indexes = this.service.indexes();
+                
+                Async.chain([
+                        function(callback) {
+                            indexes.contains(name, callback);     
+                        },
+                        function(found, index, callback) {
+                            test.ok(found);
+                            test.ok(index.isValid());
+                            index.update({
+                                assureUTF8: !index.properties().assureUTF8
+                            }, callback);
+                        },
+                        function(index, callback) {
+                            test.ok(!!index);
+                            test.ok(!index.isValid());
+                            index.read(callback);
+                        },
+                        function(index, callback) {
+                            test.ok(index);
+                            test.ok(index.isValid());
+                            var properties = index.properties();
+                            
+                            test.ok(!properties.assureUTF8);
+                            
+                            index.update({
+                                assureUTF8: !properties.assureUTF8
+                            }, callback);
+                        },
+                        function(index, callback) {
+                            test.ok(!!index);
+                            test.ok(!index.isValid());
+                            index.read(callback);
+                        },
+                        function(index, callback) {
+                            test.ok(index);
+                            test.ok(index.isValid());
+                            var properties = index.properties();
+                            
+                            test.ok(properties.assureUTF8);
+                            callback();
+                        },
+                        function(callback) {
+                            callback();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+                   
+            "Callback#Index submit event": function(test) {
+                var message = "Hello World -- " + getNextId();
+                var sourcetype = "sdk-tests";
+                
+                var originalEventCount = null;
+                var indexName = this.indexName;
+                var indexes = this.service.indexes();
+                Async.chain([
+                        function(done) {
+                            indexes.item(indexName, done);
+                        },
+                        function(index, done) {
+                            test.ok(index);
+                            test.ok(index.isValid());
+                            test.strictEqual(index.properties().__name, indexName);
+                            originalEventCount = index.properties().totalEventCount;
+                            
+                            index.submitEvent(message, {sourcetype: sourcetype}, done);
+                        },
+                        function(eventInfo, index, done) {
+                            test.ok(!index.isValid());
+                            test.ok(eventInfo);
+                            test.strictEqual(eventInfo.sourcetype, sourcetype);
+                            test.strictEqual(eventInfo.bytes, message.length);
+                            test.strictEqual(eventInfo._index, indexName);
+                            
+                            // We could poll to make sure the index has eaten up the event,
+                            // but unfortunately this can take an unbounded amount of time.
+                            // As such, since we got a good response, we'll just be done with it.
+                            done();
+                        },
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done(); 
+                    }
+                );
+            },
+        },
     };
 
 };
