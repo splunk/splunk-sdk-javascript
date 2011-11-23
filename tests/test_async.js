@@ -428,6 +428,20 @@ exports.setup = function() {
                 }
             );
         },
+        
+        "Augment callback": function(test) {
+            var callback = function(a, b) { 
+                test.ok(a);
+                test.ok(b);
+                test.strictEqual(a, 1);
+                test.strictEqual(b, 2);  
+                
+                test.done();
+            };
+            
+            var augmented = Async.augment(callback, 2);
+            augmented(1);
+        },
     };
 };
 
