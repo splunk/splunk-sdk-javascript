@@ -295,7 +295,9 @@ exports.setup = function(svc) {
                         },
                         function(job, done) {
                             test.ok(job.isValid());
-                            var ttl = originalTTL = job.properties()["ttl"];
+                            var ttl = job.properties()["ttl"];
+                            originalTTL = ttl;
+                            
                             job.setTTL(ttl*2, done);
                         },
                         function(job, done) {

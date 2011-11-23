@@ -513,7 +513,7 @@ require.define("/lib/binding.js", function (require, module, exports, __dirname,
             this.username = params.username || null;  
             this.password = params.password || null;  
             this.owner = params.owner || "-";  
-            this.namespace = params.namespace || "-";  
+            this.namespace = params.namespace;  
             this.sessionKey = params.sessionKey || "";
             
             // Store our full prefix, which is just combining together
@@ -549,7 +549,7 @@ require.define("/lib/binding.js", function (require, module, exports, __dirname,
                 return "/services/" + path;
             }
 
-            var owner = (this.owner === "*" ? "-" : this.owner);
+            var owner = (this.owner === "*" || !this.owner ? "-" : this.owner);
             var namespace = (this.namespace === "*" ? "-" : this.namespace);
 
             return "/servicesNS/" + owner + "/" + namespace + "/" + path; 
@@ -676,7 +676,9 @@ require.define("/lib/paths.js", function (require, module, exports, __dirname, _
         roles: "authentication/roles",
         savedSearches: "saved/searches",
         settings: "server/settings",
-        users: "authentication/users"
+        users: "authentication/users",
+        
+        submitEvent: "receivers/simple"
     };
 })();
 });
@@ -845,7 +847,8 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
 (function() {
     "use strict";
     
-    var binding     = require('./binding');
+    var Binding     = require('./binding');
+    var Http        = require('./http');
     var Paths       = require('./paths').Paths;
     var Class       = require('./jquery.class').Class;
     var utils       = require('./utils');
@@ -860,7 +863,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
     // A service is the root of context for the Splunk RESTful API.
     // It defines the host and login information, and makes all the 
     // request using that context.
-    root.Service = binding.Context.extend({
+    root.Service = Binding.Context.extend({
         init: function() {
             this._super.apply(this, arguments);
 
@@ -909,6 +912,10 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         
         eventTypes: function() {
             return new root.Collection(this, Paths.eventTypes);
+        },
+        
+        indexes: function() { 
+            return new root.Indexes(this);
         },
         
         // Indexes
@@ -1412,6 +1419,25 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             this._super(values, callback);
         }
     });
+    
+    root.Indexes = root.Collection.extend({
+        init: function(service) {
+            this._super(service, Paths.indexes, {
+                item: function(collection, props) {
+                    return new root.Index(collection.service, props.__name);  
+                },
+                loadOnCreate: function() { return true; },
+                loadOnItem: function() { return true; }
+            });
+        },
+        
+        create: function(name, params, callback) {
+            params = params || {};
+            params["name"] = name;
+            
+            this._super(params, callback);
+        }
+    });
 
     // An endpoint for all the jobs running on the current Splunk instance,
     // allowing us to create and list jobs
@@ -1453,6 +1479,39 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                     callback(null, job);
                 }
             });
+        }
+    });
+    
+    root.Index = root.Entity.extend({
+        init: function(service, name) {
+            this.name = name;
+            this._super(service, Paths.indexes + "/" + encodeURIComponent(name));
+            
+            this.submitEvent = utils.bind(this, this.submitEvent);
+        },
+        
+        submitEvent: function(event, params, callback) {
+            callback = callback || function() {};
+            params = params || {};
+            
+            // Add the index name to the parameters
+            params["index"] = this.name;
+            
+            var path = Paths.submitEvent + "?" + Http.encode(params);
+            var method = "POST";
+            var headers = {};
+            var body = event;
+            
+            var that = this;
+            this.service.request(path, method, headers, body, function(err, response) {
+                if (err) {
+                    callback(err);
+                } 
+                else {
+                    callback(null, response.odata.results, that);
+                }
+            });
+            this._invalidate();
         }
     });
     
@@ -1714,7 +1773,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
     // This is a utility function to encode an object into a URI-compliant
     // URI. It will convert objects into '&key=value' pairs, and arrays into
     // `&key=value1&key=value2...'
-    var encode = function(params) {
+    root.encode = function(params) {
         var encodedStr = "";
 
         // We loop over all the keys so we encode them.
@@ -1767,7 +1826,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
         },
 
         get: function(url, headers, params, timeout, callback) {
-            var encoded_url = url + "?" + encode(params);
+            var encoded_url = url + "?" + root.encode(params);
             var message = {
                 method: "GET",
                 headers: headers,
@@ -1783,14 +1842,14 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
                 method: "POST",
                 headers: headers,
                 timeout: timeout,
-                body: encode(params)
+                body: root.encode(params)
             };
 
             return this.request(url, message, callback);
         },
 
         del: function(url, headers, params, timeout, callback) {
-            var encoded_url = url + "?" + encode(params);
+            var encoded_url = url + "?" + root.encode(params);
             var message = {
                 method: "DELETE",
                 headers: headers,
@@ -1963,6 +2022,7 @@ require.define("/lib/odata.js", function (require, module, exports, __dirname, _
             for (var i = 0; i < list.length; i++) {
                 var msg = '[SPLUNKD] ' + list[i].text;
                 switch (list[i].type) {
+                    case 'HTTP':
                     case 'FATAL':
                     case 'ERROR':
                         console.error(msg);
@@ -2210,6 +2270,18 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
 
     root.sleep = function(timeout, callback) {
         setTimeout(callback, timeout);
+    };
+    
+    root.augment = function(callback) {
+        var args = Array.prototype.slice.call(arguments, 1);
+        return function() {
+            var augmentedArgs = Array.prototype.slice.call(arguments);
+            for(var i = 0; i < args.length; i++) {
+              augmentedArgs.push(args[i]);
+            }
+            
+            callback.apply(null, augmentedArgs);
+        };
     };
 })();
 });
@@ -2798,6 +2870,20 @@ exports.setup = function() {
                     test.done();
                 }
             );
+        },
+        
+        "Augment callback": function(test) {
+            var callback = function(a, b) { 
+                test.ok(a);
+                test.ok(b);
+                test.strictEqual(a, 1);
+                test.strictEqual(b, 2);  
+                
+                test.done();
+            };
+            
+            var augmented = Async.augment(callback, 2);
+            augmented(1);
         },
     };
 };
@@ -4577,7 +4663,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job,
                                 function(j) {
-                                    return !j.isValid() || !job.properties()["isDone"];
+                                    return j.isValid() && job.properties()["isDone"];
                                 },
                                 10,
                                 done
@@ -4615,7 +4701,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job,
                                 function(j) {
-                                    return !j.isValid() || !job.properties()["isDone"];
+                                    return j.isValid() && job.properties()["isDone"];
                                 },
                                 10,
                                 done
@@ -4651,7 +4737,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job,
                                 function(j) {
-                                    return !j.isValid() || !job.properties()["isDone"];
+                                    return j.isValid() && job.properties()["isDone"];
                                 },
                                 10,
                                 done
@@ -4723,7 +4809,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job, 
                                 function(j) {
-                                    return !j.isValid() || !j.properties()["isPaused"];
+                                    return j.isValid() && j.properties()["isPaused"];
                                 },
                                 10,
                                 done
@@ -4739,7 +4825,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job, 
                                 function(j) {
-                                    return !j.isValid() || j.properties()["isPaused"];
+                                    return j.isValid() && !j.properties()["isPaused"];
                                 },
                                 10,
                                 done
@@ -4776,7 +4862,9 @@ exports.setup = function(svc) {
                         },
                         function(job, done) {
                             test.ok(job.isValid());
-                            var ttl = originalTTL = job.properties()["ttl"];
+                            var ttl = job.properties()["ttl"];
+                            originalTTL = ttl;
+                            
                             job.setTTL(ttl*2, done);
                         },
                         function(job, done) {
@@ -5229,7 +5317,7 @@ exports.setup = function(svc) {
                         test.ok(!stanza.isValid());
                         tutils.pollUntil(
                             stanza, function(s) {
-                                return !s.isValid() || s.properties()["jssdk_foobar"] !== value;
+                                return s.isValid() && s.properties()["jssdk_foobar"] === value;
                             }, 
                             10, 
                             done
@@ -5360,7 +5448,7 @@ exports.setup = function(svc) {
                         test.ok(!stanza.isValid());
                         tutils.pollUntil(
                             stanza, function(s) {
-                                return !s.isValid() || s.properties()["jssdk_foobar"] !== value;
+                                return s.isValid() || s.properties()["jssdk_foobar"] === value;
                             }, 
                             10, 
                             done
@@ -5388,7 +5476,135 @@ exports.setup = function(svc) {
                     test.done();
                 });
             },
-        }
+        },
+        
+        "Index Tests": {      
+            setUp: function(done) {
+                this.service = svc;
+                
+                // Create the index for everyone to use
+                var name = this.indexName = "sdk-tests";
+                var indexes = this.service.indexes();
+                indexes.create(name, {}, function(err, index) {
+                    if (err && err.status !== 409) {
+                        throw new Error("Index creation failed for an unknown reason");
+                    }
+                    
+                    done();
+                });
+            },
+                         
+            "Callback#list indexes": function(test) {
+                var indexes = this.service.indexes();
+                indexes.list(function(err, indexList) {
+                    test.ok(indexList.length > 0);
+                    test.done();
+                });
+            },
+                   
+            "Callback#contains index": function(test) {
+                var indexes = this.service.indexes();
+                indexes.contains(this.indexName, function(err, found) {
+                    test.ok(found);
+                    test.done();
+                });
+            },
+            
+            "Callback#modify index": function(test) {
+                
+                var name = this.indexName;
+                var indexes = this.service.indexes();
+                
+                Async.chain([
+                        function(callback) {
+                            indexes.contains(name, callback);     
+                        },
+                        function(found, index, callback) {
+                            test.ok(found);
+                            test.ok(index.isValid());
+                            index.update({
+                                assureUTF8: !index.properties().assureUTF8
+                            }, callback);
+                        },
+                        function(index, callback) {
+                            test.ok(!!index);
+                            test.ok(!index.isValid());
+                            index.read(callback);
+                        },
+                        function(index, callback) {
+                            test.ok(index);
+                            test.ok(index.isValid());
+                            var properties = index.properties();
+                            
+                            test.ok(!properties.assureUTF8);
+                            
+                            index.update({
+                                assureUTF8: !properties.assureUTF8
+                            }, callback);
+                        },
+                        function(index, callback) {
+                            test.ok(!!index);
+                            test.ok(!index.isValid());
+                            index.read(callback);
+                        },
+                        function(index, callback) {
+                            test.ok(index);
+                            test.ok(index.isValid());
+                            var properties = index.properties();
+                            
+                            test.ok(properties.assureUTF8);
+                            callback();
+                        },
+                        function(callback) {
+                            callback();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+                   
+            "Callback#Index submit event": function(test) {
+                var message = "Hello World -- " + getNextId();
+                var sourcetype = "sdk-tests";
+                
+                var originalEventCount = null;
+                var indexName = this.indexName;
+                var indexes = this.service.indexes();
+                Async.chain([
+                        function(done) {
+                            indexes.item(indexName, done);
+                        },
+                        function(index, done) {
+                            test.ok(index);
+                            test.ok(index.isValid());
+                            test.strictEqual(index.properties().__name, indexName);
+                            originalEventCount = index.properties().totalEventCount;
+                            
+                            index.submitEvent(message, {sourcetype: sourcetype}, done);
+                        },
+                        function(eventInfo, index, done) {
+                            test.ok(!index.isValid());
+                            test.ok(eventInfo);
+                            test.strictEqual(eventInfo.sourcetype, sourcetype);
+                            test.strictEqual(eventInfo.bytes, message.length);
+                            test.strictEqual(eventInfo._index, indexName);
+                            
+                            // We could poll to make sure the index has eaten up the event,
+                            // but unfortunately this can take an unbounded amount of time.
+                            // As such, since we got a good response, we'll just be done with it.
+                            done();
+                        },
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done(); 
+                    }
+                );
+            },
+        },
     };
 
 };
@@ -5459,7 +5675,7 @@ require.define("/tests/utils.js", function (require, module, exports, __dirname,
         var i = 0;
         var keepGoing = true;
         Async.whilst(
-            function() { return condition(obj) && (i++ < iterations); },
+            function() { return !condition(obj) && (i++ < iterations); },
             function(done) {
                 Async.sleep(500, function() {
                     obj.refresh(done); 

@@ -392,7 +392,7 @@ require.define("/lib/binding.js", function (require, module, exports, __dirname,
             this.username = params.username || null;  
             this.password = params.password || null;  
             this.owner = params.owner || "-";  
-            this.namespace = params.namespace || "-";  
+            this.namespace = params.namespace;  
             this.sessionKey = params.sessionKey || "";
             
             // Store our full prefix, which is just combining together
@@ -428,7 +428,7 @@ require.define("/lib/binding.js", function (require, module, exports, __dirname,
                 return "/services/" + path;
             }
 
-            var owner = (this.owner === "*" ? "-" : this.owner);
+            var owner = (this.owner === "*" || !this.owner ? "-" : this.owner);
             var namespace = (this.namespace === "*" ? "-" : this.namespace);
 
             return "/servicesNS/" + owner + "/" + namespace + "/" + path; 
@@ -555,7 +555,9 @@ require.define("/lib/paths.js", function (require, module, exports, __dirname, _
         roles: "authentication/roles",
         savedSearches: "saved/searches",
         settings: "server/settings",
-        users: "authentication/users"
+        users: "authentication/users",
+        
+        submitEvent: "receivers/simple"
     };
 })();
 });
@@ -724,7 +726,8 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
 (function() {
     "use strict";
     
-    var binding     = require('./binding');
+    var Binding     = require('./binding');
+    var Http        = require('./http');
     var Paths       = require('./paths').Paths;
     var Class       = require('./jquery.class').Class;
     var utils       = require('./utils');
@@ -739,7 +742,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
     // A service is the root of context for the Splunk RESTful API.
     // It defines the host and login information, and makes all the 
     // request using that context.
-    root.Service = binding.Context.extend({
+    root.Service = Binding.Context.extend({
         init: function() {
             this._super.apply(this, arguments);
 
@@ -788,6 +791,10 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         
         eventTypes: function() {
             return new root.Collection(this, Paths.eventTypes);
+        },
+        
+        indexes: function() { 
+            return new root.Indexes(this);
         },
         
         // Indexes
@@ -1291,6 +1298,25 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             this._super(values, callback);
         }
     });
+    
+    root.Indexes = root.Collection.extend({
+        init: function(service) {
+            this._super(service, Paths.indexes, {
+                item: function(collection, props) {
+                    return new root.Index(collection.service, props.__name);  
+                },
+                loadOnCreate: function() { return true; },
+                loadOnItem: function() { return true; }
+            });
+        },
+        
+        create: function(name, params, callback) {
+            params = params || {};
+            params["name"] = name;
+            
+            this._super(params, callback);
+        }
+    });
 
     // An endpoint for all the jobs running on the current Splunk instance,
     // allowing us to create and list jobs
@@ -1332,6 +1358,39 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                     callback(null, job);
                 }
             });
+        }
+    });
+    
+    root.Index = root.Entity.extend({
+        init: function(service, name) {
+            this.name = name;
+            this._super(service, Paths.indexes + "/" + encodeURIComponent(name));
+            
+            this.submitEvent = utils.bind(this, this.submitEvent);
+        },
+        
+        submitEvent: function(event, params, callback) {
+            callback = callback || function() {};
+            params = params || {};
+            
+            // Add the index name to the parameters
+            params["index"] = this.name;
+            
+            var path = Paths.submitEvent + "?" + Http.encode(params);
+            var method = "POST";
+            var headers = {};
+            var body = event;
+            
+            var that = this;
+            this.service.request(path, method, headers, body, function(err, response) {
+                if (err) {
+                    callback(err);
+                } 
+                else {
+                    callback(null, response.odata.results, that);
+                }
+            });
+            this._invalidate();
         }
     });
     
@@ -1593,7 +1652,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
     // This is a utility function to encode an object into a URI-compliant
     // URI. It will convert objects into '&key=value' pairs, and arrays into
     // `&key=value1&key=value2...'
-    var encode = function(params) {
+    root.encode = function(params) {
         var encodedStr = "";
 
         // We loop over all the keys so we encode them.
@@ -1646,7 +1705,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
         },
 
         get: function(url, headers, params, timeout, callback) {
-            var encoded_url = url + "?" + encode(params);
+            var encoded_url = url + "?" + root.encode(params);
             var message = {
                 method: "GET",
                 headers: headers,
@@ -1662,14 +1721,14 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
                 method: "POST",
                 headers: headers,
                 timeout: timeout,
-                body: encode(params)
+                body: root.encode(params)
             };
 
             return this.request(url, message, callback);
         },
 
         del: function(url, headers, params, timeout, callback) {
-            var encoded_url = url + "?" + encode(params);
+            var encoded_url = url + "?" + root.encode(params);
             var message = {
                 method: "DELETE",
                 headers: headers,
@@ -1842,6 +1901,7 @@ require.define("/lib/odata.js", function (require, module, exports, __dirname, _
             for (var i = 0; i < list.length; i++) {
                 var msg = '[SPLUNKD] ' + list[i].text;
                 switch (list[i].type) {
+                    case 'HTTP':
                     case 'FATAL':
                     case 'ERROR':
                         console.error(msg);
@@ -2089,6 +2149,18 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
 
     root.sleep = function(timeout, callback) {
         setTimeout(callback, timeout);
+    };
+    
+    root.augment = function(callback) {
+        var args = Array.prototype.slice.call(arguments, 1);
+        return function() {
+            var augmentedArgs = Array.prototype.slice.call(arguments);
+            for(var i = 0; i < args.length; i++) {
+              augmentedArgs.push(args[i]);
+            }
+            
+            callback.apply(null, augmentedArgs);
+        };
     };
 })();
 });
