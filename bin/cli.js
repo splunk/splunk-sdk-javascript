@@ -1,5 +1,3 @@
-#!/usr/bin/env node
-
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -274,7 +272,7 @@
         
     program.parse(process.argv);
     
-    if (program.args.length === 0) {        
+    if (program.args.length === 0) {       
         process.stdout.write(program.helpInformation());
         process.exit(0);
     }
