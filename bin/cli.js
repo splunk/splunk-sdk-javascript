@@ -48,7 +48,7 @@
     
     var createServer = function(port) {
         // passing where is going to be the document root of resources.
-        var handler = staticResource.createHandler(fs.realpathSync(path.dirname(__filename)));
+        var handler = staticResource.createHandler(fs.realpathSync(path.resolve(__dirname, "..")));
 
         var server = http.createServer(function(request, response) {
             var path = url.parse(request.url).pathname;
