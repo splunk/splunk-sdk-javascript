@@ -1675,6 +1675,17 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
                         encodedStr = encodedStr + key + "=" + encodeURIComponent(value[i]) + "&";
                     }
                 }
+                else if (typeof value === "object") {
+                    var i = 0;
+                    for(var innerKey in value) {
+                        if (value.hasOwnProperty(innerKey)) {
+                            var innerValue = value[innerKey];
+                            encodedStr = encodedStr + key + "=" + encodeURIComponent(value[innerKey]) + "&";
+                            
+                            i++;
+                        }
+                    }
+                }
                 else {
                     // If it's not an array, we just encode it
                     encodedStr = encodedStr + key + "=" + encodeURIComponent(value);
