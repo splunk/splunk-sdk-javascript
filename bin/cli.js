@@ -185,6 +185,7 @@
     };
     
     var runTests = function(tests, options) {
+        options = options || {};        
         var args = (tests || "").split(",").map(function(arg) { return arg.trim(); });
         
         var files = args.map(function(arg) {
@@ -198,12 +199,12 @@
         }
         
         var cmdline = [
-            (options.username   ?                   cmdline.push(makeOption("username",     options.username))      : ""),
-            (options.scheme     ?                   cmdline.push(makeOption("scheme",       options.scheme))        : ""),
-            (options.host       ?                   cmdline.push(makeOption("host",         options.host))          : ""),
-            (options.port       ?                   cmdline.push(makeOption("port",         options.port))          : ""),
-            (options.namespace  ?                   cmdline.push(makeOption("namespace",    options.namespace))     : ""),
-            (!utils.isFunction(options.password) ?  cmdline.push(makeOption("password",     options.password))      : "")
+            (options.username   ?                   makeOption("username",     options.username)      : ""),
+            (options.scheme     ?                   makeOption("scheme",       options.scheme)        : ""),
+            (options.host       ?                   makeOption("host",         options.host)          : ""),
+            (options.port       ?                   makeOption("port",         options.port)          : ""),
+            (options.namespace  ?                   makeOption("namespace",    options.namespace)     : ""),
+            (!utils.isFunction(options.password) ?  makeOption("password",     options.password)      : "")
         ];
         
         var testFunctions = files.map(function(file) {
