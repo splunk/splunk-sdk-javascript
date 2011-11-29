@@ -1,0 +1,1025 @@
+<head>
+  <script>
+    var raw = [{"id":"1-1322598120091","name":"Splunk.Http","signature":"root.Http","type":"property","ctx":{"type":"property","receiver":"root","name":"Http","value":"Class.extend({","string":"root.Http"},"description":{"full":"<p>Splunk.Http</p>\n\n<p>Base class for HTTP abstraction. </p>\n\n<p>This class provides the basic functionality (get/post/delete/request),<br />as well as utilities to construct uniform responses.</p>\n\n<p>Base classes should only override <code>makeRequest</code> and <code>parseJSON</code></p>","summary":"<p>Splunk.Http</p>","body":"<p>Base class for HTTP abstraction. </p>\n\n<p>This class provides the basic functionality (get/post/delete/request),<br />as well as utilities to construct uniform responses.</p>\n\n<p>Base classes should only override <code>makeRequest</code> and <code>parseJSON</code></p>"},"full_description":"<p>Splunk.Http</p>\n\n<p>Base class for HTTP abstraction. </p>\n\n<p>This class provides the basic functionality (get/post/delete/request), as well as utilities to construct uniform responses.</p>\n\n<p>Base classes should only override <code>makeRequest</code> and <code>parseJSON</code></p>","code":"root.Http = Class.extend({","params":[],"has_params":false,"has_returns":false,"tags":[{"type":"moduleRoot","content":"Splunk.Http"}],"module":true,"parent":"Global","has_related":false,"is_global":false,"global":"","methods":[{"id":"2-1322598120091","name":"init","signature":"Splunk.Http.init","type":"constructor","ctx":{"type":"method","name":"init","value":"function(isSplunk) {","string":"init"},"description":{"full":"<p>Constructor for Splunk.Http</p>","summary":"<p>Constructor for Splunk.Http</p>","body":""},"full_description":"<p>Constructor for Splunk.Http</p>","code":"init: function(isSplunk) {\n    // Whether or not this HTTP provider is talking to Splunk or not\n    this.isSplunk = (isSplunk === undefined ? true : isSplunk);\n\n    // We perform the bindings so that every function works \n    // properly when it is passed as a callback.\n    this.get                = utils.bind(this, this.get);\n    this.del                = utils.bind(this, this.del);\n    this.post               = utils.bind(this, this.post);\n    this.request            = utils.bind(this, this.request);\n    this._buildResponse     = utils.bind(this, this._buildResponse);\n},","params":[{"type":"param","types":["Boolean"],"name":"isSplunk","description":"Whether or not this is HTTP instance is for talking with Splunk."}],"has_params":true,"returns":{"type":"return","types":["Splunk.Http"],"description":"A Splunk.Http instance"},"has_returns":true,"tags":[{"type":"constructor","content":""},{"type":"param","types":["Boolean"],"name":"isSplunk","description":"Whether or not this is HTTP instance is for talking with Splunk."},{"type":"return","types":["Splunk.Http"],"description":"A Splunk.Http instance"},{"type":"","content":""},{"type":"module","content":"Splunk.Http"}],"module":false,"parent":"Splunk.Http","has_related":false,"is_global":false,"global":""},{"id":"3-1322598120091","name":"get","signature":"Splunk.Http.get","type":"method","ctx":{"type":"method","name":"get","value":"function(url, headers, params, timeout, callback) {","string":"get"},"description":{"full":"<p>Perform a POST request</p>","summary":"<p>Perform a POST request</p>","body":""},"full_description":"<p>Perform a POST request</p>","code":"get: function(url, headers, params, timeout, callback) {\n    var encoded_url = url + \"?\" + root.encode(params);\n    var message = {\n        method: \"GET\",\n        headers: headers,\n        timeout: timeout\n    };\n\n    return this.request(encoded_url, message, callback);\n},","params":[{"type":"param","types":["String"],"name":"url","description":"URL to request"},{"type":"param","types":["Object"],"name":"headers","description":"Object of headers for this request"},{"type":"param","types":["Object"],"name":"params","description":"Body parameters for this request"},{"type":"param","types":["Number"],"name":"timeout","description":"Timeout (currently ignored)"},{"type":"param","types":["Function"],"name":"callback","description":"Callback for when the request is complete"}],"has_params":true,"has_returns":false,"tags":[{"type":"param","types":["String"],"name":"url","description":"URL to request"},{"type":"param","types":["Object"],"name":"headers","description":"Object of headers for this request"},{"type":"param","types":["Object"],"name":"params","description":"Body parameters for this request"},{"type":"param","types":["Number"],"name":"timeout","description":"Timeout (currently ignored)"},{"type":"param","types":["Function"],"name":"callback","description":"Callback for when the request is complete"},{"type":"","content":""},{"type":"module","content":"Splunk.Http"}],"module":false,"parent":"Splunk.Http","has_related":false,"is_global":false,"global":""},{"id":"4-1322598120091","name":"post","signature":"Splunk.Http.post","type":"method","ctx":{"type":"method","name":"post","value":"function(url, headers, params, timeout, callback) {","string":"post"},"description":{"full":"<p>Perform a POST request</p>","summary":"<p>Perform a POST request</p>","body":""},"full_description":"<p>Perform a POST request</p>","code":"post: function(url, headers, params, timeout, callback) {\n    headers[\"Content-Type\"] = \"application/x-www-form-urlencoded\";\n    var message = {\n        method: \"POST\",\n        headers: headers,\n        timeout: timeout,\n        body: root.encode(params)\n    };\n\n    return this.request(url, message, callback);\n},","params":[{"type":"param","types":["String"],"name":"url","description":"URL to request"},{"type":"param","types":["Object"],"name":"headers","description":"Object of headers for this request"},{"type":"param","types":["Object"],"name":"params","description":"Body parameters for this request"},{"type":"param","types":["Number"],"name":"timeout","description":"Timeout (currently ignored)"},{"type":"param","types":["Function"],"name":"callback","description":"Callback for when the request is complete"}],"has_params":true,"has_returns":false,"tags":[{"type":"param","types":["String"],"name":"url","description":"URL to request"},{"type":"param","types":["Object"],"name":"headers","description":"Object of headers for this request"},{"type":"param","types":["Object"],"name":"params","description":"Body parameters for this request"},{"type":"param","types":["Number"],"name":"timeout","description":"Timeout (currently ignored)"},{"type":"param","types":["Function"],"name":"callback","description":"Callback for when the request is complete"},{"type":"","content":""},{"type":"module","content":"Splunk.Http"}],"module":false,"parent":"Splunk.Http","has_related":false,"is_global":false,"global":""},{"id":"5-1322598120091","name":"del","signature":"Splunk.Http.del","type":"method","ctx":{"type":"method","name":"del","value":"function(url, headers, params, timeout, callback) {","string":"del"},"description":{"full":"<p>Perform a DELETE request</p>","summary":"<p>Perform a DELETE request</p>","body":""},"full_description":"<p>Perform a DELETE request</p>","code":"del: function(url, headers, params, timeout, callback) {\n    var encoded_url = url + \"?\" + root.encode(params);\n    var message = {\n        method: \"DELETE\",\n        headers: headers,\n        timeout: timeout\n    };\n\n    return this.request(encoded_url, message, callback);\n},","params":[{"type":"param","types":["String"],"name":"url","description":"URL to request"},{"type":"param","types":["Object"],"name":"headers","description":"Object of headers for this request"},{"type":"param","types":["Object"],"name":"params","description":"Query parameters for this request"},{"type":"param","types":["Number"],"name":"timeout","description":"Timeout (currently ignored)"},{"type":"param","types":["Function"],"name":"callback","description":"Callback for when the request is complete"}],"has_params":true,"has_returns":false,"tags":[{"type":"param","types":["String"],"name":"url","description":"URL to request"},{"type":"param","types":["Object"],"name":"headers","description":"Object of headers for this request"},{"type":"param","types":["Object"],"name":"params","description":"Query parameters for this request"},{"type":"param","types":["Number"],"name":"timeout","description":"Timeout (currently ignored)"},{"type":"param","types":["Function"],"name":"callback","description":"Callback for when the request is complete"},{"type":"","content":""},{"type":"module","content":"Splunk.Http"}],"module":false,"parent":"Splunk.Http","has_related":false,"is_global":false,"global":""},{"id":"7-1322598120091","name":"makeRequest","signature":"Splunk.Http.makeRequest","type":"method","ctx":{"type":"method","name":"makeRequest","value":"function(url, message, callback) {","string":"makeRequest"},"description":{"full":"<p>Client-specific request logic</p>\n\n<p>This function encapsulates the actual logic for performing<br />a request, and is meant to be overriden by subclasses.</p>","summary":"<p>Client-specific request logic</p>","body":"<p>This function encapsulates the actual logic for performing<br />a request, and is meant to be overriden by subclasses.</p>"},"full_description":"<p>Client-specific request logic</p>\n\n<p>This function encapsulates the actual logic for performing a request, and is meant to be overriden by subclasses.</p>","code":"makeRequest: function(url, message, callback) {\n    throw new Error(\"UNDEFINED FUNCTION - OVERRIDE REQUIRED\"); \n},","params":[{"type":"param","types":["String"],"name":"url","description":"URL to request (already encoded)"},{"type":"param","types":["Object"],"name":"message","description":"Object with values for method, headers, timeout and encoded body"},{"type":"param","types":["Function"],"name":"Callback","description":"for when the request is complete"}],"has_params":true,"has_returns":false,"tags":[{"type":"param","types":["String"],"name":"url","description":"URL to request (already encoded)"},{"type":"param","types":["Object"],"name":"message","description":"Object with values for method, headers, timeout and encoded body"},{"type":"param","types":["Function"],"name":"Callback","description":"for when the request is complete"},{"type":"","content":""},{"type":"module","content":"Splunk.Http"}],"module":false,"parent":"Splunk.Http","has_related":false,"is_global":false,"global":""},{"id":"8-1322598120091","name":"parseJson","signature":"Splunk.Http.parseJson","type":"method","ctx":{"type":"method","name":"parseJson","value":"function(json) {","string":"parseJson"},"description":{"full":"<p>Client-specific JSON parsing logic</p>\n\n<p>This function encapsulates the actual logic for parsing<br />the JSON response.</p>","summary":"<p>Client-specific JSON parsing logic</p>","body":"<p>This function encapsulates the actual logic for parsing<br />the JSON response.</p>"},"full_description":"<p>Client-specific JSON parsing logic</p>\n\n<p>This function encapsulates the actual logic for parsing the JSON response.</p>","code":"parseJson: function(json) {\n    throw new Error(\"UNDEFINED FUNCTION - OVERRIDE REQUIRED\");\n},","params":[{"type":"param","types":["String"],"name":"json","description":"JSON to parse"}],"has_params":true,"has_returns":false,"tags":[{"type":"param","types":["String"],"name":"json","description":"JSON to parse"},{"type":"returns","content":"{Object} Parsed JSON"},{"type":"","content":""},{"type":"module","content":"Splunk.Http"}],"module":false,"parent":"Splunk.Http","has_related":false,"is_global":false,"global":""},{"id":"9-1322598120091","name":"_buildResponse","signature":"Splunk.Http._buildResponse","type":"method","ctx":{"type":"method","name":"_buildResponse","value":"function(error, response, data) {","string":"_buildResponse"},"description":{"full":"<p>Construct a unified response</p>\n\n<p>This function will generate a unified response given the<br />parameters</p>","summary":"<p>Construct a unified response</p>","body":"<p>This function will generate a unified response given the<br />parameters</p>"},"full_description":"<p>Construct a unified response</p>\n\n<p>This function will generate a unified response given the parameters</p>","code":"_buildResponse: function(error, response, data) {\n            var complete_response, json, odata;\n\n            // Parse the JSON data and build the OData response\n            // object.\n            if (this.isSplunk) {\n                try {\n                    json = this.parseJson(data);\n                } catch(err1) {\n                    console.log(\"JSON PARSE ERROR\");\n                    console.log(err1.message);\n                    console.log(err1.stack);\n                    console.log(error);\n                    console.log(data);\n                }\n                odata = ODataResponse.fromJson(json);  \n\n                // Print any messages that came with the response\n                ODataResponse.printMessages(odata);\n\n                complete_response = {\n                    response: response,\n                    status: (response ? response.statusCode : 0),\n                    odata: odata,\n                    error: error\n                };\n            }\n            else {\n                json = \"\";\n\n                // We only try to parse JSON if the headers say it is JSON\n                if (response && response.headers[\"content-type\"] === \"application/json\") {\n                    try {\n                        json = this.parseJson(data);\n                    } catch(err2) {\n                        console.log(\"JSON PARSE ERROR\");\n                        console.log(err2.message);\n                        console.log(err2.stack);\n                        console.log(error);\n                        console.log(data);\n                    }\n                }\n\n                complete_response = {\n                    response: response,\n                    status: (response ? response.statusCode : 0),\n                    json: json,\n                    error: error\n                };\n            }\n\n            return complete_response;\n        }\n    });\n})();","params":[{"type":"param","types":["Object"],"name":"error","description":"Error object if there was one for the request"},{"type":"param","types":["Object"],"name":"response","description":"The actual response object"},{"type":"param","types":["Object"],"name":"data","description":"The response data"}],"has_params":true,"returns":{"type":"return","types":["Object"],"description":"A unified response object"},"has_returns":true,"tags":[{"type":"param","types":["Object"],"name":"error","description":"Error object if there was one for the request"},{"type":"param","types":["Object"],"name":"response","description":"The actual response object"},{"type":"param","types":["Object"],"name":"data","description":"The response data"},{"type":"return","types":["Object"],"description":"A unified response object"},{"type":"","content":""},{"type":"module","content":"Splunk.Http"}],"module":false,"parent":"Splunk.Http","has_related":false,"is_global":false,"global":""}],"helpers":[{"id":"0-1322598120091","name":"encode","signature":"Splunk.Http.encode","type":"method","ctx":{"type":"method","receiver":"root","name":"encode","string":"root.encode()"},"description":{"full":"<p>Helper function to encode a dictionary of values into a URL-encoded<br />format.</p>\n\n<h2>Example</h2>\n\n<pre><code> // should be a=1&amp;b=2&amp;b=3&amp;b=4\n encode({a: 1, b: [2,3,4]})\n</code></pre>","summary":"<p>Helper function to encode a dictionary of values into a URL-encoded<br />format.</p>","body":"<h2>Example</h2>\n\n<pre><code> // should be a=1&amp;b=2&amp;b=3&amp;b=4\n encode({a: 1, b: [2,3,4]})\n</code></pre>"},"full_description":"<p>Helper function to encode a dictionary of values into a URL-encoded format.</p>\n\n<h2>Example</h2>\n\n<pre><code> // should be a=1&amp;b=2&amp;b=3&amp;b=4\n encode({a: 1, b: [2,3,4]})\n</code></pre>","code":"root.encode = function(params) {\n    var encodedStr = \"\";\n\n    // We loop over all the keys so we encode them.\n    for (var key in params) {\n        if (params.hasOwnProperty(key)) {\n            // Only append the ampersand if we already have\n            // something encoded, and the last character isn't\n            // already an ampersand\n            if (encodedStr && encodedStr[encodedStr.length - 1] !== \"&\") {\n                encodedStr = encodedStr + \"&\";\n            }\n            \n            // Get the value\n            var value = params[key];\n\n            // If it's an array, we loop over each value\n            // and encode it in the form &key=value[i]\n            if (value instanceof Array) {\n                for (var i = 0; i < value.length; i++) {\n                    encodedStr = encodedStr + key + \"=\" + encodeURIComponent(value[i]) + \"&\";\n                }\n            }\n            else if (typeof value === \"object\") {\n                var i = 0;\n                for(var innerKey in value) {\n                    if (value.hasOwnProperty(innerKey)) {\n                        var innerValue = value[innerKey];\n                        encodedStr = encodedStr + key + \"=\" + encodeURIComponent(value[innerKey]) + \"&\";\n                        \n                        i++;\n                    }\n                }\n            }\n            else {\n                // If it's not an array, we just encode it\n                encodedStr = encodedStr + key + \"=\" + encodeURIComponent(value);\n            }\n        }\n    }\n\n    return encodedStr;\n};","params":[{"type":"param","types":["Object"],"name":"params","description":"Parameters to URL-encode"}],"has_params":true,"returns":{"type":"return","types":["String"],"description":"URL-encoded query string"},"has_returns":true,"tags":[{"type":"param","types":["Object"],"name":"params","description":"Parameters to URL-encode"},{"type":"return","types":["String"],"description":"URL-encoded query string"},{"type":"","content":""},{"type":"globals","content":"Splunk.Http"}],"module":false,"parent":"Splunk.Http","has_related":false,"is_global":true,"global":"Splunk.Http"}]},{"id":"10-1322598120091","name":"Splunk.Utils","description":{"full":"<p>Splunk.Utils</p>\n\n<p>Various utility functions for the Splunk SDK</p>","summary":"<p>Splunk.Utils</p>","body":"<p>Various utility functions for the Splunk SDK</p>"},"full_description":"<p>Splunk.Utils</p>\n\n<p>Various utility functions for the Splunk SDK</p>","code":"","params":[],"has_params":false,"has_returns":false,"tags":[{"type":"moduleRoot","content":"Splunk.Utils"}],"module":true,"parent":"Global","has_related":false,"is_global":false,"global":"","methods":[],"helpers":[{"id":"11-1322598120091","name":"bind","signature":"Splunk.Utils.bind","type":"method","ctx":{"type":"method","receiver":"root","name":"bind","string":"root.bind()"},"description":{"full":"<p>Bind a function to a specific object</p>\n\n<h2>Example</h2>\n\n<pre><code> var obj = {a: 1, b: function() { console.log(a); }};\n var bound = Splunk.Utils.bind(obj, obj.b);\n bound(); // should print 1\n</code></pre>","summary":"<p>Bind a function to a specific object</p>","body":"<h2>Example</h2>\n\n<pre><code> var obj = {a: 1, b: function() { console.log(a); }};\n var bound = Splunk.Utils.bind(obj, obj.b);\n bound(); // should print 1\n</code></pre>"},"full_description":"<p>Bind a function to a specific object</p>\n\n<h2>Example</h2>\n\n<pre><code> var obj = {a: 1, b: function() { console.log(a); }};\n var bound = Splunk.Utils.bind(obj, obj.b);\n bound(); // should print 1\n</code></pre>","code":"root.bind = function(me, fn) { \n    return function() { \n        return fn.apply(me, arguments); \n    }; \n};","params":[{"type":"param","types":["Object"],"name":"me","description":"Object to bind to"},{"type":"param","types":["Function"],"name":"fn","description":"Function to bind"}],"has_params":true,"returns":{"type":"return","types":["Function"],"description":"The bound function"},"has_returns":true,"tags":[{"type":"param","types":["Object"],"name":"me","description":"Object to bind to"},{"type":"param","types":["Function"],"name":"fn","description":"Function to bind"},{"type":"return","types":["Function"],"description":"The bound function"},{"type":"","content":""},{"type":"globals","content":"Splunk.Utils"}],"module":false,"parent":"Splunk.Utils","has_related":false,"is_global":true,"global":"Splunk.Utils"}]}]
+  </script>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js" type="text/javascript" charset="utf-8"></script>
+
+  <script type="text/javascript" charset="utf-8">
+    // lunr.js version: 0.0.4
+    // (c) 2011 Oliver Nightingale
+    //
+    //  Released under MIT license.
+    //
+    var Lunr=function(c,f){var b=new Lunr.Index(c);f.call(b,b);return b};
+    Lunr.utils={uniq:function(c){if(!c)return[];return c.reduce(function(c,b){c.indexOf(b)===-1&&c.push(b);return c},[])},intersect:function(c){var f=[].slice.call(arguments,1);return this.uniq(c).filter(function(b){return f.every(function(a){return a.indexOf(b)>=0})})},detect:function(c,f,b){for(var a=c.length,g=null,d=0;d<a;d++)if(f.call(b,c[d],d,c)){g=c[d];break}return g},copy:function(c){return Object.keys(c).reduce(function(f,b){f[b]=c[b];return f},{})}};
+    Lunr.Trie=function(){var c=function(){this.children={};this.values=[]};c.prototype={childForKey:function(b){var a=this.children[b];a||(a=new c,this.children[b]=a);return a}};var f=function(){this.root=new c};f.prototype={get:function(b){var a=this;return this.keys(b).reduce(function(c,d){a.getNode(d).values.forEach(function(a){a=Lunr.utils.copy(a);if(b===d)a.exact=!0;c.push(a)});return c},[])},getNode:function(b){var a=function(b,d){if(!d.length)return b;return a(b.childForKey(d.charAt(0)),d.slice(1))};
+    return a(this.root,b)},keys:function(b){var a=[];b=b||"";var c=function(b,e){b.values.length&&a.push(e);Object.keys(b.children).forEach(function(a){c(b.children[a],e+a)})};c(this.getNode(b),b);return a},set:function(b,a){var c=function(b,e){if(!e.length)return b.values.push(a);c(b.childForKey(e.charAt(0)),e.slice(1))};return c(this.root,b)}};return f}();Lunr.Index=function(c){this.name=c;this.refName="id";this.fields={};this.trie=new Lunr.Trie};
+    Lunr.Index.prototype={add:function(c){(new Lunr.Document(c,this.refName,this.fields)).words().forEach(function(c){this.trie.set(c.id,c.docs[0])},this)},field:function(c,f){this.fields[c]=f||{multiplier:1}},ref:function(c){this.refName=c},search:function(c){if(!c)return[];c=c.split(" ").map(function(c){c=new Lunr.Word(c);if(!c.isStopWord())return c.toString()}).filter(function(c){return c}).map(function(c){return this.trie.get(c).sort(function(b,a){if(b.exact&&a.exact===void 0)return-1;if(a.exact&&
+    b.exact===void 0)return 1;if(b.score<a.score)return 1;if(b.score>a.score)return-1;return 0}).map(function(b){return b.documentId})},this);return Lunr.utils.intersect.apply(Lunr.utils,c)}};Lunr.Document=function(c,f,b){this.original=c;this.fields=b;this.ref=c[f]};
+    Lunr.Document.prototype={asJSON:function(){return{id:this.ref,words:this.words().map(function(c){return c.id}),original:this.original}},words:function(){var c=this,f={};Object.keys(this.fields).forEach(function(b){c.original[b].split(/\b/g).filter(function(a){return!!a.match(/\w/)}).map(function(a){a=new Lunr.Word(a);if(!a.isStopWord())return a.toString()}).filter(function(a){return a}).forEach(function(a){f[a]||(f[a]={score:0,ref:c.ref});f[a].score+=c.fields[b].multiplier})});return Object.keys(f).map(function(b){return{id:b,
+    docs:[{score:f[b].score,documentId:c.ref}]}})}};Lunr.Word=function(c){this.raw=c;this.out=this.raw.replace(/^\W+/,"").replace(/\W+$/,"").toLowerCase()};Lunr.Word.stopWords=["the","of","to","and","a","in","is","it","you","that","this"];
+    Lunr.Word.prototype={isStopWord:function(){return Lunr.Word.stopWords.indexOf(this.raw.toLowerCase())!==-1},toString:function(){if(!this.isStopWord())return this.stem(),this.out},stem:function(){var c={ational:"ate",tional:"tion",enci:"ence",anci:"ance",izer:"ize",bli:"ble",alli:"al",entli:"ent",eli:"e",ousli:"ous",ization:"ize",ation:"ate",ator:"ate",alism:"al",iveness:"ive",fulness:"ful",ousness:"ous",aliti:"al",iviti:"ive",biliti:"ble",logi:"log"},f={icate:"ic",ative:"",alize:"al",iciti:"ic",ical:"ic",
+    ful:"",ness:""};return function(){var b,a,g,d=g=this.out;if(g.length<3)return g;var e,h;g=g.substr(0,1);g=="y"&&(d=g.toUpperCase()+d.substr(1));e=/^(.+?)(ss|i)es$/;a=/^(.+?)([^s])s$/;e.test(d)?d=d.replace(e,"$1$2"):a.test(d)&&(d=d.replace(a,"$1$2"));e=/^(.+?)eed$/;a=/^(.+?)(ed|ing)$/;e.test(d)?(a=e.exec(d),e=/^([^aeiou][^aeiouy]*)?[aeiouy][aeiou]*[^aeiou][^aeiouy]*/,e.test(a[1])&&(e=/.$/,d=d.replace(e,""))):a.test(d)&&(a=a.exec(d),b=a[1],a=/^([^aeiou][^aeiouy]*)?[aeiouy]/,a.test(b)&&(d=b,a=/(at|bl|iz)$/,
+    h=/([^aeiouylsz])\1$/,b=/^[^aeiou][^aeiouy]*[aeiouy][^aeiouwxy]$/,a.test(d)?d+="e":h.test(d)?(e=/.$/,d=d.replace(e,"")):b.test(d)&&(d+="e")));e=/^(.+?)y$/;e.test(d)&&(a=e.exec(d),b=a[1],e=/^([^aeiou][^aeiouy]*)?[aeiouy]/,e.test(b)&&(d=b+"i"));e=/^(.+?)(ational|tional|enci|anci|izer|bli|alli|entli|eli|ousli|ization|ation|ator|alism|iveness|fulness|ousness|aliti|iviti|biliti|logi)$/;e.test(d)&&(a=e.exec(d),b=a[1],a=a[2],e=/^([^aeiou][^aeiouy]*)?[aeiouy][aeiou]*[^aeiou][^aeiouy]*/,e.test(b)&&(d=b+c[a]));
+    e=/^(.+?)(icate|ative|alize|iciti|ical|ful|ness)$/;e.test(d)&&(a=e.exec(d),b=a[1],a=a[2],e=/^([^aeiou][^aeiouy]*)?[aeiouy][aeiou]*[^aeiou][^aeiouy]*/,e.test(b)&&(d=b+f[a]));e=/^(.+?)(al|ance|ence|er|ic|able|ible|ant|ement|ment|ent|ou|ism|ate|iti|ous|ive|ize)$/;a=/^(.+?)(s|t)(ion)$/;e.test(d)?(a=e.exec(d),b=a[1],e=/^([^aeiou][^aeiouy]*)?[aeiouy][aeiou]*[^aeiou][^aeiouy]*[aeiouy][aeiou]*[^aeiou][^aeiouy]*/,e.test(b)&&(d=b)):a.test(d)&&(a=a.exec(d),b=a[1]+a[2],a=/^([^aeiou][^aeiouy]*)?[aeiouy][aeiou]*[^aeiou][^aeiouy]*[aeiouy][aeiou]*[^aeiou][^aeiouy]*/,
+    a.test(b)&&(d=b));e=/^(.+?)e$/;if(e.test(d)&&(a=e.exec(d),b=a[1],e=/^([^aeiou][^aeiouy]*)?[aeiouy][aeiou]*[^aeiou][^aeiouy]*[aeiouy][aeiou]*[^aeiou][^aeiouy]*/,a=/^([^aeiou][^aeiouy]*)?[aeiouy][aeiou]*[^aeiou][^aeiouy]*([aeiouy][aeiou]*)?$/,h=/^[^aeiou][^aeiouy]*[aeiouy][^aeiouwxy]$/,e.test(b)||a.test(b)&&!h.test(b)))d=b;e=/ll$/;a=/^([^aeiou][^aeiouy]*)?[aeiouy][aeiou]*[^aeiou][^aeiouy]*[aeiouy][aeiou]*[^aeiou][^aeiouy]*/;e.test(d)&&a.test(d)&&(e=/.$/,d=d.replace(e,""));g=="y"&&(d=g.toLowerCase()+
+    d.substr(1));this.out=d}}()};
+  </script>
+
+  <script type="text/javascript" charset="utf-8">
+    var idx = Lunr('methods', function () {
+      this.ref('id')
+      this.field('name', { multiplier: 10 })
+      this.field('parent', { multiplier: 5 })
+      this.field('full_description')
+    })
+
+    var methods = raw.reduce(function (memo, module) {
+      return memo.concat(module.methods)
+    }, [])
+
+    methods.forEach(function (method) {
+      idx.add(method)
+    })
+
+    $(document).ready(function () {
+
+      var search = function (term) {
+        return idx.search(term).map(function (id) {
+          return methods.filter(function (method) {
+            return method.id === id
+          })[0]
+        })
+      }
+
+      var searchResults = $('#search-results')
+
+      $('#search-input').keyup(function () {
+        var query = $(this).val(),
+            results = search(query)
+
+        if (!results.length) {
+          searchResults.empty()
+          return
+        };
+
+        var resultsList = results.reduce(function (ul, result) {
+          var li = $('<li>').append($('<a>', {
+            href: '#' + result.name,
+            text: result.name
+          }))
+
+          ul.append(li)
+
+          return ul
+        }, $('<ul>'))
+
+        searchResults.html(resultsList)
+      })
+    })
+  </script>
+
+  <style type="text/css" media="screen">
+    body {
+      font-family: 'Helvetica Neue';
+      color: #333;
+    }
+
+    a {
+      color: #0f4bf0;
+    }
+
+    header h1 {
+      border-top: 4px solid #333;
+      font-size: 2.6em;
+    }
+
+    header .version {
+      font-size: 0.6em;
+    }
+
+    .main > header {
+      margin-bottom: 40px;
+    }
+
+    article {
+      margin-bottom: 10px;
+      padding-bottom: 30px;
+    }
+
+    article header h2 {
+      border-top: 3px solid #333;
+      font-size: 2em;
+      padding-top: 5px;
+    }
+
+    article > section {
+      margin-bottom: 30px;
+    }
+
+    article section h3 {
+      font-size: 1em;
+    }
+
+    article section header h3 {
+      padding-top: 2px;
+      font-size: 1.2em;
+      margin-bottom: 5px;
+      border-top: 2px solid #333;
+    }
+
+    article section header h4 {
+      font-size: 0.9em;
+      font-family: courier;
+      margin: 2px 0 5px 0;
+    }
+
+    @-webkit-keyframes highlight {
+      from {
+        background-color: #Ffff66;
+      }
+
+      to {
+        background-color: white;
+      }
+    }
+
+    section.method:target {
+      -webkit-animation-duration: 1s;
+      -webkit-animation-name: highlight;
+    }
+
+    section header .type, section header .related {
+      margin-top: 0px;
+      font-size: 0.8em;
+    }
+
+    section.params h4, section.source h4 {
+      margin-top: 5px;
+      margin-bottom: 2px;
+      font-size: 0.9em;
+    }
+
+    section.params ul {
+      margin-top: 2px;
+    }
+
+    a.show-source {
+      font-size: 0.8em;
+    }
+
+    .wrap {
+      width: 960px;
+      margin: 0 auto;
+    }
+
+    .main {
+      width: 760px;
+      float: left;
+    }
+
+    .search {
+      margin-top: 10px;
+      float: right;
+    }
+
+    #search-input {
+      width: 200px;
+    }
+
+    #search-results {
+      position: relative;
+    }
+
+    #search-results ul {
+      width: 200px;
+      position: absolute;
+      top: 0px;
+      left: 0px;
+      background-color: white;
+      border: 1px solid #ccc;
+      list-style: none;
+      padding: 0;
+      margin-top: 0;
+      font-size: 0.9em;
+    }
+
+    #search-results li {
+      padding: 5px;
+    }
+
+    #search-results li:hover {
+      background-color: #eee;
+      cursor: pointer;
+    }
+
+    #search-results li a {
+      text-decoration: none;
+      width: 200px;
+      display: block;
+    }
+
+    p {
+      line-height: 1.4em;
+    }
+
+    nav {
+      padding-top: 15px;
+      float: left;
+      width: 165px;
+      margin-right: 30px;
+      text-align: right;
+      font-size: 0.8em;
+    }
+
+    nav ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    nav ul h3 {
+      margin-bottom: 5px;
+      border-top: 2px solid #CCC;
+      padding-top: 2px;
+    }
+
+    nav ul ul li {
+      padding: 2px 0;
+    }
+
+    pre {
+      background-color: rgba(0,0,0,0.1);
+      padding: 8px;
+      overflow-x: auto;
+      overflow-y: auto;
+    }
+
+    code .keyword, code .special {
+      font-weight: bold;
+      color: black;
+    }
+
+    code .string, code .regexp {
+      color: green
+    }
+
+    code .class { 
+      color: blue
+    }
+
+    code .number {
+      color: red
+    }
+
+    code .comment {
+      color: grey;
+      font-style: italic;
+    }
+    
+    .em {
+      font-style: italic;
+      color: gray;
+      font-size: 12px;
+    }
+  </style>
+</head>
+<body>
+  <div class='wrap'>
+
+
+    <nav>
+      <ul>
+        
+          <li>
+            <a href='#Splunk.Http'>
+              <h3>Splunk.Http</h3>
+            </a>
+
+            <ul>
+              
+                <li><a href='#init'>init</a></li>
+              
+                <li><a href='#get'>get</a></li>
+              
+                <li><a href='#post'>post</a></li>
+              
+                <li><a href='#del'>del</a></li>
+              
+                <li><a href='#makeRequest'>makeRequest</a></li>
+              
+                <li><a href='#parseJson'>parseJson</a></li>
+              
+                <li><a href='#_buildResponse'>_buildResponse</a></li>
+              
+            </ul>
+            
+            <a href='#Splunk.Http-globals'>
+              <h4>Module Globals</h4>
+            </a>
+            
+            <ul>
+              
+                <li><a href='#Splunk.Http-encode'>encode</a></li>
+              
+            </ul>
+          </li>
+        
+          <li>
+            <a href='#Splunk.Utils'>
+              <h3>Splunk.Utils</h3>
+            </a>
+
+            <ul>
+              
+            </ul>
+            
+            <a href='#Splunk.Utils-globals'>
+              <h4>Module Globals</h4>
+            </a>
+            
+            <ul>
+              
+                <li><a href='#Splunk.Utils-bind'>bind</a></li>
+              
+            </ul>
+          </li>
+        
+      </ul>
+    </nav>
+
+    <div class='main'>
+      <header>
+        <div class='search'>
+          <input type="search" id="search-input" placeholder="Search"></input>
+          <div id="search-results"></div>
+        </div>
+        <h1>Splunk JavaScript SDK <span class='version'>0.1.0</span></h1>
+      </header>
+
+      
+        <article id='Splunk.Http'>
+          <header>
+            <h2>Splunk.Http</h2>
+          </header>
+
+          <section>
+            <p>Splunk.Http</p>
+
+<p>Base class for HTTP abstraction. </p>
+
+<p>This class provides the basic functionality (get/post/delete/request), as well as utilities to construct uniform responses.</p>
+
+<p>Base classes should only override <code>makeRequest</code> and <code>parseJSON</code></p>
+          </section>
+
+          
+            <section class='method' id='init'>
+              <header>
+                <h3>init</h3>
+                <h4>Splunk.Http.init</h4>
+                <p class='type'>constructor</p>
+                
+              </header>
+
+              <section class='params'>
+                
+                  <h4>Params</h4>
+                
+                <ul>
+                  
+                    <li>isSplunk - <span class="em">Boolean</span> Whether or not this is HTTP instance is for talking with Splunk.</li>
+                  
+                </ul>
+              </section>
+
+              <section class='params'>
+                
+                  <h4>Returns</h4>
+                  
+                    <p><span class="em">Splunk.Http</span> A Splunk.Http instance</p>
+                  
+                
+              </section>
+
+              <section>
+                <p>Constructor for Splunk.Http</p>
+              </section>
+
+              <section class='source'>
+                <h4>Source</h4>
+                <pre><code>init: function(isSplunk) {
+    // Whether or not this HTTP provider is talking to Splunk or not
+    this.isSplunk = (isSplunk === undefined ? true : isSplunk);
+
+    // We perform the bindings so that every function works 
+    // properly when it is passed as a callback.
+    this.get                = utils.bind(this, this.get);
+    this.del                = utils.bind(this, this.del);
+    this.post               = utils.bind(this, this.post);
+    this.request            = utils.bind(this, this.request);
+    this._buildResponse     = utils.bind(this, this._buildResponse);
+},</code></pre>
+              </section>
+              
+            </section>
+          
+            <section class='method' id='get'>
+              <header>
+                <h3>get</h3>
+                <h4>Splunk.Http.get</h4>
+                <p class='type'>method</p>
+                
+              </header>
+
+              <section class='params'>
+                
+                  <h4>Params</h4>
+                
+                <ul>
+                  
+                    <li>url - <span class="em">String</span> URL to request</li>
+                  
+                    <li>headers - <span class="em">Object</span> Object of headers for this request</li>
+                  
+                    <li>params - <span class="em">Object</span> Body parameters for this request</li>
+                  
+                    <li>timeout - <span class="em">Number</span> Timeout (currently ignored)</li>
+                  
+                    <li>callback - <span class="em">Function</span> Callback for when the request is complete</li>
+                  
+                </ul>
+              </section>
+
+              <section class='params'>
+                
+              </section>
+
+              <section>
+                <p>Perform a POST request</p>
+              </section>
+
+              <section class='source'>
+                <h4>Source</h4>
+                <pre><code>get: function(url, headers, params, timeout, callback) {
+    var encoded_url = url + &quot;?&quot; + root.encode(params);
+    var message = {
+        method: &quot;GET&quot;,
+        headers: headers,
+        timeout: timeout
+    };
+
+    return this.request(encoded_url, message, callback);
+},</code></pre>
+              </section>
+              
+            </section>
+          
+            <section class='method' id='post'>
+              <header>
+                <h3>post</h3>
+                <h4>Splunk.Http.post</h4>
+                <p class='type'>method</p>
+                
+              </header>
+
+              <section class='params'>
+                
+                  <h4>Params</h4>
+                
+                <ul>
+                  
+                    <li>url - <span class="em">String</span> URL to request</li>
+                  
+                    <li>headers - <span class="em">Object</span> Object of headers for this request</li>
+                  
+                    <li>params - <span class="em">Object</span> Body parameters for this request</li>
+                  
+                    <li>timeout - <span class="em">Number</span> Timeout (currently ignored)</li>
+                  
+                    <li>callback - <span class="em">Function</span> Callback for when the request is complete</li>
+                  
+                </ul>
+              </section>
+
+              <section class='params'>
+                
+              </section>
+
+              <section>
+                <p>Perform a POST request</p>
+              </section>
+
+              <section class='source'>
+                <h4>Source</h4>
+                <pre><code>post: function(url, headers, params, timeout, callback) {
+    headers[&quot;Content-Type&quot;] = &quot;application/x-www-form-urlencoded&quot;;
+    var message = {
+        method: &quot;POST&quot;,
+        headers: headers,
+        timeout: timeout,
+        body: root.encode(params)
+    };
+
+    return this.request(url, message, callback);
+},</code></pre>
+              </section>
+              
+            </section>
+          
+            <section class='method' id='del'>
+              <header>
+                <h3>del</h3>
+                <h4>Splunk.Http.del</h4>
+                <p class='type'>method</p>
+                
+              </header>
+
+              <section class='params'>
+                
+                  <h4>Params</h4>
+                
+                <ul>
+                  
+                    <li>url - <span class="em">String</span> URL to request</li>
+                  
+                    <li>headers - <span class="em">Object</span> Object of headers for this request</li>
+                  
+                    <li>params - <span class="em">Object</span> Query parameters for this request</li>
+                  
+                    <li>timeout - <span class="em">Number</span> Timeout (currently ignored)</li>
+                  
+                    <li>callback - <span class="em">Function</span> Callback for when the request is complete</li>
+                  
+                </ul>
+              </section>
+
+              <section class='params'>
+                
+              </section>
+
+              <section>
+                <p>Perform a DELETE request</p>
+              </section>
+
+              <section class='source'>
+                <h4>Source</h4>
+                <pre><code>del: function(url, headers, params, timeout, callback) {
+    var encoded_url = url + &quot;?&quot; + root.encode(params);
+    var message = {
+        method: &quot;DELETE&quot;,
+        headers: headers,
+        timeout: timeout
+    };
+
+    return this.request(encoded_url, message, callback);
+},</code></pre>
+              </section>
+              
+            </section>
+          
+            <section class='method' id='makeRequest'>
+              <header>
+                <h3>makeRequest</h3>
+                <h4>Splunk.Http.makeRequest</h4>
+                <p class='type'>method</p>
+                
+              </header>
+
+              <section class='params'>
+                
+                  <h4>Params</h4>
+                
+                <ul>
+                  
+                    <li>url - <span class="em">String</span> URL to request (already encoded)</li>
+                  
+                    <li>message - <span class="em">Object</span> Object with values for method, headers, timeout and encoded body</li>
+                  
+                    <li>Callback - <span class="em">Function</span> for when the request is complete</li>
+                  
+                </ul>
+              </section>
+
+              <section class='params'>
+                
+              </section>
+
+              <section>
+                <p>Client-specific request logic</p>
+
+<p>This function encapsulates the actual logic for performing a request, and is meant to be overriden by subclasses.</p>
+              </section>
+
+              <section class='source'>
+                <h4>Source</h4>
+                <pre><code>makeRequest: function(url, message, callback) {
+    throw new Error(&quot;UNDEFINED FUNCTION - OVERRIDE REQUIRED&quot;); 
+},</code></pre>
+              </section>
+              
+            </section>
+          
+            <section class='method' id='parseJson'>
+              <header>
+                <h3>parseJson</h3>
+                <h4>Splunk.Http.parseJson</h4>
+                <p class='type'>method</p>
+                
+              </header>
+
+              <section class='params'>
+                
+                  <h4>Params</h4>
+                
+                <ul>
+                  
+                    <li>json - <span class="em">String</span> JSON to parse</li>
+                  
+                </ul>
+              </section>
+
+              <section class='params'>
+                
+              </section>
+
+              <section>
+                <p>Client-specific JSON parsing logic</p>
+
+<p>This function encapsulates the actual logic for parsing the JSON response.</p>
+              </section>
+
+              <section class='source'>
+                <h4>Source</h4>
+                <pre><code>parseJson: function(json) {
+    throw new Error(&quot;UNDEFINED FUNCTION - OVERRIDE REQUIRED&quot;);
+},</code></pre>
+              </section>
+              
+            </section>
+          
+            <section class='method' id='_buildResponse'>
+              <header>
+                <h3>_buildResponse</h3>
+                <h4>Splunk.Http._buildResponse</h4>
+                <p class='type'>method</p>
+                
+              </header>
+
+              <section class='params'>
+                
+                  <h4>Params</h4>
+                
+                <ul>
+                  
+                    <li>error - <span class="em">Object</span> Error object if there was one for the request</li>
+                  
+                    <li>response - <span class="em">Object</span> The actual response object</li>
+                  
+                    <li>data - <span class="em">Object</span> The response data</li>
+                  
+                </ul>
+              </section>
+
+              <section class='params'>
+                
+                  <h4>Returns</h4>
+                  
+                    <p><span class="em">Object</span> A unified response object</p>
+                  
+                
+              </section>
+
+              <section>
+                <p>Construct a unified response</p>
+
+<p>This function will generate a unified response given the parameters</p>
+              </section>
+
+              <section class='source'>
+                <h4>Source</h4>
+                <pre><code>_buildResponse: function(error, response, data) {
+            var complete_response, json, odata;
+
+            // Parse the JSON data and build the OData response
+            // object.
+            if (this.isSplunk) {
+                try {
+                    json = this.parseJson(data);
+                } catch(err1) {
+                    console.log(&quot;JSON PARSE ERROR&quot;);
+                    console.log(err1.message);
+                    console.log(err1.stack);
+                    console.log(error);
+                    console.log(data);
+                }
+                odata = ODataResponse.fromJson(json);  
+
+                // Print any messages that came with the response
+                ODataResponse.printMessages(odata);
+
+                complete_response = {
+                    response: response,
+                    status: (response ? response.statusCode : 0),
+                    odata: odata,
+                    error: error
+                };
+            }
+            else {
+                json = &quot;&quot;;
+
+                // We only try to parse JSON if the headers say it is JSON
+                if (response &amp;&amp; response.headers[&quot;content-type&quot;] === &quot;application/json&quot;) {
+                    try {
+                        json = this.parseJson(data);
+                    } catch(err2) {
+                        console.log(&quot;JSON PARSE ERROR&quot;);
+                        console.log(err2.message);
+                        console.log(err2.stack);
+                        console.log(error);
+                        console.log(data);
+                    }
+                }
+
+                complete_response = {
+                    response: response,
+                    status: (response ? response.statusCode : 0),
+                    json: json,
+                    error: error
+                };
+            }
+
+            return complete_response;
+        }
+    });
+})();</code></pre>
+              </section>
+              
+            </section>
+          
+          
+          <header id='Splunk.Http-globals'>
+            <h3>Splunk.Http Module Globals</h3>
+          </header>
+          
+          
+            <section class='method' id='Splunk.Http-encode'>
+              <header>
+                <h3>encode</h3>
+                <h4>Splunk.Http.encode</h4>
+                <p class='type'>method</p>
+                
+              </header>
+
+              <section class='params'>
+                
+                  <h4>Params</h4>
+                
+                <ul>
+                  
+                    <li>params - <span class="em">Object</span> Parameters to URL-encode</li>
+                  
+                </ul>
+              </section>
+
+              <section class='params'>
+                
+                  <h4>Returns</h4>
+                  
+                    <p><span class="em">String</span> URL-encoded query string</p>
+                  
+                
+              </section>
+
+              <section>
+                <p>Helper function to encode a dictionary of values into a URL-encoded format.</p>
+
+<h2>Example</h2>
+
+<pre><code> // should be a=1&amp;b=2&amp;b=3&amp;b=4
+ encode({a: 1, b: [2,3,4]})
+</code></pre>
+              </section>
+
+              <section class='source'>
+                <h4>Source</h4>
+                <pre><code>root.encode = function(params) {
+    var encodedStr = &quot;&quot;;
+
+    // We loop over all the keys so we encode them.
+    for (var key in params) {
+        if (params.hasOwnProperty(key)) {
+            // Only append the ampersand if we already have
+            // something encoded, and the last character isn't
+            // already an ampersand
+            if (encodedStr &amp;&amp; encodedStr[encodedStr.length - 1] !== &quot;&amp;&quot;) {
+                encodedStr = encodedStr + &quot;&amp;&quot;;
+            }
+            
+            // Get the value
+            var value = params[key];
+
+            // If it's an array, we loop over each value
+            // and encode it in the form &amp;key=value[i]
+            if (value instanceof Array) {
+                for (var i = 0; i &lt; value.length; i++) {
+                    encodedStr = encodedStr + key + &quot;=&quot; + encodeURIComponent(value[i]) + &quot;&amp;&quot;;
+                }
+            }
+            else if (typeof value === &quot;object&quot;) {
+                var i = 0;
+                for(var innerKey in value) {
+                    if (value.hasOwnProperty(innerKey)) {
+                        var innerValue = value[innerKey];
+                        encodedStr = encodedStr + key + &quot;=&quot; + encodeURIComponent(value[innerKey]) + &quot;&amp;&quot;;
+                        
+                        i++;
+                    }
+                }
+            }
+            else {
+                // If it's not an array, we just encode it
+                encodedStr = encodedStr + key + &quot;=&quot; + encodeURIComponent(value);
+            }
+        }
+    }
+
+    return encodedStr;
+};</code></pre>
+              </section>
+              
+            </section>
+          
+        </article>
+      
+        <article id='Splunk.Utils'>
+          <header>
+            <h2>Splunk.Utils</h2>
+          </header>
+
+          <section>
+            <p>Splunk.Utils</p>
+
+<p>Various utility functions for the Splunk SDK</p>
+          </section>
+
+          
+          
+          <header id='Splunk.Utils-globals'>
+            <h3>Splunk.Utils Module Globals</h3>
+          </header>
+          
+          
+            <section class='method' id='Splunk.Utils-bind'>
+              <header>
+                <h3>bind</h3>
+                <h4>Splunk.Utils.bind</h4>
+                <p class='type'>method</p>
+                
+              </header>
+
+              <section class='params'>
+                
+                  <h4>Params</h4>
+                
+                <ul>
+                  
+                    <li>me - <span class="em">Object</span> Object to bind to</li>
+                  
+                    <li>fn - <span class="em">Function</span> Function to bind</li>
+                  
+                </ul>
+              </section>
+
+              <section class='params'>
+                
+                  <h4>Returns</h4>
+                  
+                    <p><span class="em">Function</span> The bound function</p>
+                  
+                
+              </section>
+
+              <section>
+                <p>Bind a function to a specific object</p>
+
+<h2>Example</h2>
+
+<pre><code> var obj = {a: 1, b: function() { console.log(a); }};
+ var bound = Splunk.Utils.bind(obj, obj.b);
+ bound(); // should print 1
+</code></pre>
+              </section>
+
+              <section class='source'>
+                <h4>Source</h4>
+                <pre><code>root.bind = function(me, fn) { 
+    return function() { 
+        return fn.apply(me, arguments); 
+    }; 
+};</code></pre>
+              </section>
+              
+            </section>
+          
+        </article>
+      
+    </div>
+  </div>
+  <script>
+    (function (hijs) {
+    //
+    // hijs - JavaScript Syntax Highlighter
+    //
+    // Copyright (c) 2010 Alexis Sellier
+    //
+
+    // All elements which match this will be syntax highlighted.
+    var selector = hijs || 'code';
+
+    var keywords = ('var function if else for while break switch case do new null in with void '
+                   +'continue delete return this true false throw catch typeof with instanceof').split(' '),
+        special  = ('eval window document undefined NaN Infinity parseInt parseFloat '
+                   +'encodeURI decodeURI encodeURIComponent decodeURIComponent').split(' ');
+
+    // Syntax definition
+    // The key becomes the class name of the <span>
+    // around the matched block of code.
+    var syntax = [
+      ['comment', /(\/\*(?:[^*\n]|\*+[^\/*])*\*+\/)/g],
+      ['comment', /(\/\/[^\n]*)/g],
+      ['string' , /("(?:(?!")[^\\\n]|\\.)*"|'(?:(?!')[^\\\n]|\\.)*')/g],
+      ['regexp' , /(\/.+\/[mgi]*)(?!\s*\w)/g],
+      ['class'  , /\b([A-Z][a-zA-Z]+)\b/g],
+      ['number' , /\b([0-9]+(?:\.[0-9]+)?)\b/g],
+      ['keyword', new(RegExp)('\\b(' + keywords.join('|') + ')\\b', 'g')],
+      ['special', new(RegExp)('\\b(' + special.join('|') + ')\\b', 'g')]
+    ];
+    var nodes, table = {};
+
+    if (/^[a-z]+$/.test(selector)) {
+        nodes = document.getElementsByTagName(selector);
+    } else if (/^\.[\w-]+$/.test(selector)) {
+        nodes = document.getElementsByClassName(selector.slice(1));
+    } else if (document.querySelectorAll) {
+        nodes = document.querySelectorAll(selector);
+    } else {
+        nodes = [];
+    }
+
+    for (var i = 0, children; i < nodes.length; i++) {
+        children = nodes[i].childNodes;
+
+        for (var j = 0, str; j < children.length; j++) {
+            code = children[j];
+
+            if (code.length >= 0) { // It's a text node
+                // Don't highlight command-line snippets
+                if (! /^\$/.test(code.nodeValue.trim())) {
+                    syntax.forEach(function (s) {
+                        var k = s[0], v = s[1];
+                        code.nodeValue = code.nodeValue.replace(v, function (_, m) {
+                            return '\u00ab' + encode(k) + '\u00b7'
+                                            + encode(m) +
+                                   '\u00b7' + encode(k) + '\u00bb';
+                        });
+                    });
+                }
+            }
+        }
+    }
+    for (var i = 0; i < nodes.length; i++) {
+        nodes[i].innerHTML =
+            nodes[i].innerHTML.replace(/\u00ab(.+?)\u00b7(.+?)\u00b7\1\u00bb/g, function (_, name, value) {
+                value = value.replace(/\u00ab[^\u00b7]+\u00b7/g, '').replace(/\u00b7[^\u00bb]+\u00bb/g, '');
+                return '<span class="' + decode(name) + '">' + escape(decode(value)) + '</span>';
+        });
+    }
+
+    function escape(str) {
+        return str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+
+    // Encode ASCII characters to, and from Braille
+    function encode (str, encoded) {
+        table[encoded = str.split('').map(function (s) {
+            if (s.charCodeAt(0) > 127) { return s }
+            return String.fromCharCode(s.charCodeAt(0) + 0x2800);
+        }).join('')] = str;
+        return encoded;
+    }
+    function decode (str) {
+        if (str in table) {
+            return table[str];
+        } else {
+            return str.trim().split('').map(function (s) {
+                if (s.charCodeAt(0) - 0x2800 > 127) { return s }
+                return String.fromCharCode(s.charCodeAt(0) - 0x2800);
+            }).join('');
+        }
+    }
+
+    })(window.hijs);
+  </script>
+</body>

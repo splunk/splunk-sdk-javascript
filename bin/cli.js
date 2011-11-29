@@ -50,7 +50,7 @@
     var COMPILED_TEST_MIN = path.join(CLIENT_DIRECTORY, "splunk.test.min.js");
     var COMPILED_UI       = path.join(CLIENT_DIRECTORY, "splunk.ui.js");
     var COMPILED_UI_MIN   = path.join(CLIENT_DIRECTORY, "splunk.ui.min.js");
-    var GENERATED_DOCS    = path.join(DOC_DIRECTORY, DOC_FILE);
+    var GENERATED_DOCS    = path.join(DOC_DIRECTORY, SDK_VERSION, DOC_FILE);
     
     var createServer = function(port) {
         // passing where is going to be the document root of resources.
@@ -208,11 +208,12 @@
         });
         
         doc_builder.generate(comments, SDK_VERSION, function(err, data) {
-            ensureDirectoryExists(DOC_DIRECTORY);
             if (err) {
                 throw err;
             }
             
+            ensureDirectoryExists(DOC_DIRECTORY);
+            ensureDirectoryExists(path.join(DOC_DIRECTORY, SDK_VERSION));
             
             fs.writeFileSync(GENERATED_DOCS, data);
         });
