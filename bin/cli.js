@@ -167,7 +167,9 @@
     };
     
     var runServer = function(port) {
-        compileAll(true);
+        // TODO: compile doesn't work on Windows, so lets not
+        // make runServer depend on it
+        //compileAll(true);
         createServer(port);
     };
     
