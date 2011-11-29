@@ -7,7 +7,6 @@
 //   <http://daringfireball.net/projects/markdown/>
 //
 // Redistributable under a BSD-style open source license.
-// See LICENSE for more information.
 //
 // The full source distribution is at:
 //
