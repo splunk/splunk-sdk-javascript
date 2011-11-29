@@ -67,6 +67,6 @@
     "onevar"        : false,    // Allow only one `var` statement per function.
     "plusplus"      : false,    // Prohibit use of `++` & `--`.
     "sub"           : true,     // Tolerate all forms of subscript notation besides dot notation e.g. `dict['key']` instead of `dict.key`.
-    "trailing"      : true,     // Prohibit trailing whitespaces.
+    "trailing"      : false,    // Prohibit trailing whitespaces. // TODO
     "white"         : false     // Check against strict whitespace and indentation rules.
 }
