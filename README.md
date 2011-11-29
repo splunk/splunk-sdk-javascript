@@ -9,6 +9,7 @@ Lorem Ipsum
 The Splunk JavaScript SDK is available under an Apache license. 
 
 The third-party libraries embedded may have different licenses. This is the list of embedded libraries and their licenses:
+
 1. [dox]: [MIT][dox-license]
 2. [davis.js Documentation Generator][davis.js]: [MIT][davis-license]
 3. [easyXDM]: [MIT][xdm-license]
@@ -19,7 +20,7 @@ The third-party libraries embedded may have different licenses. This is the list
 8. [webapp2]: [Apache][webapp2-license]
 
 [dox]:                                          https://github.com/visionmedia/dox
-[davis.js Documentation Generator][davis.js]:   https://github.com/olivernn/davis.js
+[davis.js]:   https://github.com/olivernn/davis.js
 [easyXDM]:                                      http://easyxdm.net
 [jquery.class.js]:                              http://ejohn.org/blog/simple-javascript-inheritance/
 [nodeunit]:                                     https://github.com/caolan/nodeunit/
