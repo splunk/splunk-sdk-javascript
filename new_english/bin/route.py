@@ -1,3 +1,11 @@
+#
+# Modified version of webapp2
+# http://code.google.com/p/webapp-improved/source/browse/webapp2.py
+# 
+# :copyright: 2011 by tipfy.org.
+# :license: Apache Sotware License, see LICENSE for details.
+#
+
 import urllib
 import urlparse
 import re
