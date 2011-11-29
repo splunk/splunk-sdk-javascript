@@ -6,7 +6,9 @@ Lorem Ipsum
 
 ## License
 
-The Splunk JavaScript SDK is available under an Apache license. 
+The Splunk Software Development Kit for JavaScript is licensed under the Apache License 2.0. Details can be found in the file LICENSE.
+
+### Third-Party Libraries
 
 The third-party libraries embedded may have different licenses. This is the list of embedded libraries and their licenses:
 
