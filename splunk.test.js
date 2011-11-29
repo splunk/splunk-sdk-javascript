@@ -16,5 +16,13 @@
 (function() {
     var root = exports || this;
 
-    root.SplunkTest = require('./tests/tests.browser.js');
+    root.SplunkTest = {
+        Utils    : require('./tests/test_utils'),
+        Async    : require('./tests/test_async'),
+        Http     : require('./tests/test_http'),
+        Binding  : require('./tests/test_binding'),
+        Client   : require('./tests/test_client'),
+        Searcher : require('./tests/test_searcher'),
+        Examples : require('./tests/test_examples')
+    };
 })();
