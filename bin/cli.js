@@ -16,6 +16,8 @@
     var utils          = require('../lib/utils');
     var Async          = require('../lib/async');
     var staticResource = require('../contrib/static-resource/index');
+    var dox            = require('../contrib/dox/dox');
+    var doc_builder    = require('../contrib/dox/doc_builder');
     var spawn          = require('child_process').spawn;
     var path           = require('path');
     var fs             = require('fs');
@@ -28,6 +30,7 @@
      * Constants
      */
     var DEFAULT_PORT        = 6969;
+    var DOC_DIRECTORY       = "docs";
     var CLIENT_DIRECTORY    = "client";
     var TEST_DIRECTORY      = "tests";
     var TEST_PREFIX         = "test_";
@@ -35,6 +38,8 @@
     var SDK_BROWSER_ENTRY   = "browser.entry.js";
     var TEST_BROWSER_ENTRY  = "browser.test.entry.js";
     var UI_BROWSER_ENTRY    = "browser.ui.entry.js";
+    var DOC_FILE            = "index.html";
+    var SDK_VERSION         = JSON.parse(fs.readFileSync(path.resolve(__dirname, "../package.json")).toString("utf-8")).version;
     
     /**
      * Generated files
@@ -45,6 +50,7 @@
     var COMPILED_TEST_MIN = path.join(CLIENT_DIRECTORY, "splunk.test.min.js");
     var COMPILED_UI       = path.join(CLIENT_DIRECTORY, "splunk.ui.js");
     var COMPILED_UI_MIN   = path.join(CLIENT_DIRECTORY, "splunk.ui.min.js");
+    var GENERATED_DOCS    = path.join(DOC_DIRECTORY, DOC_FILE);
     
     var createServer = function(port) {
         // passing where is going to be the document root of resources.
@@ -137,7 +143,9 @@
     };
     
     var ensureDirectoryExists = function(dir) {
-        fs.mkdirSync(dir, "755");  
+        if (!path.existsSync(dir)) {
+            fs.mkdirSync(dir, "755");  
+        }
     };
     
     var ensureClientDirectory = function() {
@@ -184,6 +192,30 @@
     var launchBrowserTests = function(port) {
         runServer(port);
         launchBrowser("tests/tests.browser.html", port);
+    };
+    
+    var generateDocs = function() {        
+        var files = [
+            "lib/http.js",
+            "lib/utils.js"
+        ];
+        
+        var comments = [];
+        files.forEach(function(file) {
+          var contents = fs.readFileSync(file).toString("utf-8");
+          var obj = dox.parseComments(contents);
+          comments = comments.concat(obj);
+        });
+        
+        doc_builder.generate(comments, SDK_VERSION, function(err, data) {
+            ensureDirectoryExists(DOC_DIRECTORY);
+            if (err) {
+                throw err;
+            }
+            
+            
+            fs.writeFileSync(GENERATED_DOCS, data);
+        });
     };
     
     var runTests = function(tests, options) {
@@ -272,6 +304,11 @@
         .command('hint')
         .description('Run JSHint on the codebase.')
         .action(hint);
+    
+    program
+        .command('docs')
+        .description('Generate reference documentation for the SDK.')
+        .action(generateDocs);
         
     program.parse(process.argv);
     

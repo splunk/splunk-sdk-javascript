@@ -28,7 +28,8 @@
         "uglify-js" : "1.1.x",
         "nodeunit" : "0.6.2",
         "commander" : "0.4.x",
-        "jshint" : "0.5.x"
+        "jshint" : "0.5.x",
+        "mu": "0.5.x"
     },
     "author" : {
         "name" : "Splunk",
