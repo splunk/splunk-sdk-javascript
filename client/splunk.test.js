@@ -342,36 +342,15 @@ require.define("/splunk.test.js", function (require, module, exports, __dirname,
 (function() {
     var root = exports || this;
 
-    root.SplunkTest = require('./tests/tests.browser.js');
-})();
-});
-
-require.define("/tests/tests.browser.js", function (require, module, exports, __dirname, __filename) {
-    
-// Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-(function() {
-    var root = exports || this;
-    
-    root.Utils    = require('./test_utils');
-    root.Async    = require('./test_async');
-    root.Http     = require('./test_http');
-    root.Binding  = require('./test_binding');
-    root.Client   = require('./test_client');
-    root.Searcher = require('./test_searcher');
-    root.Examples = require('./test_examples');
+    root.SplunkTest = {
+        Utils    : require('./tests/test_utils'),
+        Async    : require('./tests/test_async'),
+        Http     : require('./tests/test_http'),
+        Binding  : require('./tests/test_binding'),
+        Client   : require('./tests/test_client'),
+        Searcher : require('./tests/test_searcher'),
+        Examples : require('./tests/test_examples')
+    };
 })();
 });
 
@@ -684,25 +663,11 @@ require.define("/lib/paths.js", function (require, module, exports, __dirname, _
 });
 
 require.define("/lib/jquery.class.js", function (require, module, exports, __dirname, __filename) {
-    // Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-/* Simple JavaScript Inheritance
+    /*! Simple JavaScript Inheritance
  * By John Resig http://ejohn.org/
  * MIT Licensed.
+ * Inspired by base2 and Prototype
  */
-// Inspired by base2 and Prototype
 (function(){
     var root = exports || this;
 
@@ -767,7 +732,7 @@ require.define("/lib/jquery.class.js", function (require, module, exports, __dir
 });
 
 require.define("/lib/utils.js", function (require, module, exports, __dirname, __filename) {
-    
+    /*!*/
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -787,12 +752,36 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     
     var root = exports || this;
 
+    /**
+     * Splunk.Utils
+     * 
+     * Various utility functions for the Splunk SDK
+     *
+     * @moduleRoot Splunk.Utils
+     */
+
+    /**
+     * Bind a function to a specific object
+     *
+     * Example:
+     *      
+     *      var obj = {a: 1, b: function() { console.log(a); }};
+     *      var bound = Splunk.Utils.bind(obj, obj.b);
+     *      bound(); // should print 1
+     *
+     * @param {Object} me Object to bind to
+     * @param {Function} fn Function to bind
+     * @return {Function} The bound function
+     *
+     * @globals Splunk.Utils
+     */
     root.bind = function(me, fn) { 
         return function() { 
             return fn.apply(me, arguments); 
         }; 
     };
 
+    /*!*/
     root.contains = function(arr, obj) {
         arr = arr || [];
         for(var i = 0; i < arr.length; i++) {
@@ -1746,7 +1735,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
 });
 
 require.define("/lib/http.js", function (require, module, exports, __dirname, __filename) {
-    
+    /*!*/
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -1769,10 +1758,21 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
     var utils           = require('./utils');
 
     var root = exports || this;
-    
-    // This is a utility function to encode an object into a URI-compliant
-    // URI. It will convert objects into '&key=value' pairs, and arrays into
-    // `&key=value1&key=value2...'
+
+    /**
+     * Helper function to encode a dictionary of values into a URL-encoded
+     * format.
+     *
+     * Example:
+     *      
+     *      // should be a=1&b=2&b=3&b=4
+     *      encode({a: 1, b: [2,3,4]})
+     *
+     * @param {Object} params Parameters to URL-encode
+     * @return {String} URL-encoded query string
+     *
+     * @globals Splunk.Http
+     */
     root.encode = function(params) {
         var encodedStr = "";
 
@@ -1816,13 +1816,29 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
 
         return encodedStr;
     };
-
-    // This is our base class for HTTP implementations. It provides the basic 
-    // functionality (get/post/delete), as well as a utility function to build
-    // a uniform response object.
-    //
-    // Base classes should only override 'request' and 'parseJSON'.
+     
+    /**
+     * Splunk.Http
+     * 
+     * Base class for HTTP abstraction. 
+     *
+     * This class provides the basic functionality (get/post/delete/request),
+     * as well as utilities to construct uniform responses.
+     *
+     * Base classes should only override `makeRequest` and `parseJSON`
+     *
+     * @moduleRoot Splunk.Http
+     */
     root.Http = Class.extend({
+        /**
+         * Constructor for Splunk.Http
+         *
+         * @constructor
+         * @param {Boolean} isSplunk Whether or not this is HTTP instance is for talking with Splunk.
+         * @return {Splunk.Http} A Splunk.Http instance
+         *
+         * @module Splunk.Http 
+         */
         init: function(isSplunk) {
             // Whether or not this HTTP provider is talking to Splunk or not
             this.isSplunk = (isSplunk === undefined ? true : isSplunk);
@@ -1836,6 +1852,17 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
             this._buildResponse     = utils.bind(this, this._buildResponse);
         },
 
+        /**
+         * Perform a POST request
+         *
+         * @param {String} url URL to request
+         * @param {Object} headers Object of headers for this request
+         * @param {Object} params Body parameters for this request
+         * @param {Number} timeout Timeout (currently ignored)
+         * @param {Function} callback Callback for when the request is complete
+         *
+         * @module Splunk.Http 
+         */
         get: function(url, headers, params, timeout, callback) {
             var encoded_url = url + "?" + root.encode(params);
             var message = {
@@ -1847,6 +1874,17 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
             return this.request(encoded_url, message, callback);
         },
 
+        /**
+         * Perform a POST request
+         *
+         * @param {String} url URL to request
+         * @param {Object} headers Object of headers for this request
+         * @param {Object} params Body parameters for this request
+         * @param {Number} timeout Timeout (currently ignored)
+         * @param {Function} callback Callback for when the request is complete
+         *
+         * @module Splunk.Http 
+         */
         post: function(url, headers, params, timeout, callback) {
             headers["Content-Type"] = "application/x-www-form-urlencoded";
             var message = {
@@ -1859,6 +1897,17 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
             return this.request(url, message, callback);
         },
 
+        /**
+         * Perform a DELETE request
+         *
+         * @param {String} url URL to request
+         * @param {Object} headers Object of headers for this request
+         * @param {Object} params Query parameters for this request
+         * @param {Number} timeout Timeout (currently ignored)
+         * @param {Function} callback Callback for when the request is complete
+         *
+         * @module Splunk.Http 
+         */
         del: function(url, headers, params, timeout, callback) {
             var encoded_url = url + "?" + root.encode(params);
             var message = {
@@ -1870,9 +1919,21 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
             return this.request(encoded_url, message, callback);
         },
 
+        /**
+         * Perform a request
+         *
+         * This function sets up everything to handle the response from a request,
+         * but delegates the actual calling to the subclass using `makeRequest`.
+         *
+         * @param {String} url URL to request (already encoded)
+         * @param {Object} message Object with values for method, headers, timeout and encoded body
+         * @param {Function} Callback for when the request is complete
+         *
+         * @module Splunk.Http 
+         *
+         * @see makeRequest
+         */
         request: function(url, message, callback) {
-            message.headers["Accept"] = "*/*";
-
             var wrappedCallback = function(response) {
                 callback = callback || function() {};
 
@@ -1889,14 +1950,50 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
             this.makeRequest(url, message, wrappedCallback);
         },
 
+        /**
+         * Client-specific request logic
+         *
+         * This function encapsulates the actual logic for performing
+         * a request, and is meant to be overriden by subclasses.
+         *
+         * @param {String} url URL to request (already encoded)
+         * @param {Object} message Object with values for method, headers, timeout and encoded body
+         * @param {Function} Callback for when the request is complete
+         *
+         * @module Splunk.Http 
+         */
         makeRequest: function(url, message, callback) {
             throw new Error("UNDEFINED FUNCTION - OVERRIDE REQUIRED"); 
         },
 
+        /**
+         * Client-specific JSON parsing logic
+         *
+         * This function encapsulates the actual logic for parsing
+         * the JSON response.
+         *
+         * @param {String} json JSON to parse
+         * @returns {Object} Parsed JSON
+         *
+         * @module Splunk.Http 
+         */
         parseJson: function(json) {
             throw new Error("UNDEFINED FUNCTION - OVERRIDE REQUIRED");
         },
 
+        /**
+         * Construct a unified response
+         *
+         * This function will generate a unified response given the
+         * parameters
+         *
+         * @param {Object} error Error object if there was one for the request
+         * @param {Object} response The actual response object
+         * @param {Object} data The response data
+         * @return {Object} A unified response object
+         *
+         * @module Splunk.Http 
+         */
         _buildResponse: function(error, response, data) {
             var complete_response, json, odata;
 
