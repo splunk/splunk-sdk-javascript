@@ -198,7 +198,8 @@
         var files = [
             "lib/http.js",
             "lib/utils.js",
-            "lib/async.js"
+            "lib/async.js",
+            "lib/binding.js"
         ];
         
         var comments = [];
