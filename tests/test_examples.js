@@ -156,6 +156,7 @@ exports.setup = function() {
                 
                 var context = this;
                 Async.parallelMap(
+                    creates,
                     function(create, idx, done) {
                         context.run("create", [], create, function(err, job) {
                             test.ok(!err);
@@ -164,7 +165,6 @@ exports.setup = function() {
                             done(null, job);
                         });
                     },
-                    creates,
                     function(err, created) {
                         for(var i = 0; i < created.length; i++) {
                             test.strictEqual(creates[i].id, created[i].sid);

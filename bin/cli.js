@@ -197,7 +197,8 @@
     var generateDocs = function() {        
         var files = [
             "lib/http.js",
-            "lib/utils.js"
+            "lib/utils.js",
+            "lib/async.js"
         ];
         
         var comments = [];

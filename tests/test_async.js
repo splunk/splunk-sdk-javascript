@@ -202,10 +202,10 @@ exports.setup = function() {
         
         "Parallel map success": function(test) {
             Async.parallelMap(
+                [1, 2, 3],
                 function(val, idx, done) { 
                     done(null, val + 1);
                 },
-                [1, 2, 3],
                 function(err, vals) {
                     test.ok(!err);
                     test.strictEqual(vals[0], 2);
@@ -218,6 +218,7 @@ exports.setup = function() {
         
         "Parallel map reorder success": function(test) {
             Async.parallelMap(
+                [1, 2, 3],
                 function(val, idx, done) { 
                     if (val === 2) {
                         Async.sleep(100, function() { done(null, val+1); });   
@@ -226,7 +227,6 @@ exports.setup = function() {
                         done(null, val + 1);
                     }
                 },
-                [1, 2, 3],
                 function(err, vals) {
                     test.strictEqual(vals[0], 2);
                     test.strictEqual(vals[1], 3);
@@ -238,6 +238,7 @@ exports.setup = function() {
         
         "Parallel map error": function(test) {
             Async.parallelMap(
+                [1, 2, 3],
                 function(val, idx, done) { 
                     if (val === 2) {
                         done(5);
@@ -246,7 +247,6 @@ exports.setup = function() {
                         done(null, val + 1);
                     }
                 },
-                [1, 2, 3],
                 function(err, vals) {
                     test.ok(err);
                     test.ok(!vals);
@@ -259,11 +259,11 @@ exports.setup = function() {
         "Series map success": function(test) {
             var keeper = 1;
             Async.seriesMap(
+                [1, 2, 3],
                 function(val, idx, done) { 
                     test.strictEqual(keeper++, val);
                     done(null, val + 1);
                 },
-                [1, 2, 3],
                 function(err, vals) {
                     test.ok(!err);
                     test.strictEqual(vals[0], 2);
@@ -277,6 +277,7 @@ exports.setup = function() {
         
         "Series map error": function(test) {
             Async.seriesMap(
+                [1, 2, 3],
                 function(val, idx, done) { 
                     if (val === 2) {
                         done(5);
@@ -285,7 +286,6 @@ exports.setup = function() {
                         done(null, val + 1);
                     }
                 },
-                [1, 2, 3],
                 function(err, vals) {
                     test.ok(err);
                     test.ok(!vals);
@@ -389,6 +389,7 @@ exports.setup = function() {
         "Parallel each reodrder success": function(test) {
             var total = 0;
             Async.parallelEach(
+                [1, 2, 3],
                 function(val, idx, done) { 
                     var go = function() {
                         total += val;
@@ -402,8 +403,7 @@ exports.setup = function() {
                         go();
                     }
                 },
-                [1, 2, 3],
-                function(err, vals) {
+                function(err) {
                     test.ok(!err);
                     test.strictEqual(total, 6);
                     test.done();
@@ -414,14 +414,14 @@ exports.setup = function() {
         "Series each success": function(test) {
             var results = [1, 3, 6];
             var total = 0;
-            Async.parallelEach(
+            Async.seriesEach(
+                [1, 2, 3],
                 function(val, idx, done) { 
                     total += val;
                     test.strictEqual(total, results[idx]);
                     done();
                 },
-                [1, 2, 3],
-                function(err, vals) {
+                function(err) {
                     test.ok(!err);
                     test.strictEqual(total, 6);
                     test.done();

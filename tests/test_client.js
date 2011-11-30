@@ -579,17 +579,20 @@ exports.setup = function(svc) {
                 apps.list(function(err, appList) {
                     test.ok(appList.length > 0);
                     
-                    Async.parallelEach(function(app, idx, callback) {
-                        if (utils.startsWith(app.properties().__name, "jssdk_")) {
-                            app.remove(callback);
+                    Async.parallelEach(
+                        appList,
+                        function(app, idx, callback) {
+                            if (utils.startsWith(app.properties().__name, "jssdk_")) {
+                                app.remove(callback);
+                            }
+                            else {
+                                callback();
+                            }
+                        }, function(err) {
+                            test.ok(!err);
+                            test.done();
                         }
-                        else {
-                            callback();
-                        }
-                    }, appList, function(err) {
-                        test.ok(!err);
-                        test.done();
-                    });
+                    );
                 });
             }
         },

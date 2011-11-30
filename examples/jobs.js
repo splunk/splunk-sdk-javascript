@@ -152,7 +152,7 @@
                     }
                 }
                 
-                Async.parallelMap(fn, jobs, callback);
+                Async.parallelMap(jobs, fn, callback);
             });
         },
 
