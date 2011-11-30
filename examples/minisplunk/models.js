@@ -54,7 +54,7 @@ var Events = Backbone.Collection.extend({
           show_empty_fields: true
         }, done);
       },
-      function(results, done) {
+      function(results, job, done) {
         var data = results.rows || [];
         var baseOffset = results.init_offset
         var fields = results.fields;
