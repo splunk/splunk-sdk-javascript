@@ -164,6 +164,8 @@
         return doc.is_global && doc.global === module.name;
       });
     });
+    
+    module.has_globals = (module.helpers || []).length > 0;
 
     mustache.compile(path.resolve(__dirname, 'template.mustache'), function (err, parsed) {
       if (err) {

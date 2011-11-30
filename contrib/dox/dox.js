@@ -135,7 +135,7 @@ exports.parseTag = function(str) {
     case 'param':
       tag.types = exports.parseTagTypes(parts.shift());
       tag.name = parts.shift() || '';
-      tag.description = parts.join(' ');
+      tag.description = markdown(parts.join(' '));
       break;
     case 'return':
       tag.types = exports.parseTagTypes(parts.shift());
