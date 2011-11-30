@@ -681,36 +681,118 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
         }; 
     };
 
-    /*!*/
+    /**
+     * Whether an array contains a specific object
+     *
+     * Example:
+     *      
+     *      var a = {a: 3};
+     *      var b = [{}, {c: 1}, {b: 1}, a];
+     *      var contained = Splunk.Utils.contains(b, a); // should be tree
+     *
+     * @param {Array} arr Array to search
+     * @param {Anything} obj Whether the array contains the element
+     * @return {Boolean} Whether the array contains the element
+     *
+     * @globals Splunk.Utils
+     */
     root.contains = function(arr, obj) {
         arr = arr || [];
-        for(var i = 0; i < arr.length; i++) {
-            if (arr[i] === obj) {
-                return true;
-            }
-        }  
+        return (arr.indexOf(obj) >= 0);
     };
 
-    root.startsWith = function(original, str) {
-        var matches = original.match("^" + str);
-        return matches && matches.length > 0 && matches[0] === str;  
+    /**
+     * Whether a string starts with a specific prefix.
+     *
+     * Example:
+     *      
+     *      var starts = Splunk.Utils.startsWith("splunk-foo", "splunk-");
+     *
+     * @param {String} original String to search
+     * @param {String} prefix Prefix to search with
+     * @return {Boolean} Whether the string starts with the prefix
+     *
+     * @globals Splunk.Utils
+     */
+    root.startsWith = function(original, prefix) {
+        var matches = original.match("^" + prefix);
+        return matches && matches.length > 0 && matches[0] === prefix;  
     };
 
-    root.endsWith = function(original, str) {
-        var matches = original.match(str + "$");
-        return matches && matches.length > 0 && matches[0] === str;  
+    /**
+     * Whether a string ends with a specific suffix.
+     *
+     * Example:
+     *      
+     *      var ends = Splunk.Utils.endsWith("foo-splunk", "-splunk");
+     *
+     * @param {String} original String to search
+     * @param {String} suffix Suffix to search with
+     * @return {Boolean} Whether the string ends with the suffix
+     *
+     * @globals Splunk.Utils
+     */
+    root.endsWith = function(original, suffix) {
+        var matches = original.match(suffix + "$");
+        return matches && matches.length > 0 && matches[0] === suffix;  
     };
     
-    root.toString = Object.prototype.toString;
+    var toString = Object.prototype.toString;
     
+    /**
+     * Convert an iterable to an array.
+     *
+     * Example:
+     *      
+     *      function() { 
+     *          console.log(arguments instanceof Array); // false
+     *          var arr = console.log(Splunk.Utils.toArray(arguments) instanceof Array); // true
+     *      }
+     *
+     * @param {Arguments} iterable Iterable to conver to an array
+     * @return {Array} The converted array
+     *
+     * @globals Splunk.Utils
+     */
     root.toArray = function(iterable) {
         return Array.prototype.slice.call(iterable);
     };
     
+    /**
+     * Whether or not the argument is an array
+     *
+     * Example:
+     *      
+     *      function() { 
+     *          console.log(Splunk.Utils.isArray(arguments)); // false
+     *          console.log(Splunk.Utils.isArray([1,2,3])); // true
+     *      }
+     *
+     * @param {Anything} obj Parameter to check whether it is an array
+     * @return {Boolean} Whether or not the passed in parameter was an array
+     *
+     * @globals Splunk.Utils
+     */
     root.isArray = Array.isArray || function(obj) {
-        return root.toString.call(obj) === '[object Array]';
+        return toString.call(obj) === '[object Array]';
     };
 
+    
+    /**
+     * Whether or not the argument is a function
+     *
+     * Example:
+     *      
+     *      function() { 
+     *          console.log(Splunk.Utils.isFunction([1,2,3]); // false
+     *          console.log(Splunk.Utils.isFunction(function() {})); // true
+     *      }
+     *
+     * @param {Anything} obj Parameter to check whether it is a function
+     * @return {Boolean} Whether or not the passed in parameter was a function
+     *
+     * @globals Splunk.Utils
+     */
     root.isFunction = function(obj) {
       return !!(obj && obj.constructor && obj.call && obj.apply);
     };
@@ -2056,7 +2138,7 @@ require.define("/lib/odata.js", function (require, module, exports, __dirname, _
 });
 
 require.define("/lib/async.js", function (require, module, exports, __dirname, __filename) {
-    
+    /*!*/
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -2077,10 +2159,36 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
     var utils = require('./utils');
     var root = exports || this;
 
-    // A definition for an asynchronous while loop. The function takes three parameters:
-    // * A condition function, which takes a callback, whose only parameter is whether the condition was met or not.
-    // * A body function, which takes a no-parameter callback. The callback should be invoked when the body of the loop has finished.
-    // * A done function, which takes no parameter, and will be invoked when the loop has finished.
+    /**
+     * Splunk.Async
+     * 
+     * Utilities for Async control flow and collection handling
+     *
+     * @moduleRoot Splunk.Async
+     */
+
+    /**
+     * An asynchronous while loop
+     *
+     * Example:
+     *      
+     *      var i = 0;
+     *      Async.whilst(
+     *          function() { return i++ < 3; },
+     *          function(done) {
+     *              Async.sleep(0, function() { done(); });
+     *          },
+     *          function(err) {
+     *              console.log(i) // == 3;
+     *          }
+     *      );
+     *
+     * @param {Function} condition A function which returns a boolean depending on whether the condition has been met.
+     * @param {Function} body A function which executes the body of the loop: `(done)`
+     * @param {Function} callback A function to be executed when the loop is complete: `(err)`
+     *
+     * @globals Splunk.Async
+     */
     root.whilst = function(condition, body, callback) {  
         condition = condition || function() { return false; };
         body = body || function(done) { done(); };
@@ -2103,6 +2211,41 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
         }
     };
     
+    /**
+     * Execute multiple functions in parallel.
+     * 
+     * Async.parallel will execute multiple tasks (functions) in parallel,
+     * and only call the callback if one of them fails, or when all are complete.
+     *
+     * Each task takes a single parameter, which is a callback to be invoked when the 
+     * task is complete.
+     *
+     * The callback will be invoked with the combined results (in order) of all the 
+     * tasks.
+     *
+     * Note that order of execution is not guaranteed, even though order of results is. 
+     *
+     * Example:
+     *      
+     *      Async.parallel([
+     *          function(done) {
+     *              done(null, 1);
+     *          },
+     *          function(done) {
+     *              done(null, 2, 3);
+     *          }],
+     *          function(err, one, two) {
+     *              console.log(err); // == null
+     *              console.log(one); // == 1
+     *              console.log(two); // == [1,2]
+     *          }
+     *      );
+     *
+     * @param {Function} tasks An array of functions: `(done)`
+     * @param {Function} callback A function to be executed when all tasks are done or an error occurred: `(err, ...)`
+     *
+     * @globals Splunk.Async
+     */
     root.parallel = function(tasks, callback) {
         tasks = tasks || [];
         callback = callback || function() {};
@@ -2145,6 +2288,44 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
         }
     };
     
+    /**
+     * Execute multiple functions in series.
+     * 
+     * Async.series will execute multiple tasks (functions) in series,
+     * and only call the callback if one of them fails, or when all are complete.
+     *
+     * Each task takes a single parameter, which is a callback to be invoked when the 
+     * task is complete.
+     *
+     * The callback will be invoked with the combined results (in order) of all the 
+     * tasks.
+     *
+     * Example:
+     *      
+     *      var keeper = 0;
+     *      Async.series([
+     *          function(done) {
+     *              Async.sleep(10, function() {
+     *                  console.log(keeper++); // == 0
+     *                  done(null, 1);
+     *              });
+     *          },
+     *          function(done) {
+     *              console.log(keeper++); // == 1
+     *              done(null, 2, 3);
+     *          }],
+     *          function(err, one, two) {
+     *              console.log(err); // == null
+     *              console.log(one); // == 1
+     *              console.log(two); // == [1,2]
+     *          }
+     *      );
+     *
+     * @param {Function} tasks An array of functions: `(done)`
+     * @param {Function} callback A function to be executed when all tasks are done or an error occurred: `(err, ...)`
+     *
+     * @globals Splunk.Async
+     */
     root.series = function(tasks, callback) {        
         callback = callback || function() {};
         
@@ -2176,7 +2357,38 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
         innerSeries(tasks[0], tasks.slice(1), [], callback);
     };
     
-    root.parallelMap = function(fn, vals, callback) {     
+    /**
+     * Map an asynchronous function over an array of values, in parallel.
+     * 
+     * Async.parallelMap will execute a function over each element in an array in parallel,
+     * and only call the callback when all operations are done, or when there is an error.
+     *
+     * The callback will be invoked with the resulting array.
+     *
+     * Example:
+     *      
+     *      Async.parallelMap(
+     *          [1, 2, 3],
+     *          function(val, idx, done) { 
+     *              if (val === 2) {
+     *                  Async.sleep(100, function() { done(null, val+1); });   
+     *              }
+     *              else {
+     *                  done(null, val + 1);
+     *              }
+     *          },
+     *          function(err, vals) {
+     *              console.log(vals); // == [2,3,4]
+     *          }
+     *      );
+     *
+     * @param {Array} vals An array of the values to map over.
+     * @param {Function} fn A (possibly asycnhronous) function to apply to each element: `(done)`
+     * @param {Function} callback A function to be executed when all tasks are done or an error occurred: `(err, mappedVals)`
+     *
+     * @globals Splunk.Async
+     */
+    root.parallelMap = function(vals, fn, callback) {     
         callback = callback || function() {};
         
         var tasks = [];
@@ -2201,7 +2413,35 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
         });
     };
     
-    root.seriesMap = function(fn, vals, callback) {     
+    /**
+     * Map an asynchronous function over an array of values, in series.
+     * 
+     * Async.seriesMap will execute a function over each element in an array in series,
+     * and only call the callback when all operations are done, or when there is an error.
+     *
+     * The callback will be invoked with the resulting array.
+     *
+     * Example:
+     *      
+     *      var keeper = 1;
+     *      Async.seriesMap(
+     *          [1, 2, 3],
+     *          function(val, idx, done) { 
+     *              console.log(keeper++); // == 1, then 2, then 3
+     *              done(null, val + 1);
+     *          },
+     *          function(err, vals) {
+     *              console.log(vals); // == [2,3,4];
+     *          }
+     *      );
+     *
+     * @param {Array} vals An array of the values to map over.
+     * @param {Function} fn A (possibly asycnhronous) function to apply to each element: `(done)`
+     * @param {Function} callback A function to be executed when all tasks are done or an error occurred: `(err, mappedVals)`
+     *
+     * @globals Splunk.Async
+     */
+    root.seriesMap = function(vals, fn, callback) {     
         callback = callback || function() {};
         
         var tasks = [];
@@ -2225,22 +2465,127 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
         });
     };
     
-    root.parallelEach = function(fn, vals, callback) {
+    /**
+     * Apply an asynchronous function over an array of values, in parallel.
+     * 
+     * Async.parallelEach will execute a function over each element in an array in parallel,
+     * and only call the callback when all operations are done, or when there is an error.
+     *
+     * The callback will be invoked with nothing except a possible error parameter
+     *
+     * Example:
+     *      
+     *      var total = 0;
+     *      Async.parallelEach(
+     *          [1, 2, 3],
+     *          function(val, idx, done) { 
+     *              var go = function() {
+     *                  total += val;
+     *                  done();
+     *              };
+     *              
+     *              if (idx === 1) {
+     *                  Async.sleep(100, go);    
+     *              }
+     *              else {
+     *                  go();
+     *              }
+     *          },
+     *          function(err) {
+     *              console.log(total); // == 6
+     *          }
+     *      );
+     *
+     * @param {Array} vals An array of the values to apply over.
+     * @param {Function} fn A (possibly asycnhronous) function to apply to each element: `(done)`
+     * @param {Function} callback A function to be executed when all tasks are done or an error occurred: `(err)`
+     *
+     * @globals Splunk.Async
+     */
+    root.parallelEach = function(vals, fn, callback) {     
         callback = callback || function() {};
         
-        root.parallelMap(fn, vals, function(err, result) {
+        root.parallelMap(vals, fn, function(err, result) {
             callback(err); 
         });
     };
     
-    root.seriesEach = function(fn, vals, callback) {
+    /**
+     * Apply an asynchronous function over an array of values, in series.
+     * 
+     * Async.seriesEach will execute a function over each element in an array in series,
+     * and only call the callback when all operations are done, or when there is an error.
+     *
+     * The callback will be invoked with nothing except a possible error parameter
+     *
+     * Example:
+     *      
+     *      var results = [1, 3, 6];
+     *      var total = 0;
+     *      Async.seriesEach(
+     *          [1, 2, 3],
+     *          function(val, idx, done) { 
+     *              total += val;
+     *              console.log(total === results[idx]); //== true
+     *              done();
+     *          },
+     *          function(err) {
+     *              console.log(total); //== 6
+     *          }
+     *      );
+     *
+     * @param {Array} vals An array of the values to apply over.
+     * @param {Function} fn A (possibly asycnhronous) function to apply to each element: `(done)`
+     * @param {Function} callback A function to be executed when all tasks are done or an error occurred: `(err)`
+     *
+     * @globals Splunk.Async
+     */
+    root.seriesEach = function(vals, fn, callback) {     
         callback = callback || function() {};
         
-        root.seriesMap(fn, vals, function(err, result) {
+        root.seriesMap(vals, fn, function(err, result) {
             callback(err); 
         });
     };
     
+    /**
+     * Chain asynchronous tasks.
+     * 
+     * Async.chain will chain asynchronous together by executing a task, and passing the results
+     * to the next task as arguments. If an error occurs at any point, or when the chain completes,
+     * the callback will be executed
+     *
+     * Each task takes 1-N parameters, where the amount is dependent on the previous task in the chain.
+     * The last parameter will always be a function to invoke when the task is complete.
+     *
+     * The callback will be invoked with the result of the final task.
+     * 
+     * Note that `err` arguments are not passed to individual tasks - they are propagated to the final
+     * callback.
+     *
+     * Example:
+     *      
+     *     Async.chain([
+     *         function(callback) { 
+     *             callback(null, 1, 2);
+     *         },
+     *         function(val1, val2, callback) {
+     *             callback(null, val1 + 1);
+     *         },
+     *         function(val1, callback) {
+     *             callback(null, val1 + 1, 5);
+     *         }],
+     *         function(err, val1, val2) {
+     *             console.log(val1); //== 3
+     *             console.log(val2); //== 5
+     *         }
+     *     );
+     *     
+     * @param {Function} tasks An array of functions: `(done)`
+     * @param {Function} callback A function to be executed when the chain is done or an error occurred: `(err, ...)`
+     *
+     * @globals Splunk.Async
+     */
     root.chain = function(tasks, callback) {
         callback = callback || function() {};
         
@@ -2275,11 +2620,48 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
             innerChain(tasks[0], tasks.slice(1), []);
         }
     };
-
+    
+    /**
+     * Execute a function after a certain delay.
+     * 
+     * Async.sleep will execute the given function after the specified timeout period. This function
+     * mostly exists to make `setTimeout` adhere to Node.js style function signatures.
+     *
+     * Example:
+     *      
+     *     Async.sleep(1000, function() { console.log("TIMEOUT");});
+     *     
+     * @param {Number} timeout The specified timeout in milliseconds.
+     * @param {Function} callback A function to be executed when the timeout occurs.
+     *
+     * @globals Splunk.Async
+     */
     root.sleep = function(timeout, callback) {
         setTimeout(callback, timeout);
     };
     
+    /**
+     * Augment a callback with extra parameters
+     * 
+     * Async.augment will cause a callback to be invoked with the extra specified parameters.
+     *
+     * Note that the augmented parameters are appended to the end of the parameter list.
+     *
+     * Example:
+     *
+     *      var callback = function(a, b) {
+     *          console.log(a); //== 1
+     *          console.log(b); //== 2
+     *      };
+     *      
+     *      var augmented = Async.augment(callback, 2);
+     *      augmented(1);
+     *     
+     * @param {Function} callback The callback to augment.
+     * @param {Anything...} rest Variable number of arguments to augment the callback with.
+     *
+     * @globals Splunk.Async
+     */
     root.augment = function(callback) {
         var args = Array.prototype.slice.call(arguments, 1);
         return function() {
