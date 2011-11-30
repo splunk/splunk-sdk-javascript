@@ -94,8 +94,6 @@
                 var complete_response = this._buildResponse(message, response, data);
                 callback(complete_response);
             });
-
-            console.log("URL: " + params.url);
             
             this.xhr.request(params, success, error);
         },
@@ -105,6 +103,7 @@
                 return JSON.parse(json);
             }
             catch (err) {
+                // TODO
                 console.log(err);
                 console.log(err.stack);
                 console.log(json);
