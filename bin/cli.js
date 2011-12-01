@@ -199,7 +199,8 @@
             "lib/http.js",
             "lib/utils.js",
             "lib/async.js",
-            "lib/binding.js"
+            "lib/binding.js",
+            "lib/client.js"
         ];
         
         var comments = [];
@@ -256,7 +257,7 @@
     var hint = function() {
         var hintRequirePath = path.join(path.resolve(require.resolve('jshint'), './../../../'), 'lib', 'cli');  
         var jshint = require(hintRequirePath);
-        jshint.interpret(['node', 'jshint', '.'])
+        jshint.interpret(['node', 'jshint', '.']);
     };
 
     program

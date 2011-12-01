@@ -1040,7 +1040,7 @@ exports.setup = function(svc) {
                     }
                 );
             },
-        },
+        }
     };
 
 };
