@@ -229,7 +229,7 @@
     };
     
     var generateDocs = function(callback) {        
-        callback = (callback && utils.isFunction(callback)) || function() {};
+        callback = (callback && utils.isFunction(callback)) ? callback : (function() {});
         
         var files = [
             "lib/http.js",
@@ -246,7 +246,6 @@
           var obj = dox.parseComments(contents, file);
           comments = comments.concat(obj);
         });
-        
         doc_builder.generate(comments, SDK_VERSION, function(err, data) {
             if (err) {
                 throw err;
