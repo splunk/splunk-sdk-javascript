@@ -198,8 +198,8 @@
     };
     
     var compileUI = function(watch) {
-        compile(UI_BROWSER_ENTRY, COMPILED_TEST, false, watch);
-        compile(UI_BROWSER_ENTRY, COMPILED_TEST_MIN, true, watch);
+        compile(UI_BROWSER_ENTRY, COMPILED_UI, false, watch);
+        compile(UI_BROWSER_ENTRY, COMPILED_UI_MIN, true, watch);
     };
     
     var compileAll = function(watch) {
@@ -229,7 +229,7 @@
     };
     
     var generateDocs = function(callback) {        
-        callback = callback || function() {};
+        callback = (callback && utils.isFunction(callback)) || function() {};
         
         var files = [
             "lib/http.js",

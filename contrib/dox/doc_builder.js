@@ -76,7 +76,7 @@
             }
         }
         
-        return module;
+        return module.trim();
     }
 
     // Find any related tags, and create the structure for it
@@ -84,7 +84,7 @@
     if (relatedTag) {
         var related = {
             name: relatedTag.local,
-            href: relatedTag.local ? relatedTag.local.split('.').pop() : ''
+            href: relatedTag.local ? relatedTag.local : ''
         }
     };
     
@@ -179,9 +179,10 @@
       module.helpers = transformedDocs.filter(function(doc) {
         return doc.is_global && doc.global === module.name;
       });
+      
+      module.has_globals = (module.helpers || []).length > 0;
     });
     
-    module.has_globals = (module.helpers || []).length > 0;
 
     mustache.compile(path.resolve(__dirname, 'template.mustache'), function (err, parsed) {
       if (err) {

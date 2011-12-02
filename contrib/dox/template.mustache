@@ -316,7 +316,7 @@
 
             <ul>
               {{#methods}}
-                <li><a href='#{{name}}'>{{name}}</a></li>
+                <li><a href='#{{parent}}-{{name}}'>{{name}}</a></li>
               {{/methods}}
             </ul>
             
@@ -328,7 +328,7 @@
             
             <ul>
               {{#helpers}}
-                <li><a href='#{{parent}}-{{name}}'>{{name}}</a></li>
+                <li><a href='#{{parent}}+{{name}}'>{{name}}</a></li>
               {{/helpers}}
             </ul>
           </li>
@@ -359,7 +359,7 @@
           </section>
 
           {{#methods}}
-            <section class='method' id='{{name}}'>
+            <section class='method' id='{{parent}}-{{name}}'>
               <header>
                 <h3>{{name}}</h3>
                 <h4>{{signature}}</h4>
@@ -408,7 +408,7 @@
           {{/has_globals}}
           
           {{#helpers}}
-            <section class='method' id='{{parent}}-{{name}}'>
+            <section class='method' id='{{parent}}+{{name}}'>
               <header>
                 <h3>{{name}}</h3>
                 <h4>{{signature}}</h4>
