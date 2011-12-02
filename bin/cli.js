@@ -78,6 +78,40 @@
         return "http://localhost:" + (port ? port : DEFAULT_PORT) + "/" + file;  
     };
     
+    var temp = {
+        _defaultDirectory: '/tmp',
+        _environmentVariables: ['TMPDIR', 'TMP', 'TEMP'],
+        
+        _findDirectory: function() {
+            for(var i = 0; i < temp._environmentVariables.length; i++) {
+                var value = process.env[temp._environmentVariables[i]];
+                if (value) {
+                    return fs.realpathSync(value);
+                }
+            }
+            
+            return fs.realpathSync(temp._defaultDirectory);
+        },
+        
+        _generateName: function() {
+            var now = new Date();
+            var name = ["__",
+                        now.getYear(), now.getMonth(), now.getDay(),
+                        '-',
+                        process.pid,
+                        '-',
+                        (Math.random() * 0x100000000 + 1).toString(36),
+                        "__"].join('');
+            return path.join(temp._findDirectory(), name);
+        },
+        
+        mkdirSync: function() {
+            var tempDirPath = temp._generateName();
+            fs.mkdirSync(tempDirPath, "755");
+            return tempDirPath;
+        }
+    };
+    
     var launch = function(file, args, done) {
         done = function() {};
         
@@ -194,7 +228,9 @@
         launchBrowser("tests/tests.browser.html", port);
     };
     
-    var generateDocs = function() {        
+    var generateDocs = function(callback) {        
+        callback = callback || function() {};
+        
         var files = [
             "lib/http.js",
             "lib/utils.js",
@@ -220,7 +256,182 @@
             ensureDirectoryExists(path.join(DOC_DIRECTORY, SDK_VERSION));
             
             fs.writeFileSync(GENERATED_DOCS, data);
+            
+            callback(null);
         });
+    };
+    
+    var git = {
+        execute: function(args, callback) {
+            var program = spawn("git", args);
+            
+            process.on("exit", function() {
+                program.kill();
+            });
+            
+            program.stderr.on("data", function(data) {
+                process.stderr.write(data);
+            });
+            
+            return program;
+        },
+        
+        stash: function(callback) {
+            var program = git.execute(["stash"], callback);  
+            
+            program.on("exit", function(code) {
+                if (code) {
+                    throw new Error("Stash error");
+                }
+                else {
+                    callback();
+                }
+            });
+        },
+        
+        unstash: function(callback) {
+            var program = git.execute(["stash", "pop"], callback);  
+            
+            program.on("exit", function(code) {
+                if (code) {
+                    throw new Error("Unstash error");
+                }
+                else {
+                    callback();
+                }
+            });
+        },
+        
+        switchBranch: function(toBranch, callback) {
+            var program = git.execute(["checkout", toBranch], callback);
+            
+            program.on("exit", function(code) {
+                if (code) {
+                    throw new Error("Switch branch error error");
+                }
+                else {
+                    callback();
+                }
+            });
+        },
+        
+        currentBranch: function(callback) {
+            var program = git.execute(["symbolic-ref",  "HEAD"], callback);
+            
+            var buffer = "";
+            program.stdout.on("data", function(data) {
+                buffer = data.toString("utf-8");
+            });
+            
+            program.on("exit", function(code) {
+                if (code) {
+                    throw new Error("Couldn't determine current branch name");
+                }
+                else {
+                    var branchName = buffer.replace("refs/heads/", "").trim();
+                    callback(null, branchName);
+                }
+            });
+        },
+        
+        add: function(filename, callback) {
+            var program = git.execute(["add", filename], callback);
+            
+            program.on("exit", function(code) {
+                if (code) {
+                    throw new Error("Add error");
+                }
+                else {
+                    callback(null);
+                }
+            });
+        },
+        
+        commit: function(msg, callback) {
+            var program = git.execute(["commit", "-m", msg], callback);
+            
+            program.on("exit", function(code) {
+                if (code) {
+                    throw new Error("Commit error");
+                }
+                else {
+                    callback(null);
+                }
+            });
+        },
+        
+        push: function(branch, callback) {
+            var program = git.execute(["push", "origin", branch], callback);
+            
+            program.on("exit", function(code) {
+                if (code) {
+                    throw new Error("push error");
+                }
+                else {
+                    callback(null);
+                }
+            });
+        }
+    };
+    
+    var uploadDocs = function() {
+        var originalBranch = "master";
+        var tempPath = "";
+        
+        Async.chain([
+            function(done) {
+                git.currentBranch(done);
+            },
+            function(branchName, done) {
+                originalBranch = branchName;
+                generateDocs(done);
+            },
+            function(done) {
+                var tempDirPath = temp.mkdirSync();
+                
+                tempPath = path.join(tempDirPath, DOC_FILE);
+                fs.link(GENERATED_DOCS, tempPath);
+                
+                done();
+            },
+            function(done) {
+                git.stash(done);
+            },
+            function(done) {
+                git.switchBranch("gh-pages", done);
+            },
+            function(done) {
+                ensureDirectoryExists(DOC_DIRECTORY);
+                ensureDirectoryExists(path.join(DOC_DIRECTORY, SDK_VERSION));
+                
+                if (path.existsSync(GENERATED_DOCS)) {
+                    fs.unlinkSync(GENERATED_DOCS);
+                }
+                fs.link(tempPath, GENERATED_DOCS);
+                
+                done();
+            },
+            function(done) {
+                git.add(GENERATED_DOCS, done);
+            },
+            function(done) {
+                git.commit("Updating v" + SDK_VERSION + " docs: " + (new Date()), done);  
+            },
+            function(done) {
+                git.push("gh-pages", done);
+            },
+            function(done) {
+                git.switchBranch(originalBranch, done);
+            },
+            function(done) {
+                git.unstash(done);
+            }],
+            function(err) {
+               if (err) {
+                   console.log(err);
+               } 
+            }
+        );
     };
     
     var runTests = function(tests, options) {
@@ -314,6 +525,11 @@
         .command('docs')
         .description('Generate reference documentation for the SDK.')
         .action(generateDocs);
+    
+    program
+        .command('uploaddocs')
+        .description('Upload docs to GitHub.')
+        .action(uploadDocs);
         
     program.parse(process.argv);
     
