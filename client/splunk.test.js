@@ -3382,7 +3382,6 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
          * @param {Function} Callback for when the request is complete: `(err, response)`
          *
          * @module Splunk.Http 
-         *
          * @see makeRequest
          */
         request: function(url, message, callback) {
