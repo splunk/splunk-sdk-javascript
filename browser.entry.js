@@ -32,5 +32,5 @@
         window.Splunk = previousSplunk;
         
         return ourSplunk;
-    }
+    };
 })();

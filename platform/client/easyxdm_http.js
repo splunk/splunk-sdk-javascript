@@ -41,7 +41,7 @@
     
     var getNamespace = function() {
         return NAMESPACE_PREFIX + (++namespaceCounter);
-    }
+    };
     
     // Store a copy of the easyXDM library we just imported
     var xdmLocal = easyXDM;
