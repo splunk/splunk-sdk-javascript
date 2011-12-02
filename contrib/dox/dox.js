@@ -26,13 +26,14 @@ exports.version = '0.1.2';
  * @api public
  */
 
-exports.parseComments = function(js){
+exports.parseComments = function(js, filename){
   var comments = []
     , comment
     , buf = ''
     , ignore
     , within
-    , code;
+    , code
+    , curLine = 1;
 
   for (var i = 0, len = js.length; i < len; ++i) {
     // start comment
@@ -53,12 +54,18 @@ exports.parseComments = function(js){
       buf = buf.replace(/^ *\* ?/gm, '');
       var comment = exports.parseComment(buf);
       comment.ignore = ignore;
+      comment.line = curLine + 1;
+      comment.filename = filename;
       comments.push(comment);
       within = ignore = false;
       buf = '';
     // buffer comment or code
     } else {
       buf += js[i];
+    }
+    
+    if (js[i] === '\n') {
+      curLine++;
     }
   }
 

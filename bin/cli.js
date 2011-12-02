@@ -206,7 +206,8 @@
         var comments = [];
         files.forEach(function(file) {
           var contents = fs.readFileSync(file).toString("utf-8");
-          var obj = dox.parseComments(contents);
+          
+          var obj = dox.parseComments(contents, file);
           comments = comments.concat(obj);
         });
         

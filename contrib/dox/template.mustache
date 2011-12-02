@@ -1,6 +1,5 @@
 <head>
   <script>
-    var raw = {{{raw}}}
   </script>
 
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js" type="text/javascript" charset="utf-8"></script>
@@ -112,6 +111,7 @@
       border-top: 3px solid #333;
       font-size: 2em;
       padding-top: 5px;
+      margin-bottom: 0px;
     }
 
     article > section {
@@ -143,6 +143,10 @@
       to {
         background-color: white;
       }
+    }
+    .extends {
+      margin-top: 0px;
+      font-size: 0.8em;
     }
 
     section.method:target {
@@ -345,6 +349,9 @@
         <article id='{{name}}'>
           <header>
             <h2>{{name}}</h2>
+            {{#is_extends}}
+              <p class='extends'>extends <a href="#{{extends}}">{{extends}}</a></p>
+            {{/is_extends}}
           </header>
 
           <section>
@@ -387,7 +394,7 @@
               </section>
 
               <section class='source'>
-                <h4>Source</h4>
+                <h4>Source (<a href="{{url}}#L{{line}}">{{filename}}:{{line}}</a>)</h4>
                 <pre><code>{{code}}</code></pre>
               </section>
               

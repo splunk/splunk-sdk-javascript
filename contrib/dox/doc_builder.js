@@ -21,6 +21,7 @@
   var fs = require('fs');
   var mustache = require('mu');
   var counter = 0;
+  var URL_ROOT = "https://github.com/splunk/splunk-sdk-javascript/blob/master/";
 
   var formatCode = function(doc) {
         var code = doc.code || "";
@@ -118,6 +119,16 @@
         return false;
     });
     
+    var extendsName = "";
+    var isExtends = doc.tags.some(function(tag) {
+        if (tag.type === "extends") {
+            extendsName = tag.content;
+            return true;
+        }
+        
+        return false;
+    });
+    
     var name = moduleName || doc.ctx && doc.ctx.name;
     var signature = (isGlobal || !isModule) ? parent() + "." + name : doc.ctx && doc.ctx.string;
 
@@ -125,6 +136,9 @@
         id: [counter++, Date.now()].join('-'),
         name: name,
         signature: signature,
+        line: doc.line,
+        filename: doc.filename,
+        url: URL_ROOT + doc.filename,
         type: isConstructor ? "constructor" : (doc.ctx && doc.ctx.type),
         ctx: doc.ctx,
         description: doc.description,
@@ -140,7 +154,9 @@
         related: related,
         has_related: !!related,
         is_global: isGlobal,
-        global: globalName
+        global: globalName,
+        is_extends: isExtends,
+        "extends": extendsName
     };
   }
 
