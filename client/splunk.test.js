@@ -1,3 +1,4 @@
+(function() {
 var require = function (file, cwd) {
     var resolved = require.resolve(file, cwd || '/');
     var mod = require.modules[resolved];
@@ -5060,8 +5061,6 @@ require.define("/platform/node/node_http.js", function (require, module, exports
             };
             
             request_options.headers["Content-Length"] = request_options.body.length;
-            
-            console.log(message.method + ": " + url);
 
             request(request_options, utils.bind(this, function (error, res, data) {
                 var complete_response = this._buildResponse(error, res, data);
@@ -8407,3 +8406,5 @@ require.define("/browser.test.entry.js", function (require, module, exports, __d
 window.SplunkTest = require('./splunk.test').SplunkTest;
 });
 require("/browser.test.entry.js");
+
+})()

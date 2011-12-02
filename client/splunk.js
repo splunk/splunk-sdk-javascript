@@ -1,3 +1,4 @@
+(function() {
 var require = function (file, cwd) {
     var resolved = require.resolve(file, cwd || '/');
     var mod = require.modules[resolved];
@@ -4250,7 +4251,7 @@ require.define("/platform/client/easyxdm_http.js", function (require, module, ex
     
     var getNamespace = function() {
         return NAMESPACE_PREFIX + (++namespaceCounter);
-    }
+    };
     
     // Store a copy of the easyXDM library we just imported
     var xdmLocal = easyXDM;
@@ -4400,7 +4401,9 @@ require.define("/browser.entry.js", function (require, module, exports, __dirnam
         window.Splunk = previousSplunk;
         
         return ourSplunk;
-    }
+    };
 })();
 });
 require("/browser.entry.js");
+
+})()

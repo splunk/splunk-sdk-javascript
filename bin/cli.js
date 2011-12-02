@@ -163,11 +163,11 @@
                     var ast = parser.parse(code);
                     ast = uglify.ast_mangle(ast);
                     ast = uglify.ast_squeeze(ast);
-                    return uglify.gen_code(ast);
+                    code = uglify.gen_code(ast);
                 }
-                else {
-                    return code;
-                }
+                
+                code = "(function() {\n" + code + "\n})()";
+                return code;
             },
         });
 
