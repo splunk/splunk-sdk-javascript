@@ -628,11 +628,12 @@ exports.setup = function(svc) {
             
             "Callback#history": function(test) {
                 var searches = this.service.savedSearches();
-                searches.contains("gentimes", function(err, found, search) {
+                searches.contains("Indexing workload", function(err, found, search) {
                     test.ok(found);
                     test.ok(search.isValid());
                     
-                    search.history(function(err, response) {
+                    search.history(function(err, history, search) {
+                        test.ok(!err);
                         test.done();
                     });
                 });
@@ -640,11 +641,12 @@ exports.setup = function(svc) {
             
             "Callback#suppress": function(test) {
                 var searches = this.service.savedSearches();
-                searches.contains("gentimes", function(err, found, search) {
+                searches.contains("Indexing workload", function(err, found, search) {
                     test.ok(found);
                     test.ok(search.isValid());
                     
-                    search.suppressInfo(function(response) {
+                    search.suppressInfo(function(err, info, search) {
+                        test.ok(!err);
                         test.done();
                     });
                 });
@@ -1039,7 +1041,7 @@ exports.setup = function(svc) {
                         test.done(); 
                     }
                 );
-            },
+            }
         }
     };
 

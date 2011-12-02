@@ -9,3 +9,4 @@ tests/html/*
 external-nocheckin/*
 client/splunk.ui.*
 .idea/*
+npm-debug.log
