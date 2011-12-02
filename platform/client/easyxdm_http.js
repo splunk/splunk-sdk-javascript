@@ -15,10 +15,16 @@
 
 (function() {
     var Splunk  = require('../../splunk').Splunk;
-    var xdm = require('../../contrib/easyXDM/easyXDM.min');
     var utils   = Splunk.Utils;
+    
+    // Include it so it gets put in splunk.js
+    require('../../contrib/easyXDM/easyXDM.min');
 
     var root = exports || this;
+    
+    var NAMESPACE_PREFIX = "SPLUNK_XDM_";
+    var namespaceCounter = 0;
+    var namespace = NAMESPACE_PREFIX + (++namespaceCounter);
 
     var getHeaders = function(headersString) {
         var headers = {};
@@ -32,12 +38,22 @@
 
         return headers;
     };
+    
+    var getNamespace = function() {
+        return NAMESPACE_PREFIX + (++namespaceCounter);
+    }
+    
+    // Store a copy of the easyXDM library we just imported
+    var xdmLocal = easyXDM;
 
     root.XdmHttp = Splunk.Http.extend({
         init: function(isSplunk, remoteServer) {
             this._super(isSplunk);
+            
+            // Get a no conflict version of easyXDM
+            var xdm = xdmLocal.noConflict(getNamespace());
        
-            this.xhr = new easyXDM.Rpc(
+            this.xhr = new xdm.Rpc(
                 {
                     local: "name.html",
                     swf: remoteServer + "/static/xdm/easyxdm.swf",

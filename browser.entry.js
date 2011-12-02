@@ -17,6 +17,20 @@
 // important functionality to the "window", such that others can easily
 // include it.
 
-window.Splunk = require('./splunk').Splunk;
-window.Splunk.JQueryHttp = require('./platform/client/jquery_http').JQueryHttp;
-window.Splunk.XdmHttp = require('./platform/client/easyxdm_http').XdmHttp;
+(function() {
+    var previousSplunk = window.Splunk;
+    
+    var ourSplunk = require('./splunk').Splunk;
+    var ourXDM = require('./platform/client/easyxdm_http').XdmHttp;
+    
+    window.Splunk = ourSplunk;
+    window.Splunk.XdmHttp = ourXDM;
+    
+    // Add no conflict capabilities
+    window.Splunk.noConflict = function(name) {
+        // Reset the window.Splunk reference
+        window.Splunk = previousSplunk;
+        
+        return ourSplunk;
+    }
+})();
