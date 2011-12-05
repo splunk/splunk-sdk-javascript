@@ -246,6 +246,7 @@
           var obj = dox.parseComments(contents, file);
           comments = comments.concat(obj);
         });
+        
         doc_builder.generate(comments, SDK_VERSION, function(err, data) {
             if (err) {
                 throw err;

@@ -19,7 +19,7 @@
 (function() {
   var path = require('path');
   var fs = require('fs');
-  var mustache = require('mu');
+  var mustache = require('mustache');
   var counter = 0;
   var URL_ROOT = "https://github.com/splunk/splunk-sdk-javascript/blob/master/";
 
@@ -129,6 +129,14 @@
         return false;
     });
     
+    var isPrivate = doc.tags.some(function(tag) {
+        if (tag.type === "private") {
+            return true;
+        }
+        
+        return false;
+    });
+    
     var name = moduleName || doc.ctx && doc.ctx.name;
     var signature = (isGlobal || !isModule) ? parent() + "." + name : doc.ctx && doc.ctx.string;
 
@@ -156,7 +164,8 @@
         is_global: isGlobal,
         global: globalName,
         is_extends: isExtends,
-        "extends": extendsName
+        "extends": extendsName,
+        is_private: isPrivate
     };
   }
 
@@ -183,23 +192,82 @@
       module.has_globals = (module.helpers || []).length > 0;
     });
     
-
-    mustache.compile(path.resolve(__dirname, 'template.mustache'), function (err, parsed) {
-      if (err) {
-          callback(err);
-      }
-      
-      var buffer = "";
-      mustache.render(parsed, { 
-          modules: modules, 
-          raw: JSON.
-          stringify(modules), 
-          version: version 
-      }).on('data', function (data) {
-        buffer += data;
-      }).on('end', function() {
-        callback(null, buffer);  
-      });
+    var moduleStore = {};
+    modules.forEach(function (module) {
+        moduleStore[module.name] = module;  
     });
+    
+    var getParentMethods = function(module) {
+        var newMethods = module.methods.slice();
+        var methodNames = {};
+        module.methods.forEach(function(method) {
+            methodNames[method.name] = true; 
+        });
+        
+        if (module.is_extends) {
+            // Get our parent name and his methods
+            var parentName = module["extends"];
+            var parent = moduleStore[parentName];
+            var parentMethods = getParentMethods(parent);
+            
+            // For each method we got from our parent (and thus their
+            // parent and so on), we look at it. If we don't have
+            // a method with the same name, we note it.
+            for(var i = 0; i < parentMethods.length; i++) {
+                var parentMethod = parentMethods[i];
+                
+                // Check to see if we have a method of the same name
+                if (!methodNames[parentMethod.name] && !parentMethod.ignore && !parentMethod.is_private) {
+                    // Copy over the method
+                    var newMethod = {};
+                    for(var k in parentMethod) { 
+                        newMethod[k] = parentMethod[k]; 
+                    }
+                    newMethod.parent = module.name;
+                    
+                    // Push it
+                    newMethods.push(newMethod);
+                }
+            }
+        }
+        
+        return newMethods;
+    }
+    
+    modules.forEach(function (module) {
+        // Get the methods from the parent that are applicable to us
+        var newMethods = getParentMethods(module);
+        
+        // If we have a parent, add those methods in
+        if (module.is_extends) {
+            module.methods = newMethods; 
+        }
+        
+        // Sort the method names according to alphabetical order, but 'init'
+        // should always be at the top
+        module.methods = module.methods.sort(function(left, right) { 
+            if (right.name === "init") {
+                return 1;
+            }
+            if (left.name === "init") {
+                return -1;
+            }
+            if (left.name > right.name) {
+                return 1;
+            }
+            if (left.name < right.name) {
+                return -1;
+            }
+            return 0;
+        });
+    });
+    
+    var template = fs.readFileSync(path.resolve(__dirname, 'template.mustache')).toString("utf-8");
+    var context = {
+        modules: modules,
+        version: version
+    }
+    var output = mustache.to_html(template, context, null);
+    callback(null, output);
   };
 })();
