@@ -24,8 +24,8 @@
         "request" : "2.2.x"
     },
     "devDependencies" : {
-        "browserify" : "1.7.x",
-        "uglify-js" : "1.1.xn",
+        "browserify" : "1.8.x",
+        "uglify-js" : "1.1.x",
         "nodeunit" : "0.6.2",
         "commander" : "0.5.x",
         "jshint" : "0.5.x",
