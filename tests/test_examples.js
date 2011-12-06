@@ -15,7 +15,7 @@
 
 exports.setup = function() {
     var Async       = require('../splunk').Splunk.Async;
-    var JobsMain    = require("../examples/jobs").main;
+    var JobsMain    = require("../examples/node/jobs").main;
 
     var idCounter = 0;
     var getNextId = function() {

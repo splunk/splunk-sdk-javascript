@@ -3,10 +3,10 @@
   <head>
     <title>Splunk Charting</title>
     
-    <link rel="stylesheet" type="text/css" href="../../external-nocheckin/ui.css">
+    <link rel="stylesheet" type="text/css" href="../../../external-nocheckin/ui.css">
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.js"></script>
-    <script type="text/javascript" src="../../client/splunk.js"></script>
-    <script type="text/javascript" src="../../client/splunk.ui.js"></script>
+    <script type="text/javascript" src="../../../client/splunk.js"></script>
+    <script type="text/javascript" src="../../../client/splunk.ui.js"></script>
     <script>
     
       var augment = function(callback) {
@@ -25,10 +25,9 @@
         var XdmHttp = Splunk.XdmHttp;
         var Async = Splunk.Async;
 
-        http = new XdmHttp("https://10.80.1.74:8089");
-        svc = new Splunk.Client.Service(http, { 
+        svc = new Splunk.Client.Service({ 
             scheme: "https",
-            host: "10.80.1.74",
+            host: "localhost",
             port: "8089",
             username: "itay",
             password: "changeme",

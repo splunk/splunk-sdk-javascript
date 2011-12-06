@@ -14,11 +14,11 @@
 // under the License.
 
 (function() {
-    var Splunk          = require('../splunk').Splunk;
-    var Class           = require('../lib/jquery.class').Class;
-    var utils           = require('../lib/utils');
-    var Async           = require('../lib/async');
-    var options         = require('../internal/cmdline');
+    var Splunk          = require('../../splunk').Splunk;
+    var Class           = Splunk.Class;
+    var utils           = Splunk.Utils;
+    var Async           = Splunk.Async;
+    var options         = require('../../internal/cmdline');
     var OptionParser    = options.OptionParser;
 
     var FLAGS_CREATE = [

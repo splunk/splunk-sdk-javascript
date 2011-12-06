@@ -6937,7 +6937,7 @@ require.define("/tests/test_examples.js", function (require, module, exports, __
 
 exports.setup = function() {
     var Async       = require('../splunk').Splunk.Async;
-    var JobsMain    = require("../examples/jobs").main;
+    var JobsMain    = require("../examples/node/jobs").main;
 
     var idCounter = 0;
     var getNextId = function() {
@@ -7115,7 +7115,7 @@ if (module === require.main) {
 }
 });
 
-require.define("/examples/jobs.js", function (require, module, exports, __dirname, __filename) {
+require.define("/examples/node/jobs.js", function (require, module, exports, __dirname, __filename) {
     
 // Copyright 2011 Splunk, Inc.
 //
@@ -7134,8 +7134,8 @@ require.define("/examples/jobs.js", function (require, module, exports, __dirnam
 (function() {
     var Splunk          = require('../splunk').Splunk;
     var Class           = require('../lib/jquery.class').Class;
-    var utils           = require('../lib/utils');
-    var Async           = require('../lib/async');
+    var utils           = Splunk.Utils;
+    var Async           = Splunk.Async;
     var options         = require('../internal/cmdline');
     var OptionParser    = options.OptionParser;
 
