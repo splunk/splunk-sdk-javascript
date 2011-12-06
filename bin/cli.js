@@ -492,6 +492,11 @@
         .action(compileTests);
     
     program
+        .command('compile-ui')
+        .description('Compile all UI files into a single, browser-includable file.')
+        .action(compileUI);
+    
+    program
         .command('compile')
         .description('Compile all files into several single, browser-includable file.')
         .action(compileAll);
