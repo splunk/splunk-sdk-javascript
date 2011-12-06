@@ -149,7 +149,9 @@
         return program;
     };
     
-    var compile = function(entry, path, shouldUglify, watch) {
+    var compile = function(entry, path, shouldUglify, watch, exportName) {
+        exportName = exportName || "Splunk";
+        
         // Compile/combine all the files into the package
         var bundle = browserify({
             entry: entry,
@@ -170,7 +172,15 @@
                     code = uglify.gen_code(ast);
                 }
                 
-                code = "(function() {\n" + code + "\n})()";
+                code = [
+                    "(function() {",
+                    "",
+                    "var __exportName = '" + exportName + "';",
+                    "",
+                    code,
+                    "",
+                    "})();"
+                ].join("\n");
                 return code;
             },
         });
@@ -190,26 +200,26 @@
         ensureDirectoryExists(CLIENT_DIRECTORY);
     };
     
-    var compileSDK = function(watch) {
+    var compileSDK = function(watch, exportName) {
         ensureClientDirectory();
-        compile(SDK_BROWSER_ENTRY, COMPILED_SDK, false, watch);
-        compile(SDK_BROWSER_ENTRY, COMPILED_SDK_MIN, true, watch);
+        compile(SDK_BROWSER_ENTRY, COMPILED_SDK, false, watch, exportName);
+        compile(SDK_BROWSER_ENTRY, COMPILED_SDK_MIN, true, watch, exportName);
     };
     
-    var compileTests = function(watch) {
+    var compileTests = function(watch, exportName) {
         ensureClientDirectory();
         compile(TEST_BROWSER_ENTRY, COMPILED_TEST, false, watch);
         compile(TEST_BROWSER_ENTRY, COMPILED_TEST_MIN, true, watch);
     };
     
-    var compileUI = function(watch) {
+    var compileUI = function(watch, exportName) {
         ensureClientDirectory();
         compile(UI_BROWSER_ENTRY, COMPILED_UI, false, watch);
         compile(UI_BROWSER_ENTRY, COMPILED_UI_MIN, true, watch);
     };
     
-    var compileAll = function(watch) {
-        compileSDK(watch);
+    var compileAll = function(watch, exportName) {
+        compileSDK(watch, exportName);
         compileTests(watch);
         // TODO: compileUI(watch);  
     };
@@ -482,9 +492,11 @@
         .version('0.0.1');
     
     program
-        .command('compile-sdk')
+        .command('compile-sdk [global]')
         .description('Compile all SDK files into a single, browser-includable file.')
-        .action(compileSDK);
+        .action(function(globalName) {
+            compileSDK(false, globalName);
+        });
     
     program
         .command('compile-test')
@@ -497,9 +509,11 @@
         .action(compileUI);
     
     program
-        .command('compile')
-        .description('Compile all files into several single, browser-includable file.')
-        .action(compileAll);
+        .command('compile [global]')
+        .description('Compile all files into several single, browser-includable files.')
+        .action(function(globalName) {
+            compileAll(false, globalName);
+        });
     
     program
         .command('runserver [port]')

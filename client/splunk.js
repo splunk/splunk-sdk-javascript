@@ -1,4 +1,7 @@
 (function() {
+
+var __exportName = 'Splunk';
+
 var require = function (file, cwd) {
     var resolved = require.resolve(file, cwd || '/');
     var mod = require.modules[resolved];
@@ -4408,24 +4411,25 @@ require.define("/browser.entry.js", function (require, module, exports, __dirnam
 // important functionality to the "window", such that others can easily
 // include it.
 
-(function() {
-    var previousSplunk = window.Splunk;
+(function(exportName) {
+    var previousSplunk = window[exportName];
     
     var ourSplunk = require('./splunk').Splunk;
     var ourXDM = require('./platform/client/easyxdm_http').XdmHttp;
     
-    window.Splunk = ourSplunk;
-    window.Splunk.XdmHttp = ourXDM;
+    window[exportName] = ourSplunk;
+    window[exportName].XdmHttp = ourXDM;
     
     // Add no conflict capabilities
-    window.Splunk.noConflict = function(name) {
-        // Reset the window.Splunk reference
-        window.Splunk = previousSplunk;
+    window[exportName].noConflict = function(name) {
+        // Reset the window[exportName] reference
+        window[exportName] = previousSplunk;
         
         return ourSplunk;
     };
-})();
+})(__exportName);
 });
 require("/browser.entry.js");
 
-})()
+
+})();

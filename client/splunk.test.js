@@ -1,4 +1,7 @@
 (function() {
+
+var __exportName = 'Splunk';
+
 var require = function (file, cwd) {
     var resolved = require.resolve(file, cwd || '/');
     var mod = require.modules[resolved];
@@ -7132,11 +7135,11 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
 // under the License.
 
 (function() {
-    var Splunk          = require('../splunk').Splunk;
-    var Class           = require('../lib/jquery.class').Class;
+    var Splunk          = require('../../splunk').Splunk;
+    var Class           = Splunk.Class;
     var utils           = Splunk.Utils;
     var Async           = Splunk.Async;
-    var options         = require('../internal/cmdline');
+    var options         = require('../../internal/cmdline');
     var OptionParser    = options.OptionParser;
 
     var FLAGS_CREATE = [
@@ -7587,4 +7590,5 @@ window.SplunkTest = require('./splunk.test').SplunkTest;
 });
 require("/browser.test.entry.js");
 
-})()
+
+})();
