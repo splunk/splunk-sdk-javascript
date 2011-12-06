@@ -2052,9 +2052,14 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for Splunk.Binding.Context</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L48">lib/binding.js:48</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L49">lib/binding.js:49</a>)</h4>
                 <pre><code>init: function(http, params) {
-    this.http = http;
+    if (!(http instanceof Http) &amp;&amp; !params) {
+        // Move over the params
+        params = http;
+        http = null;
+    }
+    
     this.scheme = params.scheme || "https";
     this.host = params.host || "localhost";
     this.port = params.port || 8089;
@@ -2063,6 +2068,23 @@ var toString = Object.prototype.toString;</code></pre>
     this.owner = params.owner || "-";  
     this.namespace = params.namespace;  
     this.sessionKey = params.sessionKey || "";
+    
+    if (!http) {
+        // If there is no HTTP implementation set, we check what platform
+        // we're running on. If we're running in the browser, then we instantiate
+        // XdmHttp, else, we instantiate NodeHttp.
+        if (typeof(window) !== 'undefined') {
+            var XdmHttp  = require('../platform/client/easyxdm_http').XdmHttp;
+            http = new XdmHttp(this.scheme + "://" + this.host + ":" + this.port);
+        }
+        else {
+            var NodeHttp = require('../platform/node/node_http').NodeHttp;
+            http = new NodeHttp();
+        }
+    }
+    
+    // Store the HTTP implementation
+    this.http = http;
     
     // Store our full prefix, which is just combining together
     // the scheme with the host
@@ -2100,7 +2122,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Append Splunk-specific headers</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L83">lib/binding.js:83</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L106">lib/binding.js:106</a>)</h4>
                 <pre><code>_headers: function (headers) {
     headers = headers || {};
     headers["Authorization"] = "Splunk " + this.sessionKey;
@@ -2129,7 +2151,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Perform a DELETE request</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L189">lib/binding.js:189</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L212">lib/binding.js:212</a>)</h4>
                 <pre><code>del: function(path, params, callback) {
     this.http.del(
         this.urlify(path),
@@ -2163,7 +2185,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>Convert any partial path into a full path containing the full owner and namespace prefixes if necessary</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L101">lib/binding.js:101</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L124">lib/binding.js:124</a>)</h4>
                 <pre><code>fullpath: function(path) {
     if (utils.startsWith(path, "/")) {
         return path;
@@ -2198,7 +2220,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Perform a GET request</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L170">lib/binding.js:170</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L193">lib/binding.js:193</a>)</h4>
                 <pre><code>get: function(path, params, callback) {
     this.http.get(
         this.urlify(path),
@@ -2230,7 +2252,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>Perform authentication to a Splunk instance and store the resulting session key.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L142">lib/binding.js:142</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L165">lib/binding.js:165</a>)</h4>
                 <pre><code>login: function(callback) {
     var that = this;
     var url = Paths.login;
@@ -2271,7 +2293,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Perform a POST request</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L208">lib/binding.js:208</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L231">lib/binding.js:231</a>)</h4>
                 <pre><code>post: function(path, params, callback) {
     this.http.post(
         this.urlify(path),
@@ -2306,7 +2328,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Perform a request</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L229">lib/binding.js:229</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L252">lib/binding.js:252</a>)</h4>
                 <pre><code>request: function(path, method, headers, body, callback) {
             this.http.request(
                 this.urlify(path),    
@@ -2345,7 +2367,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>Convert any partial path into a fully qualified URL.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L127">lib/binding.js:127</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L150">lib/binding.js:150</a>)</h4>
                 <pre><code>urlify: function(path) {
     return this.prefix + this.fullpath(path);
 },</code></pre>
@@ -2490,7 +2512,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Perform a DELETE request</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L189">lib/binding.js:189</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L212">lib/binding.js:212</a>)</h4>
                 <pre><code>del: function(path, params, callback) {
     this.http.del(
         this.urlify(path),
@@ -2523,7 +2545,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Perform a GET request</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L170">lib/binding.js:170</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L193">lib/binding.js:193</a>)</h4>
                 <pre><code>get: function(path, params, callback) {
     this.http.get(
         this.urlify(path),
@@ -2630,7 +2652,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Perform a POST request</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L208">lib/binding.js:208</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L231">lib/binding.js:231</a>)</h4>
                 <pre><code>post: function(path, params, callback) {
     this.http.post(
         this.urlify(path),
@@ -2702,7 +2724,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Perform a request</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L229">lib/binding.js:229</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L252">lib/binding.js:252</a>)</h4>
                 <pre><code>request: function(path, method, headers, body, callback) {
             this.http.request(
                 this.urlify(path),    
