@@ -504,7 +504,7 @@ require.define("/lib/binding.js", function (require, module, exports, __dirname,
          *
          * @constructor
          * @param {Splunk.Http} http An instance of a `Splunk.Http` class
-         * @param {Object} params Dictionary of optional parameters: scheme, host, port, username, password, owner, namespace, sessionKey
+         * @param {Object} params Dictionary of optional parameters: scheme, host, port, username, password, owner, app, sessionKey
          * @return {Splunk.Binding.Context} A Splunk.Binding.Context instance
          *
          * @module Splunk.Binding.Context 
@@ -516,13 +516,13 @@ require.define("/lib/binding.js", function (require, module, exports, __dirname,
                 http = null;
             }
             
-            this.scheme = params.scheme || "https";
-            this.host = params.host || "localhost";
-            this.port = params.port || 8089;
-            this.username = params.username || null;  
-            this.password = params.password || null;  
-            this.owner = params.owner || "-";  
-            this.namespace = params.namespace;  
+            this.scheme     = params.scheme || "https";
+            this.host       = params.host || "localhost";
+            this.port       = params.port || 8089;
+            this.username   = params.username || null;  
+            this.password   = params.password || null;  
+            this.owner      = params.owner || "-";  
+            this.app        = params.app;  
             this.sessionKey = params.sessionKey || "";
             
             if (!http) {
@@ -576,7 +576,7 @@ require.define("/lib/binding.js", function (require, module, exports, __dirname,
          * Convert partial paths to fully qualified ones
          *
          * Convert any partial path into a full path containing the full
-         * owner and namespace prefixes if necessary
+         * owner and app prefixes if necessary
          *
          * @param {String} path Partial path
          * @return {String} Fully qualified path
@@ -589,14 +589,14 @@ require.define("/lib/binding.js", function (require, module, exports, __dirname,
                 return path;
             }  
 
-            if (!this.namespace) {
+            if (!this.app) {
                 return "/services/" + path;
             }
 
             var owner = (this.owner === "*" || !this.owner ? "-" : this.owner);
-            var namespace = (this.namespace === "*" ? "-" : this.namespace);
+            var app   = (this.app === "*" ? "-" : this.app);
 
-            return "/servicesNS/" + owner + "/" + namespace + "/" + path; 
+            return "/servicesNS/" + owner + "/" + app + "/" + path; 
         },
 
         /**
@@ -1650,7 +1650,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * @constructor
          * @param {Splunk.Http} http An instance of a `Splunk.Http` class
-         * @param {Object} params Dictionary of optional parameters: scheme, host, port, username, password, owner, namespace, sessionKey
+         * @param {Object} params Dictionary of optional parameters: scheme, host, port, username, password, owner, app, sessionKey
          * @return {Splunk.Client.Service} A Splunk.Client.Service instance
          *
          * @module Splunk.Client.Service
@@ -1681,12 +1681,12 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *      var newService = svc.specialize("myuser", "unix");
          *
          * @param {String} owner The specialized owner of the new service
-         * @param {String} namespace The specialized app of the new sevice
+         * @param {String} app The specialized app of the new sevice
          * @return {Splunk.Client.Service} The specialized service.
          *
          * @module Splunk.Client.Service
          */
-        specialize: function(owner, namespace) {
+        specialize: function(owner, app) {
             return new root.Service(this.http, {
                 scheme: this.scheme,
                 host: this.host,   
@@ -1694,7 +1694,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                 username: this.username,
                 password: this.password,
                 owner: owner,
-                namespace: namespace, 
+                app: app, 
                 sessionKey: this.sessionKey
             });
         },

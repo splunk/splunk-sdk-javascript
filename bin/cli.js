@@ -113,7 +113,7 @@
     };
     
     var launch = function(file, args, done) {
-        done = function() {};
+        done = done || function() {};
         
         // Add the file to the arguments
         args = args || [];
@@ -469,7 +469,7 @@
             (options.scheme     ?                   makeOption("scheme",       options.scheme)        : ""),
             (options.host       ?                   makeOption("host",         options.host)          : ""),
             (options.port       ?                   makeOption("port",         options.port)          : ""),
-            (options.namespace  ?                   makeOption("namespace",    options.namespace)     : ""),
+            (options.app        ?                   makeOption("app",          options.app)           : ""),
             (!utils.isFunction(options.password) ?  makeOption("password",     options.password)      : "")
         ];
         

@@ -961,7 +961,7 @@ var SigninView = BootstrapModalView.extend({
         port: port,
         username: username,
         password: password,
-        namespace: app,
+        app: app,
     });
       
     svc.login(function(err, success) {
