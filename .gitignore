@@ -10,3 +10,4 @@ external-nocheckin/*
 client/splunk.ui.*
 .idea/*
 npm-debug.log
+server.py
