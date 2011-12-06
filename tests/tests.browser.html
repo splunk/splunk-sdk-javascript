@@ -135,7 +135,7 @@
           var svc = new Splunk.Client.Service(options);
           svc.login(function(err, success) {
             if (err || !success) {
-              console.log(err);
+              if (err) throw err;
               alert("Cannot run tests - login failed");
             }
             

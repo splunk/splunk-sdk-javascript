@@ -66,9 +66,6 @@
                 })
             };
             
-            // TODO
-            console.log("URL: " + params.url);
-
             $.ajax(params);
         },
 

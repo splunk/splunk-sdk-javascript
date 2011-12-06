@@ -115,15 +115,7 @@
         },
 
         parseJson: function(json) {
-            try {
-                return JSON.parse(json);
-            }
-            catch (err) {
-                // TODO
-                console.log(err);
-                console.log(err.stack);
-                console.log(json);
-            }
+            return JSON.parse(json);
         }
     });
 })();
