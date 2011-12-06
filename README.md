@@ -94,7 +94,7 @@ in the root directory of the repistory.
 #### Installation
 
 To use the SDK on Node.js, you first need to install Node, which you can do from
-here for desired platform: http://nodejs.org/#download
+here for your desired platform: http://nodejs.org/#download
 
 You also need to install the Node Package Manager (npm). npm is bundled with node
 starting with version 0.6.4, but you can also follow the instructions here to
@@ -456,5 +456,5 @@ You can reach the Dev Platform team at devinfo@splunk.com
 [node_examples_dir]: https://github.com/splunk/splunk-sdk-javascript/blob/master/examples/node
 [browser_examples_dir]: https://github.com/splunk/splunk-sdk-javascript/blob/master/examples/browser
 [client_dir]: https://github.com/splunk/splunk-sdk-javascript/blob/master/client
-[refdocs]: https://splunk.github.com/splunk-sdk-javascript/docs/0.1.0/index.html
+[refdocs]: http://splunk.github.com/splunk-sdk-javascript/docs/0.1.0/index.html
 [devportal]: http://dev.splunk.com
