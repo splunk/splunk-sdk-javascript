@@ -20,7 +20,6 @@
     var Async           = require('../lib/async');
     var options         = require('../internal/cmdline');
     var OptionParser    = options.OptionParser;
-    var NodeHttp        = require('../platform/node/node_http').NodeHttp;
 
     var FLAGS_CREATE = [
         "search", "earliest_time", "latest_time", "now", "time_format",
@@ -412,11 +411,8 @@
             return;
         }
         
-        // Create our HTTP request class for node.js
-        var http = new NodeHttp();
-        
         // Create our service context using the information from the command line
-        var svc = new Splunk.Client.Service(http, { 
+        var svc = new Splunk.Client.Service({ 
             scheme: cmdline.options.scheme,
             host: cmdline.options.host,
             port: cmdline.options.port,

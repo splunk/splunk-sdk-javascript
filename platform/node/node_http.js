@@ -30,7 +30,8 @@
                 url: url,
                 method: message.method,
                 headers: message.headers || {},
-                body: message.body || ""
+                body: message.body || "",
+                jar: false
             };
             
             request_options.headers["Content-Length"] = request_options.body.length;

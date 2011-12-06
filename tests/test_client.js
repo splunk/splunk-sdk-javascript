@@ -1049,7 +1049,6 @@ exports.setup = function(svc) {
 
 if (module === require.main) {
     var Splunk      = require('../splunk').Splunk;
-    var NodeHttp    = require('../platform/node/node_http').NodeHttp;
     var options     = require('../internal/cmdline');
     var test        = require('../contrib/nodeunit/test_reporter');
     
@@ -1060,8 +1059,7 @@ if (module === require.main) {
         throw new Error("Error in parsing command line parameters");
     }
     
-    var http = new NodeHttp();
-    var svc = new Splunk.Client.Service(http, { 
+    var svc = new Splunk.Client.Service({ 
         scheme: cmdline.options.scheme,
         host: cmdline.options.host,
         port: cmdline.options.port,

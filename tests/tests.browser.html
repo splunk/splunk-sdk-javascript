@@ -124,9 +124,6 @@
           
           var httpLocation = scheme + "://" + host + ":" + port;
           
-          var XdmHttp = Splunk.XdmHttp;
-          var http = new XdmHttp(true, "http://www.doesntexist.com");
-          var http2 = new XdmHttp(true, httpLocation);
           var options = {
             scheme: scheme,
             host: host,
@@ -135,7 +132,7 @@
             password: password
           };
           
-          var svc = new Splunk.Client.Service(http2, options);
+          var svc = new Splunk.Client.Service(options);
           svc.login(function(err, success) {
             if (err || !success) {
               console.log(err);

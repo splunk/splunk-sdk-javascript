@@ -153,7 +153,11 @@
         // Compile/combine all the files into the package
         var bundle = browserify({
             entry: entry,
-            ignore: ["../contrib/nodeunit/test_reporter", "../contrib/parseopt", "request"],
+            ignore: [
+                "../contrib/nodeunit/test_reporter", 
+                "../contrib/parseopt", 
+                "../platform/node/node_http",
+                "request"],
             filter: function(code) {
                 if (shouldUglify) {
                     var uglifyjs = require("uglify-js"),
@@ -187,17 +191,19 @@
     };
     
     var compileSDK = function(watch) {
-        
+        ensureClientDirectory();
         compile(SDK_BROWSER_ENTRY, COMPILED_SDK, false, watch);
         compile(SDK_BROWSER_ENTRY, COMPILED_SDK_MIN, true, watch);
     };
     
     var compileTests = function(watch) {
+        ensureClientDirectory();
         compile(TEST_BROWSER_ENTRY, COMPILED_TEST, false, watch);
         compile(TEST_BROWSER_ENTRY, COMPILED_TEST_MIN, true, watch);
     };
     
     var compileUI = function(watch) {
+        ensureClientDirectory();
         compile(UI_BROWSER_ENTRY, COMPILED_UI, false, watch);
         compile(UI_BROWSER_ENTRY, COMPILED_UI_MIN, true, watch);
     };

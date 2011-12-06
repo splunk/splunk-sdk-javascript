@@ -42,9 +42,8 @@
     var Splunk      = require('../splunk').Splunk;
     var NodeHttp    = require('../platform/node/node_http').NodeHttp;
     
-    var http = new NodeHttp();
     var nonSplunkHttp = new NodeHttp(false);
-    var svc = new Splunk.Client.Service(http, { 
+    var svc = new Splunk.Client.Service({ 
         scheme: cmdline.options.scheme,
         host: cmdline.options.host,
         port: cmdline.options.port,

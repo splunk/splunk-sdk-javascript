@@ -47,8 +47,8 @@
     var xdmLocal = easyXDM;
 
     root.XdmHttp = Splunk.Http.extend({
-        init: function(isSplunk, remoteServer) {
-            this._super(isSplunk);
+        init: function(remoteServer) {
+            this._super(true);
             
             // Get a no conflict version of easyXDM
             var xdm = xdmLocal.noConflict(getNamespace());
