@@ -21,7 +21,8 @@
         //"exampleVar",
         //"anotherCoolGlobal",
         //"iLoveDouglas",
-        "easyXDM"
+        "easyXDM",
+        "__exportName"
     ],
 
 

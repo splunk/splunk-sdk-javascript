@@ -5,8 +5,8 @@ node_modules
 build
 client
 external
-examples/minisplunk
-examples\\minisplunk
+examples/browser/minisplunk
+examples\\browser\\minisplunk
 old_english
 new_english
 contrib
