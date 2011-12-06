@@ -847,16 +847,7 @@
             // Parse the JSON data and build the OData response
             // object.
             if (this.isSplunk) {
-                try {
-                    json = this.parseJson(data);
-                } catch(err1) {
-                    // TODO
-                    console.log("JSON PARSE ERROR");
-                    console.log(err1.message);
-                    console.log(err1.stack);
-                    console.log(error);
-                    console.log(data);
-                }
+                json = this.parseJson(data);
                 odata = ODataResponse.fromJson(json);  
                 // Print any messages that came with the response
                 ODataResponse.printMessages(odata);
@@ -871,16 +862,7 @@
                 json = "";
                 // We only try to parse JSON if the headers say it is JSON
                 if (response &amp;&amp; response.headers["content-type"] === "application/json") {
-                    try {
-                        json = this.parseJson(data);
-                    } catch(err2) {
-                        // TODO
-                        console.log("JSON PARSE ERROR");
-                        console.log(err2.message);
-                        console.log(err2.stack);
-                        console.log(error);
-                        console.log(data);
-                    }
+                    json = this.parseJson(data);
                 }
                 complete_response = {
                     response: response,
@@ -2041,7 +2023,7 @@ var toString = Object.prototype.toString;</code></pre>
                                   <h4>Params</h4>
                 <ul>
                                       <li><span class="bold">http</span> - <span class="em">Splunk.Http</span> <p>An instance of a <code>Splunk.Http</code> class</p></li>
-                                      <li><span class="bold">params</span> - <span class="em">Object</span> <p>Dictionary of optional parameters: scheme, host, port, username, password, owner, namespace, sessionKey</p></li>
+                                      <li><span class="bold">params</span> - <span class="em">Object</span> <p>Dictionary of optional parameters: scheme, host, port, username, password, owner, app, sessionKey</p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -2060,13 +2042,13 @@ var toString = Object.prototype.toString;</code></pre>
         http = null;
     }
     
-    this.scheme = params.scheme || "https";
-    this.host = params.host || "localhost";
-    this.port = params.port || 8089;
-    this.username = params.username || null;  
-    this.password = params.password || null;  
-    this.owner = params.owner || "-";  
-    this.namespace = params.namespace;  
+    this.scheme     = params.scheme || "https";
+    this.host       = params.host || "localhost";
+    this.port       = params.port || 8089;
+    this.username   = params.username || null;  
+    this.password   = params.password || null;  
+    this.owner      = params.owner || "-";  
+    this.app        = params.app;  
     this.sessionKey = params.sessionKey || "";
     
     if (!http) {
@@ -2182,7 +2164,7 @@ var toString = Object.prototype.toString;</code></pre>
                   </section>
               <section>
                 <p>Convert partial paths to fully qualified ones</p>
-<p>Convert any partial path into a full path containing the full owner and namespace prefixes if necessary</p>
+<p>Convert any partial path into a full path containing the full owner and app prefixes if necessary</p>
               </section>
               <section class='source'>
                 <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L124">lib/binding.js:124</a>)</h4>
@@ -2190,12 +2172,12 @@ var toString = Object.prototype.toString;</code></pre>
     if (utils.startsWith(path, "/")) {
         return path;
     }  
-    if (!this.namespace) {
+    if (!this.app) {
         return "/services/" + path;
     }
     var owner = (this.owner === "*" || !this.owner ? "-" : this.owner);
-    var namespace = (this.namespace === "*" ? "-" : this.namespace);
-    return "/servicesNS/" + owner + "/" + namespace + "/" + path; 
+    var app   = (this.app === "*" ? "-" : this.app);
+    return "/servicesNS/" + owner + "/" + app + "/" + path; 
 },</code></pre>
               </section>
               
@@ -2395,7 +2377,7 @@ var toString = Object.prototype.toString;</code></pre>
                                   <h4>Params</h4>
                 <ul>
                                       <li><span class="bold">http</span> - <span class="em">Splunk.Http</span> <p>An instance of a <code>Splunk.Http</code> class</p></li>
-                                      <li><span class="bold">params</span> - <span class="em">Object</span> <p>Dictionary of optional parameters: scheme, host, port, username, password, owner, namespace, sessionKey</p></li>
+                                      <li><span class="bold">params</span> - <span class="em">Object</span> <p>Dictionary of optional parameters: scheme, host, port, username, password, owner, app, sessionKey</p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -2787,7 +2769,7 @@ var toString = Object.prototype.toString;</code></pre>
                                   <h4>Params</h4>
                 <ul>
                                       <li><span class="bold">owner</span> - <span class="em">String</span> <p>The specialized owner of the new service</p></li>
-                                      <li><span class="bold">namespace</span> - <span class="em">String</span> <p>The specialized app of the new sevice</p></li>
+                                      <li><span class="bold">app</span> - <span class="em">String</span> <p>The specialized app of the new sevice</p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -2804,7 +2786,7 @@ var toString = Object.prototype.toString;</code></pre>
               </section>
               <section class='source'>
                 <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L82">lib/client.js:82</a>)</h4>
-                <pre><code>specialize: function(owner, namespace) {
+                <pre><code>specialize: function(owner, app) {
     return new root.Service(this.http, {
         scheme: this.scheme,
         host: this.host,   
@@ -2812,7 +2794,7 @@ var toString = Object.prototype.toString;</code></pre>
         username: this.username,
         password: this.password,
         owner: owner,
-        namespace: namespace, 
+        app: app, 
         sessionKey: this.sessionKey
     });
 },</code></pre>
