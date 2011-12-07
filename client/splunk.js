@@ -1015,16 +1015,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
             // Parse the JSON data and build the OData response
             // object.
             if (this.isSplunk) {
-                try {
-                    json = this.parseJson(data);
-                } catch(err1) {
-                    // TODO
-                    console.log("JSON PARSE ERROR");
-                    console.log(err1.message);
-                    console.log(err1.stack);
-                    console.log(error);
-                    console.log(data);
-                }
+                json = this.parseJson(data);
                 odata = ODataResponse.fromJson(json);  
 
                 // Print any messages that came with the response
@@ -1042,16 +1033,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
 
                 // We only try to parse JSON if the headers say it is JSON
                 if (response && response.headers["content-type"] === "application/json") {
-                    try {
-                        json = this.parseJson(data);
-                    } catch(err2) {
-                        // TODO
-                        console.log("JSON PARSE ERROR");
-                        console.log(err2.message);
-                        console.log(err2.stack);
-                        console.log(error);
-                        console.log(data);
-                    }
+                    json = this.parseJson(data);
                 }
 
                 complete_response = {
@@ -1090,6 +1072,28 @@ require.define("/lib/odata.js", function (require, module, exports, __dirname, _
     var Class   = require('./jquery.class').Class;
 
     var root = exports || this;
+
+    
+    if (!console || !console.log) {
+        console = {
+            log: function() {},
+            error: function() {},
+            warn: function() {},
+            info: function() {}
+        };
+    }
+    
+    if (!console.error) {
+        console.error = console.log;
+    }
+    
+    if (!console.warn) {
+        console.warn = console.log;
+    }
+    
+    if (!console.info) {
+        console.info = console.log;
+    }
 
     // Our basic class to represent an OData resposne object.
     root.ODataResponse = Class.extend({
@@ -1463,15 +1467,7 @@ require.define("/platform/client/easyxdm_http.js", function (require, module, ex
         },
 
         parseJson: function(json) {
-            try {
-                return JSON.parse(json);
-            }
-            catch (err) {
-                // TODO
-                console.log(err);
-                console.log(err.stack);
-                console.log(json);
-            }
+            return JSON.parse(json);
         }
     });
 })();
