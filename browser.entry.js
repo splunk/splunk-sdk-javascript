@@ -22,9 +22,11 @@
     
     var ourSplunk = require('./splunk').Splunk;
     var ourXDM = require('./platform/client/easyxdm_http').XdmHttp;
+    var proxyHttp = require('./platform/client/proxy_http').ProxyHttp;
     
     window[exportName] = ourSplunk;
     window[exportName].XdmHttp = ourXDM;
+    window[exportName].ProxyHttp = proxyHttp;
     
     // Add no conflict capabilities
     window[exportName].noConflict = function(name) {
