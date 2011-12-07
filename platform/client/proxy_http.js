@@ -39,7 +39,9 @@
         },
 
         makeRequest: function(url, message, callback) {
-            // Need to remove the hostname from the URL
+            // Need to remove the hostname from the URL,
+            // and we do this by creating an anchor tag,
+            // and then retrieving the hostname from it.
             var anchorTag = document.createElement("a");
             anchorTag.href = url;
             url = url.replace(anchorTag.origin, "");
