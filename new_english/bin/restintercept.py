@@ -586,6 +586,8 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
                 output.data = {
                     'sid': root.findtext('sid')
                 }
+            elif self.request["form"].get("exec_mode", "").lower() == "oneshot":
+                output.data = self._parseResultData(root, format=ResultFormat.ROW)
                 
             # service may return messages in the body; try to parse them
             try:

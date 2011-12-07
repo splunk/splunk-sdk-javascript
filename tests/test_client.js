@@ -33,7 +33,7 @@ exports.setup = function(svc) {
 
             "Callback#Create+cancel job": function(test) {
                 var sid = getNextId();
-                this.service.jobs().create('search index=_internal | head 1', {id: sid}, function(err, job) {   
+                this.service.jobs().search('search index=_internal | head 1', {id: sid}, function(err, job) {   
                     test.ok(job);
                     test.strictEqual(job.sid, sid);
 
@@ -45,7 +45,7 @@ exports.setup = function(svc) {
 
             "Callback#Create job error": function(test) {
                 var sid = getNextId();
-                this.service.jobs().create('index=_internal | head 1', {id: sid}, function(err) { 
+                this.service.jobs().search('index=_internal | head 1', {id: sid}, function(err) { 
                     test.ok(!!err);
                     test.done(); 
                 });
@@ -68,7 +68,7 @@ exports.setup = function(svc) {
             "Callback#Contains job": function(test) {
                 var that = this;
                 var sid = getNextId();
-                this.service.jobs().create('search index=_internal | head 1', {id: sid}, function(err, job) {   
+                this.service.jobs().search('search index=_internal | head 1', {id: sid}, function(err, job) {   
                     test.ok(job);
                     test.strictEqual(job.sid, sid);
 
@@ -89,7 +89,7 @@ exports.setup = function(svc) {
                 
                 Async.chain([
                         function(done) {
-                            that.service.jobs().create('search index=_internal | head 1 | stats count', {id: sid}, done);
+                            that.service.jobs().search('search index=_internal | head 1 | stats count', {id: sid}, done);
                         },
                         function(job, done) {
                             test.strictEqual(job.sid, sid);
@@ -127,7 +127,7 @@ exports.setup = function(svc) {
                 
                 Async.chain([
                         function(done) {
-                            that.service.jobs().create('search index=_internal | head 1', {id: sid}, done);
+                            that.service.jobs().search('search index=_internal | head 1', {id: sid}, done);
                         },
                         function(job, done) {
                             test.strictEqual(job.sid, sid);
@@ -163,7 +163,7 @@ exports.setup = function(svc) {
                 
                 Async.chain([
                         function(done) {
-                            that.service.jobs().create('search index=_internal | head 1 | stats count', {id: sid}, done);
+                            that.service.jobs().search('search index=_internal | head 1 | stats count', {id: sid}, done);
                         },
                         function(job, done) {
                             test.strictEqual(job.sid, sid);
@@ -202,7 +202,7 @@ exports.setup = function(svc) {
                 
                 Async.chain([
                         function(done) {
-                            service.jobs().create('search index=_internal | head 1 | sleep 60', {id: sid}, done);
+                            service.jobs().search('search index=_internal | head 1 | sleep 60', {id: sid}, done);
                         },
                         function(job, done) {
                             job.enablePreview(done);
@@ -232,7 +232,7 @@ exports.setup = function(svc) {
                 
                 Async.chain([
                         function(done) {
-                            service.jobs().create('search index=_internal | head 1 | sleep 5', {id: sid}, done);
+                            service.jobs().search('search index=_internal | head 1 | sleep 5', {id: sid}, done);
                         },
                         function(job, done) {
                             job.pause(done);
@@ -288,7 +288,7 @@ exports.setup = function(svc) {
                 
                 Async.chain([
                         function(done) {
-                            that.service.jobs().create('search index=_internal | head 1', {id: sid}, done);
+                            that.service.jobs().search('search index=_internal | head 1', {id: sid}, done);
                         },
                         function(job, done) {
                             job.read(done);
@@ -328,7 +328,7 @@ exports.setup = function(svc) {
                 
                 Async.chain([
                         function(done) {
-                            service.jobs().create('search index=_internal | head 1 | sleep 5', {id: sid}, done);
+                            service.jobs().search('search index=_internal | head 1 | sleep 5', {id: sid}, done);
                         },
                         function(job, done) {
                             job.read(done);
@@ -361,7 +361,7 @@ exports.setup = function(svc) {
                 
                 Async.chain([
                         function(done) {
-                            that.service.jobs().create('search index=_internal | head 1', {id: sid}, done);
+                            that.service.jobs().search('search index=_internal | head 1', {id: sid}, done);
                         },
                         function(job, done) {
                             job.searchlog(done);
@@ -387,7 +387,7 @@ exports.setup = function(svc) {
                 
                 Async.chain([
                         function(done) {
-                            that.service.jobs().create(
+                            that.service.jobs().search(
                                 'search index=_internal | head 1 | eval foo="bar" | fields foo', 
                                 {
                                     id: sid,
@@ -427,7 +427,7 @@ exports.setup = function(svc) {
                 
                 Async.chain([
                         function(done) {
-                            that.service.jobs().create(
+                            that.service.jobs().search(
                                 'search index=_internal | head 1 | eval foo="bar" | fields foo', 
                                 {
                                     id: sid,
@@ -467,7 +467,7 @@ exports.setup = function(svc) {
                 
                 Async.chain([
                         function(done) {
-                            that.service.jobs().create('search index=_internal | head 1', {id: sid}, done);
+                            that.service.jobs().search('search index=_internal | head 1', {id: sid}, done);
                         },
                         function(job, done) {
                             job.read(done);
@@ -492,7 +492,103 @@ exports.setup = function(svc) {
                         test.done();
                     }
                 ); 
-            }            
+            },
+
+            "Callback#Oneshot search": function(test) {
+                var sid = getNextId();
+                var that = this;
+                var originalTime = "";
+                
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().oneshotSearch('search index=_internal | head 1 | stats count', {id: sid}, done);
+                        },
+                        function(results, done) {
+                            test.ok(results);
+                            test.ok(results.fields);
+                            test.strictEqual(results.fields.length, 1);
+                            test.strictEqual(results.fields[0], "count");
+                            test.ok(results.rows);
+                            test.strictEqual(results.rows.length, 1);
+                            test.strictEqual(results.rows[0].length, 1);
+                            test.strictEqual(results.rows[0][0], "1");
+                            
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
+
+            "Callback#Service oneshot search": function(test) {
+                var sid = getNextId();
+                var that = this;
+                var originalTime = "";
+                
+                Async.chain([
+                        function(done) {
+                            that.service.oneshotSearch('search index=_internal | head 1 | stats count', {id: sid}, done);
+                        },
+                        function(results, done) {
+                            test.ok(results);
+                            test.ok(results.fields);
+                            test.strictEqual(results.fields.length, 1);
+                            test.strictEqual(results.fields[0], "count");
+                            test.ok(results.rows);
+                            test.strictEqual(results.rows.length, 1);
+                            test.strictEqual(results.rows[0].length, 1);
+                            test.strictEqual(results.rows[0][0], "1");
+                            
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
+                        
+            "Callback#Service search": function(test) {
+                var sid = getNextId();
+                var service = this.service;
+                var that = this;
+                
+                Async.chain([
+                        function(done) {
+                            that.service.search('search index=_internal | head 1 | stats count', {id: sid}, done);
+                        },
+                        function(job, done) {
+                            test.strictEqual(job.sid, sid);
+                            tutils.pollUntil(
+                                job,
+                                function(j) {
+                                    return j.isValid() && job.properties()["isDone"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            job.results({}, done);
+                        },
+                        function(results, job, done) {
+                            test.strictEqual(results.rows.length, 1);
+                            test.strictEqual(results.fields.length, 1);
+                            test.strictEqual(results.fields[0], "count");
+                            test.strictEqual(results.rows[0][0], "1");
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },            
         },
         
         "App Tests": {      

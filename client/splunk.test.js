@@ -516,6 +516,8 @@ require.define("/lib/binding.js", function (require, module, exports, __dirname,
                 http = null;
             }
             
+            params = params || {};
+            
             this.scheme     = params.scheme || "https";
             this.host       = params.host || "localhost";
             this.port       = params.port || 8089;
@@ -1826,7 +1828,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         /**
          * Get an instance of the Jobs collection 
          *
-         * The SavedSearches collection allows you to list jobs,
+         * The Jobs collection allows you to list jobs,
          * create new ones, get a specific job, etc.
          * 
          * This maps to the `search/jobs` endpoint
@@ -1848,6 +1850,54 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          */
         jobs: function() {
             return new root.Jobs(this);  
+        },
+        
+        /**
+         * Create an asyncronous search job
+         *
+         * Create a search job using the specified query and parameters.
+         *
+         * Maps to `search/jobs`
+         *
+         * Example:
+         *
+         *      service.search("search ERROR", {id: "myjob_123"}, function(err, newJob) {
+         *          console.log("CREATED": newJob.sid);
+         *      });
+         *
+         * @param {String} query The search query
+         * @param {Object} params A dictionary of properties for the job.
+         * @param {Function} callback A callback with the created job: `(err, createdJob)`
+         *
+         * @module Splunk.Client.Service
+         */
+        search: function(query, params, callback) {
+            var jobs = new root.Jobs(this);
+            jobs.search(query, params, callback);
+        },
+        
+        /**
+         * Create a oneshot search job
+         *
+         * Create a oneshot search job using the specified query and parameters.
+         *
+         * Maps to `search/jobs` with exec_mode=oneshot
+         *
+         * Example:
+         *
+         *      service.oneshotSearch("search ERROR", {id: "myjob_123"}, function(err, results) {
+         *          console.log("RESULT FIELDS": results.fields);
+         *      });
+         *
+         * @param {String} query The search query
+         * @param {Object} params A dictionary of properties for the job.
+         * @param {Function} callback A callback with the results of the job: `(err, results)`
+         *
+         * @module Splunk.Client.Service
+         */
+        oneshotSearch: function(query, params, callback) {
+            var jobs = new root.Jobs(this);
+            jobs.oneshotSearch(query, params, callback);
         }
     });
 
@@ -3279,18 +3329,9 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         },
 
         /**
-         * Create a search job
+         * Create an asyncronous search job
          *
-         * Create a search job using the specified query and parameters.
-         *
-         * Maps to `search/jobs`
-         *
-         * Example:
-         *
-         *      var jobs = service.jobs();
-         *      jobs.create("search ERROR", {id: "myjob_123"}, function(err, newJob) {
-         *          console.log("CREATED": newJob.sid);
-         *      });
+         * @see Splunk.Client.Jobs.search
          *
          * @param {String} query The search query
          * @param {Object} params A dictionary of properties for the job.
@@ -3302,6 +3343,10 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             params = params || {};
             params.search = query; 
+            
+            if ((params.exec_mode || "").toLowerCase() === "oneshot") {
+                throw new Error("Please use Splunk.Client.Jobs.oneshotSearch for exec_mode=oneshot");
+            }
             
             if (!params.search) {
                 callback("Must provide a query to create a search job");
@@ -3316,6 +3361,74 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                     that._invalidate();
                     var job = new root.Job(that.service, response.odata.results.sid);
                     callback(null, job);
+                }
+            });
+        },
+                
+        /**
+         * Create an asyncronous search job
+         *
+         * Create a search job using the specified query and parameters.
+         *
+         * This method will throw an error if exec_mode=oneshot is passed in the params
+         * variable.
+         *
+         * Maps to `search/jobs`
+         *
+         * Example:
+         *
+         *      var jobs = service.jobs();
+         *      jobs.search("search ERROR", {id: "myjob_123"}, function(err, newJob) {
+         *          console.log("CREATED": newJob.sid);
+         *      });
+         *
+         * @param {String} query The search query
+         * @param {Object} params A dictionary of properties for the job.
+         * @param {Function} callback A callback with the created job: `(err, createdJob)`
+         *
+         * @module Splunk.Client.Jobs
+         */
+        search: function(query, params, callback) {
+            this.create(query, params, callback);
+        },
+                
+        /**
+         * Create a oneshot search job
+         *
+         * Create a oneshot search job using the specified query and parameters.
+         *
+         * Maps to `search/jobs` with exec_mode=oneshot
+         *
+         * Example:
+         *
+         *      var jobs = service.jobs();
+         *      jobs.oneshotSearch("search ERROR", {id: "myjob_123"}, function(err, results) {
+         *          console.log("RESULT FIELDS": results.fields);
+         *      });
+         *
+         * @param {String} query The search query
+         * @param {Object} params A dictionary of properties for the job.
+         * @param {Function} callback A callback with the results of the job: `(err, results)`
+         *
+         * @module Splunk.Client.Jobs
+         */
+        oneshotSearch: function(query, params, callback) {
+            callback = callback || function() {};
+            params = params || {};
+            params.search = query; 
+            params.exec_mode = "oneshot";
+            
+            if (!params.search) {
+                callback("Must provide a query to create a search job");
+            } 
+
+            var that = this;
+            this.post("", params, function(err, response) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    callback(null, response.odata.results);
                 }
             });
         }
@@ -5610,7 +5723,7 @@ exports.setup = function(svc) {
 
             "Callback#Create+cancel job": function(test) {
                 var sid = getNextId();
-                this.service.jobs().create('search index=_internal | head 1', {id: sid}, function(err, job) {   
+                this.service.jobs().search('search index=_internal | head 1', {id: sid}, function(err, job) {   
                     test.ok(job);
                     test.strictEqual(job.sid, sid);
 
@@ -5622,7 +5735,7 @@ exports.setup = function(svc) {
 
             "Callback#Create job error": function(test) {
                 var sid = getNextId();
-                this.service.jobs().create('index=_internal | head 1', {id: sid}, function(err) { 
+                this.service.jobs().search('index=_internal | head 1', {id: sid}, function(err) { 
                     test.ok(!!err);
                     test.done(); 
                 });
@@ -5645,7 +5758,7 @@ exports.setup = function(svc) {
             "Callback#Contains job": function(test) {
                 var that = this;
                 var sid = getNextId();
-                this.service.jobs().create('search index=_internal | head 1', {id: sid}, function(err, job) {   
+                this.service.jobs().search('search index=_internal | head 1', {id: sid}, function(err, job) {   
                     test.ok(job);
                     test.strictEqual(job.sid, sid);
 
@@ -5666,7 +5779,7 @@ exports.setup = function(svc) {
                 
                 Async.chain([
                         function(done) {
-                            that.service.jobs().create('search index=_internal | head 1 | stats count', {id: sid}, done);
+                            that.service.jobs().search('search index=_internal | head 1 | stats count', {id: sid}, done);
                         },
                         function(job, done) {
                             test.strictEqual(job.sid, sid);
@@ -5704,7 +5817,7 @@ exports.setup = function(svc) {
                 
                 Async.chain([
                         function(done) {
-                            that.service.jobs().create('search index=_internal | head 1', {id: sid}, done);
+                            that.service.jobs().search('search index=_internal | head 1', {id: sid}, done);
                         },
                         function(job, done) {
                             test.strictEqual(job.sid, sid);
@@ -5740,7 +5853,7 @@ exports.setup = function(svc) {
                 
                 Async.chain([
                         function(done) {
-                            that.service.jobs().create('search index=_internal | head 1 | stats count', {id: sid}, done);
+                            that.service.jobs().search('search index=_internal | head 1 | stats count', {id: sid}, done);
                         },
                         function(job, done) {
                             test.strictEqual(job.sid, sid);
@@ -5779,7 +5892,7 @@ exports.setup = function(svc) {
                 
                 Async.chain([
                         function(done) {
-                            service.jobs().create('search index=_internal | head 1 | sleep 60', {id: sid}, done);
+                            service.jobs().search('search index=_internal | head 1 | sleep 60', {id: sid}, done);
                         },
                         function(job, done) {
                             job.enablePreview(done);
@@ -5809,7 +5922,7 @@ exports.setup = function(svc) {
                 
                 Async.chain([
                         function(done) {
-                            service.jobs().create('search index=_internal | head 1 | sleep 5', {id: sid}, done);
+                            service.jobs().search('search index=_internal | head 1 | sleep 5', {id: sid}, done);
                         },
                         function(job, done) {
                             job.pause(done);
@@ -5865,7 +5978,7 @@ exports.setup = function(svc) {
                 
                 Async.chain([
                         function(done) {
-                            that.service.jobs().create('search index=_internal | head 1', {id: sid}, done);
+                            that.service.jobs().search('search index=_internal | head 1', {id: sid}, done);
                         },
                         function(job, done) {
                             job.read(done);
@@ -5905,7 +6018,7 @@ exports.setup = function(svc) {
                 
                 Async.chain([
                         function(done) {
-                            service.jobs().create('search index=_internal | head 1 | sleep 5', {id: sid}, done);
+                            service.jobs().search('search index=_internal | head 1 | sleep 5', {id: sid}, done);
                         },
                         function(job, done) {
                             job.read(done);
@@ -5938,7 +6051,7 @@ exports.setup = function(svc) {
                 
                 Async.chain([
                         function(done) {
-                            that.service.jobs().create('search index=_internal | head 1', {id: sid}, done);
+                            that.service.jobs().search('search index=_internal | head 1', {id: sid}, done);
                         },
                         function(job, done) {
                             job.searchlog(done);
@@ -5964,7 +6077,7 @@ exports.setup = function(svc) {
                 
                 Async.chain([
                         function(done) {
-                            that.service.jobs().create(
+                            that.service.jobs().search(
                                 'search index=_internal | head 1 | eval foo="bar" | fields foo', 
                                 {
                                     id: sid,
@@ -6004,7 +6117,7 @@ exports.setup = function(svc) {
                 
                 Async.chain([
                         function(done) {
-                            that.service.jobs().create(
+                            that.service.jobs().search(
                                 'search index=_internal | head 1 | eval foo="bar" | fields foo', 
                                 {
                                     id: sid,
@@ -6044,7 +6157,7 @@ exports.setup = function(svc) {
                 
                 Async.chain([
                         function(done) {
-                            that.service.jobs().create('search index=_internal | head 1', {id: sid}, done);
+                            that.service.jobs().search('search index=_internal | head 1', {id: sid}, done);
                         },
                         function(job, done) {
                             job.read(done);
@@ -6069,7 +6182,103 @@ exports.setup = function(svc) {
                         test.done();
                     }
                 ); 
-            }            
+            },
+
+            "Callback#Oneshot search": function(test) {
+                var sid = getNextId();
+                var that = this;
+                var originalTime = "";
+                
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().oneshotSearch('search index=_internal | head 1 | stats count', {id: sid}, done);
+                        },
+                        function(results, done) {
+                            test.ok(results);
+                            test.ok(results.fields);
+                            test.strictEqual(results.fields.length, 1);
+                            test.strictEqual(results.fields[0], "count");
+                            test.ok(results.rows);
+                            test.strictEqual(results.rows.length, 1);
+                            test.strictEqual(results.rows[0].length, 1);
+                            test.strictEqual(results.rows[0][0], "1");
+                            
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
+
+            "Callback#Service oneshot search": function(test) {
+                var sid = getNextId();
+                var that = this;
+                var originalTime = "";
+                
+                Async.chain([
+                        function(done) {
+                            that.service.oneshotSearch('search index=_internal | head 1 | stats count', {id: sid}, done);
+                        },
+                        function(results, done) {
+                            test.ok(results);
+                            test.ok(results.fields);
+                            test.strictEqual(results.fields.length, 1);
+                            test.strictEqual(results.fields[0], "count");
+                            test.ok(results.rows);
+                            test.strictEqual(results.rows.length, 1);
+                            test.strictEqual(results.rows[0].length, 1);
+                            test.strictEqual(results.rows[0][0], "1");
+                            
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
+                        
+            "Callback#Service search": function(test) {
+                var sid = getNextId();
+                var service = this.service;
+                var that = this;
+                
+                Async.chain([
+                        function(done) {
+                            that.service.search('search index=_internal | head 1 | stats count', {id: sid}, done);
+                        },
+                        function(job, done) {
+                            test.strictEqual(job.sid, sid);
+                            tutils.pollUntil(
+                                job,
+                                function(j) {
+                                    return j.isValid() && job.properties()["isDone"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            job.results({}, done);
+                        },
+                        function(results, job, done) {
+                            test.strictEqual(results.rows.length, 1);
+                            test.strictEqual(results.fields.length, 1);
+                            test.strictEqual(results.fields[0], "count");
+                            test.strictEqual(results.rows[0][0], "1");
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },            
         },
         
         "App Tests": {      
