@@ -350,10 +350,12 @@
                               <li><a href='#Splunk.Client.Service-get'>get</a></li>
                               <li><a href='#Splunk.Client.Service-indexes'>indexes</a></li>
                               <li><a href='#Splunk.Client.Service-jobs'>jobs</a></li>
+                              <li><a href='#Splunk.Client.Service-oneshotSearch'>oneshotSearch</a></li>
                               <li><a href='#Splunk.Client.Service-post'>post</a></li>
                               <li><a href='#Splunk.Client.Service-properties'>properties</a></li>
                               <li><a href='#Splunk.Client.Service-request'>request</a></li>
                               <li><a href='#Splunk.Client.Service-savedSearches'>savedSearches</a></li>
+                              <li><a href='#Splunk.Client.Service-search'>search</a></li>
                               <li><a href='#Splunk.Client.Service-specialize'>specialize</a></li>
               </ul>
             
@@ -718,10 +720,12 @@
                               <li><a href='#Splunk.Client.Jobs-isValid'>isValid</a></li>
                               <li><a href='#Splunk.Client.Jobs-item'>item</a></li>
                               <li><a href='#Splunk.Client.Jobs-list'>list</a></li>
+                              <li><a href='#Splunk.Client.Jobs-oneshotSearch'>oneshotSearch</a></li>
                               <li><a href='#Splunk.Client.Jobs-post'>post</a></li>
                               <li><a href='#Splunk.Client.Jobs-properties'>properties</a></li>
                               <li><a href='#Splunk.Client.Jobs-read'>read</a></li>
                               <li><a href='#Splunk.Client.Jobs-refresh'>refresh</a></li>
+                              <li><a href='#Splunk.Client.Jobs-search'>search</a></li>
               </ul>
             
             <ul>
@@ -2042,6 +2046,8 @@ var toString = Object.prototype.toString;</code></pre>
         http = null;
     }
     
+    params = params || {};
+    
     this.scheme     = params.scheme || "https";
     this.host       = params.host || "localhost";
     this.port       = params.port || 8089;
@@ -2104,7 +2110,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Append Splunk-specific headers</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L106">lib/binding.js:106</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L108">lib/binding.js:108</a>)</h4>
                 <pre><code>_headers: function (headers) {
     headers = headers || {};
     headers["Authorization"] = "Splunk " + this.sessionKey;
@@ -2133,7 +2139,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Perform a DELETE request</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L212">lib/binding.js:212</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L214">lib/binding.js:214</a>)</h4>
                 <pre><code>del: function(path, params, callback) {
     this.http.del(
         this.urlify(path),
@@ -2167,7 +2173,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>Convert any partial path into a full path containing the full owner and app prefixes if necessary</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L124">lib/binding.js:124</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L126">lib/binding.js:126</a>)</h4>
                 <pre><code>fullpath: function(path) {
     if (utils.startsWith(path, "/")) {
         return path;
@@ -2202,7 +2208,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Perform a GET request</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L193">lib/binding.js:193</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L195">lib/binding.js:195</a>)</h4>
                 <pre><code>get: function(path, params, callback) {
     this.http.get(
         this.urlify(path),
@@ -2234,7 +2240,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>Perform authentication to a Splunk instance and store the resulting session key.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L165">lib/binding.js:165</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L167">lib/binding.js:167</a>)</h4>
                 <pre><code>login: function(callback) {
     var that = this;
     var url = Paths.login;
@@ -2275,7 +2281,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Perform a POST request</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L231">lib/binding.js:231</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L233">lib/binding.js:233</a>)</h4>
                 <pre><code>post: function(path, params, callback) {
     this.http.post(
         this.urlify(path),
@@ -2310,7 +2316,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Perform a request</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L252">lib/binding.js:252</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L254">lib/binding.js:254</a>)</h4>
                 <pre><code>request: function(path, method, headers, body, callback) {
             this.http.request(
                 this.urlify(path),    
@@ -2349,7 +2355,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>Convert any partial path into a fully qualified URL.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L150">lib/binding.js:150</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L152">lib/binding.js:152</a>)</h4>
                 <pre><code>urlify: function(path) {
     return this.prefix + this.fullpath(path);
 },</code></pre>
@@ -2494,7 +2500,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Perform a DELETE request</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L212">lib/binding.js:212</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L214">lib/binding.js:214</a>)</h4>
                 <pre><code>del: function(path, params, callback) {
     this.http.del(
         this.urlify(path),
@@ -2527,7 +2533,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Perform a GET request</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L193">lib/binding.js:193</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L195">lib/binding.js:195</a>)</h4>
                 <pre><code>get: function(path, params, callback) {
     this.http.get(
         this.urlify(path),
@@ -2593,7 +2599,7 @@ var toString = Object.prototype.toString;</code></pre>
                   </section>
               <section>
                 <p>Get an instance of the Jobs collection </p>
-<p>The SavedSearches collection allows you to list jobs, create new ones, get a specific job, etc.</p>
+<p>The Jobs collection allows you to list jobs, create new ones, get a specific job, etc.</p>
 <p>This maps to the <code>search/jobs</code> endpoint</p>
 <h2>Example</h2>
 <pre><code> // List all job IDs
@@ -2608,7 +2614,42 @@ var toString = Object.prototype.toString;</code></pre>
               <section class='source'>
                 <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L246">lib/client.js:246</a>)</h4>
                 <pre><code>jobs: function() {
-        return new root.Jobs(this);  
+    return new root.Jobs(this);  
+},</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='Splunk.Client.Service-oneshotSearch'>
+              <header>
+                <h3>oneshotSearch</h3>
+                <h4>Splunk.Client.Service.oneshotSearch</h4>
+                <p class='type'>method</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">query</span> - <span class="em">String</span> <p>The search query</p></li>
+                                      <li><span class="bold">params</span> - <span class="em">Object</span> <p>A dictionary of properties for the job.</p></li>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with the results of the job: <code>(err, results)</code></p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                </section>
+              <section>
+                <p>Create a oneshot search job</p>
+<p>Create a oneshot search job using the specified query and parameters.</p>
+<p>Maps to <code>search/jobs</code> with exec_mode=oneshot</p>
+<h2>Example</h2>
+<pre><code> service.oneshotSearch("search ERROR", {id: "myjob_123"}, function(err, results) {
+     console.log("RESULT FIELDS": results.fields);
+ });
+</code></pre>
+              </section>
+              <section class='source'>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L293">lib/client.js:293</a>)</h4>
+                <pre><code>oneshotSearch: function(query, params, callback) {
+        var jobs = new root.Jobs(this);
+        jobs.oneshotSearch(query, params, callback);
     }
 });</code></pre>
               </section>
@@ -2634,7 +2675,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Perform a POST request</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L231">lib/binding.js:231</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L233">lib/binding.js:233</a>)</h4>
                 <pre><code>post: function(path, params, callback) {
     this.http.post(
         this.urlify(path),
@@ -2706,7 +2747,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Perform a request</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L252">lib/binding.js:252</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L254">lib/binding.js:254</a>)</h4>
                 <pre><code>request: function(path, method, headers, body, callback) {
             this.http.request(
                 this.urlify(path),    
@@ -2755,6 +2796,41 @@ var toString = Object.prototype.toString;</code></pre>
                 <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L219">lib/client.js:219</a>)</h4>
                 <pre><code>savedSearches: function() {
     return new root.SavedSearches(this);
+},</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='Splunk.Client.Service-search'>
+              <header>
+                <h3>search</h3>
+                <h4>Splunk.Client.Service.search</h4>
+                <p class='type'>method</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">query</span> - <span class="em">String</span> <p>The search query</p></li>
+                                      <li><span class="bold">params</span> - <span class="em">Object</span> <p>A dictionary of properties for the job.</p></li>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with the created job: <code>(err, createdJob)</code></p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                </section>
+              <section>
+                <p>Create an asyncronous search job</p>
+<p>Create a search job using the specified query and parameters.</p>
+<p>Maps to <code>search/jobs</code></p>
+<h2>Example</h2>
+<pre><code> service.search("search ERROR", {id: "myjob_123"}, function(err, newJob) {
+     console.log("CREATED": newJob.sid);
+ });
+</code></pre>
+              </section>
+              <section class='source'>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L269">lib/client.js:269</a>)</h4>
+                <pre><code>search: function(query, params, callback) {
+    var jobs = new root.Jobs(this);
+    jobs.search(query, params, callback);
 },</code></pre>
               </section>
               
@@ -2832,7 +2908,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for Splunk.Client.Endpoint</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L274">lib/client.js:274</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L322">lib/client.js:322</a>)</h4>
                 <pre><code>init: function(service, path) {
     if (!service) {
         throw new Error("Passed in a null Service.");
@@ -2876,7 +2952,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L378">lib/client.js:378</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L426">lib/client.js:426</a>)</h4>
                 <pre><code>del: function(relpath, params, callback) {
         var url = this.path;
         // If we have a relative path, we will append it with a preceding
@@ -2920,7 +2996,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L310">lib/client.js:310</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L358">lib/client.js:358</a>)</h4>
                 <pre><code>get: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -2963,7 +3039,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L344">lib/client.js:344</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L392">lib/client.js:392</a>)</h4>
                 <pre><code>post: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -3012,7 +3088,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for Splunk.Client.Resource</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L418">lib/client.js:418</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L466">lib/client.js:466</a>)</h4>
                 <pre><code>init: function(service, path) {
     this._super(service, path);
     this._maybeValid = false;
@@ -3047,7 +3123,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Mark the resource as in an invalid state</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L440">lib/client.js:440</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L488">lib/client.js:488</a>)</h4>
                 <pre><code>_invalidate: function() {
     this._maybeValid = false;
 },</code></pre>
@@ -3072,7 +3148,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Load the resource and mark it as valid, also storing the properties.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L452">lib/client.js:452</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L500">lib/client.js:500</a>)</h4>
                 <pre><code>_load: function(properties) {
     this._maybeValid = true;
     this._properties = properties;
@@ -3098,7 +3174,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Validate if the resource is in a valid state,  and refresh it if it is not.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L466">lib/client.js:466</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L514">lib/client.js:514</a>)</h4>
                 <pre><code>_validate: function(callback) {
     callback = callback || function() {};
     
@@ -3138,7 +3214,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L378">lib/client.js:378</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L426">lib/client.js:426</a>)</h4>
                 <pre><code>del: function(relpath, params, callback) {
         var url = this.path;
         // If we have a relative path, we will append it with a preceding
@@ -3182,7 +3258,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L310">lib/client.js:310</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L358">lib/client.js:358</a>)</h4>
                 <pre><code>get: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -3217,7 +3293,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Check whether the resource is in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L499">lib/client.js:499</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L547">lib/client.js:547</a>)</h4>
                 <pre><code>isValid: function() {
     return this._maybeValid;
 },</code></pre>
@@ -3250,7 +3326,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L344">lib/client.js:344</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L392">lib/client.js:392</a>)</h4>
                 <pre><code>post: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -3286,7 +3362,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will retrieve the current properties for this resource, whether or not they are valid.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L513">lib/client.js:513</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L561">lib/client.js:561</a>)</h4>
                 <pre><code>properties: function(callback) {
     return this._properties;
 },</code></pre>
@@ -3312,7 +3388,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will conditionally refresh the object from the server, only if it is not in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L528">lib/client.js:528</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L576">lib/client.js:576</a>)</h4>
                 <pre><code>read: function(callback) {
         callback = callback || function() {};
         
@@ -3344,7 +3420,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will unconditionally refresh the object from the server and load it up, regardless of whether it is valid or not.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L488">lib/client.js:488</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L536">lib/client.js:536</a>)</h4>
                 <pre><code>refresh: function(callback) {
     throw new Error("MUST BE OVERRIDDEN");
 },</code></pre>
@@ -3383,7 +3459,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for Splunk.Client.Entity</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L561">lib/client.js:561</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L609">lib/client.js:609</a>)</h4>
                 <pre><code>init: function(service, path) {
     this._super(service, path);
     
@@ -3415,7 +3491,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Load the resource and mark it as valid, also storing the properties.    </p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L580">lib/client.js:580</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L628">lib/client.js:628</a>)</h4>
                 <pre><code>_load: function(properties) {
     properties = utils.isArray(properties) ? properties[0] : properties;
     
@@ -3450,7 +3526,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L378">lib/client.js:378</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L426">lib/client.js:426</a>)</h4>
                 <pre><code>del: function(relpath, params, callback) {
         var url = this.path;
         // If we have a relative path, we will append it with a preceding
@@ -3494,7 +3570,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L310">lib/client.js:310</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L358">lib/client.js:358</a>)</h4>
                 <pre><code>get: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -3529,7 +3605,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Check whether the resource is in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L499">lib/client.js:499</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L547">lib/client.js:547</a>)</h4>
                 <pre><code>isValid: function() {
     return this._maybeValid;
 },</code></pre>
@@ -3562,7 +3638,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L344">lib/client.js:344</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L392">lib/client.js:392</a>)</h4>
                 <pre><code>post: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -3598,7 +3674,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will retrieve the current properties for this resource, whether or not they are valid.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L513">lib/client.js:513</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L561">lib/client.js:561</a>)</h4>
                 <pre><code>properties: function(callback) {
     return this._properties;
 },</code></pre>
@@ -3624,7 +3700,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will conditionally refresh the object from the server, only if it is not in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L528">lib/client.js:528</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L576">lib/client.js:576</a>)</h4>
                 <pre><code>read: function(callback) {
         callback = callback || function() {};
         
@@ -3656,7 +3732,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will unconditionally refresh the object from the server and load it up, regardless of whether it is valid or not.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L596">lib/client.js:596</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L644">lib/client.js:644</a>)</h4>
                 <pre><code>refresh: function(callback) {
     callback = callback || function() {};
     
@@ -3693,7 +3769,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will tell the server to delete this entity.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L621">lib/client.js:621</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L669">lib/client.js:669</a>)</h4>
                 <pre><code>remove: function(callback) {
     callback = callback || function() {};
     
@@ -3725,7 +3801,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will update the entity on the server.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L641">lib/client.js:641</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L689">lib/client.js:689</a>)</h4>
                 <pre><code>update: function(props, callback) {
         callback = callback || function() {};
         
@@ -3773,7 +3849,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for Splunk.Client.Collection</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L677">lib/client.js:677</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L725">lib/client.js:725</a>)</h4>
                 <pre><code>init: function(service, path, handlers) {
     this._super(service, path);
     
@@ -3821,7 +3897,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will load the properties as well as create a map between entity names to entity IDs (for retrieval purposes).</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L714">lib/client.js:714</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L762">lib/client.js:762</a>)</h4>
                 <pre><code>_load: function(properties) {
     this._super(properties);
     
@@ -3874,7 +3950,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L887">lib/client.js:887</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L935">lib/client.js:935</a>)</h4>
                 <pre><code>contains: function(id, callback) {
         callback = callback || function() {};
         var that = this;
@@ -3932,7 +4008,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L818">lib/client.js:818</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L866">lib/client.js:866</a>)</h4>
                 <pre><code>create: function(params, callback) {
     callback = callback || function() {};
     
@@ -3986,7 +4062,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L378">lib/client.js:378</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L426">lib/client.js:426</a>)</h4>
                 <pre><code>del: function(relpath, params, callback) {
         var url = this.path;
         // If we have a relative path, we will append it with a preceding
@@ -4030,7 +4106,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L310">lib/client.js:310</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L358">lib/client.js:358</a>)</h4>
                 <pre><code>get: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -4065,7 +4141,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Check whether the resource is in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L499">lib/client.js:499</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L547">lib/client.js:547</a>)</h4>
                 <pre><code>isValid: function() {
     return this._maybeValid;
 },</code></pre>
@@ -4098,7 +4174,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L781">lib/client.js:781</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L829">lib/client.js:829</a>)</h4>
                 <pre><code>item: function(name, callback) {
     callback = callback || function() {};
     var that = this;
@@ -4144,7 +4220,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L860">lib/client.js:860</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L908">lib/client.js:908</a>)</h4>
                 <pre><code>list: function(callback) {
     callback = callback || function() {};
     
@@ -4182,7 +4258,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L344">lib/client.js:344</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L392">lib/client.js:392</a>)</h4>
                 <pre><code>post: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -4218,7 +4294,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will retrieve the current properties for this resource, whether or not they are valid.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L513">lib/client.js:513</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L561">lib/client.js:561</a>)</h4>
                 <pre><code>properties: function(callback) {
     return this._properties;
 },</code></pre>
@@ -4244,7 +4320,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will conditionally refresh the object from the server, only if it is not in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L528">lib/client.js:528</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L576">lib/client.js:576</a>)</h4>
                 <pre><code>read: function(callback) {
         callback = callback || function() {};
         
@@ -4276,7 +4352,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will unconditionally refresh the object from the server and load it up, regardless of whether it is valid or not.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L748">lib/client.js:748</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L796">lib/client.js:796</a>)</h4>
                 <pre><code>refresh: function(callback) {
     callback = callback || function() {};
     
@@ -4325,7 +4401,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for Splunk.Client.SavedSearches</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L938">lib/client.js:938</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L986">lib/client.js:986</a>)</h4>
                 <pre><code>init: function(service) {
         this._super(service, Paths.savedSearches, {
             item: function(collection, props) { 
@@ -4363,7 +4439,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L887">lib/client.js:887</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L935">lib/client.js:935</a>)</h4>
                 <pre><code>contains: function(id, callback) {
         callback = callback || function() {};
         var that = this;
@@ -4421,7 +4497,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L818">lib/client.js:818</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L866">lib/client.js:866</a>)</h4>
                 <pre><code>create: function(params, callback) {
     callback = callback || function() {};
     
@@ -4475,7 +4551,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L378">lib/client.js:378</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L426">lib/client.js:426</a>)</h4>
                 <pre><code>del: function(relpath, params, callback) {
         var url = this.path;
         // If we have a relative path, we will append it with a preceding
@@ -4519,7 +4595,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L310">lib/client.js:310</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L358">lib/client.js:358</a>)</h4>
                 <pre><code>get: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -4554,7 +4630,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Check whether the resource is in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L499">lib/client.js:499</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L547">lib/client.js:547</a>)</h4>
                 <pre><code>isValid: function() {
     return this._maybeValid;
 },</code></pre>
@@ -4587,7 +4663,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L781">lib/client.js:781</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L829">lib/client.js:829</a>)</h4>
                 <pre><code>item: function(name, callback) {
     callback = callback || function() {};
     var that = this;
@@ -4633,7 +4709,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L860">lib/client.js:860</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L908">lib/client.js:908</a>)</h4>
                 <pre><code>list: function(callback) {
     callback = callback || function() {};
     
@@ -4671,7 +4747,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L344">lib/client.js:344</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L392">lib/client.js:392</a>)</h4>
                 <pre><code>post: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -4707,7 +4783,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will retrieve the current properties for this resource, whether or not they are valid.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L513">lib/client.js:513</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L561">lib/client.js:561</a>)</h4>
                 <pre><code>properties: function(callback) {
     return this._properties;
 },</code></pre>
@@ -4733,7 +4809,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will conditionally refresh the object from the server, only if it is not in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L528">lib/client.js:528</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L576">lib/client.js:576</a>)</h4>
                 <pre><code>read: function(callback) {
         callback = callback || function() {};
         
@@ -4765,7 +4841,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will unconditionally refresh the object from the server and load it up, regardless of whether it is valid or not.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L748">lib/client.js:748</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L796">lib/client.js:796</a>)</h4>
                 <pre><code>refresh: function(callback) {
     callback = callback || function() {};
     
@@ -4815,7 +4891,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for Splunk.Client.SavedSearch</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L969">lib/client.js:969</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1017">lib/client.js:1017</a>)</h4>
                 <pre><code>init: function(service, name) {
     this.name = name;
     this._super(service, Paths.savedSearches + "/" + encodeURIComponent(name));
@@ -4846,7 +4922,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Load the resource and mark it as valid, also storing the properties.    </p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L580">lib/client.js:580</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L628">lib/client.js:628</a>)</h4>
                 <pre><code>_load: function(properties) {
     properties = utils.isArray(properties) ? properties[0] : properties;
     
@@ -4880,7 +4956,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L995">lib/client.js:995</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1043">lib/client.js:1043</a>)</h4>
                 <pre><code>acknowledge: function(callback) {
     callback = callback || function() {};
     
@@ -4919,7 +4995,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L378">lib/client.js:378</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L426">lib/client.js:426</a>)</h4>
                 <pre><code>del: function(relpath, params, callback) {
         var url = this.path;
         // If we have a relative path, we will append it with a preceding
@@ -4962,7 +5038,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1021">lib/client.js:1021</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1069">lib/client.js:1069</a>)</h4>
                 <pre><code>dispatch: function(callback) {
     callback = callback || function() {};
     
@@ -5001,7 +5077,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L310">lib/client.js:310</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L358">lib/client.js:358</a>)</h4>
                 <pre><code>get: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -5043,7 +5119,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1047">lib/client.js:1047</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1095">lib/client.js:1095</a>)</h4>
                 <pre><code>history: function(callback) {
     callback = callback || function() {};
     
@@ -5073,7 +5149,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Check whether the resource is in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L499">lib/client.js:499</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L547">lib/client.js:547</a>)</h4>
                 <pre><code>isValid: function() {
     return this._maybeValid;
 },</code></pre>
@@ -5106,7 +5182,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L344">lib/client.js:344</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L392">lib/client.js:392</a>)</h4>
                 <pre><code>post: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -5142,7 +5218,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will retrieve the current properties for this resource, whether or not they are valid.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L513">lib/client.js:513</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L561">lib/client.js:561</a>)</h4>
                 <pre><code>properties: function(callback) {
     return this._properties;
 },</code></pre>
@@ -5168,7 +5244,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will conditionally refresh the object from the server, only if it is not in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L528">lib/client.js:528</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L576">lib/client.js:576</a>)</h4>
                 <pre><code>read: function(callback) {
         callback = callback || function() {};
         
@@ -5200,7 +5276,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will unconditionally refresh the object from the server and load it up, regardless of whether it is valid or not.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L596">lib/client.js:596</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L644">lib/client.js:644</a>)</h4>
                 <pre><code>refresh: function(callback) {
     callback = callback || function() {};
     
@@ -5237,7 +5313,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will tell the server to delete this entity.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L621">lib/client.js:621</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L669">lib/client.js:669</a>)</h4>
                 <pre><code>remove: function(callback) {
     callback = callback || function() {};
     
@@ -5274,7 +5350,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1072">lib/client.js:1072</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1120">lib/client.js:1120</a>)</h4>
                 <pre><code>suppressInfo: function(callback) {
         callback = callback || function() {};
         
@@ -5307,7 +5383,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will update the entity on the server.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L641">lib/client.js:641</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L689">lib/client.js:689</a>)</h4>
                 <pre><code>update: function(props, callback) {
         callback = callback || function() {};
         
@@ -5353,7 +5429,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for Splunk.Client.Applications</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1103">lib/client.js:1103</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1151">lib/client.js:1151</a>)</h4>
                 <pre><code>init: function(service) {
         this._super(service, Paths.apps, {
             item: function(collection, props) {
@@ -5391,7 +5467,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L887">lib/client.js:887</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L935">lib/client.js:935</a>)</h4>
                 <pre><code>contains: function(id, callback) {
         callback = callback || function() {};
         var that = this;
@@ -5449,7 +5525,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L818">lib/client.js:818</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L866">lib/client.js:866</a>)</h4>
                 <pre><code>create: function(params, callback) {
     callback = callback || function() {};
     
@@ -5503,7 +5579,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L378">lib/client.js:378</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L426">lib/client.js:426</a>)</h4>
                 <pre><code>del: function(relpath, params, callback) {
         var url = this.path;
         // If we have a relative path, we will append it with a preceding
@@ -5547,7 +5623,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L310">lib/client.js:310</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L358">lib/client.js:358</a>)</h4>
                 <pre><code>get: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -5582,7 +5658,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Check whether the resource is in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L499">lib/client.js:499</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L547">lib/client.js:547</a>)</h4>
                 <pre><code>isValid: function() {
     return this._maybeValid;
 },</code></pre>
@@ -5615,7 +5691,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L781">lib/client.js:781</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L829">lib/client.js:829</a>)</h4>
                 <pre><code>item: function(name, callback) {
     callback = callback || function() {};
     var that = this;
@@ -5661,7 +5737,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L860">lib/client.js:860</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L908">lib/client.js:908</a>)</h4>
                 <pre><code>list: function(callback) {
     callback = callback || function() {};
     
@@ -5699,7 +5775,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L344">lib/client.js:344</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L392">lib/client.js:392</a>)</h4>
                 <pre><code>post: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -5735,7 +5811,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will retrieve the current properties for this resource, whether or not they are valid.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L513">lib/client.js:513</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L561">lib/client.js:561</a>)</h4>
                 <pre><code>properties: function(callback) {
     return this._properties;
 },</code></pre>
@@ -5761,7 +5837,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will conditionally refresh the object from the server, only if it is not in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L528">lib/client.js:528</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L576">lib/client.js:576</a>)</h4>
                 <pre><code>read: function(callback) {
         callback = callback || function() {};
         
@@ -5793,7 +5869,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will unconditionally refresh the object from the server and load it up, regardless of whether it is valid or not.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L748">lib/client.js:748</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L796">lib/client.js:796</a>)</h4>
                 <pre><code>refresh: function(callback) {
     callback = callback || function() {};
     
@@ -5843,7 +5919,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for Splunk.Client.Application</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1134">lib/client.js:1134</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1182">lib/client.js:1182</a>)</h4>
                 <pre><code>init: function(service, name) {
     this.name = name;
     this._super(service, Paths.apps + "/" + encodeURIComponent(name));
@@ -5872,7 +5948,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Load the resource and mark it as valid, also storing the properties.    </p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L580">lib/client.js:580</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L628">lib/client.js:628</a>)</h4>
                 <pre><code>_load: function(properties) {
     properties = utils.isArray(properties) ? properties[0] : properties;
     
@@ -5907,7 +5983,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L378">lib/client.js:378</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L426">lib/client.js:426</a>)</h4>
                 <pre><code>del: function(relpath, params, callback) {
         var url = this.path;
         // If we have a relative path, we will append it with a preceding
@@ -5951,7 +6027,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L310">lib/client.js:310</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L358">lib/client.js:358</a>)</h4>
                 <pre><code>get: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -5986,7 +6062,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Check whether the resource is in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L499">lib/client.js:499</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L547">lib/client.js:547</a>)</h4>
                 <pre><code>isValid: function() {
     return this._maybeValid;
 },</code></pre>
@@ -6019,7 +6095,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L344">lib/client.js:344</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L392">lib/client.js:392</a>)</h4>
                 <pre><code>post: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -6055,7 +6131,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will retrieve the current properties for this resource, whether or not they are valid.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L513">lib/client.js:513</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L561">lib/client.js:561</a>)</h4>
                 <pre><code>properties: function(callback) {
     return this._properties;
 },</code></pre>
@@ -6081,7 +6157,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will conditionally refresh the object from the server, only if it is not in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L528">lib/client.js:528</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L576">lib/client.js:576</a>)</h4>
                 <pre><code>read: function(callback) {
         callback = callback || function() {};
         
@@ -6113,7 +6189,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will unconditionally refresh the object from the server and load it up, regardless of whether it is valid or not.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L596">lib/client.js:596</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L644">lib/client.js:644</a>)</h4>
                 <pre><code>refresh: function(callback) {
     callback = callback || function() {};
     
@@ -6150,7 +6226,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will tell the server to delete this entity.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L621">lib/client.js:621</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L669">lib/client.js:669</a>)</h4>
                 <pre><code>remove: function(callback) {
     callback = callback || function() {};
     
@@ -6187,7 +6263,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1158">lib/client.js:1158</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1206">lib/client.js:1206</a>)</h4>
                 <pre><code>setupInfo: function(callback) {
     callback = callback || function() {};
     
@@ -6224,7 +6300,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will update the entity on the server.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L641">lib/client.js:641</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L689">lib/client.js:689</a>)</h4>
                 <pre><code>update: function(props, callback) {
         callback = callback || function() {};
         
@@ -6264,7 +6340,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1188">lib/client.js:1188</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1236">lib/client.js:1236</a>)</h4>
                 <pre><code>updateInfo: function(callback) {
         callback = callback || function() {};
         
@@ -6313,7 +6389,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for Splunk.Client.Indexes</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1224">lib/client.js:1224</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1272">lib/client.js:1272</a>)</h4>
                 <pre><code>init: function(service) {
     this._super(service, Paths.indexes, {
         item: function(collection, props) {
@@ -6352,7 +6428,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L887">lib/client.js:887</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L935">lib/client.js:935</a>)</h4>
                 <pre><code>contains: function(id, callback) {
         callback = callback || function() {};
         var that = this;
@@ -6411,7 +6487,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1252">lib/client.js:1252</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1300">lib/client.js:1300</a>)</h4>
                 <pre><code>create: function(name, params, callback) {
         params = params || {};
         params["name"] = name;
@@ -6448,7 +6524,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L378">lib/client.js:378</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L426">lib/client.js:426</a>)</h4>
                 <pre><code>del: function(relpath, params, callback) {
         var url = this.path;
         // If we have a relative path, we will append it with a preceding
@@ -6492,7 +6568,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L310">lib/client.js:310</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L358">lib/client.js:358</a>)</h4>
                 <pre><code>get: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -6527,7 +6603,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Check whether the resource is in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L499">lib/client.js:499</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L547">lib/client.js:547</a>)</h4>
                 <pre><code>isValid: function() {
     return this._maybeValid;
 },</code></pre>
@@ -6560,7 +6636,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L781">lib/client.js:781</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L829">lib/client.js:829</a>)</h4>
                 <pre><code>item: function(name, callback) {
     callback = callback || function() {};
     var that = this;
@@ -6606,7 +6682,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L860">lib/client.js:860</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L908">lib/client.js:908</a>)</h4>
                 <pre><code>list: function(callback) {
     callback = callback || function() {};
     
@@ -6644,7 +6720,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L344">lib/client.js:344</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L392">lib/client.js:392</a>)</h4>
                 <pre><code>post: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -6680,7 +6756,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will retrieve the current properties for this resource, whether or not they are valid.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L513">lib/client.js:513</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L561">lib/client.js:561</a>)</h4>
                 <pre><code>properties: function(callback) {
     return this._properties;
 },</code></pre>
@@ -6706,7 +6782,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will conditionally refresh the object from the server, only if it is not in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L528">lib/client.js:528</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L576">lib/client.js:576</a>)</h4>
                 <pre><code>read: function(callback) {
         callback = callback || function() {};
         
@@ -6738,7 +6814,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will unconditionally refresh the object from the server and load it up, regardless of whether it is valid or not.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L748">lib/client.js:748</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L796">lib/client.js:796</a>)</h4>
                 <pre><code>refresh: function(callback) {
     callback = callback || function() {};
     
@@ -6788,7 +6864,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for Splunk.Client.Index</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1282">lib/client.js:1282</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1330">lib/client.js:1330</a>)</h4>
                 <pre><code>init: function(service, name) {
     this.name = name;
     this._super(service, Paths.indexes + "/" + encodeURIComponent(name));
@@ -6816,7 +6892,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Load the resource and mark it as valid, also storing the properties.    </p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L580">lib/client.js:580</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L628">lib/client.js:628</a>)</h4>
                 <pre><code>_load: function(properties) {
     properties = utils.isArray(properties) ? properties[0] : properties;
     
@@ -6851,7 +6927,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L378">lib/client.js:378</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L426">lib/client.js:426</a>)</h4>
                 <pre><code>del: function(relpath, params, callback) {
         var url = this.path;
         // If we have a relative path, we will append it with a preceding
@@ -6895,7 +6971,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L310">lib/client.js:310</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L358">lib/client.js:358</a>)</h4>
                 <pre><code>get: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -6930,7 +7006,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Check whether the resource is in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L499">lib/client.js:499</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L547">lib/client.js:547</a>)</h4>
                 <pre><code>isValid: function() {
     return this._maybeValid;
 },</code></pre>
@@ -6963,7 +7039,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L344">lib/client.js:344</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L392">lib/client.js:392</a>)</h4>
                 <pre><code>post: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -6999,7 +7075,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will retrieve the current properties for this resource, whether or not they are valid.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L513">lib/client.js:513</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L561">lib/client.js:561</a>)</h4>
                 <pre><code>properties: function(callback) {
     return this._properties;
 },</code></pre>
@@ -7025,7 +7101,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will conditionally refresh the object from the server, only if it is not in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L528">lib/client.js:528</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L576">lib/client.js:576</a>)</h4>
                 <pre><code>read: function(callback) {
         callback = callback || function() {};
         
@@ -7057,7 +7133,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will unconditionally refresh the object from the server and load it up, regardless of whether it is valid or not.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L596">lib/client.js:596</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L644">lib/client.js:644</a>)</h4>
                 <pre><code>refresh: function(callback) {
     callback = callback || function() {};
     
@@ -7094,7 +7170,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will tell the server to delete this entity.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L621">lib/client.js:621</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L669">lib/client.js:669</a>)</h4>
                 <pre><code>remove: function(callback) {
     callback = callback || function() {};
     
@@ -7133,7 +7209,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1307">lib/client.js:1307</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1355">lib/client.js:1355</a>)</h4>
                 <pre><code>submitEvent: function(event, params, callback) {
         callback = callback || function() {};
         params = params || {};
@@ -7185,7 +7261,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will update the entity on the server.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L641">lib/client.js:641</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L689">lib/client.js:689</a>)</h4>
                 <pre><code>update: function(props, callback) {
         callback = callback || function() {};
         
@@ -7231,7 +7307,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for Splunk.Client.Properties</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1357">lib/client.js:1357</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1405">lib/client.js:1405</a>)</h4>
                 <pre><code>init: function(service) {
    this._super(service, Paths.properties, {
        item: function(collection, props) {
@@ -7270,7 +7346,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L887">lib/client.js:887</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L935">lib/client.js:935</a>)</h4>
                 <pre><code>contains: function(id, callback) {
         callback = callback || function() {};
         var that = this;
@@ -7327,7 +7403,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1382">lib/client.js:1382</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1430">lib/client.js:1430</a>)</h4>
                 <pre><code>create: function(filename, callback) {
         callback = callback || function() {};
         
@@ -7372,7 +7448,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L378">lib/client.js:378</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L426">lib/client.js:426</a>)</h4>
                 <pre><code>del: function(relpath, params, callback) {
         var url = this.path;
         // If we have a relative path, we will append it with a preceding
@@ -7416,7 +7492,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L310">lib/client.js:310</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L358">lib/client.js:358</a>)</h4>
                 <pre><code>get: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -7451,7 +7527,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Check whether the resource is in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L499">lib/client.js:499</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L547">lib/client.js:547</a>)</h4>
                 <pre><code>isValid: function() {
     return this._maybeValid;
 },</code></pre>
@@ -7484,7 +7560,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L781">lib/client.js:781</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L829">lib/client.js:829</a>)</h4>
                 <pre><code>item: function(name, callback) {
     callback = callback || function() {};
     var that = this;
@@ -7530,7 +7606,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L860">lib/client.js:860</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L908">lib/client.js:908</a>)</h4>
                 <pre><code>list: function(callback) {
     callback = callback || function() {};
     
@@ -7568,7 +7644,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L344">lib/client.js:344</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L392">lib/client.js:392</a>)</h4>
                 <pre><code>post: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -7604,7 +7680,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will retrieve the current properties for this resource, whether or not they are valid.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L513">lib/client.js:513</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L561">lib/client.js:561</a>)</h4>
                 <pre><code>properties: function(callback) {
     return this._properties;
 },</code></pre>
@@ -7630,7 +7706,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will conditionally refresh the object from the server, only if it is not in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L528">lib/client.js:528</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L576">lib/client.js:576</a>)</h4>
                 <pre><code>read: function(callback) {
         callback = callback || function() {};
         
@@ -7662,7 +7738,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will unconditionally refresh the object from the server and load it up, regardless of whether it is valid or not.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L748">lib/client.js:748</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L796">lib/client.js:796</a>)</h4>
                 <pre><code>refresh: function(callback) {
     callback = callback || function() {};
     
@@ -7711,7 +7787,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for Splunk.Client.PropertyFile</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1419">lib/client.js:1419</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1467">lib/client.js:1467</a>)</h4>
                 <pre><code>init: function(service, name) {
     this.name = name;
     this._super(service, Paths.properties + "/" + encodeURIComponent(name), {
@@ -7751,7 +7827,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L887">lib/client.js:887</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L935">lib/client.js:935</a>)</h4>
                 <pre><code>contains: function(id, callback) {
         callback = callback || function() {};
         var that = this;
@@ -7808,7 +7884,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1445">lib/client.js:1445</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1493">lib/client.js:1493</a>)</h4>
                 <pre><code>create: function(stanzaName, callback) {
         callback = callback || function() {};
         
@@ -7853,7 +7929,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L378">lib/client.js:378</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L426">lib/client.js:426</a>)</h4>
                 <pre><code>del: function(relpath, params, callback) {
         var url = this.path;
         // If we have a relative path, we will append it with a preceding
@@ -7897,7 +7973,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L310">lib/client.js:310</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L358">lib/client.js:358</a>)</h4>
                 <pre><code>get: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -7932,7 +8008,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Check whether the resource is in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L499">lib/client.js:499</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L547">lib/client.js:547</a>)</h4>
                 <pre><code>isValid: function() {
     return this._maybeValid;
 },</code></pre>
@@ -7965,7 +8041,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L781">lib/client.js:781</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L829">lib/client.js:829</a>)</h4>
                 <pre><code>item: function(name, callback) {
     callback = callback || function() {};
     var that = this;
@@ -8011,7 +8087,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L860">lib/client.js:860</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L908">lib/client.js:908</a>)</h4>
                 <pre><code>list: function(callback) {
     callback = callback || function() {};
     
@@ -8049,7 +8125,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L344">lib/client.js:344</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L392">lib/client.js:392</a>)</h4>
                 <pre><code>post: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -8085,7 +8161,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will retrieve the current properties for this resource, whether or not they are valid.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L513">lib/client.js:513</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L561">lib/client.js:561</a>)</h4>
                 <pre><code>properties: function(callback) {
     return this._properties;
 },</code></pre>
@@ -8111,7 +8187,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will conditionally refresh the object from the server, only if it is not in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L528">lib/client.js:528</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L576">lib/client.js:576</a>)</h4>
                 <pre><code>read: function(callback) {
         callback = callback || function() {};
         
@@ -8143,7 +8219,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will unconditionally refresh the object from the server and load it up, regardless of whether it is valid or not.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L748">lib/client.js:748</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L796">lib/client.js:796</a>)</h4>
                 <pre><code>refresh: function(callback) {
     callback = callback || function() {};
     
@@ -8193,7 +8269,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for Splunk.Client.PropertyStanza</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1483">lib/client.js:1483</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1531">lib/client.js:1531</a>)</h4>
                 <pre><code>init: function(service, file, name) {
         this.name = name;
         this._super(service, Paths.properties + "/" + encodeURIComponent(file) + "/" + encodeURIComponent(name));
@@ -8220,7 +8296,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Load the resource and mark it as valid, also storing the properties.    </p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L580">lib/client.js:580</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L628">lib/client.js:628</a>)</h4>
                 <pre><code>_load: function(properties) {
     properties = utils.isArray(properties) ? properties[0] : properties;
     
@@ -8255,7 +8331,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L378">lib/client.js:378</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L426">lib/client.js:426</a>)</h4>
                 <pre><code>del: function(relpath, params, callback) {
         var url = this.path;
         // If we have a relative path, we will append it with a preceding
@@ -8299,7 +8375,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L310">lib/client.js:310</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L358">lib/client.js:358</a>)</h4>
                 <pre><code>get: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -8334,7 +8410,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Check whether the resource is in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L499">lib/client.js:499</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L547">lib/client.js:547</a>)</h4>
                 <pre><code>isValid: function() {
     return this._maybeValid;
 },</code></pre>
@@ -8367,7 +8443,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L344">lib/client.js:344</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L392">lib/client.js:392</a>)</h4>
                 <pre><code>post: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -8403,7 +8479,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will retrieve the current properties for this resource, whether or not they are valid.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L513">lib/client.js:513</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L561">lib/client.js:561</a>)</h4>
                 <pre><code>properties: function(callback) {
     return this._properties;
 },</code></pre>
@@ -8429,7 +8505,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will conditionally refresh the object from the server, only if it is not in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L528">lib/client.js:528</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L576">lib/client.js:576</a>)</h4>
                 <pre><code>read: function(callback) {
         callback = callback || function() {};
         
@@ -8461,7 +8537,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will unconditionally refresh the object from the server and load it up, regardless of whether it is valid or not.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L596">lib/client.js:596</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L644">lib/client.js:644</a>)</h4>
                 <pre><code>refresh: function(callback) {
     callback = callback || function() {};
     
@@ -8498,7 +8574,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will tell the server to delete this entity.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L621">lib/client.js:621</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L669">lib/client.js:669</a>)</h4>
                 <pre><code>remove: function(callback) {
     callback = callback || function() {};
     
@@ -8530,7 +8606,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will update the entity on the server.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L641">lib/client.js:641</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L689">lib/client.js:689</a>)</h4>
                 <pre><code>update: function(props, callback) {
         callback = callback || function() {};
         
@@ -8576,7 +8652,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for Splunk.Client.Configurations</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1510">lib/client.js:1510</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1558">lib/client.js:1558</a>)</h4>
                 <pre><code>init: function(service) {
    this._super(service, Paths.properties, {
        item: function(collection, props) {
@@ -8615,7 +8691,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L887">lib/client.js:887</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L935">lib/client.js:935</a>)</h4>
                 <pre><code>contains: function(id, callback) {
         callback = callback || function() {};
         var that = this;
@@ -8672,7 +8748,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1535">lib/client.js:1535</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1583">lib/client.js:1583</a>)</h4>
                 <pre><code>create: function(filename, callback) {
         callback = callback || function() {};
         
@@ -8717,7 +8793,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L378">lib/client.js:378</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L426">lib/client.js:426</a>)</h4>
                 <pre><code>del: function(relpath, params, callback) {
         var url = this.path;
         // If we have a relative path, we will append it with a preceding
@@ -8761,7 +8837,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L310">lib/client.js:310</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L358">lib/client.js:358</a>)</h4>
                 <pre><code>get: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -8796,7 +8872,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Check whether the resource is in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L499">lib/client.js:499</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L547">lib/client.js:547</a>)</h4>
                 <pre><code>isValid: function() {
     return this._maybeValid;
 },</code></pre>
@@ -8829,7 +8905,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L781">lib/client.js:781</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L829">lib/client.js:829</a>)</h4>
                 <pre><code>item: function(name, callback) {
     callback = callback || function() {};
     var that = this;
@@ -8875,7 +8951,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L860">lib/client.js:860</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L908">lib/client.js:908</a>)</h4>
                 <pre><code>list: function(callback) {
     callback = callback || function() {};
     
@@ -8913,7 +8989,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L344">lib/client.js:344</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L392">lib/client.js:392</a>)</h4>
                 <pre><code>post: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -8949,7 +9025,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will retrieve the current properties for this resource, whether or not they are valid.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L513">lib/client.js:513</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L561">lib/client.js:561</a>)</h4>
                 <pre><code>properties: function(callback) {
     return this._properties;
 },</code></pre>
@@ -8975,7 +9051,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will conditionally refresh the object from the server, only if it is not in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L528">lib/client.js:528</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L576">lib/client.js:576</a>)</h4>
                 <pre><code>read: function(callback) {
         callback = callback || function() {};
         
@@ -9007,7 +9083,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will unconditionally refresh the object from the server and load it up, regardless of whether it is valid or not.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L748">lib/client.js:748</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L796">lib/client.js:796</a>)</h4>
                 <pre><code>refresh: function(callback) {
     callback = callback || function() {};
     
@@ -9056,7 +9132,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for Splunk.Client.ConfigurationFile</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1572">lib/client.js:1572</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1620">lib/client.js:1620</a>)</h4>
                 <pre><code>init: function(service, name) {
     this.name = name;
     var path = Paths.configurations + "/conf-" + encodeURIComponent(name);
@@ -9097,7 +9173,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L887">lib/client.js:887</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L935">lib/client.js:935</a>)</h4>
                 <pre><code>contains: function(id, callback) {
         callback = callback || function() {};
         var that = this;
@@ -9155,7 +9231,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1600">lib/client.js:1600</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1648">lib/client.js:1648</a>)</h4>
                 <pre><code>create: function(stanzaName, values, callback) {
         if (utils.isFunction(values) &amp;&amp; !callback) {
             callback = values;
@@ -9197,7 +9273,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L378">lib/client.js:378</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L426">lib/client.js:426</a>)</h4>
                 <pre><code>del: function(relpath, params, callback) {
         var url = this.path;
         // If we have a relative path, we will append it with a preceding
@@ -9241,7 +9317,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L310">lib/client.js:310</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L358">lib/client.js:358</a>)</h4>
                 <pre><code>get: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -9276,7 +9352,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Check whether the resource is in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L499">lib/client.js:499</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L547">lib/client.js:547</a>)</h4>
                 <pre><code>isValid: function() {
     return this._maybeValid;
 },</code></pre>
@@ -9309,7 +9385,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L781">lib/client.js:781</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L829">lib/client.js:829</a>)</h4>
                 <pre><code>item: function(name, callback) {
     callback = callback || function() {};
     var that = this;
@@ -9355,7 +9431,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L860">lib/client.js:860</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L908">lib/client.js:908</a>)</h4>
                 <pre><code>list: function(callback) {
     callback = callback || function() {};
     
@@ -9393,7 +9469,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L344">lib/client.js:344</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L392">lib/client.js:392</a>)</h4>
                 <pre><code>post: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -9429,7 +9505,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will retrieve the current properties for this resource, whether or not they are valid.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L513">lib/client.js:513</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L561">lib/client.js:561</a>)</h4>
                 <pre><code>properties: function(callback) {
     return this._properties;
 },</code></pre>
@@ -9455,7 +9531,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will conditionally refresh the object from the server, only if it is not in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L528">lib/client.js:528</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L576">lib/client.js:576</a>)</h4>
                 <pre><code>read: function(callback) {
         callback = callback || function() {};
         
@@ -9487,7 +9563,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will unconditionally refresh the object from the server and load it up, regardless of whether it is valid or not.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L748">lib/client.js:748</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L796">lib/client.js:796</a>)</h4>
                 <pre><code>refresh: function(callback) {
     callback = callback || function() {};
     
@@ -9537,7 +9613,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for Splunk.Client.ConfigurationStanza</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1635">lib/client.js:1635</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1683">lib/client.js:1683</a>)</h4>
                 <pre><code>init: function(service, file, name) {
         this.name = name;
         this._super(service, Paths.configurations + "/conf-" + encodeURIComponent(file) + "/" + encodeURIComponent(name));
@@ -9564,7 +9640,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Load the resource and mark it as valid, also storing the properties.    </p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L580">lib/client.js:580</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L628">lib/client.js:628</a>)</h4>
                 <pre><code>_load: function(properties) {
     properties = utils.isArray(properties) ? properties[0] : properties;
     
@@ -9599,7 +9675,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L378">lib/client.js:378</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L426">lib/client.js:426</a>)</h4>
                 <pre><code>del: function(relpath, params, callback) {
         var url = this.path;
         // If we have a relative path, we will append it with a preceding
@@ -9643,7 +9719,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L310">lib/client.js:310</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L358">lib/client.js:358</a>)</h4>
                 <pre><code>get: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -9678,7 +9754,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Check whether the resource is in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L499">lib/client.js:499</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L547">lib/client.js:547</a>)</h4>
                 <pre><code>isValid: function() {
     return this._maybeValid;
 },</code></pre>
@@ -9711,7 +9787,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L344">lib/client.js:344</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L392">lib/client.js:392</a>)</h4>
                 <pre><code>post: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -9747,7 +9823,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will retrieve the current properties for this resource, whether or not they are valid.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L513">lib/client.js:513</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L561">lib/client.js:561</a>)</h4>
                 <pre><code>properties: function(callback) {
     return this._properties;
 },</code></pre>
@@ -9773,7 +9849,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will conditionally refresh the object from the server, only if it is not in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L528">lib/client.js:528</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L576">lib/client.js:576</a>)</h4>
                 <pre><code>read: function(callback) {
         callback = callback || function() {};
         
@@ -9805,7 +9881,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will unconditionally refresh the object from the server and load it up, regardless of whether it is valid or not.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L596">lib/client.js:596</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L644">lib/client.js:644</a>)</h4>
                 <pre><code>refresh: function(callback) {
     callback = callback || function() {};
     
@@ -9842,7 +9918,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will tell the server to delete this entity.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L621">lib/client.js:621</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L669">lib/client.js:669</a>)</h4>
                 <pre><code>remove: function(callback) {
     callback = callback || function() {};
     
@@ -9874,7 +9950,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will update the entity on the server.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L641">lib/client.js:641</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L689">lib/client.js:689</a>)</h4>
                 <pre><code>update: function(props, callback) {
         callback = callback || function() {};
         
@@ -9920,7 +9996,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for Splunk.Client.Jobs</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1662">lib/client.js:1662</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1710">lib/client.js:1710</a>)</h4>
                 <pre><code>init: function(service) {
     this._super(service, Paths.jobs, {
         item: function(collection, props) {
@@ -9964,7 +10040,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L887">lib/client.js:887</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L935">lib/client.js:935</a>)</h4>
                 <pre><code>contains: function(id, callback) {
         callback = callback || function() {};
         var that = this;
@@ -10001,6 +10077,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <h3>create</h3>
                 <h4>Splunk.Client.Jobs.create</h4>
                 <p class='type'>method</p>
+                                  <p class='related'>See: <a href='#Splunk.Client.Jobs.search'>Splunk.Client.Jobs.search</a></p>
                 </header>
               <section class='params'>
                                   <h4>Params</h4>
@@ -10013,39 +10090,34 @@ var toString = Object.prototype.toString;</code></pre>
               <section class='params'>
                 </section>
               <section>
-                <p>Create a search job</p>
-<p>Create a search job using the specified query and parameters.</p>
-<p>Maps to <code>search/jobs</code></p>
-<h2>Example</h2>
-<pre><code> var jobs = service.jobs();
- jobs.create("search ERROR", {id: "myjob_123"}, function(err, newJob) {
-     console.log("CREATED": newJob.sid);
- });
-</code></pre>
+                <p>Create an asyncronous search job</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1698">lib/client.js:1698</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1737">lib/client.js:1737</a>)</h4>
                 <pre><code>create: function(query, params, callback) {
-        callback = callback || function() {};
-        params = params || {};
-        params.search = query; 
-        
-        if (!params.search) {
-            callback("Must provide a query to create a search job");
-        } 
-        var that = this;
-        this.post("", params, function(err, response) {
-            if (err) {
-                callback(err);
-            }
-            else {
-                that._invalidate();
-                var job = new root.Job(that.service, response.odata.results.sid);
-                callback(null, job);
-            }
-        });
+    callback = callback || function() {};
+    params = params || {};
+    params.search = query; 
+    
+    if ((params.exec_mode || "").toLowerCase() === "oneshot") {
+        throw new Error("Please use Splunk.Client.Jobs.oneshotSearch for exec_mode=oneshot");
     }
-});</code></pre>
+    
+    if (!params.search) {
+        callback("Must provide a query to create a search job");
+    } 
+    var that = this;
+    this.post("", params, function(err, response) {
+        if (err) {
+            callback(err);
+        }
+        else {
+            that._invalidate();
+            var job = new root.Job(that.service, response.odata.results.sid);
+            callback(null, job);
+        }
+    });
+},</code></pre>
               </section>
               
             </section>
@@ -10075,7 +10147,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L378">lib/client.js:378</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L426">lib/client.js:426</a>)</h4>
                 <pre><code>del: function(relpath, params, callback) {
         var url = this.path;
         // If we have a relative path, we will append it with a preceding
@@ -10119,7 +10191,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L310">lib/client.js:310</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L358">lib/client.js:358</a>)</h4>
                 <pre><code>get: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -10154,7 +10226,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Check whether the resource is in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L499">lib/client.js:499</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L547">lib/client.js:547</a>)</h4>
                 <pre><code>isValid: function() {
     return this._maybeValid;
 },</code></pre>
@@ -10187,7 +10259,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L781">lib/client.js:781</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L829">lib/client.js:829</a>)</h4>
                 <pre><code>item: function(name, callback) {
     callback = callback || function() {};
     var that = this;
@@ -10233,7 +10305,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L860">lib/client.js:860</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L908">lib/client.js:908</a>)</h4>
                 <pre><code>list: function(callback) {
     callback = callback || function() {};
     
@@ -10242,6 +10314,58 @@ var toString = Object.prototype.toString;</code></pre>
         callback(err, that._entities);
     });
 },</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='Splunk.Client.Jobs-oneshotSearch'>
+              <header>
+                <h3>oneshotSearch</h3>
+                <h4>Splunk.Client.Jobs.oneshotSearch</h4>
+                <p class='type'>method</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">query</span> - <span class="em">String</span> <p>The search query</p></li>
+                                      <li><span class="bold">params</span> - <span class="em">Object</span> <p>A dictionary of properties for the job.</p></li>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with the results of the job: <code>(err, results)</code></p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                </section>
+              <section>
+                <p>Create a oneshot search job</p>
+<p>Create a oneshot search job using the specified query and parameters.</p>
+<p>Maps to <code>search/jobs</code> with exec_mode=oneshot</p>
+<h2>Example</h2>
+<pre><code> var jobs = service.jobs();
+ jobs.oneshotSearch("search ERROR", {id: "myjob_123"}, function(err, results) {
+     console.log("RESULT FIELDS": results.fields);
+ });
+</code></pre>
+              </section>
+              <section class='source'>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1810">lib/client.js:1810</a>)</h4>
+                <pre><code>oneshotSearch: function(query, params, callback) {
+        callback = callback || function() {};
+        params = params || {};
+        params.search = query; 
+        params.exec_mode = "oneshot";
+        
+        if (!params.search) {
+            callback("Must provide a query to create a search job");
+        } 
+        var that = this;
+        this.post("", params, function(err, response) {
+            if (err) {
+                callback(err);
+            }
+            else {
+                callback(null, response.odata.results);
+            }
+        });
+    }
+});</code></pre>
               </section>
               
             </section>
@@ -10271,7 +10395,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L344">lib/client.js:344</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L392">lib/client.js:392</a>)</h4>
                 <pre><code>post: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -10307,7 +10431,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will retrieve the current properties for this resource, whether or not they are valid.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L513">lib/client.js:513</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L561">lib/client.js:561</a>)</h4>
                 <pre><code>properties: function(callback) {
     return this._properties;
 },</code></pre>
@@ -10333,7 +10457,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will conditionally refresh the object from the server, only if it is not in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L528">lib/client.js:528</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L576">lib/client.js:576</a>)</h4>
                 <pre><code>read: function(callback) {
         callback = callback || function() {};
         
@@ -10365,7 +10489,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will unconditionally refresh the object from the server and load it up, regardless of whether it is valid or not.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L748">lib/client.js:748</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L796">lib/client.js:796</a>)</h4>
                 <pre><code>refresh: function(callback) {
     callback = callback || function() {};
     
@@ -10379,6 +10503,42 @@ var toString = Object.prototype.toString;</code></pre>
             callback(null, that);
         }
     });
+},</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='Splunk.Client.Jobs-search'>
+              <header>
+                <h3>search</h3>
+                <h4>Splunk.Client.Jobs.search</h4>
+                <p class='type'>method</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">query</span> - <span class="em">String</span> <p>The search query</p></li>
+                                      <li><span class="bold">params</span> - <span class="em">Object</span> <p>A dictionary of properties for the job.</p></li>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with the created job: <code>(err, createdJob)</code></p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                </section>
+              <section>
+                <p>Create an asyncronous search job</p>
+<p>Create a search job using the specified query and parameters.</p>
+<p>This method will throw an error if exec_mode=oneshot is passed in the params variable.</p>
+<p>Maps to <code>search/jobs</code></p>
+<h2>Example</h2>
+<pre><code> var jobs = service.jobs();
+ jobs.search("search ERROR", {id: "myjob_123"}, function(err, newJob) {
+     console.log("CREATED": newJob.sid);
+ });
+</code></pre>
+              </section>
+              <section class='source'>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1786">lib/client.js:1786</a>)</h4>
+                <pre><code>search: function(query, params, callback) {
+    this.create(query, params, callback);
 },</code></pre>
               </section>
               
@@ -10415,7 +10575,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for Splunk.Client.Job</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1744">lib/client.js:1744</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1855">lib/client.js:1855</a>)</h4>
                 <pre><code>init: function(service, sid) {
     this._super(service, Paths.jobs + "/" + sid);
     this.sid = sid;
@@ -10458,7 +10618,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Load the resource and mark it as valid, also storing the properties.    </p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L580">lib/client.js:580</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L628">lib/client.js:628</a>)</h4>
                 <pre><code>_load: function(properties) {
     properties = utils.isArray(properties) ? properties[0] : properties;
     
@@ -10492,7 +10652,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1783">lib/client.js:1783</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1894">lib/client.js:1894</a>)</h4>
                 <pre><code>cancel: function(callback) {
     this.post("control", {action: "cancel"}, callback);
     this._invalidate();
@@ -10526,7 +10686,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L378">lib/client.js:378</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L426">lib/client.js:426</a>)</h4>
                 <pre><code>del: function(relpath, params, callback) {
         var url = this.path;
         // If we have a relative path, we will append it with a preceding
@@ -10569,7 +10729,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1804">lib/client.js:1804</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1915">lib/client.js:1915</a>)</h4>
                 <pre><code>disablePreview: function(callback) {
     callback = callback || function() {};
     
@@ -10607,7 +10767,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1830">lib/client.js:1830</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1941">lib/client.js:1941</a>)</h4>
                 <pre><code>enablePreview: function(callback) {
     callback = callback || function() {};
     
@@ -10647,7 +10807,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1859">lib/client.js:1859</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1970">lib/client.js:1970</a>)</h4>
                 <pre><code>events: function(params, callback) {
     callback = callback || function() {};
     
@@ -10689,7 +10849,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1889">lib/client.js:1889</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2000">lib/client.js:2000</a>)</h4>
                 <pre><code>finalize: function(callback) {
     callback = callback || function() {};
     
@@ -10728,7 +10888,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L310">lib/client.js:310</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L358">lib/client.js:358</a>)</h4>
                 <pre><code>get: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -10763,7 +10923,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Check whether the resource is in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L499">lib/client.js:499</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L547">lib/client.js:547</a>)</h4>
                 <pre><code>isValid: function() {
     return this._maybeValid;
 },</code></pre>
@@ -10795,7 +10955,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1915">lib/client.js:1915</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2026">lib/client.js:2026</a>)</h4>
                 <pre><code>pause: function(callback) {
     callback = callback || function() {};
     
@@ -10834,7 +10994,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L344">lib/client.js:344</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L392">lib/client.js:392</a>)</h4>
                 <pre><code>post: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -10878,7 +11038,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1944">lib/client.js:1944</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2055">lib/client.js:2055</a>)</h4>
                 <pre><code>preview: function(params, callback) {
     callback = callback || function() {};
     
@@ -10914,7 +11074,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will retrieve the current properties for this resource, whether or not they are valid.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L513">lib/client.js:513</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L561">lib/client.js:561</a>)</h4>
                 <pre><code>properties: function(callback) {
     return this._properties;
 },</code></pre>
@@ -10940,7 +11100,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will conditionally refresh the object from the server, only if it is not in a valid state.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L528">lib/client.js:528</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L576">lib/client.js:576</a>)</h4>
                 <pre><code>read: function(callback) {
         callback = callback || function() {};
         
@@ -10972,7 +11132,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will unconditionally refresh the object from the server and load it up, regardless of whether it is valid or not.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L596">lib/client.js:596</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L644">lib/client.js:644</a>)</h4>
                 <pre><code>refresh: function(callback) {
     callback = callback || function() {};
     
@@ -11009,7 +11169,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will tell the server to delete this entity.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L621">lib/client.js:621</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L669">lib/client.js:669</a>)</h4>
                 <pre><code>remove: function(callback) {
     callback = callback || function() {};
     
@@ -11048,7 +11208,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1977">lib/client.js:1977</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2088">lib/client.js:2088</a>)</h4>
                 <pre><code>results: function(params, callback) {
     callback = callback || function() {};
     
@@ -11090,7 +11250,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2007">lib/client.js:2007</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2118">lib/client.js:2118</a>)</h4>
                 <pre><code>searchlog: function(callback) {
     callback = callback || function() {};
     
@@ -11133,7 +11293,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2038">lib/client.js:2038</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2149">lib/client.js:2149</a>)</h4>
                 <pre><code>setPriority: function(value, callback) {
     callback = callback || function() {};
     
@@ -11172,7 +11332,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2065">lib/client.js:2065</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2176">lib/client.js:2176</a>)</h4>
                 <pre><code>setTTL: function(value, callback) {
     callback = callback || function() {};
     
@@ -11212,7 +11372,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2094">lib/client.js:2094</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2205">lib/client.js:2205</a>)</h4>
                 <pre><code>summary: function(params, callback) {
     callback = callback || function() {};
     
@@ -11255,7 +11415,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2125">lib/client.js:2125</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2236">lib/client.js:2236</a>)</h4>
                 <pre><code>timeline: function(params, callback) {
     callback = callback || function() {};
     
@@ -11297,7 +11457,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2155">lib/client.js:2155</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2266">lib/client.js:2266</a>)</h4>
                 <pre><code>touch: function(callback) {
     callback = callback || function() {};
     
@@ -11335,7 +11495,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2181">lib/client.js:2181</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2292">lib/client.js:2292</a>)</h4>
                 <pre><code>unpause: function(callback) {
             callback = callback || function() {};
             
@@ -11370,7 +11530,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will update the entity on the server.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L641">lib/client.js:641</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L689">lib/client.js:689</a>)</h4>
                 <pre><code>update: function(props, callback) {
         callback = callback || function() {};
         
