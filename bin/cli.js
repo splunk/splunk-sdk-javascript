@@ -528,7 +528,7 @@
     program
         .command('tests [files]')
         .description('Run the specified test files (comma-separated), or all of them if no file is specified.')
-        .option('--username=<username>', 'Splunk username')
+        .option('--username <username>', 'Splunk username')
         .option('--password <password>', 'Splunk password')
         .option('--scheme <scheme>', 'Splunk scheme')
         .option('--host <host>', 'Splunk host')
