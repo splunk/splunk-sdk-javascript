@@ -18,11 +18,11 @@
     var staticResource = require('../contrib/static-resource/index');
     var dox            = require('../contrib/dox/dox');
     var doc_builder    = require('../contrib/dox/doc_builder');
+    var program        = require('../contrib/commander');
     var spawn          = require('child_process').spawn;
     var path           = require('path');
     var fs             = require('fs');
     var browserify     = require('browserify');
-    var program        = require('commander');
     var http           = require('http');
     var url            = require('url');
     

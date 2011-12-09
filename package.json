@@ -27,7 +27,6 @@
         "browserify" : "1.8.x",
         "uglify-js" : "1.1.x",
         "nodeunit" : "0.6.x",
-        "commander" : "0.5.x",
         "jshint" : "0.5.x >= 0.5.4",
         "mustache": "0.3.x"
     },
