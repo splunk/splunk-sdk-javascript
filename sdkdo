@@ -15,5 +15,14 @@
 // under the License.
 
 (function() {
-    require('./bin/cli');
+    try {
+        require('./bin/cli');
+    }
+    catch (ex) {
+        if (ex.message.indexOf("Cannot find module") >= 0) {
+            console.error("NOTE: 'sdkdo' failed to run. Did you forget to run 'npm install'?");
+        }
+        
+        throw ex;
+    }
 })();
