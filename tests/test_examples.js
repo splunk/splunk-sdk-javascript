@@ -46,7 +46,7 @@ exports.setup = function() {
                     if (options) {
                         for(var key in options) {
                             if (options.hasOwnProperty(key)) {
-                                combinedArgs.push("--" + key)
+                                combinedArgs.push("--" + key);
                                 combinedArgs.push(options[key]);
                             }
                         }

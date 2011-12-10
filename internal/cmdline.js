@@ -51,8 +51,8 @@
     };
     
     module.exports.create = function() {
-        parser = new commander.Command();
-        parse = parser.parse;
+        var parser = new commander.Command();
+        var parse = parser.parse;
     
         parser.password = undefined;
     
@@ -63,7 +63,7 @@
             .option('--host <host>', "Hostname to use", "localhost", false)
             .option('--port <port>', "Port to use", 8089, false)
             .option('--namespace <namespace>', "Namespace to use (of the form app:owner)", undefined, false)
-            .option('--config <config>', "Load options from config file", undefined, false)
+            .option('--config <config>', "Load options from config file", undefined, false);
         
         parser.parse = function(argv) {
             argv = (argv || []).slice(2);
@@ -102,8 +102,8 @@
                 args.unshift(commandName);
                 onAction.apply(null, args);
             });
-        }
+        };
         
         return parser;
-    }
+    };
 })();

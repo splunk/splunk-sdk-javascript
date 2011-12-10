@@ -468,7 +468,7 @@
             files.push(path.join(TEST_DIRECTORY, ALL_TESTS));
         }
         
-        var args = [
+        var cmdlineArgs = [
             (cmdline.opts.username   ?                   makeOption("username",     cmdline.opts.username)      : ""),
             (cmdline.opts.scheme     ?                   makeOption("scheme",       cmdline.opts.scheme)        : ""),
             (cmdline.opts.host       ?                   makeOption("host",         cmdline.opts.host)          : ""),
@@ -479,7 +479,7 @@
         
         var testFunctions = files.map(function(file) {
             return function(done) {
-                launch(file, args, done);
+                launch(file, cmdlineArgs, done);
             };
         });
         
