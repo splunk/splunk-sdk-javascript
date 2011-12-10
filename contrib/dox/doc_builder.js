@@ -252,26 +252,12 @@
         
         // If we have a parent, add those methods in
         if (module.is_extends) {
-            module.methods = newMethods; 
+            module.inherited = newMethods.filter(function(method) {
+                return (module.methods.indexOf(method) < 0);
+            });
+            //console.log(module.inherited.map(function(method) { return method.name; })); 
+            module.has_inherited = module.inherited.length;
         }
-        
-        // Sort the method names according to alphabetical order, but 'init'
-        // should always be at the top
-        module.methods = module.methods.sort(function(left, right) { 
-            if (right.name === "init") {
-                return 1;
-            }
-            if (left.name === "init") {
-                return -1;
-            }
-            if (left.name > right.name) {
-                return 1;
-            }
-            if (left.name < right.name) {
-                return -1;
-            }
-            return 0;
-        });
     });
     
     var template = fs.readFileSync(path.resolve(__dirname, 'template.mustache')).toString("utf-8");

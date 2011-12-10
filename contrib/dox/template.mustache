@@ -335,6 +335,18 @@
                 <li><a href='#{{parent}}+{{name}}'>{{name}}</a></li>
               {{/helpers}}
             </ul>
+            
+            {{#has_inherited}}
+              <a href='#{{name}}-inherited'>
+                <h4>Inherited</h4>
+              </a>
+            {{/has_inherited}}
+            
+            <ul>
+              {{#inherited}}
+                <li><a href='#{{parent}}^{{name}}'>{{name}}</a></li>
+              {{/inherited}}
+            </ul>
           </li>
         {{/modules}}
       </ul>
@@ -456,6 +468,55 @@
               
             </section>
           {{/helpers}}
+          
+          {{#has_inherited}}
+            <header id='{{name}}-inherited'>
+              <h3>Inherited Methods</h3>
+            </header>
+          {{/has_inherited}}
+          
+          {{#inherited}}
+            <section class='method' id='{{parent}}^{{name}}'>
+              <header>
+                <h3>{{name}}</h3>
+                <h4>{{signature}}</h4>
+                <p class='type'>{{type}}</p>
+                {{#related}}
+                  <p class='related'>See: <a href='#{{href}}'>{{name}}</a></p>
+                {{/related}}
+              </header>
+
+              <section class='params'>
+                {{#has_params}}
+                  <h4>Params</h4>
+                {{/has_params}}
+                <ul>
+                  {{#params}}
+                    <li><span class="bold">{{name}}</span> - <span class="em">{{types}}</span> {{{description}}}</li>
+                  {{/params}}
+                </ul>
+              </section>
+
+              <section class='params'>
+                {{#has_returns}}
+                  <h4>Returns</h4>
+                  {{#returns}}
+                    <p><span class="em">{{types}}</span> {{{description}}}</p>
+                  {{/returns}}
+                {{/has_returns}}
+              </section>
+
+              <section>
+                {{{full_description}}}
+              </section>
+
+              <section class='source'>
+                <h4>Source</h4>
+                <pre><code>{{code}}</code></pre>
+              </section>
+              
+            </section>
+          {{/inherited}}
         </article>
       {{/modules}}
     </div>
