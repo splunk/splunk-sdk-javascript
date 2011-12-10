@@ -227,7 +227,7 @@
     var compileAll = function(watch, exportName) {
         compileSDK(watch, exportName);
         compileTests(watch);
-        // TODO: compileUI(watch);  
+        compileUI(watch);  
     };
     
     var runServer = function(port) {

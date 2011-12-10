@@ -7,7 +7,6 @@ tests/html/*
 *.sublime-*
 *.pyc
 external-nocheckin/*
-client/splunk.ui.*
 .idea/*
 npm-debug.log
 server.py

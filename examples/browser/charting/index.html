@@ -53,7 +53,7 @@
           },
           // Get the final results data
           function(searcher, callback) {
-            searcher.job.results({json_mode: "column"}, augment(callback, searcher.job));
+            searcher.job.results({json_mode: "column"}, callback);
           },
           // Update the chart
           function(results, job, callback) {         

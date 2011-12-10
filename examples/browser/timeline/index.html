@@ -5,7 +5,7 @@
     <link rel="stylesheet" type="text/css" href="../../../external-nocheckin/ui.css">
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.js"></script>
     <script type="text/javascript" src="../../../client/splunk.js"></script>
-    <script type="text/javascript" src="../../../client/splunk.ui.js"></script>
+    <script type="text/javascript" src="../../../client/splunk.ui.min.js"></script>
     <script>
     
       var augment = function(callback) {
@@ -35,7 +35,7 @@
         });
         
         var timeline = new SplunkUI.Timeline.Timeline($("#timeline-container"));
-        var searchTerm = "search * | head 100000 | stats count";
+        var searchTerm = "search * | head 10 | stats count";
         
         Async.chain([
           // Login
@@ -60,7 +60,7 @@
           },
           // Get the final timeline data
           function(searcher, callback) {
-            searcher.job.timeline({}, augment(callback, searcher.job));
+            searcher.job.timeline({}, callback);
           },
           // Update the timeline control
           function(timelineData, job, callback) {

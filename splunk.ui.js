@@ -17,7 +17,7 @@
     var root = exports || this;
 
     root.SplunkUI = {
-        Timeline         : require('./ui/timeline'),
-        Charting         : require('./ui/charting')
+        Timeline         : require('./ui/timeline')
+        //Charting         : require('./ui/charting')
     };
 })();

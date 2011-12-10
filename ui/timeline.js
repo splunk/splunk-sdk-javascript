@@ -14,120 +14,25 @@
 // under the License.
 
 (function() {
+    
     // Import the timeline code
-    if (typeof(window) === 'undefined') {
-        window = this;
-    }
-    
-    require('../external-nocheckin/jg_global.js');
-    require('../external-nocheckin/splunk_time.js');
-    require('../external-nocheckin/splunk_timeline.js');
-    
-    var Class           = require('../lib/jquery.class').Class;
-    var utils           = require('../lib/utils');
+    var jg_global   = require('./timeline/jg_global.js');
+    var time        = require('./timeline/splunk_time.js');
+    var timeline    = require('./timeline/splunk_timeline.js');
+    var format      = require('./timeline/format.js')
+        
+    var Class = require('../lib/jquery.class').Class;
+    var utils = require('../lib/utils');
     
     var root = exports || this;
 
-    var SplunkTimeline = this.splunk.Timeline;
-    root.DateTime = this.splunk.time.DateTime;
-    root.SimpleTimeZone = this.splunk.time.SimpleTimeZone;
+    var SplunkTimeline = timeline.splunk.Timeline;
+    var DateTime = time.splunk.time.DateTime;
+    var SimpleTimeZone = time.splunk.time.SimpleTimeZone;
     
-    var formatNumber = function(num) {
-        var pos = Math.abs(num);
-        if ((pos > 0) && ((pos < 1e-3) || (pos >= 1e9))) {
-            return num.toExponential(2).replace(/e/g, "E").replace(/\+/g, "");
-        }
-
-        var str = String(Number(num.toFixed(3)));
-        var dotIndex = str.indexOf(".");
-        if (dotIndex < 0) {
-            dotIndex = str.length;
-        }
-        var str2 = str.substring(dotIndex, str.length);
-        var i;
-        for (i = dotIndex - 3; i > 0; i -= 3) {
-            str2 = "," + str.substring(i, i + 3) + str2;
-        }
-        str2 = str.substring(0, i + 3) + str2;
-        return str2;
-    };
-    
-    var formatNumericString = function(strSingular, strPlural, num) {
-        var str = (Math.abs(num) === 1) ? strSingular : strPlural;
-        str = str.split("%s").join(formatNumber(num));
-        return str;
-    };
-
-    var formatDate = function(time, timeZoneOffset, dateFormat) {
-        var date = new root.DateTime(time);
-        date = date.toTimeZone(new root.SimpleTimeZone(timeZoneOffset));
-
-        var monthNames = [ "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December" ];
-        var monthShortNames = [ "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" ];
-        var weekdayShortNames = [ "Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat" ];
-
-        switch (dateFormat) {
-            case "EEE MMM d":
-                return  weekdayShortNames[date.getWeekday()] + " " + monthShortNames[date.getMonth() - 1] + " " + date.getDay();
-            case "MMMM":
-                return monthNames[date.getMonth() - 1];
-            case "yyyy":
-                return String(date.getYear());
-            default:
-                return monthShortNames[date.getMonth() - 1] + " " + date.getDay() + ", " + date.getYear();
-        }
-    };
-
-    var formatTime = function(time, timeZoneOffset, timeFormat) {
-        var date = new root.DateTime(time);
-        date = date.toTimeZone(new root.SimpleTimeZone(timeZoneOffset));
-
-        var hours = date.getHours();
-        var minutes = date.getMinutes();
-        var seconds = Math.floor(date.getSeconds());
-        var milliseconds = Math.floor((date.getSeconds() - seconds) * 1000);
-        var ampm = (hours < 12) ? "AM" : "PM";
-
-        if (hours >= 12) {
-            hours -= 12;
-        }
-        if (hours === 0) {
-            hours = 12;
-        }
-
-        hours = ("" + hours);
-        minutes = (minutes < 10) ? ("0" + minutes) : ("" + minutes);
-        seconds = (seconds < 10) ? ("0" + seconds) : ("" + seconds);
-        milliseconds = (milliseconds < 100) ? (milliseconds < 10) ? ("00" + milliseconds) : ("0" + milliseconds) : ("" + milliseconds);
-
-        switch (timeFormat)
-        {
-            case "short":
-                return hours + ":" + minutes + " " + ampm;
-            case "medium":
-                return hours + ":" + minutes + ":" + seconds + " " + ampm;
-            case "long":
-            case "full":
-                return hours + ":" + minutes + ":" + seconds + "." + milliseconds + " " + ampm;
-            default:
-                if (milliseconds !== "000") {
-                    return hours + ":" + minutes + ":" + seconds + "." + milliseconds + " " + ampm;
-                }
-                if (seconds !== "00") {
-                    return hours + ":" + minutes + ":" + seconds + " " + ampm;
-                }
-                return hours + ":" + minutes + " " + ampm;
-        }
-    };
-
-    var formatDateTime = function(time, timeZoneOffset, dateFormat, timeFormat) {
-        return formatDate(time, timeZoneOffset, dateFormat) + " " + formatTime(time, timeZoneOffset, timeFormat);
-    };
-
-    var formatTooltip = function(earliestTime, latestTime, earliestOffset, latestOffset, eventCount) {
-        return formatNumericString("%s event", "%s events", eventCount) + " from " + formatDateTime(earliestTime, earliestOffset) + " to " + formatDateTime(latestTime, latestOffset);
-    };
-    
+    // Setup the exports and our timeline wrapper class
+    root.DateTime = DateTime;
+    root.SimpleTimeZone = SimpleTimeZone;
     root.Timeline = Class.extend({
         init: function(el) {
             this.timeline = new SplunkTimeline();
@@ -137,12 +42,12 @@
             this.timeline.appendTo($(el).get(0));
 
             // Add the external interface formatting functions
-            this.timeline.externalInterface.formatNumericString = formatNumericString;
-            this.timeline.externalInterface.formatNumber = formatNumber;
-            this.timeline.externalInterface.formatDate = formatDate;
-            this.timeline.externalInterface.formatTime = formatTime;
-            this.timeline.externalInterface.formatDateTime = formatDateTime;
-            this.timeline.externalInterface.formatTooltip = formatTooltip;
+            this.timeline.externalInterface.formatNumericString = format.formatNumericString;
+            this.timeline.externalInterface.formatNumber        = format.formatNumber;
+            this.timeline.externalInterface.formatDate          = format.formatDate;
+            this.timeline.externalInterface.formatTime          = format.formatTime;
+            this.timeline.externalInterface.formatDateTime      = format.formatDateTime;
+            this.timeline.externalInterface.formatTooltip       = format.formatTooltip;
 
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
@@ -154,19 +59,19 @@
         updateWithJSON: function(timelineData) {
             var data = {
               buckets: [],
-              cursorTime: new root.DateTime(timelineData.cursor_time),
+              cursorTime: new DateTime(timelineData.cursor_time),
               eventCount: timelineData.event_count,
               earliestOffset: timelineData.earliestOffset || 0
             };
             
             if (data.cursorTime) {
-              data.cursorTime = data.cursorTime.toTimeZone(new root.SimpleTimeZone(data.earliestOffset));
+              data.cursorTime = data.cursorTime.toTimeZone(new SimpleTimeZone(data.earliestOffset));
             }
             
             for(var i = 0; i < timelineData.buckets.length; i++) {
               var oldBucket = timelineData.buckets[i];
               var newBucket = {
-                earliestTime: new root.DateTime(oldBucket.earliest_time),
+                earliestTime: new DateTime(oldBucket.earliest_time),
                 duration: oldBucket.duration,
                 eventCount: oldBucket.total_count,
                 eventAvailableCount: oldBucket.available_count,
@@ -184,14 +89,14 @@
               }
 
               if (newBucket.earliestTime) {
-                newBucket.latestTime = new root.DateTime(newBucket.earliestTime.getTime() + newBucket.duration);
+                newBucket.latestTime = new DateTime(newBucket.earliestTime.getTime() + newBucket.duration);
               }
               
               if (newBucket.earliestTime) {
-                newBucket.earliestTime = newBucket.earliestTime.toTimeZone(new root.SimpleTimeZone(oldBucket.earliest_time_offset));
+                newBucket.earliestTime = newBucket.earliestTime.toTimeZone(new SimpleTimeZone(oldBucket.earliest_time_offset));
               }
               if (newBucket.latestTime) {
-                newBucket.latestTime = newBucket.latestTime.toTimeZone(new root.SimpleTimeZone(oldBucket.latest_time_offset));
+                newBucket.latestTime = newBucket.latestTime.toTimeZone(new SimpleTimeZone(oldBucket.latest_time_offset));
               }
               
               data.buckets.push(newBucket);
