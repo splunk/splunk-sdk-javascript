@@ -158,6 +158,10 @@
       margin-top: 0px;
       font-size: 0.8em;
     }
+    section header .endpoint {
+      margin-top: -.8em;
+      font-size: 0.8em;
+    }
 
     section.params h4, section.source h4 {
       margin-top: 5px;
@@ -364,6 +368,9 @@
                 <h3>{{name}}</h3>
                 <h4>{{signature}}</h4>
                 <p class='type'>{{type}}</p>
+                {{#has_endpoint}}
+                  <p class='endpoint'>{{endpoint}}</p>
+                {{/has_endpoint}}
                 {{#related}}
                   <p class='related'>See: <a href='#{{href}}'>{{name}}</a></p>
                 {{/related}}

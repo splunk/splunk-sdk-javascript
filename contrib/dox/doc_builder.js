@@ -129,6 +129,16 @@
         return false;
     });
     
+    var endpointName = "";
+    var hasEndpoint = doc.tags.some(function(tag) {
+        if (tag.type === "endpoint") {
+            endpointName = tag.content;
+            return true;
+        }
+        
+        return false;
+    });
+    
     var isPrivate = doc.tags.some(function(tag) {
         if (tag.type === "private") {
             return true;
@@ -165,7 +175,9 @@
         global: globalName,
         is_extends: isExtends,
         "extends": extendsName,
-        is_private: isPrivate
+        is_private: isPrivate,
+        has_endpoint: hasEndpoint,
+        endpoint: endpointName
     };
   }
 
