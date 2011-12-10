@@ -63,6 +63,7 @@
 
         var server = http.createServer(function(request, response) {
             var path = url.parse(request.url).pathname;
+            
             // handle method returns true if a resource specified with the path
             // has been handled by handler and returns false otherwise.
             if(!handler.handle(path, request, response)) {
@@ -72,7 +73,9 @@
             }
         });
         
-        server.listen(port || DEFAULT_PORT);  
+        port = port || DEFAULT_PORT;
+        server.listen(port);
+        console.log("Running server on port: " + (port) + " -- Hit CTRL+C to exit"); 
     };
     
     var makeOption = function(name, value) {
@@ -230,7 +233,6 @@
         // make runServer depend on it
         //compileAll(true);
         createServer(port);
-        console.log("Running server on port: " + port + " -- Hit CTRL+C to exit");
     };
     
     var launchBrowser = function(file, port) {
