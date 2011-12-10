@@ -357,6 +357,10 @@ require.define("/splunk.js", function (require, module, exports, __dirname, __fi
         Class           : require('./lib/jquery.class').Class,
         Searcher        : require('./lib/searcher.js')
     };
+    
+    if (typeof(window) === 'undefined') {
+        root.Splunk.NodeHttp = require('./lib/platform/node/node_http').NodeHttp;
+    }
 })();
 });
 
@@ -432,11 +436,11 @@ require.define("/lib/binding.js", function (require, module, exports, __dirname,
                 // we're running on. If we're running in the browser, then we instantiate
                 // XdmHttp, else, we instantiate NodeHttp.
                 if (typeof(window) !== 'undefined') {
-                    var XdmHttp  = require('../platform/client/easyxdm_http').XdmHttp;
+                    var XdmHttp  = require('./platform/client/easyxdm_http').XdmHttp;
                     http = new XdmHttp(this.scheme + "://" + this.host + ":" + this.port);
                 }
                 else {
-                    var NodeHttp = require('../platform/node/node_http').NodeHttp;
+                    var NodeHttp = require('./platform/node/node_http').NodeHttp;
                     http = new NodeHttp();
                 }
             }
@@ -1351,7 +1355,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
 })();
 });
 
-require.define("/platform/client/easyxdm_http.js", function (require, module, exports, __dirname, __filename) {
+require.define("/lib/platform/client/easyxdm_http.js", function (require, module, exports, __dirname, __filename) {
     
 // Copyright 2011 Splunk, Inc.
 //
@@ -1368,11 +1372,11 @@ require.define("/platform/client/easyxdm_http.js", function (require, module, ex
 // under the License.
 
 (function() {
-    var Splunk  = require('../../splunk').Splunk;
-    var utils   = Splunk.Utils;
+    var Http    = require('../../http').Http;
+    var utils   = require('../../utils');
     
     // Include it so it gets put in splunk.js
-    require('../../contrib/easyXDM/easyXDM.min');
+    require('../../../contrib/easyXDM/easyXDM.min');
 
     var root = exports || this;
     
@@ -1400,7 +1404,7 @@ require.define("/platform/client/easyxdm_http.js", function (require, module, ex
     // Store a copy of the easyXDM library we just imported
     var xdmLocal = easyXDM;
 
-    root.XdmHttp = Splunk.Http.extend({
+    root.XdmHttp = Http.extend({
         init: function(remoteServer) {
             this._super(true);
             
@@ -4500,7 +4504,7 @@ require.define("/lib/searcher.js", function (require, module, exports, __dirname
 })();
 });
 
-require.define("/platform/client/proxy_http.js", function (require, module, exports, __dirname, __filename) {
+require.define("/lib/platform/client/proxy_http.js", function (require, module, exports, __dirname, __filename) {
     
 // Copyright 2011 Splunk, Inc.
 //
@@ -4517,8 +4521,8 @@ require.define("/platform/client/proxy_http.js", function (require, module, expo
 // under the License.
 
 (function() {
-    var Splunk  = require('../../splunk').Splunk;
-    var utils   = Splunk.Utils;
+    var Http    = require('../../http').Http;
+    var utils   = require('../../utils');
 
     var root = exports || this;
     
@@ -4535,7 +4539,7 @@ require.define("/platform/client/proxy_http.js", function (require, module, expo
         return headers;
     };
 
-    root.ProxyHttp = Splunk.Http.extend({
+    root.ProxyHttp = Http.extend({
         init: function(prefix) {
             this.prefix = prefix;
             this._super(true);
@@ -4616,8 +4620,8 @@ require.define("/browser.entry.js", function (require, module, exports, __dirnam
     var previousSplunk = window[exportName];
     
     var ourSplunk = require('./splunk').Splunk;
-    var ourXDM = require('./platform/client/easyxdm_http').XdmHttp;
-    var proxyHttp = require('./platform/client/proxy_http').ProxyHttp;
+    var ourXDM = require('./lib/platform/client/easyxdm_http').XdmHttp;
+    var proxyHttp = require('./lib/platform/client/proxy_http').ProxyHttp;
     
     window[exportName] = ourSplunk;
     window[exportName].XdmHttp = ourXDM;

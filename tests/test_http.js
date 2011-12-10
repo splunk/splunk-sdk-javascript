@@ -248,7 +248,7 @@ exports.setup = function(http) {
 
 if (module === require.main) {
     var Splunk      = require('../splunk').Splunk;
-    var NodeHttp    = require('../platform/node/node_http').NodeHttp;
+    var NodeHttp    = Splunk.NodeHttp;
     var test        = require('../contrib/nodeunit/test_reporter');
 
     var http = new NodeHttp(false);

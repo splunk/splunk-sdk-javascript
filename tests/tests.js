@@ -18,7 +18,7 @@
     var test        = require('../contrib/nodeunit/test_reporter');
     var options     = require('../internal/cmdline');
     var Splunk      = require('../splunk').Splunk;
-    var NodeHttp    = require('../platform/node/node_http').NodeHttp;
+    var NodeHttp    = Splunk.NodeHttp;
     
     var parser = new options.create();
     var cmdline = parser.parse(process.argv);

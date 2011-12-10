@@ -21,8 +21,8 @@
     var previousSplunk = window[exportName];
     
     var ourSplunk = require('./splunk').Splunk;
-    var ourXDM = require('./platform/client/easyxdm_http').XdmHttp;
-    var proxyHttp = require('./platform/client/proxy_http').ProxyHttp;
+    var ourXDM = require('./lib/platform/client/easyxdm_http').XdmHttp;
+    var proxyHttp = require('./lib/platform/client/proxy_http').ProxyHttp;
     
     window[exportName] = ourSplunk;
     window[exportName].XdmHttp = ourXDM;

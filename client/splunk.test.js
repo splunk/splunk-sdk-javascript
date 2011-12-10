@@ -457,6 +457,10 @@ require.define("/splunk.js", function (require, module, exports, __dirname, __fi
         Class           : require('./lib/jquery.class').Class,
         Searcher        : require('./lib/searcher.js')
     };
+    
+    if (typeof(window) === 'undefined') {
+        root.Splunk.NodeHttp = require('./lib/platform/node/node_http').NodeHttp;
+    }
 })();
 });
 
@@ -532,11 +536,11 @@ require.define("/lib/binding.js", function (require, module, exports, __dirname,
                 // we're running on. If we're running in the browser, then we instantiate
                 // XdmHttp, else, we instantiate NodeHttp.
                 if (typeof(window) !== 'undefined') {
-                    var XdmHttp  = require('../platform/client/easyxdm_http').XdmHttp;
+                    var XdmHttp  = require('./platform/client/easyxdm_http').XdmHttp;
                     http = new XdmHttp(this.scheme + "://" + this.host + ":" + this.port);
                 }
                 else {
-                    var NodeHttp = require('../platform/node/node_http').NodeHttp;
+                    var NodeHttp = require('./platform/node/node_http').NodeHttp;
                     http = new NodeHttp();
                 }
             }
@@ -1451,7 +1455,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
 })();
 });
 
-require.define("/platform/client/easyxdm_http.js", function (require, module, exports, __dirname, __filename) {
+require.define("/lib/platform/client/easyxdm_http.js", function (require, module, exports, __dirname, __filename) {
     
 // Copyright 2011 Splunk, Inc.
 //
@@ -1468,11 +1472,11 @@ require.define("/platform/client/easyxdm_http.js", function (require, module, ex
 // under the License.
 
 (function() {
-    var Splunk  = require('../../splunk').Splunk;
-    var utils   = Splunk.Utils;
+    var Http    = require('../../http').Http;
+    var utils   = require('../../utils');
     
     // Include it so it gets put in splunk.js
-    require('../../contrib/easyXDM/easyXDM.min');
+    require('../../../contrib/easyXDM/easyXDM.min');
 
     var root = exports || this;
     
@@ -1500,7 +1504,7 @@ require.define("/platform/client/easyxdm_http.js", function (require, module, ex
     // Store a copy of the easyXDM library we just imported
     var xdmLocal = easyXDM;
 
-    root.XdmHttp = Splunk.Http.extend({
+    root.XdmHttp = Http.extend({
         init: function(remoteServer) {
             this._super(true);
             
@@ -5307,7 +5311,7 @@ exports.setup = function(http) {
 
 if (module === require.main) {
     var Splunk      = require('../splunk').Splunk;
-    var NodeHttp    = require('../platform/node/node_http').NodeHttp;
+    var NodeHttp    = Splunk.NodeHttp;
     var test        = require('../contrib/nodeunit/test_reporter');
 
     var http = new NodeHttp(false);
@@ -5576,8 +5580,8 @@ require.define("/internal/cmdline.js", function (require, module, exports, __dir
     };
     
     module.exports.create = function() {
-        parser = new commander.Command();
-        parse = parser.parse;
+        var parser = new commander.Command();
+        var parse = parser.parse;
     
         parser.password = undefined;
     
@@ -5588,7 +5592,7 @@ require.define("/internal/cmdline.js", function (require, module, exports, __dir
             .option('--host <host>', "Hostname to use", "localhost", false)
             .option('--port <port>', "Port to use", 8089, false)
             .option('--namespace <namespace>', "Namespace to use (of the form app:owner)", undefined, false)
-            .option('--config <config>', "Load options from config file", undefined, false)
+            .option('--config <config>', "Load options from config file", undefined, false);
         
         parser.parse = function(argv) {
             argv = (argv || []).slice(2);
@@ -5627,10 +5631,10 @@ require.define("/internal/cmdline.js", function (require, module, exports, __dir
                 args.unshift(commandName);
                 onAction.apply(null, args);
             });
-        }
+        };
         
         return parser;
-    }
+    };
 })();
 });
 
@@ -7130,7 +7134,7 @@ exports.setup = function() {
                     if (options) {
                         for(var key in options) {
                             if (options.hasOwnProperty(key)) {
-                                combinedArgs.push("--" + key)
+                                combinedArgs.push("--" + key);
                                 combinedArgs.push(options[key]);
                             }
                         }

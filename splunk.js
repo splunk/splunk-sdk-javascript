@@ -27,4 +27,8 @@
         Class           : require('./lib/jquery.class').Class,
         Searcher        : require('./lib/searcher.js')
     };
+    
+    if (typeof(window) === 'undefined') {
+        root.Splunk.NodeHttp = require('./lib/platform/node/node_http').NodeHttp;
+    }
 })();
