@@ -19,7 +19,7 @@
     var jg_global   = require('./timeline/jg_global.js');
     var time        = require('./timeline/splunk_time.js');
     var timeline    = require('./timeline/splunk_timeline.js');
-    var format      = require('./timeline/format.js')
+    var format      = require('./timeline/format.js');
         
     var Class = require('../lib/jquery.class').Class;
     var utils = require('../lib/utils');

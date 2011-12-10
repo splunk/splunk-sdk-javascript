@@ -14,27 +14,13 @@
 // under the License.
 
 (function() {
-    var utils = require('../lib/utils');
-    var Class   = require('../lib/jquery.class').Class;
-    
-    this.SplunkCharting = this.SplunkCharting || {};
-    var i18n = require('../external-nocheckin/i18n.js');
-    for(var key in i18n) {
-        if (i18n.hasOwnProperty(key)) {
-            this[key] = i18n[key];
-        }
-    }
-    
-    require('../external-nocheckin/i18n_locale.js');
-    require('../external-nocheckin/lowpro_for_jquery.js');
-    require('../external-nocheckin/splunk.js');
-    require('../external-nocheckin/util.js');
-    require('../external-nocheckin/highcharts.js');
-    require('../external-nocheckin/js_charting.js');
+    var utils        = require('../lib/utils');
+    var Class        = require('../lib/jquery.class').Class;
+    var SplunkCharts = require('../external-nocheckin/js_charting').Splunk;
     
     var root = exports || this;
         
-    var JSCharting = this.SplunkCharting.JSCharting;
+    var JSCharting = SplunkCharts.JSCharting;
     root.ChartType = {
         LINE: "line",
         AREA: "area",
@@ -63,22 +49,10 @@
             this.chart = null;
         },
         
-        setColumnData: function(data, properties) {
-            var series = [];
-            for(var i = 0; i < data.fields.length; i++) {
-                var column = {
-                    field: data.fields[i],
-                    data: data.columns[i] 
-                };
-                series.push(column);
-            }
+        setData: function(data, properties) {
+            var fieldInfo = JSCharting.extractFieldInfo(data);
+            var chartData = JSCharting.extractChartReadyData(data, fieldInfo);
             
-            this.setData(series, properties);
-        },
-        
-        setData: function(series, properties) {
-            var fieldInfo = JSCharting.extractFieldInfo({series: series});
-            var chartData = JSCharting.extractChartReadyData({series: series}, fieldInfo);
             this.chart.prepare(chartData, fieldInfo, properties);
         },
         

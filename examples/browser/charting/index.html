@@ -3,7 +3,6 @@
   <head>
     <title>Splunk Charting</title>
     
-    <link rel="stylesheet" type="text/css" href="../../../external-nocheckin/ui.css">
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.js"></script>
     <script type="text/javascript" src="../../../client/splunk.js"></script>
     <script type="text/javascript" src="../../../client/splunk.ui.js"></script>
@@ -35,8 +34,7 @@
         
         var chart = new SplunkUI.Charting.Chart($("#chart-container"), SplunkUI.Charting.ChartType.COLUMN, false);
         
-        /*var searchTerm = 'search index=foursquare * | head 5000 | eval venue=venue_id+","+venue_name | timechart count by venue | fields - OTHER';*/
-        var searchTerm = 'search index=foursquare * | head 10000 | eval venue=venue_id + "," + venue_name | stats count(eval(user_gender="male")) as MaleCount, count(eval(user_gender="female")) as FemaleCount by venue';
+        var searchTerm = 'search index=_internal | head 10000 | stats count(host), count(source) by sourcetype';
         Async.chain([
           // Login
           function(callback) { svc.login(callback); },
@@ -56,8 +54,8 @@
             searcher.job.results({json_mode: "column"}, callback);
           },
           // Update the chart
-          function(results, job, callback) {         
-            chart.setColumnData(results, {
+          function(results, job, callback) {   
+            chart.setData(results, {
               "chart.stackMode": "stacked"
             });
             chart.draw();
