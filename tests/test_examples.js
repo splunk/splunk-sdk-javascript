@@ -15,7 +15,6 @@
 
 exports.setup = function() {
     var Async       = require('../splunk').Splunk.Async;
-    var JobsMain    = require("../examples/node/jobs").main;
 
     var idCounter = 0;
     var getNextId = function() {
@@ -31,7 +30,7 @@ exports.setup = function() {
             setUp: function(done) {   
                 var context = this;
                 
-                this.main = JobsMain;      
+                this.main = require("../examples/node/jobs").main;
                 this.run = function(command, args, options, callback) {                
                     var combinedArgs = process.argv.slice();
                     if (command) {
@@ -45,10 +44,10 @@ exports.setup = function() {
                     }
                     
                     if (options) {
-                        combinedArgs.push("--");
                         for(var key in options) {
                             if (options.hasOwnProperty(key)) {
-                                combinedArgs.push("--" + key + "=" + options[key]);
+                                combinedArgs.push("--" + key)
+                                combinedArgs.push(options[key]);
                             }
                         }
                     }
@@ -61,14 +60,13 @@ exports.setup = function() {
             
             "help": function(test) {
                 this.run(null, null, null, function(err) {
-                    test.ok(err);
+                    test.ok(!!err);
                     test.done();
                 });
             },
             
             "List jobs": function(test) {
                 this.run("list", null, null, function(err) {
-                    console.log(err);
                     test.ok(!err);
                     test.done();
                 });

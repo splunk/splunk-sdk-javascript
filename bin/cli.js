@@ -40,6 +40,11 @@
     var UI_BROWSER_ENTRY    = "browser.ui.entry.js";
     var DOC_FILE            = "index.html";
     var SDK_VERSION         = JSON.parse(fs.readFileSync(path.resolve(__dirname, "../package.json")).toString("utf-8")).version;
+    var IGNORED_MODULES     = [
+        "../contrib/nodeunit/test_reporter", 
+        "../contrib/commander", 
+        "../platform/node/node_http"
+    ];
     
     /**
      * Generated files
@@ -155,11 +160,7 @@
         // Compile/combine all the files into the package
         var bundle = browserify({
             entry: entry,
-            ignore: [
-                "../contrib/nodeunit/test_reporter", 
-                "../contrib/parseopt", 
-                "../platform/node/node_http",
-                "request"],
+            ignore: IGNORED_MODULES,
             filter: function(code) {
                 if (shouldUglify) {
                     var uglifyjs = require("uglify-js"),
@@ -229,6 +230,7 @@
         // make runServer depend on it
         //compileAll(true);
         createServer(port);
+        console.log("Running server on port: " + port + " -- Hit CTRL+C to exit");
     };
     
     var launchBrowser = function(file, port) {
@@ -450,8 +452,8 @@
         );
     };
     
-    var runTests = function(tests, options) {
-        options = options || {};        
+    var runTests = function(tests, cmdline) {
+        cmdline = cmdline || {opts: {}};        
         var args = (tests || "").split(",").map(function(arg) { return arg.trim(); });
         
         var files = args.map(function(arg) {
@@ -464,18 +466,18 @@
             files.push(path.join(TEST_DIRECTORY, ALL_TESTS));
         }
         
-        var cmdline = [
-            (options.username   ?                   makeOption("username",     options.username)      : ""),
-            (options.scheme     ?                   makeOption("scheme",       options.scheme)        : ""),
-            (options.host       ?                   makeOption("host",         options.host)          : ""),
-            (options.port       ?                   makeOption("port",         options.port)          : ""),
-            (options.app        ?                   makeOption("app",          options.app)           : ""),
-            (!utils.isFunction(options.password) ?  makeOption("password",     options.password)      : "")
+        var args = [
+            (cmdline.opts.username   ?                   makeOption("username",     cmdline.opts.username)      : ""),
+            (cmdline.opts.scheme     ?                   makeOption("scheme",       cmdline.opts.scheme)        : ""),
+            (cmdline.opts.host       ?                   makeOption("host",         cmdline.opts.host)          : ""),
+            (cmdline.opts.port       ?                   makeOption("port",         cmdline.opts.port)          : ""),
+            (cmdline.opts.app        ?                   makeOption("app",          cmdline.opts.app)           : ""),
+            (cmdline.opts.password   ?                   makeOption("password",     cmdline.opts.password)      : "")
         ];
         
         var testFunctions = files.map(function(file) {
             return function(done) {
-                launch(file, cmdline, done);
+                launch(file, args, done);
             };
         });
         
@@ -558,8 +560,7 @@
         
     program.parse(process.argv);
     
-    if (program.args.length === 0) {       
+    if (!program.executedCommand) {
         process.stdout.write(program.helpInformation());
-        process.exit(0);
     }
 })();

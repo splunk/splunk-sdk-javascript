@@ -5,6 +5,66 @@
  * MIT Licensed
  */
 
+/*!
+ * Console
+ */
+var util = require('util');
+var fs = require("fs");
+
+/* Monkey patching */
+if (!util.format) {
+  var formatRegExp = /%[sdj%]/g;
+  util.format = function(f) {
+    if (typeof f !== 'string') {
+      var objects = [];
+      for (var i = 0; i < arguments.length; i++) {
+        objects.push(util.inspect(arguments[i]));
+      }
+      return objects.join(' ');
+    }
+
+    var i = 1;
+    var args = arguments;
+    var len = args.length;
+    var str = String(f).replace(formatRegExp, function(x) {
+      if (i >= len) return x;
+      switch (x) {
+        case '%s': return String(args[i++]);
+        case '%d': return Number(args[i++]);
+        case '%j': return JSON.stringify(args[i++]);
+        case '%%': return '%';
+        default:
+          return x;
+      }
+    });
+    for (var x = args[i]; i < len; x = args[++i]) {
+      if (x === null || typeof x !== 'object') {
+        str += ' ' + x;
+      } else {
+        str += ' ' + util.inspect(x);
+      }
+    }
+    return str;
+  }
+}
+
+var consoleFlush = function(data) {
+  if (!Buffer.isBuffer(data)) {
+    data= new Buffer(''+ data);
+  }
+  if (data.length) {
+    var written= 0;
+    do {
+      try {
+        var len = data.length- written;
+        written += fs.writeSync(process.stdout.fd, data, written, len, -1);
+      }
+      catch (e) {
+      }
+    } while(written < data.length);  
+  }
+};
+
 /**
  * Module dependencies.
  */
@@ -89,6 +149,7 @@ function Command(name) {
   this.options = [];
   this.args = [];
   this.name = name;
+  this.opts = {};
 }
 
 /**
@@ -199,7 +260,9 @@ Command.prototype.parseExpectedArgs = function(args){
 
 Command.prototype.action = function(fn){
   var self = this;
-  this.parent.on(this.name, function(args, unknown){    
+  this.parent.on(this.name, function(args, unknown){
+     
+    args = args.slice(); 
     // Parse any so-far unknown options
     unknown = unknown || [];
     var parsed = self.parseOptions(unknown);
@@ -233,7 +296,10 @@ Command.prototype.action = function(fn){
     // Always append ourselves to the end of the arguments,
     // to make sure we match the number of arguments the user
     // expects
-    if (self.args.length) {
+    // If we have expected arguments and we have at most the number of
+    // expected arguments, then add it to the end. If not, push us
+    // at the end (for the case of varargs).
+    if (self.args.length && (args.length <= self.args.length - 1)) {
       args[self.args.length] = self;
     } else {
       args.push(self);
@@ -325,15 +391,15 @@ Command.prototype.option = function(flags, description, fn, defaultValue, isRequ
     if ('boolean' == typeof self[name] || 'undefined' == typeof self[name]) {
       // if no value, bool true, and we have a default, then use it!
       if (null == val) {
-        self[name] = option.bool
+        self[name] = self.opts[name] = option.bool
           ? defaultValue || true
           : false;
       } else {
-        self[name] = val;
+        self[name] = self.opts[name] = val;
       }
     } else if (null !== val) {
       // reassign
-      self[name] = val;
+      self[name] = self.opts[name] = val;
     }
   });
 
@@ -409,8 +475,11 @@ Command.prototype.parseArgs = function(args, unknown, required){
   if (args.length) {
     name = args[0];
     if (this.listeners(name).length) {
-      this.emit(args.shift(), args, unknown);
+      var commandName = args.shift();
+      this.executedCommand = commandName;
+      this.emit(commandName, args, unknown);
     } else {
+      this.executedCommand = "*";
       this.emit('*', args);
     }
   } else {
@@ -1026,9 +1095,12 @@ function outputHelpIfNecessary(cmd, options) {
   options = options || [];
   for (var i = 0; i < options.length; i++) {
     if (options[i] == '--help' || options[i] == '-h') {
-      process.stdout.write(cmd.helpInformation());
-      cmd.emit('--help');
-      process.exit(0);
+      process.on('exit', function() {
+        consoleFlush(cmd.helpInformation());
+      });
+      process.exit();
     }
+    
+    return true;
   }
 }

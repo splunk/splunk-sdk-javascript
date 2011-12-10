@@ -13,9 +13,10 @@
 // under the License.
 
 (function() {
-    var path = require('path');
-    var fs = require('fs');
-    var OptionParser    = require('../contrib/parseopt').OptionParser;
+    var path         = require('path');
+    var fs           = require('fs');
+    var commander    = require('../contrib/commander');
+    var utils        = require('../lib/utils');
     
     var DEFAULTS_PATHS = [
         process.env.HOME || process.env.HOMEPATH,
@@ -49,110 +50,60 @@
         return defaults;
     };
     
-    exports.OptionParser = OptionParser;
-    exports.parse = function(argv, additionalOptions) {
-        additionalOptions = additionalOptions || [];
-        argv = (argv || []).slice(2);
-        var defaults = getDefaults();
-        for(var key in defaults) {
-            if (defaults.hasOwnProperty(key)) {
-                var value = defaults[key];
-                argv.unshift("--" + key + "=" + value);
+    module.exports.create = function() {
+        parser = new commander.Command();
+        parse = parser.parse;
+    
+        parser.password = undefined;
+    
+        parser
+            .option('-u, --username <username>', "Username to login with", undefined, true)
+            .option('--password <password>', "Username to login with", undefined, false)
+            .option('--scheme <scheme>', "Scheme to use", "https", false)
+            .option('--host <host>', "Hostname to use", "localhost", false)
+            .option('--port <port>', "Port to use", 8089, false)
+            .option('--namespace <namespace>', "Namespace to use (of the form app:owner)", undefined, false)
+            .option('--config <config>', "Load options from config file", undefined, false)
+        
+        parser.parse = function(argv) {
+            argv = (argv || []).slice(2);
+            var defaults = getDefaults();
+            for(var key in defaults) {
+                if (defaults.hasOwnProperty(key) && argv.indexOf("--" + key) < 0) {
+                    var value = defaults[key];
+                    argv.unshift(value);
+                    argv.unshift("--" + key.trim());
+                }
             }
+            
+            argv.unshift("");
+            argv.unshift("");
+            
+            var cmdline = parse.call(parser, argv);
+            
+            return cmdline;
+        };
+        
+        parser.add = function(commandName, description, args, flags, required_flags, onAction) {
+            var opts = {};
+            flags = flags || [];
+            
+            var command = parser.command(commandName + (args ? " " + args : "")).description(description || "");
+            
+            // For each of the flags, add an option to the parser
+            for(var i = 0; i < flags.length; i++) {
+                var required = required_flags.indexOf(flags[i]) >= 0;
+                var option = "<" + flags[i] + ">";
+                command.option("--" + flags[i] + " " + option, "", undefined, required);
+            }
+            
+            command.action(function() {
+                var args = utils.toArray(arguments);
+                args.unshift(commandName);
+                onAction.apply(null, args);
+            });
         }
         
-        var parser = new OptionParser({
-            strings: { help: 'N/A', metavars: { integer: 'INT' } },
-            options: [
-                {
-                    names: ['--help', '-h'],
-                    type: 'flag',
-                    help: 'Show this help message.',
-                    onOption: function (value) {
-                            if (value) {
-                                    parser.usage();
-                            }
-                            // returning true canceles any further option parsing
-                            // and parser.parse() returns null
-                            return value;
-                    }
-                },
-                {
-                    names: ['--username'],
-                    type: 'string',
-                    required: true,
-                    help: "Username to login with",
-                    metavar: "USERNAME",
-                },
-                
-                {
-                    names: ['--password'],
-                    type: 'string',
-                    required: true,
-                    help: "Password to login with",
-                    metavar: "PASSWORD",
-                },
-                
-                {
-                    names: ['--host'],
-                    type: 'string',
-                    required: false,
-                    help: "Host name",
-                    default: "localhost",
-                    metavar: "HOST",
-                },
-                
-                {
-                    names: ['--port'],
-                    type: 'string',
-                    required: false,
-                    help: "Port number",
-                    default: "8089",
-                    metavar: "PORT",
-                },
-                
-                {
-                    names: ['--scheme'],
-                    type: 'string',
-                    required: false,
-                    help: "Scheme",
-                    default: "https",
-                    metavar: "SCHEME",
-                },
-                
-                {
-                    names: ['--config'],
-                    type: 'string',
-                    help: "Load options from config file",
-                    metavar: "CONFIG",
-                },
-                
-                {
-                    names: ['--namespace'],
-                    type: 'string',
-                    help: "",
-                    metavar: "NAMESPACE",
-                },
-            ],
-
-        });
-        
-        for(var i = 0; i < additionalOptions.length; i++) {
-            var option = additionalOptions[i];
-            parser.add(option.names[0], option);
-        }
-        
-        // Try and parse the command line
-        var cmdline = null;
-        try {
-            cmdline = parser.parse(argv);
-        }
-        catch(e) {
-            // If we failed, then we print out the error message, and then the usage
-            console.log(e.message);
-            parser.usage();
-        }
-        
-        return cmdline;
-    };
+        return parser;
+    }
 })();

@@ -175,7 +175,8 @@ if (module === require.main) {
     var options     = require('../internal/cmdline');
     var test        = require('../contrib/nodeunit/test_reporter');
     
-    var cmdline = options.parse(process.argv);
+    var parser = options.create();
+    var cmdline = parser.parse(process.argv);
         
     // If there is no command line, we should return
     if (!cmdline) {
@@ -183,11 +184,11 @@ if (module === require.main) {
     }
     
     var svc = new Splunk.Client.Service({ 
-        scheme: cmdline.options.scheme,
-        host: cmdline.options.host,
-        port: cmdline.options.port,
-        username: cmdline.options.username,
-        password: cmdline.options.password,
+        scheme: cmdline.opts.scheme,
+        host: cmdline.opts.host,
+        port: cmdline.opts.port,
+        username: cmdline.opts.username,
+        password: cmdline.opts.password,
     });
     
     var suite = exports.setup(svc);

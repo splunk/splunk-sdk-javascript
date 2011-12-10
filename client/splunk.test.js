@@ -5189,7 +5189,7 @@ exports.setup = function(http) {
                     var args = res.json.form;
                     test.strictEqual(args.a, "1");
                     test.strictEqual(args.b, "2");
-                    test.strictEqual(args.c, "1");
+                    test.deepEqual(args.c, ["1", "2", "3"]);
                     test.strictEqual(args.d, "a/b");
                     test.strictEqual(res.json.url, "http://www.httpbin.org/post");
                     test.done();
@@ -5227,7 +5227,7 @@ exports.setup = function(http) {
                     var args = res.json.form;
                     test.strictEqual(args.a, "1");
                     test.strictEqual(args.b, "2");
-                    test.strictEqual(args.c, "1");
+                    test.deepEqual(args.c, ["1", "2", "3"]);
                     test.strictEqual(args.d, "a/b");
                     test.strictEqual(res.json.url, "http://www.httpbin.org/post");
                     test.done();
@@ -5495,7 +5495,8 @@ if (module === require.main) {
     var options     = require('../internal/cmdline');
     var test        = require('../contrib/nodeunit/test_reporter');
     
-    var cmdline = options.parse(process.argv);
+    var parser = options.create();
+    var cmdline = parser.parse(process.argv);
         
     // If there is no command line, we should return
     if (!cmdline) {
@@ -5503,11 +5504,11 @@ if (module === require.main) {
     }
     
     var svc = new Splunk.Client.Service({ 
-        scheme: cmdline.options.scheme,
-        host: cmdline.options.host,
-        port: cmdline.options.port,
-        username: cmdline.options.username,
-        password: cmdline.options.password,
+        scheme: cmdline.opts.scheme,
+        host: cmdline.opts.host,
+        port: cmdline.opts.port,
+        username: cmdline.opts.username,
+        password: cmdline.opts.password,
     });
     
     var suite = exports.setup(svc);
@@ -5537,9 +5538,10 @@ require.define("/internal/cmdline.js", function (require, module, exports, __dir
 // under the License.
 
 (function() {
-    var path = require('path');
-    var fs = require('fs');
-    var OptionParser    = require('../contrib/parseopt').OptionParser;
+    var path         = require('path');
+    var fs           = require('fs');
+    var commander    = require('../contrib/commander');
+    var utils        = require('../lib/utils');
     
     var DEFAULTS_PATHS = [
         process.env.HOME || process.env.HOMEPATH,
@@ -5573,112 +5575,62 @@ require.define("/internal/cmdline.js", function (require, module, exports, __dir
         return defaults;
     };
     
-    exports.OptionParser = OptionParser;
-    exports.parse = function(argv, additionalOptions) {
-        additionalOptions = additionalOptions || [];
-        argv = (argv || []).slice(2);
-        var defaults = getDefaults();
-        for(var key in defaults) {
-            if (defaults.hasOwnProperty(key)) {
-                var value = defaults[key];
-                argv.unshift("--" + key + "=" + value);
+    module.exports.create = function() {
+        parser = new commander.Command();
+        parse = parser.parse;
+    
+        parser.password = undefined;
+    
+        parser
+            .option('-u, --username <username>', "Username to login with", undefined, true)
+            .option('--password <password>', "Username to login with", undefined, false)
+            .option('--scheme <scheme>', "Scheme to use", "https", false)
+            .option('--host <host>', "Hostname to use", "localhost", false)
+            .option('--port <port>', "Port to use", 8089, false)
+            .option('--namespace <namespace>', "Namespace to use (of the form app:owner)", undefined, false)
+            .option('--config <config>', "Load options from config file", undefined, false)
+        
+        parser.parse = function(argv) {
+            argv = (argv || []).slice(2);
+            var defaults = getDefaults();
+            for(var key in defaults) {
+                if (defaults.hasOwnProperty(key) && argv.indexOf("--" + key) < 0) {
+                    var value = defaults[key];
+                    argv.unshift(value);
+                    argv.unshift("--" + key.trim());
+                }
             }
+            
+            argv.unshift("");
+            argv.unshift("");
+            
+            var cmdline = parse.call(parser, argv);
+            
+            return cmdline;
+        };
+        
+        parser.add = function(commandName, description, args, flags, required_flags, onAction) {
+            var opts = {};
+            flags = flags || [];
+            
+            var command = parser.command(commandName + (args ? " " + args : "")).description(description || "");
+            
+            // For each of the flags, add an option to the parser
+            for(var i = 0; i < flags.length; i++) {
+                var required = required_flags.indexOf(flags[i]) >= 0;
+                var option = "<" + flags[i] + ">";
+                command.option("--" + flags[i] + " " + option, "", undefined, required);
+            }
+            
+            command.action(function() {
+                var args = utils.toArray(arguments);
+                args.unshift(commandName);
+                onAction.apply(null, args);
+            });
         }
         
-        var parser = new OptionParser({
-            strings: { help: 'N/A', metavars: { integer: 'INT' } },
-            options: [
-                {
-                    names: ['--help', '-h'],
-                    type: 'flag',
-                    help: 'Show this help message.',
-                    onOption: function (value) {
-                            if (value) {
-                                    parser.usage();
-                            }
-                            // returning true canceles any further option parsing
-                            // and parser.parse() returns null
-                            return value;
-                    }
-                },
-                {
-                    names: ['--username'],
-                    type: 'string',
-                    required: true,
-                    help: "Username to login with",
-                    metavar: "USERNAME",
-                },
-                
-                {
-                    names: ['--password'],
-                    type: 'string',
-                    required: true,
-                    help: "Password to login with",
-                    metavar: "PASSWORD",
-                },
-                
-                {
-                    names: ['--host'],
-                    type: 'string',
-                    required: false,
-                    help: "Host name",
-                    default: "localhost",
-                    metavar: "HOST",
-                },
-                
-                {
-                    names: ['--port'],
-                    type: 'string',
-                    required: false,
-                    help: "Port number",
-                    default: "8089",
-                    metavar: "PORT",
-                },
-                
-                {
-                    names: ['--scheme'],
-                    type: 'string',
-                    required: false,
-                    help: "Scheme",
-                    default: "https",
-                    metavar: "SCHEME",
-                },
-                
-                {
-                    names: ['--config'],
-                    type: 'string',
-                    help: "Load options from config file",
-                    metavar: "CONFIG",
-                },
-                
-                {
-                    names: ['--namespace'],
-                    type: 'string',
-                    help: "",
-                    metavar: "NAMESPACE",
-                },
-            ],
-
-        });
-        
-        for(var i = 0; i < additionalOptions.length; i++) {
-            var option = additionalOptions[i];
-            parser.add(option.names[0], option);
-        }
-        
-        // Try and parse the command line
-        var cmdline = null;
-        try {
-            cmdline = parser.parse(argv);
-        }
-        catch(e) {
-            // If we failed, then we print out the error message, and then the usage
-            console.log(e.message);
-            parser.usage();
-        }
-        
-        return cmdline;
-    };
+        return parser;
+    }
 })();
 });
 
@@ -6838,7 +6790,8 @@ if (module === require.main) {
     var options     = require('../internal/cmdline');
     var test        = require('../contrib/nodeunit/test_reporter');
     
-    var cmdline = options.parse(process.argv);
+    var parser = options.create();
+    var cmdline = parser.parse(process.argv);
         
     // If there is no command line, we should return
     if (!cmdline) {
@@ -6846,11 +6799,11 @@ if (module === require.main) {
     }
     
     var svc = new Splunk.Client.Service({ 
-        scheme: cmdline.options.scheme,
-        host: cmdline.options.host,
-        port: cmdline.options.port,
-        username: cmdline.options.username,
-        password: cmdline.options.password,
+        scheme: cmdline.opts.scheme,
+        host: cmdline.opts.host,
+        port: cmdline.opts.port,
+        username: cmdline.opts.username,
+        password: cmdline.opts.password,
     });
     
     var suite = exports.setup(svc);
@@ -7101,7 +7054,8 @@ if (module === require.main) {
     var options     = require('../internal/cmdline');
     var test        = require('../contrib/nodeunit/test_reporter');
     
-    var cmdline = options.parse(process.argv);
+    var parser = options.create();
+    var cmdline = parser.parse(process.argv);
         
     // If there is no command line, we should return
     if (!cmdline) {
@@ -7109,11 +7063,11 @@ if (module === require.main) {
     }
     
     var svc = new Splunk.Client.Service({ 
-        scheme: cmdline.options.scheme,
-        host: cmdline.options.host,
-        port: cmdline.options.port,
-        username: cmdline.options.username,
-        password: cmdline.options.password,
+        scheme: cmdline.opts.scheme,
+        host: cmdline.opts.host,
+        port: cmdline.opts.port,
+        username: cmdline.opts.username,
+        password: cmdline.opts.password,
     });
     
     var suite = exports.setup(svc);
@@ -7145,7 +7099,6 @@ require.define("/tests/test_examples.js", function (require, module, exports, __
 
 exports.setup = function() {
     var Async       = require('../splunk').Splunk.Async;
-    var JobsMain    = require("../examples/node/jobs").main;
 
     var idCounter = 0;
     var getNextId = function() {
@@ -7161,7 +7114,7 @@ exports.setup = function() {
             setUp: function(done) {   
                 var context = this;
                 
-                this.main = JobsMain;      
+                this.main = require("../examples/node/jobs").main;
                 this.run = function(command, args, options, callback) {                
                     var combinedArgs = process.argv.slice();
                     if (command) {
@@ -7175,10 +7128,10 @@ exports.setup = function() {
                     }
                     
                     if (options) {
-                        combinedArgs.push("--");
                         for(var key in options) {
                             if (options.hasOwnProperty(key)) {
-                                combinedArgs.push("--" + key + "=" + options[key]);
+                                combinedArgs.push("--" + key)
+                                combinedArgs.push(options[key]);
                             }
                         }
                     }
@@ -7191,14 +7144,13 @@ exports.setup = function() {
             
             "help": function(test) {
                 this.run(null, null, null, function(err) {
-                    test.ok(err);
+                    test.ok(!!err);
                     test.done();
                 });
             },
             
             "List jobs": function(test) {
                 this.run("list", null, null, function(err) {
-                    console.log(err);
                     test.ok(!err);
                     test.done();
                 });
@@ -7345,7 +7297,6 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
     var utils           = Splunk.Utils;
     var Async           = Splunk.Async;
     var options         = require('../../internal/cmdline');
-    var OptionParser    = options.OptionParser;
 
     var FLAGS_CREATE = [
         "search", "earliest_time", "latest_time", "now", "time_format",
@@ -7363,55 +7314,6 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
     var FLAGS_RESULTS = [
         "offset", "count", "search", "field_list", "f", "json_mode"
     ];
-
-    // This function will create a set of options for command line parsing
-    // and then parse the arguments to the command we're running.
-    var _makeCommandLine = function(program, argv, flags, search_required) {
-        var opts = {};
-        flags = flags || [];
-
-        // Create the parser and add some help information
-        var parser = new OptionParser({
-            program: program, 
-            options: [
-                {
-                    names: ['--help', '-h'],
-                    type: 'flag',
-                    help: 'Show this help message.',
-                    onOption: function (value) {
-                            if (value) {
-                                    parser.usage();
-                            }
-                            // returning true canceles any further option parsing
-                            // and parser.parse() returns null
-                            return value;
-                    }
-                },
-            ],
-        });
-
-        // For each of the flags, add an option to the parser
-        for(var i = 0; i < flags.length; i++) {
-            parser.add("--" + flags[i], { 
-                required: search_required && flags[i] === "search",  // Make search required if necessary
-                metavar: flags[i].toUpperCase(), // Give it a proper label
-            });
-        }
-
-        // Try and parse, and if we fail, print out the error message
-        // and the usage information
-        var cmdline = null;
-        try {
-            cmdline = parser.parse(argv);
-            delete cmdline.options.help;
-        }
-        catch(e) {
-            console.log(e.message);
-            parser.usage();
-        }
-
-        return cmdline;
-    };
     
     var printRows = function(data) {
         var fields = data.fields;
@@ -7462,7 +7364,6 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
 
         _foreach: function(sids, fn, callback) {
             sids = sids || [];
-
             // We get a list of the current jobs, and for each of them,
             // we check whether it is the job we're looking for.
             // If it is, we wrap it up in a Splunk.Job object, and invoke
@@ -7481,7 +7382,7 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
             });
         },
 
-        run: function(command, args, callback) {
+        run: function(command, args, options, callback) {
             var commands = {
                 'cancel':       this.cancel,
                 'create':       this.create,
@@ -7523,11 +7424,11 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
             }
 
             // Invoke the command
-            handler(args, callback);
+            handler(args, options, callback);
         },
 
         // Cancel the specified search jobs
-        cancel: function(sids, callback) {
+        cancel: function(sids, options, callback) {
             _check_sids('cancel', sids);
 
             // For each of the supplied sids, cancel the job.
@@ -7545,21 +7446,17 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
         },
 
         // Retrieve events for the specified search jobs
-        events: function(argv, callback) {
-            // Create the command line for the event command and parse it
-            var cmdline = _makeCommandLine("events", argv, FLAGS_EVENTS, false);
-
+        events: function(sids, options, callback) {
             // For each of the passed in sids, get the relevant events
-            this._foreach(cmdline.arguments, function(job, idx, done) {
-                console.log("===== EVENTS @ " + job.sid + " ====="); 
-
-                job.events(cmdline.options, function(err, data) {
+            this._foreach(sids, function(job, idx, done) {
+                job.events(options, function(err, data) {
+                    console.log("===== EVENTS @ " + job.sid + " ====="); 
                     if (err) {
                         done(err);
                         return;
                     }
                     
-                    var json_mode = cmdline.options.json_mode || "rows";
+                    var json_mode = options.json_mode || "rows";
                     if (json_mode === "rows") {
                         printRows(data);
                     }
@@ -7577,19 +7474,11 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
         },
 
         // Create a search job
-        create: function(argv, callback) {
-            // Create the command line for the create command and parse it
-            var cmdline = _makeCommandLine("create", argv, FLAGS_CREATE, true);
-
-            // If nothing was passed in, terminate
-            if (!cmdline) {
-                return;
-            }
-
+        create: function(args, options, callback) {
             // Get the query and parameters, and remove the extraneous
             // search parameter
-            var query = cmdline.options.search;
-            var params = cmdline.options;
+            var query = options.search;
+            var params = options;
             delete params.search;
 
             // Create the job
@@ -7606,7 +7495,7 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
 
         // List all current search jobs if no jobs specified, otherwise
         // list the properties of the specified jobs.
-        list: function(sids, callback) {
+        list: function(sids, options, callback) {
             sids = sids || [];
 
             if (sids.length === 0) {
@@ -7654,21 +7543,17 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
         },
 
         // Retrieve events for the specified search jobs
-        preview: function(argv, callback) {
-            // Create the command line for the results_preview command and parse it
-            var cmdline = _makeCommandLine("results", argv, FLAGS_RESULTS, false);
-
+        preview: function(sids, options, callback) {
             // For each of the passed in sids, get the relevant results
-            this._foreach(cmdline.arguments, function(job, idx, done) {
-                console.log("===== PREVIEW @ " + job.sid + " ====="); 
-
-                job.events(cmdline.options, function(err, data) {
+            this._foreach(sids, function(job, idx, done) {
+                job.preview(options, function(err, data) {
+                    console.log("===== PREVIEW @ " + job.sid + " ====="); 
                     if (err) {
                         done(err);
                         return;
                     }
-                    
-                    var json_mode = cmdline.options.json_mode || "rows";
+
+                    var json_mode = options.json_mode || "rows";
                     if (json_mode === "rows") {
                         printRows(data);
                     }
@@ -7686,21 +7571,17 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
         },
 
         // Retrieve events for the specified search jobs
-        results: function(argv, callback) {
-            // Create the command line for the results command and parse it
-            var cmdline = _makeCommandLine("results", argv, FLAGS_RESULTS, false);
-
+        results: function(sids, options, callback) {
             // For each of the passed in sids, get the relevant results
-            this._foreach(cmdline.arguments, function(job, idx, done) {
-                console.log("===== RESULTS @ " + job.sid + " ====="); 
-
-                job.events(cmdline.options, function(err, data) {
+            this._foreach(sids, function(job, idx, done) {
+                job.results(options, function(err, data) {
+                    console.log("===== RESULTS @ " + job.sid + " ====="); 
                     if (err) {
                         done(err);
                         return;
                     }
                     
-                    var json_mode = cmdline.options.json_mode || "rows";
+                    var json_mode = options.json_mode || "rows";
                     if (json_mode === "rows") {
                         printRows(data);
                     }
@@ -7719,7 +7600,9 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
     });
 
 
-    exports.main = function(argv, callback) {        
+    exports.main = function(argv, callback) {     
+        var cmdline = options.create();
+        
         callback = callback || function(err) { 
             if (err) {
                 console.log(err);
@@ -7728,41 +7611,56 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
                 console.log("=============="); 
             }
         };
-        // Try and parse the command line
-        var cmdline = options.parse(argv);
         
-        // If there is no command line, we should return
-        if (!cmdline) {
-            callback("Error in parsing command line parameters");
+        var run = function(name) {  
+            var options = arguments[arguments.length - 1];
+                    
+            // Create our service context using the information from the command line
+            var svc = new Splunk.Client.Service({ 
+                scheme: cmdline.opts.scheme,
+                host: cmdline.opts.host,
+                port: cmdline.opts.port,
+                username: cmdline.opts.username,
+                password: cmdline.opts.password
+            });
+            
+            svc.login(function(err, success) {
+               if (err) {
+                   console.log("Error: " + err);
+                   callback(err);
+                   return;
+               }
+               
+               var program = new Program(svc);
+               
+               program.run(name, cmdline.args, options.opts, function(err) {
+                   if (err) {
+                       callback(err);
+                       return;
+                   }
+                   callback.apply(null, arguments);
+               });
+            });
+        };
+        
+        cmdline.name = "jobs";
+        cmdline.description("List, create and manage search jobs");
+        
+        cmdline.add("create",  "Create a new search job",                                "",             FLAGS_CREATE,   ["search"], run);
+        cmdline.add("results", "Fetch results for the specified search jobs",            "<sids...>",    FLAGS_RESULTS,  [],         run);
+        cmdline.add("preview", "Fetch preview results for the specified search jobs",    "<sids...>",    FLAGS_RESULTS,  [],         run);
+        cmdline.add("events",  "Fetch events for the specified search jobs",             "<sids...>",    FLAGS_EVENTS,   [],         run);
+        cmdline.add("cancel",  "Cancel the specify search jobs",                         "<sids...>",    [],             [],         run);
+        cmdline.add("list",    "List all search jobs or properties for those specified", "[sids...]",    [],             [],         run);
+        
+        cmdline.parse(argv);
+        
+        // Try and parse the command line
+        if (!cmdline.executedCommand) {
+            console.log(cmdline.helpInformation());
+            callback("You must specify a command to run.");
             return;
         }
-        
-        // Create our service context using the information from the command line
-        var svc = new Splunk.Client.Service({ 
-            scheme: cmdline.options.scheme,
-            host: cmdline.options.host,
-            port: cmdline.options.port,
-            username: cmdline.options.username,
-            password: cmdline.options.password,
-        });
-        
-        svc.login(function(err, success) {
-            if (err) {
-                console.log("Error: " + err);
-                callback(err);
-                return;
-            }
-            
-            var program = new Program(svc);
-            
-            program.run(cmdline.arguments[0], cmdline.arguments.slice(1), function(err) {
-                if (err) {
-                    callback(err);
-                    return;
-                }
-                callback.apply(null, arguments);
-            });
-        });
     };
     
     if (module === require.main) {

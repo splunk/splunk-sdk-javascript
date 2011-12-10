@@ -130,7 +130,7 @@ exports.setup = function(http) {
                     var args = res.json.form;
                     test.strictEqual(args.a, "1");
                     test.strictEqual(args.b, "2");
-                    test.strictEqual(args.c, "1");
+                    test.deepEqual(args.c, ["1", "2", "3"]);
                     test.strictEqual(args.d, "a/b");
                     test.strictEqual(res.json.url, "http://www.httpbin.org/post");
                     test.done();
@@ -168,7 +168,7 @@ exports.setup = function(http) {
                     var args = res.json.form;
                     test.strictEqual(args.a, "1");
                     test.strictEqual(args.b, "2");
-                    test.strictEqual(args.c, "1");
+                    test.deepEqual(args.c, ["1", "2", "3"]);
                     test.strictEqual(args.d, "a/b");
                     test.strictEqual(res.json.url, "http://www.httpbin.org/post");
                     test.done();

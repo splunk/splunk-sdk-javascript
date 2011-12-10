@@ -19,7 +19,6 @@
     var utils           = Splunk.Utils;
     var Async           = Splunk.Async;
     var options         = require('../../internal/cmdline');
-    var OptionParser    = options.OptionParser;
 
     var FLAGS_CREATE = [
         "search", "earliest_time", "latest_time", "now", "time_format",
@@ -37,55 +36,6 @@
     var FLAGS_RESULTS = [
         "offset", "count", "search", "field_list", "f", "json_mode"
     ];
-
-    // This function will create a set of options for command line parsing
-    // and then parse the arguments to the command we're running.
-    var _makeCommandLine = function(program, argv, flags, search_required) {
-        var opts = {};
-        flags = flags || [];
-
-        // Create the parser and add some help information
-        var parser = new OptionParser({
-            program: program, 
-            options: [
-                {
-                    names: ['--help', '-h'],
-                    type: 'flag',
-                    help: 'Show this help message.',
-                    onOption: function (value) {
-                            if (value) {
-                                    parser.usage();
-                            }
-                            // returning true canceles any further option parsing
-                            // and parser.parse() returns null
-                            return value;
-                    }
-                },
-            ],
-        });
-
-        // For each of the flags, add an option to the parser
-        for(var i = 0; i < flags.length; i++) {
-            parser.add("--" + flags[i], { 
-                required: search_required && flags[i] === "search",  // Make search required if necessary
-                metavar: flags[i].toUpperCase(), // Give it a proper label
-            });
-        }
-
-        // Try and parse, and if we fail, print out the error message
-        // and the usage information
-        var cmdline = null;
-        try {
-            cmdline = parser.parse(argv);
-            delete cmdline.options.help;
-        }
-        catch(e) {
-            console.log(e.message);
-            parser.usage();
-        }
-
-        return cmdline;
-    };
     
     var printRows = function(data) {
         var fields = data.fields;
@@ -136,7 +86,6 @@
 
         _foreach: function(sids, fn, callback) {
             sids = sids || [];
-
             // We get a list of the current jobs, and for each of them,
             // we check whether it is the job we're looking for.
             // If it is, we wrap it up in a Splunk.Job object, and invoke
@@ -155,7 +104,7 @@
             });
         },
 
-        run: function(command, args, callback) {
+        run: function(command, args, options, callback) {
             var commands = {
                 'cancel':       this.cancel,
                 'create':       this.create,
@@ -197,11 +146,11 @@
             }
 
             // Invoke the command
-            handler(args, callback);
+            handler(args, options, callback);
         },
 
         // Cancel the specified search jobs
-        cancel: function(sids, callback) {
+        cancel: function(sids, options, callback) {
             _check_sids('cancel', sids);
 
             // For each of the supplied sids, cancel the job.
@@ -219,21 +168,17 @@
         },
 
         // Retrieve events for the specified search jobs
-        events: function(argv, callback) {
-            // Create the command line for the event command and parse it
-            var cmdline = _makeCommandLine("events", argv, FLAGS_EVENTS, false);
-
+        events: function(sids, options, callback) {
             // For each of the passed in sids, get the relevant events
-            this._foreach(cmdline.arguments, function(job, idx, done) {
-                console.log("===== EVENTS @ " + job.sid + " ====="); 
-
-                job.events(cmdline.options, function(err, data) {
+            this._foreach(sids, function(job, idx, done) {
+                job.events(options, function(err, data) {
+                    console.log("===== EVENTS @ " + job.sid + " ====="); 
                     if (err) {
                         done(err);
                         return;
                     }
                     
-                    var json_mode = cmdline.options.json_mode || "rows";
+                    var json_mode = options.json_mode || "rows";
                     if (json_mode === "rows") {
                         printRows(data);
                     }
@@ -251,19 +196,11 @@
         },
 
         // Create a search job
-        create: function(argv, callback) {
-            // Create the command line for the create command and parse it
-            var cmdline = _makeCommandLine("create", argv, FLAGS_CREATE, true);
-
-            // If nothing was passed in, terminate
-            if (!cmdline) {
-                return;
-            }
-
+        create: function(args, options, callback) {
             // Get the query and parameters, and remove the extraneous
             // search parameter
-            var query = cmdline.options.search;
-            var params = cmdline.options;
+            var query = options.search;
+            var params = options;
             delete params.search;
 
             // Create the job
@@ -280,7 +217,7 @@
 
         // List all current search jobs if no jobs specified, otherwise
         // list the properties of the specified jobs.
-        list: function(sids, callback) {
+        list: function(sids, options, callback) {
             sids = sids || [];
 
             if (sids.length === 0) {
@@ -328,21 +265,17 @@
         },
 
         // Retrieve events for the specified search jobs
-        preview: function(argv, callback) {
-            // Create the command line for the results_preview command and parse it
-            var cmdline = _makeCommandLine("results", argv, FLAGS_RESULTS, false);
-
+        preview: function(sids, options, callback) {
             // For each of the passed in sids, get the relevant results
-            this._foreach(cmdline.arguments, function(job, idx, done) {
-                console.log("===== PREVIEW @ " + job.sid + " ====="); 
-
-                job.events(cmdline.options, function(err, data) {
+            this._foreach(sids, function(job, idx, done) {
+                job.preview(options, function(err, data) {
+                    console.log("===== PREVIEW @ " + job.sid + " ====="); 
                     if (err) {
                         done(err);
                         return;
                     }
-                    
-                    var json_mode = cmdline.options.json_mode || "rows";
+
+                    var json_mode = options.json_mode || "rows";
                     if (json_mode === "rows") {
                         printRows(data);
                     }
@@ -360,21 +293,17 @@
         },
 
         // Retrieve events for the specified search jobs
-        results: function(argv, callback) {
-            // Create the command line for the results command and parse it
-            var cmdline = _makeCommandLine("results", argv, FLAGS_RESULTS, false);
-
+        results: function(sids, options, callback) {
             // For each of the passed in sids, get the relevant results
-            this._foreach(cmdline.arguments, function(job, idx, done) {
-                console.log("===== RESULTS @ " + job.sid + " ====="); 
-
-                job.events(cmdline.options, function(err, data) {
+            this._foreach(sids, function(job, idx, done) {
+                job.results(options, function(err, data) {
+                    console.log("===== RESULTS @ " + job.sid + " ====="); 
                     if (err) {
                         done(err);
                         return;
                     }
                     
-                    var json_mode = cmdline.options.json_mode || "rows";
+                    var json_mode = options.json_mode || "rows";
                     if (json_mode === "rows") {
                         printRows(data);
                     }
@@ -393,7 +322,9 @@
     });
 
 
-    exports.main = function(argv, callback) {        
+    exports.main = function(argv, callback) {     
+        var cmdline = options.create();
+        
         callback = callback || function(err) { 
             if (err) {
                 console.log(err);
@@ -402,41 +333,56 @@
                 console.log("=============="); 
             }
         };
-        // Try and parse the command line
-        var cmdline = options.parse(argv);
         
-        // If there is no command line, we should return
-        if (!cmdline) {
-            callback("Error in parsing command line parameters");
+        var run = function(name) {  
+            var options = arguments[arguments.length - 1];
+                    
+            // Create our service context using the information from the command line
+            var svc = new Splunk.Client.Service({ 
+                scheme: cmdline.opts.scheme,
+                host: cmdline.opts.host,
+                port: cmdline.opts.port,
+                username: cmdline.opts.username,
+                password: cmdline.opts.password
+            });
+            
+            svc.login(function(err, success) {
+               if (err) {
+                   console.log("Error: " + err);
+                   callback(err);
+                   return;
+               }
+               
+               var program = new Program(svc);
+               
+               program.run(name, cmdline.args, options.opts, function(err) {
+                   if (err) {
+                       callback(err);
+                       return;
+                   }
+                   callback.apply(null, arguments);
+               });
+            });
+        };
+        
+        cmdline.name = "jobs";
+        cmdline.description("List, create and manage search jobs");
+        
+        cmdline.add("create",  "Create a new search job",                                "",             FLAGS_CREATE,   ["search"], run);
+        cmdline.add("results", "Fetch results for the specified search jobs",            "<sids...>",    FLAGS_RESULTS,  [],         run);
+        cmdline.add("preview", "Fetch preview results for the specified search jobs",    "<sids...>",    FLAGS_RESULTS,  [],         run);
+        cmdline.add("events",  "Fetch events for the specified search jobs",             "<sids...>",    FLAGS_EVENTS,   [],         run);
+        cmdline.add("cancel",  "Cancel the specify search jobs",                         "<sids...>",    [],             [],         run);
+        cmdline.add("list",    "List all search jobs or properties for those specified", "[sids...]",    [],             [],         run);
+        
+        cmdline.parse(argv);
+        
+        // Try and parse the command line
+        if (!cmdline.executedCommand) {
+            console.log(cmdline.helpInformation());
+            callback("You must specify a command to run.");
             return;
         }
-        
-        // Create our service context using the information from the command line
-        var svc = new Splunk.Client.Service({ 
-            scheme: cmdline.options.scheme,
-            host: cmdline.options.host,
-            port: cmdline.options.port,
-            username: cmdline.options.username,
-            password: cmdline.options.password,
-        });
-        
-        svc.login(function(err, success) {
-            if (err) {
-                console.log("Error: " + err);
-                callback(err);
-                return;
-            }
-            
-            var program = new Program(svc);
-            
-            program.run(cmdline.arguments[0], cmdline.arguments.slice(1), function(err) {
-                if (err) {
-                    callback(err);
-                    return;
-                }
-                callback.apply(null, arguments);
-            });
-        });
     };
     
     if (module === require.main) {
