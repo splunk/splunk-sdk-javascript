@@ -1706,8 +1706,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * The Applications collection allows you to list installed applications,
          * create new ones, etc.
-         * 
-         * This maps to the `apps/local` endpoint
          *
          * Example:
          *
@@ -1717,6 +1715,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * @return {Splunk.Client.Collection} The Applications collection
          *
+         * @endpoint apps/local
          * @module Splunk.Client.Service
          * @see Splunk.Client.Collection
          */
@@ -1729,8 +1728,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * The Configurations collection allows you to list configuration files,
          * create new files, get specific files, etc.
-         * 
-         * This maps to the `configs` endpoint
          *
          * Example:
          *
@@ -1744,6 +1741,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * @return {Splunk.Client.Configurations} The Configurations collection
          *
+         * @endpoint configs
          * @module Splunk.Client.Service
          * @see Splunk.Client.Configurations
          */
@@ -1756,8 +1754,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * The Indexes collection allows you to list indexes,
          * create new indexes, update indexes, etc.
-         * 
-         * This maps to the `data/indexes` endpoint
          *
          * Example:
          *
@@ -1770,6 +1766,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * @return {Splunk.Client.Indexes} The Indexes collection
          *
+         * @endpoint data/indexes
          * @module Splunk.Client.Service
          * @see Splunk.Client.Indexes
          */        
@@ -1782,8 +1779,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * The Properties collection allows you to list configuration files,
          * create new files, get specific files, etc.
-         * 
-         * This maps to the `properties` endpoint
          *
          * Example:
          *
@@ -1797,6 +1792,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * @return {Splunk.Client.Properties} The Properties collection
          *
+         * @endpoint properties
          * @module Splunk.Client.Service
          * @see Splunk.Client.Properties
          */
@@ -1809,8 +1805,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * The SavedSearches collection allows you to list saved searches,
          * create new ones, update a saved search, etc.
-         * 
-         * This maps to the `saved/searches` endpoint
          *
          * Example:
          *
@@ -1822,6 +1816,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * @return {Splunk.Client.SavedSearches} The SavedSearches collection
          *
+         * @endpoint saved/searches
          * @module Splunk.Client.Service
          * @see Splunk.Client.SavedSearches
          */
@@ -1834,8 +1829,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * The Jobs collection allows you to list jobs,
          * create new ones, get a specific job, etc.
-         * 
-         * This maps to the `search/jobs` endpoint
          *
          * Example:
          *
@@ -1849,6 +1842,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * @return {Splunk.Client.Jobs} The Jobs collection
          *
+         * @endpoint search/jobs
          * @module Splunk.Client.Service
          * @see Splunk.Client.Jobs
          */
@@ -1861,8 +1855,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * Create a search job using the specified query and parameters.
          *
-         * Maps to `search/jobs`
-         *
          * Example:
          *
          *      service.search("search ERROR", {id: "myjob_123"}, function(err, newJob) {
@@ -1873,6 +1865,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @param {Object} params A dictionary of properties for the job.
          * @param {Function} callback A callback with the created job: `(err, createdJob)`
          *
+         * @endpoint search/jobs
          * @module Splunk.Client.Service
          */
         search: function(query, params, callback) {
@@ -1885,8 +1878,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * Create a oneshot search job using the specified query and parameters.
          *
-         * Maps to `search/jobs` with exec_mode=oneshot
-         *
          * Example:
          *
          *      service.oneshotSearch("search ERROR", {id: "myjob_123"}, function(err, results) {
@@ -1897,6 +1888,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @param {Object} params A dictionary of properties for the job.
          * @param {Function} callback A callback with the results of the job: `(err, results)`
          *
+         * @endpoint search/jobs
          * @module Splunk.Client.Service
          */
         oneshotSearch: function(query, params, callback) {
@@ -2577,8 +2569,8 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
      * Represents the Splunk collection of saved searches.  You can create and
      * list saved searches using this container, or get a specific one.
      *
-     * Maps to the `saved/searches`.
      *
+     * @endpoint saved/searches
      * @moduleRoot Splunk.Client.SavedSearches
      * @extends Splunk.Client.Collection
      */
@@ -2607,8 +2599,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
      * Represents a specific Splunk saved search.  You can update, remove and
      * perform various operations on this saved search.
      *
-     * Maps to the `saved/searches/{name}`.
-     *
+     * @endpoint saved/searches/{name}
      * @moduleRoot Splunk.Client.SavedSearch
      * @extends Splunk.Client.Entity
      */
@@ -2636,8 +2627,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         /**
          * Acknowledge a saved search
          *
-         * Maps to `saved/searches/{name}/acknowledge`
-         *
          * Example:
          *
          *      var savedSearch = service.savedSearches().item("MySavedSearch");
@@ -2647,6 +2636,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * @param {Function} callback A callback when the saved search was acknowledged: `(err, savedSearch)`
          *
+         * @endpoint saved/searches/{name}/acknowledge
          * @module Splunk.Client.SavedSearch
          */
         acknowledge: function(callback) {
@@ -2662,8 +2652,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         /**
          * Dispatch a saved search
          *
-         * Maps to `saved/searches/{name}/dispatch`
-         *
          * Example:
          *
          *      var savedSearch = service.savedSearches().item("MySavedSearch");
@@ -2673,6 +2661,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * @param {Function} callback A callback when the saved search was dispatched: `(err, savedSearch)`
          *
+         * @endpoint saved/searches/{name}/dispatch
          * @module Splunk.Client.SavedSearch
          */
         dispatch: function(callback) {
@@ -2688,8 +2677,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         /**
          * Retrieve the history for a saved search.
          *
-         * Maps to `saved/searches/{name}/history`
-         *
          * Example:
          *
          *      var savedSearch = service.savedSearches().item("MySavedSearch");
@@ -2699,6 +2686,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * @param {Function} callback A callback when the history is retrieved: `(err, history, savedSearch)`
          *
+         * @endpoint saved/searches/{name}/history
          * @module Splunk.Client.SavedSearch
          */
         history: function(callback) {
@@ -2713,8 +2701,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         /**
          * Check the suppression state of a saved search.
          *
-         * Maps to `saved/searches/{name}/suppress`
-         *
          * Example:
          *
          *      var savedSearch = service.savedSearches().item("MySavedSearch");
@@ -2724,6 +2710,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * @param {Function} callback A callback when the suppression state is retrieved: `(err, suppressionState, savedSearch)`
          *
+         * @endpoint saved/searches/{name}/suppress
          * @module Splunk.Client.SavedSearch
          */
         suppressInfo: function(callback) {
@@ -2742,8 +2729,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
      * Represents the Splunk collection of applications.  You can create and
      * list applications using this container, or get a specific one.
      *
-     * Maps to the `apps/local`.
-     *
+     * @endpoint apps/local
      * @moduleRoot Splunk.Client.Applications
      * @extends Splunk.Client.Collection
      */  
@@ -2772,8 +2758,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
      * Represents a specific Splunk application.  You can update, remove and
      * perform various operations on this application.
      *
-     * Maps to the `apps/local/{name}`.
-     *
+     * @endpoint apps/local/{name}
      * @moduleRoot Splunk.Client.Application
      * @extends Splunk.Client.Entity
      */
@@ -2799,8 +2784,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         /**
          * Retrieve information about the setup for this app
          *
-         * Maps to `apps/local/{name}/setup`
-         *
          * Example:
          *
          *      var app = service.apps().item("app");
@@ -2810,6 +2793,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * @param {Function} callback A callback when the setup information is retrieved: `(err, info, app)`
          *
+         * @endpoint apps/local/{name}/setup
          * @module Splunk.Client.Application
          */
         setupInfo: function(callback) {
@@ -2829,8 +2813,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         /**
          * Retrieve any available update information for this app
          *
-         * Maps to `apps/local/{name}/update`
-         *
          * Example:
          *
          *      var app = service.apps().item("MyApp");
@@ -2840,6 +2822,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * @param {Function} callback A callback when the update information is retrieved: `(err, info, app)`
          *
+         * @endpoint apps/local/{name}/update
          * @module Splunk.Client.Application
          */
         updateInfo: function(callback) {
@@ -2863,8 +2846,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
      * Represents the Splunk collection of indexes.  You can create and
      * list indexes using this container, or get a specific one.
      *
-     * Maps to the `data/indexes`.
-     *
+     * @endpoint data/indexes
      * @moduleRoot Splunk.Client.Indexes
      * @extends Splunk.Client.Collection
      */  
@@ -2904,6 +2886,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @param {Object} params A dictionary of properties to create the entity with.
          * @param {Function} callback A callback with the created entity: `(err, createdIndex)`
          *
+         * @endpoint data/indexes
          * @module Splunk.Client.Indexes
          */
         create: function(name, params, callback) {
@@ -2920,8 +2903,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
      * Represents a specific Splunk index.  You can update and submit
      * events to this index.
      *
-     * Maps to the `data/indexes/{name}`.
-     *
+     * @endpoint data/indexes/name
      * @moduleRoot Splunk.Client.Index
      * @extends Splunk.Client.Entity
      */
@@ -2946,8 +2928,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         /**
          * Submit an event to this index
          *
-         * Maps to `receivers/simple?index={name}'
-         *
          * Example:
          *
          *      var index = service.indexes().item("_internal");
@@ -2959,6 +2939,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @param {Object} params A dictionary of parameters for indexing: host, host_regex, source, sourcetype
          * @param {Function} callback A callback when the event was submitted: `(err, result, index)`
          *
+         * @endpoint receivers/simple?index={name}
          * @module Splunk.Client.Index
          */
         submitEvent: function(event, params, callback) {
@@ -2996,8 +2977,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
      * Represents the Splunk collection of property files.  You can create and
      * list files using this container, or get a specific one.
      *
-     * Maps to the `properties`.
-     *
+     * @endpoint properties
      * @moduleRoot Splunk.Client.Properties
      * @extends Splunk.Client.Collection
      */  
@@ -3034,6 +3014,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @param {String} filename A name for this property file
          * @param {Function} callback A callback with the created property file: `(err, createdFile)`
          *
+         * @endpoint properties
          * @module Splunk.Client.Properties
          */
         create: function(filename, callback) {
@@ -3058,8 +3039,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
      * Represents the Splunk collection of stanzas for a specific property file.  
      * You can create and list stanzas using this container, or get a specific one.
      *
-     * Maps to the `properties/{file-name}`.
-     *
+     * @endpoint properties/{file_name}
      * @moduleRoot Splunk.Client.PropertyFile
      * @extends Splunk.Client.Collection
      */  
@@ -3097,6 +3077,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @param {String} stanzaName A name for this stanza
          * @param {Function} callback A callback with the created stanza: `(err, createdStanza)`
          *
+         * @endpoint property/{file_name}
          * @module Splunk.Client.PropertyFile
          */
         create: function(stanzaName, callback) {
@@ -3121,8 +3102,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
      * Represents a specific Splunk stanza.  You can update and remove this
      * stanza.
      *
-     * Maps to the `properties/{file}/{name}`
-     *
+     * @endpoint properties/{file_name}/{stanza_name}
      * @moduleRoot Splunk.Client.PropertyStanza
      * @extends Splunk.Client.Entity
      */
@@ -3149,8 +3129,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
      * Represents the Splunk collection of configuration files.  You can create and
      * list files using this container, or get a specific one.
      *
-     * Maps to the `properties`.
-     *
+     * @endpoint properties
      * @moduleRoot Splunk.Client.Configurations
      * @extends Splunk.Client.Collection
      */  
@@ -3187,6 +3166,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @param {String} filename A name for this property file
          * @param {Function} callback A callback with the created configuration file: `(err, createdFile)`
          *
+         * @endpoint properties
          * @module Splunk.Client.Configurations
          */
         create: function(filename, callback) {
@@ -3211,8 +3191,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
      * Represents the Splunk collection of stanzas for a specific property file.  
      * You can create and list stanzas using this container, or get a specific one.
      *
-     * Maps to the `configs/conf-{filename}`.
-     *
+     * @endpoint configs/conf-{file}
      * @moduleRoot Splunk.Client.ConfigurationFile
      * @extends Splunk.Client.Collection
      */  
@@ -3252,6 +3231,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @param {Object} values A dictionary of key-value pairs to put in this stanza
          * @param {Function} callback A callback with the created stanza: `(err, createdStanza)`
          *
+         * @endpoint configs/conf-{file}
          * @module Splunk.Client.ConfigurationFile
          */
         create: function(stanzaName, values, callback) {
@@ -3273,8 +3253,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
      * Represents a specific Splunk stanza.  You can update and remove this
      * stanza.
      *
-     * Maps to the `configs/conf-{file}/{name}`
-     *
+     * @endpoint configs/conf-{file}/{name}`
      * @moduleRoot Splunk.Client.ConfigurationStanza
      * @extends Splunk.Client.Entity
      */
@@ -3301,8 +3280,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
      * Represents the Splunk collection of jobs.  You can create and
      * list search jobs using this container, or get a specific one.
      *
-     * Maps to the `search/jobs`.
-     *
+     * @endpoint search/jobs
      * @moduleRoot Splunk.Client.Jobs
      * @extends Splunk.Client.Collection
      */  
@@ -3335,13 +3313,13 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         /**
          * Create an asyncronous search job
          *
-         * @see Splunk.Client.Jobs.search
-         *
          * @param {String} query The search query
          * @param {Object} params A dictionary of properties for the job.
          * @param {Function} callback A callback with the created job: `(err, createdJob)`
          *
+         * @endpoint search/jobs
          * @module Splunk.Client.Jobs
+         * @see Splunk.Client.Jobs.search
          */
         create: function(query, params, callback) {
             callback = callback || function() {};
@@ -3377,8 +3355,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * This method will throw an error if exec_mode=oneshot is passed in the params
          * variable.
          *
-         * Maps to `search/jobs`
-         *
          * Example:
          *
          *      var jobs = service.jobs();
@@ -3390,6 +3366,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @param {Object} params A dictionary of properties for the job.
          * @param {Function} callback A callback with the created job: `(err, createdJob)`
          *
+         * @endpoint search/jobs
          * @module Splunk.Client.Jobs
          */
         search: function(query, params, callback) {
@@ -3400,8 +3377,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * Create a oneshot search job
          *
          * Create a oneshot search job using the specified query and parameters.
-         *
-         * Maps to `search/jobs` with exec_mode=oneshot
          *
          * Example:
          *
@@ -3414,6 +3389,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @param {Object} params A dictionary of properties for the job.
          * @param {Function} callback A callback with the results of the job: `(err, results)`
          *
+         * @endpoint search/jobs
          * @module Splunk.Client.Jobs
          */
         oneshotSearch: function(query, params, callback) {
@@ -3445,8 +3421,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
      * on this job, such as reading its status, cancelling it, getting results
      * and so on.
      *
-     * Maps to the `search/jobs/{sid}`
-     *
+     * @endpoint search/jobs/{search_id}
      * @moduleRoot Splunk.Client.Job
      * @extends Splunk.Client.Entity
      */
@@ -3487,8 +3462,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         /**
          * Cancel a search job
          *
-         * Maps to `search/jobs/{sid}/control`
-         *
          * Example:
          *
          *      var job = service.jobs().item("mysid");
@@ -3498,6 +3471,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * @param {Function} callback A callback when the search is done: `(err)`
          *
+         * @endpoint search/jobs/{search_id}/control
          * @module Splunk.Client.Job
          */
         cancel: function(callback) {
@@ -3508,8 +3482,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         /**
          * Disable preview for a job
          *
-         * Maps to `search/jobs/{sid}/control`
-         *
          * Example:
          *
          *      var job = service.jobs().item("mysid");
@@ -3519,6 +3491,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * @param {Function} callback A callback with the this job: `(err, job)`
          *
+         * @endpoint search/jobs/{search_id}/control
          * @module Splunk.Client.Job
          */
         disablePreview: function(callback) {
@@ -3534,8 +3507,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         /**
          * Enable preview for a job
          *
-         * Maps to `search/jobs/{sid}/control`
-         *
          * Example:
          *
          *      var job = service.jobs().item("mysid");
@@ -3545,6 +3516,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * @param {Function} callback A callback with the this job: `(err, job)`
          *
+         * @endpoint search/jobs/{search_id}/control
          * @module Splunk.Client.Job
          */
         enablePreview: function(callback) {
@@ -3562,8 +3534,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * Get the events for a job with given parameters.
          *
-         * Maps to `search/jobs/{sid}/events`
-         *
          * Example:
          *
          *      var job = service.jobs().item("mysid");
@@ -3574,6 +3544,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @param {Object} params Parameters for event fetching
          * @param {Function} callback A callback with when the events are fetched: `(err, events, job)`
          *
+         * @endpoint search/jobs/{search_id}/events
          * @module Splunk.Client.Job
          */
         events: function(params, callback) {
@@ -3593,8 +3564,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         /**
          * Finalize a search job
          *
-         * Maps to `search/jobs/{sid}/control`
-         *
          * Example:
          *
          *      var job = service.jobs().item("mysid");
@@ -3604,6 +3573,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * @param {Function} callback A callback with the this job: `(err, job)`
          *
+         * @endpoint search/jobs/{search_id}/control
          * @module Splunk.Client.Job
          */
         finalize: function(callback) {
@@ -3619,8 +3589,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         /**
          * Pause a search job
          *
-         * Maps to `search/jobs/{sid}/control`
-         *
          * Example:
          *
          *      var job = service.jobs().item("mysid");
@@ -3630,6 +3598,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * @param {Function} callback A callback with the this job: `(err, job)`
          *
+         * @endpoint search/jobs/{search_id}/control
          * @module Splunk.Client.Job
          */
         pause: function(callback) {
@@ -3647,8 +3616,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * Get the preview results for a job with given parameters.
          *
-         * Maps to `search/jobs/{sid}/results_preview`
-         *
          * Example:
          *
          *      var job = service.jobs().item("mysid");
@@ -3659,6 +3626,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @param {Object} params Parameters for results preview fetching
          * @param {Function} callback A callback with when the preview results are fetched: `(err, results, job)`
          *
+         * @endpoint search/jobs/{search_id}/results_preview
          * @module Splunk.Client.Job
          */
         preview: function(params, callback) {
@@ -3680,8 +3648,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * Get the results for a job with given parameters.
          *
-         * Maps to `search/jobs/{sid}/results`
-         *
          * Example:
          *
          *      var job = service.jobs().item("mysid");
@@ -3692,6 +3658,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @param {Object} params Parameters for results fetching
          * @param {Function} callback A callback with when the results are fetched: `(err, results, job)`
          *
+         * @endpoint search/jobs/{search_id}/results
          * @module Splunk.Client.Job
          */
         results: function(params, callback) {
@@ -3711,8 +3678,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         /**
          * Get the search log for this job.
          *
-         * Maps to `search/jobs/{sid}/search.log`
-         *
          * Example:
          *
          *      var job = service.jobs().item("mysid");
@@ -3722,6 +3687,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * @param {Function} callback A callback with the searchlog and job: `(err, searchlog, job)`
          *
+         * @endpoint search/jobs/{search_id}/search.log
          * @module Splunk.Client.Job
          */
         searchlog: function(callback) {
@@ -3741,8 +3707,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         /**
          * Set the job priority
          *
-         * Maps to `search/jobs/{sid}/control`
-         *
          * Example:
          *
          *      var job = service.jobs().item("mysid");
@@ -3753,6 +3717,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @param {Number} value Value for the new priority
          * @param {Function} callback A callback with the this job: `(err, job)`
          *
+         * @endpoint search/jobs/{search_id}/control
          * @module Splunk.Client.Job
          */
         setPriority: function(value, callback) {
@@ -3768,8 +3733,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         /**
          * Set the job TTL
          *
-         * Maps to `search/jobs/{sid}/control`
-         *
          * Example:
          *
          *      var job = service.jobs().item("mysid");
@@ -3780,6 +3743,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @param {Number} value Value for the new priority
          * @param {Function} callback A callback with the this job: `(err, job)`
          *
+         * @endpoint search/jobs/{search_id}/control
          * @module Splunk.Client.Job
          */
         setTTL: function(value, callback) {
@@ -3797,8 +3761,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * Get the job summary for this job with the given parameters
          *
-         * Maps to `search/jobs/{sid}/summary`
-         *
          * Example:
          *
          *      var job = service.jobs().item("mysid");
@@ -3809,6 +3771,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @param {Object} params Parameters for summary fetching
          * @param {Function} callback A callback with with the summary and this job: `(err, summary, job)`
          *
+         * @endpoint search/jobs/{search_id}/summmary
          * @module Splunk.Client.Job
          */
         summary: function(params, callback) {
@@ -3828,8 +3791,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         /**
          * Get the timeline for this job
          *
-         * Maps to `search/jobs/{sid}/timeline`
-         *
          * Example:
          *
          *      var job = service.jobs().item("mysid");
@@ -3840,6 +3801,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @param {Object} params Parameters for timeline fetching
          * @param {Function} callback A callback with with the timeline and this job: `(err, timeline, job)`
          *
+         * @endpoint search/jobs/{search_id}/timeline
          * @module Splunk.Client.Job
          */
         timeline: function(params, callback) {
@@ -3859,8 +3821,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         /**
          * Touch a job
          *
-         * Maps to `search/jobs/{sid}/control`
-         *
          * Example:
          *
          *      var job = service.jobs().item("mysid");
@@ -3870,6 +3830,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * @param {Function} callback A callback with this job: `(err, job)`
          *
+         * @endpoint search/jobs/{search_id}/control
          * @module Splunk.Client.Job
          */
         touch: function(callback) {
@@ -3885,8 +3846,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         /**
          * Unpause a search job
          *
-         * Maps to `search/jobs/{sid}/control`
-         *
          * Example:
          *
          *      var job = service.jobs().item("mysid");
@@ -3896,6 +3855,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * @param {Function} callback A callback with this job: `(err, job)`
          *
+         * @endpoint search/jobs/{search_id}/control
          * @module Splunk.Client.Job
          */
         unpause: function(callback) {
