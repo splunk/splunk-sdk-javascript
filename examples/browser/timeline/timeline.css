@@ -1,0 +1,29 @@
+.Timeline .label {
+    font-family: Arial,Helvetica,sans-serif;
+    font-size: 12px;
+    cursor: default;
+}
+.Timeline .TimeAxisLabels .label {
+    margin-left: 5px;
+    margin-right: 5px;
+    margin-top: 4px;
+    margin-bottom: 4px;
+}
+.Timeline .NumericAxisLabels .label {
+    margin-left: 5px;
+    margin-right: 5px;
+    margin-top: 3px;
+    margin-bottom: 3px;
+}
+.Timeline .ClickDragRangeMarker .label {
+    color: #000000;
+    margin-left: 7px;
+    margin-right: 7px;
+}
+.Timeline .Tooltip .label {
+    color: #FFFFFF;
+    margin-left: 7px;
+    margin-right: 7px;
+    margin-top: 4px;
+    margin-bottom: 4px;
+}
