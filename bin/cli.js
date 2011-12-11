@@ -92,9 +92,9 @@
         server.listen(port);
         console.log("Running server on port: " + (port) + " -- Hit CTRL+C to exit"); 
     };
-    
+
     var makeOption = function(name, value) {
-        return "--" + name + "=" + value;  
+        return ["--" + name, value];
     };
     
     var makeURL = function(file, port) {
@@ -564,14 +564,13 @@
             files.push(path.join(TEST_DIRECTORY, ALL_TESTS));
         }
         
-        var cmdlineArgs = [
-            (cmdline.opts.username   ?                   makeOption("username",     cmdline.opts.username)      : ""),
-            (cmdline.opts.scheme     ?                   makeOption("scheme",       cmdline.opts.scheme)        : ""),
-            (cmdline.opts.host       ?                   makeOption("host",         cmdline.opts.host)          : ""),
-            (cmdline.opts.port       ?                   makeOption("port",         cmdline.opts.port)          : ""),
-            (cmdline.opts.app        ?                   makeOption("app",          cmdline.opts.app)           : ""),
-            (cmdline.opts.password   ?                   makeOption("password",     cmdline.opts.password)      : "")
-        ];
+        var cmdlineArgs = []
+            .concat(cmdline.opts.username  ?   makeOption("username",  cmdline.opts.username)  : "")
+            .concat(cmdline.opts.scheme    ?   makeOption("scheme",    cmdline.opts.scheme)    : "")
+            .concat(cmdline.opts.host      ?   makeOption("host",      cmdline.opts.host)      : "")
+            .concat(cmdline.opts.port      ?   makeOption("port",      cmdline.opts.port)      : "")
+            .concat(cmdline.opts.app       ?   makeOption("app",       cmdline.opts.app)       : "")
+            .concat(cmdline.opts.password  ?   makeOption("password",  cmdline.opts.password)  : "");
         
         var testFunctions = files.map(function(file) {
             return function(done) {
