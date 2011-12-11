@@ -122,8 +122,6 @@
           var username = $("#server-username").val() || "admin";
           var password = $("#server-password").val() || "changeme";
           
-          var httpLocation = scheme + "://" + host + ":" + port;
-          
           var options = {
             scheme: scheme,
             host: host,
@@ -132,7 +130,8 @@
             password: password
           };
           
-          var svc = new Splunk.Client.Service(options);
+          var http = new Splunk.ProxyHttp("/proxy");
+          var svc = new Splunk.Client.Service(http, options);
           svc.login(function(err, success) {
             if (err || !success) {
               if (err) throw err;

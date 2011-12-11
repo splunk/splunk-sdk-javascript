@@ -137,7 +137,9 @@ exports.setup = function(svc) {
                 test.strictEqual(res.odata.count, res.odata.results.length);
                 test.ok(res.odata.results[0].sid);
                 
-                test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
+                if (res.response.request) {
+                    test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
+                }
                 
                 test.done();
             });
@@ -163,7 +165,11 @@ exports.setup = function(svc) {
         "Callback#request error": function(test) { 
             this.service.request("search/jobs/1234_nosuchjob", "GET", {"X-TestHeader": 1}, "", function(res) {
                 test.ok(!!res);
-                test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
+                
+                if (res.response.request) {
+                    test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
+                }
+                
                 test.strictEqual(res.status, 404);
                 test.done();
             });

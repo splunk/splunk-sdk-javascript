@@ -1515,7 +1515,7 @@ require.define("/lib/odata.js", function (require, module, exports, __dirname, _
                         break;
                     default:
                         // TODO
-                        logger.info('[SPLUNKD] ' + list[i].type + ' - ' + msg);
+                        logger.info(msg + (list[i].code ? " -- " + list[i].code : ""));
                         break;
                 }
             }
@@ -4676,6 +4676,11 @@ require.define("/lib/platform/client/proxy_http.js", function (require, module, 
         },
 
         makeRequest: function(url, message, callback) {
+            // Add our original destination to to headers,
+            // as some proxy implementations would rather
+            // use this.
+            message.headers["X-ProxyDestination"] = url;
+            
             // Need to remove the hostname from the URL,
             // and we do this by creating an anchor tag,
             // and then retrieving the hostname from it.

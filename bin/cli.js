@@ -25,6 +25,7 @@
     var browserify     = require('browserify');
     var http           = require('http');
     var url            = require('url');
+    var request        = require('request');
     
     /**
      * Constants
@@ -72,12 +73,47 @@
      * Helpers
      */     
     
+    var serverProxy = function(req, res) {        
+        var body = "";
+        req.on('data', function(data) {
+            body += data.toString("utf-8");
+        });
+        
+        req.on('end', function() {
+            var destination = req.headers["X-ProxyDestination".toLowerCase()];
+        
+            var options = {
+                url: destination,
+                method: req.method,
+                headers: {
+                    "Content-Length": req.headers["content-length"],
+                    "Content-Type": req.headers["content-type"],
+                    "Authorization": req.headers["authorization"],
+                },
+                body: body,
+                jar: false
+            };
+        
+            request(options, function(error, response, data) {
+                res.writeHead(response.statusCode, response.headers);
+                res.write(data);
+                res.end();
+            });
+        
+        });
+    };
+    
     var createServer = function(port) {
         // passing where is going to be the document root of resources.
         var handler = staticResource.createHandler(fs.realpathSync(path.resolve(__dirname, "..")));
 
         var server = http.createServer(function(request, response) {
             var path = url.parse(request.url).pathname;
+            
+            if (utils.startsWith(path, "/proxy")) {
+                serverProxy(request, response);
+                return;
+            }
             
             // handle method returns true if a resource specified with the path
             // has been handled by handler and returns false otherwise.

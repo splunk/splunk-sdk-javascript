@@ -9,11 +9,10 @@
       $(function() {
         var timelineToken = Splunk.UI.loadTimeline("../../../client/splunk.ui.timeline.js");
         
-        var XdmHttp = Splunk.XdmHttp;
         var Async = Splunk.Async;
 
-
-        svc = new Splunk.Client.Service({ 
+        var http = new Splunk.ProxyHttp("/proxy");
+        svc = new Splunk.Client.Service(http, { 
             scheme: "https",
             host: "localhost",
             port: "8089",
