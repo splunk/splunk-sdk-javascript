@@ -16,6 +16,7 @@
 exports.setup = function(http) {
     var Splunk      = require('../splunk').Splunk;
 
+    Splunk.Logger.setLevel("ALL");
     return {
         "HTTP GET Tests": {
             setUp: function(done) {

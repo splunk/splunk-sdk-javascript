@@ -16,7 +16,15 @@
 (function() {
     var root = exports || this;
 
+    // Declare a process environment so that we can set
+    // some globals here and have interop with node
+    if (typeof(process) === 'undefined') {
+        process = {};
+    }
+    process.env = process.env || {};
+
     root.Splunk = {
+        Logger          : require('./lib/log').Logger,
         Binding         : require('./lib/binding'),
         Client          : require('./lib/client'),
         Http            : require('./lib/http').Http,

@@ -16,6 +16,7 @@
 exports.setup = function() {
     var Splunk      = require('../splunk').Splunk;
 
+    Splunk.Logger.setLevel("ALL");
     return {        
         "Callback#callback to object success": function(test) {
             var successfulFunction = function(callback) {

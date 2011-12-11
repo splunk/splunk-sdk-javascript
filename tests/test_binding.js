@@ -16,6 +16,7 @@
 exports.setup = function(svc) {
     var Splunk      = require('../splunk').Splunk;
 
+    Splunk.Logger.setLevel("ALL");
     var isBrowser = typeof "window" !== "undefined";
     
     return {

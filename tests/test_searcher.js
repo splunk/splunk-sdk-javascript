@@ -19,6 +19,7 @@ exports.setup = function(svc) {
     var Async       = Splunk.Async;
     var Searcher    = Splunk.Searcher;
     
+    Splunk.Logger.setLevel("ALL");
     var idCounter = 0;
     var getNextId = function() {
         return "id" + (idCounter++) + "_" + ((new Date()).valueOf());

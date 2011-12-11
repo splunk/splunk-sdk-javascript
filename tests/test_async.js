@@ -17,6 +17,7 @@ exports.setup = function() {
     var Splunk      = require('../splunk').Splunk;
     var Async       = Splunk.Async;
 
+    Splunk.Logger.setLevel("ALL");
     var isBrowser = typeof "window" !== "undefined";
 
     return {        

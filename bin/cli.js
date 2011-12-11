@@ -454,6 +454,7 @@
         callback = (callback && utils.isFunction(callback)) ? callback : (function() {});
         
         var files = [
+            "lib/log.js",
             "lib/http.js",
             "lib/utils.js",
             "lib/async.js",

@@ -346,7 +346,15 @@ require.define("/splunk.js", function (require, module, exports, __dirname, __fi
 (function() {
     var root = exports || this;
 
+    // Declare a process environment so that we can set
+    // some globals here and have interop with node
+    if (typeof(process) === 'undefined') {
+        process = {};
+    }
+    process.env = process.env || {};
+
     root.Splunk = {
+        Logger          : require('./lib/log').Logger,
         Binding         : require('./lib/binding'),
         Client          : require('./lib/client'),
         Http            : require('./lib/http').Http,
@@ -361,6 +369,326 @@ require.define("/splunk.js", function (require, module, exports, __dirname, __fi
     if (typeof(window) === 'undefined') {
         root.Splunk.NodeHttp = require('./lib/platform/node/node_http').NodeHttp;
     }
+})();
+});
+
+require.define("/lib/log.js", function (require, module, exports, __dirname, __filename) {
+    /*!*/
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+(function() {
+    "use strict";
+    var utils = require('./utils');
+    
+    var root = exports || this;
+
+    var levels = {
+        "ALL": 4,
+        "INFO": 3,
+        "WARN": 2,
+        "ERROR": 1,
+        "NONE": 0
+    };
+    
+    var exists = function(key) {
+        return typeof(process.env[key]) !== "undefined";
+    }
+    
+    if (exists("LOG_LEVEL")) {
+        // If it isn't set, then we default to only errors
+        process.env.LOG_LEVEL = levels["ERROR"];
+    }
+    else if (utils.isString(process.env.LOG_LEVEL)) {
+        // If it is a string, try and convert it, but default
+        // to error output if we can't convert it.
+        if (levels.hasOwnProperty(process.env.LOG_LEVEL)) {
+            process.env.LOG_LEVEL = levels[process.env.LOG_LEVEL];
+        }
+        else {
+            process.env.LOG_LEVEL = levels["ERROR"];
+        }
+    }
+    else if (!utils.isNumber(process.env.LOG_LEVEL)) {
+        // If it is anything other than a string or number,
+        // set it to only error output.
+        process.env.LOG_LEVEL = levels["ERROR"];
+    }
+
+    // Set the actual output functions
+    var _log, _warn, _error, _info;
+    if (console) {
+        _log   = function() { console.log.apply(console, arguments);   } || function() {};
+        _error = function() { console.error.apply(console, arguments); } || function() {};
+        _warn  = function() { console.warn.apply(console, arguments);  } || function() {};
+        _info  = function() { console.info.apply(console, arguments);  } || function() {};
+    }
+
+    /**
+     * Splunk.Logger
+     * 
+     * A controllable logging module.
+     *
+     * @moduleRoot Splunk.Logger
+     */
+    exports.Logger = {
+        log: function() {
+            if (process.env.LOG_LEVEL >= levels.ALL) {
+                _log.apply(null, arguments);
+            }
+        },
+        
+        error: function() {
+            if (process.env.LOG_LEVEL >= levels.ERROR) {
+                _error.apply(null, arguments);
+            }
+        },
+        
+        warn: function() {
+            if (process.env.LOG_LEVEL >= levels.WARN) {
+                _warn.apply(null, arguments);
+            }
+        },
+        
+        info: function() {
+            if (process.env.LOG_LEVEL >= levels.INFO) {
+                _info.apply(null, arguments);
+            }
+        },
+        
+        setLevel: function(level) {    
+            if (utils.isString(level)) {
+                if (levels.hasOwnProperty(level)) {
+                    process.env.LOG_LEVEL = levels[level];
+                }
+                else {
+                    process.env.LOG_LEVEL = levels["ERROR"];
+                }
+            }
+            else if (utils.isNumber(level)) {
+                process.env.LOG_LEVEL = level;
+            }
+            else {
+                process.env.LOG_LEVEL = levels["ERROR"];
+            }
+        }
+    };
+})();
+});
+
+require.define("/lib/utils.js", function (require, module, exports, __dirname, __filename) {
+    /*!*/
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+(function() {
+    "use strict";
+    
+    var root = exports || this;
+
+    /**
+     * Splunk.Utils
+     * 
+     * Various utility functions for the Splunk SDK
+     *
+     * @moduleRoot Splunk.Utils
+     */
+
+    /**
+     * Bind a function to a specific object
+     *
+     * Example:
+     *      
+     *      var obj = {a: 1, b: function() { console.log(a); }};
+     *      var bound = Splunk.Utils.bind(obj, obj.b);
+     *      bound(); // should print 1
+     *
+     * @param {Object} me Object to bind to
+     * @param {Function} fn Function to bind
+     * @return {Function} The bound function
+     *
+     * @globals Splunk.Utils
+     */
+    root.bind = function(me, fn) { 
+        return function() { 
+            return fn.apply(me, arguments); 
+        }; 
+    };
+
+    /**
+     * Whether an array contains a specific object
+     *
+     * Example:
+     *      
+     *      var a = {a: 3};
+     *      var b = [{}, {c: 1}, {b: 1}, a];
+     *      var contained = Splunk.Utils.contains(b, a); // should be tree
+     *
+     * @param {Array} arr Array to search
+     * @param {Anything} obj Whether the array contains the element
+     * @return {Boolean} Whether the array contains the element
+     *
+     * @globals Splunk.Utils
+     */
+    root.contains = function(arr, obj) {
+        arr = arr || [];
+        return (arr.indexOf(obj) >= 0);
+    };
+
+    /**
+     * Whether a string starts with a specific prefix.
+     *
+     * Example:
+     *      
+     *      var starts = Splunk.Utils.startsWith("splunk-foo", "splunk-");
+     *
+     * @param {String} original String to search
+     * @param {String} prefix Prefix to search with
+     * @return {Boolean} Whether the string starts with the prefix
+     *
+     * @globals Splunk.Utils
+     */
+    root.startsWith = function(original, prefix) {
+        var matches = original.match("^" + prefix);
+        return matches && matches.length > 0 && matches[0] === prefix;  
+    };
+
+    /**
+     * Whether a string ends with a specific suffix.
+     *
+     * Example:
+     *      
+     *      var ends = Splunk.Utils.endsWith("foo-splunk", "-splunk");
+     *
+     * @param {String} original String to search
+     * @param {String} suffix Suffix to search with
+     * @return {Boolean} Whether the string ends with the suffix
+     *
+     * @globals Splunk.Utils
+     */
+    root.endsWith = function(original, suffix) {
+        var matches = original.match(suffix + "$");
+        return matches && matches.length > 0 && matches[0] === suffix;  
+    };
+    
+    var toString = Object.prototype.toString;
+    
+    /**
+     * Convert an iterable to an array.
+     *
+     * Example:
+     *      
+     *      function() { 
+     *          console.log(arguments instanceof Array); // false
+     *          var arr = console.log(Splunk.Utils.toArray(arguments) instanceof Array); // true
+     *      }
+     *
+     * @param {Arguments} iterable Iterable to conver to an array
+     * @return {Array} The converted array
+     *
+     * @globals Splunk.Utils
+     */
+    root.toArray = function(iterable) {
+        return Array.prototype.slice.call(iterable);
+    };
+    
+    /**
+     * Whether or not the argument is an array
+     *
+     * Example:
+     *      
+     *      function() { 
+     *          console.log(Splunk.Utils.isArray(arguments)); // false
+     *          console.log(Splunk.Utils.isArray([1,2,3])); // true
+     *      }
+     *
+     * @param {Anything} obj Parameter to check whether it is an array
+     * @return {Boolean} Whether or not the passed in parameter was an array
+     *
+     * @globals Splunk.Utils
+     */
+    root.isArray = Array.isArray || function(obj) {
+        return toString.call(obj) === '[object Array]';
+    };
+
+    /**
+     * Whether or not the argument is a function
+     *
+     * Example:
+     *      
+     *      function() { 
+     *          console.log(Splunk.Utils.isFunction([1,2,3]); // false
+     *          console.log(Splunk.Utils.isFunction(function() {})); // true
+     *      }
+     *
+     * @param {Anything} obj Parameter to check whether it is a function
+     * @return {Boolean} Whether or not the passed in parameter was a function
+     *
+     * @globals Splunk.Utils
+     */
+    root.isFunction = function(obj) {
+        return !!(obj && obj.constructor && obj.call && obj.apply);
+    };
+
+    /**
+     * Whether or not the argument is a number
+     *
+     * Example:
+     *      
+     *      function() { 
+     *          console.log(Splunk.Utils.isNumber(1); // true
+     *          console.log(Splunk.Utils.isNumber(function() {})); // false
+     *      }
+     *
+     * @param {Anything} obj Parameter to check whether it is a number
+     * @return {Boolean} Whether or not the passed in parameter was a number
+     *
+     * @globals Splunk.Utils
+     */
+    root.isNumber = function(obj) {
+        return !!(obj === 0 || (obj && obj.toExponential && obj.toFixed));
+    };
+    
+    /**
+     * Whether or not the argument is a string
+     *
+     * Example:
+     *      
+     *      function() { 
+     *          console.log(Splunk.Utils.isNumber("abc"); // true
+     *          console.log(Splunk.Utils.isNumber(function() {})); // false
+     *      }
+     *
+     * @param {Anything} obj Parameter to check whether it is a string
+     * @return {Boolean} Whether or not the passed in parameter was a string
+     *
+     * @globals Splunk.Utils
+     */
+    root.isString = function(obj) {
+        return !!(obj === '' || (obj && obj.charCodeAt && obj.substr));
+    };
 })();
 });
 
@@ -1076,22 +1404,9 @@ require.define("/lib/odata.js", function (require, module, exports, __dirname, _
     "use strict";
     
     var Class   = require('./jquery.class').Class;
+    var logger  = require('./log').Logger;
 
     var root = exports || this;
-
-    var logger = {
-        log: function() {},
-        error: function() {},
-        warn: function() {},
-        info: function() {}
-    };
-    
-    if (console) {
-        logger.log   = function() { console.log.apply(console, arguments);   } || logger.log;
-        logger.error = function() { console.error.apply(console, arguments); } || logger.log;
-        logger.warn  = function() { console.warn.apply(console, arguments);  } || logger.log;
-        logger.info  = function() { console.info.apply(console, arguments);  } || logger.log;
-    }
 
     // Our basic class to represent an OData resposne object.
     root.ODataResponse = Class.extend({
@@ -1175,174 +1490,6 @@ require.define("/lib/odata.js", function (require, module, exports, __dirname, _
         }
 
         return list;  
-    };
-})();
-});
-
-require.define("/lib/utils.js", function (require, module, exports, __dirname, __filename) {
-    /*!*/
-// Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-(function() {
-    "use strict";
-    
-    var root = exports || this;
-
-    /**
-     * Splunk.Utils
-     * 
-     * Various utility functions for the Splunk SDK
-     *
-     * @moduleRoot Splunk.Utils
-     */
-
-    /**
-     * Bind a function to a specific object
-     *
-     * Example:
-     *      
-     *      var obj = {a: 1, b: function() { console.log(a); }};
-     *      var bound = Splunk.Utils.bind(obj, obj.b);
-     *      bound(); // should print 1
-     *
-     * @param {Object} me Object to bind to
-     * @param {Function} fn Function to bind
-     * @return {Function} The bound function
-     *
-     * @globals Splunk.Utils
-     */
-    root.bind = function(me, fn) { 
-        return function() { 
-            return fn.apply(me, arguments); 
-        }; 
-    };
-
-    /**
-     * Whether an array contains a specific object
-     *
-     * Example:
-     *      
-     *      var a = {a: 3};
-     *      var b = [{}, {c: 1}, {b: 1}, a];
-     *      var contained = Splunk.Utils.contains(b, a); // should be tree
-     *
-     * @param {Array} arr Array to search
-     * @param {Anything} obj Whether the array contains the element
-     * @return {Boolean} Whether the array contains the element
-     *
-     * @globals Splunk.Utils
-     */
-    root.contains = function(arr, obj) {
-        arr = arr || [];
-        return (arr.indexOf(obj) >= 0);
-    };
-
-    /**
-     * Whether a string starts with a specific prefix.
-     *
-     * Example:
-     *      
-     *      var starts = Splunk.Utils.startsWith("splunk-foo", "splunk-");
-     *
-     * @param {String} original String to search
-     * @param {String} prefix Prefix to search with
-     * @return {Boolean} Whether the string starts with the prefix
-     *
-     * @globals Splunk.Utils
-     */
-    root.startsWith = function(original, prefix) {
-        var matches = original.match("^" + prefix);
-        return matches && matches.length > 0 && matches[0] === prefix;  
-    };
-
-    /**
-     * Whether a string ends with a specific suffix.
-     *
-     * Example:
-     *      
-     *      var ends = Splunk.Utils.endsWith("foo-splunk", "-splunk");
-     *
-     * @param {String} original String to search
-     * @param {String} suffix Suffix to search with
-     * @return {Boolean} Whether the string ends with the suffix
-     *
-     * @globals Splunk.Utils
-     */
-    root.endsWith = function(original, suffix) {
-        var matches = original.match(suffix + "$");
-        return matches && matches.length > 0 && matches[0] === suffix;  
-    };
-    
-    var toString = Object.prototype.toString;
-    
-    /**
-     * Convert an iterable to an array.
-     *
-     * Example:
-     *      
-     *      function() { 
-     *          console.log(arguments instanceof Array); // false
-     *          var arr = console.log(Splunk.Utils.toArray(arguments) instanceof Array); // true
-     *      }
-     *
-     * @param {Arguments} iterable Iterable to conver to an array
-     * @return {Array} The converted array
-     *
-     * @globals Splunk.Utils
-     */
-    root.toArray = function(iterable) {
-        return Array.prototype.slice.call(iterable);
-    };
-    
-    /**
-     * Whether or not the argument is an array
-     *
-     * Example:
-     *      
-     *      function() { 
-     *          console.log(Splunk.Utils.isArray(arguments)); // false
-     *          console.log(Splunk.Utils.isArray([1,2,3])); // true
-     *      }
-     *
-     * @param {Anything} obj Parameter to check whether it is an array
-     * @return {Boolean} Whether or not the passed in parameter was an array
-     *
-     * @globals Splunk.Utils
-     */
-    root.isArray = Array.isArray || function(obj) {
-        return toString.call(obj) === '[object Array]';
-    };
-
-    
-    /**
-     * Whether or not the argument is a function
-     *
-     * Example:
-     *      
-     *      function() { 
-     *          console.log(Splunk.Utils.isFunction([1,2,3]); // false
-     *          console.log(Splunk.Utils.isFunction(function() {})); // true
-     *      }
-     *
-     * @param {Anything} obj Parameter to check whether it is a function
-     * @return {Boolean} Whether or not the passed in parameter was a function
-     *
-     * @globals Splunk.Utils
-     */
-    root.isFunction = function(obj) {
-      return !!(obj && obj.constructor && obj.call && obj.apply);
     };
 })();
 });

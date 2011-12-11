@@ -45,6 +45,8 @@
     exports.Tests.Searcher = require('./test_searcher').setup(svc);
     exports.Tests.Examples = require('./test_examples').setup(svc);
 
+    Splunk.Logger.setLevel("ALL");
+    
     svc.login(function(err, success) {
         test.run([exports]);
     });
