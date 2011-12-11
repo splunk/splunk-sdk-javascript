@@ -2239,7 +2239,6 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             handlers = handlers || {};
             this._item = handlers.item || function(collection, props) { 
                 throw new Error("SHOULD NEVER BE CALLED!");
-                //return new root.Entity(collection.service, collection.path + "/" + encodeURIComponent(props.__name));
             };
             this._isSame = handlers.isSame || function(entity, id) { 
                 return id === entity.properties().__name;
