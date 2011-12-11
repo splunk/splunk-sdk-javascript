@@ -7,29 +7,40 @@
     <script type="text/javascript" src="../../../client/splunk.js"></script>
     <script>    
       $(function() {
-        var timelineToken = Splunk.UI.loadTimeline("../../../client/splunk.ui.timeline.js");
+        var timelineToken = Splunk.UI.loadTimeline("../../../client/splunk.ui.timeline.js", function() {
+          timeline = new Splunk.UI.Timeline.Timeline($("#timeline-container"));
+        });
         
         var Async = Splunk.Async;
 
         var http = new Splunk.ProxyHttp("/proxy");
         svc = new Splunk.Client.Service(http, { 
-            scheme: "https",
-            host: "localhost",
-            port: "8089",
-            username: "admin",
-            password: "changeme",
+          scheme: "https",
+          host: "localhost",
+          port: "8089",
+          username: "admin",
+          password: "changeme",
         });
         
         var timeline = null;
         var searchTerm = "search * | head 10 | stats count";
         
+        // A small utility function to queue up operations on the chart
+        // until it is ready.
+        var updateTimeline = function(data) {
+          var setData = function() {
+            timeline.updateWithJSON(data);
+          }
+          
+          if (timeline === null) {
+            Splunk.UI.ready(timelineToken, function() { setData(); });
+          }
+          else {
+            setData();
+          }
+        }
+        
         Async.chain([
-          function(callback) {
-            Splunk.UI.ready(timelineToken, function() {
-              timeline = new Splunk.UI.Timeline.Timeline($("#timeline-container"));
-              callback();
-            });
-          },
           // Login
           function(callback) { svc.login(callback); },
           // Create the job
@@ -43,7 +54,7 @@
             // Queue up timeline displays while we are querying the job
             searcher.onProgress(function(properties) {
               job.timeline({}, function(err, data) { 
-                if (!err) timeline.updateWithJSON(data); 
+                if (!err) updateTimeline(data);
               });
             });
             
@@ -56,7 +67,7 @@
           },
           // Update the timeline control
           function(timelineData, job, callback) {
-            timeline.updateWithJSON(timelineData);
+            updateTimeline(timelineData);
             callback(job);
           }
         ],
