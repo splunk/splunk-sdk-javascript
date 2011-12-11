@@ -1079,26 +1079,18 @@ require.define("/lib/odata.js", function (require, module, exports, __dirname, _
 
     var root = exports || this;
 
+    var logger = {
+        log: function() {},
+        error: function() {},
+        warn: function() {},
+        info: function() {}
+    };
     
-    if (!console || !console.log) {
-        console = {
-            log: function() {},
-            error: function() {},
-            warn: function() {},
-            info: function() {}
-        };
-    }
-    
-    if (!console.error) {
-        console.error = console.log;
-    }
-    
-    if (!console.warn) {
-        console.warn = console.log;
-    }
-    
-    if (!console.info) {
-        console.info = console.log;
+    if (console) {
+        logger.log   = console.log      || logger.log;
+        logger.error = console.error    || logger.log;
+        logger.warn  = console.warn     || logger.log;
+        logger.info  = console.info     || logger.log;
     }
 
     // Our basic class to represent an OData resposne object.
@@ -1123,9 +1115,9 @@ require.define("/lib/odata.js", function (require, module, exports, __dirname, _
     // into an ODataResponse
     root.ODataResponse.fromJson = function(json) {
         if (!json || !json.d) {
-            // TODO
-            console.log('Invalid JSON object passed; cannot parse into OData.');
-            return null;
+            var error = new Error('Invalid JSON object passed; cannot parse into OData.');
+            error.json = json;
+            throw error;
         }
 
         var d = json.d;
@@ -1162,21 +1154,21 @@ require.define("/lib/odata.js", function (require, module, exports, __dirname, _
                     case 'FATAL':
                     case 'ERROR':
                         // TODO
-                        console.error(msg);
+                        logger.error(msg);
                         break;
                     case 'WARN':
                         // TODO
-                        console.warn(msg);
+                        logger.warn(msg);
                         break;
                     case 'INFO':
                         // TODO
-                        console.info(msg);
+                        logger.info(msg);
                         break;
                     case 'HTTP':
                         break;
                     default:
                         // TODO
-                        console.info('[SPLUNKD] ' + list[i].type + ' - ' + msg);
+                        logger.info('[SPLUNKD] ' + list[i].type + ' - ' + msg);
                         break;
                 }
             }
@@ -4606,13 +4598,13 @@ require.define("/entries/browser.ui.entry.js", function (require, module, export
         var token = 'timeline' + (token++);
         loadComponent(path, token, callback);
         return token;
-    }
+    };
     
     UI.loadCharting = function(path, callback) {
         var token = 'charting' + (token++);
         loadComponent(path, token, callback);
         return token;
-    }
+    };
     
     UI.load = function(paths, callback) {
         if (!paths) {

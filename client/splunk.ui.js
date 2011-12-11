@@ -384,13 +384,13 @@ require.define("/browser.ui.entry.js", function (require, module, exports, __dir
         var token = 'timeline' + (token++);
         loadComponent(path, token, callback);
         return token;
-    }
+    };
     
     UI.loadCharting = function(path, callback) {
         var token = 'charting' + (token++);
         loadComponent(path, token, callback);
         return token;
-    }
+    };
     
     UI.load = function(paths, callback) {
         if (!paths) {
