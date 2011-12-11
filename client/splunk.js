@@ -4668,6 +4668,12 @@ require.define("/lib/platform/client/proxy_http.js", function (require, module, 
 
         return headers;
     };
+    
+    var specials = /[.*+?|()\[\]{}\\$^]/g; // .*+?|()[]{}\$^
+    var escape = function(str) {
+        str = str || "";
+        return str.replace(specials, "\\$&");
+    }
 
     root.ProxyHttp = Http.extend({
         init: function(prefix) {
@@ -4686,7 +4692,7 @@ require.define("/lib/platform/client/proxy_http.js", function (require, module, 
             // and then retrieving the hostname from it.
             var anchorTag = document.createElement("a");
             anchorTag.href = url;
-            url = url.replace(anchorTag.origin, "");
+            url = url.replace(new RegExp(escape(anchorTag.origin), "i"), "");
             
             // Now, we prepend the prefix
             url = this.prefix + url;
