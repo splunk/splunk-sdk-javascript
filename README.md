@@ -268,24 +268,6 @@ Finally, to run the browser tests:
 * Reference documentation can be found [here][refdocs]
 * Conceptual documentation, tutorials and HOWTOs can be found at the Splunk [Dev Portal][devportal]
 
-## License
-
-The Splunk Software Development Kit for JavaScript is licensed under the Apache License 2.0. Details can be found in the file LICENSE.
-
-### Third-Party Libraries
-
-The third-party libraries embedded may have different licenses. This is the list of embedded libraries and their licenses:
-
-1. [dox]: [MIT][dox-license]
-2. [davis.js Documentation Generator][davis.js]: [MIT][davis-license]
-3. [easyXDM]: [MIT][xdm-license]
-4. [jquery.class.js]: [MIT][jquery.class-license]
-5. [nodeunit]: [MIT][nodeunit-license]
-6. [showdown.js]: [BSD][showdown-license]
-7. [staticresource]: [MIT][staticresource-license]
-8. [webapp2]: [Apache][webapp2-license]
-
-
 ### Changelog
 
 The file CHANGELOG.md in the root of the repository contains a description
@@ -431,6 +413,24 @@ this README for more updates soon.
 ### Contact Us
 
 You can reach the Dev Platform team at devinfo@splunk.com
+## License
+
+The Splunk Software Development Kit for JavaScript is licensed under the Apache License 2.0. Details can be found in the file LICENSE.
+
+### Third-Party Libraries
+
+The third-party libraries embedded may have different licenses. This is the list of embedded libraries and their licenses:
+
+1. [dox]: [MIT][dox-license]
+2. [davis.js Documentation Generator][davis.js]: [MIT][davis-license]
+3. [easyXDM]: [MIT][xdm-license]
+4. [jquery.class.js]: [MIT][jquery.class-license]
+5. [nodeunit]: [MIT][nodeunit-license]
+6. [showdown.js]: [BSD][showdown-license]
+7. [staticresource]: [MIT][staticresource-license]
+8. [webapp2]: [Apache][webapp2-license]
+7. [commander]: [MIT][commander-license]
+8. [script.js]: [Apache][scriptjs-license]
 
 
 [dox]:                                          https://github.com/visionmedia/dox
@@ -441,6 +441,8 @@ You can reach the Dev Platform team at devinfo@splunk.com
 [showdown.js]:                                  https://github.com/coreyti/showdown/
 [staticresource]:                               https://github.com/atsuya/static-resource/
 [webapp2]:                                      http://code.google.com/p/webapp-improved/
+[commander]:                                    https://github.com/visionmedia/commander.js/
+[script.js]:                                    https://github.com/ded/script.js/
 [dox-license]:              https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-DOX
 [davis-license]:            https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-DAVIS
 [xdm-license]:              https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-EASYXDM
@@ -449,6 +451,8 @@ You can reach the Dev Platform team at devinfo@splunk.com
 [showdown-license]:         https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-SHOWDOWN
 [staticresource-license]:   https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-STATICRESOURCE
 [webapp2-license]:          https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-WEBAPP2
+[commander-license]:        https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-COMMANDER
+[scriptjs-license]:         https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-SCRIPTJS
 
 [json2]: http://www.json.org/js.html
 [new_english]: https://github.com/splunk/splunk-sdk-javascript/tree/master/new_english
