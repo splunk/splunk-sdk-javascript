@@ -48,13 +48,13 @@
         var token = 'timeline' + (token++);
         loadComponent(path, token, callback);
         return token;
-    }
+    };
     
     UI.loadCharting = function(path, callback) {
         var token = 'charting' + (token++);
         loadComponent(path, token, callback);
         return token;
-    }
+    };
     
     UI.load = function(paths, callback) {
         if (!paths) {

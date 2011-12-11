@@ -298,7 +298,7 @@
         }
         
         return dependencies;
-    }
+    };
     
     var compile = function(entry, path, shouldUglify, watch, exportName) {
         exportName = exportName || "Splunk";
@@ -349,8 +349,6 @@
         }));
           
         return latestDependencyTime > compiledTime || latestDependencyTime > compiledMinTime;
-        
-        return true;
     };
     
     var ensureDirectoryExists = function(dir) {
