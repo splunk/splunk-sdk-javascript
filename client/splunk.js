@@ -4685,7 +4685,7 @@ require.define("/browser.entry.js", function (require, module, exports, __dirnam
     };
     
     // Load the UI component loader
-    require("./browser.ui.entry");
+    require("../entries/browser.ui.entry");
 })(__exportName);
 });
 require("/browser.entry.js");

@@ -37,5 +37,5 @@
     };
     
     // Load the UI component loader
-    require("./browser.ui.entry");
+    require("../entries/browser.ui.entry");
 })(__exportName);
