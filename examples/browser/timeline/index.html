@@ -7,18 +7,6 @@
     <script type="text/javascript" src="../../../client/splunk.js"></script>
     <script>
     
-      var augment = function(callback) {
-        var args = Array.prototype.slice.call(arguments, 1);
-        return function() {
-          var augmentedArgs = Array.prototype.slice.call(arguments);
-          for(var i = 0; i < args.length; i++) {
-            augmentedArgs.push(args[i]);
-          }
-          
-          callback.apply(null, augmentedArgs);
-        };
-      }
-    
       $(function() {
         var timelineToken = Splunk.UI.loadTimeline("../../../client/splunk.ui.timeline.js");
         

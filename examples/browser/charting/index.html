@@ -5,20 +5,7 @@
     
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.js"></script>
     <script type="text/javascript" src="../../../client/splunk.js"></script>
-    <script type="text/javascript" src="../../../client/splunk.ui.js"></script>
     <script>
-    
-      var augment = function(callback) {
-        var args = Array.prototype.slice.call(arguments, 1);
-        return function() {
-          var augmentedArgs = Array.prototype.slice.call(arguments);
-          for(var i = 0; i < args.length; i++) {
-            augmentedArgs.push(args[i]);
-          }
-          
-          callback.apply(null, augmentedArgs);
-        };
-      }
     
       $(function() {
         var XdmHttp = Splunk.XdmHttp;
@@ -32,10 +19,17 @@
             password: "changeme",
         });
         
-        var chart = new SplunkUI.Charting.Chart($("#chart-container"), SplunkUI.Charting.ChartType.COLUMN, false);
+        var chartToken = Splunk.UI.loadCharting("../../../client/splunk.ui.charting.js");
+        var chart = null; 
         
-        var searchTerm = 'search index=_internal | head 10000 | stats count(host), count(source) by sourcetype';
+        var searchTerm = 'search index=_internal | head 1000 | stats count(host), count(source) by sourcetype';
         Async.chain([
+          function(callback) {
+            Splunk.UI.ready(chartToken, function() {
+              chart = new Splunk.UI.Charting.Chart($("#chart-container"), Splunk.UI.Charting.ChartType.COLUMN, false);
+              callback();
+            });
+          },
           // Login
           function(callback) { svc.login(callback); },
           // Create the job
