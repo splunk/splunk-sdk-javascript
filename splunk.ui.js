@@ -14,10 +14,52 @@
 // under the License.
 
 (function() {
+    var $script = require('./contrib/script');
+    
     var root = exports || this;
+    
+    var token = 0;
 
-    root.SplunkUI = {
-        Timeline         : require('./ui/timeline')
-        //Charting         : require('./ui/charting')
+    root.SplunkUI = {};
+        
+    var loadComponent = function(path, token, callback) {
+        if (!path) {
+            throw new Error("Must specify a path to load from.");
+        }
+        
+        callback = callback || function() {};
+        
+        $script(path, token, callback);
     };
+    
+    root.SplunkUI.loadTimeline = function(path, callback) {
+        var token = 'timeline' + (token++);
+        loadComponent(path, token, callback);
+        return token;
+    }
+    
+    root.SplunkUI.loadCharting = function(path, callback) {
+        var token = 'charting' + (token++);
+        loadComponent(path, token, callback);
+        return token;
+    }
+    
+    root.SplunkUI.load = function(paths, callback) {
+        if (!paths) {
+            throw new Error("Must specify paths to load components from");
+        }  
+        
+        callback = callback || function() {};
+        var token = "all" + (token++);
+        $script(paths, token, function() {
+            callback();
+        });
+        
+        return token;
+    };
+    
+    root.SplunkUI.ready = function(token, callback) {
+        callback = callback || function() {};
+        $script.ready(token, callback);
+    }
 })();

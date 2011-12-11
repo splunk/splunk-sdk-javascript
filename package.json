@@ -24,7 +24,7 @@
         "request" : "2.2.x"
     },
     "devDependencies" : {
-        "browserify" : "1.8.x",
+        "browserify" : "https://github.com/itay/node-browserify/tarball/master",
         "uglify-js" : "1.1.x",
         "nodeunit" : "0.6.x",
         "jshint" : "0.5.x >= 0.5.4",

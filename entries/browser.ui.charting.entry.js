@@ -17,4 +17,14 @@
 // important functionality to the "window", such that others can easily
 // include it.
 
-window.SplunkTest = require('../splunk.test').SplunkTest;
+(function(exportName) {
+    if (!window[exportName]) {
+        window[exportName] = {};
+    }
+    
+    if (!window[exportName].UI) {
+        window[exportName].UI = {};
+    }
+
+    window[exportName].UI.Charting = require('../ui/charting.js');
+})(__exportName);

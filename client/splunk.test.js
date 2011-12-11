@@ -7653,7 +7653,7 @@ require.define("/browser.test.entry.js", function (require, module, exports, __d
 // important functionality to the "window", such that others can easily
 // include it.
 
-window.SplunkTest = require('./splunk.test').SplunkTest;
+window.SplunkTest = require('../splunk.test').SplunkTest;
 });
 require("/browser.test.entry.js");
 

@@ -17,4 +17,10 @@
 // important functionality to the "window", such that others can easily
 // include it.
 
-window.SplunkUI = require('./splunk.ui').SplunkUI;
+(function(exportName) {
+    if (!window[exportName]) {
+        window[exportName] = {};
+    }
+
+    window[exportName].UI = require('../splunk.ui').SplunkUI;
+})(__exportName);

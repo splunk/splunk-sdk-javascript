@@ -4556,6 +4556,113 @@ require.define("/lib/platform/client/proxy_http.js", function (require, module, 
 })();
 });
 
+require.define("/entries/browser.ui.entry.js", function (require, module, exports, __dirname, __filename) {
+    
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+// This file is the entry point for client-side code, so it "exports" the
+// important functionality to the "window", such that others can easily
+// include it.
+
+(function(exportName) {
+    if (!window[exportName]) {
+        window[exportName] = {};
+    }
+
+    window[exportName].UI = require('../splunk.ui').SplunkUI;
+})(__exportName);
+});
+
+require.define("/splunk.ui.js", function (require, module, exports, __dirname, __filename) {
+    
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+(function() {
+    var $script = require('./contrib/script');
+    
+    var root = exports || this;
+    
+    var token = 0;
+
+    root.SplunkUI = {};
+        
+    var loadComponent = function(path, token, callback) {
+        if (!path) {
+            throw new Error("Must specify a path to load from.");
+        }
+        
+        callback = callback || function() {};
+        
+        $script(path, token, callback);
+    };
+    
+    root.SplunkUI.loadTimeline = function(path, callback) {
+        var token = 'timeline' + (token++);
+        loadComponent(path, token, callback);
+        return token;
+    }
+    
+    root.SplunkUI.loadCharting = function(path, callback) {
+        var token = 'charting' + (token++);
+        loadComponent(path, token, callback);
+        return token;
+    }
+    
+    root.SplunkUI.load = function(paths, callback) {
+        if (!paths) {
+            throw new Error("Must specify paths to load components from");
+        }  
+        
+        callback = callback || function() {};
+        var token = "all" + (token++);
+        $script(paths, token, function() {
+            callback();
+        });
+        
+        return token;
+    };
+    
+    root.SplunkUI.ready = function(token, callback) {
+        callback = callback || function() {};
+        $script.ready(token, callback);
+    }
+})();
+});
+
+require.define("/contrib/script.js", function (require, module, exports, __dirname, __filename) {
+    /*!
+  * $script.js Async loader & dependency manager
+  * https://github.com/ded/script.js
+  * (c) Dustin Diaz, Jacob Thornton 2011
+  * License: MIT
+  */
+!function(a,b){typeof define=="function"?define(b):typeof module!="undefined"?module.exports=b():this[a]=b()}("$script",function(){function s(a,b,c){for(c=0,j=a.length;c<j;++c)if(!b(a[c]))return m;return 1}function t(a,b){s(a,function(a){return!b(a)})}function u(a,b,c){function o(a){return a.call?a():f[a]}function p(){if(!--m){f[l]=1,j&&j();for(var a in h)s(a.split("|"),o)&&!t(h[a],o)&&(h[a]=[])}}a=a[n]?a:[a];var e=b&&b.call,j=e?b:c,l=e?a.join(""):b,m=a.length;return setTimeout(function(){t(a,function(a){if(k[a])return l&&(g[l]=1),k[a]==2&&p();k[a]=1,l&&(g[l]=1),v(!d.test(a)&&i?i+a+".js":a,p)})},0),u}function v(a,d){var e=b.createElement("script"),f=m;e.onload=e.onerror=e[r]=function(){if(e[p]&&!/^c|loade/.test(e[p])||f)return;e.onload=e[r]=null,f=1,k[a]=2,d()},e.async=1,e.src=a,c.insertBefore(e,c.firstChild)}var a=this,b=document,c=b.getElementsByTagName("head")[0],d=/^https?:\/\//,e=a.$script,f={},g={},h={},i,k={},l="string",m=!1,n="push",o="DOMContentLoaded",p="readyState",q="addEventListener",r="onreadystatechange";return!b[p]&&b[q]&&(b[q](o,function w(){b.removeEventListener(o,w,m),b[p]="complete"},m),b[p]="loading"),u.get=v,u.order=function(a,b,c){(function d(e){e=a.shift(),a.length?u(e,d):u(e,b,c)})()},u.path=function(a){i=a},u.ready=function(a,b,c){a=a[n]?a:[a];var d=[];return!t(a,function(a){f[a]||d[n](a)})&&s(a,function(a){return f[a]})?b():!function(a){h[a]=h[a]||[],h[a][n](b),c&&c(d)}(a.join("|")),u},u.noConflict=function(){return a.$script=e,this},u})
+});
+
 require.define("/browser.entry.js", function (require, module, exports, __dirname, __filename) {
     
 // Copyright 2011 Splunk, Inc.
@@ -4579,9 +4686,9 @@ require.define("/browser.entry.js", function (require, module, exports, __dirnam
 (function(exportName) {
     var previousSplunk = window[exportName];
     
-    var ourSplunk = require('./splunk').Splunk;
-    var ourXDM = require('./lib/platform/client/easyxdm_http').XdmHttp;
-    var proxyHttp = require('./lib/platform/client/proxy_http').ProxyHttp;
+    var ourSplunk = require('../splunk').Splunk;
+    var ourXDM    = require('../lib/platform/client/easyxdm_http').XdmHttp;
+    var proxyHttp = require('../lib/platform/client/proxy_http').ProxyHttp;
     
     window[exportName] = ourSplunk;
     window[exportName].XdmHttp = ourXDM;
@@ -4594,6 +4701,9 @@ require.define("/browser.entry.js", function (require, module, exports, __dirnam
         
         return ourSplunk;
     };
+    
+    // Load the UI component loader
+    require("./browser.ui.entry");
 })(__exportName);
 });
 require("/browser.entry.js");

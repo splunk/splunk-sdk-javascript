@@ -35,9 +35,9 @@
     var TEST_DIRECTORY      = "tests";
     var TEST_PREFIX         = "test_";
     var ALL_TESTS           = "tests.js";
-    var SDK_BROWSER_ENTRY   = "browser.entry.js";
-    var TEST_BROWSER_ENTRY  = "browser.test.entry.js";
-    var UI_BROWSER_ENTRY    = "browser.ui.entry.js";
+    var SDK_BROWSER_ENTRY   = "entries/browser.entry.js";
+    var TEST_BROWSER_ENTRY  = "entries/browser.test.entry.js";
+    var UI_BROWSER_ENTRY    = "entries/browser.ui.entry.js";
     var DOC_FILE            = "index.html";
     var SDK_VERSION         = JSON.parse(fs.readFileSync(path.resolve(__dirname, "../package.json")).toString("utf-8")).version;
     var IGNORED_MODULES     = [
@@ -47,6 +47,14 @@
         "./lib/platform/node/node_http",
         "../lib/platform/node/node_http"
     ];
+    
+    /**
+     * UI Component Entry Points (for async loading)
+     */
+    var UI_COMPONENT_BROWSER_ENTRY  = {
+        timeline: "entries/browser.ui.timeline.entry.js",
+        charting: "entries/browser.ui.timeline.entry.js"
+    };
     
     /**
      * Generated files
@@ -196,6 +204,48 @@
         console.log("Compiled " + path);
     };
     
+    var walkSync = function (start, callback) {
+        var stat = fs.statSync(start);
+        
+        if (stat.isDirectory()) {
+            var filenames = fs.readdirSync(start);
+            
+            var coll = filenames.reduce(function (acc, name) {
+                var abspath = path.join(start, name);
+                
+                if (fs.statSync(abspath).isDirectory()) {
+                  acc.dirs.push(name);
+                } else {
+                  acc.names.push(name);
+                }
+                
+                return acc;
+            }, {"names": [], "dirs": []});
+            
+            callback(start, coll.dirs, coll.names);
+            
+            coll.dirs.forEach(function (d) {
+                var abspath = path.join(start, d);
+                walkSync(abspath, callback);
+            });
+          
+        } else {
+            throw new Error("path: " + start + " is not a directory");
+        }
+    };
+    
+    var collectFiles = function(start) {
+        var allFiles = [];
+        walkSync(start, function(dirPath, dirs, files) {
+            files = files || [];
+            files.map(function(file) {
+                return path.join(dirPath, file);    
+            }).forEach(function(file) {
+                allFiles.push(file);
+            });
+        });
+    };
+    
     var ensureDirectoryExists = function(dir) {
         if (!path.existsSync(dir)) {
             fs.mkdirSync(dir, "755");  
@@ -220,14 +270,27 @@
     
     var compileUI = function(watch, exportName) {
         ensureClientDirectory();
-        compile(UI_BROWSER_ENTRY, COMPILED_UI, false, watch);
-        compile(UI_BROWSER_ENTRY, COMPILED_UI_MIN, true, watch);
+        compile(UI_BROWSER_ENTRY, COMPILED_UI, false, watch, exportName);
+        compile(UI_BROWSER_ENTRY, COMPILED_UI_MIN, true, watch, exportName);
+        
+        for(var component in UI_COMPONENT_BROWSER_ENTRY) {
+            if (!UI_COMPONENT_BROWSER_ENTRY.hasOwnProperty(component)) {
+                continue;
+            }
+            
+            var entryPath = UI_COMPONENT_BROWSER_ENTRY[component];
+            var generatedPath = path.join(CLIENT_DIRECTORY, "splunk.ui." + component + ".js");
+            var generatedMinPath = path.join(CLIENT_DIRECTORY, "splunk.ui." + component + ".min.js");
+            
+            compile(entryPath, generatedPath, false, watch, exportName);
+            compile(entryPath, generatedMinPath, true, watch, exportName);
+        }
     };
     
     var compileAll = function(watch, exportName) {
         compileSDK(watch, exportName);
         compileTests(watch);
-        compileUI(watch);  
+        compileUI(watch, exportName);  
     };
     
     var runServer = function(port) {

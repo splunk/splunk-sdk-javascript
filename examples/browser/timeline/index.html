@@ -5,7 +5,6 @@
     <link rel="stylesheet" type="text/css" href="timeline.css">
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.js"></script>
     <script type="text/javascript" src="../../../client/splunk.js"></script>
-    <script type="text/javascript" src="../../../client/splunk.ui.min.js"></script>
     <script>
     
       var augment = function(callback) {
@@ -21,6 +20,7 @@
       }
     
       $(function() {
+        var timelineToken = Splunk.UI.loadTimeline("../../../client/splunk.ui.timeline.js");
         
         var XdmHttp = Splunk.XdmHttp;
         var Async = Splunk.Async;
@@ -34,10 +34,16 @@
             password: "changeme",
         });
         
-        var timeline = new SplunkUI.Timeline.Timeline($("#timeline-container"));
+        var timeline = null;
         var searchTerm = "search * | head 10 | stats count";
         
         Async.chain([
+          function(callback) {
+            Splunk.UI.ready(timelineToken, function() {
+              timeline = new Splunk.UI.Timeline.Timeline($("#timeline-container"));
+              callback();
+            });
+          },
           // Login
           function(callback) { svc.login(callback); },
           // Create the job

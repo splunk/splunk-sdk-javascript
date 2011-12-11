@@ -10,3 +10,4 @@ external-nocheckin/*
 .idea/*
 npm-debug.log
 server.py
+client/splunk.ui.charting.*
