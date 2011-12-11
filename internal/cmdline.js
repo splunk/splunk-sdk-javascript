@@ -29,7 +29,7 @@
         
         for(var i = 0; i < lines.length; i++) {
             var line = lines[i].trim();
-            if (line !== "") {
+            if (line !== "" && !utils.startsWith(line, "#")) {
                 var parts = line.split("=");
                 var key = parts[0].trim();
                 var value = parts[1].trim();
