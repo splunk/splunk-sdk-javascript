@@ -39,6 +39,7 @@
     var TEST_BROWSER_ENTRY  = "entries/browser.test.entry.js";
     var UI_BROWSER_ENTRY    = "entries/browser.ui.entry.js";
     var DOC_FILE            = "index.html";
+    var BUILD_CACHE_FILE    = ".buildcache";
     var SDK_VERSION         = JSON.parse(fs.readFileSync(path.resolve(__dirname, "../package.json")).toString("utf-8")).version;
     var IGNORED_MODULES     = [
         "../contrib/nodeunit/test_reporter", 
@@ -53,7 +54,7 @@
      */
     var UI_COMPONENT_BROWSER_ENTRY  = {
         timeline: "entries/browser.ui.timeline.entry.js",
-        charting: "entries/browser.ui.charting.entry.js"
+        //charting: "entries/browser.ui.charting.entry.js"
     };
     
     /**
@@ -284,10 +285,11 @@
         return program;
     };
     
-    var getDependencies = function(entry) {        
+    var getDependencies = function(entry) {   
         var bundle = browserify({
             entry: entry,
-            ignore: IGNORED_MODULES
+            ignore: IGNORED_MODULES,
+            cache: BUILD_CACHE_FILE
         });
         
         var dependencies = [entry];
@@ -307,6 +309,7 @@
         var bundle = browserify({
             entry: entry,
             ignore: IGNORED_MODULES,
+            cache: BUILD_CACHE_FILE,
             filter: function(code) {
                 if (shouldUglify) {
                     var uglifyjs = require("uglify-js"),
@@ -432,7 +435,6 @@
     var runServer = function(port) {
         // TODO: compile doesn't work on Windows, so lets not
         // make runServer depend on it
-        //compileAll(true);
         createServer(port);
     };
     
@@ -441,11 +443,15 @@
             throw new Error("File does not exist: " + file);
         } 
         
-        spawn("open", [makeURL(file, port)]);
+        if (process.platform === "win32") {
+            spawn("cmd.exe", ["/C", "start " + makeURL(file, port)]);
+        }
+        else {
+            spawn("open", [makeURL(file, port)]);
+        }
     };
     
     var launchBrowserTests = function(port) {
-        compileAll();
         runServer(port);
         launchBrowser("tests/tests.browser.html", port);
     };

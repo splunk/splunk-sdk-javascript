@@ -18,9 +18,6 @@
 
     // Declare a process environment so that we can set
     // some globals here and have interop with node
-    if (typeof(process) === 'undefined') {
-        process = {};
-    }
     process.env = process.env || {};
 
     root.Splunk = {

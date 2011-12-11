@@ -715,7 +715,7 @@ exports.setup = function(svc) {
             
             "Callback#contains": function(test) {
                 var searches = this.service.savedSearches();
-                searches.contains("gentimes", function(err, found, search) {
+                searches.contains("Indexing workload", function(err, found, search) {
                     test.ok(found);
                     test.ok(search.isValid());
                     

@@ -418,9 +418,6 @@ require.define("/splunk.js", function (require, module, exports, __dirname, __fi
 
     // Declare a process environment so that we can set
     // some globals here and have interop with node
-    if (typeof(process) === 'undefined') {
-        process = {};
-    }
     process.env = process.env || {};
 
     root.Splunk = {
@@ -474,7 +471,7 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
     
     var exists = function(key) {
         return typeof(process.env[key]) !== "undefined";
-    }
+    };
     
     if (exists("LOG_LEVEL")) {
         // If it isn't set, then we default to only errors
@@ -513,30 +510,62 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
      * @moduleRoot Splunk.Logger
      */
     exports.Logger = {
+        /**
+         * Log to the console (equivalent to `console.log`)
+         *
+         * @module Splunk.Logger
+         */
         log: function() {
             if (process.env.LOG_LEVEL >= levels.ALL) {
                 _log.apply(null, arguments);
             }
         },
         
+        /**
+         * Log error to the console (equivalent to `console.error`)
+         *
+         * @module Splunk.Logger
+         */
         error: function() {
             if (process.env.LOG_LEVEL >= levels.ERROR) {
                 _error.apply(null, arguments);
             }
         },
         
+        /**
+         * Log warning to the console (equivalent to `console.warn`)
+         *
+         * @module Splunk.Logger
+         */
         warn: function() {
             if (process.env.LOG_LEVEL >= levels.WARN) {
                 _warn.apply(null, arguments);
             }
         },
         
+        /**
+         * Log info to the console (equivalent to `console.info`)
+         *
+         * @module Splunk.Logger
+         */
         info: function() {
             if (process.env.LOG_LEVEL >= levels.INFO) {
                 _info.apply(null, arguments);
             }
         },
         
+        /**
+         * Set the global logging level
+         *
+         * Example:
+         *
+         *      Splunk.Logger.setLevel("WARN");
+         *      Splunk.Logger.setLevel(0); // equivalent to NONE
+         *
+         * @param {String|Number} level A string (`ALL` | `INFO` | `WARN` | `ERROR` | `NONE`) or number representing the log level
+         *
+         * @module Splunk.Logger
+         */
         setLevel: function(level) {    
             if (utils.isString(level)) {
                 if (levels.hasOwnProperty(level)) {
@@ -552,7 +581,10 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
             else {
                 process.env.LOG_LEVEL = levels["ERROR"];
             }
-        }
+        },
+        
+        /*!*/
+        levels: levels
     };
 })();
 });
@@ -5629,7 +5661,7 @@ require.define("/internal/cmdline.js", function (require, module, exports, __dir
         
         for(var i = 0; i < lines.length; i++) {
             var line = lines[i].trim();
-            if (line !== "") {
+            if (line !== "" && !utils.startsWith(line, "#")) {
                 var parts = line.split("=");
                 var key = parts[0].trim();
                 var value = parts[1].trim();
@@ -6432,7 +6464,7 @@ exports.setup = function(svc) {
             
             "Callback#contains": function(test) {
                 var searches = this.service.savedSearches();
-                searches.contains("gentimes", function(err, found, search) {
+                searches.contains("Indexing workload", function(err, found, search) {
                     test.ok(found);
                     test.ok(search.isValid());
                     
@@ -7175,7 +7207,8 @@ require.define("/tests/test_examples.js", function (require, module, exports, __
 // under the License.
 
 exports.setup = function() {
-    var Async       = require('../splunk').Splunk.Async;
+    var Splunk  = require('../splunk').Splunk;
+    var Async   = Splunk.Async;
 
     Splunk.Logger.setLevel("ALL");
     var idCounter = 0;

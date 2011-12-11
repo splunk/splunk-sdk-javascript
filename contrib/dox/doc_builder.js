@@ -206,7 +206,7 @@
     
     var moduleStore = {};
     modules.forEach(function (module) {
-        moduleStore[module.name] = module;  
+        moduleStore[module.name.trim()] = module;  
     });
     
     var getParentMethods = function(module) {
@@ -218,7 +218,7 @@
         
         if (module.is_extends) {
             // Get our parent name and his methods
-            var parentName = module["extends"];
+            var parentName = module["extends"].trim();
             var parent = moduleStore[parentName];
             var parentMethods = getParentMethods(parent);
             

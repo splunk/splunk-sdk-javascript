@@ -14,7 +14,8 @@
 // under the License.
 
 exports.setup = function() {
-    var Async       = require('../splunk').Splunk.Async;
+    var Splunk  = require('../splunk').Splunk;
+    var Async   = Splunk.Async;
 
     Splunk.Logger.setLevel("ALL");
     var idCounter = 0;

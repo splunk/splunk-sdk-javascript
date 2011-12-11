@@ -11,3 +11,5 @@ external-nocheckin/*
 npm-debug.log
 server.py
 client/splunk.ui.charting.*
+.buildcache
+v8.log
