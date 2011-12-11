@@ -4577,38 +4577,21 @@ require.define("/entries/browser.ui.entry.js", function (require, module, export
 // include it.
 
 (function(exportName) {
+    var $script = require('../contrib/script');
+    
     if (!window[exportName]) {
         window[exportName] = {};
     }
-
-    window[exportName].UI = require('../splunk.ui').SplunkUI;
-})(__exportName);
-});
-
-require.define("/splunk.ui.js", function (require, module, exports, __dirname, __filename) {
     
-// Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-(function() {
-    var $script = require('./contrib/script');
+    if (!window[exportName].UI) {
+        window[exportName].UI = {};
+    }
+    
+    var UI = window[exportName].UI;
     
     var root = exports || this;
     
     var token = 0;
-
-    root.SplunkUI = {};
         
     var loadComponent = function(path, token, callback) {
         if (!path) {
@@ -4620,19 +4603,19 @@ require.define("/splunk.ui.js", function (require, module, exports, __dirname, _
         $script(path, token, callback);
     };
     
-    root.SplunkUI.loadTimeline = function(path, callback) {
+    UI.loadTimeline = function(path, callback) {
         var token = 'timeline' + (token++);
         loadComponent(path, token, callback);
         return token;
     }
     
-    root.SplunkUI.loadCharting = function(path, callback) {
+    UI.loadCharting = function(path, callback) {
         var token = 'charting' + (token++);
         loadComponent(path, token, callback);
         return token;
     }
     
-    root.SplunkUI.load = function(paths, callback) {
+    UI.load = function(paths, callback) {
         if (!paths) {
             throw new Error("Must specify paths to load components from");
         }  
@@ -4646,11 +4629,11 @@ require.define("/splunk.ui.js", function (require, module, exports, __dirname, _
         return token;
     };
     
-    root.SplunkUI.ready = function(token, callback) {
+    UI.ready = function(token, callback) {
         callback = callback || function() {};
         $script.ready(token, callback);
-    }
-})();
+    };
+})(__exportName);
 });
 
 require.define("/contrib/script.js", function (require, module, exports, __dirname, __filename) {

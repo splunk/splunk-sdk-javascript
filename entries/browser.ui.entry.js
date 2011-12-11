@@ -18,9 +18,60 @@
 // include it.
 
 (function(exportName) {
+    var $script = require('../contrib/script');
+    
     if (!window[exportName]) {
         window[exportName] = {};
     }
-
-    window[exportName].UI = require('../splunk.ui').SplunkUI;
+    
+    if (!window[exportName].UI) {
+        window[exportName].UI = {};
+    }
+    
+    var UI = window[exportName].UI;
+    
+    var root = exports || this;
+    
+    var token = 0;
+        
+    var loadComponent = function(path, token, callback) {
+        if (!path) {
+            throw new Error("Must specify a path to load from.");
+        }
+        
+        callback = callback || function() {};
+        
+        $script(path, token, callback);
+    };
+    
+    UI.loadTimeline = function(path, callback) {
+        var token = 'timeline' + (token++);
+        loadComponent(path, token, callback);
+        return token;
+    }
+    
+    UI.loadCharting = function(path, callback) {
+        var token = 'charting' + (token++);
+        loadComponent(path, token, callback);
+        return token;
+    }
+    
+    UI.load = function(paths, callback) {
+        if (!paths) {
+            throw new Error("Must specify paths to load components from");
+        }  
+        
+        callback = callback || function() {};
+        var token = "all" + (token++);
+        $script(paths, token, function() {
+            callback();
+        });
+        
+        return token;
+    };
+    
+    UI.ready = function(token, callback) {
+        callback = callback || function() {};
+        $script.ready(token, callback);
+    };
 })(__exportName);
