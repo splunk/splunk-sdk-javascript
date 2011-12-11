@@ -4669,11 +4669,11 @@ require.define("/lib/platform/client/proxy_http.js", function (require, module, 
         return headers;
     };
     
-    var specials = /[.*+?|()\[\]{}\\$^]/g; // .*+?|()[]{}\$^
+    var specials = /[.*+?|()\[\]{}\\$\^]/g; // .*+?|()[]{}\$^
     var escape = function(str) {
         str = str || "";
         return str.replace(specials, "\\$&");
-    }
+    };
 
     root.ProxyHttp = Http.extend({
         init: function(prefix) {
