@@ -945,7 +945,7 @@ var SigninView = BootstrapModalView.extend({
     e.preventDefault();    
     var that = this;
     
-    var username = this.$("#id_username").val() || "itay";
+    var username = this.$("#id_username").val() || "admin";
     var password = this.$("#id_password").val() || "changeme";
     var scheme   = this.$("#id_scheme").val() || "https";
     var host     = this.$("#id_host").val() || "localhost";
