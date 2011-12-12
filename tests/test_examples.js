@@ -62,6 +62,11 @@ exports.setup = function(opts) {
             "Search#oneshot": function(test) {
                 var main = require("../examples/node/helloworld/search_oneshot").main;
                 main(opts, test.done);
+            },
+            
+            "Search#realtime": function(test) {
+                var main = require("../examples/node/helloworld/search_realtime").main;
+                main(opts, test.done);
             }
         },
         

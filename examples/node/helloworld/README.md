@@ -43,3 +43,15 @@ print out job statistics and the search results.
 not return the REST call until the job is done, and then it will simply return
 the search results, rather than the search job ID. Once it is done, we print out
 the results.
+
+#### `search_realtime.js`
+
+This example shows how to work with realtime searches. It will execute a realtime
+search that will collect statistics about all events from "now" to infinity (as
+noted by the use of `earliest_time=rt` and `latest_time=rt`).
+
+Once the job is created, it will poll the results every second, and print them
+out.
+
+Since a realtime search is never "done", we only iterate for 5 times before
+we terminate the loop.
