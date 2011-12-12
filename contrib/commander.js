@@ -1097,6 +1097,8 @@ function outputHelpIfNecessary(cmd, options) {
     if (options[i] == '--help' || options[i] == '-h') {
       process.on('exit', function() {
         consoleFlush(cmd.helpInformation());
+        cmd.emit('--help');
+        consoleFlush("");
       });
       process.exit();
     }
