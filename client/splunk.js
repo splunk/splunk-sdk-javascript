@@ -4848,6 +4848,12 @@ require.define("/browser.entry.js", function (require, module, exports, __dirnam
 // include it.
 
 (function(exportName) {
+    // Polyfill String.prototype.trim
+    String.prototype.trim = String.prototype.trim || function(str, delim) {
+        if (delim) return str.replace(new RegExp("^[\\s" + delim + "]+"),'').replace(new RegExp("[\\s" + delim + "]+$"), '');
+        else return str.replace(/^\s\s*/, '').replace(/\s\s*$/, '');
+    };
+    
     var previousSplunk = window[exportName];
     
     var ourSplunk = require('../splunk').Splunk;

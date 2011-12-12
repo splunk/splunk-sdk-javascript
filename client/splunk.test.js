@@ -7212,7 +7212,7 @@ require.define("/tests/test_examples.js", function (require, module, exports, __
 // License for the specific language governing permissions and limitations
 // under the License.
 
-exports.setup = function() {
+exports.setup = function(opts) {
     var Splunk  = require('../splunk').Splunk;
     var Async   = Splunk.Async;
 
@@ -7227,6 +7227,48 @@ exports.setup = function() {
     };
       
     return {  
+        "Hello World Tests": {
+            "Apps": function(test) {
+                var main = require("../examples/node/helloworld/apps").main;
+                main(opts, test.done);
+            },
+            
+            "Apps#Async": function(test) {
+                var main = require("../examples/node/helloworld/apps_async").main;
+                main(opts, test.done);
+            },
+            
+            "Saved Searches": function(test) {
+                var main = require("../examples/node/helloworld/savedsearches").main;
+                main(opts, test.done);
+            },
+            
+            "Saved Searches#Async": function(test) {
+                var main = require("../examples/node/helloworld/savedsearches_async").main;
+                main(opts, test.done);
+            },
+            
+            "Search#normal": function(test) {
+                var main = require("../examples/node/helloworld/search_normal").main;
+                main(opts, test.done);
+            },
+            
+            "Search#blocking": function(test) {
+                var main = require("../examples/node/helloworld/search_blocking").main;
+                main(opts, test.done);
+            },
+            
+            "Search#oneshot": function(test) {
+                var main = require("../examples/node/helloworld/search_oneshot").main;
+                main(opts, test.done);
+            },
+            
+            "Search#realtime": function(test) {
+                var main = require("../examples/node/helloworld/search_realtime").main;
+                main(opts, test.done);
+            }
+        },
+        
         "Jobs Example Tests": {
             setUp: function(done) {   
                 var context = this;
@@ -7380,6 +7422,157 @@ exports.setup = function() {
                     }
                 );
             }
+        },
+        
+        "Conf Example Tests": {
+            setUp: function(done) {   
+                var context = this;
+                
+                this.main = require("../examples/node/conf").main;
+                this.run = function(command, args, options, callback) {                
+                    var combinedArgs = process.argv.slice();
+                    if (command) {
+                        combinedArgs.push(command);
+                    }
+                    
+                    if (args) {
+                        for(var i = 0; i < args.length; i++) {
+                            combinedArgs.push(args[i]);
+                        }
+                    }
+                    
+                    if (options) {
+                        for(var key in options) {
+                            if (options.hasOwnProperty(key)) {
+                                combinedArgs.push("--" + key);
+                                combinedArgs.push(options[key]);
+                            }
+                        }
+                    }
+              
+                    return context.main(combinedArgs, callback);
+                };
+                
+                done(); 
+            },
+            
+            "help": function(test) {
+                this.run(null, null, null, function(err) {
+                    test.ok(!!err);
+                    test.done();
+                });
+            },
+            
+            "List files": function(test) {
+                this.run("files", null, null, function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+            
+            "List files with pattern": function(test) {
+                this.run("files", ["^v"], null, function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+            
+            "List stanzas": function(test) {
+                this.run("stanzas", ["web"], null, function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+            
+            "Show non-existent contents": function(test) {
+                this.run("contents", ["json", "settings"], null, function(err) {
+                    test.ok(err);
+                    test.done();
+                });
+            },
+            
+            "Show contents with specialization": function(test) {
+                this.run("contents", ["json", "settings"], {app: "new_english"}, function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+            
+            "Show contents with --global": function(test) {
+                this.run("contents", ["json", "settings", "--global"], {}, function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+            
+            "Edit contents with no user set": function(test) {
+                this.run("edit", ["json", "settings", "foo", "bar"], {app: "new_english"}, function(err) {
+                    test.ok(err);
+                    test.done();
+                });
+            },
+            
+            "Edit contents": function(test) {
+                this.run("edit", ["json", "settings", "foo", "bar"], {app: "new_english", user: "admin"}, function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+            
+            "Create file": function(test) {
+                this.run("create", ["foo"], {app: "new_english", user: "admin"}, function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+            
+            "Create stanza": function(test) {
+                var options = {
+                    app: "new_english",
+                    user: "admin"
+                };
+                
+                var that = this;
+                this.run("create", ["foo", "bar"], options, function(err) {
+                    test.ok(!err);
+                    that.run("delete", ["foo", "bar"], options, function(err) {
+                        test.ok(!err);
+                        test.done();
+                    });
+                });
+            },
+            
+            "Create key=value": function(test) {
+                var options = {
+                    app: "new_english",
+                    user: "admin"
+                };
+                
+                var that = this;
+                this.run("create", ["foo", "bar", "abc", "123"], options, function(err) {
+                    test.ok(!err);
+                    that.run("delete", ["foo", "bar"], options, function(err) {
+                        test.ok(!err);
+                        test.done();
+                    });
+                });
+            },
+            
+            "Create+delete stanza": function(test) {
+                var options = {
+                    app: "new_english",
+                    user: "admin"
+                };
+                
+                var that = this;
+                this.run("create", ["foo", "bar"], options, function(err) {
+                    test.ok(!err);
+                    that.run("delete", ["foo", "bar"], options, function(err) {
+                        test.ok(!err);
+                        test.done();
+                    });
+                });
+            }
         }
     };
 };
@@ -7387,8 +7580,737 @@ exports.setup = function() {
 if (module === require.main) {
     var test        = require('../contrib/nodeunit/test_reporter');
     
-    var suite = exports.setup();
+    var options = require('../internal/cmdline');    
+    var parser  = options.create();
+    var cmdline = parser.parse(process.argv);
+        
+    // If there is no command line, we should return
+    if (!cmdline) {
+        throw new Error("Error in parsing command line parameters");
+    }    
+    
+    var suite = exports.setup(cmdline.opts);
     test.run([{"Tests": suite}]);
+}
+});
+
+require.define("/examples/node/helloworld/apps.js", function (require, module, exports, __dirname, __filename) {
+    
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+// This example will login to Splunk, and then retrieve the list of applications,
+// printing each application's name.
+
+var Splunk = require('../../../splunk').Splunk;
+
+exports.main = function(opts, done) {
+    // This is just for testing - ignore it
+    opts = opts || {};
+    
+    var username = opts.username    || "admin";
+    var password = opts.password    || "changeme";
+    var scheme   = opts.scheme      || "https";
+    var host     = opts.host        || "localhost";
+    var port     = opts.port        || "8089";
+    
+    var service = new Splunk.Client.Service({
+        username: username,
+        password: password,
+        scheme: scheme,
+        host: host,
+        port: port
+    });
+
+    // First, we log in
+    service.login(function(err, success) {
+        // We check for both errors in the connection as well
+        // as if the login itself failed.
+        if (err || !success) {
+            console.log("Error in logging in");
+            done(err || "Login failed");
+            return;
+        } 
+        
+        // Now that we're logged in, let's get a listing of all the apps.
+        service.apps().list(function(err, apps) {
+            if (err) {
+                console.log("There was an error retrieving the list of applications:", err);
+                done(err);
+                return;
+            }
+            
+            console.log("Applications:");
+            for(var i = 0; i < apps.length; i++) {
+                var app = apps[i];
+                console.log("  App " + i + ": " + app.name);
+            } 
+            
+            done();
+        });
+    });
+};
+
+if (module === require.main) {
+    exports.main({}, function() {});
+}
+});
+
+require.define("/examples/node/helloworld/apps_async.js", function (require, module, exports, __dirname, __filename) {
+    
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+// This example will login to Splunk, and then retrieve the list of applications,
+// printing each application's name. It is the same as apps.js, except that it 
+// uses the Async library
+
+var Splunk = require('../../../splunk').Splunk;
+var Async  = Splunk.Async;
+
+exports.main = function(opts, callback) {
+    // This is just for testing - ignore it
+    opts = opts || {};
+    
+    var username = opts.username    || "admin";
+    var password = opts.password    || "changeme";
+    var scheme   = opts.scheme      || "https";
+    var host     = opts.host        || "localhost";
+    var port     = opts.port        || "8089";
+    
+    var service = new Splunk.Client.Service({
+        username: username,
+        password: password,
+        scheme: scheme,
+        host: host,
+        port: port
+    });
+
+    Async.chain([
+            // First, we log in
+            function(done) {
+                service.login(done);
+            },
+            // Retrieve the apps
+            function(success, done) {
+                if (!success) {
+                    done("Error logging in");
+                }
+                
+                service.apps().list(done);
+            },
+            // Print them out
+            function(apps, done) {            
+                console.log("Applications:");
+                for(var i = 0; i < apps.length; i++) {
+                    var app = apps[i];
+                    console.log("  App " + i + ": " + app.name);
+                } 
+                done();
+            }
+        ],
+        function(err) {
+            callback(err);        
+        }
+    );
+};
+
+if (module === require.main) {
+    exports.main({}, function() {});
+}
+});
+
+require.define("/examples/node/helloworld/savedsearches.js", function (require, module, exports, __dirname, __filename) {
+    
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+// This example will login to Splunk, and then retrieve the list of saved searchs,
+// printing each saved search's name and search query.
+
+var Splunk = require('../../../splunk').Splunk;
+
+exports.main = function(opts, done) {
+    // This is just for testing - ignore it
+    opts = opts || {};
+    
+    var username = opts.username    || "admin";
+    var password = opts.password    || "changeme";
+    var scheme   = opts.scheme      || "https";
+    var host     = opts.host        || "localhost";
+    var port     = opts.port        || "8089";
+    
+    var service = new Splunk.Client.Service({
+        username: username,
+        password: password,
+        scheme: scheme,
+        host: host,
+        port: port
+    });
+
+    // First, we log in
+    service.login(function(err, success) {
+        // We check for both errors in the connection as well
+        // as if the login itself failed.
+        if (err || !success) {
+            console.log("Error in logging in");
+            done(err || "Login failed");
+            return;
+        } 
+        
+        // Now that we're logged in, let's get a listing of all the saved searches.
+        service.savedSearches().list(function(err, searches) {
+            if (err) {
+                console.log("There was an error retrieving the list of saved searches:", err);
+                done(err);
+                return;
+            }
+            
+            console.log("Saved searches:");
+            for(var i = 0; i < searches.length; i++) {
+                var search = searches[i];
+                console.log("  Search " + i + ": " + search.name);
+                console.log("    " + search.properties().search);
+            } 
+            
+            done();
+        });
+    });
+};
+
+if (module === require.main) {
+    exports.main({}, function() {});
+}
+});
+
+require.define("/examples/node/helloworld/savedsearches_async.js", function (require, module, exports, __dirname, __filename) {
+    
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+// This example will login to Splunk, and then retrieve the list of saved searchs,
+// printing each saved search's name and search query. It is the same as savedsearches.js, 
+// except that it uses the Async library
+
+var Splunk = require('../../../splunk').Splunk;
+var Async  = Splunk.Async;
+
+exports.main = function(opts, callback) {
+    // This is just for testing - ignore it
+    opts = opts || {};
+    
+    var username = opts.username    || "admin";
+    var password = opts.password    || "changeme";
+    var scheme   = opts.scheme      || "https";
+    var host     = opts.host        || "localhost";
+    var port     = opts.port        || "8089";
+    
+    var service = new Splunk.Client.Service({
+        username: username,
+        password: password,
+        scheme: scheme,
+        host: host,
+        port: port
+    });
+
+    Async.chain([
+            // First, we log in
+            function(done) {
+                service.login(done);
+            },
+            // Retrieve the apps
+            function(success, done) {
+                if (!success) {
+                    done("Error logging in");
+                }
+                
+                service.savedSearches().list(done);
+            },
+            // Print them out
+            function(searches, done) {
+                console.log("Saved searches:");
+                for(var i = 0; i < searches.length; i++) {
+                    var search = searches[i];
+                    console.log("  Search " + i + ": " + search.name);
+                    console.log("    " + search.properties().search);
+                } 
+                
+                done();
+            }
+        ],
+        function(err) {
+            callback(err);        
+        }
+    );
+};
+
+if (module === require.main) {
+    exports.main({}, function() {});
+}
+});
+
+require.define("/examples/node/helloworld/search_normal.js", function (require, module, exports, __dirname, __filename) {
+    
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+// This example will login to Splunk, perform a regular search, wait until
+// it is done, and then print out the raw results and some key-value pairs
+
+var Splunk = require('../../../splunk').Splunk;
+var Async  = Splunk.Async;
+
+exports.main = function(opts, callback) {
+    // This is just for testing - ignore it
+    opts = opts || {};
+    
+    var username = opts.username    || "admin";
+    var password = opts.password    || "changeme";
+    var scheme   = opts.scheme      || "https";
+    var host     = opts.host        || "localhost";
+    var port     = opts.port        || "8089";
+    
+    var service = new Splunk.Client.Service({
+        username: username,
+        password: password,
+        scheme: scheme,
+        host: host,
+        port: port
+    });
+
+    Async.chain([
+            // First, we log in
+            function(done) {
+                service.login(done);
+            },
+            // Perform the search
+            function(success, done) {
+                if (!success) {
+                    done("Error logging in");
+                }
+                
+                service.search("search index=_internal | head 3", {}, done);
+            },
+            // Wait until the job is done
+            function(job, done) {
+                Async.whilst(
+                    // Loop until it is done
+                    function() { return !job.properties().isDone; },
+                    // Refresh the job on every iteration, but sleep for 1 second
+                    function(iterationDone) {
+                        Async.sleep(1000, function() {
+                            // Refresh the job and note how many events we've looked at so far
+                            job.refresh(function(err) {
+                                console.log("-- refreshing, " + (job.properties().eventCount || 0) + " events so far");
+                                iterationDone();
+                            });
+                        });
+                    },
+                    // When we're done, just pass the job forward
+                    function(err) {
+                        console.log("-- job done --");
+                        done(err, job);
+                    }
+                );
+            },
+            // Print out the statistics and get the results
+            function(job, done) {
+                // Print out the statics
+                console.log("Job Statistics: ");
+                console.log("  Event Count: " + job.properties().eventCount);
+                console.log("  Disk Usage: " + job.properties().diskUsage + " bytes");
+                console.log("  Priority: " + job.properties().priority);
+                
+                // Ask the server for the results
+                job.results({}, done);
+            },
+            // Print the raw results out
+            function(results, job, done) {
+                // Find the index of the fields we want
+                var rawIndex = results.fields.indexOf("_raw");
+                var sourcetypeIndex = results.fields.indexOf("sourcetype");
+                var userIndex = results.fields.indexOf("user");
+                
+                // Print out each result and the key-value pairs we want
+                console.log("Results: ");
+                for(var i = 0; i < results.rows.length; i++) {
+                    console.log("  Result " + i + ": ");
+                    console.log("    sourcetype: " + results.rows[i][rawIndex]);
+                    console.log("    user: " + results.rows[i][sourcetypeIndex]);
+                    console.log("    _raw: " + results.rows[i][userIndex]);
+                }
+                
+                // Once we're done, cancel the job.
+                job.cancel(done);
+            }
+        ],
+        function(err) {
+            callback(err);        
+        }
+    );
+};
+
+if (module === require.main) {
+    exports.main({}, function() {});
+}
+});
+
+require.define("/examples/node/helloworld/search_blocking.js", function (require, module, exports, __dirname, __filename) {
+    
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+// This example will login to Splunk, perform a blocking search, and then print 
+// out the raw results and some key-value pairs. A blocking search is one that 
+// won't return until the search is complete.
+
+var Splunk = require('../../../splunk').Splunk;
+var Async  = Splunk.Async;
+
+exports.main = function(opts, callback) {
+    // This is just for testing - ignore it
+    opts = opts || {};
+    
+    var username = opts.username    || "admin";
+    var password = opts.password    || "changeme";
+    var scheme   = opts.scheme      || "https";
+    var host     = opts.host        || "localhost";
+    var port     = opts.port        || "8089";
+    
+    var service = new Splunk.Client.Service({
+        username: username,
+        password: password,
+        scheme: scheme,
+        host: host,
+        port: port
+    });
+
+    Async.chain([
+            // First, we log in
+            function(done) {
+                service.login(done);
+            },
+            // Perform the search
+            function(success, done) {
+                if (!success) {
+                    done("Error logging in");
+                }
+                
+                service.search("search index=_internal | head 3", {exec_mode: "blocking"}, done);
+            },
+            // The job is done, but let's some statistics from the server.
+            function(job, done) {
+                job.read(done);
+            },
+            // Print out the statistics and get the results
+            function(job, done) {
+                // Print out the statics
+                console.log("Job Statistics: ");
+                console.log("  Event Count: " + job.properties().eventCount);
+                console.log("  Disk Usage: " + job.properties().diskUsage + " bytes");
+                console.log("  Priority: " + job.properties().priority);
+                
+                // Ask the server for the results
+                job.results({}, done);
+            },
+            // Print the raw results out
+            function(results, job, done) {
+                // Find the index of the fields we want
+                var rawIndex = results.fields.indexOf("_raw");
+                var sourcetypeIndex = results.fields.indexOf("sourcetype");
+                var userIndex = results.fields.indexOf("user");
+                
+                // Print out each result and the key-value pairs we want
+                console.log("Results: ");
+                for(var i = 0; i < results.rows.length; i++) {
+                    console.log("  Result " + i + ": ");
+                    console.log("    sourcetype: " + results.rows[i][rawIndex]);
+                    console.log("    user: " + results.rows[i][sourcetypeIndex]);
+                    console.log("    _raw: " + results.rows[i][userIndex]);
+                }
+                
+                // Once we're done, cancel the job.
+                job.cancel(done);
+            }
+        ],
+        function(err) {
+            callback(err);        
+        }
+    );
+};
+
+if (module === require.main) {
+    exports.main({}, function() {});
+}
+});
+
+require.define("/examples/node/helloworld/search_oneshot.js", function (require, module, exports, __dirname, __filename) {
+    
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+// This example will login to Splunk, perform a oneshot search, and then print 
+// out the raw results and some key-value pairs. A one search is one that 
+// won't return until the search is complete and return all the search
+// results in the response.
+
+var Splunk = require('../../../splunk').Splunk;
+var Async  = Splunk.Async;
+
+exports.main = function(opts, callback) {
+    // This is just for testing - ignore it
+    opts = opts || {};
+    
+    var username = opts.username    || "admin";
+    var password = opts.password    || "changeme";
+    var scheme   = opts.scheme      || "https";
+    var host     = opts.host        || "localhost";
+    var port     = opts.port        || "8089";
+    
+    var service = new Splunk.Client.Service({
+        username: username,
+        password: password,
+        scheme: scheme,
+        host: host,
+        port: port
+    });
+
+    Async.chain([
+            // First, we log in
+            function(done) {
+                service.login(done);
+            },
+            // Perform the search
+            function(success, done) {
+                if (!success) {
+                    done("Error logging in");
+                }
+                
+                service.oneshotSearch("search index=_internal | head 3", {}, done);
+            },
+            // The job is done, and the results are returned inline
+            function(results, done) {
+                // Find the index of the fields we want
+                var rawIndex = results.fields.indexOf("_raw");
+                var sourcetypeIndex = results.fields.indexOf("sourcetype");
+                var userIndex = results.fields.indexOf("user");
+                
+                // Print out each result and the key-value pairs we want
+                console.log("Results: ");
+                for(var i = 0; i < results.rows.length; i++) {
+                    console.log("  Result " + i + ": ");
+                    console.log("    sourcetype: " + results.rows[i][rawIndex]);
+                    console.log("    user: " + results.rows[i][sourcetypeIndex]);
+                    console.log("    _raw: " + results.rows[i][userIndex]);
+                }
+                
+                done();
+            }
+        ],
+        function(err) {
+            callback(err);        
+        }
+    );
+};
+
+if (module === require.main) {
+    exports.main({}, function() {});
+}
+});
+
+require.define("/examples/node/helloworld/search_realtime.js", function (require, module, exports, __dirname, __filename) {
+    
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+// This example will login to Splunk and perform a realtime search that counts
+// how many events of each sourcetype we have seen. It will then print out
+// this information every 1 second for a set number of iterations.
+
+var Splunk = require('../../../splunk').Splunk;
+var Async  = Splunk.Async;
+
+exports.main = function(opts, callback) {
+    // This is just for testing - ignore it
+    opts = opts || {};
+    
+    var username = opts.username    || "admin";
+    var password = opts.password    || "changeme";
+    var scheme   = opts.scheme      || "https";
+    var host     = opts.host        || "localhost";
+    var port     = opts.port        || "8089";
+    
+    var service = new Splunk.Client.Service({
+        username: username,
+        password: password,
+        scheme: scheme,
+        host: host,
+        port: port
+    });
+
+    Async.chain([
+            // First, we log in
+            function(done) {
+                service.login(done);
+            },
+            // Perform the search
+            function(success, done) {
+                if (!success) {
+                    done("Error logging in");
+                }
+                
+                service.search(
+                    "search index=_internal | stats count by sourcetype", 
+                    {earliest_time: "rt", latest_time: "rt"}, 
+                    done);
+            },
+            // The search is never going to be done, so we simply poll it every second to get
+            // more results
+            function(job, done) {
+                var MAX_COUNT = 5;
+                var count = 0;
+                
+                Async.whilst(
+                    // Loop for N times
+                    function() { return MAX_COUNT > count; },
+                    // Every second, ask for preview results
+                    function(iterationDone) {
+                        Async.sleep(1000, function() {
+                            job.preview({}, function(err, results) {
+                                if (err) {
+                                    iterationDone(err);
+                                }
+                                
+                                // Only do something if we have results
+                                if (results.rows) {                                    
+                                    // Up the iteration counter
+                                    count++;
+                                    
+                                    console.log("========== Iteration " + count + " ==========");
+                                    var sourcetypeIndex = results.fields.indexOf("sourcetype");
+                                    var countIndex = results.fields.indexOf("count");
+                                    
+                                    for(var i = 0; i < results.rows.length; i++) {
+                                        var row = results.rows[i];
+                                        
+                                        // This is a hacky "padding" solution
+                                        var stat = ("  " + row[sourcetypeIndex] + "                         ").slice(0, 30);
+                                        
+                                        // Print out the sourcetype and the count of the sourcetype so far
+                                        console.log(stat + row[countIndex]);   
+                                    }
+                                    
+                                    console.log("=================================");
+                                }
+                                    
+                                // And we're done with this iteration
+                                iterationDone();
+                            });
+                        });
+                    },
+                    // When we're done looping, just cancel the job
+                    function(err) {
+                        job.cancel(done);
+                    }
+                );
+            }
+        ],
+        function(err) {
+            callback(err);        
+        }
+    );
+};
+
+if (module === require.main) {
+    exports.main({}, function() {});
 }
 });
 
@@ -7504,17 +8426,9 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
                 'cancel':       this.cancel,
                 'create':       this.create,
                 'events':       this.events,
-                'finalize':     this.finalize,
                 'list':         this.list,
-                'pause':        this.pause,
                 'preview':      this.preview,
-                'results':      this.results,
-                'searchlog':    this.searchlog,
-                'summary':      this.summary,
-                'perf':         this.perf,
-                'timeline':     this.timeline,
-                'touch':        this.touch,
-                'unpause':      this.unpause,
+                'results':      this.results
             };
 
             // If we don't have any command, notify the user.
@@ -7775,6 +8689,540 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
         // Try and parse the command line
         if (!cmdline.executedCommand) {
             console.log(cmdline.helpInformation());
+            callback("You must specify a command to run.");
+            return;
+        }
+    };
+    
+    if (module === require.main) {
+        exports.main(process.argv);
+    }
+})();
+});
+
+require.define("/examples/node/conf.js", function (require, module, exports, __dirname, __filename) {
+    
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+(function() {
+    var Splunk          = require('../../splunk').Splunk;
+    var Class           = Splunk.Class;
+    var utils           = Splunk.Utils;
+    var Async           = Splunk.Async;
+    var options         = require('../../internal/cmdline');
+
+    var createService = function(options) {
+        return new Splunk.Client.Service({
+            scheme:     options.scheme,
+            host:       options.host,
+            port:       options.port,
+            username:   options.username,
+            password:   options.password
+        });
+    };
+    
+    var extractError = function(err) {
+        if (err && err instanceof Error) {
+            err = err.message;
+        }
+        
+        if (err && err.odata) {
+            err = err.odata.messages;
+        }
+        
+        return err;
+    };
+    
+    var Program = Class.extend({
+        init: function(cmdline) {
+            this.cmdline = cmdline;
+        },
+
+        run: function() {
+            var args = arguments;
+            var that = this;
+            
+            this.service = createService(this.cmdline.opts);
+            
+            var commands = {
+                files: this.files,
+                stanzas: this.stanzas,
+                contents: this.contents,
+                edit: this.edit,
+                create: this.create,
+                "delete": this.del
+            }
+            
+            this.service.login(function(err, success) {
+                if (err || !success) {
+                    callback(err || "Login failure");
+                    return;
+                }
+                
+                commands[that.cmdline.executedCommand].apply(that, args);    
+            });
+        },
+        
+        // List all the conf files that match the specified
+        // pattern (or all of them if no pattern is specified).
+        files: function(pattern, options, callback) {
+            pattern = pattern || ".*";
+            
+            var service = this.service;
+            Async.chain([
+                    function(done) {
+                        service.properties().list(done);
+                    },
+                    function(files, done) {
+                        // Find all the files that match the pattern
+                        var regex = new RegExp(pattern);
+                        var files = files.filter(function(file) {
+                            return file.name.match(regex);
+                        });
+                        
+                        // If there are any files, print their name
+                        if (files.length > 0) {
+                            console.log("Configuration Files: ");
+                            files.forEach(function(file) {
+                                console.log("  " + file.name);
+                            });
+                        }
+                        
+                        done();
+                    }
+                ],
+                function(err) {
+                    callback(extractError(err));
+                }
+            );
+        },
+        
+        // List all the stanzas in the specified conf file.
+        stanzas: function(filename, options, callback) {
+            var service = this.service;
+            
+            if (options.global && (!!options.app || !!options.user)) {
+                done("Cannot specify both --global and --user or --app");
+                return;
+            }
+            
+            // Specialize our service if necessary
+            if (options.app || options.user) {
+                service = service.specialize(options.user, options.app);
+            }
+            
+            Async.chain([
+                    function(done) {
+                        var collection = options.global ? service.properties() : service.configurations();
+                        collection.contains(filename, done);
+                    },
+                    function(found, file, done) {
+                        if (!found) {
+                            done("Could not find file '" + filename + "'");
+                            return;
+                        }
+                        file.list(done);
+                    },
+                    function(stanzas, done) {
+                        // If there any stanzas, print their names
+                        if (stanzas.length > 0) {
+                            console.log("Stanzas for '" + filename + "': ");
+                            stanzas.forEach(function(stanza) {
+                                console.log("  " + stanza.name);
+                            });
+                        }
+                        done();
+                    }
+                ],
+                function(err) {
+                    callback(extractError(err));
+                }
+            );
+        },
+        
+        // List all the properties in the specified conf file::stanza
+        contents: function(filename, stanzaName, options, callback) {
+            var ignore = ["__id", "__metadata", "__name"];
+            var service = this.service;
+            
+            if (options.global && (!!options.app || !!options.user)) {
+                callback("Cannot specify both --global and --user or --app");
+                return;
+            }
+            
+            // Specialize our service if necessary
+            if (options.app || options.user) {
+                service = service.specialize(options.user, options.app);
+            }
+            
+            Async.chain([
+                    function(done) {
+                        var collection = options.global ? service.properties() : service.configurations();
+                        collection.contains(filename, done);
+                    },
+                    function(found, file, done) {
+                        if (!found) {
+                            done("Could not find file: '" + filename + "'");
+                            return;
+                        }
+                        file.contains(stanzaName, done);  
+                    },
+                    function(found, stanza, done) {
+                        if (!found) {
+                            done("Could not find stanza '" + stanzaName + "' in file '" + filename + "'");
+                            return;
+                        }
+                        stanza.refresh(done);
+                    },
+                    function(stanza, done) {
+                        // Find all the properties
+                        var keys = [];
+                        var properties = stanza.properties();
+                        for(var key in properties) {
+                            if (properties.hasOwnProperty(key) && ignore.indexOf(key) < 0) {
+                                keys.push(key);
+                            }
+                        }
+                        
+                        // If there are any properties, print their name and value
+                        if (keys.length > 0) {
+                            console.log("Properties for " + filename + ".conf [" + stanzaName + "]: ");
+                            keys.forEach(function(key) {
+                                console.log("  " + key + ": " + properties[key]);
+                            });
+                        }
+                        
+                        done();
+                    }
+                ],
+                function(err) {
+                    callback(extractError(err));
+                }
+            );
+        },
+        
+        // Edit the specified property in the specified conf file::stanza
+        edit: function(filename, stanzaName, key, value, options, callback) {
+            var service = this.service;
+            
+            if (options.global && (!!options.app || !!options.user)) {
+                callback("Cannot specify both --global and --user or --app");
+                return;
+            }
+            
+            // Specialize our service if necessary
+            if (options.app || options.user) {
+                service = service.specialize(options.user, options.app);
+            }
+            
+            Async.chain([
+                    function(done) {
+                        var collection = options.global ? service.properties() : service.configurations();
+                        collection.contains(filename, done);
+                    },
+                    function(found, file, done) {
+                        if (!found) {
+                            done("Could not find file: '" + filename + "'");
+                            return;
+                        }
+                        file.contains(stanzaName, done);  
+                    },
+                    function(found, stanza, done) {
+                        if (!found) {
+                            done("Could not find stanza '" + stanzaName + "' in file '" + filename + "'");
+                            return;
+                        }
+                        done(null, stanza);
+                    },
+                    function(stanza, done) {
+                        // Update the property
+                        var props = {};
+                        props[key] = value;
+                        stanza.update(props, done);                      
+                    }
+                ],
+                function(err) {                    
+                    if (!err) {
+                        console.log("Set '" + key + "' to '" + value + "' in stanza '" + stanzaName + "' in file '" + filename + "'");
+                    }
+                    
+                    callback(extractError(err));
+                }
+            );
+        },
+        
+        // Create the file, stanza and key
+        create: function(filename, stanzaName, key, value, options, callback) {
+            var service = this.service;
+            
+            if (options.global && (!!options.app || !!options.user)) {
+                callback("Cannot specify both --global and --user or --app");
+                return;
+            }
+            
+            // Specialize our service if necessary
+            if (options.app || options.user) {
+                service = service.specialize(options.user, options.app);
+            }
+            
+            Async.chain([
+                    function(done) {
+                        collection = options.global ? service.properties() : service.configurations();
+                        collection.contains(filename, done);
+                    },
+                    function(found, file, done) {
+                        // If we can't find the file, create it
+                        if (!found) {
+                            collection.create(filename, function(err, file) {
+                    
+                                if (!err) {
+                                    console.log("Created file '" + filename + "'");
+                                }
+                                
+                                // Don't do anything with the stanza if we 
+                                // didn't specify one
+                                if (stanzaName) {
+                                    done(null, null, null);
+                                    return;   
+                                }
+                                
+                                file.contains(stanzaName, done);
+                            });
+                            
+                            return;
+                        }
+                        
+                        // Don't do anything with the stanza if we 
+                        // didn't specify one
+                        if (!stanzaName) {
+                            done(null, null, null);
+                            return;
+                        }
+                        
+                        file.contains(stanzaName, done);
+                    },
+                    function(found, stanza, done) {
+                        if (!stanzaName) {
+                            done(null, null);
+                            return;
+                        }
+                        
+                        // If we can't find the stanza, then create it
+                        if (!found) {
+                            var file = options.global 
+                                ? new Splunk.Client.PropertyFile(service, filename) 
+                                : new Splunk.Client.ConfigurationFile(service, filename);
+                                
+                            file.create(stanzaName, {}, function(err, stanza) {
+                                if (err) {
+                                    done(err);
+                                    return;
+                                }
+                                
+                                if (!err) {
+                                    console.log("Created stanza '" + stanzaName + "' in file '" + filename + "'");
+                                }
+                                
+                                stanza.refresh(done);
+                            });
+                            return;
+                        }
+                        
+                        stanza.refresh(done);
+                    },
+                    function(stanza, done) {
+                        // If there is a key to update it,
+                        // then update it.
+                        if (stanzaName && key && value) {
+                            var props = {};
+                            props[key] = value;
+                            stanza.update(props, done);
+                            return;
+                        }
+
+                        done();
+                    }
+                ],
+                function(err) {
+                    if (key) {
+                        console.log("Set '" + key + "' to '" + value + "' in stanza '" + stanzaName + "' in file '" + filename + "'");
+                    }
+                    
+                    callback(extractError(err));
+                }
+            );
+        },
+        
+        // Delete the specified stanza in the specified conf file
+        del: function(filename, stanzaName, options, callback) {
+            var service = this.service;
+            
+            if (options.global && (!!options.app || !!options.user)) {
+                callback("Cannot specify both --global and --user or --app");
+                return;
+            }
+            
+            // Specialize our service if necessary
+            if (options.app || options.user) {
+                service = service.specialize(options.user, options.app);
+            }
+            
+            Async.chain([
+                    function(done) {
+                        var collection = options.global ? service.properties() : service.configurations();
+                        collection.contains(filename, done);
+                    },
+                    function(found, file, done) {
+                        if (!found) {
+                            done("Could not find file: '" + filename + "'");
+                            return;
+                        }
+                        file.contains(stanzaName, done);  
+                    },
+                    function(found, stanza, done) {
+                        if (!found) {
+                            done("Could not find stanza '" + stanzaName + "' in file '" + filename + "'");
+                            return;
+                        }
+                        stanza.remove(done);
+                    }
+                ],
+                function(err) {
+                    if (!err) {
+                        console.log("Deleted stanza '" + stanzaName + "' in file '" + filename + "'");
+                    }
+                    
+                    callback(extractError(err));
+                }
+            );
+        },
+    });
+
+    exports.main = function(argv, callback) {     
+        Splunk.Logger.setLevel("ALL");
+        
+        callback = callback || function(err) { 
+            if (err) {
+                console.log(err);
+            }
+            else {
+                console.log("=============="); 
+            }
+        };
+        var cmdline = options.create();
+        
+        var program = new Program(cmdline);
+        
+        cmdline.name = "conf";
+        cmdline.description("View and edit configuration properties");
+        
+        cmdline
+            .command("files [pattern]")
+            .description("List all configuration files. Optional pattern to filter files")
+            .action(function(pattern, options) {
+                program.run(pattern, options, callback);
+            });
+            
+        cmdline
+            .command("stanzas <filename>")
+            .description("List all stanzas in the specified configuration file")
+            .option("-g, --global", "Get the contents of the file from the global (indexing) view.")
+            .option("-u, --user <user>", "User context to look in")
+            .option("-a, --app <app>", "App context to look in")
+            .action(function(filename, options) {
+                program.run(filename, options, callback);
+            });
+            
+        cmdline
+            .command("contents <filename> <stanza>")
+            .description("List all key=value properties of the specified file and stanza")
+            .option("-g, --global", "Get the contents of the file from the global (indexing) view.")
+            .option("-u, --user <user>", "User context to look in")
+            .option("-a, --app <app>", "App context to look in")
+            .action(function(filename, stanza, options) {
+                program.run(filename, stanza, options, callback);
+            });
+            
+        cmdline
+            .command("edit <filename> <stanza> <key> <value>")
+            .description("Edit the specified stanza")
+            .option("-g, --global", "Get the contents of the file from the global (indexing) view.")
+            .option("-u, --user <user>", "User context to look in")
+            .option("-a, --app <app>", "App context to look in")
+            .action(function(filename, stanza, key, value, options) {
+                program.run(filename, stanza, key, value, options, callback);
+            });
+            
+        cmdline
+            .command("create <filename> [stanza] [key] [value]")
+            .description("Create a file/stanza/key (will create up to the deepest level")
+            .option("-g, --global", "Get the contents of the file from the global (indexing) view.")
+            .option("-u, --user <user>", "User context to look in")
+            .option("-a, --app <app>", "App context to look in")
+            .action(function(filename, stanza, key, value, options) {
+                program.run(filename, stanza, key, value, options, callback);
+            });
+            
+        cmdline
+            .command("delete <filename> <stanza>")
+            .description("Delete the stanza in the specified file")
+            .option("-g, --global", "Get the contents of the file from the global (indexing) view.")
+            .option("-u, --user <user>", "User context to look in")
+            .option("-a, --app <app>", "App context to look in")
+            .action(function(filename, stanza, options) {
+                program.run(filename, stanza, options, callback);
+            });
+        
+        cmdline.on('--help', function(){
+            console.log("  Examples:");
+            console.log("  ");
+            console.log("  List all files:");
+            console.log("  > node conf.js files");
+            console.log("  ");
+            console.log("  List all files which start with 'foo':");
+            console.log("  > node conf.js files ^foo");
+            console.log("  ");
+            console.log("  List all stanzas in file 'foo':");
+            console.log("  > node conf.js stanzas foo");
+            console.log("  ");
+            console.log("  List the content of stanza 'bar' in file 'foo':");
+            console.log("  > node conf.js content foo bar");
+            console.log("  ");
+            console.log("  > List the content of stanza 'bar' in file 'foo' in the namespace of user1/app1:");
+            console.log("  node conf.js content foo bar --user user1 --app app1");
+            console.log("  ");
+            console.log("  Set the key 'mykey' to value 'myval' in stanza 'bar' in file 'foo' in the namespace of user1/app1:");
+            console.log("  > node conf.js edit foo bar mykey myvalue --user user1 --app app1");
+            console.log("  ");
+            console.log("  Create a file 'foo' in the namespace of user1/app1:");
+            console.log("  > node conf.js create foo --user user1 --app app1");
+            console.log("  ");
+            console.log("  Create a stanza 'bar' in file 'foo' (and create if it doesn't exist) in the namespace of user1/app1:");
+            console.log("  > node conf.js create foo bar --user user1 --app app1");
+            console.log("  ");
+            console.log("  Delete stanza 'bar' in file 'foo':");
+            console.log("  > node conf.js delete foo bar");
+            console.log("  ");
+            
+        });
+        cmdline.parse(argv);
+        
+        // Try and parse the command line
+        if (!cmdline.executedCommand) {
+            console.log(cmdline.helpInformation());
+            cmdline.emit("--help");
             callback("You must specify a command to run.");
             return;
         }
