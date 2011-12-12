@@ -13,7 +13,7 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-exports.setup = function() {
+exports.setup = function(opts) {
     var Splunk  = require('../splunk').Splunk;
     var Async   = Splunk.Async;
 
@@ -28,6 +28,28 @@ exports.setup = function() {
     };
       
     return {  
+        "Hello World Tests": {
+            "Apps": function(test) {
+                var main = require("../examples/node/helloworld/apps").main;
+                main(opts, test.done);
+            },
+            
+            "Apps#Async": function(test) {
+                var main = require("../examples/node/helloworld/apps_async").main;
+                main(opts, test.done);
+            },
+            
+            "Saved Searches": function(test) {
+                var main = require("../examples/node/helloworld/savedsearches").main;
+                main(opts, test.done);
+            },
+            
+            "Saved Searches#Async": function(test) {
+                var main = require("../examples/node/helloworld/savedsearches_async").main;
+                main(opts, test.done);
+            }  
+        },
+        
         "Jobs Example Tests": {
             setUp: function(done) {   
                 var context = this;
@@ -188,6 +210,15 @@ exports.setup = function() {
 if (module === require.main) {
     var test        = require('../contrib/nodeunit/test_reporter');
     
-    var suite = exports.setup();
+    var options = require('../internal/cmdline');    
+    var parser  = options.create();
+    var cmdline = parser.parse(process.argv);
+        
+    // If there is no command line, we should return
+    if (!cmdline) {
+        throw new Error("Error in parsing command line parameters");
+    }    
+    
+    var suite = exports.setup(cmdline.opts);
     test.run([{"Tests": suite}]);
 }
