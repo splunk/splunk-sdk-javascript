@@ -47,7 +47,22 @@ exports.setup = function(opts) {
             "Saved Searches#Async": function(test) {
                 var main = require("../examples/node/helloworld/savedsearches_async").main;
                 main(opts, test.done);
-            }  
+            },
+            
+            "Search#normal": function(test) {
+                var main = require("../examples/node/helloworld/search_normal").main;
+                main(opts, test.done);
+            },
+            
+            "Search#blocking": function(test) {
+                var main = require("../examples/node/helloworld/search_blocking").main;
+                main(opts, test.done);
+            },
+            
+            "Search#oneshot": function(test) {
+                var main = require("../examples/node/helloworld/search_oneshot").main;
+                main(opts, test.done);
+            }
         },
         
         "Jobs Example Tests": {
