@@ -140,7 +140,7 @@ var EventView = Backbone.View.extend({
   
   events: {
     "click tr.result-data" : "toggleInfo",
-    "click a.close" : "hideInfo",
+    "click a.close" : "hideInfo"
   },
   
   toggleInfo: function(e) {
@@ -319,7 +319,7 @@ var PaginationView = Backbone.View.extend({
   events: {
     "click div.pagination li.prev a": "prev",
     "click div.pagination li.next a": "next",
-    "click div.pagination li.number a": "page",
+    "click div.pagination li.number a": "page"
   },
   
   prev: function(e) {
@@ -396,7 +396,7 @@ var PaginationView = Backbone.View.extend({
       isPrevDisabled: this.currentPage === 1,
       isNextDisabled: this.currentPage === numPages,
       items: [],
-      numPages: numPages,
+      numPages: numPages
     };
     
     for(var i = 0; i < pageList.length; i++) {
@@ -450,7 +450,7 @@ var SearchStatsView = Backbone.View.extend({
     "click a.unpause" : "unpause",
     "click a.pause" : "pause",
     "click a.delete" : "del",
-    "click a.finalize" : "finalize",
+    "click a.finalize" : "finalize"
   },
   
   newJob: function(job) {
@@ -617,7 +617,7 @@ var JobView = Backbone.View.extend({
     "click a.unpause" : "unpause",
     "click a.pause" : "pause",
     "click a.delete" : "del",
-    "click a.finalize" : "finalize",
+    "click a.finalize" : "finalize"
   },
   
   unpause: function(e) {
@@ -658,7 +658,7 @@ var JobView = Backbone.View.extend({
       expires: expires.format("m/d/yy h:MM:ss TT"),
       status: propertiesToState(properties),
       query: properties.label || properties.__name,
-      actions: propertiesToActions(properties),
+      actions: propertiesToActions(properties)
     };
     var content = this.template.tmpl(templateData);
     
@@ -722,7 +722,7 @@ var SearchView = Backbone.View.extend({
     $(this.el).append(this.eventsView.render().el);
     
     return this;
-  },
+  }
 });
 
 var JobManagerView = Backbone.View.extend({
@@ -880,7 +880,7 @@ var MapView = Backbone.View.extend({
     });
     
     return this;
-  },
+  }
 });  
 
 var BootstrapModalView = Backbone.View.extend({
@@ -961,7 +961,7 @@ var SigninView = BootstrapModalView.extend({
         port: port,
         username: username,
         password: password,
-        app: app,
+        app: app
     });
       
     svc.login(function(err, success) {
@@ -990,7 +990,7 @@ var SigninView = BootstrapModalView.extend({
     });
     
     this.$("#login-error").addClass("hidden");
-  },
+  }
 });
 
 var NavBarView = Backbone.View.extend({

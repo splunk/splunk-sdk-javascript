@@ -425,11 +425,12 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
 
     // Set the actual output functions
     var _log, _warn, _error, _info;
-    if (console) {
-        _log   = function() { console.log.apply(console, arguments);   } || function() {};
-        _error = function() { console.error.apply(console, arguments); } || function() {};
-        _warn  = function() { console.warn.apply(console, arguments);  } || function() {};
-        _info  = function() { console.info.apply(console, arguments);  } || function() {};
+    _log = _warn = _error = _info = function() {};
+    if (typeof(console) !== "undefined") {
+        _log   = (console.log   ? function() { console.log.apply(console, arguments);   } : _log);
+        _error = (console.error ? function() { console.error.apply(console, arguments); } : _error);
+        _warn  = (console.warn  ? function() { console.warn.apply(console, arguments);  } : _warn);
+        _info  = (console.info  ? function() { console.info.apply(console, arguments);  } : _info);
     }
 
     /**
@@ -4852,6 +4853,16 @@ require.define("/browser.entry.js", function (require, module, exports, __dirnam
     String.prototype.trim = String.prototype.trim || function(delim) {
         if (delim) return this.replace(new RegExp("^[\\s" + delim + "]+"),'').replace(new RegExp("[\\s" + delim + "]+$"), '');
         else return this.replace(/^\s\s*/, '').replace(/\s\s*$/, '');
+    };
+    
+    // Polyfill Array.prototype.indexOf
+    Array.prototype.indexOf = Array.prototype.indexOf || function(search, fromIndex) {
+        if (!fromIndex) fromIndex = 0;
+        for(var i=0; i<this.length; i++) {
+            if (this[i] === search)
+                return i;
+        }
+        return -1;
     };
     
     var previousSplunk = window[exportName];

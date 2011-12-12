@@ -130,7 +130,7 @@ var Job = Backbone.Model.extend({
   finalize: function(callback) {
     this.set({isFinalized: true});
     this.job.finalize(callback);
-  },
+  }
 });
 
 var Jobs = Backbone.Collection.extend({
@@ -191,5 +191,5 @@ var Jobs = Backbone.Collection.extend({
         alert("ERR: " + err);
       }
     )
-  },
+  }
 });

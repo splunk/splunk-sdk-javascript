@@ -495,11 +495,12 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
 
     // Set the actual output functions
     var _log, _warn, _error, _info;
-    if (console) {
-        _log   = function() { console.log.apply(console, arguments);   } || function() {};
-        _error = function() { console.error.apply(console, arguments); } || function() {};
-        _warn  = function() { console.warn.apply(console, arguments);  } || function() {};
-        _info  = function() { console.info.apply(console, arguments);  } || function() {};
+    _log = _warn = _error = _info = function() {};
+    if (typeof(console) !== "undefined") {
+        _log   = (console.log   ? function() { console.log.apply(console, arguments);   } : _log);
+        _error = (console.error ? function() { console.error.apply(console, arguments); } : _error);
+        _warn  = (console.warn  ? function() { console.warn.apply(console, arguments);  } : _warn);
+        _info  = (console.info  ? function() { console.info.apply(console, arguments);  } : _info);
     }
 
     /**
