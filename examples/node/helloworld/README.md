@@ -7,7 +7,7 @@ of the examples hard-code the connection information for Splunk.
 One note is that we do test the examples in our test harness, so there is
 a way to sideload connection information. However, you can safely ignore this.
 
-#### `apps.js` and `apps_async.js`
+### Files: `apps.js` and `apps_async.js`
 
 These files demonstrate working with the `Splunk.Client.Applications` collection
 and `Splunk.Client.Application` entity. It will list all the apps, and for each
@@ -16,7 +16,7 @@ one print its name.
 The only difference between the two files is that the latter uses the built-in
 `Splunk.Async` module to make asynchronous control-flow easier.
 
-#### `savedsearches.js` and `savedsearches_async.js`
+### Files: `savedsearches.js` and `savedsearches_async.js`
 
 These files demonstrate working with the `Splunk.Client.SavedSearches` collection
 and `Splunk.Client.SavedSearch` entity. It will list all the saved searches, and 
@@ -25,7 +25,7 @@ for each one print its name and the search query associated with it.
 The only difference between the two files is that the latter uses the built-in
 `Splunk.Async` module to make asynchronous control-flow easier.
 
-#### `search_normal.js`, `search_blocking.js` and `search_oneshot.js`
+### Files: `search_normal.js`, `search_blocking.js` and `search_oneshot.js`
 
 These files demonstrate running searches on Splunk using the SDK. They will
 run the search, print out progress (if available), search statistics 
@@ -44,7 +44,7 @@ not return the REST call until the job is done, and then it will simply return
 the search results, rather than the search job ID. Once it is done, we print out
 the results.
 
-#### `search_realtime.js`
+### Files: `search_realtime.js`
 
 This example shows how to work with realtime searches. It will execute a realtime
 search that will collect statistics about all events from "now" to infinity (as
