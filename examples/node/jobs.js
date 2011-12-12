@@ -109,17 +109,9 @@
                 'cancel':       this.cancel,
                 'create':       this.create,
                 'events':       this.events,
-                'finalize':     this.finalize,
                 'list':         this.list,
-                'pause':        this.pause,
                 'preview':      this.preview,
-                'results':      this.results,
-                'searchlog':    this.searchlog,
-                'summary':      this.summary,
-                'perf':         this.perf,
-                'timeline':     this.timeline,
-                'touch':        this.touch,
-                'unpause':      this.unpause,
+                'results':      this.results
             };
 
             // If we don't have any command, notify the user.
