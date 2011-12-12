@@ -18,7 +18,7 @@ events, and cancel jobs.
 To see more options and example usage, you can execute:
 > node jobs.js --help
 
-#### File: `conf.js`
+### File: `conf.js`
 
 This file contains an example that enables navigation and modification of the Splunk
 configuration system. With it, you can list configuration files, stanzas and properties,
