@@ -670,7 +670,7 @@ var JobView = Backbone.View.extend({
 
 var JobsView = Backbone.View.extend({
   tagName: "div",
-  class: "row",
+  className: "row",
   
   initialize: function() {
     this.template = templates.jobs;
