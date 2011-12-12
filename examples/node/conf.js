@@ -111,7 +111,7 @@
             var service = this.service;
             
             if (options.global && (!!options.app || !!options.user)) {
-                callback("Cannot specify both --global and --user or --app");
+                done("Cannot specify both --global and --user or --app");
                 return;
             }
             
@@ -127,7 +127,7 @@
                     },
                     function(found, file, done) {
                         if (!found) {
-                            callback("Could not find file '" + filename + "'");
+                            done("Could not find file '" + filename + "'");
                             return;
                         }
                         file.list(done);
@@ -135,7 +135,7 @@
                     function(stanzas, done) {
                         // If there any stanzas, print their names
                         if (stanzas.length > 0) {
-                            console.log("Stanzas for '" + filename + ": ");
+                            console.log("Stanzas for '" + filename + "': ");
                             stanzas.forEach(function(stanza) {
                                 console.log("  " + stanza.name);
                             });
@@ -171,14 +171,14 @@
                     },
                     function(found, file, done) {
                         if (!found) {
-                            callback("Could not find file: '" + filename + "'");
+                            done("Could not find file: '" + filename + "'");
                             return;
                         }
                         file.contains(stanzaName, done);  
                     },
                     function(found, stanza, done) {
                         if (!found) {
-                            callback("Could not find stanza '" + stanzaName + "' in file '" + filename + "'");
+                            done("Could not find stanza '" + stanzaName + "' in file '" + filename + "'");
                             return;
                         }
                         stanza.refresh(done);
@@ -231,14 +231,14 @@
                     },
                     function(found, file, done) {
                         if (!found) {
-                            callback("Could not find file: '" + filename + "'");
+                            done("Could not find file: '" + filename + "'");
                             return;
                         }
                         file.contains(stanzaName, done);  
                     },
                     function(found, stanza, done) {
                         if (!found) {
-                            callback("Could not find stanza '" + stanzaName + "' in file '" + filename + "'");
+                            done("Could not find stanza '" + stanzaName + "' in file '" + filename + "'");
                             return;
                         }
                         done(null, stanza);
@@ -383,14 +383,14 @@
                     },
                     function(found, file, done) {
                         if (!found) {
-                            callback("Could not find file: '" + filename + "'");
+                            done("Could not find file: '" + filename + "'");
                             return;
                         }
                         file.contains(stanzaName, done);  
                     },
                     function(found, stanza, done) {
                         if (!found) {
-                            callback("Could not find stanza '" + stanzaName + "' in file '" + filename + "'");
+                            done("Could not find stanza '" + stanzaName + "' in file '" + filename + "'");
                             return;
                         }
                         stanza.remove(done);
@@ -519,6 +519,7 @@
         // Try and parse the command line
         if (!cmdline.executedCommand) {
             console.log(cmdline.helpInformation());
+            cmdline.emit("--help");
             callback("You must specify a command to run.");
             return;
         }

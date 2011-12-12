@@ -223,6 +223,157 @@ exports.setup = function(opts) {
                     }
                 );
             }
+        },
+        
+        "Conf Example Tests": {
+            setUp: function(done) {   
+                var context = this;
+                
+                this.main = require("../examples/node/conf").main;
+                this.run = function(command, args, options, callback) {                
+                    var combinedArgs = process.argv.slice();
+                    if (command) {
+                        combinedArgs.push(command);
+                    }
+                    
+                    if (args) {
+                        for(var i = 0; i < args.length; i++) {
+                            combinedArgs.push(args[i]);
+                        }
+                    }
+                    
+                    if (options) {
+                        for(var key in options) {
+                            if (options.hasOwnProperty(key)) {
+                                combinedArgs.push("--" + key);
+                                combinedArgs.push(options[key]);
+                            }
+                        }
+                    }
+              
+                    return context.main(combinedArgs, callback);
+                };
+                
+                done(); 
+            },
+            
+            "help": function(test) {
+                this.run(null, null, null, function(err) {
+                    test.ok(!!err);
+                    test.done();
+                });
+            },
+            
+            "List files": function(test) {
+                this.run("files", null, null, function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+            
+            "List files with pattern": function(test) {
+                this.run("files", ["^v"], null, function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+            
+            "List stanzas": function(test) {
+                this.run("stanzas", ["web"], null, function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+            
+            "Show non-existent contents": function(test) {
+                this.run("contents", ["json", "settings"], null, function(err) {
+                    test.ok(err);
+                    test.done();
+                });
+            },
+            
+            "Show contents with specialization": function(test) {
+                this.run("contents", ["json", "settings"], {app: "new_english"}, function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+            
+            "Show contents with --global": function(test) {
+                this.run("contents", ["json", "settings", "--global"], {}, function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+            
+            "Edit contents with no user set": function(test) {
+                this.run("edit", ["json", "settings", "foo", "bar"], {app: "new_english"}, function(err) {
+                    test.ok(err);
+                    test.done();
+                });
+            },
+            
+            "Edit contents": function(test) {
+                this.run("edit", ["json", "settings", "foo", "bar"], {app: "new_english", user: "admin"}, function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+            
+            "Create file": function(test) {
+                this.run("create", ["foo"], {app: "new_english", user: "admin"}, function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+            
+            "Create stanza": function(test) {
+                var options = {
+                    app: "new_english",
+                    user: "admin"
+                };
+                
+                var that = this;
+                this.run("create", ["foo", "bar"], options, function(err) {
+                    test.ok(!err);
+                    that.run("delete", ["foo", "bar"], options, function(err) {
+                        test.ok(!err);
+                        test.done();
+                    });
+                });
+            },
+            
+            "Create key=value": function(test) {
+                var options = {
+                    app: "new_english",
+                    user: "admin"
+                };
+                
+                var that = this;
+                this.run("create", ["foo", "bar", "abc", "123"], options, function(err) {
+                    test.ok(!err);
+                    that.run("delete", ["foo", "bar"], options, function(err) {
+                        test.ok(!err);
+                        test.done();
+                    });
+                });
+            },
+            
+            "Create+delete stanza": function(test) {
+                var options = {
+                    app: "new_english",
+                    user: "admin"
+                };
+                
+                var that = this;
+                this.run("create", ["foo", "bar"], options, function(err) {
+                    test.ok(!err);
+                    that.run("delete", ["foo", "bar"], options, function(err) {
+                        test.ok(!err);
+                        test.done();
+                    });
+                });
+            }
         }
     };
 };
