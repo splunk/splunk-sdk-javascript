@@ -313,6 +313,8 @@
               </a>
             <ul>
                               <li><a href='#Splunk.Utils+bind'>bind</a></li>
+                              <li><a href='#Splunk.Utils+trim'>trim</a></li>
+                              <li><a href='#Splunk.Utils+indexOf'>indexOf</a></li>
                               <li><a href='#Splunk.Utils+contains'>contains</a></li>
                               <li><a href='#Splunk.Utils+startsWith'>startsWith</a></li>
                               <li><a href='#Splunk.Utils+endsWith'>endsWith</a></li>
@@ -948,7 +950,7 @@
                 <p>Log to the console (equivalent to <code>console.log</code>)</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/log.js#L76">lib/log.js:76</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/log.js#L85">lib/log.js:85</a>)</h4>
                 <pre><code>log: function() {
     if (process.env.LOG_LEVEL &gt;= levels.ALL) {
         _log.apply(null, arguments);
@@ -973,7 +975,7 @@
                 <p>Log error to the console (equivalent to <code>console.error</code>)</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/log.js#L87">lib/log.js:87</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/log.js#L96">lib/log.js:96</a>)</h4>
                 <pre><code>error: function() {
     if (process.env.LOG_LEVEL &gt;= levels.ERROR) {
         _error.apply(null, arguments);
@@ -998,7 +1000,7 @@
                 <p>Log warning to the console (equivalent to <code>console.warn</code>)</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/log.js#L98">lib/log.js:98</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/log.js#L107">lib/log.js:107</a>)</h4>
                 <pre><code>warn: function() {
     if (process.env.LOG_LEVEL &gt;= levels.WARN) {
         _warn.apply(null, arguments);
@@ -1023,7 +1025,7 @@
                 <p>Log info to the console (equivalent to <code>console.info</code>)</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/log.js#L109">lib/log.js:109</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/log.js#L118">lib/log.js:118</a>)</h4>
                 <pre><code>info: function() {
     if (process.env.LOG_LEVEL &gt;= levels.INFO) {
         _info.apply(null, arguments);
@@ -1054,7 +1056,7 @@
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/log.js#L127">lib/log.js:127</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/log.js#L136">lib/log.js:136</a>)</h4>
                 <pre><code>setLevel: function(level) {    
     if (utils.isString(level)) {
         if (levels.hasOwnProperty(level)) {
@@ -1495,6 +1497,79 @@
               </section>
               
             </section>
+                      <section class='method' id='Splunk.Utils+trim'>
+              <header>
+                <h3>trim</h3>
+                <h4>Splunk.Utils.trim</h4>
+                <p class='type'>method</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">str</span> - <span class="em">String</span> <p>The string to trim</p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                                  <h4>Returns</h4>
+                                      <p><span class="em">String</span> The trimmed string</p>
+                  </section>
+              <section>
+                <p>Strip a string of all leading and trailing whitespace.</p>
+<h2>Example</h2>
+<pre><code> var a = " aaa ";
+ var b = Splunk.Utils.trim(a); //== "aaa"
+</code></pre>
+              </section>
+              <section class='source'>
+                <h4>Source</h4>
+                <pre><code>root.trim = function(str) {
+    if (String.prototype.trim) {
+        return String.prototype.trim.call(str);
+    }
+    else {
+        return str.replace(/^\\s\\s*/, '').replace(/\\s\\s*$/, '');   
+    }
+};</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='Splunk.Utils+indexOf'>
+              <header>
+                <h3>indexOf</h3>
+                <h4>Splunk.Utils.indexOf</h4>
+                <p class='type'>method</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">arr</span> - <span class="em">Array</span> <p>The array to search in</p></li>
+                                      <li><span class="bold">search</span> - <span class="em">Anything</span> <p>The thing to search for</p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                                  <h4>Returns</h4>
+                                      <p><span class="em">Number</span> The index of `search` or `-1` if it wasn't found</p>
+                  </section>
+              <section>
+                <p>Whether an array contains a specific object</p>
+<h2>Example</h2>
+<pre><code> var a = ["a", "b', "c"];
+ console.log(Splunk.Utils.indexOf(a, "b")) //== 1
+ console.log(Splunk.Utils.indexOf(a, "d")) //== -1
+</code></pre>
+              </section>
+              <section class='source'>
+                <h4>Source</h4>
+                <pre><code>root.indexOf = function(arr, search) {
+    for(var i=0; i&lt;arr.length; i++) {
+        if (arr[i] === search)
+            return i;
+    }
+    return -1;
+};</code></pre>
+              </section>
+              
+            </section>
                       <section class='method' id='Splunk.Utils+contains'>
               <header>
                 <h3>contains</h3>
@@ -1524,7 +1599,7 @@
                 <h4>Source</h4>
                 <pre><code>root.contains = function(arr, obj) {
     arr = arr || [];
-    return (arr.indexOf(obj) &gt;= 0);
+    return (root.indexOf(arr, obj) &gt;= 0);
 };</code></pre>
               </section>
               
