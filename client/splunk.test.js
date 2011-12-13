@@ -7716,10 +7716,8 @@ exports.setup = function(svc, opts) {
                     "search index=_internal | head 1 | stats count by sourcetype", 
                     {exec_mode: "blocking"}, 
                     function(err, job) {
-                        console.log("SEARCH DONE");
                         test.ok(!err);
                         job.results({json_mode: "rows"}, function(err, results) {
-                            console.log("GOT RESULTS");
                             test.ok(!err);
                             process.stdin.emit("data", JSON.stringify(results));
                             process.stdin.emit("end");
@@ -7740,10 +7738,8 @@ exports.setup = function(svc, opts) {
                     "search index=_internal | head 10 | stats count by sourcetype", 
                     {exec_mode: "blocking"}, 
                     function(err, job) {
-                        console.log("SEARCH DONE");
                         test.ok(!err);
                         job.results({json_mode: "column"}, function(err, results) {
-                            console.log("GOT RESULTS");
                             test.ok(!err);
                             process.stdin.emit("data", JSON.stringify(results));
                             process.stdin.emit("end");
@@ -8065,7 +8061,7 @@ exports.main = function(opts, callback) {
             function(done) {
                 service.login(done);
             },
-            // Retrieve the apps
+            // Retrieve the saved searches
             function(success, done) {
                 if (!success) {
                     done("Error logging in");
@@ -8193,9 +8189,9 @@ exports.main = function(opts, callback) {
                 console.log("Results: ");
                 for(var i = 0; i < results.rows.length; i++) {
                     console.log("  Result " + i + ": ");
-                    console.log("    sourcetype: " + results.rows[i][rawIndex]);
-                    console.log("    user: " + results.rows[i][sourcetypeIndex]);
-                    console.log("    _raw: " + results.rows[i][userIndex]);
+                    console.log("    sourcetype: " + results.rows[i][sourcetypeIndex]);
+                    console.log("    user: " + results.rows[i][userIndex]);
+                    console.log("    _raw: " + results.rows[i][rawIndex]);
                 }
                 
                 // Once we're done, cancel the job.
@@ -8293,9 +8289,9 @@ exports.main = function(opts, callback) {
                 console.log("Results: ");
                 for(var i = 0; i < results.rows.length; i++) {
                     console.log("  Result " + i + ": ");
-                    console.log("    sourcetype: " + results.rows[i][rawIndex]);
-                    console.log("    user: " + results.rows[i][sourcetypeIndex]);
-                    console.log("    _raw: " + results.rows[i][userIndex]);
+                    console.log("    sourcetype: " + results.rows[i][sourcetypeIndex]);
+                    console.log("    user: " + results.rows[i][userIndex]);
+                    console.log("    _raw: " + results.rows[i][rawIndex]);
                 }
                 
                 // Once we're done, cancel the job.
@@ -8379,9 +8375,9 @@ exports.main = function(opts, callback) {
                 console.log("Results: ");
                 for(var i = 0; i < results.rows.length; i++) {
                     console.log("  Result " + i + ": ");
-                    console.log("    sourcetype: " + results.rows[i][rawIndex]);
-                    console.log("    user: " + results.rows[i][sourcetypeIndex]);
-                    console.log("    _raw: " + results.rows[i][userIndex]);
+                    console.log("    sourcetype: " + results.rows[i][sourcetypeIndex]);
+                    console.log("    user: " + results.rows[i][userIndex]);
+                    console.log("    _raw: " + results.rows[i][rawIndex]);
                 }
                 
                 done();
