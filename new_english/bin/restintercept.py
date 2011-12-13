@@ -693,6 +693,9 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         )
         
     def set_response(self, status, content):
+        if status == 204:
+            status = 200
+            
         self.response.setStatus(status)
         self.response.setHeader('Content-Type', 'application/json')
         
