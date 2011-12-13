@@ -1,3 +1,8 @@
+/* Changes
+ * - Comment out <pre> and <code>
+ * - Comment out .label
+ */
+
 /*!
  * Bootstrap v1.4.0
  *
@@ -2404,7 +2409,7 @@ button.btn::-moz-focus-inner, input[type=submit].btn::-moz-focus-inner {
 .fade.in {
   opacity: 1;
 }
-.label {
+/*.label {
   padding: 1px 3px 2px;
   font-size: 9.75px;
   font-weight: bold;
@@ -2428,7 +2433,7 @@ button.btn::-moz-focus-inner, input[type=submit].btn::-moz-focus-inner {
 }
 .label.notice {
   background-color: #62cffc;
-}
+}*/
 .media-grid {
   margin-left: -20px;
   margin-bottom: 0;

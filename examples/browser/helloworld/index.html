@@ -17,6 +17,9 @@
     <link href="../resources/prettify.css" type="text/css" rel="stylesheet" />
     <style type="text/css">
       body {
+      }
+      
+      section {
         padding-top: 60px;
       }
       
@@ -76,9 +79,29 @@
           return sTag;
         }
         
+        var getCode = function(id) {
+          var code = "";
+          $(id + " pre li").each(function(index, line) {
+            var lineCode = "";
+            $("span" ,line).each(function(index, span) {
+              if ($(span).hasClass("com")) {
+                lineCode += " ";
+              }
+              else {
+                lineCode += $(span).text();
+              }
+            });
+            
+            lineCode += "\n";
+            code += lineCode;
+          });
+          
+          return code;
+        }
+        
         $("#apps-run").click(function() {
           // Get the code except comments
-          var code = $("#apps-tab-content .active pre li span:not(.com)").text();
+          var code = getCode("#apps-tab-content .active");
           
           var log = console.log;
           var tag = null;
@@ -103,7 +126,7 @@
         
         $("#savedsearches-run").click(function() {
           // Get the code except comments
-          var code = $("#savedsearches-tab-content .active pre li span:not(.com)").text();
+          var code = getCode("#savedsearches-tab-content .active");
           
           var log = console.log;
           var tag = null;
@@ -128,7 +151,7 @@
         
         $("#search-run").click(function() {
           // Get the code except comments
-          var code = $("#search-tab-content .active pre li span:not(.com)").text();
+          var code = getCode("#search-tab-content .active");
           
           var log = console.log;
           var tag = null;
@@ -154,7 +177,7 @@
         
         $("#search-realtime-run").click(function() {
           // Get the code except comments
-          var code = $("#search-realtime-tab-content .active pre li span:not(.com)").text();
+          var code = getCode("#search-realtime-tab-content .active");
           
           var log = console.log;
           var tag = null;
