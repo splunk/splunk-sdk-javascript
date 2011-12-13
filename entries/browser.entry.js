@@ -18,22 +18,6 @@
 // include it.
 
 (function(exportName) {
-    // Polyfill String.prototype.trim
-    String.prototype.trim = String.prototype.trim || function(delim) {
-        if (delim) return this.replace(new RegExp("^[\\s" + delim + "]+"),'').replace(new RegExp("[\\s" + delim + "]+$"), '');
-        else return this.replace(/^\s\s*/, '').replace(/\s\s*$/, '');
-    };
-    
-    // Polyfill Array.prototype.indexOf
-    Array.prototype.indexOf = Array.prototype.indexOf || function(search, fromIndex) {
-        if (!fromIndex) fromIndex = 0;
-        for(var i=0; i<this.length; i++) {
-            if (this[i] === search)
-                return i;
-        }
-        return -1;
-    };
-    
     var previousSplunk = window[exportName];
     
     var ourSplunk = require('../splunk').Splunk;

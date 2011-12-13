@@ -34,7 +34,7 @@ var performSearch = function(svc, query, callback) {
   var job = null;
   var searcher = null;
   
-  if (!Splunk.Utils.startsWith(query.trim(), "search")) {
+  if (!Splunk.Utils.startsWith(Splunk.Utils.trim(query), "search")) {
     query = "search " + query;
   }
   
@@ -84,7 +84,7 @@ var propertiesToActions = function(properties) {
   
   var okStates = ["INITIALIZED", "ACKED", "QUEUED", "PARSING", "RUNNING"];
   
-  if (okStates.indexOf(properties.dispatchState) > -1) {
+  if (Splunk.Utils.indexOf(okStates, properties.dispatchState) > -1) {
     return ["Pause", "Finalize", "Delete"];
   }
   
@@ -258,7 +258,7 @@ var EventsView = Backbone.View.extend({
   
   stats: function(properties) {
     var reportSearch = properties.reportSearch;
-    this.isTransform = (reportSearch && reportSearch.trim() !== "");
+    this.isTransform = (reportSearch && Splunk.Utils.trim(reportSearch) !== "");
   },
   
   add: function(event) {
@@ -564,7 +564,7 @@ var SearchFormView = Backbone.View.extend({
       return;
     }
     
-    var query = $("#searchbox").val().trim();
+    var query = Splunk.Utils.trim($("#searchbox").val());
     
     if (query !== "") {
       performSearch(App.service(), query);

@@ -12,6 +12,8 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
+var utils = Splunk.Utils;
+
 var Event = Backbone.Model.extend({
 });
 
@@ -58,8 +60,8 @@ var Events = Backbone.Collection.extend({
         var data = results.rows || [];
         var baseOffset = results.init_offset
         var fields = results.fields;
-        var timestampIndex = fields.indexOf("_time");
-        var rawIndex = fields.indexOf("_raw");
+        var timestampIndex = utils.indexOf(fields, "_time");
+        var rawIndex = utils.indexOf(fields, "_raw");
         var rows = [];
         
         for(var i = 0; i < data.length; i++) {
