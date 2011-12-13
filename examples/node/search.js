@@ -161,10 +161,10 @@
             console.log("  > node search.js --search 'search index=_internal | head 10' --exec_mode oneshot");
             console.log("  ");
             console.log("  Create a regular search and only return 10 results:");
-            console.log("  > node search.js --search 'search index=_internal | head 2' --count 10");
+            console.log("  > node search.js --search 'search index=_internal | head 20' --count 10");
             console.log("  ");
             console.log("  Create a regular search and output the progress while the search is running");
-            console.log("  > node search.js --search 'search index=_internal | head 2' --verbose");
+            console.log("  > node search.js --search 'search index=_internal | head 20' --verbose");
             console.log("  ");
         });
         
