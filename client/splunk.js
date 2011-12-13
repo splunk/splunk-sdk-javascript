@@ -569,6 +569,51 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
             return fn.apply(me, arguments); 
         }; 
     };
+    
+    /**
+     * Strip a string of all leading and trailing whitespace.
+     *
+     * Example:
+     *      
+     *      var a = " aaa ";
+     *      var b = Splunk.Utils.trim(a); //== "aaa"
+     *
+     * @param {String} str The string to trim
+     * @return {String} The trimmed string
+     *
+     * @globals Splunk.Utils
+     */
+    root.trim = function(str) {
+        if (String.prototype.trim) {
+            return String.prototype.trim.call(str);
+        }
+        else {
+            return this.replace(/^\s\s*/, '').replace(/\s\s*$/, '');   
+        }
+    };
+    
+    /**
+     * Whether an array contains a specific object
+     *
+     * Example:
+     *      
+     *      var a = ["a", "b', "c"];
+     *      console.log(Splunk.Utils.indexOf(a, "b")) //== 1
+     *      console.log(Splunk.Utils.indexOf(a, "d")) //== -1
+     *
+     * @param {Array} arr The array to search in
+     * @param {Anything} search The thing to search for
+     * @return {Number} The index of `search` or `-1` if it wasn't found
+     *
+     * @globals Splunk.Utils
+     */
+    root.indexOf = function(arr, search) {
+        for(var i=0; i<arr.length; i++) {
+            if (arr[i] === search)
+                return i;
+        }
+        return -1;
+    };
 
     /**
      * Whether an array contains a specific object
@@ -587,7 +632,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      */
     root.contains = function(arr, obj) {
         arr = arr || [];
-        return (arr.indexOf(obj) >= 0);
+        return (root.indexOf(arr, obj) >= 0);
     };
 
     /**
@@ -1560,7 +1605,7 @@ require.define("/lib/platform/client/easyxdm_http.js", function (require, module
         var headers = {};
         var headerLines = headersString.split("\n");
         for(var i = 0; i < headerLines.length; i++) {
-            if (headerLines[i].trim() !== "") {
+            if (utils.trim(headerLines[i]) !== "") {
                 var headerParts = headerLines[i].split(": ");
                 headers[headerParts[0]] = headerParts[1];
             }
@@ -4661,7 +4706,7 @@ require.define("/lib/platform/client/proxy_http.js", function (require, module, 
         var headers = {};
         var headerLines = headersString.split("\n");
         for(var i = 0; i < headerLines.length; i++) {
-            if (headerLines[i].trim() !== "") {
+            if (utils.trim(headerLines[i]) !== "") {
                 var headerParts = headerLines[i].split(": ");
                 headers[headerParts[0]] = headerParts[1];
             }
@@ -4849,22 +4894,6 @@ require.define("/browser.entry.js", function (require, module, exports, __dirnam
 // include it.
 
 (function(exportName) {
-    // Polyfill String.prototype.trim
-    String.prototype.trim = String.prototype.trim || function(delim) {
-        if (delim) return this.replace(new RegExp("^[\\s" + delim + "]+"),'').replace(new RegExp("[\\s" + delim + "]+$"), '');
-        else return this.replace(/^\s\s*/, '').replace(/\s\s*$/, '');
-    };
-    
-    // Polyfill Array.prototype.indexOf
-    Array.prototype.indexOf = Array.prototype.indexOf || function(search, fromIndex) {
-        if (!fromIndex) fromIndex = 0;
-        for(var i=0; i<this.length; i++) {
-            if (this[i] === search)
-                return i;
-        }
-        return -1;
-    };
-    
     var previousSplunk = window[exportName];
     
     var ourSplunk = require('../splunk').Splunk;
