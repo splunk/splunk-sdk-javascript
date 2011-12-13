@@ -27,7 +27,7 @@
         "rt_maxblocksecs", "rt_indexfilter", "id", "status_buckets",
         "max_count", "max_time", "timeout", "auto_finalize_ec", "enable_lookups",
         "reload_macros", "reduce_freq", "spawn_process", "required_field_list",
-        "rf", "auto_cancel", "auto_pause",
+        "rf", "auto_cancel", "auto_pause"
     ];
 
     var createService = function(options) {
@@ -46,9 +46,11 @@
         var query = options.search;
         var isVerbose = options.verbose;
         var count = options.count || 0;
+        var mode = options.mode || "row";
         delete options.search;
         delete options.verbose;
         delete options.count;
+        delete options.mode;
         
         Async.chain([
                 // Create a search
@@ -73,31 +75,33 @@
                                         var scanned     = properties.scanCount;
                                         var matched     = properties.eventCount;
                                         var results     = properties.resultCount;
-                                        var stats = "-- " 
-                                            + progress + " done | " 
-                                            + scanned  + " scanned | " 
-                                            + matched  + " matched | "
-                                            + results  + " results"
+                                        var stats = "-- " +
+                                            progress + " done | " +
+                                            scanned  + " scanned | " +
+                                            matched  + " matched | " +
+                                            results  + " results";
                                         print("\r" + stats + "                                          ");
                                     }
                                     
                                     Async.sleep(1000, iterationDone);
                                 }
-                            })
+                            });
                         },
                         function(err) {
-                            print("\r");
+                            if (isVerbose) {
+                                print("\r");
+                            }
                             done(err, job);
                         }
                     );
                 },
                 // Once the search is done, get the results
                 function(job, done) {
-                    job.results({count: count}, done);
+                    job.results({count: count, json_mode: mode}, done);
                 },
                 // Print them out (as JSON), and cancel the job
                 function(results, job, done) {
-                    console.log(JSON.stringify(results));
+                    process.stdout.write(JSON.stringify(results));
                     job.cancel(done);
                 }
             ],
@@ -132,6 +136,7 @@
                 console.log(err);
             }
             else {
+                callback();
             }
         };
         var cmdline = options.create();
@@ -140,6 +145,7 @@
         cmdline.description("Create a search and print the results to stdout");
         cmdline.option("--verbose", "Output job progress as we wait for completion");
         cmdline.option("--count <count>", "How many results to fetch");
+        cmdline.option("--mode <mode>", "Row or column mode [row|column]");
         
         // For each of the flags, add an option to the parser
         var flags = FLAGS_CREATE;

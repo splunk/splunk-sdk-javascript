@@ -497,18 +497,18 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
     var _log, _warn, _error, _info;
     _log = _warn = _error = _info = function() {};
     if (typeof(console) !== "undefined") {
-        _log   = (console.log   
-            ? function(str) { try { console.log.apply(console, arguments);   } catch (ex) { console.log(str);   } } 
-            : _log);
-        _error = (console.error 
-            ? function(str) { try { console.error.apply(console, arguments); } catch (ex) { console.error(str); } } 
-            : _error);
-        _warn  = (console.warn  
-            ? function(str) { try { console.warn.apply(console, arguments);  } catch (ex) { console.warn(str);  } } 
-            : _warn);
-        _info  = (console.info  
-            ? function(str) { try { console.info.apply(console, arguments);  } catch (ex) { console.info(str);  } } 
-            : _info);
+        _log   = (console.log   ?
+            function(str) { try { console.log.apply(console, arguments);   } catch (ex) { console.log(str);   } }   :
+            _log);
+        _error = (console.error ?
+            function(str) { try { console.error.apply(console, arguments); } catch (ex) { console.error(str); } } :
+            _error);
+        _warn  = (console.warn  ?
+            function(str) { try { console.warn.apply(console, arguments);  } catch (ex) { console.warn(str);  } } :
+            _warn);
+        _info  = (console.info  ?
+            function(str) { try { console.info.apply(console, arguments);  } catch (ex) { console.info(str);  } } :
+            _info);
     }
 
     /**
@@ -687,8 +687,9 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      */
     root.indexOf = function(arr, search) {
         for(var i=0; i<arr.length; i++) {
-            if (arr[i] === search)
+            if (arr[i] === search) {
                 return i;
+            }
         }
         return -1;
     };
@@ -5754,7 +5755,7 @@ require.define("/internal/cmdline.js", function (require, module, exports, __dir
             .option('--scheme <scheme>', "Scheme to use", "https", false)
             .option('--host <host>', "Hostname to use", "localhost", false)
             .option('--port <port>', "Port to use", 8089, false)
-            .option('--namespace <namespace>', "Namespace to use (of the form app:owner)", undefined, false)
+            .option('--namespace <namespace>', "Namespace to use (of the form app:owner)", undefined, false);
         
         parser.parse = function(argv) {
             argv = (argv || []).slice(2);
@@ -7265,7 +7266,7 @@ require.define("/tests/test_examples.js", function (require, module, exports, __
 // License for the specific language governing permissions and limitations
 // under the License.
 
-exports.setup = function(opts) {
+exports.setup = function(svc, opts) {
     var Splunk  = require('../splunk').Splunk;
     var Async   = Splunk.Async;
 
@@ -7275,9 +7276,8 @@ exports.setup = function(opts) {
         return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
     };
         
-    var process = process || {
-        argv: ["program", "script"] // initialize it with some dummy values
-    };
+    // initialize it with some dummy values
+    var argv = ["program", "script"]; 
       
     return {  
         "Hello World Tests": {
@@ -7328,7 +7328,7 @@ exports.setup = function(opts) {
                 
                 this.main = require("../examples/node/jobs").main;
                 this.run = function(command, args, options, callback) {                
-                    var combinedArgs = process.argv.slice();
+                    var combinedArgs = argv.slice();
                     if (command) {
                         combinedArgs.push(command);
                     }
@@ -7483,7 +7483,7 @@ exports.setup = function(opts) {
                 
                 this.main = require("../examples/node/conf").main;
                 this.run = function(command, args, options, callback) {                
-                    var combinedArgs = process.argv.slice();
+                    var combinedArgs = argv.slice();
                     if (command) {
                         combinedArgs.push(command);
                     }
@@ -7626,11 +7626,147 @@ exports.setup = function(opts) {
                     });
                 });
             }
+        },
+        
+        "Search Example Tests": {
+            setUp: function(done) {   
+                var context = this;
+                
+                this.main = require("../examples/node/search").main;
+                this.run = function(command, args, options, callback) {                
+                    var combinedArgs = argv.slice();
+                    if (command) {
+                        combinedArgs.push(command);
+                    }
+                    
+                    if (args) {
+                        for(var i = 0; i < args.length; i++) {
+                            combinedArgs.push(args[i]);
+                        }
+                    }
+                    
+                    if (options) {
+                        for(var key in options) {
+                            if (options.hasOwnProperty(key)) {
+                                combinedArgs.push("--" + key);
+                                combinedArgs.push(options[key]);
+                            }
+                        }
+                    }
+              
+                    return context.main(combinedArgs, callback);
+                };
+                
+                done(); 
+            },
+            
+            "Create regular search": function(test) {
+                var options = {
+                    search: "search index=_internal | head 5"
+                };
+                
+                this.run(null, null, options, function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+            
+            "Create regular search with verbose": function(test) {
+                var options = {
+                    search: "search index=_internal | head 5"
+                };
+                
+                this.run(null, ["--verbose"], options, function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+            
+            "Create oneshot search": function(test) {
+                var options = {
+                    search: "search index=_internal | head 5",
+                    exec_mode: "oneshot"
+                };
+                
+                this.run(null, ["--verbose"], options, function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+            
+            "Create normal search with reduced count": function(test) {
+                var options = {
+                    search: "search index=_internal | head 20",
+                    count: 10
+                };
+                
+                this.run(null, ["--verbose"], options, function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            }
+        },
+        
+        "Results Example Tests": {
+            
+            "Parse row results": function(test) {
+                var main = require("../examples/node/results").main;
+                
+                svc.search(
+                    "search index=_internal | head 1 | stats count by sourcetype", 
+                    {exec_mode: "blocking"}, 
+                    function(err, job) {
+                        console.log("SEARCH DONE");
+                        test.ok(!err);
+                        job.results({json_mode: "rows"}, function(err, results) {
+                            console.log("GOT RESULTS");
+                            test.ok(!err);
+                            process.stdin.emit("data", JSON.stringify(results));
+                            process.stdin.emit("end");
+                        });
+                    }
+                );
+                
+                main([], function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+            
+            "Parse column results": function(test) {
+                var main = require("../examples/node/results").main;
+                
+                svc.search(
+                    "search index=_internal | head 10 | stats count by sourcetype", 
+                    {exec_mode: "blocking"}, 
+                    function(err, job) {
+                        console.log("SEARCH DONE");
+                        test.ok(!err);
+                        job.results({json_mode: "column"}, function(err, results) {
+                            console.log("GOT RESULTS");
+                            test.ok(!err);
+                            process.stdin.emit("data", JSON.stringify(results));
+                            process.stdin.emit("end");
+                        });    
+                    }
+                );
+                
+                main([], function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+            
+            "Close stdin": function(test) {
+                process.stdin.destroy();
+                test.done();
+            }
         }
     };
 };
 
 if (module === require.main) {
+    var Splunk      = require('../splunk').Splunk;
     var test        = require('../contrib/nodeunit/test_reporter');
     
     var options = require('../internal/cmdline');    
@@ -7642,8 +7778,22 @@ if (module === require.main) {
         throw new Error("Error in parsing command line parameters");
     }    
     
-    var suite = exports.setup(cmdline.opts);
-    test.run([{"Tests": suite}]);
+    var svc = new Splunk.Client.Service({ 
+        scheme: cmdline.opts.scheme,
+        host: cmdline.opts.host,
+        port: cmdline.opts.port,
+        username: cmdline.opts.username,
+        password: cmdline.opts.password,
+    });
+    
+    var suite = exports.setup(svc, cmdline.opts);
+    
+    svc.login(function(err, success) {
+        if (err || !success) {
+            throw new Error("Login failed - not running tests", err || "");
+        }
+        test.run([{"Tests": suite}]);
+    });
 }
 });
 
@@ -8799,8 +8949,9 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
     };
     
     var Program = Class.extend({
-        init: function(cmdline) {
+        init: function(cmdline, callback) {
             this.cmdline = cmdline;
+            this.callback = callback;
         },
 
         run: function() {
@@ -8816,11 +8967,11 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
                 edit: this.edit,
                 create: this.create,
                 "delete": this.del
-            }
+            };
             
             this.service.login(function(err, success) {
                 if (err || !success) {
-                    callback(err || "Login failure");
+                    that.callback(err || "Login failure");
                     return;
                 }
                 
@@ -8841,7 +8992,7 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
                     function(files, done) {
                         // Find all the files that match the pattern
                         var regex = new RegExp(pattern);
-                        var files = files.filter(function(file) {
+                        files = files.filter(function(file) {
                             return file.name.match(regex);
                         });
                         
@@ -8867,7 +9018,7 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
             var service = this.service;
             
             if (options.global && (!!options.app || !!options.user)) {
-                done("Cannot specify both --global and --user or --app");
+                callback("Cannot specify both --global and --user or --app");
                 return;
             }
             
@@ -9030,6 +9181,7 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
                 service = service.specialize(options.user, options.app);
             }
             
+            var collection = null;
             Async.chain([
                     function(done) {
                         collection = options.global ? service.properties() : service.configurations();
@@ -9074,9 +9226,9 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
                         
                         // If we can't find the stanza, then create it
                         if (!found) {
-                            var file = options.global 
-                                ? new Splunk.Client.PropertyFile(service, filename) 
-                                : new Splunk.Client.ConfigurationFile(service, filename);
+                            var file = options.global ?
+                                new Splunk.Client.PropertyFile(service, filename) :
+                                new Splunk.Client.ConfigurationFile(service, filename);
                                 
                             file.create(stanzaName, {}, function(err, stanza) {
                                 if (err) {
@@ -9176,7 +9328,7 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
         };
         var cmdline = options.create();
         
-        var program = new Program(cmdline);
+        var program = new Program(cmdline, callback);
         
         cmdline.name = "conf";
         cmdline.description("View and edit configuration properties");
@@ -9279,6 +9431,344 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
             callback("You must specify a command to run.");
             return;
         }
+    };
+    
+    if (module === require.main) {
+        exports.main(process.argv);
+    }
+})();
+});
+
+require.define("/examples/node/search.js", function (require, module, exports, __dirname, __filename) {
+    
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+(function() {
+    var Splunk          = require('../../splunk').Splunk;
+    var Class           = Splunk.Class;
+    var utils           = Splunk.Utils;
+    var Async           = Splunk.Async;
+    var options         = require('../../internal/cmdline');
+    var print           = require('util').print;
+    
+    var FLAGS_CREATE = [
+        "search", "earliest_time", "latest_time", "now", "time_format",
+        "exec_mode", "search_mode", "rt_blocking", "rt_queue_size",
+        "rt_maxblocksecs", "rt_indexfilter", "id", "status_buckets",
+        "max_count", "max_time", "timeout", "auto_finalize_ec", "enable_lookups",
+        "reload_macros", "reduce_freq", "spawn_process", "required_field_list",
+        "rf", "auto_cancel", "auto_pause"
+    ];
+
+    var createService = function(options) {
+        return new Splunk.Client.Service({
+            scheme:     options.scheme,
+            host:       options.host,
+            port:       options.port,
+            username:   options.username,
+            password:   options.password
+        });
+    };
+    
+    var search = function(service, options, callback) {
+        // Extract the options we care about and delete them
+        // the object
+        var query = options.search;
+        var isVerbose = options.verbose;
+        var count = options.count || 0;
+        var mode = options.mode || "row";
+        delete options.search;
+        delete options.verbose;
+        delete options.count;
+        delete options.mode;
+        
+        Async.chain([
+                // Create a search
+                function(done) {
+                    service.search(query, options, done);
+                },
+                // Poll until the search is complete
+                function(job, done) {
+                    Async.whilst(
+                        function() { return !job.properties().isDone; },
+                        function(iterationDone) {
+                            job.refresh(function(err, job) {
+                                if (err) {
+                                    callback(err);
+                                }
+                                else {
+                                    // If the user asked for verbose output,
+                                    // then write out the status of the search
+                                    var properties = job.properties();
+                                    if (isVerbose) {
+                                        var progress    = (properties.doneProgress * 100.0) + "%";
+                                        var scanned     = properties.scanCount;
+                                        var matched     = properties.eventCount;
+                                        var results     = properties.resultCount;
+                                        var stats = "-- " +
+                                            progress + " done | " +
+                                            scanned  + " scanned | " +
+                                            matched  + " matched | " +
+                                            results  + " results";
+                                        print("\r" + stats + "                                          ");
+                                    }
+                                    
+                                    Async.sleep(1000, iterationDone);
+                                }
+                            });
+                        },
+                        function(err) {
+                            if (isVerbose) {
+                                print("\r");
+                            }
+                            done(err, job);
+                        }
+                    );
+                },
+                // Once the search is done, get the results
+                function(job, done) {
+                    job.results({count: count, json_mode: mode}, done);
+                },
+                // Print them out (as JSON), and cancel the job
+                function(results, job, done) {
+                    process.stdout.write(JSON.stringify(results));
+                    job.cancel(done);
+                }
+            ],
+            function(err) {
+                callback(err);
+            }
+        );
+    };
+    
+    var oneshotSearch = function(service, options, callback) {
+        var query = options.search;
+        delete options.search;
+        
+        // Oneshot searches don't have a job associated with them, so we
+        // simply execute it and print out the results.
+        service.oneshotSearch(query, options, function(err, results) {
+            if (err) {
+                callback(err);
+            }
+            else { 
+                console.log(JSON.stringify(results));
+                callback();
+            }
+        });
+    };
+
+    exports.main = function(argv, callback) {     
+        Splunk.Logger.setLevel("NONE");
+        
+        callback = callback || function(err) { 
+            if (err) {
+                console.log(err);
+            }
+            else {
+                callback();
+            }
+        };
+        var cmdline = options.create();
+        
+        cmdline.name = "search";
+        cmdline.description("Create a search and print the results to stdout");
+        cmdline.option("--verbose", "Output job progress as we wait for completion");
+        cmdline.option("--count <count>", "How many results to fetch");
+        cmdline.option("--mode <mode>", "Row or column mode [row|column]");
+        
+        // For each of the flags, add an option to the parser
+        var flags = FLAGS_CREATE;
+        var required_flags = ["search"];
+        
+        for(var i = 0; i < flags.length; i++) {
+            var required = required_flags.indexOf(flags[i]) >= 0;
+            var option = "<" + flags[i] + ">";
+            cmdline.option("--" + flags[i] + " " + option, "", undefined, required);
+        }
+        
+        cmdline.on('--help', function(){
+            console.log("  Examples:");
+            console.log("  ");
+            console.log("  Create a regular search:");
+            console.log("  > node search.js --search 'search index=_internal | head 10'");
+            console.log("  ");
+            console.log("  Create a oneshot search:");
+            console.log("  > node search.js --search 'search index=_internal | head 10' --exec_mode oneshot");
+            console.log("  ");
+            console.log("  Create a regular search and only return 10 results:");
+            console.log("  > node search.js --search 'search index=_internal | head 20' --count 10");
+            console.log("  ");
+            console.log("  Create a regular search and output the progress while the search is running");
+            console.log("  > node search.js --search 'search index=_internal | head 20' --verbose");
+            console.log("  ");
+        });
+        
+        cmdline.parse(argv);
+        
+        var service = createService(cmdline.opts);
+        service.login(function(err, success) {
+            if (err || !success) {
+                callback("Error logging in");
+                return;
+            }
+            
+            delete cmdline.username;
+            delete cmdline.password;
+            delete cmdline.scheme;
+            delete cmdline.host;
+            delete cmdline.port;
+            delete cmdline.namespace;
+            
+            if (cmdline.opts.exec_mode === "oneshot") {
+                oneshotSearch(service, cmdline.opts, callback);
+            }
+            else {
+                search(service, cmdline.opts, callback);
+            }
+        });
+    };
+    
+    if (module === require.main) {
+        exports.main(process.argv);
+    }
+})();
+});
+
+require.define("util", function (require, module, exports, __dirname, __filename) {
+    // todo
+
+});
+
+require.define("/examples/node/results.js", function (require, module, exports, __dirname, __filename) {
+    
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+(function() {
+    var Splunk          = require('../../splunk').Splunk;
+    var Class           = Splunk.Class;
+    var utils           = Splunk.Utils;
+    var Async           = Splunk.Async;
+    var options         = require('../../internal/cmdline');
+    
+    var createService = function(options) {
+        return new Splunk.Client.Service({
+            scheme:     options.scheme,
+            host:       options.host,
+            port:       options.port,
+            username:   options.username,
+            password:   options.password
+        });
+    };
+    
+    // Print the result rows
+    var printRows = function(results) {        
+        for(var i = 0; i < results.rows.length; i++) {
+            console.log("Result " + (i + 1) + ": ");
+            var row = results.rows[i];
+            for(var j = 0; j < results.fields.length; j++) {
+                var field = results.fields[j];
+                var value = row[j];
+                
+                console.log("  " + field + " = " + value);
+            }
+        }
+    };
+    
+    // Instead of trying to print the column-major format, we just 
+    // transpose it
+    var transpose = function(results) {
+        var rows = [];
+        var cols = results.columns;
+        
+        var mapFirst = function(col) { return col.shift(); };
+        
+        while(cols.length > 0 && cols[0].length > 0) {
+            rows.push(cols.map(mapFirst));   
+        }
+        
+        results.rows = rows;
+        return results;
+    };
+    
+    // Print the results
+    var printResults = function(results) {
+        if (results) {
+            var isRows = !!results.rows;
+            var numResults = (results.rows ? results.rows.length : (results.columns[0] || []).length);
+            
+            console.log("====== " + numResults + " RESULTS (preview: " + !!results.preview + ") ======");
+            
+            // If it is in column-major form, transpose it.
+            if (!isRows) {
+                results = transpose(results);
+            }
+            
+            printRows(results);
+        }
+    };
+
+    exports.main = function(argv, callback) {     
+        Splunk.Logger.setLevel("NONE");
+        
+        // Read data from stdin
+        var incomingResults = "";
+        var onData = function(data) {
+            incomingResults += data.toString("utf-8"); 
+        };
+        
+        // When there is no more data, parse it and pretty
+        // print it
+        var onEnd = function() {
+            var results = JSON.parse(incomingResults || "{}");
+            printResults(results);
+            callback();
+        };
+        
+        var onError = function() {
+            callback("ERROR");
+        };
+        
+        // Unregister all the listeners when we're done
+        var originalCallback = callback || function() {};
+        callback = function() {
+            process.stdin.removeListener("data", onData);
+            process.stdin.removeListener("end", onEnd);
+            process.stdin.removeListener("error", onError);
+            process.stdin.pause();
+            
+            originalCallback.apply(null, arguments);  
+        };
+        
+        process.stdin.on("data", onData);
+        process.stdin.on("end", onEnd);
+        process.stdin.on("error", onError);
+        
+        process.stdin.resume();
     };
     
     if (module === require.main) {

@@ -10998,8 +10998,9 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      */
     root.indexOf = function(arr, search) {
         for(var i=0; i<arr.length; i++) {
-            if (arr[i] === search)
+            if (arr[i] === search) {
                 return i;
+            }
         }
         return -1;
     };

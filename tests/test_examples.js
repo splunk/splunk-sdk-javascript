@@ -13,7 +13,7 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-exports.setup = function(opts) {
+exports.setup = function(svc, opts) {
     var Splunk  = require('../splunk').Splunk;
     var Async   = Splunk.Async;
 
@@ -23,9 +23,8 @@ exports.setup = function(opts) {
         return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
     };
         
-    var process = process || {
-        argv: ["program", "script"] // initialize it with some dummy values
-    };
+    // initialize it with some dummy values
+    var argv = ["program", "script"]; 
       
     return {  
         "Hello World Tests": {
@@ -76,7 +75,7 @@ exports.setup = function(opts) {
                 
                 this.main = require("../examples/node/jobs").main;
                 this.run = function(command, args, options, callback) {                
-                    var combinedArgs = process.argv.slice();
+                    var combinedArgs = argv.slice();
                     if (command) {
                         combinedArgs.push(command);
                     }
@@ -231,7 +230,7 @@ exports.setup = function(opts) {
                 
                 this.main = require("../examples/node/conf").main;
                 this.run = function(command, args, options, callback) {                
-                    var combinedArgs = process.argv.slice();
+                    var combinedArgs = argv.slice();
                     if (command) {
                         combinedArgs.push(command);
                     }
@@ -382,7 +381,7 @@ exports.setup = function(opts) {
                 
                 this.main = require("../examples/node/search").main;
                 this.run = function(command, args, options, callback) {                
-                    var combinedArgs = process.argv.slice();
+                    var combinedArgs = argv.slice();
                     if (command) {
                         combinedArgs.push(command);
                     }
@@ -454,10 +453,63 @@ exports.setup = function(opts) {
                 });
             }
         },
+        
+        "Results Example Tests": {
+            
+            "Parse row results": function(test) {
+                var main = require("../examples/node/results").main;
+                
+                svc.search(
+                    "search index=_internal | head 1 | stats count by sourcetype", 
+                    {exec_mode: "blocking"}, 
+                    function(err, job) {
+                        test.ok(!err);
+                        job.results({json_mode: "rows"}, function(err, results) {
+                            test.ok(!err);
+                            process.stdin.emit("data", JSON.stringify(results));
+                            process.stdin.emit("end");
+                        });
+                    }
+                );
+                
+                main([], function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+            
+            "Parse column results": function(test) {
+                var main = require("../examples/node/results").main;
+                
+                svc.search(
+                    "search index=_internal | head 10 | stats count by sourcetype", 
+                    {exec_mode: "blocking"}, 
+                    function(err, job) {
+                        test.ok(!err);
+                        job.results({json_mode: "column"}, function(err, results) {
+                            test.ok(!err);
+                            process.stdin.emit("data", JSON.stringify(results));
+                            process.stdin.emit("end");
+                        });    
+                    }
+                );
+                
+                main([], function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+            
+            "Close stdin": function(test) {
+                process.stdin.destroy();
+                test.done();
+            }
+        }
     };
 };
 
 if (module === require.main) {
+    var Splunk      = require('../splunk').Splunk;
     var test        = require('../contrib/nodeunit/test_reporter');
     
     var options = require('../internal/cmdline');    
@@ -469,6 +521,20 @@ if (module === require.main) {
         throw new Error("Error in parsing command line parameters");
     }    
     
-    var suite = exports.setup(cmdline.opts);
-    test.run([{"Tests": suite}]);
+    var svc = new Splunk.Client.Service({ 
+        scheme: cmdline.opts.scheme,
+        host: cmdline.opts.host,
+        port: cmdline.opts.port,
+        username: cmdline.opts.username,
+        password: cmdline.opts.password,
+    });
+    
+    var suite = exports.setup(svc, cmdline.opts);
+    
+    svc.login(function(err, success) {
+        if (err || !success) {
+            throw new Error("Login failed - not running tests", err || "");
+        }
+        test.run([{"Tests": suite}]);
+    });
 }

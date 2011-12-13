@@ -427,18 +427,18 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
     var _log, _warn, _error, _info;
     _log = _warn = _error = _info = function() {};
     if (typeof(console) !== "undefined") {
-        _log   = (console.log   
-            ? function(str) { try { console.log.apply(console, arguments);   } catch (ex) { console.log(str);   } } 
-            : _log);
-        _error = (console.error 
-            ? function(str) { try { console.error.apply(console, arguments); } catch (ex) { console.error(str); } } 
-            : _error);
-        _warn  = (console.warn  
-            ? function(str) { try { console.warn.apply(console, arguments);  } catch (ex) { console.warn(str);  } } 
-            : _warn);
-        _info  = (console.info  
-            ? function(str) { try { console.info.apply(console, arguments);  } catch (ex) { console.info(str);  } } 
-            : _info);
+        _log   = (console.log   ?
+            function(str) { try { console.log.apply(console, arguments);   } catch (ex) { console.log(str);   } }   :
+            _log);
+        _error = (console.error ?
+            function(str) { try { console.error.apply(console, arguments); } catch (ex) { console.error(str); } } :
+            _error);
+        _warn  = (console.warn  ?
+            function(str) { try { console.warn.apply(console, arguments);  } catch (ex) { console.warn(str);  } } :
+            _warn);
+        _info  = (console.info  ?
+            function(str) { try { console.info.apply(console, arguments);  } catch (ex) { console.info(str);  } } :
+            _info);
     }
 
     /**
@@ -617,8 +617,9 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      */
     root.indexOf = function(arr, search) {
         for(var i=0; i<arr.length; i++) {
-            if (arr[i] === search)
+            if (arr[i] === search) {
                 return i;
+            }
         }
         return -1;
     };

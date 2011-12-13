@@ -43,8 +43,9 @@
     };
     
     var Program = Class.extend({
-        init: function(cmdline) {
+        init: function(cmdline, callback) {
             this.cmdline = cmdline;
+            this.callback = callback;
         },
 
         run: function() {
@@ -60,11 +61,11 @@
                 edit: this.edit,
                 create: this.create,
                 "delete": this.del
-            }
+            };
             
             this.service.login(function(err, success) {
                 if (err || !success) {
-                    callback(err || "Login failure");
+                    that.callback(err || "Login failure");
                     return;
                 }
                 
@@ -85,7 +86,7 @@
                     function(files, done) {
                         // Find all the files that match the pattern
                         var regex = new RegExp(pattern);
-                        var files = files.filter(function(file) {
+                        files = files.filter(function(file) {
                             return file.name.match(regex);
                         });
                         
@@ -111,7 +112,7 @@
             var service = this.service;
             
             if (options.global && (!!options.app || !!options.user)) {
-                done("Cannot specify both --global and --user or --app");
+                callback("Cannot specify both --global and --user or --app");
                 return;
             }
             
@@ -274,6 +275,7 @@
                 service = service.specialize(options.user, options.app);
             }
             
+            var collection = null;
             Async.chain([
                     function(done) {
                         collection = options.global ? service.properties() : service.configurations();
@@ -318,9 +320,9 @@
                         
                         // If we can't find the stanza, then create it
                         if (!found) {
-                            var file = options.global 
-                                ? new Splunk.Client.PropertyFile(service, filename) 
-                                : new Splunk.Client.ConfigurationFile(service, filename);
+                            var file = options.global ?
+                                new Splunk.Client.PropertyFile(service, filename) :
+                                new Splunk.Client.ConfigurationFile(service, filename);
                                 
                             file.create(stanzaName, {}, function(err, stanza) {
                                 if (err) {
@@ -420,7 +422,7 @@
         };
         var cmdline = options.create();
         
-        var program = new Program(cmdline);
+        var program = new Program(cmdline, callback);
         
         cmdline.name = "conf";
         cmdline.description("View and edit configuration properties");

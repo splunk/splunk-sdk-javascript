@@ -43,7 +43,7 @@
     exports.Tests.Binding = require('./test_binding').setup(svc);
     exports.Tests.Client = require('./test_client').setup(svc);
     exports.Tests.Searcher = require('./test_searcher').setup(svc);
-    exports.Tests.Examples = require('./test_examples').setup(cmdline.opts);
+    exports.Tests.Examples = require('./test_examples').setup(svc, cmdline.opts);
 
     Splunk.Logger.setLevel("ALL");
     
