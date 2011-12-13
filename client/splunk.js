@@ -588,7 +588,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
             return String.prototype.trim.call(str);
         }
         else {
-            return this.replace(/^\s\s*/, '').replace(/\s\s*$/, '');   
+            return str.replace(/^\s\s*/, '').replace(/\s\s*$/, '');   
         }
     };
     
