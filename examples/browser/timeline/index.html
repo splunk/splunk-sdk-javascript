@@ -68,18 +68,20 @@
           // Update the timeline control
           function(timelineData, job, callback) {
             updateTimeline(timelineData);
-            callback(job);
+            callback(null, job);
           }
         ],
         // And we're done, so make sure we had no error, and
         // cancel the job
-        function(job, err) {
+        function(err, job) {
           if (err) {
             console.log(err);
-            throw new Error(err);
+            alert("An error occurred");
           }
           
-          job.cancel();
+          if (job) {
+            job.cancel();
+          }
         });
       });
     </script>

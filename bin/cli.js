@@ -95,8 +95,10 @@
             };
         
             request(options, function(error, response, data) {
-                res.writeHead(response.statusCode, response.headers);
-                res.write(data);
+                var statusCode = (response ? response.statusCode : 500) || 500;
+                var headers = (response ? response.headers : {}) || {};
+                res.writeHead(statusCode, headers);
+                res.write(data || JSON.stringify({d: { __messages: [{ type: "ERROR", text: "Proxy Error", code: "PROXY"}] }}));
                 res.end();
             });
         

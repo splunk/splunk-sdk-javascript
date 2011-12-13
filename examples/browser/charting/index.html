@@ -13,7 +13,7 @@
         var http = new Splunk.ProxyHttp("/proxy");
         svc = new Splunk.Client.Service(http, { 
           scheme: "https",
-          host: "localhost",
+          host: "Octavian2.local",
           port: "8089",
           username: "admin",
           password: "changeme"
@@ -51,19 +51,21 @@
                 "chart.stackMode": "stacked"
               });
               chart.draw();
-              callback(job);
+              callback(null, job);
             });
           }
         ],
         // And we're done, so make sure we had no error, and
         // cancel the job
-        function(job, err) {
+        function(err, job) {
           if (err) {
             console.log(err);
-            throw new Error(err);
+            alert("An error occurred");
           }
           
-          job.cancel();
+          if (job) {
+            job.cancel();
+          }
         });
       });
     </script>
