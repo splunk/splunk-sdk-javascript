@@ -480,7 +480,7 @@ from another source, you can just use it as follows:
 
 ### Changelog
 
-The file CHANGELOG.md in the root of the repository contains a description
+The file `CHANGELOG.md` in the root of the repository contains a description
 of changes for each version of the SDK. You can also find it online at:
 
 * https://github.com/splunk/splunk-sdk-javascript/blob/master/CHANGELOG.md
@@ -605,7 +605,7 @@ Stay connected with other developers building on Splunk.
 
 ### How to contribute
 
-We aren't ready to accept code contributions yet, but will be shortly.  Check 
+We aren't ready to accept code contributions yet, but will be shortly. Check 
 this README for more updates soon.
 
 ### Support
