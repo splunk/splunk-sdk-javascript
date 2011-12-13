@@ -15,3 +15,4 @@ client/splunk.ui.charting.*
 v8.log
 cover_html
 .coverage_data
+.coverignore
