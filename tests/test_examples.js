@@ -374,7 +374,86 @@ exports.setup = function(opts) {
                     });
                 });
             }
-        }
+        },
+        
+        "Search Example Tests": {
+            setUp: function(done) {   
+                var context = this;
+                
+                this.main = require("../examples/node/search").main;
+                this.run = function(command, args, options, callback) {                
+                    var combinedArgs = process.argv.slice();
+                    if (command) {
+                        combinedArgs.push(command);
+                    }
+                    
+                    if (args) {
+                        for(var i = 0; i < args.length; i++) {
+                            combinedArgs.push(args[i]);
+                        }
+                    }
+                    
+                    if (options) {
+                        for(var key in options) {
+                            if (options.hasOwnProperty(key)) {
+                                combinedArgs.push("--" + key);
+                                combinedArgs.push(options[key]);
+                            }
+                        }
+                    }
+              
+                    return context.main(combinedArgs, callback);
+                };
+                
+                done(); 
+            },
+            
+            "Create regular search": function(test) {
+                var options = {
+                    search: "search index=_internal | head 5"
+                };
+                
+                this.run(null, null, options, function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+            
+            "Create regular search with verbose": function(test) {
+                var options = {
+                    search: "search index=_internal | head 5"
+                };
+                
+                this.run(null, ["--verbose"], options, function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+            
+            "Create oneshot search": function(test) {
+                var options = {
+                    search: "search index=_internal | head 5",
+                    exec_mode: "oneshot"
+                };
+                
+                this.run(null, ["--verbose"], options, function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+            
+            "Create normal search with reduced count": function(test) {
+                var options = {
+                    search: "search index=_internal | head 20",
+                    count: 10
+                };
+                
+                this.run(null, ["--verbose"], options, function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            }
+        },
     };
 };
 
