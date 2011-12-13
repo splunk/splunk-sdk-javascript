@@ -43,7 +43,7 @@ exports.main = function(opts, callback) {
             function(done) {
                 service.login(done);
             },
-            // Retrieve the apps
+            // Retrieve the saved searches
             function(success, done) {
                 if (!success) {
                     done("Error logging in");

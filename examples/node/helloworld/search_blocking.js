@@ -77,9 +77,9 @@ exports.main = function(opts, callback) {
                 console.log("Results: ");
                 for(var i = 0; i < results.rows.length; i++) {
                     console.log("  Result " + i + ": ");
-                    console.log("    sourcetype: " + results.rows[i][rawIndex]);
-                    console.log("    user: " + results.rows[i][sourcetypeIndex]);
-                    console.log("    _raw: " + results.rows[i][userIndex]);
+                    console.log("    sourcetype: " + results.rows[i][sourcetypeIndex]);
+                    console.log("    user: " + results.rows[i][userIndex]);
+                    console.log("    _raw: " + results.rows[i][rawIndex]);
                 }
                 
                 // Once we're done, cancel the job.
