@@ -47,6 +47,20 @@
       #timeline-container.active {
         height: 250px;
       }
+      
+      .secondary-nav ul.dropdown-menu  {
+        padding: 10px;
+      }
+      
+      .secondary-nav .dropdown-menu li {
+        width: 100%;
+      }
+      
+      .secondary-nav .dropdown-menu li input {
+        width: 200px;
+        margin: 1px auto;
+        margin-bottom: 8px;
+      }
     </style>
 
     <!-- Le fav and touch icons -->
@@ -58,19 +72,43 @@
     <script type="text/javascript" src="../resources/jquery.min.js"></script>
     <script type="text/javascript" src="../resources/prettify.js"></script>
     <script type="text/javascript" src="../resources/bootstrap.tabs.js"></script>
+    <script type="text/javascript" src="../resources/bootstrap.dropdown.js"></script>
+    <script type="text/javascript" src="../resources/jquery.placeholder.min.js"></script>
     <script type="text/javascript" src="../../../client/splunk.js"></script>
-    <script >
+    <script >      
+      username = "admin";
+      password = "changeme";
+      scheme   = "https";
+      host     = "localhost";
+      port     = "8089";
+      
+      Async = Splunk.Async;
+      utils = Splunk.Utils;
+      
+      var updateConnectionInformation = function() {
+        username = utils.trim($("#id_username").val()) || "admin";
+        password = utils.trim($("#id_password").val()) || "changeme";
+        scheme   = utils.trim($("#id_scheme").val())   || "https";
+        host     = utils.trim($("#id_host").val())     || "localhost";
+        port     = utils.trim($("#id_port").val())     || "8089";
+        
+        var connectionString = username + " : ****** @ " + scheme + "://" + host + ":" + port;
+        $("#signin-dropdown").text(connectionString);
+      };
+      
       $(function() {
+        $('input, textarea').placeholder();
+        updateConnectionInformation();
+        
+        $(".dropdown input").click(function(e) {
+          e.stopPropagation();
+        });
+        
+        $(".dropdown input").blur(function(e) {
+          updateConnectionInformation();
+        });
+        
         prettyPrint();
-        
-        username = "admin";
-        password = "changeme";
-        scheme   = "https";
-        host     = "localhost";
-        port     = "8089"
-        
-        Async = Splunk.Async;
-        utils = Splunk.utils;
         
         var head = $("head");
         
@@ -141,12 +179,34 @@
   <body>
     <div class="topbar">
       <div class="fill">
-        <div class="container">
+        <div class="container-fluid">
           <a class="brand" href="#">SDK UI Examples</a>
           <ul class="nav">
             <li class="active"><a href="#">Home</a></li>
             <li><a href="#timeline">Timeline</a></li>
             <li><a href="#chart">Charting</a></li>
+          </ul>
+          <ul class="nav secondary-nav">
+            <li class="dropdown" data-dropdown="dropdown">
+              <a href="#" class="dropdown-toggle" id="signin-dropdown">Sign In</a>
+              <ul class="dropdown-menu">
+                  <li>
+                    <input id="id_username" type="text" name="username" placeholder="username: admin"/>
+                  </li>
+                  <li>
+                    <input type="password" name="password" id="id_password" placeholder="password: changeme"/>
+                  </li>
+                  <li>
+                    <input type="text" name="scheme" id="id_scheme" placeholder="scheme: https"/>
+                  </li>
+                  <li>
+                    <input type="text" name="host" id="id_host" placeholder="host: localhost"/>
+                  </li>
+                  <li>
+                    <input type="text" name="port" id="id_port" placeholder="port: 8089"/>
+                  </li>
+              </ul>
+            </li>
           </ul>
         </div>
       </div>
