@@ -115,7 +115,11 @@
     <script type="text/javascript">
       google.load('visualization', '1', {packages: ['corechart']});
     </script>
-    <script>        
+    <script>       
+      $.fn.pVal = function() {
+        return this.hasClass('placeholder') ? '' : this.val();
+      };
+       
       username = "admin";
       password = "changeme";
       scheme   = "https";
