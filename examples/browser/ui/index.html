@@ -90,11 +90,11 @@
       utils = Splunk.Utils;
       
       var updateConnectionInformation = function() {
-        username = utils.trim($("#id_username").val()) || "admin";
-        password = utils.trim($("#id_password").val()) || "changeme";
-        scheme   = utils.trim($("#id_scheme").val())   || "https";
-        host     = utils.trim($("#id_host").val())     || "localhost";
-        port     = utils.trim($("#id_port").val())     || "8089";
+        username = utils.trim($("#id_username").pVal()) || "admin";
+        password = utils.trim($("#id_password").pVal()) || "changeme";
+        scheme   = utils.trim($("#id_scheme").pVal())   || "https";
+        host     = utils.trim($("#id_host").pVal())     || "localhost";
+        port     = utils.trim($("#id_port").pVal())     || "8089";
         
         var connectionString = username + " : ****** @ " + scheme + "://" + host + ":" + port;
         $("#signin-dropdown").text(connectionString);
