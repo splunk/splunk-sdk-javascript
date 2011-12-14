@@ -298,12 +298,12 @@
           <div class="span5">
             <h2>Description</h2>
               <p>
-                These sample demonstrate working with the <span class="code">Splunk.Client.Applications</span> collection
-                and <span class="code">Splunk.Client.Application</span> entity. It will list all the apps, and for each
+                These sample demonstrate working with the <code>Splunk.Client.Applications</code> collection
+                and <code>Splunk.Client.Application</code> entity. It will list all the apps, and for each
                 one print its name.
 
                 The only difference between the two files is that the latter uses the built-in
-                <span class="code">Splunk.Async</span> module to make asynchronous control-flow easier.
+                <code>Splunk.Async</code> module to make asynchronous control-flow easier.
               </p>
             
           </div>
@@ -311,7 +311,7 @@
             <h3>Code <button class="btn primary run" id="apps-run">Run</button></h3>
             <ul class="tabs" id="apps-tabs" data-tabs="tabs" >
               <li class="active"><a href="#apps-regular">Regular</a></li>
-              <li><a href="#apps-async"><span class="code">Splunk.Async</span></a></li>
+              <li><a href="#apps-async"><code>Splunk.Async</code></a></li>
               <li><a href="#apps-output">Output</a></li>
             </ul>
             <div id="apps-tab-content" class="tab-content">
@@ -414,12 +414,12 @@ Async.chain([
           <div class="span5">
             <h2>Description</h2>
               <p>              
-                These sample demonstrate working with the <span class="code">Splunk.Client.SavedSearches</span> collection
-                and <span class="code">Splunk.Client.SavedSearch</span> entity. It will list all the saved searches, and 
+                These sample demonstrate working with the <code>Splunk.Client.SavedSearches</code> collection
+                and <code>Splunk.Client.SavedSearch</code> entity. It will list all the saved searches, and 
                 for each one print its name and the search query associated with it.
 
                 The only difference between the two files is that the latter uses the built-in
-                <span class="code">Splunk.Async</span> module to make asynchronous control-flow easier.
+                <code>Splunk.Async</code> module to make asynchronous control-flow easier.
               </p>
             
           </div>
@@ -427,7 +427,8 @@ Async.chain([
             <h3>Code <button class="btn primary run" id="savedsearches-run">Run</button></h3>
             <ul class="tabs" id="savedsearches-tabs" data-tabs="tabs" >
               <li class="active"><a href="#savedsearches-regular">Regular</a></li>
-              <li><a href="#savedsearches-async"><span class="code">Splunk.Async</span></a></li>
+              <li><a href="#savedsearches-async"><code>Splunk.Async</code></a></li>
+              <li><a href="#savedsearches-create">Create A Saved Search</a></li>
               <li><a href="#savedsearches-output">Output</a></li>
             </ul>
             <div id="savedsearches-tab-content" class="tab-content">
@@ -512,6 +513,51 @@ Async.chain([
         callback(err);        
     }
 );
+                </pre>
+              </div>
+              <div class="tab-pane" id="savedsearches-create">
+                <pre class='prettyprint lang-js linenums'>
+var http = new Splunk.ProxyHttp("/proxy");
+var service = new Splunk.Client.Service(http, {
+    username: username,
+    password: password,
+    scheme: scheme,
+    host: host,
+    port: port
+});
+
+// First, we log in
+service.login(function(err, success) {
+    // We check for both errors in the connection as well
+    // as if the login itself failed.
+    if (err || !success) {
+        console.log("Error in logging in");
+        done(err || "Login failed");
+        return;
+    } 
+    
+    var savedSearchOptions = {
+        name: "My Awesome Saved Search",
+        search: "index=_internal error sourcetype=splunkd* | head 10"
+    };
+    
+    // Now that we're logged in, Let's create a saved search
+    service.savedSearches().create(savedSearchOptions, function(err, savedSearch) {
+        if (err && err.status === 409) {
+            console.log("ERROR: A saved search with the name '" + savedSearchOptions.name + "' already exists")
+            done();
+            return;
+        }
+        else if (err) {
+            console.log("There was an error creating the saved search:", err);
+            done(err);
+            return;
+        }
+        
+        console.log("Created saved search: " + savedSearch.name);            
+        done();
+    });
+});
                 </pre>
               </div>
               <div class="tab-pane" id="savedsearches-output">

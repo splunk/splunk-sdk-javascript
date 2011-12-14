@@ -2682,6 +2682,8 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                     callback(null, entity);
                 }
             });
+            
+            this._invalidate();
         },
         
         /**
