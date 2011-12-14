@@ -105,12 +105,12 @@
                 
                 
                 try {
-                    request(options, function(error, response, data) {
+                    request(options, function(err, response, data) {
                         try {
                             var statusCode = (response ? response.statusCode : 500) || 500;
                             var headers = (response ? response.headers : {}) || {};
                             res.writeHead(statusCode, headers);
-                            res.write(data);
+                            res.write(data || JSON.stringify(err));
                             res.end();
                         }
                         catch (ex) {
