@@ -1,0 +1,465 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Visualization Examples -- Splunk JavaScript SDK</title>
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+
+    <!-- Le styles -->
+    <link href="../resources/bootstrap.css" rel="stylesheet">
+    <link href="../resources/prettify.css" type="text/css" rel="stylesheet" />
+    <link type="text/css" rel="stylesheet" href="../resources/rickshaw/graph.css">
+    <link type="text/css" rel="stylesheet" href="../resources/rickshaw/legend.css">
+    <link type="text/css" rel="stylesheet" href="../resources/rickshaw/detail.css">
+    <link type="text/css" rel="stylesheet" href="../resources/rickshaw/extensions.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
+    <style type="text/css">
+      body {
+      }
+      
+      section {
+        padding-top: 60px;
+      }
+      
+      .code {
+        font-family: Monaco, 'Andale Mono', 'Courier New', monospace;
+      }
+      
+      button.run {
+        float: right;
+      }
+      
+      pre {
+        overflow-x: auto;
+      }
+      
+      code {
+        font-size: 12px!important;
+        background-color: ghostWhite!important;
+        color: #444!important;
+        padding: 0 .2em!important;
+        border: 1px solid #DEDEDE!important;
+      }
+      
+      #google-container.active { 
+        height: 250px;
+        margin-bottom: 20px;
+      }
+      
+      #rickshaw-container.active { 
+        height: 250px;
+        width: 100%;
+        
+        position: relative;
+        margin-bottom: 20px;
+      }
+      
+      #rickshaw-chart {
+        position: relative;
+        left: 40px;
+      }
+      
+      .rickshaw_legend span {
+        color: white;
+      }
+      .rickshaw_legend a.action {
+        color: white;
+      }
+      
+      #y_axis {
+        width: 40px;
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 40px;
+      }
+    </style>
+
+    <!-- Le fav and touch icons -->
+    <link rel="shortcut icon" href="images/favicon.ico">
+    <link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+    <link rel="apple-touch-icon" sizes="72x72" href="images/apple-touch-icon-72x72.png">
+    <link rel="apple-touch-icon" sizes="114x114" href="images/apple-touch-icon-114x114.png">
+    
+    <script type="text/javascript" src="../resources/jquery.min.js"></script>
+    <script type="text/javascript" src="../resources/prettify.js"></script>
+    <script type="text/javascript" src="../resources/bootstrap.tabs.js"></script>
+    <script type="text/javascript" src="../resources/rickshaw/d3.min.js"></script>
+    <script type="text/javascript" src="../resources/rickshaw/d3.layout.min.js"></script>
+    <script type="text/javascript" src="../resources/rickshaw/rickshaw.min.js"></script>
+    <script type="text/javascript" src="../../../client/splunk.js"></script>
+    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    <script type="text/javascript">
+      google.load('visualization', '1', {packages: ['corechart']});
+    </script>
+    <script>        
+        username = "admin";
+        password = "changeme";
+        scheme   = "https";
+        host     = "localhost";
+        port     = "8089"
+      
+      $(function() {
+        prettyPrint();
+        
+        Async = Splunk.Async;
+        utils = Splunk.Utils;
+        
+        var head = $("head");
+        
+        var injectCode = function(code) {
+          var sTag = document.createElement("script");
+          sTag.type = "text/javascript";
+          sTag.text = code;
+          $(head).append(sTag);
+          
+          return sTag;
+        }
+        
+        var getCode = function(id) {
+          var code = "";
+          $(id + " pre li").each(function(index, line) {
+            var lineCode = "";
+            $("span" ,line).each(function(index, span) {
+              if ($(span).hasClass("com")) {
+                lineCode += " ";
+              }
+              else {
+                lineCode += $(span).text();
+              }
+            });
+            
+            lineCode += "\n";
+            code += lineCode;
+          });
+          
+          return code;
+        }
+        
+        $("#google-run").click(function() {
+          // Get the code except comments
+          var code = getCode("#google");
+          
+          var tag = null;
+          
+          // setup the global variables we need
+          done = callback = function() {
+            $(tag).remove();
+          };
+          
+          $("#google-container").html("");
+          $("#google-container").addClass("active");
+          tag = injectCode(code);
+        });
+        
+        $("#rickshaw-run").click(function() {
+          // Get the code except comments
+          var code = getCode("#rickshaw");
+          
+          var tag = null;
+          
+          // setup the global variables we need
+          done = callback = function() {
+            $(tag).remove();
+          };
+          
+          $("#rickshaw-chart").html("");
+          $("#rickshaw-legend").html("");
+          $("#y_axis").html("");
+          $("#rickshaw-container").addClass("active");
+          tag = injectCode(code);
+        });
+      });
+    </script>
+  </head>
+
+  <body>
+    <div class="topbar">
+      <div class="fill">
+        <div class="container">
+          <a class="brand" href="#">SDK Visualization Examples</a>
+          <ul class="nav">
+            <li class="active"><a href="#">Home</a></li>
+            <li><a href="#google">Google Charts</a></li>
+            <li><a href="#rickshaw">Rickshaw</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="container">
+      
+      <section id="google">
+       <div class="page-header">
+          <h1>
+            Google Charts <small>Using Splunk data and Google Charts</small>
+          </h1>
+       </div>
+       <div class="row">
+          <div class="span4">
+            <h2>Description</h2>
+              <p>
+                <p>Even though Splunk has advanced charting and visualization capabilities, sometimes you may want to use a 3rd-party charting and visualization to display your data. For example, you may already have a website setup with Google Charts, and you want to display your data using it.</p>
+                <p>This example performs a simple Splunk search (using <code>exec_mode=oneshot</code> for simplicity), and presents the results using Google Charts. The result format that Splunk gives is very similar to what Google Charts expects, so with a little bit of data massaging, you can have a chart up and running in no time.</p>
+              </p>
+          </div>
+         <div class="span12">
+            <h3>Code <button class="btn primary run" id="google-run">Run</button></h3>
+            <div id="google-container">
+                
+            </div>
+            <pre class='prettyprint lang-js linenums'>
+var http = new Splunk.ProxyHttp("/proxy");
+service = new Splunk.Client.Service(http, { 
+  scheme: scheme,
+  host: host,
+  port: port,
+  username: username,
+  password: password
+});
+
+var drawChart = function(rows) {  
+  var chart = new google.visualization.ComboChart(document.getElementById('google-container'));
+  var data = google.visualization.arrayToDataTable(rows);
+  
+  var options = {
+    title : 'HTTP Status Codes For Every 10 Minutes on Splunkd',
+    vAxis: {title: "Count", logScale: true},
+    hAxis: {title: "Time"},
+    seriesType: "bars",
+    isStacked: false
+  };
+  
+  chart.draw(data, options);
+};
+
+// First, we log in
+service.login(function(err, success) {
+  // We check for both errors in the connection as well
+  // as if the login itself failed.
+  if (err || !success) {
+      console.log("Error in logging in");
+      done(err || "Login failed");
+      return;
+  }
+    
+  // OK, we're logged in, let's do a oneshot search and just
+  // get the results
+  var query = "" +
+    'search index=_internal sourcetype=splunkd* | head 10000 | bucket span=10m _time | eval formatted_time=strftime(_time, "%D %H:%M") | chart count over formatted_time by status usenull=f';
+  service.oneshotSearch(query, {}, function(err, results) {
+    if (err) {
+      console.log(err);
+      alert("An error occurred with the search");
+      return;
+    }
+  
+    // The format Google Charts needs data in is very similar to ours - we just
+    // need to put the field headers in the same array, and convert the strings
+    // into numbers.
+    var rows = results.rows.slice();
+    var fields = results.fields.slice();
+    
+    var timeIndex = utils.indexOf(fields, "formatted_time");
+    for(var i = 0; i < rows.length; i++) {
+      var row = rows[i];
+      for(var j = 0; j < row.length; j++) {
+        
+        // Don't change the time field
+        if (j !== timeIndex) {
+          row[j] = parseInt(row[j]);
+        }
+      }
+    }
+    
+    // Add the headers in
+    rows.unshift(results.fields);
+    
+    drawChart(rows);
+  }); 
+});
+            </pre>
+          </div>
+        </div>
+      </section>
+      
+      <section id="rickshaw">
+       <div class="page-header">
+          <h1>
+            Rickshaw <small>Using Splunk data with Rickshaw</small>
+          </h1>
+       </div>
+       <div class="row">
+          <div class="span4">
+            <h2>Description</h2>
+            <p>
+              <p><a href="http://shutterstock.github.com/rickshaw/">Rickshaw</a> is a time series visualization library built by the excellent  folks over at Shutterstock. It is built on top of the immensely powerful <a href="http://mbostock.github.com/d3/">d3</a> library,  and exposes a lot of the raw power of d3 in a more user friendly way.</p>
+              <p>Much like the Google Charts example, this example shows how to create a simple line graph given a Splunk search. This graph shows the HTTP status codes broken down by minute as observed by splunkd.</p>
+              <p>It might look like a lot of code, but most of it is just setting up the Rickshaw graph - so have no fear!</p>
+            </p>
+          </div>
+         <div class="span12">
+            <h3>Code <button class="btn primary run" id="rickshaw-run">Run</button></h3>
+            <div id="rickshaw-container">
+              <div id="y_axis"></div>
+              <div id="rickshaw-chart"></div>
+              <div id="legend_container">
+                <div id="smoother" title="Smoothing"></div>
+                <div id="rickshaw-legend"></div>
+              </div>
+              <div id="slider"></div>
+            </div>
+            <pre class='prettyprint lang-js linenums'>
+var http = new Splunk.ProxyHttp("/proxy");
+service = new Splunk.Client.Service(http, { 
+  scheme: scheme,
+  host: host,
+  port: port,
+  username: username,
+  password: password
+});
+
+var palette = new Rickshaw.Color.Palette( { scheme: 'httpStatus' } );
+
+var transformData = function(d) {
+  var data = [];
+  var statusCounts = {};
+
+  Rickshaw.keys(d).sort().forEach( function(t) {
+    Rickshaw.keys(d[t]).forEach( function(status) {
+      statusCounts[status] = statusCounts[status] || [];
+      statusCounts[status].push( { x: parseFloat(t), y: d[t][status] } );
+    } );
+  } );
+
+  Rickshaw.keys(statusCounts).sort().forEach( function(status) {
+    data.push( {
+      name: status,
+      data: statusCounts[status],
+      color: palette.color(status)
+    } );
+  } );
+
+  Rickshaw.Series.zeroFill(data);
+  return data;
+};
+
+var drawChart = function(rows, fields) {  
+  
+  var data = {};
+  
+  var timeIndex = utils.indexOf(fields, "formatted_time");    
+  for(var i = 0; i < rows.length; i++) {
+    var row = rows[i];
+    var timeValue = parseInt(row[timeIndex]);
+    data[timeValue] = {};
+    for(var j = 0; j < row.length; j++) {
+      if (j !== timeIndex) {
+        data[timeValue][fields[j]] = row[j];
+      }
+    }
+  }
+
+  var transformed = transformData(data);
+
+  // Setup the graph
+  var graph = new Rickshaw.Graph( {
+    element: document.getElementById("rickshaw-chart"),
+    series: transformed,
+    renderer: 'line',
+    width: 550
+  });
+  
+  var y_ticks = new Rickshaw.Graph.Axis.Y({
+    graph: graph,
+    orientation: 'left',
+    tickFormat: Rickshaw.Fixtures.Number.formatKMBT,
+    element: document.getElementById('y_axis')
+  });
+  
+  // Render the graph
+  graph.render();
+
+  var hoverDetail = new Rickshaw.Graph.HoverDetail( {
+    graph: graph
+  });
+
+  var legend = new Rickshaw.Graph.Legend( {
+    graph: graph,
+    element: document.getElementById('rickshaw-legend')
+
+  });
+
+  var shelving = new Rickshaw.Graph.Behavior.Series.Toggle( {
+    graph: graph,
+    legend: legend
+  });
+  
+  var axes = new Rickshaw.Graph.Axis.Time({
+    graph: graph
+  });
+  axes.render();
+};
+
+// First, we log in
+service.login(function(err, success) {
+  // We check for both errors in the connection as well
+  // as if the login itself failed.
+  if (err || !success) {
+      console.log("Error in logging in");
+      done(err || "Login failed");
+      return;
+  }
+    
+  // OK, we're logged in, let's do a oneshot search and just
+  // get the results
+  var query = "" +
+    'search search index=_internal sourcetype=splunkd* | head 10000 | bucket span=1m _time | eval formatted_time=_time | chart count over formatted_time by status usenull=f';
+  service.oneshotSearch(query, {}, function(err, results) {
+    if (err) {
+      console.log(err);
+      alert("An error occurred with the search");
+      return;
+    }
+  
+    // The format Google Charts needs data in is very similar to ours - we just
+    // need to put the field headers in the same array, and convert the strings
+    // into numbers.
+    var rows = results.rows.slice();
+    var fields = results.fields.slice();
+    
+    var timeIndex = utils.indexOf(fields, "formatted_time");
+    for(var i = 0; i < rows.length; i++) {
+      var row = rows[i];
+      for(var j = 0; j < row.length; j++) {
+        
+        // Don't change the time field
+        if (j !== timeIndex) {
+          row[j] = parseInt(row[j]);
+        }
+      }
+    }
+    
+    drawChart(rows, fields);
+  });
+});
+            </pre>
+          </div>
+        </div>
+      </section>
+      
+      <footer>
+        <p>&copy; Splunk 2011</p>
+      </footer>
+
+    </div> <!-- /container -->
+
+  </body>
+</html>
