@@ -6,6 +6,7 @@ build
 client
 external
 examples/browser/minisplunk
+examples/browser/resources
 examples\\browser\\minisplunk
 old_english
 new_english

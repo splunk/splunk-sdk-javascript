@@ -52,7 +52,7 @@
     "latedef"       : true,     // Prohipit variable use before definition.
     "loopfunc"      : false,    // Allow functions to be defined within loops.
     "noarg"         : true,     // Prohibit use of `arguments.caller` and `arguments.callee`.
-    "regexp"        : true,     // Prohibit `.` and `[^...]` in regular expressions.
+    "regexp"        : false,    // Prohibit `.` and `[^...]` in regular expressions.
     "regexdash"     : false,    // Tolerate unescaped last dash i.e. `[-...]`.
     "scripturl"     : false,    // Tolerate script-targeted URLs.
     "shadow"        : false,    // Allows re-define variables later in code e.g. `var x=1; x=2;`.
