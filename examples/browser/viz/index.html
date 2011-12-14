@@ -421,7 +421,7 @@ service.login(function(err, success) {
   // OK, we're logged in, let's do a oneshot search and just
   // get the results
   var query = "" +
-    'search search index=_internal sourcetype=splunkd* | head 10000 | bucket span=1m _time | eval formatted_time=_time | chart count over formatted_time by status usenull=f';
+    'search index=_internal sourcetype=splunkd* | head 10000 | bucket span=1m _time | eval formatted_time=_time | chart count over formatted_time by status usenull=f';
   service.oneshotSearch(query, {}, function(err, results) {
     if (err) {
       console.log(err);
@@ -456,7 +456,7 @@ service.login(function(err, success) {
       </section>
       
       <footer>
-        <p>&copy; Splunk 2011</p>
+        <p>&copy; Splunk 2011-2012</p>
       </footer>
 
     </div> <!-- /container -->

@@ -494,6 +494,11 @@
         launchBrowser("tests/tests.browser.html", port);
     };
     
+    var launchBrowserExamples = function(port) {
+        runServer(port);
+        launchBrowser("examples/browser/index.html", port);
+    };
+    
     var generateDocs = function(callback) {        
         callback = (callback && utils.isFunction(callback)) ? callback : (function() {});
         
@@ -677,6 +682,11 @@
         .command('tests-browser [port]')
         .description('Launch the browser test suite.')
         .action(launchBrowserTests);
+    
+    program
+        .command('examples [port]')
+        .description('Launch the browser examples index page.')
+        .action(launchBrowserExamples);
     
     program
         .command('hint')
