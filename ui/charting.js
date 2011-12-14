@@ -16,7 +16,7 @@
 (function() {
     var utils        = require('../lib/utils');
     var Class        = require('../lib/jquery.class').Class;
-    var SplunkCharts = require('../external-nocheckin/js_charting').Splunk;
+    var SplunkCharts = require('./charting/js_charting').Splunk;
     
     var root = exports || this;
         

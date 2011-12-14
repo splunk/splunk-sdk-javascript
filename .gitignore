@@ -6,13 +6,12 @@ tests/html/*
 *DS_Store
 *.sublime-*
 *.pyc
-external-nocheckin/*
 .idea/*
 npm-debug.log
 server.py
-client/splunk.ui.charting.*
 .buildcache
 v8.log
 cover_html
 .coverage_data
 .coverignore
+*.swp

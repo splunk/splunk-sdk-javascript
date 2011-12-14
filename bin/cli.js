@@ -55,7 +55,7 @@
      */
     var UI_COMPONENT_BROWSER_ENTRY  = {
         timeline: "entries/browser.ui.timeline.entry.js",
-        //charting: "entries/browser.ui.charting.entry.js"
+        charting: "entries/browser.ui.charting.entry.js"
     };
     
     /**
