@@ -2296,7 +2296,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          */
         _load: function(properties) {
             this._maybeValid = true;
-            this._properties = properties;
+            this._properties = properties || {};
         },
         
         /**
@@ -4566,7 +4566,9 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      * @globals Splunk.Async
      */
     root.sleep = function(timeout, callback) {
-        setTimeout(callback, timeout);
+        setTimeout(function() {
+            callback();   
+        }, timeout);
     };
     
     /**
@@ -4678,9 +4680,13 @@ require.define("/lib/searcher.js", function (require, module, exports, __dirname
             var stopLooping = false;
             Async.whilst(
                 function() { return !stopLooping; },
-                function(done) {
+                function(iterationDone) {
                     job.refresh(function(err, job) {
-                        properties = job.properties();
+                        if (err) {
+                            iterationDone(err);
+                        }
+                        
+                        properties = job.properties() || {};
                         
                         // Dispatch for progress
                         manager._dispatchCallbacks(manager.onProgressCallbacks, properties);
@@ -4691,7 +4697,7 @@ require.define("/lib/searcher.js", function (require, module, exports, __dirname
                         }
                         
                         stopLooping = properties.isDone || manager.isJobDone || properties.isFailed;
-                        Async.sleep(1000, done);
+                        Async.sleep(1000, iterationDone);
                     });
                 },
                 function(err) {
