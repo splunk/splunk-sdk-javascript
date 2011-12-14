@@ -73,36 +73,60 @@
      * Helpers
      */     
     
-    var serverProxy = function(req, res) {        
-        var body = "";
-        req.on('data', function(data) {
-            body += data.toString("utf-8");
-        });
+    var serverProxy = function(req, res) {     
+        var error = {d: { __messages: [{ type: "ERROR", text: "Proxy Error", code: "PROXY"}] }};
         
-        req.on('end', function() {
-            var destination = req.headers["X-ProxyDestination".toLowerCase()];
+        var writeError = function() {
+            res.writeHead(500, {});
+            res.write(JSON.stringify(error));
+            res.end();
+        };
         
-            var options = {
-                url: destination,
-                method: req.method,
-                headers: {
-                    "Content-Length": req.headers["content-length"],
-                    "Content-Type": req.headers["content-type"],
-                    "Authorization": req.headers["authorization"],
-                },
-                body: body,
-                jar: false
-            };
-        
-            request(options, function(error, response, data) {
-                var statusCode = (response ? response.statusCode : 500) || 500;
-                var headers = (response ? response.headers : {}) || {};
-                res.writeHead(statusCode, headers);
-                res.write(data || JSON.stringify({d: { __messages: [{ type: "ERROR", text: "Proxy Error", code: "PROXY"}] }}));
-                res.end();
+        try {      
+            var body = "";
+            req.on('data', function(data) {
+                body += data.toString("utf-8");
             });
-        
-        });
+            
+            req.on('end', function() {
+                var destination = req.headers["X-ProxyDestination".toLowerCase()];
+            
+                var options = {
+                    url: destination,
+                    method: req.method,
+                    headers: {
+                        "Content-Length": req.headers["content-length"],
+                        "Content-Type": req.headers["content-type"],
+                        "Authorization": req.headers["authorization"],
+                    },
+                    body: body,
+                    jar: false
+                };
+                
+                
+                try {
+                    request(options, function(error, response, data) {
+                        try {
+                            var statusCode = (response ? response.statusCode : 500) || 500;
+                            var headers = (response ? response.headers : {}) || {};
+                            res.writeHead(statusCode, headers);
+                            res.write(data);
+                            res.end();
+                        }
+                        catch (ex) {
+                            writeError();
+                        }
+                    });
+                }
+                catch (ex) {
+                    writeError();
+                }
+            
+            });
+        }
+        catch (ex) {
+            writeError();
+        }
     };
     
     var createServer = function(port) {
