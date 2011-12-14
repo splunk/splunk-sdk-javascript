@@ -2397,7 +2397,9 @@ var toString = Object.prototype.toString;</code></pre>
               <section class='source'>
                 <h4>Source</h4>
                 <pre><code>root.sleep = function(timeout, callback) {
-    setTimeout(callback, timeout);
+    setTimeout(function() {
+        callback();   
+    }, timeout);
 };</code></pre>
               </section>
               
@@ -3594,7 +3596,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L492">lib/client.js:492</a>)</h4>
                 <pre><code>_load: function(properties) {
     this._maybeValid = true;
-    this._properties = properties;
+    this._properties = properties || {};
 },</code></pre>
               </section>
               
