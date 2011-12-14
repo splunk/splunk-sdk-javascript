@@ -247,7 +247,14 @@ security policies, cross-domain messaging is not possible when you use the
 `file://` protocol, so you must serve the HTML pages from a server. The Splunk
 JavaScript SDK includes a simple server you can use.
 
-**TODO**: Note about SSL
+**Note**: Splunk ships with a self-signed SSL certificate, which prevents us 
+from doing IFrame cross-domain messaging (as the browser rejects any IFrame
+from an untrusted source by default). As such, if you want to use the `XdmHttp`
+class (which is the default), you will either have to put an exception in your
+browser for the Splunk certificate (OK for development purposes, but can be 
+annoying), or get a real SSL certificate for your Splunk instance. Another option
+is to use a small proxy to forward requests to Splunk (this is what the browser
+examples in the SDK do).
 
 **Note**: Node.js is required to run the server. For more about Node.js, see
 "SDK tools for server-side JavaScript".  
@@ -304,10 +311,21 @@ see "SDK tools for server-side JavaScript".
 To run these examples, open a command prompt and go to the `splunk-sdk-javascript` 
 directory, then enter the following command: 
 
+> node sdkdo examples
+
+This will start our development webserver and open your browser up to the example index page.
+If you prefer to start the server manually, you can execute:
+
 > node sdkdo runserver
 
-Once the server is running, open a browser and navigate to the example file. For example, 
-to run the minisplunk example, navigate to http://localhost:6969/examples/browser/minisplunk/index.html. 
+And then open your browser and go to the following page: http://localhost:6969/examples/browser/index.html
+
+**Note**: As noted above, the SDK requires the usage of cross-domain communication when running in the browser.
+Unfortunately, Splunk ships with a self-signed SSL certificate, and so the browser rejects any requests to
+it. In order to avoid this hindering your usage of the SDK, all the browser examples use a tiny proxy (
+you can see the implementation in [`bin/cli.js`][cli]) that will forward all requests to Splunk. In a 
+real scenario, you would either have the proxy on your own webserver, or get a properly signed
+certificate for Splunk itself.
 
 ### Building files and running unit tests
 
@@ -667,3 +685,4 @@ The third-party libraries embedded may have different licenses. This is the list
 [client_dir]: https://github.com/splunk/splunk-sdk-javascript/blob/master/client
 [refdocs]: http://splunk.github.com/splunk-sdk-javascript/docs/0.1.0/index.html
 [devportal]: http://dev.splunk.com
+[cli]: https://github.com/splunk/splunk-sdk-javascript/blob/master/bin/cli.js
