@@ -610,9 +610,9 @@ Async.chain([
         // Print the raw results out
         function(results, job, done) {
             // Find the index of the fields we want
-            var rawIndex = results.fields.indexOf("_raw");
-            var sourcetypeIndex = results.fields.indexOf("sourcetype");
-            var userIndex = results.fields.indexOf("user");
+            var rawIndex        = utils.indexOf(results.fields, "_raw");
+            var sourcetypeIndex = utils.indexOf(results.fields, "sourcetype");
+            var userIndex       = utils.indexOf(results.fields, "user");
             
             // Print out each result and the key-value pairs we want
             console.log("Results: ");
@@ -675,9 +675,9 @@ Async.chain([
         // Print the raw results out
         function(results, job, done) {
             // Find the index of the fields we want
-            var rawIndex = results.fields.indexOf("_raw");
-            var sourcetypeIndex = results.fields.indexOf("sourcetype");
-            var userIndex = results.fields.indexOf("user");
+            var rawIndex        = utils.indexOf(results.fields, "_raw");
+            var sourcetypeIndex = utils.indexOf(results.fields, "sourcetype");
+            var userIndex       = utils.indexOf(results.fields, "user");
             
             // Print out each result and the key-value pairs we want
             console.log("Results: ");
@@ -725,9 +725,9 @@ Async.chain([
         // The job is done, and the results are returned inline
         function(results, done) {
             // Find the index of the fields we want
-            var rawIndex = results.fields.indexOf("_raw");
-            var sourcetypeIndex = results.fields.indexOf("sourcetype");
-            var userIndex = results.fields.indexOf("user");
+            var rawIndex        = utils.indexOf(results.fields, "_raw");
+            var sourcetypeIndex = utils.indexOf(results.fields, "sourcetype");
+            var userIndex       = utils.indexOf(results.fields, "user");
             
             // Print out each result and the key-value pairs we want
             console.log("Results: ");
@@ -830,8 +830,8 @@ Async.chain([
                                 count++;
                                 
                                 console.log("========== Iteration " + count + " ==========");
-                                var sourcetypeIndex = results.fields.indexOf("sourcetype");
-                                var countIndex = results.fields.indexOf("count");
+                                var sourcetypeIndex = utils.indexOf(results.fields, "sourcetype");
+                                var countIndex      = utils.indexOf(results.fields, "count");
                                 
                                 for(var i = 0; i < results.rows.length; i++) {
                                     var row = results.rows[i];
