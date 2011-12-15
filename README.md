@@ -86,6 +86,11 @@ To install new_english, you can either copy the [`splunk-sdk-javascript/new_engl
 directory to the Splunk apps directory or you can create
 a symbolic link to it. Then, restart Splunk. 
 
+**Note**: `new_english` does a domain check against the requester, and will return an error
+if it is not in the list. If you are accessing Splunk from a domain/IP that is different
+than `localhost` or `127.0.0.1`, you should add your domain/IP to the `new_english/default/json.conf`
+file.
+
 **Examples for Mac OS X**:
 
 The following example command shows how to copy the `new_english`
