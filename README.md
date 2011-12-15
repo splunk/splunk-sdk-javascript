@@ -175,7 +175,7 @@ with the following format:
     # Use the admin port, which is 8089 by default.
     port=8089
     # Splunk username
-    user=admin
+    username=admin
     # Splunk password
     password=changeme
     # Access scheme (OPTIONAL)
