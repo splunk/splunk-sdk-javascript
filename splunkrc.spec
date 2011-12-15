@@ -1,5 +1,5 @@
 # Host at which Splunk is reachable (default: localhost)
-host=127.0.0.1
+host=localhost
 
 # Port at which Splunk is reachable (default: 8089)
 port=8089
@@ -12,9 +12,3 @@ password=changeme
 
 # Access scheme (default: https)
 scheme=https
-
-# The app namespace to use (optional)
-app=MyApp
-
-# The user namespace to use (optional)
-owner=admin
