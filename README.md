@@ -86,10 +86,11 @@ To install new_english, you can either copy the [`splunk-sdk-javascript/new_engl
 directory to the Splunk apps directory or you can create
 a symbolic link to it. Then, restart Splunk. 
 
-**Note**: `new_english` does a domain check against the requester, and will return an error
-if it is not in the list. If you are accessing Splunk from a domain/IP that is different
-than `localhost` or `127.0.0.1`, you should add your domain/IP to the `new_english/default/json.conf`
-file.
+**Note**: The `new_english app performs a domain check by comparing the requester's domain and IP 
+address against the list of allowed ones in the `new_english/default/json.conf` file. If the 
+requester's domain and IP address are not in this list, the app returns an error. If you are 
+accessing Splunk from a domain and IP address other than `localhost` and `127.0.0.1`, add your 
+domain and IP address to the conf file.
 
 **Examples for Mac OS X**:
 
