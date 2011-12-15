@@ -234,6 +234,22 @@ Or:
 This tag creates a global variable called `Splunk`, which is the root of the SDK. 
 No other global variables are introduced.
 
+#### UI Components
+
+Beyond the ability to interact with Splunk data, the SDK also provides you with
+UI components you can use on your site in conjunction with this data. As of
+the preview launch, these components include:
+
+* Timeline Control: this is the event timeline view that shows you how many
+events are available for every timeslice in your query.
+
+* Charting Control: this is the charting control that is included in Splunk,
+allowing you to derive types of charts when supplied with Splunk data.
+
+These are the same components that ship with Splunk 4.3 (no flash!). Because the
+timeline control uses the `<canvas>` tag, it will only work in browsers that
+support it (which means it does not support versions of IE before IE9).
+
 #### Dependencies and Cross Domain Communication
 
 When running in a web browser, the SDK's only dependency is JSON support. If
