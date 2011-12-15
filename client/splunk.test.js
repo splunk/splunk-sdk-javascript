@@ -2478,7 +2478,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * This will update the entity on the server.
          *
          * @param {Object} props Properties to be updated the object with.
-         * @param {Function} callback A callback when the object is deleted: `(err)`
+         * @param {Function} callback A callback when the object is updated: `(err, entity)`
          *
          * @module Splunk.Client.Entity
          * @protected

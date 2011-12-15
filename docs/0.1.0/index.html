@@ -4026,7 +4026,7 @@ var toString = Object.prototype.toString;</code></pre>
                                   <h4>Params</h4>
                 <ul>
                                       <li><span class="bold">props</span> - <span class="em">Object</span> <p>Properties to be updated the object with.</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback when the object is deleted: <code>(err)</code></p></li>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback when the object is updated: <code>(err, entity)</code></p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -4508,6 +4508,8 @@ var toString = Object.prototype.toString;</code></pre>
             callback(null, entity);
         }
     });
+    
+    this._invalidate();
 },</code></pre>
               </section>
               
@@ -4537,7 +4539,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L899">lib/client.js:899</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L901">lib/client.js:901</a>)</h4>
                 <pre><code>list: function(callback) {
     callback = callback || function() {};
     
@@ -4575,7 +4577,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L926">lib/client.js:926</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L928">lib/client.js:928</a>)</h4>
                 <pre><code>contains: function(id, callback) {
         callback = callback || function() {};
         var that = this;
@@ -4853,7 +4855,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for Splunk.Client.SavedSearches</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L977">lib/client.js:977</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L979">lib/client.js:979</a>)</h4>
                 <pre><code>init: function(service) {
         this._super(service, Paths.savedSearches, {
             item: function(collection, props) { 
@@ -5002,6 +5004,8 @@ var toString = Object.prototype.toString;</code></pre>
             callback(null, entity);
         }
     });
+    
+    this._invalidate();
 },</code></pre>
               </section>
               
@@ -5345,7 +5349,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for Splunk.Client.SavedSearch</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1007">lib/client.js:1007</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1009">lib/client.js:1009</a>)</h4>
                 <pre><code>init: function(service, name) {
     this.name = name;
     this._super(service, Paths.savedSearches + "/" + encodeURIComponent(name));
@@ -5383,7 +5387,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1032">lib/client.js:1032</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1034">lib/client.js:1034</a>)</h4>
                 <pre><code>acknowledge: function(callback) {
     callback = callback || function() {};
     
@@ -5421,7 +5425,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1057">lib/client.js:1057</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1059">lib/client.js:1059</a>)</h4>
                 <pre><code>dispatch: function(callback) {
     callback = callback || function() {};
     
@@ -5459,7 +5463,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1082">lib/client.js:1082</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1084">lib/client.js:1084</a>)</h4>
                 <pre><code>history: function(callback) {
     callback = callback || function() {};
     
@@ -5496,7 +5500,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1106">lib/client.js:1106</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1108">lib/client.js:1108</a>)</h4>
                 <pre><code>suppressInfo: function(callback) {
         callback = callback || function() {};
         
@@ -5617,7 +5621,7 @@ var toString = Object.prototype.toString;</code></pre>
                                   <h4>Params</h4>
                 <ul>
                                       <li><span class="bold">props</span> - <span class="em">Object</span> <p>Properties to be updated the object with.</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback when the object is deleted: <code>(err)</code></p></li>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback when the object is updated: <code>(err, entity)</code></p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -5885,7 +5889,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for Splunk.Client.Applications</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1136">lib/client.js:1136</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1138">lib/client.js:1138</a>)</h4>
                 <pre><code>init: function(service) {
         this._super(service, Paths.apps, {
             item: function(collection, props) {
@@ -6034,6 +6038,8 @@ var toString = Object.prototype.toString;</code></pre>
             callback(null, entity);
         }
     });
+    
+    this._invalidate();
 },</code></pre>
               </section>
               
@@ -6377,7 +6383,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for Splunk.Client.Application</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1166">lib/client.js:1166</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1168">lib/client.js:1168</a>)</h4>
                 <pre><code>init: function(service, name) {
     this.name = name;
     this._super(service, Paths.apps + "/" + encodeURIComponent(name));
@@ -6413,7 +6419,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1189">lib/client.js:1189</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1191">lib/client.js:1191</a>)</h4>
                 <pre><code>setupInfo: function(callback) {
     callback = callback || function() {};
     
@@ -6455,7 +6461,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1218">lib/client.js:1218</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1220">lib/client.js:1220</a>)</h4>
                 <pre><code>updateInfo: function(callback) {
         callback = callback || function() {};
         
@@ -6581,7 +6587,7 @@ var toString = Object.prototype.toString;</code></pre>
                                   <h4>Params</h4>
                 <ul>
                                       <li><span class="bold">props</span> - <span class="em">Object</span> <p>Properties to be updated the object with.</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback when the object is deleted: <code>(err)</code></p></li>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback when the object is updated: <code>(err, entity)</code></p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -6849,7 +6855,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for Splunk.Client.Indexes</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1253">lib/client.js:1253</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1255">lib/client.js:1255</a>)</h4>
                 <pre><code>init: function(service) {
     this._super(service, Paths.indexes, {
         item: function(collection, props) {
@@ -6890,7 +6896,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1282">lib/client.js:1282</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1284">lib/client.js:1284</a>)</h4>
                 <pre><code>create: function(name, params, callback) {
         params = params || {};
         params["name"] = name;
@@ -7327,7 +7333,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for Splunk.Client.Index</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1311">lib/client.js:1311</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1313">lib/client.js:1313</a>)</h4>
                 <pre><code>init: function(service, name) {
     this.name = name;
     this._super(service, Paths.indexes + "/" + encodeURIComponent(name));
@@ -7364,7 +7370,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1335">lib/client.js:1335</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1337">lib/client.js:1337</a>)</h4>
                 <pre><code>submitEvent: function(event, params, callback) {
         callback = callback || function() {};
         params = params || {};
@@ -7504,7 +7510,7 @@ var toString = Object.prototype.toString;</code></pre>
                                   <h4>Params</h4>
                 <ul>
                                       <li><span class="bold">props</span> - <span class="em">Object</span> <p>Properties to be updated the object with.</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback when the object is deleted: <code>(err)</code></p></li>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback when the object is updated: <code>(err, entity)</code></p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -7772,7 +7778,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for Splunk.Client.Properties</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1384">lib/client.js:1384</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1386">lib/client.js:1386</a>)</h4>
                 <pre><code>init: function(service) {
    this._super(service, Paths.properties, {
        item: function(collection, props) {
@@ -7811,7 +7817,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1410">lib/client.js:1410</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1412">lib/client.js:1412</a>)</h4>
                 <pre><code>create: function(filename, callback) {
         callback = callback || function() {};
         
@@ -8255,7 +8261,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for Splunk.Client.PropertyFile</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1446">lib/client.js:1446</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1448">lib/client.js:1448</a>)</h4>
                 <pre><code>init: function(service, name) {
     this.name = name;
     this._super(service, Paths.properties + "/" + encodeURIComponent(name), {
@@ -8295,7 +8301,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1473">lib/client.js:1473</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1475">lib/client.js:1475</a>)</h4>
                 <pre><code>create: function(stanzaName, callback) {
         callback = callback || function() {};
         
@@ -8740,7 +8746,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for Splunk.Client.PropertyStanza</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1510">lib/client.js:1510</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1512">lib/client.js:1512</a>)</h4>
                 <pre><code>init: function(service, file, name) {
         this.name = name;
         this._super(service, Paths.properties + "/" + encodeURIComponent(file) + "/" + encodeURIComponent(name));
@@ -8857,7 +8863,7 @@ var toString = Object.prototype.toString;</code></pre>
                                   <h4>Params</h4>
                 <ul>
                                       <li><span class="bold">props</span> - <span class="em">Object</span> <p>Properties to be updated the object with.</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback when the object is deleted: <code>(err)</code></p></li>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback when the object is updated: <code>(err, entity)</code></p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -9125,7 +9131,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for Splunk.Client.Configurations</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1536">lib/client.js:1536</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1538">lib/client.js:1538</a>)</h4>
                 <pre><code>init: function(service) {
    this._super(service, Paths.properties, {
        item: function(collection, props) {
@@ -9164,7 +9170,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1562">lib/client.js:1562</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1564">lib/client.js:1564</a>)</h4>
                 <pre><code>create: function(filename, callback) {
         callback = callback || function() {};
         
@@ -9608,7 +9614,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for Splunk.Client.ConfigurationFile</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1598">lib/client.js:1598</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1600">lib/client.js:1600</a>)</h4>
                 <pre><code>init: function(service, name) {
     this.name = name;
     var path = Paths.configurations + "/conf-" + encodeURIComponent(name);
@@ -9650,7 +9656,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1627">lib/client.js:1627</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1629">lib/client.js:1629</a>)</h4>
                 <pre><code>create: function(stanzaName, values, callback) {
         if (utils.isFunction(values) &amp;&amp; !callback) {
             callback = values;
@@ -10092,7 +10098,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for Splunk.Client.ConfigurationStanza</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1661">lib/client.js:1661</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1663">lib/client.js:1663</a>)</h4>
                 <pre><code>init: function(service, file, name) {
         this.name = name;
         this._super(service, Paths.configurations + "/conf-" + encodeURIComponent(file) + "/" + encodeURIComponent(name));
@@ -10209,7 +10215,7 @@ var toString = Object.prototype.toString;</code></pre>
                                   <h4>Params</h4>
                 <ul>
                                       <li><span class="bold">props</span> - <span class="em">Object</span> <p>Properties to be updated the object with.</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback when the object is deleted: <code>(err)</code></p></li>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback when the object is updated: <code>(err, entity)</code></p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -10477,7 +10483,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for Splunk.Client.Jobs</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1687">lib/client.js:1687</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1689">lib/client.js:1689</a>)</h4>
                 <pre><code>init: function(service) {
     this._super(service, Paths.jobs, {
         item: function(collection, props) {
@@ -10517,7 +10523,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Create an asyncronous search job</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1714">lib/client.js:1714</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1716">lib/client.js:1716</a>)</h4>
                 <pre><code>create: function(query, params, callback) {
     callback = callback || function() {};
     params = params || {};
@@ -10574,7 +10580,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1762">lib/client.js:1762</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1764">lib/client.js:1764</a>)</h4>
                 <pre><code>search: function(query, params, callback) {
     this.create(query, params, callback);
 },</code></pre>
@@ -10609,7 +10615,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1785">lib/client.js:1785</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1787">lib/client.js:1787</a>)</h4>
                 <pre><code>oneshotSearch: function(query, params, callback) {
         callback = callback || function() {};
         params = params || {};
@@ -11059,7 +11065,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for Splunk.Client.Job</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1829">lib/client.js:1829</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1831">lib/client.js:1831</a>)</h4>
                 <pre><code>init: function(service, sid) {
     this._super(service, Paths.jobs + "/" + sid);
     this.sid = sid;
@@ -11109,7 +11115,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1867">lib/client.js:1867</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1869">lib/client.js:1869</a>)</h4>
                 <pre><code>cancel: function(callback) {
     this.post("control", {action: "cancel"}, callback);
     this._invalidate();
@@ -11142,7 +11148,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1887">lib/client.js:1887</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1889">lib/client.js:1889</a>)</h4>
                 <pre><code>disablePreview: function(callback) {
     callback = callback || function() {};
     
@@ -11180,7 +11186,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1912">lib/client.js:1912</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1914">lib/client.js:1914</a>)</h4>
                 <pre><code>enablePreview: function(callback) {
     callback = callback || function() {};
     
@@ -11220,7 +11226,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1940">lib/client.js:1940</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1942">lib/client.js:1942</a>)</h4>
                 <pre><code>events: function(params, callback) {
     callback = callback || function() {};
     
@@ -11262,7 +11268,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1969">lib/client.js:1969</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1971">lib/client.js:1971</a>)</h4>
                 <pre><code>finalize: function(callback) {
     callback = callback || function() {};
     
@@ -11300,7 +11306,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1994">lib/client.js:1994</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L1996">lib/client.js:1996</a>)</h4>
                 <pre><code>pause: function(callback) {
     callback = callback || function() {};
     
@@ -11340,7 +11346,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2022">lib/client.js:2022</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2024">lib/client.js:2024</a>)</h4>
                 <pre><code>preview: function(params, callback) {
     callback = callback || function() {};
     
@@ -11384,7 +11390,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2054">lib/client.js:2054</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2056">lib/client.js:2056</a>)</h4>
                 <pre><code>results: function(params, callback) {
     callback = callback || function() {};
     
@@ -11426,7 +11432,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2083">lib/client.js:2083</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2085">lib/client.js:2085</a>)</h4>
                 <pre><code>searchlog: function(callback) {
     callback = callback || function() {};
     
@@ -11469,7 +11475,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2113">lib/client.js:2113</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2115">lib/client.js:2115</a>)</h4>
                 <pre><code>setPriority: function(value, callback) {
     callback = callback || function() {};
     
@@ -11508,7 +11514,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2139">lib/client.js:2139</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2141">lib/client.js:2141</a>)</h4>
                 <pre><code>setTTL: function(value, callback) {
     callback = callback || function() {};
     
@@ -11548,7 +11554,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2167">lib/client.js:2167</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2169">lib/client.js:2169</a>)</h4>
                 <pre><code>summary: function(params, callback) {
     callback = callback || function() {};
     
@@ -11591,7 +11597,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2197">lib/client.js:2197</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2199">lib/client.js:2199</a>)</h4>
                 <pre><code>timeline: function(params, callback) {
     callback = callback || function() {};
     
@@ -11633,7 +11639,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2226">lib/client.js:2226</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2228">lib/client.js:2228</a>)</h4>
                 <pre><code>touch: function(callback) {
     callback = callback || function() {};
     
@@ -11671,7 +11677,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2251">lib/client.js:2251</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/client.js#L2253">lib/client.js:2253</a>)</h4>
                 <pre><code>unpause: function(callback) {
             callback = callback || function() {};
             
@@ -11794,7 +11800,7 @@ var toString = Object.prototype.toString;</code></pre>
                                   <h4>Params</h4>
                 <ul>
                                       <li><span class="bold">props</span> - <span class="em">Object</span> <p>Properties to be updated the object with.</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback when the object is deleted: <code>(err)</code></p></li>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback when the object is updated: <code>(err, entity)</code></p></li>
                   </ul>
               </section>
               <section class='params'>
