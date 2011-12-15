@@ -46,7 +46,7 @@ on what you want to do—use server tools, use client tools, run examples, or ru
 —read the sections below to find out what you need to do to get going. 
 
 *   **Requirements**. Lists the things you must set up to use the SDK. 
-*   SDK tools for server-side JavaScript. Describes what you need to install to use the 
+*   **SDK tools for server-side JavaScript**. Describes what you need to install to use the 
     tools for creating server-side JavaScript applications. 
 *   **Server-side examples and tests**. Describes how to set up the .splunkrc file and install 
     dependencies that you need to run examples and tests. 
@@ -65,7 +65,7 @@ requirements apply to both.
 #### Splunk
 
 If you haven't already installed Splunk, download it here: http://www.splunk.com/download. For 
-more about installing and running Splunk and system requirements, see Installing & Running Splunk. 
+more about installing and running Splunk and system requirements, see [Installing & Running Splunk][SplunkInstall]. 
 
 #### Splunk JavaScript SDK
 
@@ -292,7 +292,7 @@ then enter the following command:
 > node sdkdo runserver
 
 **Tip**: On Mac OSX and Linux, you can type `./sdkdo` instead of `node sdkdo`. On 
-Windows, you can use `.\sdkdo.  
+Windows, you can use `.\sdkdo`.  
 
 Then, navigate to http://localhost:6969/path/filename.html to see your HTML file.
 
@@ -713,3 +713,4 @@ The third-party libraries embedded may have different licenses. This is the list
 [refdocs]: http://splunk.github.com/splunk-sdk-javascript/docs/0.1.0/index.html
 [devportal]: http://dev.splunk.com
 [cli]: https://github.com/splunk/splunk-sdk-javascript/blob/master/bin/cli.js
+[SplunkInstall]: http://docs.splunk.com/Documentation/Splunk/latest/Installation/WhatsintheInstallationManual
