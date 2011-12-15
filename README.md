@@ -218,6 +218,17 @@ If you aren't storing your login credentials in .splunkrc, enter the following c
 
 > node jobs.js --username yourusername --password yourpassword list
 
+If it executed correctly, your output will look something like this:
+
+    ~\splunk-sdk-javascript\examples\node> node .\jobs.js list
+      Job 1 sid: scheduler__nobody__search_VG9wIGZpdmUgc291cmNldHlwZXM_at_1323917700_79740ae7e22350d6
+      Job 2 sid: scheduler__nobody__search_VG9wIGZpdmUgc291cmNldHlwZXM_at_1323917400_0dceb302931a2b3f
+      Job 3 sid: scheduler__nobody__search_SW5kZXhpbmcgd29ya2xvYWQ_at_1323917100_48fb4cc65a25c5b1
+      Job 4 sid: scheduler__nobody__search_SW5kZXhpbmcgd29ya2xvYWQ_at_1323916200_b2f239fef7834523
+      Job 5 sid: scheduler__nobody__unix_QWxlcnQgLSBzeXNsb2cgZXJyb3JzIGxhc3QgaG91cg_at_1323914400_96cb9084680b25d7
+      Job 6 sid: admin__admin__search_TXkgQXdlc29tZSBTYXZlZCBTZWFyY2g_1323901055.6
+    ==============
+
 ### SDK tools for client-side JavaScript
 
 The Splunk JavaScript SDK includes pre-built client-side files that run in a web
