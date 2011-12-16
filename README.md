@@ -1,3 +1,5 @@
+**NOTE**: The version of Node.js (0.6.6) released on 12/15/11 has a [bug](https://github.com/isaacs/npm/issues/1888) in npm that prevents the SDK from being installed. You can install Node 0.6.5 to avoid this issue for now.
+
 # The Splunk Software Development Kit for JavaScript (Preview Release)
 
 This SDK contains library code and examples designed to enable developers to
