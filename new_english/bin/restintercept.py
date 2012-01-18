@@ -166,7 +166,7 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
             })
           
             content = self.render_odata(output)
-            raise e
+            raise
             
         self.set_response(status, content)
     
@@ -1028,7 +1028,10 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
             for val in node.findall('modes/value'):
                 v = val.findtext('text')
                 if field['mean'] != None:
-                    v = float(v)
+                    try:
+                        v = float(v)
+                    except:
+                        pass
                 field['modes'].append({
                     'value': v,
                     'count': int(val.get('c', 0)),
