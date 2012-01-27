@@ -747,6 +747,48 @@ exports.setup = function(svc) {
                         test.done();
                     });
                 });
+            },
+            
+            "Callback#list limit count": function(test) {
+                var searches = this.service.savedSearches({count: 2});
+                searches.list(function(err, savedSearches) {
+                    test.strictEqual(savedSearches.length, 2);
+                    
+                    for(var i = 0; i < savedSearches.length; i++) {
+                        console.log(savedSearches[i].path)
+                        test.ok(savedSearches[i].isValid());
+                    }
+                    
+                    test.done();
+                });
+            },
+            
+            "Callback#list filter": function(test) {
+                var searches = this.service.savedSearches({search: "Error"});
+                searches.list(function(err, savedSearches) {
+                    test.ok(savedSearches.length > 0);
+                    
+                    for(var i = 0; i < savedSearches.length; i++) {
+                        console.log(savedSearches[i].path)
+                        test.ok(savedSearches[i].isValid());
+                    }
+                    
+                    test.done();
+                });
+            },
+            
+            "Callback#list offset": function(test) {
+                var searches = this.service.savedSearches({offset: 2, count: 1});
+                searches.list(function(err, savedSearches) {
+                    test.strictEqual(savedSearches.length, 1);
+                    
+                    for(var i = 0; i < savedSearches.length; i++) {
+                        console.log(savedSearches[i].path)
+                        test.ok(savedSearches[i].isValid());
+                    }
+                    
+                    test.done();
+                });
             }
         },
         

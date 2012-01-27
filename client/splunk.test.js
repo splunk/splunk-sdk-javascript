@@ -1909,14 +1909,15 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *      var apps = svc.apps();
          *      apps.list(function(err, list) { console.log(list); });
          *
+         * @param {Object} options Dictionary of collection filtering and pagination options
          * @return {Splunk.Client.Collection} The Applications collection
          *
          * @endpoint apps/local
          * @module Splunk.Client.Service
          * @see Splunk.Client.Collection
          */
-        apps: function() {
-            return new root.Applications(this);
+        apps: function(options) {
+            return new root.Applications(this, options);
         },
         
         /**
@@ -1935,14 +1936,15 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *          });
          *      });
          *
+         * @param {Object} options Dictionary of collection filtering and pagination options
          * @return {Splunk.Client.Configurations} The Configurations collection
          *
          * @endpoint configs
          * @module Splunk.Client.Service
          * @see Splunk.Client.Configurations
          */
-        configurations: function() {
-            return new root.Configurations(this);
+        configurations: function(options) {
+            return new root.Configurations(this, options);
         },
         
         /**
@@ -1960,14 +1962,15 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *          // `index` contains the Index object.
          *      });
          *
+         * @param {Object} options Dictionary of collection filtering and pagination options
          * @return {Splunk.Client.Indexes} The Indexes collection
          *
          * @endpoint data/indexes
          * @module Splunk.Client.Service
          * @see Splunk.Client.Indexes
          */        
-        indexes: function() { 
-            return new root.Indexes(this);
+        indexes: function(options) { 
+            return new root.Indexes(this, options);
         },
         
         /**
@@ -1986,14 +1989,15 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *          });
          *      });
          *
+         * @param {Object} options Dictionary of collection filtering and pagination options
          * @return {Splunk.Client.Properties} The Properties collection
          *
          * @endpoint properties
          * @module Splunk.Client.Service
          * @see Splunk.Client.Properties
          */
-        properties: function() {
-            return new root.Properties(this);
+        properties: function(options) {
+            return new root.Properties(this, options);
         },
         
         /**
@@ -2010,14 +2014,15 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *          console.log("# Of Saved Searches: " + list.length);
          *      });
          *
+         * @param {Object} options Dictionary of collection filtering and pagination options
          * @return {Splunk.Client.SavedSearches} The SavedSearches collection
          *
          * @endpoint saved/searches
          * @module Splunk.Client.Service
          * @see Splunk.Client.SavedSearches
          */
-        savedSearches: function() {
-            return new root.SavedSearches(this);
+        savedSearches: function(options) {
+            return new root.SavedSearches(this, options);
         },
         
         /**
@@ -2036,14 +2041,15 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *          }
          *      });
          *
+         * @param {Object} options Dictionary of collection filtering and pagination options
          * @return {Splunk.Client.Jobs} The Jobs collection
          *
          * @endpoint search/jobs
          * @module Splunk.Client.Service
          * @see Splunk.Client.Jobs
          */
-        jobs: function() {
-            return new root.Jobs(this);  
+        jobs: function(options) {
+            return new root.Jobs(this, options);  
         },
         
         /**
@@ -2514,13 +2520,15 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @constructor
          * @param {Splunk.Client.Service} service A service instance
          * @param {String} path A relative endpoint path (e.g. 'search/jobs')
+         * @param {Object} options Dictionary of collection filtering and pagination options
          * @param {Object} handlers A dictionary of functions to perform specialized operations: item, isSame, loadOnCreate, loadOnItem
          * @return {Splunk.Client.Collection} A Splunk.Client.Collection instance
          *
          * @module Splunk.Client.Collection
          */     
-        init: function(service, path, handlers) {
+        init: function(service, path, options, handlers) {
             this._super(service, path);
+            this._options = options;
             
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
@@ -2592,8 +2600,13 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         refresh: function(callback) {
             callback = callback || function() {};
             
+            var options = this._options || {};
+            if (!options.count) {
+                options.count = 0;
+            }
+            
             var that = this;
-            that.get("", {count: 0}, function(err, response) {
+            that.get("", options, function(err, response) {
                 if (err) {
                     callback(err);
                 }
@@ -2777,12 +2790,13 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * @constructor
          * @param {Splunk.Client.Service} service A service instance
+         * @param {Object} options Dictionary of collection filtering and pagination options
          * @return {Splunk.Client.SavedSearches} A Splunk.Client.SavedSearches instance
          *
          * @module Splunk.Client.SavedSearches
          */     
-        init: function(service) {
-            this._super(service, Paths.savedSearches, {
+        init: function(service, options) {
+            this._super(service, Paths.savedSearches, options, {
                 item: function(collection, props) { 
                     return new root.SavedSearch(collection.service, props.__name);
                 }
@@ -2936,12 +2950,13 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * @constructor
          * @param {Splunk.Client.Service} service A service instance
+         * @param {Object} options Dictionary of collection filtering and pagination options
          * @return {Splunk.Client.Applications} A Splunk.Client.Applications instance
          *
          * @module Splunk.Client.Applications
          */  
-        init: function(service) {
-            this._super(service, Paths.apps, {
+        init: function(service, options) {
+            this._super(service, Paths.apps, options, {
                 item: function(collection, props) {
                     return new root.Application(collection.service, props.__name);
                 }
@@ -3053,12 +3068,13 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * @constructor
          * @param {Splunk.Client.Service} service A service instance
+         * @param {Object} options Dictionary of collection filtering and pagination options
          * @return {Splunk.Client.Indexes} A Splunk.Client.Indexes instance
          *
          * @module Splunk.Client.Indexes
          */  
-        init: function(service) {
-            this._super(service, Paths.indexes, {
+        init: function(service, options) {
+            this._super(service, Paths.indexes, options, {
                 item: function(collection, props) {
                     return new root.Index(collection.service, props.__name);  
                 },
@@ -3184,12 +3200,13 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * @constructor
          * @param {Splunk.Client.Service} service A service instance
+         * @param {Object} options Dictionary of collection filtering and pagination options
          * @return {Splunk.Client.Properties} A Splunk.Client.Properties instance
          *
          * @module Splunk.Client.Properties
          */  
-        init: function(service) {
-           this._super(service, Paths.properties, {
+        init: function(service, options) {
+           this._super(service, Paths.properties, options, {
                item: function(collection, props) {
                    var name = props.__name;
                    return new root.PropertyFile(collection.service, name);
@@ -3246,13 +3263,14 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * @constructor
          * @param {Splunk.Client.Service} service A service instance
+         * @param {Object} options Dictionary of collection filtering and pagination options
          * @return {Splunk.Client.PropertyFile} A Splunk.Client.PropertyFile instance
          *
          * @module Splunk.Client.PropertyFile
          */  
-        init: function(service, name) {
+        init: function(service, name, options) {
             this.name = name;
-            this._super(service, Paths.properties + "/" + encodeURIComponent(name), {
+            this._super(service, Paths.properties + "/" + encodeURIComponent(name), options, {
                 item: function(collection, props) {
                     var name = props.__name;
                     return new root.PropertyStanza(collection.service, collection.name, name);
@@ -3336,12 +3354,13 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * @constructor
          * @param {Splunk.Client.Service} service A service instance
+         * @param {Object} options Dictionary of collection filtering and pagination options
          * @return {Splunk.Client.Configurations} A Splunk.Client.Configurations instance
          *
          * @module Splunk.Client.Configurations
          */  
-        init: function(service) {
-           this._super(service, Paths.properties, {
+        init: function(service, options) {
+           this._super(service, Paths.properties, options, {
                item: function(collection, props) {
                    var name = props.__name;
                    return new root.ConfigurationFile(collection.service, name);
@@ -3398,14 +3417,15 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * @constructor
          * @param {Splunk.Client.Service} service A service instance
+         * @param {Object} options Dictionary of collection filtering and pagination options
          * @return {Splunk.Client.ConfigurationFile} A Splunk.Client.ConfigurationFile instance
          *
          * @module Splunk.Client.ConfigurationFile
          */  
-        init: function(service, name) {
+        init: function(service, name, options) {
             this.name = name;
             var path = Paths.configurations + "/conf-" + encodeURIComponent(name);
-            this._super(service, path, {
+            this._super(service, path, options, {
                 item: function(collection, props) {
                     var name = props.__name;
                     return new root.ConfigurationStanza(collection.service, collection.name, name);
@@ -3487,12 +3507,13 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * @constructor
          * @param {Splunk.Client.Service} service A service instance
+         * @param {Object} options Dictionary of collection filtering and pagination options
          * @return {Splunk.Client.Jobs} A Splunk.Client.Jobs instance
          *
          * @module Splunk.Client.Jobs
          */  
-        init: function(service) {
-            this._super(service, Paths.jobs, {
+        init: function(service, options) {
+            this._super(service, Paths.jobs, options, {
                 item: function(collection, props) {
                     var sid = props.sid;
                     return new root.Job(collection.service, sid);
@@ -6563,6 +6584,48 @@ exports.setup = function(svc) {
                         test.ok(!err);
                         test.done();
                     });
+                });
+            },
+            
+            "Callback#list limit count": function(test) {
+                var searches = this.service.savedSearches({count: 2});
+                searches.list(function(err, savedSearches) {
+                    test.strictEqual(savedSearches.length, 2);
+                    
+                    for(var i = 0; i < savedSearches.length; i++) {
+                        console.log(savedSearches[i].path)
+                        test.ok(savedSearches[i].isValid());
+                    }
+                    
+                    test.done();
+                });
+            },
+            
+            "Callback#list filter": function(test) {
+                var searches = this.service.savedSearches({search: "Error"});
+                searches.list(function(err, savedSearches) {
+                    test.ok(savedSearches.length > 0);
+                    
+                    for(var i = 0; i < savedSearches.length; i++) {
+                        console.log(savedSearches[i].path)
+                        test.ok(savedSearches[i].isValid());
+                    }
+                    
+                    test.done();
+                });
+            },
+            
+            "Callback#list offset": function(test) {
+                var searches = this.service.savedSearches({offset: 2, count: 1});
+                searches.list(function(err, savedSearches) {
+                    test.strictEqual(savedSearches.length, 1);
+                    
+                    for(var i = 0; i < savedSearches.length; i++) {
+                        console.log(savedSearches[i].path)
+                        test.ok(savedSearches[i].isValid());
+                    }
+                    
+                    test.done();
                 });
             }
         },
