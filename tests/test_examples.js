@@ -278,21 +278,23 @@ exports.setup = function(svc, opts) {
             },
             
             "List stanzas": function(test) {
-                this.run("stanzas", ["web"], null, function(err) {
+                this.run("stanzas", ["web"], {app: "search", user: "nobody"}, function(err) {
                     test.ok(!err);
                     test.done();
                 });
             },
             
             "Show non-existent contents": function(test) {
-                this.run("contents", ["json", "settings"], null, function(err) {
+                console.log("BOOO");
+                this.run("contents", ["json", "settings"], {app: "search", user: "nobody"}, function(err) {
                     test.ok(err);
                     test.done();
                 });
             },
             
             "Show contents with specialization": function(test) {
-                this.run("contents", ["json", "settings"], {app: "new_english"}, function(err) {
+                this.run("contents", ["json", "settings"], {app: "new_english", user: "nobody"}, function(err) {
+                    console.log(err);
                     test.ok(!err);
                     test.done();
                 });

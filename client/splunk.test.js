@@ -846,6 +846,51 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     root.isString = function(obj) {
         return !!(obj === '' || (obj && obj.charCodeAt && obj.substr));
     };
+    
+    /**
+     * Whether or not the argument is empty
+     *
+     * Example:
+     *      
+     *      function() { 
+     *          console.log(Splunk.Utils.isEmpty({})); // true
+     *          console.log(Splunk.Utils.isEmpty({a: 1})); // false
+     *      }
+     *
+     * @param {Anything} obj Parameter to check whether it is empty
+     * @return {Boolean} Whether or not the passed in parameter was empty
+     *
+     * @globals Splunk.Utils
+     */
+    root.isEmpty = function(obj) {
+        if (root.isArray(obj) || root.isString(obj)) {
+            return obj.length === 0;
+        }
+        
+        for (var key in obj) {
+            if (hasOwnProperty.call(obj, key)) {
+                return false;
+            }
+        }
+        
+        return true;
+    };
+    
+    /**
+     * Extract namespace information from a properties dictionary
+     *
+     * @param {Object} props Properties dictionary
+     * @return {Object} Namespace information (owner, app, sharing) for the given properties
+     *
+     * @globals Splunk.Utils
+     */
+    root.namespaceFromProperties = function(props) {
+        return {
+            owner: props.__metadata.acl.owner,
+            app: props.__metadata.acl.app,
+            sharing: props.__metadata.acl.sharing
+        };
+    };
 })();
 });
 
@@ -874,6 +919,13 @@ require.define("/lib/binding.js", function (require, module, exports, __dirname,
     var utils    = require('./utils');
 
     var root = exports || this;
+
+    root.Sharing = {
+        USER: "user",
+        APP: "app",
+        GLOBAL: "global",
+        SYSTEM: "system"  
+    };
 
     /**
      * Splunk.Binding.Context
@@ -912,7 +964,7 @@ require.define("/lib/binding.js", function (require, module, exports, __dirname,
             this.port       = params.port || 8089;
             this.username   = params.username || null;  
             this.password   = params.password || null;  
-            this.owner      = params.owner || "-";  
+            this.owner      = params.owner;  
             this.app        = params.app;  
             this.sessionKey = params.sessionKey || "";
             
@@ -973,21 +1025,36 @@ require.define("/lib/binding.js", function (require, module, exports, __dirname,
          * @return {String} Fully qualified path
          *
          * @module Splunk.Binding.Context 
-         * @private
          */
-        fullpath: function(path) {
+        fullpath: function(path, namespace) {
+            namespace = namespace || {};
+            
             if (utils.startsWith(path, "/")) {
                 return path;
             }  
 
-            if (!this.app) {
+            // If we don't have an app name (explicitly or implicitly), we default to /services/
+            if (!namespace.app && !this.app && namespace.sharing !== root.Sharing.SYSTEM) {
                 return "/services/" + path;
             }
 
-            var owner = (this.owner === "*" || !this.owner ? "-" : this.owner);
-            var app   = (this.app === "*" ? "-" : this.app);
+            // Get the app and owner, first from the passed in namespace, then the service,
+            // finally defaulting to wild cards
+            var owner = namespace.owner || this.owner || "-";
+            var app   = namespace.app || this.app || "-";
+            
+            namespace.sharing = (namespace.sharing || "").toLowerCase();
+            
+            // Modify the owner and app appropriately based on the sharing parameter
+            if (namespace.sharing === root.Sharing.APP || namespace.sharing === root.Sharing.GLOBAL) {
+                owner = "nobody";
+            }
+            else if (namespace.sharing === root.Sharing.SYSTEM) {
+                owner = "nobody";
+                app = "system";
+            }
 
-            return "/servicesNS/" + owner + "/" + app + "/" + path; 
+            return utils.trim("/servicesNS/" + owner + "/" + app + "/" + path); 
         },
 
         /**
@@ -1142,7 +1209,7 @@ require.define("/lib/paths.js", function (require, module, exports, __dirname, _
 
     // A list of the Splunk API endpoint paths
     root.Paths = {
-        apps: "apps/local",
+        apps: "/services/apps/local",
         capabilities: "authorization/capabilities",
         configurations: "configs",
         deploymentClient: "deployment/client",
@@ -1937,14 +2004,15 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *      });
          *
          * @param {Object} options Dictionary of collection filtering and pagination options
+         * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {Splunk.Client.Configurations} The Configurations collection
          *
          * @endpoint configs
          * @module Splunk.Client.Service
          * @see Splunk.Client.Configurations
          */
-        configurations: function(options) {
-            return new root.Configurations(this, options);
+        configurations: function(options, namespace) {
+            return new root.Configurations(this, options, namespace);
         },
         
         /**
@@ -1963,14 +2031,15 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *      });
          *
          * @param {Object} options Dictionary of collection filtering and pagination options
+         * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {Splunk.Client.Indexes} The Indexes collection
          *
          * @endpoint data/indexes
          * @module Splunk.Client.Service
          * @see Splunk.Client.Indexes
          */        
-        indexes: function(options) { 
-            return new root.Indexes(this, options);
+        indexes: function(options, namespace) { 
+            return new root.Indexes(this, options, namespace);
         },
         
         /**
@@ -2015,14 +2084,15 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *      });
          *
          * @param {Object} options Dictionary of collection filtering and pagination options
+         * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {Splunk.Client.SavedSearches} The SavedSearches collection
          *
          * @endpoint saved/searches
          * @module Splunk.Client.Service
          * @see Splunk.Client.SavedSearches
          */
-        savedSearches: function(options) {
-            return new root.SavedSearches(this, options);
+        savedSearches: function(options, namespace) {
+            return new root.SavedSearches(this, options, namespace);
         },
         
         /**
@@ -2042,14 +2112,15 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *      });
          *
          * @param {Object} options Dictionary of collection filtering and pagination options
+         * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {Splunk.Client.Jobs} The Jobs collection
          *
          * @endpoint search/jobs
          * @module Splunk.Client.Service
          * @see Splunk.Client.Jobs
          */
-        jobs: function(options) {
-            return new root.Jobs(this, options);  
+        jobs: function(options, namespace) {
+            return new root.Jobs(this, options, namespace);  
         },
         
         /**
@@ -2065,13 +2136,19 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * @param {String} query The search query
          * @param {Object} params A dictionary of properties for the job.
+         * @param {Object} namespace Namespace information (owner, app, sharing)
          * @param {Function} callback A callback with the created job: `(err, createdJob)`
          *
          * @endpoint search/jobs
          * @module Splunk.Client.Service
          */
-        search: function(query, params, callback) {
-            var jobs = new root.Jobs(this);
+        search: function(query, params, namespace, callback) {
+            if (!callback && utils.isFunction(namespace)) {
+                callback = namespace;
+                namespace = null;
+            }
+            
+            var jobs = new root.Jobs(this, {}, namespace);
             jobs.search(query, params, callback);
         },
         
@@ -2088,13 +2165,19 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *
          * @param {String} query The search query
          * @param {Object} params A dictionary of properties for the job.
+         * @param {Object} namespace Namespace information (owner, app, sharing)
          * @param {Function} callback A callback with the results of the job: `(err, results)`
          *
          * @endpoint search/jobs
          * @module Splunk.Client.Service
          */
-        oneshotSearch: function(query, params, callback) {
-            var jobs = new root.Jobs(this);
+        oneshotSearch: function(query, params, namespace, callback) {
+            if (!callback && utils.isFunction(namespace)) {
+                callback = namespace;
+                namespace = null;
+            }
+            
+            var jobs = new root.Jobs(this, {}, namespace);
             jobs.oneshotSearch(query, params, callback);
         }
     });
@@ -2262,12 +2345,17 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @constructor
          * @param {Splunk.Client.Service} service A service instance
          * @param {String} path A relative endpoint path (e.g. 'search/jobs')
+         * @param {Object} namespace Namespace information for this resource (owner, app, sharing)
          * @return {Splunk.Client.Resource} A Splunk.Client.Resource instance
          *
          * @module Splunk.Client.Resource
          */
-        init: function(service, path) {
-            this._super(service, path);
+        init: function(service, path, namespace) {
+            var fullpath = service.fullpath(path, namespace);
+            
+            this._super(service, fullpath);
+            this.fragmentPath = path;
+            this.namespace = namespace;
             this._maybeValid = false;
             this._properties = {};
             
@@ -2405,12 +2493,13 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @constructor
          * @param {Splunk.Client.Service} service A service instance
          * @param {String} path A relative endpoint path (e.g. 'search/jobs')
+         * @param {Object} namespace Namespace information for this entity (owner, app, sharing)
          * @return {Splunk.Client.Entity} A Splunk.Client.Entity instance
          *
          * @module Splunk.Client.Entity
          */
-        init: function(service, path) {
-            this._super(service, path);
+        init: function(service, path, namespace) {
+            this._super(service, path, namespace);
             
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
@@ -2521,13 +2610,14 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @param {Splunk.Client.Service} service A service instance
          * @param {String} path A relative endpoint path (e.g. 'search/jobs')
          * @param {Object} options Dictionary of collection filtering and pagination options
+         * @param {Object} namespace Namespace information for this collection (owner, app, sharing)
          * @param {Object} handlers A dictionary of functions to perform specialized operations: item, isSame, loadOnCreate, loadOnItem
          * @return {Splunk.Client.Collection} A Splunk.Client.Collection instance
          *
          * @module Splunk.Client.Collection
          */     
-        init: function(service, path, options, handlers) {
-            this._super(service, path);
+        init: function(service, path, options, namespace, handlers) {
+            this._super(service, path, namespace);
             this._options = options;
             
             // We perform the bindings so that every function works 
@@ -2544,8 +2634,11 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             this._item = handlers.item || function(collection, props) { 
                 throw new Error("SHOULD NEVER BE CALLED!");
             };
-            this._isSame = handlers.isSame || function(entity, id) { 
-                return id === entity.properties().__name;
+            this._itemPath = handlers.itemPath || function(collection, name, namespace) {
+                var fragmentPath = collection.fragmentPath + "/" + encodeURIComponent(name);
+                var fullPath = service.fullpath(fragmentPath, namespace);  
+                
+                return {fragment: fragmentPath, full: fullPath};
             };
             this._loadOnCreate = handlers.loadOnCreate || function() { return false; };
             this._loadOnItem = handlers.loadOnItem || function() { return true; };
@@ -2581,7 +2674,13 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                     entity._invalidate();
                 }
                 entities.push(entity);
-                entitiesByName[props.__name] = entity;
+                
+                if (entitiesByName.hasOwnProperty(entity.fragmentPath)) {
+                    entitiesByName[entity.fragmentPath].push(entity);
+                }
+                else {
+                    entitiesByName[entity.fragmentPath] = [entity];
+                }
             }
             this._entities = entities;
             this._entitiesByName = entitiesByName;
@@ -2631,27 +2730,30 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *      })
          *
          * @param {String} name The name of the entity to retrieve
+         * @param {Object} namespace Namespace information (owner, app, sharing)
          * @param {Function} callback A callback with the specified entity: `(err, resource)`
          *
          * @module Splunk.Client.Collection
          */
-        item: function(name, callback) {
-            callback = callback || function() {};
-            var that = this;
-            this._validate(function(err) {
+        item: function(name, namespace, callback) {             
+            if (!callback && utils.isFunction(namespace)) {
+                callback = namespace;
+                namespace = null;
+            }
+            
+            this.contains(name, namespace, function(err, contains, entity) {
                 if (err) {
                     callback(err);
                 } 
-                else {            
-                    if (that._entitiesByName.hasOwnProperty(name)) {
-                        callback(null, that._entitiesByName[name]);
-                    }  
+                else {
+                    if (contains) {
+                        callback(null, entity);
+                    }
                     else {
                         callback(new Error("No entity with name: " + name));
                     }
                 }
             });
-
         },
         
         /**
@@ -2738,39 +2840,79 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          *          console.log("Search App Found: " + found);
          *      });
          *
-         * @param {String} name The name of the entity to retrieve
+         * @param {String} id The name of the entity to retrieve
+         * @param {Object} namespace Namespace information (owner, app, sharing)
          * @param {Function} callback A callback with whether the entity was found: `(err, wasFound, entity)`
          *
          * @module Splunk.Client.Collection
          */
-        contains: function(id, callback) {
+        contains: function(id, namespace, callback) {                
+            if (!callback && utils.isFunction(namespace)) {
+                callback = namespace;
+                namespace = null;
+            }
+            
+            if (utils.isEmpty(namespace)) {
+                namespace = null;
+            }
+            
             callback = callback || function() {};
-
+            
             var that = this;
-            this.list(function(err, list) {
+            this._validate(function(err) {
                 if (err) {
                     callback(err);
-                }
-                else {
-                    list = list || [];
-                    var found = false;
-                    var foundEntity = null;
-                    for(var i = 0; i < list.length; i++) {
-                        // If the job is the same, then call the callback,
-                        // and return
-                        var entity = list[i];
-                        if (that._isSame(entity, id)) {
-                            found = true;
-                            foundEntity = entity;
-                            break;
+                } 
+                else {             
+                    var path = that._itemPath(that, id, namespace);           
+                    var fragmentPath = path.fragment;
+                    var fullPath = path.full;
+                     
+                    if (that._entitiesByName.hasOwnProperty(fragmentPath)) {
+                        var entities = that._entitiesByName[fragmentPath];
+                        
+                        if (entities.length === 1 && !namespace) {
+                            // If there is only one entity with the
+                            // specified name and the user did not
+                            // specify a namespace, then we just
+                            // return it
+                            callback(null, true, entities[0]);
+                        }
+                        else if (entities.length === 1 && namespace) {
+                            // If we specified a namespace, then we 
+                            // only return the entity if it matches
+                            // the full path
+                            if (entities[0].path === fullPath) {
+                                callback(null, true, entities[0]);
+                            }
+                            else {
+                                callback(null, false, null);
+                            }
+                        }
+                        else if (entities.length > 1 && !namespace) {
+                            // If there is more than one entity and we didn't
+                            // specify a namespace, then we return an error
+                            // saying the match is ambiguous
+                            callback(new Error("Ambiguous match for name '" + id + "'"), false, null);
+                        }
+                        else {
+                            // There is more than one entity, and we do have
+                            // a namespace, so we try and find it
+                            for(var i = 0; i < entities.length; i++) {
+                                var entity = entities[i];
+                                if (entity.path === fullPath) {
+                                    callback(null, true, entity);
+                                    break;
+                                }
+                            }                            
                         }
                     }
-                    
-                    // If we didn't find anything, let the callback now.
-                    callback(null, found, foundEntity);
+                    else {
+                        callback(null, false, null);
+                    }
                 }
             });
-        }
+        },
     });
     
     /**
@@ -2791,14 +2933,16 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @constructor
          * @param {Splunk.Client.Service} service A service instance
          * @param {Object} options Dictionary of collection filtering and pagination options
+         * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {Splunk.Client.SavedSearches} A Splunk.Client.SavedSearches instance
          *
          * @module Splunk.Client.SavedSearches
          */     
-        init: function(service, options) {
-            this._super(service, Paths.savedSearches, options, {
+        init: function(service, options, namespace) {
+            this._super(service, Paths.savedSearches, options, namespace, {
                 item: function(collection, props) { 
-                    return new root.SavedSearch(collection.service, props.__name);
+                    var entityNamespace = utils.namespaceFromProperties(props);
+                    return new root.SavedSearch(collection.service, props.__name, entityNamespace);
                 }
             });
         } 
@@ -2821,13 +2965,14 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @constructor
          * @param {Splunk.Client.Service} service A service instance
          * @param {String} name The name of saved search
+         * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {Splunk.Client.SavedSearch} A Splunk.Client.SavedSearch instance
          *
          * @module Splunk.Client.SavedSearch
          */     
-        init: function(service, name) {
+        init: function(service, name, namespace) {
             this.name = name;
-            this._super(service, Paths.savedSearches + "/" + encodeURIComponent(name));
+            this._super(service, Paths.savedSearches + "/" + encodeURIComponent(name), namespace);
             
             this.acknowledge  = utils.bind(this, this.acknowledge);
             this.dispatch     = utils.bind(this, this.dispatch);
@@ -2956,9 +3101,9 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @module Splunk.Client.Applications
          */  
         init: function(service, options) {
-            this._super(service, Paths.apps, options, {
+            this._super(service, Paths.apps, options, {}, {
                 item: function(collection, props) {
-                    return new root.Application(collection.service, props.__name);
+                    return new root.Application(collection.service, props.__name, {});
                 }
             });
         }
@@ -2987,7 +3132,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          */ 
         init: function(service, name) {
             this.name = name;
-            this._super(service, Paths.apps + "/" + encodeURIComponent(name));
+            this._super(service, Paths.apps + "/" + encodeURIComponent(name), {});
             
             this.setupInfo  = utils.bind(this, this.setupInfo);
             this.updateInfo = utils.bind(this, this.updateInfo);
@@ -3069,14 +3214,16 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @constructor
          * @param {Splunk.Client.Service} service A service instance
          * @param {Object} options Dictionary of collection filtering and pagination options
+         * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {Splunk.Client.Indexes} A Splunk.Client.Indexes instance
          *
          * @module Splunk.Client.Indexes
          */  
-        init: function(service, options) {
-            this._super(service, Paths.indexes, options, {
+        init: function(service, options, namespace) {
+            this._super(service, Paths.indexes, options, namespace, {
                 item: function(collection, props) {
-                    return new root.Index(collection.service, props.__name);  
+                    var entityNamespace = utils.namespaceFromProperties(props);
+                    return new root.Index(collection.service, props.__name, entityNamespace);  
                 },
                 loadOnCreate: function() { return true; },
                 loadOnItem: function() { return true; }
@@ -3127,13 +3274,14 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @constructor
          * @param {Splunk.Client.Service} service A service instance
          * @param {String} name The name of the index
+         * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {Splunk.Client.Index} A Splunk.Client.Index instance
          *
          * @module Splunk.Client.Index
          */ 
-        init: function(service, name) {
+        init: function(service, name, namespace) {
             this.name = name;
-            this._super(service, Paths.indexes + "/" + encodeURIComponent(name));
+            this._super(service, Paths.indexes + "/" + encodeURIComponent(name), namespace);
             
             this.submitEvent = utils.bind(this, this.submitEvent);
         },
@@ -3206,13 +3354,14 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @module Splunk.Client.Properties
          */  
         init: function(service, options) {
-           this._super(service, Paths.properties, options, {
-               item: function(collection, props) {
-                   var name = props.__name;
-                   return new root.PropertyFile(collection.service, name);
-               },
-               loadOnItem: function() { return false; }
-           });  
+            var namespace = {owner: "-", app: "-"};
+            this._super(service, Paths.properties, options, namespace, {
+                item: function(collection, props) {
+                    var name = props.__name;
+                    return new root.PropertyFile(collection.service, name, options);
+                },
+                loadOnItem: function() { return false; }
+            });  
         },
 
         /**
@@ -3270,7 +3419,11 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          */  
         init: function(service, name, options) {
             this.name = name;
-            this._super(service, Paths.properties + "/" + encodeURIComponent(name), options, {
+            
+            // We always enforce the "globalness" of properties
+            var namespace = {owner: "-", app: "-"};
+            
+            this._super(service, Paths.properties + "/" + encodeURIComponent(name), options, namespace, {
                 item: function(collection, props) {
                     var name = props.__name;
                     return new root.PropertyStanza(collection.service, collection.name, name);
@@ -3334,7 +3487,9 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          */ 
         init: function(service, file, name) {
             this.name = name;
-            this._super(service, Paths.properties + "/" + encodeURIComponent(file) + "/" + encodeURIComponent(name));
+            // We always enforce the "globalness" of properties
+            var namespace = {owner: "-", app: "-"};
+            this._super(service, Paths.properties + "/" + encodeURIComponent(file) + "/" + encodeURIComponent(name), namespace);
         } 
     });
     
@@ -3355,17 +3510,30 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @constructor
          * @param {Splunk.Client.Service} service A service instance
          * @param {Object} options Dictionary of collection filtering and pagination options
+         * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {Splunk.Client.Configurations} A Splunk.Client.Configurations instance
          *
          * @module Splunk.Client.Configurations
          */  
-        init: function(service, options) {
-           this._super(service, Paths.properties, options, {
-               item: function(collection, props) {
-                   var name = props.__name;
-                   return new root.ConfigurationFile(collection.service, name);
-               },
-               loadOnItem: function() { return false; }
+        init: function(service, options, namespace) {
+            if (!namespace || namespace.owner === "-" || namespace.app === "-") {
+                throw new Error("Configurations requires a non-wildcard owner/app");
+            }
+            
+            this._super(service, Paths.properties, options, namespace, {
+                item: function(collection, props) {
+                    var name = props.__name;
+                    return new root.ConfigurationFile(collection.service, name, {}, namespace);
+                },
+                loadOnItem: function() { return false; },
+                itemPath: function(collection, name, namespace) {
+                    // We move from the /properties to /configs/conf-{file}, so we special
+                    // case this to work.
+                    var fragment = Paths.configurations + "/conf-" + encodeURIComponent(name);
+                    var fullPath = service.fullpath(fragment, namespace);
+                    
+                    return {fragment: fragment, full: fullPath};
+                }
            });  
         },
 
@@ -3418,17 +3586,19 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @constructor
          * @param {Splunk.Client.Service} service A service instance
          * @param {Object} options Dictionary of collection filtering and pagination options
+         * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {Splunk.Client.ConfigurationFile} A Splunk.Client.ConfigurationFile instance
          *
          * @module Splunk.Client.ConfigurationFile
          */  
-        init: function(service, name, options) {
+        init: function(service, name, options, namespace) {
             this.name = name;
             var path = Paths.configurations + "/conf-" + encodeURIComponent(name);
-            this._super(service, path, options, {
+            this._super(service, path, options, namespace, {
                 item: function(collection, props) {
                     var name = props.__name;
-                    return new root.ConfigurationStanza(collection.service, collection.name, name);
+                    var entityNamespace = utils.namespaceFromProperties(props);
+                    return new root.ConfigurationStanza(collection.service, collection.name, name, entityNamespace);
                 },
                 loadOnCreate: function() { return true; }
             });
@@ -3481,13 +3651,14 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @constructor
          * @param {Splunk.Client.Service} service A service instance
          * @param {String} name The name of the index
+         * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {Splunk.Client.ConfigurationStanza} A Splunk.Client.ConfigurationStanza instance
          *
          * @module Splunk.Client.ConfigurationStanza
          */ 
-        init: function(service, file, name) {
+        init: function(service, file, name, namespace) {
             this.name = name;
-            this._super(service, Paths.configurations + "/conf-" + encodeURIComponent(file) + "/" + encodeURIComponent(name));
+            this._super(service, Paths.configurations + "/conf-" + encodeURIComponent(file) + "/" + encodeURIComponent(name), namespace);
         } 
     });
 
@@ -3508,18 +3679,17 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @constructor
          * @param {Splunk.Client.Service} service A service instance
          * @param {Object} options Dictionary of collection filtering and pagination options
+         * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {Splunk.Client.Jobs} A Splunk.Client.Jobs instance
          *
          * @module Splunk.Client.Jobs
          */  
-        init: function(service, options) {
-            this._super(service, Paths.jobs, options, {
+        init: function(service, options, namespace) {
+            this._super(service, Paths.jobs, options, namespace, {
                 item: function(collection, props) {
                     var sid = props.sid;
-                    return new root.Job(collection.service, sid);
-                },
-                isSame: function(entity, sid) {
-                    return entity.sid === sid;
+                    var entityNamespace = utils.namespaceFromProperties(props);
+                    return new root.Job(collection.service, sid, entityNamespace);
                 }
             });
 
@@ -3650,13 +3820,15 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @constructor
          * @param {Splunk.Client.Service} service A service instance
          * @param {String} sid The search ID for this search
+         * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {Splunk.Client.Job} A Splunk.Client.Job instance
          *
          * @module Splunk.Client.Job
          */ 
-        init: function(service, sid) {
-            this._super(service, Paths.jobs + "/" + sid);
+        init: function(service, sid, namespace) {
+            this._super(service, Paths.jobs + "/" + sid, namespace);
             this.sid = sid;
+            this.name = sid;
 
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
@@ -5907,11 +6079,13 @@ exports.setup = function(svc) {
             "Callback#Contains job": function(test) {
                 var that = this;
                 var sid = getNextId();
-                this.service.jobs().search('search index=_internal | head 1', {id: sid}, function(err, job) {   
+                var jobs = this.service.jobs();
+                
+                jobs.search('search index=_internal | head 1', {id: sid}, function(err, job) {   
                     test.ok(job);
                     test.strictEqual(job.sid, sid);
 
-                    that.service.jobs().contains(sid, function(err, contains) {
+                    jobs.contains(sid, function(err, contains) {
                         test.ok(contains);
 
                         job.cancel(function() {
@@ -6427,7 +6601,7 @@ exports.setup = function(svc) {
                         test.done();
                     }
                 );
-            },            
+            }
         },
         
         "App Tests": {      
@@ -6770,9 +6944,10 @@ exports.setup = function(svc) {
                    
             "Callback#list": function(test) {
                 var that = this;
+                var namespace = {owner: "admin", app: "search"};
                 
                 Async.chain([
-                    function(done) { that.service.configurations().list(done); },
+                    function(done) { that.service.configurations({}, namespace).list(done); },
                     function(files, done) { 
                         test.ok(files.length > 0);
                         done();
@@ -6786,10 +6961,11 @@ exports.setup = function(svc) {
                    
             "Callback#contains": function(test) {
                 var that = this;
+                var namespace = {owner: "admin", app: "search"};
                 
                 Async.chain([
-                    function(done) { that.service.configurations().contains("web", done); },
-                    function(found, file, done) { 
+                    function(done) { that.service.configurations({}, namespace).contains("web", done); },
+                    function(found, file, done) {                         
                         test.ok(found);
                         test.ok(!file.isValid());
                         file.read(done);
@@ -6808,9 +6984,10 @@ exports.setup = function(svc) {
                    
             "Callback#contains stanza": function(test) {
                 var that = this;
+                var namespace = {owner: "admin", app: "search"};
                 
                 Async.chain([
-                    function(done) { that.service.configurations().contains("web", done); },
+                    function(done) { that.service.configurations({}, namespace).contains("web", done); },
                     function(found, file, done) { 
                         test.ok(found);
                         test.ok(!file.isValid());
@@ -6837,15 +7014,13 @@ exports.setup = function(svc) {
                    
             "Callback#create file + create stanza + update stanza": function(test) {
                 var that = this;
+                var namespace = {owner: "nobody", app: "system"};
                 var fileName = "jssdk_file";
                 var value = "barfoo_" + getNextId();
                 
-                // We clone the service to get to a specific namespace
-                var svc = this.service.specialize("nobody", "system");
-                
                 Async.chain([
                     function(done) {
-                        var configs = svc.configurations(); 
+                        var configs = svc.configurations({}, namespace); 
                         test.ok(!configs.isValid());
                         configs.read(done);
                     },
@@ -6929,6 +7104,7 @@ exports.setup = function(svc) {
                 
                 var name = this.indexName;
                 var indexes = this.service.indexes();
+                var originalAssureUTF8Value = false;
                 
                 Async.chain([
                         function(callback) {
@@ -6937,8 +7113,9 @@ exports.setup = function(svc) {
                         function(found, index, callback) {
                             test.ok(found);
                             test.ok(index.isValid());
+                            originalAssureUTF8Value = index.properties().assureUTF8;
                             index.update({
-                                assureUTF8: !index.properties().assureUTF8
+                                assureUTF8: !originalAssureUTF8Value
                             }, callback);
                         },
                         function(index, callback) {
@@ -6951,7 +7128,7 @@ exports.setup = function(svc) {
                             test.ok(index.isValid());
                             var properties = index.properties();
                             
-                            test.ok(!properties.assureUTF8);
+                            test.strictEqual(!originalAssureUTF8Value, properties.assureUTF8);
                             
                             index.update({
                                 assureUTF8: !properties.assureUTF8
@@ -6967,7 +7144,7 @@ exports.setup = function(svc) {
                             test.ok(index.isValid());
                             var properties = index.properties();
                             
-                            test.ok(properties.assureUTF8);
+                            test.strictEqual(originalAssureUTF8Value, properties.assureUTF8);
                             callback();
                         },
                         function(callback) {
@@ -7042,7 +7219,7 @@ if (module === require.main) {
         host: cmdline.opts.host,
         port: cmdline.opts.port,
         username: cmdline.opts.username,
-        password: cmdline.opts.password,
+        password: cmdline.opts.password
     });
     
     var suite = exports.setup(svc);
@@ -7602,21 +7779,23 @@ exports.setup = function(svc, opts) {
             },
             
             "List stanzas": function(test) {
-                this.run("stanzas", ["web"], null, function(err) {
+                this.run("stanzas", ["web"], {app: "search", user: "nobody"}, function(err) {
                     test.ok(!err);
                     test.done();
                 });
             },
             
             "Show non-existent contents": function(test) {
-                this.run("contents", ["json", "settings"], null, function(err) {
+                console.log("BOOO");
+                this.run("contents", ["json", "settings"], {app: "search", user: "nobody"}, function(err) {
                     test.ok(err);
                     test.done();
                 });
             },
             
             "Show contents with specialization": function(test) {
-                this.run("contents", ["json", "settings"], {app: "new_english"}, function(err) {
+                this.run("contents", ["json", "settings"], {app: "new_english", user: "nobody"}, function(err) {
+                    console.log(err);
                     test.ok(!err);
                     test.done();
                 });
@@ -9089,15 +9268,22 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
                 return;
             }
             
+            if (!options.global && (!options.app || !options.user)) {
+                callback("Non-global lookup has to specify --owner and --app");
+                return;
+            }
+            
             // Specialize our service if necessary
+            var namespace = null;
             if (options.app || options.user) {
+                namespace = {app: options.app, user: options.user};
                 service = service.specialize(options.user, options.app);
             }
             
             Async.chain([
                     function(done) {
-                        var collection = options.global ? service.properties() : service.configurations();
-                        collection.contains(filename, done);
+                        var collection = options.global ? service.properties() : service.configurations({}, namespace);
+                        collection.contains(filename, namespace, done);
                     },
                     function(found, file, done) {
                         if (!found) {
@@ -9133,15 +9319,23 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
                 return;
             }
             
+            console.log("Missing: ", !options.global && (!options.app || !options.user));
+            if (!options.global && (!options.app || !options.user)) {
+                callback("Non-global lookup has to specify --owner and --app");
+                return;
+            }
+            
             // Specialize our service if necessary
+            var namespace = null;
             if (options.app || options.user) {
+                namespace = {app: options.app, user: options.user};
                 service = service.specialize(options.user, options.app);
             }
             
             Async.chain([
                     function(done) {
-                        var collection = options.global ? service.properties() : service.configurations();
-                        collection.contains(filename, done);
+                        var collection = options.global ? service.properties() : service.configurations({}, namespace);
+                        collection.contains(filename, namespace, done);
                     },
                     function(found, file, done) {
                         if (!found) {
@@ -9193,15 +9387,22 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
                 return;
             }
             
+            if (!options.global && (!options.app || !options.user)) {
+                callback("Non-global lookup has to specify --owner and --app");
+                return;
+            }
+            
             // Specialize our service if necessary
+            var namespace = null;
             if (options.app || options.user) {
+                namespace = {app: options.app, user: options.user};
                 service = service.specialize(options.user, options.app);
             }
             
             Async.chain([
                     function(done) {
-                        var collection = options.global ? service.properties() : service.configurations();
-                        collection.contains(filename, done);
+                        var collection = options.global ? service.properties() : service.configurations({}, namespace);
+                        collection.contains(filename, namespace, done);
                     },
                     function(found, file, done) {
                         if (!found) {
@@ -9243,16 +9444,23 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
                 return;
             }
             
+            if (!options.global && (!options.app || !options.user)) {
+                callback("Non-global lookup has to specify --owner and --app");
+                return;
+            }
+            
             // Specialize our service if necessary
+            var namespace = null;
             if (options.app || options.user) {
+                namespace = {app: options.app, user: options.user};
                 service = service.specialize(options.user, options.app);
             }
             
             var collection = null;
             Async.chain([
                     function(done) {
-                        collection = options.global ? service.properties() : service.configurations();
-                        collection.contains(filename, done);
+                        collection = options.global ? service.properties() : service.configurations({}, namespace);
+                        collection.contains(filename, namespace, done);
                     },
                     function(found, file, done) {
                         // If we can't find the file, create it
@@ -9346,15 +9554,22 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
                 return;
             }
             
+            if (!options.global && (!options.app || !options.user)) {
+                callback("Non-global lookup has to specify --owner and --app");
+                return;
+            }
+            
             // Specialize our service if necessary
+            var namespace = null;
             if (options.app || options.user) {
+                namespace = {app: options.app, user: options.user};
                 service = service.specialize(options.user, options.app);
             }
             
             Async.chain([
                     function(done) {
-                        var collection = options.global ? service.properties() : service.configurations();
-                        collection.contains(filename, done);
+                        var collection = options.global ? service.properties() : service.configurations({}, namespace);
+                        collection.contains(filename, namespace, done);
                     },
                     function(found, file, done) {
                         if (!found) {

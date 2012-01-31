@@ -69,11 +69,13 @@ exports.setup = function(svc) {
             "Callback#Contains job": function(test) {
                 var that = this;
                 var sid = getNextId();
-                this.service.jobs().search('search index=_internal | head 1', {id: sid}, function(err, job) {   
+                var jobs = this.service.jobs();
+                
+                jobs.search('search index=_internal | head 1', {id: sid}, function(err, job) {   
                     test.ok(job);
                     test.strictEqual(job.sid, sid);
 
-                    that.service.jobs().contains(sid, function(err, contains) {
+                    jobs.contains(sid, function(err, contains) {
                         test.ok(contains);
 
                         job.cancel(function() {
@@ -589,7 +591,7 @@ exports.setup = function(svc) {
                         test.done();
                     }
                 );
-            },            
+            }
         },
         
         "App Tests": {      
@@ -932,9 +934,10 @@ exports.setup = function(svc) {
                    
             "Callback#list": function(test) {
                 var that = this;
+                var namespace = {owner: "admin", app: "search"};
                 
                 Async.chain([
-                    function(done) { that.service.configurations().list(done); },
+                    function(done) { that.service.configurations({}, namespace).list(done); },
                     function(files, done) { 
                         test.ok(files.length > 0);
                         done();
@@ -948,10 +951,11 @@ exports.setup = function(svc) {
                    
             "Callback#contains": function(test) {
                 var that = this;
+                var namespace = {owner: "admin", app: "search"};
                 
                 Async.chain([
-                    function(done) { that.service.configurations().contains("web", done); },
-                    function(found, file, done) { 
+                    function(done) { that.service.configurations({}, namespace).contains("web", done); },
+                    function(found, file, done) {                         
                         test.ok(found);
                         test.ok(!file.isValid());
                         file.read(done);
@@ -970,9 +974,10 @@ exports.setup = function(svc) {
                    
             "Callback#contains stanza": function(test) {
                 var that = this;
+                var namespace = {owner: "admin", app: "search"};
                 
                 Async.chain([
-                    function(done) { that.service.configurations().contains("web", done); },
+                    function(done) { that.service.configurations({}, namespace).contains("web", done); },
                     function(found, file, done) { 
                         test.ok(found);
                         test.ok(!file.isValid());
@@ -999,15 +1004,13 @@ exports.setup = function(svc) {
                    
             "Callback#create file + create stanza + update stanza": function(test) {
                 var that = this;
+                var namespace = {owner: "nobody", app: "system"};
                 var fileName = "jssdk_file";
                 var value = "barfoo_" + getNextId();
                 
-                // We clone the service to get to a specific namespace
-                var svc = this.service.specialize("nobody", "system");
-                
                 Async.chain([
                     function(done) {
-                        var configs = svc.configurations(); 
+                        var configs = svc.configurations({}, namespace); 
                         test.ok(!configs.isValid());
                         configs.read(done);
                     },
@@ -1091,6 +1094,7 @@ exports.setup = function(svc) {
                 
                 var name = this.indexName;
                 var indexes = this.service.indexes();
+                var originalAssureUTF8Value = false;
                 
                 Async.chain([
                         function(callback) {
@@ -1099,8 +1103,9 @@ exports.setup = function(svc) {
                         function(found, index, callback) {
                             test.ok(found);
                             test.ok(index.isValid());
+                            originalAssureUTF8Value = index.properties().assureUTF8;
                             index.update({
-                                assureUTF8: !index.properties().assureUTF8
+                                assureUTF8: !originalAssureUTF8Value
                             }, callback);
                         },
                         function(index, callback) {
@@ -1113,7 +1118,7 @@ exports.setup = function(svc) {
                             test.ok(index.isValid());
                             var properties = index.properties();
                             
-                            test.ok(!properties.assureUTF8);
+                            test.strictEqual(!originalAssureUTF8Value, properties.assureUTF8);
                             
                             index.update({
                                 assureUTF8: !properties.assureUTF8
@@ -1129,7 +1134,7 @@ exports.setup = function(svc) {
                             test.ok(index.isValid());
                             var properties = index.properties();
                             
-                            test.ok(properties.assureUTF8);
+                            test.strictEqual(originalAssureUTF8Value, properties.assureUTF8);
                             callback();
                         },
                         function(callback) {
@@ -1204,7 +1209,7 @@ if (module === require.main) {
         host: cmdline.opts.host,
         port: cmdline.opts.port,
         username: cmdline.opts.username,
-        password: cmdline.opts.password,
+        password: cmdline.opts.password
     });
     
     var suite = exports.setup(svc);

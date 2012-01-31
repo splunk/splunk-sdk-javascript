@@ -637,6 +637,51 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     root.isString = function(obj) {
         return !!(obj === '' || (obj && obj.charCodeAt && obj.substr));
     };
+    
+    /**
+     * Whether or not the argument is empty
+     *
+     * Example:
+     *      
+     *      function() { 
+     *          console.log(Splunk.Utils.isEmpty({})); // true
+     *          console.log(Splunk.Utils.isEmpty({a: 1})); // false
+     *      }
+     *
+     * @param {Anything} obj Parameter to check whether it is empty
+     * @return {Boolean} Whether or not the passed in parameter was empty
+     *
+     * @globals Splunk.Utils
+     */
+    root.isEmpty = function(obj) {
+        if (root.isArray(obj) || root.isString(obj)) {
+            return obj.length === 0;
+        }
+        
+        for (var key in obj) {
+            if (hasOwnProperty.call(obj, key)) {
+                return false;
+            }
+        }
+        
+        return true;
+    };
+    
+    /**
+     * Extract namespace information from a properties dictionary
+     *
+     * @param {Object} props Properties dictionary
+     * @return {Object} Namespace information (owner, app, sharing) for the given properties
+     *
+     * @globals Splunk.Utils
+     */
+    root.namespaceFromProperties = function(props) {
+        return {
+            owner: props.__metadata.acl.owner,
+            app: props.__metadata.acl.app,
+            sharing: props.__metadata.acl.sharing
+        };
+    };
 })();
 });
 

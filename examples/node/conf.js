@@ -116,15 +116,22 @@
                 return;
             }
             
+            if (!options.global && (!options.app || !options.user)) {
+                callback("Non-global lookup has to specify --owner and --app");
+                return;
+            }
+            
             // Specialize our service if necessary
+            var namespace = null;
             if (options.app || options.user) {
+                namespace = {app: options.app, user: options.user};
                 service = service.specialize(options.user, options.app);
             }
             
             Async.chain([
                     function(done) {
-                        var collection = options.global ? service.properties() : service.configurations();
-                        collection.contains(filename, done);
+                        var collection = options.global ? service.properties() : service.configurations({}, namespace);
+                        collection.contains(filename, namespace, done);
                     },
                     function(found, file, done) {
                         if (!found) {
@@ -160,15 +167,23 @@
                 return;
             }
             
+            console.log("Missing: ", !options.global && (!options.app || !options.user));
+            if (!options.global && (!options.app || !options.user)) {
+                callback("Non-global lookup has to specify --owner and --app");
+                return;
+            }
+            
             // Specialize our service if necessary
+            var namespace = null;
             if (options.app || options.user) {
+                namespace = {app: options.app, user: options.user};
                 service = service.specialize(options.user, options.app);
             }
             
             Async.chain([
                     function(done) {
-                        var collection = options.global ? service.properties() : service.configurations();
-                        collection.contains(filename, done);
+                        var collection = options.global ? service.properties() : service.configurations({}, namespace);
+                        collection.contains(filename, namespace, done);
                     },
                     function(found, file, done) {
                         if (!found) {
@@ -220,15 +235,22 @@
                 return;
             }
             
+            if (!options.global && (!options.app || !options.user)) {
+                callback("Non-global lookup has to specify --owner and --app");
+                return;
+            }
+            
             // Specialize our service if necessary
+            var namespace = null;
             if (options.app || options.user) {
+                namespace = {app: options.app, user: options.user};
                 service = service.specialize(options.user, options.app);
             }
             
             Async.chain([
                     function(done) {
-                        var collection = options.global ? service.properties() : service.configurations();
-                        collection.contains(filename, done);
+                        var collection = options.global ? service.properties() : service.configurations({}, namespace);
+                        collection.contains(filename, namespace, done);
                     },
                     function(found, file, done) {
                         if (!found) {
@@ -270,16 +292,23 @@
                 return;
             }
             
+            if (!options.global && (!options.app || !options.user)) {
+                callback("Non-global lookup has to specify --owner and --app");
+                return;
+            }
+            
             // Specialize our service if necessary
+            var namespace = null;
             if (options.app || options.user) {
+                namespace = {app: options.app, user: options.user};
                 service = service.specialize(options.user, options.app);
             }
             
             var collection = null;
             Async.chain([
                     function(done) {
-                        collection = options.global ? service.properties() : service.configurations();
-                        collection.contains(filename, done);
+                        collection = options.global ? service.properties() : service.configurations({}, namespace);
+                        collection.contains(filename, namespace, done);
                     },
                     function(found, file, done) {
                         // If we can't find the file, create it
@@ -373,15 +402,22 @@
                 return;
             }
             
+            if (!options.global && (!options.app || !options.user)) {
+                callback("Non-global lookup has to specify --owner and --app");
+                return;
+            }
+            
             // Specialize our service if necessary
+            var namespace = null;
             if (options.app || options.user) {
+                namespace = {app: options.app, user: options.user};
                 service = service.specialize(options.user, options.app);
             }
             
             Async.chain([
                     function(done) {
-                        var collection = options.global ? service.properties() : service.configurations();
-                        collection.contains(filename, done);
+                        var collection = options.global ? service.properties() : service.configurations({}, namespace);
+                        collection.contains(filename, namespace, done);
                     },
                     function(found, file, done) {
                         if (!found) {
