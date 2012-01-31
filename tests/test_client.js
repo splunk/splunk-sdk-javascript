@@ -652,9 +652,9 @@ exports.setup = function(svc) {
                         }, callback);
                     },
                     function(app, callback) {
-                        test.ok(!!app);
+                        test.ok(app);
                         test.ok(!app.isValid());
-                        app.read(callback);
+                        app.read(callback);  
                     },
                     function(app, callback) {
                         test.ok(app);
@@ -1109,11 +1109,6 @@ exports.setup = function(svc) {
                             }, callback);
                         },
                         function(index, callback) {
-                            test.ok(!!index);
-                            test.ok(!index.isValid());
-                            index.read(callback);
-                        },
-                        function(index, callback) {
                             test.ok(index);
                             test.ok(index.isValid());
                             var properties = index.properties();
@@ -1123,11 +1118,6 @@ exports.setup = function(svc) {
                             index.update({
                                 assureUTF8: !properties.assureUTF8
                             }, callback);
-                        },
-                        function(index, callback) {
-                            test.ok(!!index);
-                            test.ok(!index.isValid());
-                            index.read(callback);
                         },
                         function(index, callback) {
                             test.ok(index);

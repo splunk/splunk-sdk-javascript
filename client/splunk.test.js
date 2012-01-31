@@ -2507,6 +2507,10 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             this.refresh    = utils.bind(this, this.refresh);
             this.remove     = utils.bind(this, this.remove);
             this.update     = utils.bind(this, this.update);
+            
+            // By default, we will "load" entities when they are updated,
+            // based on the returned value.
+            this._loadOnUpdate = true;
         },
         
         /**
@@ -2582,7 +2586,11 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             
             var that = this;
-            this.post("", props, function(err) {
+            this.post("", props, function(err, response) {
+                if (!err && that._loadOnUpdate) {
+                    that._load(response.odata.results);
+                }
+                
                 callback(err, that);
             });
             
@@ -3136,6 +3144,9 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             
             this.setupInfo  = utils.bind(this, this.setupInfo);
             this.updateInfo = utils.bind(this, this.updateInfo);
+            
+            // Applications do not return their updated data
+            this._loadOnUpdate = false;
         },
         
         /**
@@ -3490,6 +3501,10 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             // We always enforce the "globalness" of properties
             var namespace = {owner: "-", app: "-"};
             this._super(service, Paths.properties + "/" + encodeURIComponent(file) + "/" + encodeURIComponent(name), namespace);
+            
+            // This endpoint does not behave correctly, and so we do not load
+            // on update
+            this._loadOnUpdate = false;
         } 
     });
     
@@ -6662,9 +6677,9 @@ exports.setup = function(svc) {
                         }, callback);
                     },
                     function(app, callback) {
-                        test.ok(!!app);
+                        test.ok(app);
                         test.ok(!app.isValid());
-                        app.read(callback);
+                        app.read(callback);  
                     },
                     function(app, callback) {
                         test.ok(app);
@@ -7119,11 +7134,6 @@ exports.setup = function(svc) {
                             }, callback);
                         },
                         function(index, callback) {
-                            test.ok(!!index);
-                            test.ok(!index.isValid());
-                            index.read(callback);
-                        },
-                        function(index, callback) {
                             test.ok(index);
                             test.ok(index.isValid());
                             var properties = index.properties();
@@ -7133,11 +7143,6 @@ exports.setup = function(svc) {
                             index.update({
                                 assureUTF8: !properties.assureUTF8
                             }, callback);
-                        },
-                        function(index, callback) {
-                            test.ok(!!index);
-                            test.ok(!index.isValid());
-                            index.read(callback);
                         },
                         function(index, callback) {
                             test.ok(index);
