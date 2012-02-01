@@ -1229,14 +1229,15 @@ exports.setup = function(svc) {
                             test.strictEqual(user.properties().roles.length, 1);
                             test.strictEqual(user.properties().roles[0], "user");
                         
-                            user.update({realname: "JS SDK", roles: ["admin"]}, done);
+                            user.update({realname: "JS SDK", roles: ["admin", "user"]}, done);
                         },
                         function(user, done) {
                             test.ok(user);
                             test.ok(user.isValid());
                             test.strictEqual(user.properties().realname, "JS SDK");
-                            test.strictEqual(user.properties().roles.length, 1);
+                            test.strictEqual(user.properties().roles.length, 2);
                             test.strictEqual(user.properties().roles[0], "admin");
+                            test.strictEqual(user.properties().roles[1], "user");
                             
                             user.remove(done);
                         }

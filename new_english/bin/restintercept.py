@@ -12,7 +12,7 @@ import splunk.bundle
 import pprint
 import re
 import urllib
-from urlparse import urlparse
+from urlparse import urlparse, parse_qs
 import httplib2
 
 import logging
@@ -676,17 +676,12 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
     def forward_request(self):
         base_url = "https://" + self.request['headers']['host'] + "/"
         path = self.request['path'].replace("/services/json/v1", "")
-        query = self.request["query"] 
-        query_string = ""
-        if len(query): 
-            query_string = "?" + urllib.urlencode(query)
-        url = base_url + path + query_string
         method = self.method
         
         return self.make_request(
             path, 
-            getargs=self.request["query"], 
-            postargs=self.request["form"], 
+            getargs=self.request["query"],
+            postargs=parse_qs(self.request["payload"]), 
             method=method,
             sessionKey=self.sessionKey,
             raiseAllErrors=True
