@@ -1166,6 +1166,7 @@ require.define("/lib/paths.js", function (require, module, exports, __dirname, _
         savedSearches: "saved/searches",
         settings: "server/settings",
         users: "/services/authentication/users",
+        views: "data/ui/views",
         
         currentUser: "/services/authentication/current-context",
         submitEvent: "receivers/simple"
@@ -2083,6 +2084,34 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          */
         users: function(options) {
             return new root.Users(this, options);  
+        },
+        
+        /**
+         * Get an instance of the Views collection 
+         *
+         * The Views collection allows you to list views,
+         * create new ones, get a specific user, etc.
+         *
+         * Example:
+         *
+         *      // List all views
+         *      var views = svc.views();
+         *      views.list(function(err, list) {
+         *          for(var i = 0; i < list.length; i++) {
+         *              console.log("View " + (i+1) + ": " + list[i].properties().__name);
+         *          }
+         *      });
+         *
+         * @param {Object} options Dictionary of collection filtering and pagination options
+         * @param {Object} namespace Namespace information (owner, app, sharing)
+         * @return {Splunk.Client.Views} The views collection
+         *
+         * @endpoint data/ui/views
+         * @module Splunk.Client.Service
+         * @see Splunk.Client.Views
+         */
+        views: function(options, namespace) {
+            return new root.Views(this, options, namespace);  
         },
         
         /**
@@ -3275,6 +3304,66 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         init: function(service, name) {
             this.name = name;
             this._super(service, Paths.users + "/" + encodeURIComponent(name), {});
+        }
+    });
+    
+    /**
+     * Splunk.Client.Views
+     * 
+     * Represents the Splunk collection of views.  You can create and
+     * list views using this container, or get a specific one.
+     *
+     * @endpoint data/ui/views
+     * @moduleRoot Splunk.Client.Views
+     * @extends Splunk.Client.Collection
+     */  
+    root.Views = root.Collection.extend({
+        /**
+         * Constructor for Splunk.Client.Views
+         *
+         * @constructor
+         * @param {Splunk.Client.Service} service A service instance
+         * @param {Object} options Dictionary of collection filtering and pagination options
+         * @param {Object} namespace Namespace information (owner, app, sharing)
+         * @return {Splunk.Client.Views} A Splunk.Client.Views instance
+         *
+         * @module Splunk.Client.Views
+         */  
+        init: function(service, options, namespace) {
+            this._super(service, Paths.views, options, namespace, {
+                item: function(collection, props) {
+                    var entityNamespace = utils.namespaceFromProperties(props);
+                    return new root.View(collection.service, props.__name, entityNamespace);
+                }
+            });
+        },
+    });
+    
+    /**
+     * Splunk.Client.View
+     * 
+     * Represents a specific Splunk view.  You can update, remove and
+     * perform various operations on this view.
+     *
+     * @endpoint data/ui/views/{name}
+     * @moduleRoot Splunk.Client.View
+     * @extends Splunk.Client.Entity
+     */
+    root.View = root.Entity.extend({
+        /**
+         * Constructor for Splunk.Client.View
+         *
+         * @constructor
+         * @param {Splunk.Client.Service} service A service instance
+         * @param {String} name The name of the view
+         * @param {Object} namespace Namespace information (owner, app, sharing)
+         * @return {Splunk.Client.View} A Splunk.Client.View instance
+         *
+         * @module Splunk.Client.View
+         */ 
+        init: function(service, name, namespace) {
+            this.name = name;
+            this._super(service, Paths.views + "/" + encodeURIComponent(name), namespace);
         }
     });
         

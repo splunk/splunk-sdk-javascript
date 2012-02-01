@@ -1243,6 +1243,61 @@ exports.setup = function(svc) {
                         }
                     ],
                     function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            }
+        },
+        
+        "View Tests": {
+            setUp: function(done) {
+                this.service = svc;
+                done();
+            },
+            
+            "Callback#List views": function(test) {
+                var service = this.service;
+                
+                service.views({}, {owner: "admin", app: "search"}).list(function(err, views) {
+                    test.ok(!err);
+                    test.ok(views);
+                    
+                    test.ok(views.length > 0);
+                    
+                    for(var i = 0; i < views.length; i++) {
+                        test.ok(views[i].isValid());
+                    }
+                    
+                    test.done();
+                });
+            },
+            
+            "Callback#Create + update + delete view": function(test) {
+                var service = this.service;
+                var name = "jssdk_testview";
+                
+                Async.chain([
+                        function(done) {
+                            service.views({owner: "admin", app: "new_english"}).create({name: name, "eai:data": "<view/>"}, done);
+                        },
+                        function(view, done) {
+                            test.ok(view);
+                            test.ok(view.isValid());
+                            
+                            test.strictEqual(view.properties().__name, name);
+                        
+                            view.update({"eai:data": "<view isVisible='false'></view>"}, done);
+                        },
+                        function(view, done) {
+                            test.ok(view);
+                            test.ok(view.isValid());
+                            console.log(view.properties().rawdata);
+                            
+                            view.remove(done);
+                        }
+                    ],
+                    function(err) {
                         console.log(arguments);
                         test.ok(!err);
                         test.done();
