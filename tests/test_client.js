@@ -1276,29 +1276,31 @@ exports.setup = function(svc) {
             "Callback#Create + update + delete view": function(test) {
                 var service = this.service;
                 var name = "jssdk_testview";
+                var originalData = "<view/>";
+                var newData = "<view isVisible='false'></view>";
                 
                 Async.chain([
                         function(done) {
-                            service.views({owner: "admin", app: "new_english"}).create({name: name, "eai:data": "<view/>"}, done);
+                            service.views({owner: "admin", app: "new_english"}).create({name: name, "eai:data": originalData}, done);
                         },
                         function(view, done) {
                             test.ok(view);
                             test.ok(view.isValid());
                             
                             test.strictEqual(view.properties().__name, name);
+                            test.strictEqual(view.properties().rawdata, originalData);
                         
-                            view.update({"eai:data": "<view isVisible='false'></view>"}, done);
+                            view.update({"eai:data": newData}, done);
                         },
                         function(view, done) {
                             test.ok(view);
                             test.ok(view.isValid());
-                            console.log(view.properties().rawdata);
+                            test.strictEqual(view.properties().rawdata, newData);
                             
                             view.remove(done);
                         }
                     ],
                     function(err) {
-                        console.log(arguments);
                         test.ok(!err);
                         test.done();
                     }
