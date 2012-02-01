@@ -1235,8 +1235,9 @@ require.define("/lib/paths.js", function (require, module, exports, __dirname, _
         roles: "authentication/roles",
         savedSearches: "saved/searches",
         settings: "server/settings",
-        users: "authentication/users",
+        users: "/services/authentication/users",
         
+        currentUser: "/services/authentication/current-context",
         submitEvent: "receivers/simple"
     };
 })();
@@ -1386,6 +1387,10 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
                     encodedStr = encodedStr + key + "=" + encodeURIComponent(value);
                 }
             }
+        }
+
+        if (encodedStr[encodedStr.length - 1] === '&') {
+            encodedStr = encodedStr.substr(0, encodedStr.length - 1);
         }
 
         return encodedStr;
@@ -2124,6 +2129,33 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
         },
         
         /**
+         * Get an instance of the Users collection 
+         *
+         * The Users collection allows you to list users,
+         * create new ones, get a specific user, etc.
+         *
+         * Example:
+         *
+         *      // List all usernames
+         *      var users = svc.users();
+         *      users.list(function(err, list) {
+         *          for(var i = 0; i < list.length; i++) {
+         *              console.log("User " + (i+1) + ": " + list[i].properties().__name);
+         *          }
+         *      });
+         *
+         * @param {Object} options Dictionary of collection filtering and pagination options
+         * @return {Splunk.Client.Users} The Users collection
+         *
+         * @endpoint authorization/users
+         * @module Splunk.Client.Service
+         * @see Splunk.Client.Users
+         */
+        users: function(options) {
+            return new root.Users(this, options);  
+        },
+        
+        /**
          * Create an asyncronous search job
          *
          * Create a search job using the specified query and parameters.
@@ -2179,6 +2211,36 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             
             var jobs = new root.Jobs(this, {}, namespace);
             jobs.oneshotSearch(query, params, callback);
+        },
+        
+        /**
+         * Get the current user
+         *
+         * Get the current logged in user
+         *
+         * Example:
+         *
+         *      service.currentUser(function(err, user) {
+         *          console.log("Real name: ", user.properties().realname);
+         *      });
+         *
+         * @param {Function} callback A callback with the user instance: `(err, user)`
+         *
+         * @endpoint authorization/current-context
+         * @module Splunk.Client.Service
+         */
+        currentUser: function(callback) {
+            var that = this;
+            this.get(Paths.currentUser, {}, function(err, response) {
+                if (err) {
+                    callback(err);
+                } 
+                else {
+                    var username = response.odata.results[0]["username"];
+                    var user = new root.User(that, username);
+                    user.refresh(callback);
+                }
+            });
         }
     });
 
@@ -3205,6 +3267,84 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                     callback(null, response.odata.results, that);
                 }
             });
+        }
+    });
+    
+    /**
+     * Splunk.Client.Users
+     * 
+     * Represents the Splunk collection of users.  You can create and
+     * list users using this container, or get a specific one.
+     *
+     * @endpoint authentication/users
+     * @moduleRoot Splunk.Client.Users
+     * @extends Splunk.Client.Collection
+     */  
+    root.Users = root.Collection.extend({
+        /**
+         * Constructor for Splunk.Client.Users
+         *
+         * @constructor
+         * @param {Splunk.Client.Service} service A service instance
+         * @param {Object} options Dictionary of collection filtering and pagination options
+         * @return {Splunk.Client.Users} A Splunk.Client.Users instance
+         *
+         * @module Splunk.Client.Users
+         */  
+        init: function(service, options) {
+            this._super(service, Paths.users, options, {}, {
+                item: function(collection, props) {
+                    return new root.User(collection.service, props.__name, {});
+                }
+            });
+        },
+        
+        create: function(params, callback) {
+            callback = callback || function() {};
+            
+            var that = this;
+            this.post("", params, function(err, response) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    // This endpoint is buggy, and we have to use the passed
+                    // in name
+                    var props = {__name: params.name};
+                    
+                    var entity = that._item(that, props);                    
+                    callback(null, entity);
+                }
+            });
+            
+            this._invalidate();
+        }
+    });
+    
+    /**
+     * Splunk.Client.User
+     * 
+     * Represents a specific Splunk user.  You can update, remove and
+     * perform various operations on this user.
+     *
+     * @endpoint authentication/users/{name}
+     * @moduleRoot Splunk.Client.User
+     * @extends Splunk.Client.Entity
+     */
+    root.User = root.Entity.extend({
+        /**
+         * Constructor for Splunk.Client.User
+         *
+         * @constructor
+         * @param {Splunk.Client.Service} service A service instance
+         * @param {String} name The username of the user
+         * @return {Splunk.Client.User} A Splunk.Client.User instance
+         *
+         * @module Splunk.Client.User
+         */ 
+        init: function(service, name) {
+            this.name = name;
+            this._super(service, Paths.users + "/" + encodeURIComponent(name), {});
         }
     });
         
@@ -7198,6 +7338,78 @@ exports.setup = function(svc) {
                     function(err) {
                         test.ok(!err);
                         test.done(); 
+                    }
+                );
+            }
+        },
+        
+        "User Tests": {
+            setUp: function(done) {
+                this.service = svc;
+                done();
+            },
+            
+            "Callback#Current user": function(test) {
+                var service = this.service;
+                
+                service.currentUser(function(err, user) {
+                    test.ok(!err);
+                    test.ok(user);
+                    test.ok(user.isValid());
+                    test.strictEqual(user.properties().__name, service.username);
+                    test.done();
+                });
+            },
+            
+            "Callback#List users": function(test) {
+                var service = this.service;
+                
+                service.users().list(function(err, users) {
+                    test.ok(!err);
+                    test.ok(users);
+                    
+                    test.ok(users.length > 0);
+                    test.done();
+                });
+            },
+            
+            "Callback#Create + update + delete user": function(test) {
+                var service = this.service;
+                var name = "jssdk_testuser";
+                
+                Async.chain([
+                        function(done) {
+                            service.users().create({name: "jssdk_testuser", password: "abc", roles: "user"}, done);
+                        },
+                        function(user, done) {
+                            test.ok(user);
+                            test.ok(!user.isValid());
+                            
+                            user.read(done);
+                        },
+                        function(user, done) {
+                            test.ok(user);
+                            test.ok(user.isValid());
+                            test.strictEqual(user.properties().__name, name);
+                            test.strictEqual(user.properties().roles.length, 1);
+                            test.strictEqual(user.properties().roles[0], "user");
+                        
+                            user.update({realname: "JS SDK", roles: ["admin"]}, done);
+                        },
+                        function(user, done) {
+                            test.ok(user);
+                            test.ok(user.isValid());
+                            test.strictEqual(user.properties().realname, "JS SDK");
+                            test.strictEqual(user.properties().roles.length, 1);
+                            test.strictEqual(user.properties().roles[0], "admin");
+                            
+                            user.remove(done);
+                        }
+                    ],
+                    function(err) {
+                        console.log(arguments);
+                        test.ok(!err);
+                        test.done();
                     }
                 );
             }

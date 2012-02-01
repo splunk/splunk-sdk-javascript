@@ -1176,6 +1176,78 @@ exports.setup = function(svc) {
                     }
                 );
             }
+        },
+        
+        "User Tests": {
+            setUp: function(done) {
+                this.service = svc;
+                done();
+            },
+            
+            "Callback#Current user": function(test) {
+                var service = this.service;
+                
+                service.currentUser(function(err, user) {
+                    test.ok(!err);
+                    test.ok(user);
+                    test.ok(user.isValid());
+                    test.strictEqual(user.properties().__name, service.username);
+                    test.done();
+                });
+            },
+            
+            "Callback#List users": function(test) {
+                var service = this.service;
+                
+                service.users().list(function(err, users) {
+                    test.ok(!err);
+                    test.ok(users);
+                    
+                    test.ok(users.length > 0);
+                    test.done();
+                });
+            },
+            
+            "Callback#Create + update + delete user": function(test) {
+                var service = this.service;
+                var name = "jssdk_testuser";
+                
+                Async.chain([
+                        function(done) {
+                            service.users().create({name: "jssdk_testuser", password: "abc", roles: "user"}, done);
+                        },
+                        function(user, done) {
+                            test.ok(user);
+                            test.ok(!user.isValid());
+                            
+                            user.read(done);
+                        },
+                        function(user, done) {
+                            test.ok(user);
+                            test.ok(user.isValid());
+                            test.strictEqual(user.properties().__name, name);
+                            test.strictEqual(user.properties().roles.length, 1);
+                            test.strictEqual(user.properties().roles[0], "user");
+                        
+                            user.update({realname: "JS SDK", roles: ["admin"]}, done);
+                        },
+                        function(user, done) {
+                            test.ok(user);
+                            test.ok(user.isValid());
+                            test.strictEqual(user.properties().realname, "JS SDK");
+                            test.strictEqual(user.properties().roles.length, 1);
+                            test.strictEqual(user.properties().roles[0], "admin");
+                            
+                            user.remove(done);
+                        }
+                    ],
+                    function(err) {
+                        console.log(arguments);
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            }
         }
     };
 
