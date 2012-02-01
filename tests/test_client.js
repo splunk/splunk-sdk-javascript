@@ -46,7 +46,7 @@ exports.setup = function(svc) {
 
             "Callback#Create job error": function(test) {
                 var sid = getNextId();
-                this.service.jobs().search('index=_internal | head 1', {id: sid}, function(err) { 
+                this.service.jobs().search({search: 'index=_internal | head 1', id: sid}, function(err) { 
                     test.ok(!!err);
                     test.done(); 
                 });
@@ -1016,7 +1016,7 @@ exports.setup = function(svc) {
                     },
                     function(configs, done) {
                         test.ok(configs.isValid());
-                        configs.create(fileName, done);
+                        configs.create({__conf: fileName}, done);
                     },
                     function(file, done) {
                         test.ok(!file.isValid());

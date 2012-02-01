@@ -764,8 +764,8 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * Example:
      *      
      *      function() { 
-     *          console.log(Splunk.Utils.isNumber("abc"); // true
-     *          console.log(Splunk.Utils.isNumber(function() {})); // false
+     *          console.log(Splunk.Utils.isString("abc"); // true
+     *          console.log(Splunk.Utils.isString(function() {})); // false
      *      }
      *
      * @param {Anything} obj Parameter to check whether it is a string
@@ -775,6 +775,25 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      */
     root.isString = function(obj) {
         return !!(obj === '' || (obj && obj.charCodeAt && obj.substr));
+    };
+    
+    /**
+     * Whether or not the argument is an object
+     *
+     * Example:
+     *      
+     *      function() { 
+     *          console.log(Splunk.Utils.isObject({abc: "abc"}); // true
+     *          console.log(Splunk.Utils.isObject("abc"); // false
+     *      }
+     *
+     * @param {Anything} obj Parameter to check whether it is an object
+     * @return {Boolean} Whether or not the passed in parameter was a object
+     *
+     * @globals Splunk.Utils
+     */
+    root.isObject = function(obj) {
+        return obj === Object(obj);
     };
     
     /**
@@ -3420,6 +3439,14 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @module Splunk.Client.Indexes
          */
         create: function(name, params, callback) {
+            // If someone called us with the default style of (params, callback),
+            // lets make it work
+            if (utils.isObject(name) && utils.isFunction(params) && !callback) {
+                callback = params;
+                params = name;
+                name = params.name;
+            }
+            
             params = params || {};
             params["name"] = name;
             
@@ -3551,6 +3578,12 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @module Splunk.Client.Properties
          */
         create: function(filename, callback) {
+            // If someone called us with the default style of (params, callback),
+            // lets make it work
+            if (utils.isObject(filename)) {
+                filename = filename["__conf"];
+            }
+            
             callback = callback || function() {};
             
             var that = this;
@@ -3619,6 +3652,12 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @module Splunk.Client.PropertyFile
          */
         create: function(stanzaName, callback) {
+            // If someone called us with the default style of (params, callback),
+            // lets make it work
+            if (utils.isObject(stanzaName)) {
+                stanzaName = stanzaName["__conf"];
+            }
+            
             callback = callback || function() {};
             
             var that = this;
@@ -3728,6 +3767,12 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @module Splunk.Client.Configurations
          */
         create: function(filename, callback) {
+            // If someone called us with the default style of (params, callback),
+            // lets make it work
+            if (utils.isObject(filename)) {
+                filename = filename["__conf"];
+            }
+            
             callback = callback || function() {};
             
             var that = this;
@@ -3796,6 +3841,14 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @module Splunk.Client.ConfigurationFile
          */
         create: function(stanzaName, values, callback) {
+            // If someone called us with the default style of (params, callback),
+            // lets make it work
+            if (utils.isObject(stanzaName) && utils.isFunction(values) && !callback) {
+                callback = values;
+                values = stanzaName;
+                stanzaName = values.name;
+            }
+            
             if (utils.isFunction(values) && !callback) {
                 callback = values;
                 values = {};
@@ -3884,6 +3937,14 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @see Splunk.Client.Jobs.search
          */
         create: function(query, params, callback) {
+            // If someone called us with the default style of (params, callback),
+            // lets make it work
+            if (utils.isObject(query) && utils.isFunction(params) && !callback) {
+                callback = params;
+                params = query;
+                query = params.search;
+            }
+            
             callback = callback || function() {};
             params = params || {};
             params.search = query; 
@@ -3955,6 +4016,14 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @module Splunk.Client.Jobs
          */
         oneshotSearch: function(query, params, callback) {
+            // If someone called us with the default style of (params, callback),
+            // lets make it work
+            if (utils.isObject(query) && utils.isFunction(params) && !callback) {
+                callback = params;
+                params = query;
+                query = params.search;
+            }
+            
             callback = callback || function() {};
             params = params || {};
             params.search = query; 

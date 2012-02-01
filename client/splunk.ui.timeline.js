@@ -11145,8 +11145,8 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * Example:
      *      
      *      function() { 
-     *          console.log(Splunk.Utils.isNumber("abc"); // true
-     *          console.log(Splunk.Utils.isNumber(function() {})); // false
+     *          console.log(Splunk.Utils.isString("abc"); // true
+     *          console.log(Splunk.Utils.isString(function() {})); // false
      *      }
      *
      * @param {Anything} obj Parameter to check whether it is a string
@@ -11156,6 +11156,25 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      */
     root.isString = function(obj) {
         return !!(obj === '' || (obj && obj.charCodeAt && obj.substr));
+    };
+    
+    /**
+     * Whether or not the argument is an object
+     *
+     * Example:
+     *      
+     *      function() { 
+     *          console.log(Splunk.Utils.isObject({abc: "abc"}); // true
+     *          console.log(Splunk.Utils.isObject("abc"); // false
+     *      }
+     *
+     * @param {Anything} obj Parameter to check whether it is an object
+     * @return {Boolean} Whether or not the passed in parameter was a object
+     *
+     * @globals Splunk.Utils
+     */
+    root.isObject = function(obj) {
+        return obj === Object(obj);
     };
     
     /**
