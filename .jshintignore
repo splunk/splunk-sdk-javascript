@@ -16,3 +16,7 @@ external-nocheckin
 ui/timeline
 ui\\timeline
 cover_html
+ui/charting
+ui/timeline
+ui\\charting
+ui\\timeline

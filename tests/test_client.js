@@ -757,7 +757,7 @@ exports.setup = function(svc) {
                     test.strictEqual(savedSearches.length, 2);
                     
                     for(var i = 0; i < savedSearches.length; i++) {
-                        console.log(savedSearches[i].path)
+                        console.log(savedSearches[i].path);
                         test.ok(savedSearches[i].isValid());
                     }
                     
@@ -771,7 +771,7 @@ exports.setup = function(svc) {
                     test.ok(savedSearches.length > 0);
                     
                     for(var i = 0; i < savedSearches.length; i++) {
-                        console.log(savedSearches[i].path)
+                        console.log(savedSearches[i].path);
                         test.ok(savedSearches[i].isValid());
                     }
                     
@@ -785,11 +785,82 @@ exports.setup = function(svc) {
                     test.strictEqual(savedSearches.length, 1);
                     
                     for(var i = 0; i < savedSearches.length; i++) {
-                        console.log(savedSearches[i].path)
+                        console.log(savedSearches[i].path);
                         test.ok(savedSearches[i].isValid());
                     }
                     
                     test.done();
+                });
+            },
+            
+            "Callback#create + modify + delete saved search": function(test) {
+                var name = "jssdk_savedsearch";
+                var originalSearch = "search * | head 1";
+                var updatedSearch = "search * | head 10";
+                var updatedDescription = "description";
+            
+                var searches = this.service.savedSearches({}, {owner: this.service.username, app: "new_english"});
+                
+                Async.chain([
+                        function(done) {
+                            searches.create({search: originalSearch, name: name}, done);
+                        },
+                        function(search, done) {
+                            test.ok(search);
+                            test.ok(search.isValid());
+                            
+                            test.strictEqual(search.properties().__name, name); 
+                            test.strictEqual(search.properties().search, originalSearch);
+                            test.ok(!search.properties().description);
+                            
+                            search.update({search: updatedSearch}, done);
+                        },
+                        function(search, done) {
+                            test.ok(search);
+                            test.ok(search.isValid());
+                            
+                            test.strictEqual(search.properties().__name, name); 
+                            test.strictEqual(search.properties().search, updatedSearch);
+                            test.ok(!search.properties().description);
+                            
+                            search.update({description: updatedDescription}, done);
+                        },
+                        function(search, done) {
+                            test.ok(search);
+                            test.ok(search.isValid());
+                            
+                            test.strictEqual(search.properties().__name, name); 
+                            test.strictEqual(search.properties().search, updatedSearch);
+                            test.strictEqual(search.properties().description, updatedDescription);
+                            
+                            search.remove(done);
+                        }
+                    ],
+                    function(err) {
+                        console.log(arguments);
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            
+            "Callback#delete test saved searches": function(test) {
+                var searches = this.service.savedSearches({}, {owner: this.service.username, app: "new_english"});
+                searches.list(function(err, searchList) {                    
+                    Async.parallelEach(
+                        searchList,
+                        function(search, idx, callback) {
+                            if (utils.startsWith(search.properties().__name, "jssdk_")) {
+                                search.remove(callback);
+                            }
+                            else {
+                                callback();
+                            }
+                        }, function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
                 });
             }
         },

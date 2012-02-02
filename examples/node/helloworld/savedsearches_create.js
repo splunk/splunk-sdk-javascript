@@ -54,7 +54,7 @@ exports.main = function(opts, done) {
         // Now that we're logged in, Let's create a saved search
         service.savedSearches().create(savedSearchOptions, function(err, savedSearch) {
             if (err && err.status === 409) {
-                console.error("ERROR: A saved search with the name '" + savedSearchOptions.name + "' already exists")
+                console.error("ERROR: A saved search with the name '" + savedSearchOptions.name + "' already exists");
                 done();
                 return;
             }

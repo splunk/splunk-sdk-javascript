@@ -3124,6 +3124,39 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             this.get("suppress", {}, function(err, response) {
                 callback(err, response.odata.results, that);
             });
+        },
+        
+        /**
+         * Update the saved search
+         *
+         * This will update the saved search on the server. Because saved searches
+         * require the presence of the search parameter, even if it is not being
+         * modified, the SDK will fetch it from the server (or from the local
+         * cache) if it is not present in the user-supplied input.
+         *
+         * @param {Object} props Properties to be updated the object with.
+         * @param {Function} callback A callback when the object is updated: `(err, entity)`
+         *
+         * @module Splunk.Client.SavedSearch
+         */
+        update: function(params, callback) {
+            params = params || {};
+            
+            if (!params.search) {
+                var update = this._super;
+                this.refresh(function(err, search) {
+                    if (err) {
+                        callback(err);
+                    }
+                    else {
+                        params.search = search.properties().search;
+                        update.apply(search, [params, callback]);
+                    }
+                });
+            }
+            else {
+                this._super(params, callback);
+            }
         }
     });
     
@@ -3277,6 +3310,17 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             });
         },
         
+        /**
+         * Create a new user
+         *
+         * The User endpoint is broken for creates, so we have to have a special-case
+         * implementation.
+         *
+         * @param {Object} params A dictionary of properties to create the entity with.
+         * @param {Function} callback A callback with the created entity: `(err, createdEntity)`
+         *
+         * @module Splunk.Client.Users
+         */
         create: function(params, callback) {
             callback = callback || function() {};
             

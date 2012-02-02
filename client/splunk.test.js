@@ -3194,6 +3194,39 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             this.get("suppress", {}, function(err, response) {
                 callback(err, response.odata.results, that);
             });
+        },
+        
+        /**
+         * Update the saved search
+         *
+         * This will update the saved search on the server. Because saved searches
+         * require the presence of the search parameter, even if it is not being
+         * modified, the SDK will fetch it from the server (or from the local
+         * cache) if it is not present in the user-supplied input.
+         *
+         * @param {Object} props Properties to be updated the object with.
+         * @param {Function} callback A callback when the object is updated: `(err, entity)`
+         *
+         * @module Splunk.Client.SavedSearch
+         */
+        update: function(params, callback) {
+            params = params || {};
+            
+            if (!params.search) {
+                var update = this._super;
+                this.refresh(function(err, search) {
+                    if (err) {
+                        callback(err);
+                    }
+                    else {
+                        params.search = search.properties().search;
+                        update.apply(search, [params, callback]);
+                    }
+                });
+            }
+            else {
+                this._super(params, callback);
+            }
         }
     });
     
@@ -3347,6 +3380,17 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             });
         },
         
+        /**
+         * Create a new user
+         *
+         * The User endpoint is broken for creates, so we have to have a special-case
+         * implementation.
+         *
+         * @param {Object} params A dictionary of properties to create the entity with.
+         * @param {Function} callback A callback with the created entity: `(err, createdEntity)`
+         *
+         * @module Splunk.Client.Users
+         */
         create: function(params, callback) {
             callback = callback || function() {};
             
@@ -7080,7 +7124,7 @@ exports.setup = function(svc) {
                     test.strictEqual(savedSearches.length, 2);
                     
                     for(var i = 0; i < savedSearches.length; i++) {
-                        console.log(savedSearches[i].path)
+                        console.log(savedSearches[i].path);
                         test.ok(savedSearches[i].isValid());
                     }
                     
@@ -7094,7 +7138,7 @@ exports.setup = function(svc) {
                     test.ok(savedSearches.length > 0);
                     
                     for(var i = 0; i < savedSearches.length; i++) {
-                        console.log(savedSearches[i].path)
+                        console.log(savedSearches[i].path);
                         test.ok(savedSearches[i].isValid());
                     }
                     
@@ -7108,11 +7152,82 @@ exports.setup = function(svc) {
                     test.strictEqual(savedSearches.length, 1);
                     
                     for(var i = 0; i < savedSearches.length; i++) {
-                        console.log(savedSearches[i].path)
+                        console.log(savedSearches[i].path);
                         test.ok(savedSearches[i].isValid());
                     }
                     
                     test.done();
+                });
+            },
+            
+            "Callback#create + modify + delete saved search": function(test) {
+                var name = "jssdk_savedsearch";
+                var originalSearch = "search * | head 1";
+                var updatedSearch = "search * | head 10";
+                var updatedDescription = "description";
+            
+                var searches = this.service.savedSearches({}, {owner: this.service.username, app: "new_english"});
+                
+                Async.chain([
+                        function(done) {
+                            searches.create({search: originalSearch, name: name}, done);
+                        },
+                        function(search, done) {
+                            test.ok(search);
+                            test.ok(search.isValid());
+                            
+                            test.strictEqual(search.properties().__name, name); 
+                            test.strictEqual(search.properties().search, originalSearch);
+                            test.ok(!search.properties().description);
+                            
+                            search.update({search: updatedSearch}, done);
+                        },
+                        function(search, done) {
+                            test.ok(search);
+                            test.ok(search.isValid());
+                            
+                            test.strictEqual(search.properties().__name, name); 
+                            test.strictEqual(search.properties().search, updatedSearch);
+                            test.ok(!search.properties().description);
+                            
+                            search.update({description: updatedDescription}, done);
+                        },
+                        function(search, done) {
+                            test.ok(search);
+                            test.ok(search.isValid());
+                            
+                            test.strictEqual(search.properties().__name, name); 
+                            test.strictEqual(search.properties().search, updatedSearch);
+                            test.strictEqual(search.properties().description, updatedDescription);
+                            
+                            search.remove(done);
+                        }
+                    ],
+                    function(err) {
+                        console.log(arguments);
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            
+            "Callback#delete test saved searches": function(test) {
+                var searches = this.service.savedSearches({}, {owner: this.service.username, app: "new_english"});
+                searches.list(function(err, searchList) {                    
+                    Async.parallelEach(
+                        searchList,
+                        function(search, idx, callback) {
+                            if (utils.startsWith(search.properties().__name, "jssdk_")) {
+                                search.remove(callback);
+                            }
+                            else {
+                                callback();
+                            }
+                        }, function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
                 });
             }
         },
