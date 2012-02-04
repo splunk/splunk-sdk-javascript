@@ -694,7 +694,9 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         self.response.setStatus(status)
         self.response.setHeader('Content-Type', 'application/json')
         
-        if status == 401:
+        authorization = self.request["headers"].get("authorization", "");
+        is_regular_authorized = authorization.startswith("Splunk");
+        if status == 401 and not is_regular_authorized:
             self.response.setHeader("www-authenticate", 'Basic realm="/splunk"')
         
         self.response.write(content)
