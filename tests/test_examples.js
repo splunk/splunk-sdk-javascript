@@ -285,7 +285,6 @@ exports.setup = function(svc, opts) {
             },
             
             "Show non-existent contents": function(test) {
-                console.log("BOOO");
                 this.run("contents", ["json", "settings"], {app: "search", user: "nobody"}, function(err) {
                     test.ok(err);
                     test.done();

@@ -1957,6 +1957,8 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             this.properties     = utils.bind(this, this.properties);
             this.savedSearches  = utils.bind(this, this.savedSearches);
             this.jobs           = utils.bind(this, this.jobs);
+            this.users          = utils.bind(this, this.users);
+            this.currentUser    = utils.bind(this, this.currentUser);
         },
         
         /**
@@ -8334,7 +8336,6 @@ exports.setup = function(svc, opts) {
             },
             
             "Show non-existent contents": function(test) {
-                console.log("BOOO");
                 this.run("contents", ["json", "settings"], {app: "search", user: "nobody"}, function(err) {
                     test.ok(err);
                     test.done();
