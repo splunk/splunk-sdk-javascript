@@ -1959,6 +1959,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             this.jobs           = utils.bind(this, this.jobs);
             this.users          = utils.bind(this, this.users);
             this.currentUser    = utils.bind(this, this.currentUser);
+            this.views          = utils.bind(this, this.views);
         },
         
         /**
