@@ -298,7 +298,7 @@
           <div class="span5">
             <h2>Description</h2>
               <p>
-                These sample demonstrate working with the <code>Splunk.Client.Applications</code> collection
+                This sample demonstrates working with the <code>Splunk.Client.Applications</code> collection
                 and <code>Splunk.Client.Application</code> entity. It will list all the apps, and for each
                 one print its name.
 
@@ -414,7 +414,7 @@ Async.chain([
           <div class="span5">
             <h2>Description</h2>
               <p>              
-                These sample demonstrate working with the <code>Splunk.Client.SavedSearches</code> collection
+                This sample demonstrates working with the <code>Splunk.Client.SavedSearches</code> collection
                 and <code>Splunk.Client.SavedSearch</code> entity. It will list all the saved searches, and 
                 for each one print its name and the search query associated with it.
 
@@ -579,10 +579,10 @@ service.login(function(err, success) {
           <div class="span5">
             <h2>Description</h2>
               <p>                              
-                <p>These samples demonstrate running searches on Splunk using the SDK. They will run the search, print out progress (if available), search statistics (if available), and finally, print out the search results (including some key-value fields).</p>
-                <p>These examples go over the space of possible search types:</p>
+                <p>This example demonstrates running searches on Splunk using the SDK. It will run the search, print out progress (if available), search statistics (if available), and finally, print out the search results (including some key-value fields).</p>
+                <p>This example goes over the possible search types:</p>
                 <ul>
-                <li><p>normal: execute a search with <code>exec_mode=normal</code>, wait untli the job is done, and then print out job statistics and the search results.</p></li>
+                <li><p>normal: execute a search with <code>exec_mode=normal</code>, wait until the job is done, and then print out job statistics and the search results.</p></li>
                 <li><p>blocking: execute a search with <code>exec_mode=blocking</code>, which will not return from the REST call until the job is done. Once it is done, it will print out job statistics and the search results.</p></li>
                 <li><p>oneshot: execute a search with <code>exec_mode=oneshot</code>, which will not return the REST call until the job is done, and then it will simply return the search results, rather than the search job ID. Once it is done, we print out the results.</p></li>
                 </ul>
