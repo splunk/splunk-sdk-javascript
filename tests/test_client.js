@@ -31,6 +31,22 @@ exports.setup = function(svc) {
                 this.service = svc;
                 done();
             },
+            
+            "Callback#Create+abort job": function(test) {
+                var sid = getNextId();
+                var options = {id: sid};
+                var jobs = this.service.jobs({}, {app: "new_english"});
+                var req = jobs.oneshotSearch('search index=_internal |  head 1 | sleep 10', options, function(err, job) {   
+                    test.ok(err);
+                    test.ok(!job);
+                    test.strictEqual(err.error, "abort");
+                    test.done();
+                }); 
+                
+                Splunk.Async.sleep(1000, function() {
+                    req.abort();
+                });
+            },
 
             "Callback#Create+cancel job": function(test) {
                 var sid = getNextId();

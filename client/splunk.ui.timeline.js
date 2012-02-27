@@ -30,7 +30,8 @@ require.resolve = (function () {
         
         if (require._core[x]) return x;
         var path = require.modules.path();
-        var y = cwd || '.';
+        cwd = path.resolve('/', cwd);
+        var y = cwd || '/';
         
         if (x.match(/^(?:\.\.?\/|\/)/)) {
             var m = loadAsFileSync(path.resolve(y, x))
@@ -119,7 +120,11 @@ require.alias = function (from, to) {
     }
     var basedir = path.dirname(res);
     
-    var keys = Object_keys(require.modules);
+    var keys = (Object.keys || function (obj) {
+        var res = [];
+        for (var key in obj) res.push(key)
+        return res;
+    })(require.modules);
     
     for (var i = 0; i < keys.length; i++) {
         var key = keys[i];
@@ -164,17 +169,34 @@ require.define = function (filename, fn) {
     };
 };
 
-var Object_keys = Object.keys || function (obj) {
-    var res = [];
-    for (var key in obj) res.push(key)
-    return res;
-};
-
 if (typeof process === 'undefined') process = {};
 
-if (!process.nextTick) process.nextTick = function (fn) {
-    setTimeout(fn, 0);
-};
+if (!process.nextTick) process.nextTick = (function () {
+    var queue = [];
+    var canPost = typeof window !== 'undefined'
+        && window.postMessage && window.addEventListener
+    ;
+    
+    if (canPost) {
+        window.addEventListener('message', function (ev) {
+            if (ev.source === window && ev.data === 'browserify-tick') {
+                ev.stopPropagation();
+                if (queue.length > 0) {
+                    var fn = queue.shift();
+                    fn();
+                }
+            }
+        }, true);
+    }
+    
+    return function (fn) {
+        if (canPost) {
+            queue.push(fn);
+            window.postMessage('browserify-tick', '*');
+        }
+        else setTimeout(fn, 0);
+    };
+})();
 
 if (!process.title) process.title = 'browser';
 
@@ -186,7 +208,7 @@ if (!process.binding) process.binding = function (name) {
 if (!process.cwd) process.cwd = function () { return '.' };
 
 require.define("path", function (require, module, exports, __dirname, __filename) {
-    function filter (xs, fn) {
+function filter (xs, fn) {
     var res = [];
     for (var i = 0; i < xs.length; i++) {
         if (fn(xs[i], i, xs)) res.push(xs[i]);
@@ -324,7 +346,7 @@ exports.extname = function(path) {
 });
 
 require.define("/ui/timeline.js", function (require, module, exports, __dirname, __filename) {
-    
+
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -443,7 +465,7 @@ require.define("/ui/timeline.js", function (require, module, exports, __dirname,
 });
 
 require.define("/ui/timeline/jg_global.js", function (require, module, exports, __dirname, __filename) {
-    /**
+/**
  * Global functions for defining classes and managing scope.
  * 
  * The following functions are declared globally on the window object:
@@ -1370,7 +1392,7 @@ require.define("/ui/timeline/jg_global.js", function (require, module, exports, 
 });
 
 require.define("/ui/timeline/splunk_time.js", function (require, module, exports, __dirname, __filename) {
-    /**
+/**
  * Includes code from the jgatt library
  * Copyright (c) 2011 Jason Gatt
  * Dual licensed under the MIT and GPL licenses
@@ -3300,7 +3322,7 @@ require.define("/ui/timeline/splunk_time.js", function (require, module, exports
 });
 
 require.define("/ui/timeline/splunk_timeline.js", function (require, module, exports, __dirname, __filename) {
-    /**
+/**
  * Includes code from the jgatt library
  * Copyright (c) 2011 Jason Gatt
  * Dual licensed under the MIT and GPL licenses
@@ -10722,7 +10744,7 @@ require.define("/ui/timeline/splunk_timeline.js", function (require, module, exp
 });
 
 require.define("/ui/timeline/format.js", function (require, module, exports, __dirname, __filename) {
-    // Copyright 2011 Splunk, Inc.
+// Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
 // not use this file except in compliance with the License. You may obtain
@@ -10841,7 +10863,7 @@ require.define("/ui/timeline/format.js", function (require, module, exports, __d
 });
 
 require.define("/lib/jquery.class.js", function (require, module, exports, __dirname, __filename) {
-    /*! Simple JavaScript Inheritance
+/*! Simple JavaScript Inheritance
  * By John Resig http://ejohn.org/
  * MIT Licensed.
  * Inspired by base2 and Prototype
@@ -10910,7 +10932,7 @@ require.define("/lib/jquery.class.js", function (require, module, exports, __dir
 });
 
 require.define("/lib/utils.js", function (require, module, exports, __dirname, __filename) {
-    /*!*/
+/*!*/
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may

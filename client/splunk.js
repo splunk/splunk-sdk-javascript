@@ -30,7 +30,8 @@ require.resolve = (function () {
         
         if (require._core[x]) return x;
         var path = require.modules.path();
-        var y = cwd || '.';
+        cwd = path.resolve('/', cwd);
+        var y = cwd || '/';
         
         if (x.match(/^(?:\.\.?\/|\/)/)) {
             var m = loadAsFileSync(path.resolve(y, x))
@@ -119,7 +120,11 @@ require.alias = function (from, to) {
     }
     var basedir = path.dirname(res);
     
-    var keys = Object_keys(require.modules);
+    var keys = (Object.keys || function (obj) {
+        var res = [];
+        for (var key in obj) res.push(key)
+        return res;
+    })(require.modules);
     
     for (var i = 0; i < keys.length; i++) {
         var key = keys[i];
@@ -164,17 +169,34 @@ require.define = function (filename, fn) {
     };
 };
 
-var Object_keys = Object.keys || function (obj) {
-    var res = [];
-    for (var key in obj) res.push(key)
-    return res;
-};
-
 if (typeof process === 'undefined') process = {};
 
-if (!process.nextTick) process.nextTick = function (fn) {
-    setTimeout(fn, 0);
-};
+if (!process.nextTick) process.nextTick = (function () {
+    var queue = [];
+    var canPost = typeof window !== 'undefined'
+        && window.postMessage && window.addEventListener
+    ;
+    
+    if (canPost) {
+        window.addEventListener('message', function (ev) {
+            if (ev.source === window && ev.data === 'browserify-tick') {
+                ev.stopPropagation();
+                if (queue.length > 0) {
+                    var fn = queue.shift();
+                    fn();
+                }
+            }
+        }, true);
+    }
+    
+    return function (fn) {
+        if (canPost) {
+            queue.push(fn);
+            window.postMessage('browserify-tick', '*');
+        }
+        else setTimeout(fn, 0);
+    };
+})();
 
 if (!process.title) process.title = 'browser';
 
@@ -186,7 +208,7 @@ if (!process.binding) process.binding = function (name) {
 if (!process.cwd) process.cwd = function () { return '.' };
 
 require.define("path", function (require, module, exports, __dirname, __filename) {
-    function filter (xs, fn) {
+function filter (xs, fn) {
     var res = [];
     for (var i = 0; i < xs.length; i++) {
         if (fn(xs[i], i, xs)) res.push(xs[i]);
@@ -324,11 +346,11 @@ exports.extname = function(path) {
 });
 
 require.define("/package.json", function (require, module, exports, __dirname, __filename) {
-    module.exports = {"main":"splunk.js"}
+module.exports = {"main":"splunk.js"}
 });
 
 require.define("/splunk.js", function (require, module, exports, __dirname, __filename) {
-    
+
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -370,7 +392,7 @@ require.define("/splunk.js", function (require, module, exports, __dirname, __fi
 });
 
 require.define("/lib/log.js", function (require, module, exports, __dirname, __filename) {
-    /*!*/
+/*!*/
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -529,7 +551,7 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
 });
 
 require.define("/lib/utils.js", function (require, module, exports, __dirname, __filename) {
-    /*!*/
+/*!*/
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -844,7 +866,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
 });
 
 require.define("/lib/binding.js", function (require, module, exports, __dirname, __filename) {
-    /*!*/
+/*!*/
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -1048,7 +1070,7 @@ require.define("/lib/binding.js", function (require, module, exports, __dirname,
                 }
             };
             
-            this.post(url, params, wrappedCallback);
+            return this.post(url, params, wrappedCallback);
         },
 
         /**
@@ -1061,7 +1083,7 @@ require.define("/lib/binding.js", function (require, module, exports, __dirname,
          * @module Splunk.Binding.Context 
          */
         get: function(path, params, callback) {
-            this.http.get(
+            return this.http.get(
                 this.urlify(path),
                 this._headers(),
                 params,
@@ -1080,7 +1102,7 @@ require.define("/lib/binding.js", function (require, module, exports, __dirname,
          * @module Splunk.Binding.Context 
          */
         del: function(path, params, callback) {
-            this.http.del(
+            return this.http.del(
                 this.urlify(path),
                 this._headers(),
                 params,
@@ -1099,7 +1121,7 @@ require.define("/lib/binding.js", function (require, module, exports, __dirname,
          * @module Splunk.Binding.Context 
          */
         post: function(path, params, callback) {
-            this.http.post(
+            return this.http.post(
                 this.urlify(path),
                 this._headers(),
                 params,
@@ -1120,7 +1142,7 @@ require.define("/lib/binding.js", function (require, module, exports, __dirname,
          * @module Splunk.Binding.Context 
          */
         request: function(path, method, headers, body, callback) {
-            this.http.request(
+            return this.http.request(
                 this.urlify(path),    
                 {
                     method: method,
@@ -1136,7 +1158,7 @@ require.define("/lib/binding.js", function (require, module, exports, __dirname,
 });
 
 require.define("/lib/paths.js", function (require, module, exports, __dirname, __filename) {
-    /*!*/
+/*!*/
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -1194,7 +1216,7 @@ require.define("/lib/paths.js", function (require, module, exports, __dirname, _
 });
 
 require.define("/lib/jquery.class.js", function (require, module, exports, __dirname, __filename) {
-    /*! Simple JavaScript Inheritance
+/*! Simple JavaScript Inheritance
  * By John Resig http://ejohn.org/
  * MIT Licensed.
  * Inspired by base2 and Prototype
@@ -1263,7 +1285,7 @@ require.define("/lib/jquery.class.js", function (require, module, exports, __dir
 });
 
 require.define("/lib/http.js", function (require, module, exports, __dirname, __filename) {
-    /*!*/
+/*!*/
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -1465,7 +1487,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
             var wrappedCallback = function(response) {
                 callback = callback || function() {};
 
-                if (response.status < 400) {
+                if (response.status < 400 && response.status !== "abort") {
                     callback(null, response);
                 }
                 else {
@@ -1475,7 +1497,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
 
             // Now we can invoke the user-provided HTTP class,
             // passing in our "wrapped" callback
-            this.makeRequest(url, message, wrappedCallback);
+            return this.makeRequest(url, message, wrappedCallback);
         },
 
         /**
@@ -1522,17 +1544,20 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
          *
          * @module Splunk.Http 
          */
-        _buildResponse: function(error, response, data) {
+        _buildResponse: function(error, response, data) {            
             var complete_response, json, odata;
 
             // Parse the JSON data and build the OData response
             // object.
             if (this.isSplunk) {
                 json = this.parseJson(data);
-                odata = ODataResponse.fromJson(json);  
-
-                // Print any messages that came with the response
-                ODataResponse.printMessages(odata);
+                
+                if (error !== "abort") {
+                    odata = ODataResponse.fromJson(json);  
+                    
+                    // Print any messages that came with the response
+                    ODataResponse.printMessages(odata);
+                }
 
                 complete_response = {
                     response: response,
@@ -1564,7 +1589,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
 });
 
 require.define("/lib/odata.js", function (require, module, exports, __dirname, __filename) {
-    
+
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -1674,7 +1699,7 @@ require.define("/lib/odata.js", function (require, module, exports, __dirname, _
 });
 
 require.define("/lib/platform/client/easyxdm_http.js", function (require, module, exports, __dirname, __filename) {
-    
+
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -1788,6 +1813,10 @@ require.define("/lib/platform/client/easyxdm_http.js", function (require, module
             });
             
             this.xhr.request(params, success, error);
+            
+            return {
+                abort: function() {}
+            };
         },
 
         parseJson: function(json) {
@@ -1798,7 +1827,7 @@ require.define("/lib/platform/client/easyxdm_http.js", function (require, module
 });
 
 require.define("/contrib/easyXDM/easyXDM.min.js", function (require, module, exports, __dirname, __filename) {
-    /**
+/**
  * easyXDM
  * http://easyxdm.net/
  * Copyright(c) 2009-2011, Øyvind Sean Kinsey, oyvind@kinsey.no.
@@ -1825,7 +1854,7 @@ require.define("/contrib/easyXDM/easyXDM.min.js", function (require, module, exp
 });
 
 require.define("/lib/client.js", function (require, module, exports, __dirname, __filename) {
-    /*!*/
+/*!*/
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -2162,7 +2191,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             }
             
             var jobs = new root.Jobs(this, {}, namespace);
-            jobs.search(query, params, callback);
+            return jobs.search(query, params, callback);
         },
         
         /**
@@ -2191,7 +2220,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             }
             
             var jobs = new root.Jobs(this, {}, namespace);
-            jobs.oneshotSearch(query, params, callback);
+            return jobs.oneshotSearch(query, params, callback);
         },
         
         /**
@@ -2212,7 +2241,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          */
         currentUser: function(callback) {
             var that = this;
-            this.get(Paths.currentUser, {}, function(err, response) {
+            return this.get(Paths.currentUser, {}, function(err, response) {
                 if (err) {
                     callback(err);
                 } 
@@ -2293,7 +2322,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                 url = url + "/" + relpath;    
             }
 
-            this.service.get(
+            return this.service.get(
                 url,
                 params,
                 callback
@@ -2327,7 +2356,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                 url = url + "/" + relpath;    
             }
 
-            this.service.post(
+            return this.service.post(
                 url,
                 params,
                 callback
@@ -2361,7 +2390,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                 url = url + "/" + relpath;    
             }
 
-            this.service.del(
+            return this.service.del(
                 url,
                 params,
                 callback
@@ -2449,10 +2478,11 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             
             if (!this._maybeValid) {
-                this.refresh(callback);
+                return this.refresh(callback);
             }
             else {
                 callback(null, this);
+                return {abort: function(){}};
             }
         },
         
@@ -2511,7 +2541,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             
             var that = this;
-            this._validate(function(err) {
+            return this._validate(function(err) {
                 callback(err, that);
             });
         }
@@ -2584,7 +2614,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             
             var that = this;
-            this.get("", {}, function(err, response) {
+            return this.get("", {}, function(err, response) {
                 if (err) {
                     callback(err);
                 } 
@@ -2609,7 +2639,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             
             var that = this;
-            this.del("", {}, function() {
+            return this.del("", {}, function() {
                 callback();
             });
         },
@@ -2629,7 +2659,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             
             var that = this;
-            this.post("", props, function(err, response) {
+            var req = this.post("", props, function(err, response) {
                 if (!err && that._loadOnUpdate) {
                     that._load(response.odata.results);
                 }
@@ -2638,6 +2668,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             });
             
             this._invalidate();
+            return req;
         }
     });
 
@@ -2756,7 +2787,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             }
             
             var that = this;
-            that.get("", options, function(err, response) {
+            return that.get("", options, function(err, response) {
                 if (err) {
                     callback(err);
                 }
@@ -2792,7 +2823,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                 namespace = null;
             }
             
-            this.contains(name, namespace, function(err, contains, entity) {
+            return this.contains(name, namespace, function(err, contains, entity) {
                 if (err) {
                     callback(err);
                 } 
@@ -2829,7 +2860,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             
             var that = this;
-            this.post("", params, function(err, response) {
+            var req = this.post("", params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
@@ -2850,6 +2881,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             });
             
             this._invalidate();
+            return req;
         },
         
         /**
@@ -2873,7 +2905,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             
             var that = this;
-            this._validate(function(err) {
+            return this._validate(function(err) {
                 callback(err, that._entities);
             });
         },
@@ -2910,7 +2942,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             
             var that = this;
-            this._validate(function(err) {
+            return this._validate(function(err) {
                 if (err) {
                     callback(err);
                 } 
@@ -3050,10 +3082,11 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             
             var that = this;
-            this.post("acknowledge", {}, function(err) {
+            var req = this.post("acknowledge", {}, function(err) {
                 callback(err, that);
             });
             this._invalidate();
+            return req;
         },
         
         /**
@@ -3075,10 +3108,11 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             
             var that = this;
-            this.post("dispatch", {}, function(err) {
+            var req = this.post("dispatch", {}, function(err) {
                 callback(err, that);
             });
             this._invalidate();
+            return req;
         },
         
         /**
@@ -3100,7 +3134,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             
             var that = this;
-            this.get("history", {}, function(err, response) {
+            return this.get("history", {}, function(err, response) {
                 callback(err, response.odata.results, that);
             });
         },
@@ -3124,7 +3158,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             
             var that = this;
-            this.get("suppress", {}, function(err, response) {
+            return this.get("suppress", {}, function(err, response) {
                 callback(err, response.odata.results, that);
             });
         },
@@ -3147,7 +3181,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             
             if (!params.search) {
                 var update = this._super;
-                this.refresh(function(err, search) {
+                return this.refresh(function(err, search) {
                     if (err) {
                         callback(err);
                     }
@@ -3158,7 +3192,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                 });
             }
             else {
-                this._super(params, callback);
+                return this._super(params, callback);
             }
         }
     });
@@ -3244,7 +3278,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             
             var that = this;
-            this.get("setup", {}, function(err, response) {
+            return this.get("setup", {}, function(err, response) {
                 if (err) {
                     callback(err);
                 } 
@@ -3273,7 +3307,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             
             var that = this;
-            this.get("update", {}, function(err, response) {
+            return this.get("update", {}, function(err, response) {
                 if (err) {
                     callback(err);
                 } 
@@ -3328,7 +3362,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             
             var that = this;
-            this.post("", params, function(err, response) {
+            var req = this.post("", params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
@@ -3343,6 +3377,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             });
             
             this._invalidate();
+            return req;
         }
     });
     
@@ -3497,7 +3532,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             params = params || {};
             params["name"] = name;
             
-            this._super(params, callback);
+            return this._super(params, callback);
         }
     });
     
@@ -3560,7 +3595,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             var body = event;
             
             var that = this;
-            this.service.request(path, method, headers, body, function(err, response) {
+            var req = this.service.request(path, method, headers, body, function(err, response) {
                 if (err) {
                     callback(err);
                 } 
@@ -3569,6 +3604,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
                 }
             });
             this._invalidate();
+            return req;
         },
         
         remove: function() {
@@ -3634,7 +3670,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             
             var that = this;
-            this.post("", {__conf: filename}, function(err, response) {
+            return this.post("", {__conf: filename}, function(err, response) {
                 if (err) {
                     callback(err);
                 }
@@ -3708,7 +3744,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             
             var that = this;
-            this.post("", {__stanza: stanzaName}, function(err, response) {
+            return this.post("", {__stanza: stanzaName}, function(err, response) {
                 if (err) {
                     callback(err);
                 }
@@ -3823,7 +3859,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             
             var that = this;
-            this.post("", {__conf: filename}, function(err, response) {
+            return this.post("", {__conf: filename}, function(err, response) {
                 if (err) {
                     callback(err);
                 }
@@ -3904,7 +3940,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             values = values || {};
             values["name"] = stanzaName;
             
-            this._super(values, callback);
+            return this._super(values, callback);
         }
     });
     
@@ -4005,7 +4041,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             } 
 
             var that = this;
-            this.post("", params, function(err, response) {
+            return this.post("", params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
@@ -4040,7 +4076,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @module Splunk.Client.Jobs
          */
         search: function(query, params, callback) {
-            this.create(query, params, callback);
+            return this.create(query, params, callback);
         },
                 
         /**
@@ -4081,7 +4117,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             } 
 
             var that = this;
-            this.post("", params, function(err, response) {
+            return this.post("", params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
@@ -4155,8 +4191,9 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          * @module Splunk.Client.Job
          */
         cancel: function(callback) {
-            this.post("control", {action: "cancel"}, callback);
+            var req = this.post("control", {action: "cancel"}, callback);
             this._invalidate();
+            return req;
         },
 
         /**
@@ -4178,10 +4215,11 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             
             var that = this;
-            this.post("control", {action: "disablepreview"}, function(err) {
+            var req = this.post("control", {action: "disablepreview"}, function(err) {
                 callback(err, that);
             });
             this._invalidate();
+            return req;
         },
 
         /**
@@ -4203,10 +4241,11 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             
             var that = this;
-            this.post("control", {action: "enablepreview"}, function(err) {
+            var req = this.post("control", {action: "enablepreview"}, function(err) {
                 callback(err, that);
             });
             this._invalidate();
+            return req;
         },
 
         /**
@@ -4231,7 +4270,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             
             var that = this;
-            this.get("events", params, function(err, response) { 
+            return this.get("events", params, function(err, response) { 
                 if (err) {
                     callback(err);
                 }
@@ -4260,10 +4299,11 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             
             var that = this;
-            this.post("control", {action: "finalize"}, function(err) {
+            var req = this.post("control", {action: "finalize"}, function(err) {
                 callback(err, that);
             });
             this._invalidate();
+            return req;
         },
 
         /**
@@ -4285,10 +4325,11 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             
             var that = this;
-            this.post("control", {action: "pause"}, function(err) {
+            var req = this.post("control", {action: "pause"}, function(err) {
                 callback(err, that);
             });
             this._invalidate();
+            return req;
         },
 
         /*
@@ -4313,7 +4354,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             
             var that = this;
-            this.get("results_preview", params, function(err, response) {
+            return this.get("results_preview", params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
@@ -4345,7 +4386,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             
             var that = this;
-            this.get("results", params, function(err, response) {
+            return this.get("results", params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
@@ -4374,7 +4415,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             
             var that = this;
-            this.get("search.log", {}, function(err, response) {
+            return this.get("search.log", {}, function(err, response) {
                 if (err) {
                     callback(err);
                 }
@@ -4404,10 +4445,11 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             
             var that = this;
-            this.post("control", {action: "setpriority", priority: value}, function(err) {
+            var req = this.post("control", {action: "setpriority", priority: value}, function(err) {
                 callback(err, that);
             });
             this._invalidate();
+            return req;
         },
 
         /**
@@ -4430,10 +4472,11 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             
             var that = this;
-            this.post("control", {action: "setttl", ttl: value}, function(err) {
+            var req = this.post("control", {action: "setttl", ttl: value}, function(err) {
                 callback(err, that);
             });
             this._invalidate();
+            return req;
         },
 
         /**
@@ -4458,7 +4501,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             
             var that = this;
-            this.get("summary", params, function(err, response) {
+            return this.get("summary", params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
@@ -4488,7 +4531,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             
             var that = this;
-            this.get("timeline", params, function(err, response) {
+            return this.get("timeline", params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
@@ -4517,10 +4560,11 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             
             var that = this;
-            this.post("control", {action: "touch"}, function(err) {
+            var req = this.post("control", {action: "touch"}, function(err) {
                 callback(err, that);
             });
             this._invalidate();
+            return req;
         },
 
         /**
@@ -4542,17 +4586,18 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
             callback = callback || function() {};
             
             var that = this;
-            this.post("control", {action: "unpause"}, function(err) {
+            var req = this.post("control", {action: "unpause"}, function(err) {
                 callback(err, that);
             });
             this._invalidate();
+            return req;
         }
     });
 })();
 });
 
 require.define("/lib/async.js", function (require, module, exports, __dirname, __filename) {
-    /*!*/
+/*!*/
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -5093,7 +5138,7 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
 });
 
 require.define("/lib/searcher.js", function (require, module, exports, __dirname, __filename) {
-    
+
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -5251,7 +5296,7 @@ require.define("/lib/searcher.js", function (require, module, exports, __dirname
 });
 
 require.define("/lib/platform/client/proxy_http.js", function (require, module, exports, __dirname, __filename) {
-    
+
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -5369,6 +5414,10 @@ require.define("/lib/platform/client/proxy_http.js", function (require, module, 
                         headers: getHeaders(res.getAllResponseHeaders())
                     };
 
+                    if (data === "abort") {
+                        response.statusCode = "abort";
+                        res.responseText = "{}"
+                    }
                     var json = JSON.parse(res.responseText);
 
                     var complete_response = that._buildResponse(error, response, json);
@@ -5376,7 +5425,7 @@ require.define("/lib/platform/client/proxy_http.js", function (require, module, 
                 }
             };
             
-            $.ajax(params);
+            return $.ajax(params);
         },
 
         parseJson: function(json) {
@@ -5388,7 +5437,7 @@ require.define("/lib/platform/client/proxy_http.js", function (require, module, 
 });
 
 require.define("/entries/browser.ui.entry.js", function (require, module, exports, __dirname, __filename) {
-    
+
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -5468,7 +5517,7 @@ require.define("/entries/browser.ui.entry.js", function (require, module, export
 });
 
 require.define("/contrib/script.js", function (require, module, exports, __dirname, __filename) {
-    /*!
+/*!
   * $script.js Async loader & dependency manager
   * https://github.com/ded/script.js
   * (c) Dustin Diaz, Jacob Thornton 2011

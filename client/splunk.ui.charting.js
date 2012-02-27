@@ -30,7 +30,8 @@ require.resolve = (function () {
         
         if (require._core[x]) return x;
         var path = require.modules.path();
-        var y = cwd || '.';
+        cwd = path.resolve('/', cwd);
+        var y = cwd || '/';
         
         if (x.match(/^(?:\.\.?\/|\/)/)) {
             var m = loadAsFileSync(path.resolve(y, x))
@@ -119,7 +120,11 @@ require.alias = function (from, to) {
     }
     var basedir = path.dirname(res);
     
-    var keys = Object_keys(require.modules);
+    var keys = (Object.keys || function (obj) {
+        var res = [];
+        for (var key in obj) res.push(key)
+        return res;
+    })(require.modules);
     
     for (var i = 0; i < keys.length; i++) {
         var key = keys[i];
@@ -164,17 +169,34 @@ require.define = function (filename, fn) {
     };
 };
 
-var Object_keys = Object.keys || function (obj) {
-    var res = [];
-    for (var key in obj) res.push(key)
-    return res;
-};
-
 if (typeof process === 'undefined') process = {};
 
-if (!process.nextTick) process.nextTick = function (fn) {
-    setTimeout(fn, 0);
-};
+if (!process.nextTick) process.nextTick = (function () {
+    var queue = [];
+    var canPost = typeof window !== 'undefined'
+        && window.postMessage && window.addEventListener
+    ;
+    
+    if (canPost) {
+        window.addEventListener('message', function (ev) {
+            if (ev.source === window && ev.data === 'browserify-tick') {
+                ev.stopPropagation();
+                if (queue.length > 0) {
+                    var fn = queue.shift();
+                    fn();
+                }
+            }
+        }, true);
+    }
+    
+    return function (fn) {
+        if (canPost) {
+            queue.push(fn);
+            window.postMessage('browserify-tick', '*');
+        }
+        else setTimeout(fn, 0);
+    };
+})();
 
 if (!process.title) process.title = 'browser';
 
@@ -186,7 +208,7 @@ if (!process.binding) process.binding = function (name) {
 if (!process.cwd) process.cwd = function () { return '.' };
 
 require.define("path", function (require, module, exports, __dirname, __filename) {
-    function filter (xs, fn) {
+function filter (xs, fn) {
     var res = [];
     for (var i = 0; i < xs.length; i++) {
         if (fn(xs[i], i, xs)) res.push(xs[i]);
@@ -324,7 +346,7 @@ exports.extname = function(path) {
 });
 
 require.define("/ui/charting.js", function (require, module, exports, __dirname, __filename) {
-    
+
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -390,7 +412,7 @@ require.define("/ui/charting.js", function (require, module, exports, __dirname,
 });
 
 require.define("/lib/utils.js", function (require, module, exports, __dirname, __filename) {
-    /*!*/
+/*!*/
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -705,7 +727,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
 });
 
 require.define("/lib/jquery.class.js", function (require, module, exports, __dirname, __filename) {
-    /*! Simple JavaScript Inheritance
+/*! Simple JavaScript Inheritance
  * By John Resig http://ejohn.org/
  * MIT Licensed.
  * Inspired by base2 and Prototype
@@ -774,7 +796,7 @@ require.define("/lib/jquery.class.js", function (require, module, exports, __dir
 });
 
 require.define("/ui/charting/js_charting.js", function (require, module, exports, __dirname, __filename) {
-    
+
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -8087,7 +8109,7 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
 });
 
 require.define("/ui/charting/splunk.js", function (require, module, exports, __dirname, __filename) {
-    
+
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -8136,7 +8158,7 @@ require.define("/ui/charting/splunk.js", function (require, module, exports, __d
 });
 
 require.define("/ui/charting/i18n.js", function (require, module, exports, __dirname, __filename) {
-    
+
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -9556,7 +9578,7 @@ require.define("/ui/charting/i18n.js", function (require, module, exports, __dir
 });
 
 require.define("/ui/charting/i18n_locale.js", function (require, module, exports, __dirname, __filename) {
-    
+
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -9577,7 +9599,7 @@ require.define("/ui/charting/i18n_locale.js", function (require, module, exports
 });
 
 require.define("/ui/charting/highcharts.js", function (require, module, exports, __dirname, __filename) {
-    // ==ClosureCompiler==
+// ==ClosureCompiler==
 // @compilation_level SIMPLE_OPTIMIZATIONS
 
 /**
@@ -21265,7 +21287,7 @@ exports.Highcharts = {
 });
 
 require.define("/ui/charting/util.js", function (require, module, exports, __dirname, __filename) {
-    
+
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -22509,7 +22531,7 @@ require.define("/ui/charting/util.js", function (require, module, exports, __dir
 });
 
 require.define("/ui/charting/lowpro_for_jquery.js", function (require, module, exports, __dirname, __filename) {
-    (function($) {
+(function($) {
   
   var addMethods = function(source) {
     var ancestor   = this.superclass && this.superclass.prototype;

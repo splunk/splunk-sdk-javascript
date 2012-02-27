@@ -173,7 +173,19 @@ exports.setup = function(svc) {
                 test.strictEqual(res.status, 404);
                 test.done();
             });
-        }
+        },
+        
+        "Callback#abort": function(test) { 
+            var req = this.service.get("search/jobs", {count: 2}, function(err, res) {
+                test.ok(!res);
+                test.ok(err);
+                test.strictEqual(err.error, "abort");
+                test.strictEqual(err.status, "abort");
+                test.done();
+            });
+            
+            req.abort();
+        },
     };
 };
 

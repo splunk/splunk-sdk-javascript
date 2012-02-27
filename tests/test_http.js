@@ -24,11 +24,45 @@ exports.setup = function(http) {
                 done();
             },
             
+            "Callback#abort simple": function(test) {
+                var req = this.http.get("https://www.httpbin.org/get", {}, {}, 0, function(err, res) {
+                    test.ok(err);
+                    test.strictEqual(err.error, "abort");
+                    test.done();
+                }); 
+                
+                req.abort();
+            },
+            
+            "Callback#abort response": function(test) {
+                var req = this.http.get("https://stream.twitter.com/1/statuses/sample.json", {"Authorization": "Basic aXRheW5lZW1hbjpkVXByaXdJNA=="}, {}, 0, function(err, res) {
+                    test.ok(err);
+                    test.strictEqual(err.error, "abort");
+                    test.done();
+                }); 
+                
+                Splunk.Async.sleep(1000, function() {
+                    req.abort();
+                });
+            },
+            
+            "Callback#abort delay": function(test) {
+                var req = this.http.get("https://www.httpbin.org/delay/20", {}, {}, 0, function(err, res) {
+                    test.ok(err);
+                    test.strictEqual(err.error, "abort");
+                    test.done();
+                }); 
+                
+                Splunk.Async.sleep(1000, function() {
+                    req.abort();
+                });
+            },
+            
             "Callback#no args": function(test) {
                 this.http.get("http://www.httpbin.org/get", [], {}, 0, function(err, res) {
                     test.strictEqual(res.json.url, "http://www.httpbin.org/get");
                     test.done();
-                }); 
+                });
             },
 
             "Callback#success success+error": function(test) {

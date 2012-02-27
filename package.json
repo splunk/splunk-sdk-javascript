@@ -21,7 +21,7 @@
         "javascript"
     ],
     "dependencies" : {
-        "request" : "2.2.x"
+        "request" : "2.9.152"
     },
     "devDependencies" : {
         "browserify" : "https://github.com/itay/node-browserify/tarball/master",
