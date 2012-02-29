@@ -189,7 +189,7 @@ If it executed correctly, your output will look something like this:
       Job 6 sid: admin__admin__search_TXkgQXdlc29tZSBTYXZlZCBTZWFyY2g_1323901055.6
     ==============
 
-### Development
+## Development
 
 The Splunk JavaScript SDK infrastructure relies on Node.js, so if you want to
 build files, run examples, run tests, or generate documentation, you must
@@ -203,11 +203,11 @@ list of possible commands and options, open a command prompt and go to the
 
 > node sdkdo --help
 
-#### Compiling (combining and minifying) the browser files
+### Compiling (combining and minifying) the browser files
 
 > node compile
 
-#### Running unit tests
+### Running unit tests
 
 The SDK includes several unit tests for each component. You can run individual
 test modules or run all tests. Open a command prompt and go to the splunk-sdk-
