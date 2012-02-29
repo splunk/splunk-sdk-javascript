@@ -1,7 +1,8 @@
 # The Splunk Software Development Kit for JavaScript (Preview Release)
 
 This SDK contains library code and examples designed to enable developers to
-build applications using Splunk and JavaScript.
+build applications using Splunk and JavaScript. The SDK supports both 
+server- and client-side JavaScript. 
 
 ## License
 
@@ -22,33 +23,24 @@ License 2.0. Details can be found in the file LICENSE.
 4.  Splunk is not accepting any Contributions to the Preview release of the SDK.
     All Contributions during the Preview SDK will be returned without review.
 
-## Getting started with the Splunk JavaScript SDK
-
-The Splunk JavaScript SDK contains library code and examples that show how to 
-programmatically interact with Splunk for a variety of scenarios including 
-searching, saved searches, data inputs, and many more, along with building 
-complete applications. 
-
-The Splunk JavaScript SDK supports both server- and client-side JavaScript. 
-
-### Installation
+## Installation
 
 Installing the JavaScript SDK can be done in a few simple steps. For more
 detailed instructions, you can go to the [Splunk Dev Portal][install].
 
-#### Get the SDK
+### Get the SDK
 
 You can get the SDK by either [downloading it][zip] or by cloning it using
 Git:
 
 > git clone https://github.com/splunk/splunk-sdk-javascript.git
 
-#### XML to JSON Splunk App
+### XML to JSON Splunk App
 
 To install the XML to JSON translation app, [`new_english`][new_english], you
 can copy it to `$SPLUNK_HOME/etc/apps/`
 
-#### Installing the SDK on your web page
+### Installing the SDK on your web page
 
 If you want to use the SDK on your web page, you can simply include the 
 `splunk.js` or `splunk.min.js` file in your page. You can find both of them
@@ -65,7 +57,7 @@ Or:
 To include the SDK UI components (e.g. the Timeline and Charting controls),
 simply put those files in the same folder as `splunk.js` or `splunk.min.js`.
 
-#### Installing the SDK For Node.js
+### Installing the SDK For Node.js
 
 If you want to use the SDK with your Node.js program, you can install it
 by using `npm` in *your* project's directory:
