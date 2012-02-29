@@ -1,24 +1,7 @@
-**NOTE**: The version of Node.js (0.6.6) released on 12/15/11 has a [bug]
-(https://github.com/isaacs/npm/issues/1888) in npm that prevents the SDK from 
-being installed. You can install Node 0.6.5 to avoid this issue for now.
-
 # The Splunk Software Development Kit for JavaScript (Preview Release)
 
 This SDK contains library code and examples designed to enable developers to
-build applications using Splunk.
-
-Splunk is a search engine and analytic environment that uses a distributed
-map-reduce architecture to efficiently index, search and process large 
-time-varying data sets.
-
-The Splunk product is popular with system administrators for aggregation and
-monitoring of IT machine data, security, compliance and a wide variety of other
-scenarios that share a requirement to efficiently index, search, analyze and
-generate real-time notifications from large volumes of time series data.
-
-The Splunk developer platform enables developers to take advantage of the same
-technology used by the Splunk product to build exciting new applications that
-are enabled by Splunk's unique capabilities.
+build applications using Splunk and JavaScript.
 
 ## License
 
@@ -47,120 +30,79 @@ searching, saved searches, data inputs, and many more, along with building
 complete applications. 
 
 The Splunk JavaScript SDK supports both server- and client-side JavaScript. 
-Depending on what you want to do—use server tools, use client tools, run 
-examples, or run unit tests — read the sections below to find out what you need 
-to do to get going. 
 
-*   **Requirements**. Lists the things you must set up to use the SDK. 
-*   **SDK tools for server-side JavaScript**. Describes what you need to install
-    to use the tools for creating server-side JavaScript applications. 
-*   **Server-side examples and tests**. Describes how to set up the .splunkrc 
-    file and install dependencies that you need to run examples and tests. 
-*   **SDK tools for client-side JavaScript**. Describes what you need to do to 
-    use the browser tools, including a description of dependencies and examples. 
-*   **Client-side examples**. Describes what you need to do if you want to run 
-    the client-side examples. 
-*   **Building files and running unit tests**. Tells you want you need to do to 
-    build files, run examples, run tests, or generate documentation. 
+### Installation
 
-### Requirements
+Installing the JavaScript SDK can be done in a few simple steps. For more
+detailed instructions, you can go to the [Splunk Dev Portal][install].
 
-Whether you are interested in running the JavaScript SDK on the server or 
-client, the following requirements apply to both.
+#### Get the SDK
 
-#### Splunk
-
-If you haven't already installed Splunk, download it here: 
-http://www.splunk.com/download. For more about installing and running Splunk and
-system requirements, see [Installing & Running Splunk][SplunkInstall]. 
-
-#### Splunk JavaScript SDK
-
-Get the Splunk JavaScript SDK from GitHub and clone the resources to your 
-computer. For example, use the following command: 
+You can get the SDK by either [downloading it][zip] or by cloning it using
+Git:
 
 > git clone https://github.com/splunk/splunk-sdk-javascript.git
 
-#### The XML to JSON Splunk App
+#### XML to JSON Splunk App
 
-JavaScript uses the JavaScript Object Notation (JSON) format for structured 
-data. However, Splunk uses XML to communicate with the REST API, and XML is not 
-well suited for JavaScript. Until Splunk has native JSON support, the Splunk 
-JavaScript SDK is providing a Splunk app, [`new_english`][new_english], that 
-translates the XML that Splunk returns into JSON. This app is required for the 
-Splunk JavaScript SDK. 
+To install the XML to JSON translation app, [`new_english`][new_english], you
+can copy it to `$SPLUNK_HOME/etc/apps/`
 
-To install new_english, you can either copy the 
-[`splunk-sdk-javascript/new_english`][new_english] directory to the Splunk apps 
-directory or you can create a symbolic link to it. Then, restart Splunk. 
+#### Installing the SDK on your web page
 
-**Note**: The `new_english app performs a domain check by comparing the 
-requester's domain and IP address against the list of allowed ones in the 
-`new_english/default/json.conf` file. If the requester's domain and IP address 
-are not in this list, the app returns an error. If you are accessing Splunk from
-a domain and IP address other than `localhost` and `127.0.0.1`, add your domain 
-and IP address to the conf file.
+If you want to use the SDK on your web page, you can simply include the 
+`splunk.js` or `splunk.min.js` file in your page. You can find both of them
+in the [`splunk-sdk-javascript/client`][client_dir] directory.
 
-**Examples for Mac OS X**:
+To include them in your page:
 
-The following example command shows how to copy the `new_english` directory to 
-the apps directory (assuming the command prompt is in the 
-`splunk-sdk-javascript` directory:  
+    <script type="text/javascript" src="/yourpath/splunk.js"></script>
+
+Or:
+
+    <script type="text/javascript" src="/yourpath/splunk.min.js"></script>
+
+To include the SDK UI components (e.g. the Timeline and Charting controls),
+simply put those files in the same folder as `splunk.js` or `splunk.min.js`.
+
+#### Installing the SDK For Node.js
+
+If you want to use the SDK with your Node.js program, you can install it
+by using `npm` in *your* project's directory:
+
+> npm install splunk-sdk
+
+To include then, you can use the `require` function:
+
+    var Splunk = require('splunk-sdk').Splunk;
+
+## Usage
+
+### Client-side code example
+
+The following contains sample HTML that uses the Splunk JavaScript SDK to list all jobs: 
     
-> cp -r new_english /applications/splunk/etc/apps/new_english
-
-The following example command shows how to create a symbolic link: 
-
-> ln -s /users/currentusername/splunk-sdk-javascript/new_english $SPLUNK_HOME/etc/apps/new_english
-
-Then, restart Splunk. From the command line, go to `/Applications/splunk/bin/`, 
-then enter:
-
-> ./splunk restart
-
-**Examples for Windows**:
-
-The following example command shows how to copy the new_english directory to the
-apps directory:
-
-> xcopy C:\splunk-sdk-javascript\new_english "C:\Program Files\Splunk\etc\apps\new_english" /s
-
-Then, restart Splunk. From the command line, go to 
-`C:\Program Files\Splunk\bin`, then enter: 
-
-> splunk.exe restart
-
-### SDK tools for server-side JavaScript
-
-To use the Splunk JavaScript SDK for server-side JavaScript, you'll need to
-install Node.js. This SDK also uses Node.js for other features such as running
-server and client examples, running unit tests, building files, and generating
-documentation. Download Node.js from the Node.js website
-(http://nodejs.org/#download) and install the version for your platform.
-Versions 0.6.4 and higher include the Node Package Manager (NPM), which is also
-required for the SDK.  
-
-**Note**: If you need to install an earlier version of NPM to
-work with an earlier version of Node.js, see the Super Easy Install instructions
-(http://npmjs.org/doc/README.html#Super-Easy-Install).  
-
-You'll need to install the development dependencies to run the server-side 
-examples and tests. At the command line, go to the `splunk-sdk-javascript` 
-directory and enter:
-
-> npm install
-
-**Note**: You may get a warning about one of the dependencies 
-"preferring global". Feel free to ignore it.
-
-**Note**: If you just want to use the SDK in your own Node.js program, you can 
-just install it using `npm install splunk-sdk` in your project's directory. This 
-will only install the SDK itself, without any samples, tests or utilities.
-
-#### Including the SDK in your own Node.js code
+    <script type="text/javascript" src="splunk.js"></script>
     
-To include the Splunk JavaScript SDK in your projects, use the `require()` 
-function. The following example shows how: 
+    <script type="text/javascript" charset="utf-8">
+        var service = new Splunk.Client.Service({username: "admin", password: "changeme"});
+        service.login(function(err, success) {
+            if (err) {
+                throw err;
+            }
+
+            console.log("Login was successful: " + success);
+            service.jobs().list(function(err, jobs) {
+                for(var i = 0; i < jobs.length; i++) {
+                    console.log("Job " + i + ": " + jobs[i].sid);
+                } 
+            });
+        });
+    </script>
+
+### Node.js code example
+
+Here is how you can use the JavaScript SDK and Node.js to list all jobs:
 
     var Splunk = require('splunk-sdk').Splunk;
 
@@ -178,7 +120,12 @@ function. The following example shows how:
         });
     });
 
-#### Set up the `.splunkrc` file
+## Examples
+
+The SDK contains several examples, both server- and client-based. You can read
+detailed instructions on how to get them running on the [Splunk Dev Portal][examples].
+
+### Set up the `.splunkrc` file
 
 To connect to Splunk, many of the SDK examples and unit tests take command-line
 arguments that specify values for the host, port, and login credentials for
@@ -205,25 +152,16 @@ with the following format:
 Save the file as `.splunkrc` in the current user's home directory or in the root 
 directory of the Splunk JavaScript SDK.
 
-*   For example, on Mac OS X and Linux, save the file as: `~/.splunkrc`
-*   On Windows, save the file as: `C:\Users\currentusername\.splunkrc`
+### Client-side examples
 
-You might get errors in Windows when you try to name the file because `.splunkrc` 
-looks like a nameless file with an extension. You can use the command line to 
-create this file — go to the `C:\Users\currentusername` directory and enter the 
-following command: 
+The JavaScript SDK includes several browser-based examples. To run them, you 
+can enter:
 
-> Notepad.exe .splunkrc
+> node sdkdo examples
 
-Click Yes, then continue creating the file.
+This will start a small web-server and launch your browser to the examples page.
 
-**Note** Storing login credentials in the `.splunkrc` file is only for 
-convenience during development—this file isn't part of the Splunk platform and 
-shouldn't be used for storing user credentials for production. And, if you're at 
-all concerned about the security of your credentials, just enter them at the
-command line rather than saving them in the `.splunkrc` file.
-
-#### Run examples
+### Node.js examples
 
 The JavaScript SDK includes several command-line examples, which are located in 
 the [`/splunk-sdk-javascript/examples/node`][node_examples_dir] directory. These
@@ -251,152 +189,25 @@ If it executed correctly, your output will look something like this:
       Job 6 sid: admin__admin__search_TXkgQXdlc29tZSBTYXZlZCBTZWFyY2g_1323901055.6
     ==============
 
-### SDK tools for client-side JavaScript
-
-The Splunk JavaScript SDK includes pre-built client-side files that run in a web
-browser. To use these files, copy the 
-[`splunk-sdk-javascript/client`][client_dir] directory to your site and include
-one of the following `<script>` tags, specifying the correct path to the files 
-on your site:
-
-    <script type="text/javascript" src="/yourpath/splunk.js"></script>
-
-Or:
-
-    <script type="text/javascript" src="/yourpath/splunk.min.js"></script>
-
-This tag creates a global variable called `Splunk`, which is the root of the SDK. 
-No other global variables are introduced.
-
-#### UI Components
-
-Beyond the ability to interact with Splunk data, the SDK also provides you with
-UI components you can use on your site in conjunction with this data. As of
-the preview launch, these components include:
-
-* Timeline Control: this is the event timeline view that shows you how many
-events are available for every timeslice in your query.
-
-* Charting Control: this is the charting control that is included in Splunk,
-allowing you to derive types of charts when supplied with Splunk data.
-
-These are the same components that ship with Splunk 4.3 (no flash!). Because the
-timeline control uses the `<canvas>` tag, it will only work in browsers that
-support it (which means it does not support versions of IE before IE9).
-
-#### Dependencies and Cross Domain Communication
-
-When running in a web browser, the SDK's only dependency is JSON support. If
-your site supports older browsers, you might need to include JSON handling for
-compatibility. You can learn more about this on the JSON website
-(http://www.json.org/).
-
-For cross-domain communication, the Splunk JavaScript SDK includes the 
-[easyXDM][easyxdm] library in the pre-built client files. Due to Single Origin 
-Policy (SOP) browser security policies, cross-domain messaging is not possible 
-when you use the `file://` protocol, so you must serve the HTML pages from a 
-server. The Splunk JavaScript SDK includes a simple server you can use.
-
-**Note**: Splunk ships with a self-signed SSL certificate, which prevents us 
-from doing IFrame cross-domain messaging (as the browser rejects any IFrame
-from an untrusted source by default). As such, if you want to use the `XdmHttp`
-class (which is the default), you will either have to put an exception in your
-browser for the Splunk certificate (OK for development purposes, but can be 
-annoying), or get a real SSL certificate for your Splunk instance. Another 
-option is to use a small proxy to forward requests to Splunk (this is what the 
-browser examples in the SDK do).
-
-**Note**: Node.js is required to run the server. For more about Node.js, see
-"SDK tools for server-side JavaScript".  
-
-To start it, open a command prompt and go to the `splunk-sdk-javascript` 
-directory, then enter the following command:
-
-> node sdkdo runserver
-
-**Tip**: On Mac OSX and Linux, you can type `./sdkdo` instead of `node sdkdo`.
-On Windows, you can use `.\sdkdo`.  
-
-Then, navigate to http://localhost:6969/path/filename.html to see your HTML file.
-
-#### Client-side code example
-
-The following contains sample HTML that uses the Splunk JavaScript SDK: 
-    
-    <script type="text/javascript" src="splunk.js"></script>
-    
-    <script type="text/javascript" charset="utf-8">
-        var service = new Splunk.Client.Service({username: "admin", password: "changeme"});
-        service.login(function(err, success) {
-            if (err) {
-                throw err;
-            }
-
-            console.log("Login was successful: " + success);
-            service.jobs().list(function(err, jobs) {
-                for(var i = 0; i < jobs.length; i++) {
-                    console.log("Job " + i + ": " + jobs[i].sid);
-                } 
-            });
-        });
-    </script>
-
-#### Using multiple SDKs per page
-If you want to run multiple instances of the SDK on the same page, or your code
-is on a page that you don't control, you can use the `noConflict()` method:
-    
-    var MySplunk = Splunk.noConflict();
-
-This method returns control of the global Splunk variable to the previous owner,
-and returns an instance of the SDK to you.
-
-#### Client-side examples
-
-The Splunk JavaScript SDK includes several examples that run in the browser, and
-are located in the [`/splunk-sdk-javascript/examples/browser`][browser_examples_dir] 
-directory. 
-
-**Note**: Node.js is required to run the examples. For more about Node.js, 
-see "SDK tools for server-side JavaScript". 
-
-To run these examples, open a command prompt and go to the 
-`splunk-sdk-javascript` directory, then enter the following command: 
-
-> node sdkdo examples
-
-This will start our development webserver and open your browser up to the 
-example index page. If you prefer to start the server manually, you can execute:
-
-> node sdkdo runserver
-
-And then open your browser and go to the following page: 
-http://localhost:6969/examples/browser/index.html
-
-**Note**: As noted above, the SDK requires the usage of cross-domain 
-communication when running in the browser. Unfortunately, Splunk ships with a 
-self-signed SSL certificate, and so the browser rejects any requests to it. In 
-order to avoid this hindering your usage of the SDK, all the browser examples 
-use a tiny proxy (you can see the implementation in [`bin/cli.js`][cli]) that 
-will forward all requests to Splunk. In a real scenario, you would either have 
-the proxy on your own webserver, or get a properly signed certificate for 
-Splunk itself.
-
-### Building files and running unit tests
+### Development
 
 The Splunk JavaScript SDK infrastructure relies on Node.js, so if you want to
 build files, run examples, run tests, or generate documentation, you must
-install Node.js. For more about Node.js, see "SDK tools for server-side
-JavaScript".
+install Node.js. You can read more about how to setup your environment
+on the [Splunk Dev Portal][requirements].
+
 
 All development activities are managed by a helper script called sdkdo. For a
 list of possible commands and options, open a command prompt and go to the
-splunk-sdk-javascript directory, then enter the following command:
+`splunk-sdk-javascript` directory, then enter the following command:
 
 > node sdkdo --help
 
-To rebuild the browser files, enter:
+#### Compiling (combining and minifying) the browser files
 
-> node sdkdo compile
+> node compile
+
+#### Running unit tests
 
 The SDK includes several unit tests for each component. You can run individual
 test modules or run all tests. Open a command prompt and go to the splunk-sdk-
@@ -411,140 +222,6 @@ To run the HTTP and the Async tests, enter:
 To run the browser tests, enter:
 
 > node sdkdo tests-browser
-
-## Architecture and Components
-
-The Splunk JavaScript SDK is divided into two areas: 
-*   The Data SDK allows you
-    to interact with Splunk. For example, you can manage Splunk (such as creating
-    and removing indexes, and user creation), input data (through the HTTP input),
-    and search data. 
-*   The UI SDK includes popular Splunk UI components, such as
-    charting and timeline, so that you can provide rich and engaging material to
-    your clients.
-
-The Splunk JavaScript SDK support server-side and client-side JavaScript, and
-you can decide which components to install. The SDK includes a Splunk app as a
-translation layer between Splunk's XML output and the JSON that is used by
-JavaScript. The SDK also includes several third-party libraries, which are
-included for functionality such as cross-domain communication and other features
-used by the examples.
-
-### Entities and Collections
-
-Most REST endpoints in the Splunk REST API can be thought of as operations on
-entities and collections of entities. For example, there are operations to
-create, modify, and remove apps. Similarly, there are operations to create,
-manage, remove, and get results of search jobs. For each logical grouping, the
-base abstractions are as follows:
-
-*   Resource: An abstraction over a resource that can be accessed over HTTP,
-    with shortcuts for making HTTP `GET`/`POST`/`DELETE` calls.
-
-*   Entity: An abstraction over a Splunk entity (such as a single app:
-    `apps/local/{app-name}`). Provides operations such as update, remove, read
-    properties, and refresh.
-
-*   Collection: An abstraction over a Splunk collection (such as all apps:
-    `apps/local`). Provides operations such as creating entities and fetching
-    specific entities.
-
-Both Entity and Collection are a type of Resource:
-
-    Entity = Resource.extend({...});
-    Collection = Resource.extend({...});
-
-### `Service` class
-
-The `Service` class is the entry-point for using the Splunk JavaScript SDK to
-access the different logical groupings in Splunk. For example, the following
-code snippet gets the `Jobs` collection:
-
-    var service = new Service(...); 
-    var jobs = service.jobs();
-
-The `Service` class also allows you to get more specialized version of the 
-Splunk connection, which is necessary to change the namespace of the connection
-(for example, to specialize to a specific user and/or app).
-
-### Native JavaScript objects
-
-The client layer provides higher-level access to the Splunk REST API through 
-native JavaScript objects. Architecturally, each object implements either 
-`Entity` or `Collection`. For example:
-
-    Indexes = Collection.extend({...});
-    Index = Entity.extend({
-    Jobs = Collection.extend({...});
-    Job = Entity.extend({...});
-
-Each object has the default operations available to its superclass: `Job` 
-has update and remove methods, while `Jobs` has create and list methods.
-
-### Asynchronous model
-
-JavaScript is asynchronous, so rather than return values, functions expect a 
-callback as their last argument. In return, every callback takes an error 
-parameter as its first argument. 
-
-The following code shows how to create a job:
-
-    var service = new Splunk.Client.Service({username: "admin", password: "changeme"});
-    var jobs = service.jobs();
-    service.login(function(err, success) {
-        assert.ok(success);
-        service.jobs.create("search index=_internal | head 1", {exec_mode: "blocking"}, function(err, job) {
-            assert.ok(!err); // err will be null if we were successful.
-            console.log(job.sid); 
-        });
-    });
-
-However, writing in this nesting, diagonal style can become tiresome and 
-hard to maintain, so Splunk provides the `Async` module to ease development. 
-The above code could then be written as follows:
-
-    var service = new Splunk.Client.Service({username: "admin", password: "changeme"});
-    Async.chain([
-            function(done) {
-                service.login(done);
-            },
-            function(success, svc, done) {
-                var jobs = svc.jobs();
-                jobs.create("search index=_internal | head 1", {exec_mode: "blocking"}, done);
-            },
-            function(job, done) {
-                console.log(job.sid);
-                job.cancel(done);
-            }
-        ],
-        function(err) {
-            assert.ok(err);
-            console.log("DONE");
-        }
-    );
-
-`Async.chain` executes each function in turn, and passes the results to 
-the next function. If any function encounters an error (by calling the 
-callback with the first parameter `!= null`), it immediately calls the 
-final callback with the error.
-
-### Creating a Service and logging in
-
-Communication with Splunk starts by creating a Service instance and 
-logging in. For example:
-
-    var service = new Splunk.Client.Service({username: "admin", password: "changeme"});
-    svc.login(function(err, success) {
-        console.log("Was login successful: " + (!err || success)); 
-    });
-
-You can pass more arguments to the Service constructor, such as scheme, 
-namespace, or even a sessionKey if you already have one. For example, if you 
-already got a Splunk session key from another source, you can just use it as 
-follows:
-
-    var service = new Splunk.Client.Service({sessionKey: mySessionKey});
-    // since we have a session key, we're already logged in!
 
 ## Documentation
 
@@ -746,3 +423,7 @@ of embedded libraries and their licenses:
 [devportal]:                http://dev.splunk.com
 [cli]:                      https://github.com/splunk/splunk-sdk-javascript/blob/master/bin/cli.js
 [SplunkInstall]:            http://docs.splunk.com/Documentation/Splunk/latest/Installation/WhatsintheInstallationManual
+[zip]:                      https://github.com/splunk/splunk-sdk-javascript/zipball/master
+[install]:                  http://dev.splunk.com/view/javascript-sdk-getting-started/SP-CAAAEFN
+[examples]:                 http://dev.splunk.com/view/javascript-sdk-getting-started/SP-CAAAEDD
+[requirements]:             http://dev.splunk.com/view/javascript-sdk-getting-started/SP-CAAAED6
