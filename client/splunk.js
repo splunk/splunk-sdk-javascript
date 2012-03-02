@@ -839,7 +839,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
         }
         
         for (var key in obj) {
-            if (hasOwnProperty.call(obj, key)) {
+            if (this.hasOwnProperty.call(obj, key)) {
                 return false;
             }
         }
@@ -2657,6 +2657,10 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
          */
         update: function(props, callback) {
             callback = callback || function() {};
+            
+            if (props.hasOwnProperty("name")) {
+                throw new Error("Cannot set 'name' field in 'update'");
+            }
             
             var that = this;
             var req = this.post("", props, function(err, response) {
@@ -5416,7 +5420,7 @@ require.define("/lib/platform/client/proxy_http.js", function (require, module, 
 
                     if (data === "abort") {
                         response.statusCode = "abort";
-                        res.responseText = "{}"
+                        res.responseText = "{}";
                     }
                     var json = JSON.parse(res.responseText);
 

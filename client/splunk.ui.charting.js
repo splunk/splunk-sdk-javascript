@@ -700,7 +700,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
         }
         
         for (var key in obj) {
-            if (hasOwnProperty.call(obj, key)) {
+            if (this.hasOwnProperty.call(obj, key)) {
                 return false;
             }
         }
