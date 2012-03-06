@@ -480,7 +480,14 @@ class JsonProxyRestHandler(splunk.rest.BaseRestHandler):
         uri = base_url + path + query_string
         
         # fetch data
-        h = httplib2.Http(timeout=splunk.rest.SPLUNKD_CONNECTION_TIMEOUT)
+        
+        # Construct httplib2 such that it works with the version of httplib2 that requires SSL disabling
+        h = None
+        try:
+            h = httplib2.Http(timeout=splunk.rest.SPLUNKD_CONNECTION_TIMEOUT, disable_ssl_certificate_validation=True)
+        except:
+            h = httplib2.Http(timeout=splunk.rest.SPLUNKD_CONNECTION_TIMEOUT) 
+            
         serverStatus, serverResponse = h.request(
             uri, 
             self.method, 
