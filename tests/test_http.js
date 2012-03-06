@@ -34,18 +34,6 @@ exports.setup = function(http) {
                 req.abort();
             },
             
-            "Callback#abort response": function(test) {
-                var req = this.http.get("https://stream.twitter.com/1/statuses/sample.json", {"Authorization": "Basic aXRheW5lZW1hbjpkVXByaXdJNA=="}, {}, 0, function(err, res) {
-                    test.ok(err);
-                    test.strictEqual(err.error, "abort");
-                    test.done();
-                }); 
-                
-                Splunk.Async.sleep(1000, function() {
-                    req.abort();
-                });
-            },
-            
             "Callback#abort delay": function(test) {
                 var req = this.http.get("https://www.httpbin.org/delay/20", {}, {}, 0, function(err, res) {
                     test.ok(err);
