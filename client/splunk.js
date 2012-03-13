@@ -374,7 +374,7 @@ require.define("/splunk.js", function (require, module, exports, __dirname, __fi
 
     module.exports = root = {
         Logger          : require('./lib/log').Logger,
-        Binding         : require('./lib/binding'),
+        Context         : require('./lib/context'),
         Client          : require('./lib/client'),
         Http            : require('./lib/http').Http,
         ODataResponse   : require('./lib/odata').ODataResponse,
@@ -865,7 +865,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
 })();
 });
 
-require.define("/lib/binding.js", function (require, module, exports, __dirname, __filename) {
+require.define("/lib/context.js", function (require, module, exports, __dirname, __filename) {
 /*!*/
 // Copyright 2011 Splunk, Inc.
 //
@@ -891,15 +891,8 @@ require.define("/lib/binding.js", function (require, module, exports, __dirname,
 
     var root = exports || this;
 
-    root.Sharing = {
-        USER: "user",
-        APP: "app",
-        GLOBAL: "global",
-        SYSTEM: "system"  
-    };
-
     /**
-     * splunkjs.Binding.Context
+     * splunkjs.Context
      * 
      * Abstraction over the Splunk HTTP-wire protocol
      *
@@ -907,19 +900,19 @@ require.define("/lib/binding.js", function (require, module, exports, __dirname,
      * instance over HTTP. It will handle authentication and authorization, and
      * formatting HTTP requests (GET/POST/DELETE) in the format Splunk expects.
      *
-     * @moduleRoot splunkjs.Binding.Context
+     * @moduleRoot splunkjs.Context
      */
-    root.Context = Class.extend({
+    module.exports = root = Class.extend({
         
         /**
-         * Constructor for splunkjs.Binding.Context
+         * Constructor for splunkjs.Context
          *
          * @constructor
          * @param {splunkjs.Http} http An instance of a `splunkjs.Http` class
          * @param {Object} params Dictionary of optional parameters: scheme, host, port, username, password, owner, app, sessionKey
-         * @return {splunkjs.Binding.Context} A splunkjs.Binding.Context instance
+         * @return {splunkjs.Context} A splunkjs.Context instance
          *
-         * @module splunkjs.Binding.Context 
+         * @module splunkjs.Context 
          */
         init: function(http, params) {
             if (!(http instanceof Http) && !params) {
@@ -977,7 +970,7 @@ require.define("/lib/binding.js", function (require, module, exports, __dirname,
          * @param {Object} headers Dictionary of headers (optional)
          * @return {Object} Augmented dictionary of headers
          *
-         * @module splunkjs.Binding.Context 
+         * @module splunkjs.Context 
          * @private
          */
         _headers: function (headers) {
@@ -995,7 +988,7 @@ require.define("/lib/binding.js", function (require, module, exports, __dirname,
          * @param {String} path Partial path
          * @return {String} Fully qualified path
          *
-         * @module splunkjs.Binding.Context 
+         * @module splunkjs.Context 
          */
         fullpath: function(path, namespace) {
             namespace = namespace || {};
@@ -1036,7 +1029,7 @@ require.define("/lib/binding.js", function (require, module, exports, __dirname,
          * @param {String} path Partial path
          * @return {String} Fully qualified URL
          *
-         * @module splunkjs.Binding.Context 
+         * @module splunkjs.Context 
          * @private
          */
         urlify: function(path) {
@@ -1051,7 +1044,7 @@ require.define("/lib/binding.js", function (require, module, exports, __dirname,
          *
          * @param {Function} callback Callback to be executed when login is complete: `(err, wasSuccessful)`
          *
-         * @module splunkjs.Binding.Context 
+         * @module splunkjs.Context 
          * @private
          */
         login: function(callback) {
@@ -1080,7 +1073,7 @@ require.define("/lib/binding.js", function (require, module, exports, __dirname,
          * @param {Object} params Query parameters for this request
          * @param {Function} callback Callback for when the request is complete: `(err, response)`
          *
-         * @module splunkjs.Binding.Context 
+         * @module splunkjs.Context 
          */
         get: function(path, params, callback) {
             return this.http.get(
@@ -1099,7 +1092,7 @@ require.define("/lib/binding.js", function (require, module, exports, __dirname,
          * @param {Object} params Query parameters for this request
          * @param {Function} callback Callback for when the request is complete: `(err, response)`
          *
-         * @module splunkjs.Binding.Context 
+         * @module splunkjs.Context 
          */
         del: function(path, params, callback) {
             return this.http.del(
@@ -1118,7 +1111,7 @@ require.define("/lib/binding.js", function (require, module, exports, __dirname,
          * @param {Object} params Body parameters for this request
          * @param {Function} callback Callback for when the request is complete: `(err, response)`
          *
-         * @module splunkjs.Binding.Context 
+         * @module splunkjs.Context 
          */
         post: function(path, params, callback) {
             return this.http.post(
@@ -1139,7 +1132,7 @@ require.define("/lib/binding.js", function (require, module, exports, __dirname,
          * @param {Object} body Body of parameters for this request
          * @param {Function} callback Callback for when the request is complete: `(err, response)`
          *
-         * @module splunkjs.Binding.Context 
+         * @module splunkjs.Context 
          */
         request: function(path, method, headers, body, callback) {
             return this.http.request(
@@ -1154,6 +1147,14 @@ require.define("/lib/binding.js", function (require, module, exports, __dirname,
             );
         }
     });
+
+    /*!*/
+    root.Sharing = {
+        USER: "user",
+        APP: "app",
+        GLOBAL: "global",
+        SYSTEM: "system"  
+    };
 })();
 });
 
@@ -1872,7 +1873,7 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
 (function() {
     "use strict";
     
-    var Binding     = require('./binding');
+    var Context     = require('./context');
     var Http        = require('./http');
     var Paths       = require('./paths').Paths;
     var Class       = require('./jquery.class').Class;
@@ -1891,9 +1892,9 @@ require.define("/lib/client.js", function (require, module, exports, __dirname, 
      * instances of the service.
      *
      * @moduleRoot splunkjs.Client.Service
-     * @extends splunkjs.Binding.Context
+     * @extends splunkjs.Context
      */
-    root.Service = Binding.Context.extend({
+    root.Service = Context.extend({
         /**
          * Constructor for splunkjs.Client.Service
          *

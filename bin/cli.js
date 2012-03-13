@@ -531,7 +531,7 @@
             "lib/http.js",
             "lib/utils.js",
             "lib/async.js",
-            "lib/binding.js",
+            "lib/context.js",
             "lib/client.js"
         ];
         

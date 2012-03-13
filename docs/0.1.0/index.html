@@ -358,19 +358,19 @@
               </ul>
           </li>
                   <li>
-            <a href='#splunkjs.Binding.Context'>
-              <h3>splunkjs.Binding.Context</h3>
+            <a href='#splunkjs.Context'>
+              <h3>splunkjs.Context</h3>
             </a>
             <ul>
-                              <li><a href='#splunkjs.Binding.Context-init'>init</a></li>
-                              <li><a href='#splunkjs.Binding.Context-_headers'>_headers</a></li>
-                              <li><a href='#splunkjs.Binding.Context-fullpath'>fullpath</a></li>
-                              <li><a href='#splunkjs.Binding.Context-urlify'>urlify</a></li>
-                              <li><a href='#splunkjs.Binding.Context-login'>login</a></li>
-                              <li><a href='#splunkjs.Binding.Context-get'>get</a></li>
-                              <li><a href='#splunkjs.Binding.Context-del'>del</a></li>
-                              <li><a href='#splunkjs.Binding.Context-post'>post</a></li>
-                              <li><a href='#splunkjs.Binding.Context-request'>request</a></li>
+                              <li><a href='#splunkjs.Context-init'>init</a></li>
+                              <li><a href='#splunkjs.Context-_headers'>_headers</a></li>
+                              <li><a href='#splunkjs.Context-fullpath'>fullpath</a></li>
+                              <li><a href='#splunkjs.Context-urlify'>urlify</a></li>
+                              <li><a href='#splunkjs.Context-login'>login</a></li>
+                              <li><a href='#splunkjs.Context-get'>get</a></li>
+                              <li><a href='#splunkjs.Context-del'>del</a></li>
+                              <li><a href='#splunkjs.Context-post'>post</a></li>
+                              <li><a href='#splunkjs.Context-request'>request</a></li>
               </ul>
             
             <ul>
@@ -2681,19 +2681,19 @@ var toString = Object.prototype.toString;</code></pre>
               
             </section>
           </article>
-              <article id='splunkjs.Binding.Context'>
+              <article id='splunkjs.Context'>
           <header>
-            <h2>splunkjs.Binding.Context</h2>
+            <h2>splunkjs.Context</h2>
             </header>
           <section>
-            <p>splunkjs.Binding.Context</p>
+            <p>splunkjs.Context</p>
 <p>Abstraction over the Splunk HTTP-wire protocol</p>
 <p>This class provides the basic functionality for communicating with a Splunk instance over HTTP. It will handle authentication and authorization, and formatting HTTP requests (GET/POST/DELETE) in the format Splunk expects.</p>
           </section>
-                      <section class='method' id='splunkjs.Binding.Context-init'>
+                      <section class='method' id='splunkjs.Context-init'>
               <header>
                 <h3>init</h3>
-                <h4>splunkjs.Binding.Context.init</h4>
+                <h4>splunkjs.Context.init</h4>
                 <p class='type'>constructor</p>
                 </header>
               <section class='params'>
@@ -2705,13 +2705,13 @@ var toString = Object.prototype.toString;</code></pre>
               </section>
               <section class='params'>
                                   <h4>Returns</h4>
-                                      <p><span class="em">splunkjs.Binding.Context</span> A splunkjs.Binding.Context instance</p>
+                                      <p><span class="em">splunkjs.Context</span> A splunkjs.Context instance</p>
                   </section>
               <section>
-                <p>Constructor for splunkjs.Binding.Context</p>
+                <p>Constructor for splunkjs.Context</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L56">lib/binding.js:56</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L49">lib/context.js:49</a>)</h4>
                 <pre><code>init: function(http, params) {
     if (!(http instanceof Http) &amp;&amp; !params) {
         // Move over the params
@@ -2763,10 +2763,10 @@ var toString = Object.prototype.toString;</code></pre>
               </section>
               
             </section>
-                      <section class='method' id='splunkjs.Binding.Context-_headers'>
+                      <section class='method' id='splunkjs.Context-_headers'>
               <header>
                 <h3>_headers</h3>
-                <h4>splunkjs.Binding.Context._headers</h4>
+                <h4>splunkjs.Context._headers</h4>
                 <p class='type'>method</p>
                 </header>
               <section class='params'>
@@ -2783,7 +2783,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Append Splunk-specific headers</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L115">lib/binding.js:115</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L108">lib/context.js:108</a>)</h4>
                 <pre><code>_headers: function (headers) {
     headers = headers || {};
     headers["Authorization"] = "Splunk " + this.sessionKey;
@@ -2792,10 +2792,10 @@ var toString = Object.prototype.toString;</code></pre>
               </section>
               
             </section>
-                      <section class='method' id='splunkjs.Binding.Context-fullpath'>
+                      <section class='method' id='splunkjs.Context-fullpath'>
               <header>
                 <h3>fullpath</h3>
-                <h4>splunkjs.Binding.Context.fullpath</h4>
+                <h4>splunkjs.Context.fullpath</h4>
                 <p class='type'>method</p>
                 </header>
               <section class='params'>
@@ -2813,7 +2813,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>Convert any partial path into a full path containing the full owner and app prefixes if necessary</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L132">lib/binding.js:132</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L125">lib/context.js:125</a>)</h4>
                 <pre><code>fullpath: function(path, namespace) {
     namespace = namespace || {};
     
@@ -2844,10 +2844,10 @@ var toString = Object.prototype.toString;</code></pre>
               </section>
               
             </section>
-                      <section class='method' id='splunkjs.Binding.Context-urlify'>
+                      <section class='method' id='splunkjs.Context-urlify'>
               <header>
                 <h3>urlify</h3>
-                <h4>splunkjs.Binding.Context.urlify</h4>
+                <h4>splunkjs.Context.urlify</h4>
                 <p class='type'>method</p>
                 </header>
               <section class='params'>
@@ -2865,17 +2865,17 @@ var toString = Object.prototype.toString;</code></pre>
 <p>Convert any partial path into a fully qualified URL.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L174">lib/binding.js:174</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L167">lib/context.js:167</a>)</h4>
                 <pre><code>urlify: function(path) {
     return this.prefix + this.fullpath(path);
 },</code></pre>
               </section>
               
             </section>
-                      <section class='method' id='splunkjs.Binding.Context-login'>
+                      <section class='method' id='splunkjs.Context-login'>
               <header>
                 <h3>login</h3>
-                <h4>splunkjs.Binding.Context.login</h4>
+                <h4>splunkjs.Context.login</h4>
                 <p class='type'>method</p>
                 </header>
               <section class='params'>
@@ -2891,7 +2891,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>Perform authentication to a Splunk instance and store the resulting session key.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L189">lib/binding.js:189</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L182">lib/context.js:182</a>)</h4>
                 <pre><code>login: function(callback) {
     var that = this;
     var url = Paths.login;
@@ -2912,10 +2912,10 @@ var toString = Object.prototype.toString;</code></pre>
               </section>
               
             </section>
-                      <section class='method' id='splunkjs.Binding.Context-get'>
+                      <section class='method' id='splunkjs.Context-get'>
               <header>
                 <h3>get</h3>
-                <h4>splunkjs.Binding.Context.get</h4>
+                <h4>splunkjs.Context.get</h4>
                 <p class='type'>method</p>
                 </header>
               <section class='params'>
@@ -2932,7 +2932,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Perform a GET request</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L217">lib/binding.js:217</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L210">lib/context.js:210</a>)</h4>
                 <pre><code>get: function(path, params, callback) {
     return this.http.get(
         this.urlify(path),
@@ -2945,10 +2945,10 @@ var toString = Object.prototype.toString;</code></pre>
               </section>
               
             </section>
-                      <section class='method' id='splunkjs.Binding.Context-del'>
+                      <section class='method' id='splunkjs.Context-del'>
               <header>
                 <h3>del</h3>
-                <h4>splunkjs.Binding.Context.del</h4>
+                <h4>splunkjs.Context.del</h4>
                 <p class='type'>method</p>
                 </header>
               <section class='params'>
@@ -2965,7 +2965,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Perform a DELETE request</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L236">lib/binding.js:236</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L229">lib/context.js:229</a>)</h4>
                 <pre><code>del: function(path, params, callback) {
     return this.http.del(
         this.urlify(path),
@@ -2978,10 +2978,10 @@ var toString = Object.prototype.toString;</code></pre>
               </section>
               
             </section>
-                      <section class='method' id='splunkjs.Binding.Context-post'>
+                      <section class='method' id='splunkjs.Context-post'>
               <header>
                 <h3>post</h3>
-                <h4>splunkjs.Binding.Context.post</h4>
+                <h4>splunkjs.Context.post</h4>
                 <p class='type'>method</p>
                 </header>
               <section class='params'>
@@ -2998,7 +2998,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Perform a POST request</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L255">lib/binding.js:255</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L248">lib/context.js:248</a>)</h4>
                 <pre><code>post: function(path, params, callback) {
     return this.http.post(
         this.urlify(path),
@@ -3011,10 +3011,10 @@ var toString = Object.prototype.toString;</code></pre>
               </section>
               
             </section>
-                      <section class='method' id='splunkjs.Binding.Context-request'>
+                      <section class='method' id='splunkjs.Context-request'>
               <header>
                 <h3>request</h3>
-                <h4>splunkjs.Binding.Context.request</h4>
+                <h4>splunkjs.Context.request</h4>
                 <p class='type'>method</p>
                 </header>
               <section class='params'>
@@ -3033,21 +3033,20 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Perform a request</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/binding.js#L276">lib/binding.js:276</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L269">lib/context.js:269</a>)</h4>
                 <pre><code>request: function(path, method, headers, body, callback) {
-            return this.http.request(
-                this.urlify(path),    
-                {
-                    method: method,
-                    headers: this._headers(headers),
-                    body: body,
-                    timeout: 0
-                },
-                callback
-            );
-        }
-    });
-})();</code></pre>
+        return this.http.request(
+            this.urlify(path),    
+            {
+                method: method,
+                headers: this._headers(headers),
+                body: body,
+                timeout: 0
+            },
+            callback
+        );
+    }
+});</code></pre>
               </section>
               
             </section>
@@ -3055,7 +3054,7 @@ var toString = Object.prototype.toString;</code></pre>
               <article id='splunkjs.Client.Service'>
           <header>
             <h2>splunkjs.Client.Service</h2>
-                          <p class='extends'>extends <a href="#splunkjs.Binding.Context">splunkjs.Binding.Context</a></p>
+                          <p class='extends'>extends <a href="#splunkjs.Context">splunkjs.Context</a></p>
             </header>
           <section>
             <p>splunkjs.Client.Service</p>
@@ -3585,7 +3584,7 @@ var toString = Object.prototype.toString;</code></pre>
                       <section class='method' id='splunkjs.Client.Service^fullpath'>
               <header>
                 <h3>fullpath</h3>
-                <h4>splunkjs.Binding.Context.fullpath</h4>
+                <h4>splunkjs.Context.fullpath</h4>
                 <p class='type'>method</p>
                 </header>
               <section class='params'>
@@ -3637,7 +3636,7 @@ var toString = Object.prototype.toString;</code></pre>
                       <section class='method' id='splunkjs.Client.Service^get'>
               <header>
                 <h3>get</h3>
-                <h4>splunkjs.Binding.Context.get</h4>
+                <h4>splunkjs.Context.get</h4>
                 <p class='type'>method</p>
                 </header>
               <section class='params'>
@@ -3670,7 +3669,7 @@ var toString = Object.prototype.toString;</code></pre>
                       <section class='method' id='splunkjs.Client.Service^del'>
               <header>
                 <h3>del</h3>
-                <h4>splunkjs.Binding.Context.del</h4>
+                <h4>splunkjs.Context.del</h4>
                 <p class='type'>method</p>
                 </header>
               <section class='params'>
@@ -3703,7 +3702,7 @@ var toString = Object.prototype.toString;</code></pre>
                       <section class='method' id='splunkjs.Client.Service^post'>
               <header>
                 <h3>post</h3>
-                <h4>splunkjs.Binding.Context.post</h4>
+                <h4>splunkjs.Context.post</h4>
                 <p class='type'>method</p>
                 </header>
               <section class='params'>
@@ -3736,7 +3735,7 @@ var toString = Object.prototype.toString;</code></pre>
                       <section class='method' id='splunkjs.Client.Service^request'>
               <header>
                 <h3>request</h3>
-                <h4>splunkjs.Binding.Context.request</h4>
+                <h4>splunkjs.Context.request</h4>
                 <p class='type'>method</p>
                 </header>
               <section class='params'>
@@ -3757,19 +3756,18 @@ var toString = Object.prototype.toString;</code></pre>
               <section class='source'>
                 <h4>Source</h4>
                 <pre><code>request: function(path, method, headers, body, callback) {
-            return this.http.request(
-                this.urlify(path),    
-                {
-                    method: method,
-                    headers: this._headers(headers),
-                    body: body,
-                    timeout: 0
-                },
-                callback
-            );
-        }
-    });
-})();</code></pre>
+        return this.http.request(
+            this.urlify(path),    
+            {
+                method: method,
+                headers: this._headers(headers),
+                body: body,
+                timeout: 0
+            },
+            callback
+        );
+    }
+});</code></pre>
               </section>
               
             </section>
