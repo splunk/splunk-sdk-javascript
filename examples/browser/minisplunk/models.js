@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-var utils = Splunk.Utils;
+var utils = splunkjs.Utils;
 
 var Event = Backbone.Model.extend({
 });
@@ -48,7 +48,7 @@ var Events = Backbone.Collection.extend({
     
     this.headers = [];
     var that = this;
-    Splunk.Async.chain([
+    splunkjs.Async.chain([
       function(done) {
         that.searcher.job.results({
           count: that.resultsPerPage, 
@@ -72,7 +72,7 @@ var Events = Backbone.Collection.extend({
           
           for(var j = 0; j < fields.length; j++) {
             var property = fields[j]
-            if (!Splunk.Utils.startsWith(property, "_")) {
+            if (!splunkjs.Utils.startsWith(property, "_")) {
               properties.push({
                 key: property,
                 value: result[j]
@@ -175,15 +175,15 @@ var Jobs = Backbone.Collection.extend({
     this.isFetchingStarted = true;
     
     var jobs = this;
-    Splunk.Async.whilst(
+    splunkjs.Async.whilst(
       function() { return true; },
       function(iterationDone) {
-        Splunk.Async.chain([
+        splunkjs.Async.chain([
           function(done) {
             jobs.fetch(done);
           },
           function(done) {
-            Splunk.Async.sleep(10000, done);
+            splunkjs.Async.sleep(10000, done);
           }
         ],
         iterationDone);

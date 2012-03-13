@@ -14,10 +14,10 @@
 // under the License.
 
 exports.setup = function() {
-    var Splunk      = require('../splunk').Splunk;
-    var Async       = Splunk.Async;
+    var splunkjs    = require('../splunk');
+    var Async       = splunkjs.Async;
 
-    Splunk.Logger.setLevel("ALL");
+    splunkjs.Logger.setLevel("ALL");
     var isBrowser = typeof "window" !== "undefined";
 
     return {        

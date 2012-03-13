@@ -14,10 +14,10 @@
 // under the License.
 
 (function() {
-    var Splunk          = require('../../splunk').Splunk;
-    var Class           = Splunk.Class;
-    var utils           = Splunk.Utils;
-    var Async           = Splunk.Async;
+    var splunkjs        = require('../../splunk');
+    var Class           = splunkjs.Class;
+    var utils           = splunkjs.Utils;
+    var Async           = splunkjs.Async;
     var options         = require('../../internal/cmdline');
 
     var FLAGS_CREATE = [
@@ -88,7 +88,7 @@
             sids = sids || [];
             // We get a list of the current jobs, and for each of them,
             // we check whether it is the job we're looking for.
-            // If it is, we wrap it up in a Splunk.Job object, and invoke
+            // If it is, we wrap it up in a splunkjs.Job object, and invoke
             // our function on it.
             var jobs = [];
             this.service.jobs().list(function(err, list) {
@@ -330,7 +330,7 @@
             var options = arguments[arguments.length - 1];
                     
             // Create our service context using the information from the command line
-            var svc = new Splunk.Client.Service({ 
+            var svc = new splunkjs.Client.Service({ 
                 scheme: cmdline.opts.scheme,
                 host: cmdline.opts.host,
                 port: cmdline.opts.port,

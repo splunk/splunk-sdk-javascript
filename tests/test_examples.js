@@ -14,10 +14,10 @@
 // under the License.
 
 exports.setup = function(svc, opts) {
-    var Splunk  = require('../splunk').Splunk;
-    var Async   = Splunk.Async;
+    var splunkjs= require('../splunk');
+    var Async   = splunkjs.Async;
 
-    Splunk.Logger.setLevel("ALL");
+    splunkjs.Logger.setLevel("ALL");
     var idCounter = 0;
     var getNextId = function() {
         return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
@@ -510,7 +510,7 @@ exports.setup = function(svc, opts) {
 };
 
 if (module === require.main) {
-    var Splunk      = require('../splunk').Splunk;
+    var splunkjs    = require('../splunk');
     var test        = require('../contrib/nodeunit/test_reporter');
     
     var options = require('../internal/cmdline');    
@@ -522,7 +522,7 @@ if (module === require.main) {
         throw new Error("Error in parsing command line parameters");
     }    
     
-    var svc = new Splunk.Client.Service({ 
+    var svc = new splunkjs.Client.Service({ 
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,

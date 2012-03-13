@@ -130,8 +130,8 @@
             password: password
           };
           
-          var http = new Splunk.ProxyHttp("/proxy");
-          var svc = new Splunk.Client.Service(http, options);
+          var http = new splunkjs.ProxyHttp("/proxy");
+          var svc = new splunkjs.Client.Service(http, options);
           svc.login(function(err, success) {
             if (err || !success) {
               if (err) throw err;

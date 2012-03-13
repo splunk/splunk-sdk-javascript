@@ -66,7 +66,7 @@ by using `npm` in *your* project's directory:
 
 To include then, you can use the `require` function:
 
-    var Splunk = require('splunk-sdk').Splunk;
+    var splunkjs = require('splunk-sdk');
 
 ## Usage
 
@@ -77,7 +77,7 @@ The following contains sample HTML that uses the Splunk JavaScript SDK to list a
     <script type="text/javascript" src="splunk.js"></script>
     
     <script type="text/javascript" charset="utf-8">
-        var service = new Splunk.Client.Service({username: "admin", password: "changeme"});
+        var service = new splunkjs.Client.Service({username: "admin", password: "changeme"});
         service.login(function(err, success) {
             if (err) {
                 throw err;
@@ -96,9 +96,9 @@ The following contains sample HTML that uses the Splunk JavaScript SDK to list a
 
 Here is how you can use the JavaScript SDK and Node.js to list all jobs:
 
-    var Splunk = require('splunk-sdk').Splunk;
+    var splunkjs = require('splunk-sdk');
 
-    var service = new Splunk.Client.Service({username: "admin", password: "changeme"});
+    var service = new splunkjs.Client.Service({username: "admin", password: "changeme"});
     service.login(function(err, success) {
         if (err) {
             throw err;

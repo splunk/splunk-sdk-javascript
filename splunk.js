@@ -20,7 +20,7 @@
     // some globals here and have interop with node
     process.env = process.env || {};
 
-    root.Splunk = {
+    module.exports = root = {
         Logger          : require('./lib/log').Logger,
         Binding         : require('./lib/binding'),
         Client          : require('./lib/client'),
@@ -34,6 +34,6 @@
     };
     
     if (typeof(window) === 'undefined') {
-        root.Splunk.NodeHttp = require('./lib/platform/node/node_http').NodeHttp;
+        root.NodeHttp = require('./lib/platform/node/node_http').NodeHttp;
     }
 })();

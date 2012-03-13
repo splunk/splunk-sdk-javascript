@@ -14,9 +14,9 @@
 // under the License.
 
 exports.setup = function(svc) {
-    var Splunk      = require('../splunk').Splunk;
+    var splunkjs    = require('../splunk');
 
-    Splunk.Logger.setLevel("ALL");
+    splunkjs.Logger.setLevel("ALL");
     var isBrowser = typeof "window" !== "undefined";
     
     return {
@@ -31,7 +31,7 @@ exports.setup = function(svc) {
         },
 
         "Callback#login": function(test) {
-            var newService = new Splunk.Client.Service(svc.http, { 
+            var newService = new splunkjs.Client.Service(svc.http, { 
                 scheme: svc.scheme,
                 host: svc.host,
                 port: svc.port,
@@ -46,7 +46,7 @@ exports.setup = function(svc) {
         },
 
         "Callback#login fail": function(test) {
-            var newService = new Splunk.Client.Service(svc.http, { 
+            var newService = new splunkjs.Client.Service(svc.http, { 
                 scheme: svc.scheme,
                 host: svc.host,
                 port: svc.port,
@@ -190,7 +190,7 @@ exports.setup = function(svc) {
 };
 
 if (module === require.main) {
-    var Splunk      = require('../splunk').Splunk;
+    var splunkjs    = require('../splunk');
     var options     = require('../internal/cmdline');
     var test        = require('../contrib/nodeunit/test_reporter');
     
@@ -202,7 +202,7 @@ if (module === require.main) {
         throw new Error("Error in parsing command line parameters");
     }
     
-    var svc = new Splunk.Client.Service({ 
+    var svc = new splunkjs.Client.Service({ 
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,

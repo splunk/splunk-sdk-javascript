@@ -16,8 +16,8 @@
 // This example will login to Splunk, perform a regular search, wait until
 // it is done, and then print out the raw results and some key-value pairs
 
-var Splunk = require('../../../splunk').Splunk;
-var Async  = Splunk.Async;
+var splunkjs = require('../../../splunk');
+var Async  = splunkjs.Async;
 
 exports.main = function(opts, callback) {
     // This is just for testing - ignore it
@@ -29,7 +29,7 @@ exports.main = function(opts, callback) {
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
     
-    var service = new Splunk.Client.Service({
+    var service = new splunkjs.Client.Service({
         username: username,
         password: password,
         scheme: scheme,

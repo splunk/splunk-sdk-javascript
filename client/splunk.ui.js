@@ -1,6 +1,6 @@
 (function() {
 
-var __exportName = 'Splunk';
+var __exportName = 'splunkjs';
 
 var require = function (file, cwd) {
     var resolved = require.resolve(file, cwd || '/');

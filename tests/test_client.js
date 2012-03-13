@@ -14,12 +14,12 @@
 // under the License.
 
 exports.setup = function(svc) {
-    var Splunk      = require('../splunk').Splunk;
-    var utils       = Splunk.Utils;
-    var Async       = Splunk.Async;
+    var splunkjs    = require('../splunk');
+    var utils       = splunkjs.Utils;
+    var Async       = splunkjs.Async;
     var tutils      = require('./utils');
 
-    Splunk.Logger.setLevel("ALL");
+    splunkjs.Logger.setLevel("ALL");
     var idCounter = 0;
     var getNextId = function() {
         return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
@@ -43,7 +43,7 @@ exports.setup = function(svc) {
                     test.done();
                 }); 
                 
-                Splunk.Async.sleep(1000, function() {
+                splunkjs.Async.sleep(1000, function() {
                     req.abort();
                 });
             },
@@ -991,7 +991,7 @@ exports.setup = function(svc) {
                         done();
                     },
                     function(done) {
-                        var file = new Splunk.Client.PropertyFile(svc, fileName);
+                        var file = new splunkjs.Client.PropertyFile(svc, fileName);
                         test.ok(!file.isValid());
                         file.contains("stanza", done);
                     },
@@ -1123,7 +1123,7 @@ exports.setup = function(svc) {
                         done();
                     },
                     function(done) {
-                        var file = new Splunk.Client.ConfigurationFile(svc, fileName);
+                        var file = new splunkjs.Client.ConfigurationFile(svc, fileName);
                         test.ok(!file.isValid());
                         file.contains("stanza", done);
                     },
@@ -1395,7 +1395,7 @@ exports.setup = function(svc) {
 };
 
 if (module === require.main) {
-    var Splunk      = require('../splunk').Splunk;
+    var splunkjs    = require('../splunk');
     var options     = require('../internal/cmdline');
     var test        = require('../contrib/nodeunit/test_reporter');
     
@@ -1407,7 +1407,7 @@ if (module === require.main) {
         throw new Error("Error in parsing command line parameters");
     }
     
-    var svc = new Splunk.Client.Service({ 
+    var svc = new splunkjs.Client.Service({ 
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,

@@ -14,9 +14,9 @@
 // under the License.
 
 exports.setup = function() {
-    var Splunk      = require('../splunk').Splunk;
+    var splunkjs    = require('../splunk');
 
-    Splunk.Logger.setLevel("ALL");
+    splunkjs.Logger.setLevel("ALL");
     return {        
         "Callback#callback to object success": function(test) {
             var successfulFunction = function(callback) {

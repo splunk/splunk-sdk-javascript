@@ -14,9 +14,9 @@
 // under the License.
 
 exports.setup = function(http) {
-    var Splunk      = require('../splunk').Splunk;
+    var splunkjs    = require('../splunk');
 
-    Splunk.Logger.setLevel("ALL");
+    splunkjs.Logger.setLevel("ALL");
     return {
         "HTTP GET Tests": {
             setUp: function(done) {
@@ -41,7 +41,7 @@ exports.setup = function(http) {
                     test.done();
                 }); 
                 
-                Splunk.Async.sleep(1000, function() {
+                splunkjs.Async.sleep(1000, function() {
                     req.abort();
                 });
             },
@@ -270,8 +270,8 @@ exports.setup = function(http) {
 };
 
 if (module === require.main) {
-    var Splunk      = require('../splunk').Splunk;
-    var NodeHttp    = Splunk.NodeHttp;
+    var splunkjs    = require('../splunk');
+    var NodeHttp    = splunkjs.NodeHttp;
     var test        = require('../contrib/nodeunit/test_reporter');
 
     var http = new NodeHttp(false);

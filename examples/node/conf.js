@@ -14,14 +14,14 @@
 // under the License.
 
 (function() {
-    var Splunk          = require('../../splunk').Splunk;
-    var Class           = Splunk.Class;
-    var utils           = Splunk.Utils;
-    var Async           = Splunk.Async;
+    var splunkjs        = require('../../splunk');
+    var Class           = splunkjs.Class;
+    var utils           = splunkjs.Utils;
+    var Async           = splunkjs.Async;
     var options         = require('../../internal/cmdline');
 
     var createService = function(options) {
-        return new Splunk.Client.Service({
+        return new splunkjs.Client.Service({
             scheme:     options.scheme,
             host:       options.host,
             port:       options.port,
@@ -350,8 +350,8 @@
                         // If we can't find the stanza, then create it
                         if (!found) {
                             var file = options.global ?
-                                new Splunk.Client.PropertyFile(service, filename) :
-                                new Splunk.Client.ConfigurationFile(service, filename);
+                                new splunkjs.Client.PropertyFile(service, filename) :
+                                new splunkjs.Client.ConfigurationFile(service, filename);
                                 
                             file.create(stanzaName, {}, function(err, stanza) {
                                 if (err) {
@@ -446,7 +446,7 @@
     });
 
     exports.main = function(argv, callback) {     
-        Splunk.Logger.setLevel("ALL");
+        splunkjs.Logger.setLevel("ALL");
         
         callback = callback || function(err) { 
             if (err) {

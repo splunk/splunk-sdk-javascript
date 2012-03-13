@@ -16,7 +16,7 @@
 // This example will login to Splunk, and then retrieve the list of applications,
 // printing each application's name.
 
-var Splunk = require('../../../splunk').Splunk;
+var splunkjs = require('../../../splunk');
 
 exports.main = function(opts, done) {
     // This is just for testing - ignore it
@@ -28,7 +28,7 @@ exports.main = function(opts, done) {
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
     
-    var service = new Splunk.Client.Service({
+    var service = new splunkjs.Client.Service({
         username: username,
         password: password,
         scheme: scheme,

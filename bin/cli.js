@@ -365,7 +365,7 @@
     };
     
     var compile = function(entry, path, shouldUglify, watch, exportName) {
-        exportName = exportName || "Splunk";
+        exportName = exportName || "splunkjs";
         
         // Compile/combine all the files into the package
         var bundle = browserify({

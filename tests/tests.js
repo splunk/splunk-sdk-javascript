@@ -17,14 +17,14 @@
     var fs          = require('fs');
     var test        = require('../contrib/nodeunit/test_reporter');
     var options     = require('../internal/cmdline');
-    var Splunk      = require('../splunk').Splunk;
-    var NodeHttp    = Splunk.NodeHttp;
+    var splunkjs    = require('../splunk');
+    var NodeHttp    = splunkjs.NodeHttp;
     
     var parser = new options.create();
     var cmdline = parser.parse(process.argv);
     
     var nonSplunkHttp = new NodeHttp(false);
-    var svc = new Splunk.Client.Service({ 
+    var svc = new splunkjs.Client.Service({ 
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -45,7 +45,7 @@
     exports.Tests.Searcher = require('./test_searcher').setup(svc);
     exports.Tests.Examples = require('./test_examples').setup(svc, cmdline.opts);
 
-    Splunk.Logger.setLevel("ALL");
+    splunkjs.Logger.setLevel("ALL");
     
     svc.login(function(err, success) {
         test.run([exports]);

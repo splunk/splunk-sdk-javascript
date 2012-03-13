@@ -19,6 +19,7 @@
     <link type="text/css" rel="stylesheet" href="../resources/rickshaw/legend.css">
     <link type="text/css" rel="stylesheet" href="../resources/rickshaw/detail.css">
     <link type="text/css" rel="stylesheet" href="../resources/rickshaw/extensions.css">
+    <link type="text/css" rel="stylesheet" href="../resources/rickshaw/rickshaw.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
     <style type="text/css">
       body {
@@ -127,8 +128,8 @@
       host     = "localhost";
       port     = "8089";
       
-      Async = Splunk.Async;
-      utils = Splunk.Utils;
+      Async = splunkjs.Async;
+      utils = splunkjs.Utils;
       
       var updateConnectionInformation = function() {
         username = utils.trim($("#id_username").pVal()) || "admin";
@@ -281,8 +282,8 @@
                 
             </div>
             <pre class='prettyprint lang-js linenums'>
-var http = new Splunk.ProxyHttp("/proxy");
-service = new Splunk.Client.Service(http, { 
+var http = new splunkjs.ProxyHttp("/proxy");
+service = new splunkjs.Client.Service(http, { 
   scheme: scheme,
   host: host,
   port: port,
@@ -385,8 +386,8 @@ service.login(function(err, success) {
               <div id="slider"></div>
             </div>
             <pre class='prettyprint lang-js linenums'>
-var http = new Splunk.ProxyHttp("/proxy");
-service = new Splunk.Client.Service(http, { 
+var http = new splunkjs.ProxyHttp("/proxy");
+service = new splunkjs.Client.Service(http, { 
   scheme: scheme,
   host: host,
   port: port,

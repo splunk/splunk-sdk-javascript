@@ -14,14 +14,14 @@
 // under the License.
 
 (function() {
-    var Splunk          = require('../../splunk').Splunk;
-    var Class           = Splunk.Class;
-    var utils           = Splunk.Utils;
-    var Async           = Splunk.Async;
+    var splunkjs        = require('../../splunk');
+    var Class           = splunkjs.Class;
+    var utils           = splunkjs.Utils;
+    var Async           = splunkjs.Async;
     var options         = require('../../internal/cmdline');
     
     var createService = function(options) {
-        return new Splunk.Client.Service({
+        return new splunkjs.Client.Service({
             scheme:     options.scheme,
             host:       options.host,
             port:       options.port,
@@ -78,7 +78,7 @@
     };
 
     exports.main = function(argv, callback) {     
-        Splunk.Logger.setLevel("NONE");
+        splunkjs.Logger.setLevel("NONE");
         
         // Read data from stdin
         var incomingResults = "";

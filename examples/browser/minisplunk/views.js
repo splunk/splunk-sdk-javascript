@@ -34,7 +34,7 @@ var performSearch = function(svc, query, callback) {
   var job = null;
   var searcher = null;
   
-  if (!Splunk.Utils.startsWith(Splunk.Utils.trim(query), "search")) {
+  if (!splunkjs.Utils.startsWith(splunkjs.Utils.trim(query), "search")) {
     query = "search " + query;
   }
   
@@ -50,7 +50,7 @@ var performSearch = function(svc, query, callback) {
       App.events.trigger("search:new", createdJob);
         
       job = createdJob;
-      searcher = new Splunk.Searcher.JobManager(svc, job);
+      searcher = new splunkjs.Searcher.JobManager(svc, job);
       
       searcher.onProgress(function(err, properties) {
         App.events.trigger("search:stats", properties);
@@ -84,7 +84,7 @@ var propertiesToActions = function(properties) {
   
   var okStates = ["INITIALIZED", "ACKED", "QUEUED", "PARSING", "RUNNING"];
   
-  if (Splunk.Utils.indexOf(okStates, properties.dispatchState) > -1) {
+  if (splunkjs.Utils.indexOf(okStates, properties.dispatchState) > -1) {
     return ["Pause", "Finalize", "Delete"];
   }
   
@@ -258,7 +258,7 @@ var EventsView = Backbone.View.extend({
   
   stats: function(properties) {
     var reportSearch = properties.reportSearch;
-    this.isTransform = (reportSearch && Splunk.Utils.trim(reportSearch) !== "");
+    this.isTransform = (reportSearch && splunkjs.Utils.trim(reportSearch) !== "");
   },
   
   add: function(event) {
@@ -564,7 +564,7 @@ var SearchFormView = Backbone.View.extend({
       return;
     }
     
-    var query = Splunk.Utils.trim($("#searchbox").val());
+    var query = splunkjs.Utils.trim($("#searchbox").val());
     
     if (query !== "") {
       performSearch(App.service(), query);
@@ -785,7 +785,7 @@ var MapView = Backbone.View.extend({
     var iterator = new this.searcher.resultsIterator();
     
     var hasMore = true;
-    Splunk.Async.whilst(
+    splunkjs.Async.whilst(
       function() { return hasMore; },
       function(iterationDone) {
         iterator.next(function(err, more, results) {
@@ -824,7 +824,7 @@ var MapView = Backbone.View.extend({
               var properties = [];
               for (var j = 0; j < fields.length; j++) {
                 property = fields[j];
-                if (!Splunk.Utils.startsWith(property, "_")) {
+                if (!splunkjs.Utils.startsWith(property, "_")) {
                   properties.push({
                     key: property,
                     value: result[j]
@@ -954,8 +954,8 @@ var SigninView = BootstrapModalView.extend({
     
     var base = scheme + "://" + host + ":" + port;
     
-    var http = new Splunk.ProxyHttp("/proxy");
-    var svc = new Splunk.Client.Service(http, { 
+    var http = new splunkjs.ProxyHttp("/proxy");
+    var svc = new splunkjs.Client.Service(http, { 
         scheme: scheme,
         host: host,
         port: port,
