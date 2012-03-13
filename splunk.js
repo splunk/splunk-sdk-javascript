@@ -23,7 +23,7 @@
     module.exports = root = {
         Logger          : require('./lib/log').Logger,
         Context         : require('./lib/context'),
-        Client          : require('./lib/client'),
+        Service         : require('./lib/service'),
         Http            : require('./lib/http').Http,
         ODataResponse   : require('./lib/odata').ODataResponse,
         Utils           : require('./lib/utils'),

@@ -9,8 +9,8 @@ a way to sideload connection information. However, you can safely ignore this.
 
 ### Files: [`apps.js`] and [`apps_async.js`]
 
-These files demonstrate working with the `splunkjs.Client.Applications` collection
-and `splunkjs.Client.Application` entity. It will list all the apps, and for each
+These files demonstrate working with the `splunkjs.Service.Applications` collection
+and `splunkjs.Service.Application` entity. It will list all the apps, and for each
 one print its name.
 
 The only difference between the two files is that the latter uses the built-in
@@ -18,8 +18,8 @@ The only difference between the two files is that the latter uses the built-in
 
 ### Files: [`savedsearches.js`] and [`savedsearches_async.js`]
 
-These files demonstrate working with the `splunkjs.Client.SavedSearches` collection
-and `splunkjs.Client.SavedSearch` entity. It will list all the saved searches, and 
+These files demonstrate working with the `splunkjs.Service.SavedSearches` collection
+and `splunkjs.Service.SavedSearch` entity. It will list all the saved searches, and 
 for each one print its name and the search query associated with it.
 
 The only difference between the two files is that the latter uses the built-in

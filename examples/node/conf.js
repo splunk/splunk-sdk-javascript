@@ -21,7 +21,7 @@
     var options         = require('../../internal/cmdline');
 
     var createService = function(options) {
-        return new splunkjs.Client.Service({
+        return new splunkjs.Service({
             scheme:     options.scheme,
             host:       options.host,
             port:       options.port,
@@ -350,8 +350,8 @@
                         // If we can't find the stanza, then create it
                         if (!found) {
                             var file = options.global ?
-                                new splunkjs.Client.PropertyFile(service, filename) :
-                                new splunkjs.Client.ConfigurationFile(service, filename);
+                                new splunkjs.Service.PropertyFile(service, filename) :
+                                new splunkjs.Service.ConfigurationFile(service, filename);
                                 
                             file.create(stanzaName, {}, function(err, stanza) {
                                 if (err) {

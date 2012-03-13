@@ -522,7 +522,7 @@ if (module === require.main) {
         throw new Error("Error in parsing command line parameters");
     }    
     
-    var svc = new splunkjs.Client.Service({ 
+    var svc = new splunkjs.Service({ 
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,

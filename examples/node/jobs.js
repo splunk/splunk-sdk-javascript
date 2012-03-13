@@ -330,7 +330,7 @@
             var options = arguments[arguments.length - 1];
                     
             // Create our service context using the information from the command line
-            var svc = new splunkjs.Client.Service({ 
+            var svc = new splunkjs.Service({ 
                 scheme: cmdline.opts.scheme,
                 host: cmdline.opts.host,
                 port: cmdline.opts.port,

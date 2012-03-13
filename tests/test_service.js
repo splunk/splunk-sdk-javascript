@@ -991,7 +991,7 @@ exports.setup = function(svc) {
                         done();
                     },
                     function(done) {
-                        var file = new splunkjs.Client.PropertyFile(svc, fileName);
+                        var file = new splunkjs.Service.PropertyFile(svc, fileName);
                         test.ok(!file.isValid());
                         file.contains("stanza", done);
                     },
@@ -1123,7 +1123,7 @@ exports.setup = function(svc) {
                         done();
                     },
                     function(done) {
-                        var file = new splunkjs.Client.ConfigurationFile(svc, fileName);
+                        var file = new splunkjs.Service.ConfigurationFile(svc, fileName);
                         test.ok(!file.isValid());
                         file.contains("stanza", done);
                     },
@@ -1407,7 +1407,7 @@ if (module === require.main) {
         throw new Error("Error in parsing command line parameters");
     }
     
-    var svc = new splunkjs.Client.Service({ 
+    var svc = new splunkjs.Service({ 
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,

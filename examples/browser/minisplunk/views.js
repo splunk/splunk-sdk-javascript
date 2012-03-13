@@ -955,7 +955,7 @@ var SigninView = BootstrapModalView.extend({
     var base = scheme + "://" + host + ":" + port;
     
     var http = new splunkjs.ProxyHttp("/proxy");
-    var svc = new splunkjs.Client.Service(http, { 
+    var svc = new splunkjs.Service(http, { 
         scheme: scheme,
         host: host,
         port: port,

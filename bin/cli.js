@@ -532,7 +532,7 @@
             "lib/utils.js",
             "lib/async.js",
             "lib/context.js",
-            "lib/client.js"
+            "lib/service.js"
         ];
         
         var comments = [];

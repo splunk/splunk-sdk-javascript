@@ -283,7 +283,7 @@
             </div>
             <pre class='prettyprint lang-js linenums'>
 var http = new splunkjs.ProxyHttp("/proxy");
-service = new splunkjs.Client.Service(http, { 
+service = new splunkjs.Service(http, { 
   scheme: scheme,
   host: host,
   port: port,
@@ -387,7 +387,7 @@ service.login(function(err, success) {
             </div>
             <pre class='prettyprint lang-js linenums'>
 var http = new splunkjs.ProxyHttp("/proxy");
-service = new splunkjs.Client.Service(http, { 
+service = new splunkjs.Service(http, { 
   scheme: scheme,
   host: host,
   port: port,

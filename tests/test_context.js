@@ -31,7 +31,7 @@ exports.setup = function(svc) {
         },
 
         "Callback#login": function(test) {
-            var newService = new splunkjs.Client.Service(svc.http, { 
+            var newService = new splunkjs.Service(svc.http, { 
                 scheme: svc.scheme,
                 host: svc.host,
                 port: svc.port,
@@ -46,7 +46,7 @@ exports.setup = function(svc) {
         },
 
         "Callback#login fail": function(test) {
-            var newService = new splunkjs.Client.Service(svc.http, { 
+            var newService = new splunkjs.Service(svc.http, { 
                 scheme: svc.scheme,
                 host: svc.host,
                 port: svc.port,
@@ -202,7 +202,7 @@ if (module === require.main) {
         throw new Error("Error in parsing command line parameters");
     }
     
-    var svc = new splunkjs.Client.Service({ 
+    var svc = new splunkjs.Service({ 
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,

@@ -77,7 +77,7 @@ The following contains sample HTML that uses the Splunk JavaScript SDK to list a
     <script type="text/javascript" src="splunk.js"></script>
     
     <script type="text/javascript" charset="utf-8">
-        var service = new splunkjs.Client.Service({username: "admin", password: "changeme"});
+        var service = new splunkjs.Service({username: "admin", password: "changeme"});
         service.login(function(err, success) {
             if (err) {
                 throw err;
@@ -98,7 +98,7 @@ Here is how you can use the JavaScript SDK and Node.js to list all jobs:
 
     var splunkjs = require('splunk-sdk');
 
-    var service = new splunkjs.Client.Service({username: "admin", password: "changeme"});
+    var service = new splunkjs.Service({username: "admin", password: "changeme"});
     service.login(function(err, success) {
         if (err) {
             throw err;

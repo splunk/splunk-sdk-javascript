@@ -21,7 +21,7 @@
     var options         = require('../../internal/cmdline');
     
     var createService = function(options) {
-        return new splunkjs.Client.Service({
+        return new splunkjs.Service({
             scheme:     options.scheme,
             host:       options.host,
             port:       options.port,

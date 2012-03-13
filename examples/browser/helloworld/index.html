@@ -298,8 +298,8 @@
           <div class="span5">
             <h2>Description</h2>
               <p>
-                This sample demonstrates working with the <code>splunkjs.Client.Applications</code> collection
-                and <code>splunkjs.Client.Application</code> entity. It will list all the apps, and for each
+                This sample demonstrates working with the <code>splunkjs.Service.Applications</code> collection
+                and <code>splunkjs.Service.Application</code> entity. It will list all the apps, and for each
                 one print its name.
 
                 The only difference between the two files is that the latter uses the built-in
@@ -318,7 +318,7 @@
               <div class="tab-pane active" id="apps-regular">
                 <pre class='prettyprint lang-js linenums'>
 var http = new splunkjs.ProxyHttp("/proxy");
-var service = new splunkjs.Client.Service(http, {
+var service = new splunkjs.Service(http, {
     username: username,
     password: password,
     scheme: scheme,
@@ -358,7 +358,7 @@ service.login(function(err, success) {
               <div class="tab-pane" id="apps-async">
                 <pre class='prettyprint lang-js linenums'>
 var http = new splunkjs.ProxyHttp("/proxy");
-var service = new splunkjs.Client.Service(http, {
+var service = new splunkjs.Service(http, {
     username: username,
     password: password,
     scheme: scheme,
@@ -414,8 +414,8 @@ Async.chain([
           <div class="span5">
             <h2>Description</h2>
               <p>              
-                This sample demonstrates working with the <code>splunkjs.Client.SavedSearches</code> collection
-                and <code>splunkjs.Client.SavedSearch</code> entity. It will list all the saved searches, and 
+                This sample demonstrates working with the <code>splunkjs.Service.SavedSearches</code> collection
+                and <code>splunkjs.Service.SavedSearch</code> entity. It will list all the saved searches, and 
                 for each one print its name and the search query associated with it.
 
                 The only difference between the two files is that the latter uses the built-in
@@ -435,7 +435,7 @@ Async.chain([
               <div class="tab-pane active" id="savedsearches-regular">
                 <pre class='prettyprint lang-js linenums'>
 var http = new splunkjs.ProxyHttp("/proxy");
-var service = new splunkjs.Client.Service(http, {
+var service = new splunkjs.Service(http, {
     username: username,
     password: password,
     scheme: scheme,
@@ -476,7 +476,7 @@ service.login(function(err, success) {
               <div class="tab-pane" id="savedsearches-async">
                 <pre class='prettyprint lang-js linenums'>
 var http = new splunkjs.ProxyHttp("/proxy");
-var service = new splunkjs.Client.Service(http, {
+var service = new splunkjs.Service(http, {
     username: username,
     password: password,
     scheme: scheme,
@@ -518,7 +518,7 @@ Async.chain([
               <div class="tab-pane" id="savedsearches-create">
                 <pre class='prettyprint lang-js linenums'>
 var http = new splunkjs.ProxyHttp("/proxy");
-var service = new splunkjs.Client.Service(http, {
+var service = new splunkjs.Service(http, {
     username: username,
     password: password,
     scheme: scheme,
@@ -600,7 +600,7 @@ service.login(function(err, success) {
               <div class="tab-pane active" id="search-normal">
                 <pre class='prettyprint lang-js linenums'>
 var http = new splunkjs.ProxyHttp("/proxy");
-var service = new splunkjs.Client.Service(http, {
+var service = new splunkjs.Service(http, {
     username: username,
     password: password,
     scheme: scheme,
@@ -683,7 +683,7 @@ Async.chain([
               <div class="tab-pane" id="search-blocking">
                 <pre class='prettyprint lang-js linenums'>
 var http = new splunkjs.ProxyHttp("/proxy");
-var service = new splunkjs.Client.Service(http, {
+var service = new splunkjs.Service(http, {
     username: username,
     password: password,
     scheme: scheme,
@@ -748,7 +748,7 @@ Async.chain([
               <div class="tab-pane" id="search-oneshot">
                 <pre class='prettyprint lang-js linenums'>
 var http = new splunkjs.ProxyHttp("/proxy");
-var service = new splunkjs.Client.Service(http, {
+var service = new splunkjs.Service(http, {
     username: username,
     password: password,
     scheme: scheme,
@@ -830,7 +830,7 @@ Async.chain([
               <div class="tab-pane active" id="search-realtime-regular">
                 <pre class='prettyprint lang-js linenums'>
 var http = new splunkjs.ProxyHttp("/proxy");
-var service = new splunkjs.Client.Service(http, {
+var service = new splunkjs.Service(http, {
     username: username,
     password: password,
     scheme: scheme,

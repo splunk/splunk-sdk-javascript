@@ -131,7 +131,7 @@
           };
           
           var http = new splunkjs.ProxyHttp("/proxy");
-          var svc = new splunkjs.Client.Service(http, options);
+          var svc = new splunkjs.Service(http, options);
           svc.login(function(err, success) {
             if (err || !success) {
               if (err) throw err;
@@ -147,7 +147,7 @@
               "Utils Tests": SplunkTest.Utils.setup(svc),
               "Async Tests": SplunkTest.Async.setup(svc),
               "Context Tests": SplunkTest.Context.setup(svc),
-              "Client Tests": SplunkTest.Client.setup(svc),
+              "Service Tests": SplunkTest.Service.setup(svc),
               "Searcher Tests": SplunkTest.Searcher.setup(svc),
             }]);
           });

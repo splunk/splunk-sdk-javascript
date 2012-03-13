@@ -31,7 +31,7 @@ exports.main = function(opts, callback) {
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
     
-    var service = new splunkjs.Client.Service({
+    var service = new splunkjs.Service({
         username: username,
         password: password,
         scheme: scheme,
