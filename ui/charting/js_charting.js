@@ -22,7 +22,15 @@
     require('./util');
     require('./lowpro_for_jquery');
     
-    var format_decimal = i18n.format_decimal;
+    var format_decimal               = i18n.format_decimal;
+    var format_percent               = i18n.format_percent;
+    var format_scientific            = i18n.format_scientific;
+    var format_date                  = i18n.format_date;
+    var format_datetime              = i18n.format_datetime;
+    var format_time                  = i18n.format_time;
+    var format_datetime_microseconds = i18n.format_datetime_microseconds;
+    var format_time_microseconds     = i18n.format_time_microseconds;
+    var format_datetime_range        = i18n.format_datetime_range;
     
     exports.Splunk = Splunk;
     
