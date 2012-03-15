@@ -18,8 +18,8 @@ import time
 import json
 import sys
 
-#import xml.etree.cElementTree as et
-import lxml.etree as et
+import xml.etree.cElementTree as et
+#import lxml.etree as et
 
 ATOM_NS         = 'http://www.w3.org/2005/Atom'
 SPLUNK_NS       = 'http://dev.splunk.com/ns/rest'
@@ -128,15 +128,12 @@ def unesc(str):
     if not str: return str    
     return su.unescape(str, {'&quot;': '"', '&apos;': "'"})
     
-def node_to_primitive(N, fail_on_non_node=False):
+def node_to_primitive(N):
     if N == None: return None
-    if isinstance(N, et._Element):
-        if N.tag in (SPLUNK_TAGF % 'dict', 'dict'):
-            return _dict_node_to_primitive(N)
-        elif N.tag in (SPLUNK_TAGF % 'list', 'list'):
-            return _list_node_to_primitive(N)
-    if fail_on_non_node:
-        raise Exception, 'Expected Element object type; got %s' % N
+    if N.tag in (SPLUNK_TAGF % 'dict', 'dict'):
+        return _dict_node_to_primitive(N)
+    elif N.tag in (SPLUNK_TAGF % 'list', 'list'):
+        return _list_node_to_primitive(N)
     return unesc(str(N))
 
 def _dict_node_to_primitive(N):
@@ -203,7 +200,7 @@ def from_feed(content, timings = {}, messages = {}):
             entries = []
             collection["entry"] = entries
             
-            for node in root.xpath('a:entry', namespaces={'a': ATOM_NS}):
+            for node in root.findall('{%s}entry' % (ATOM_NS)):
                 entries.append(from_entry(node, messages))
                 
             time_end = time.time()
@@ -218,10 +215,12 @@ def from_feed(content, timings = {}, messages = {}):
                 collection["paging"] = paging
                 
                 try:
-                    paging["offset"] = int(root.xpath('o:startIndex', namespaces={'o': OPENSEARCH_NS})[0].text)
-                    paging["total"] = int(root.xpath('o:totalResults', namespaces={'o': OPENSEARCH_NS})[0].text)
+                    paging["page"] = int(root.findall('{%s}itemsPerPage' % (OPENSEARCH_NS))[0].text)
+                    paging["offset"] = int(root.findall('{%s}startIndex' % (OPENSEARCH_NS))[0].text)
+                    paging["total"] = int(root.findall('{%s}totalResults' % (OPENSEARCH_NS))[0].text)
                 except:
-                    output.total_count = None
+                    paging["total"] = None
+                    # TODO
                     pass
                   
                 # We might not have a total_count field, so we have to check if it is "none" or actually
@@ -232,16 +231,19 @@ def from_feed(content, timings = {}, messages = {}):
                 else:
                     paging["count"] = min(paging["total"], entries)
                 
-                  
-                collection["origin"] = root.xpath('a:id', namespaces={'a': ATOM_NS})[0].text
+                try:
+                    collection["origin"] = root.findall('{%s}id' % (ATOM_NS))[0].text
               
-                links = {}
-                collection["links"] = links
-                
-                for link in root.xpath('a:link', namespaces={'a': ATOM_NS}):
-                    links[link.get('rel')] = link.get('href') 
+                    links = {}
+                    collection["links"] = links
+                    
+                    for link in root.findall('{%s}link' % (ATOM_NS)):
+                        links[link.get('rel')] = link.get('href') 
+                except:
+                    pass
             except:
-                pass
+                # TODO
+                raise
         
             time_end = time.time()
             timings["collection_metadata"] = time_end - time_start
@@ -255,7 +257,7 @@ def from_entry(root, messages):
     
     # Extract the content
     contents = {}
-    tentative_content = root.xpath('a:content', namespaces={'a': ATOM_NS})
+    tentative_content = root.findall('{%s}content' % (ATOM_NS))
     if (len(tentative_content) > 0):
         if (len(tentative_content[0]) > 0):
             content_node = tentative_content[0][0]
@@ -282,22 +284,22 @@ def from_entry(root, messages):
     links = {}
     entry["links"] = links
     
-    for link in root.xpath('a:link', namespaces={'a': ATOM_NS}):
+    for link in root.findall('{%s}link' % (ATOM_NS)):
         links[link.get('rel')] = link.get('href') 
         
     # Get the rest of the metadata
-    entry["id"] = root.xpath('a:id', namespaces={'a': ATOM_NS})[0].text
-    entry["name"] = contents.get("name", root.xpath('a:title', namespaces={'a': ATOM_NS})[0].text)
+    entry["id"] = root.findall('{%s}id' % (ATOM_NS))[0].text
+    entry["name"] = contents.get("name", root.findall('{%s}title' % (ATOM_NS))[0].text)
     
-    published_info = root.xpath('a:published', namespaces={'a': ATOM_NS})
+    published_info = root.findall('{%s}published' % (ATOM_NS))
     if published_info:
         entry["published"] = published_info[0].text
         
-    updated_info = root.xpath('a:updated', namespaces={'a': ATOM_NS})
+    updated_info = root.findall('{%s}updated' % (ATOM_NS))
     if updated_info:
         entry["updated"] = updated_info[0].text
         
-    author_info = root.xpath('a:author/a:name', namespaces={'a': ATOM_NS})
+    author_info = root.findall('{%s}author/{%s}name' % (ATOM_NS, ATOM_NS))
     if author_info:
         entry["author"] = author_info[0].text
     
@@ -314,9 +316,17 @@ def from_attributes(attr_dict):
         "wildcard": wildcard
     }
 
-def from_job_results(root, format=ResultFormat.ROW): 
+def from_job_results(root, format=ResultFormat.ROW, timings={}): 
     if isinstance(root, str):
+        time_start = time.time()
         root = et.fromstring(root)
+        time_end = time.time()
+        timings["job_results_parse"] = time_end - time_start
+    elif isinstance(root, file):
+        time_start = time.time()
+        root = et.parse(root).getroot()
+        time_end = time.time()
+        timings["job_results_parse"] = time_end - time_start
     
     results = {}
     messages = {}
@@ -333,38 +343,48 @@ def from_job_results(root, format=ResultFormat.ROW):
     data = []
     offsets = []
 
+    time_start = time.time()
     for node in root.findall('meta/fieldOrder/field'):
         field_list.append(unicode(node.text))
+    time_end = time.time()
+    timings["job_results_extract_fields"] = time_end - time_start
+    
+    time_start = time.time()
     for node in root.findall('result'):
         row = {}
         
         offsets.append(node.get('offset'))
         for field in node.findall('field'):
-            field_struct = []
-            for subfield in field.findall('value'):
-                field_struct.append({
-                    'value': subfield.findtext('text'),
-                    'tags': [x.text for x in subfield.findall('tag')]
-                })
-            for subfield in field.findall('v'):
-                field_struct.append({
-                    'value': extract_result_inner_text(subfield)
-                })
-            row[field.get('k')] = field_struct
+           field_struct = []
+           for subfield in field.findall('value'):
+              field_struct.append({
+                  'value': subfield.findtext('text'),
+                  #'tags': [x.text for x in subfield.findall('tag')]
+              })
+           for subfield in field.findall('v'):
+              field_struct.append({
+                  'value': extract_result_inner_text(subfield)
+              })
+           row[field.get('k')] = field_struct
         data.append(row)
+    time_end = time.time()
+    timings["job_results_extract_data"] = time_end - time_start
         
-    
+    time_start = time.time()
     if format is ResultFormat.VERBOSE:
-        results = results_to_verbose(field_list, data)
+       results = results_to_verbose(field_list, data)
     elif format is ResultFormat.ROW:
-        results = results_to_rows(field_list, data)
+       results = results_to_rows(field_list, data)
     elif format is ResultFormat.COLUMN:
-        results = results_to_columns(field_list, data)
+       results = results_to_columns(field_list, data)
+    time_end = time.time()
+    timings["job_results_mold_data"] = time_end - time_start
 
     if format is not ResultFormat.VERBOSE:
         results["preview"] = normalize_boolean(root.get("preview"))
         results["init_offset"] = int(offsets[0] if len(offsets) else 0)
         results["messages"] = messages
+        results["timings"] = timings
 
     return results
 
@@ -448,15 +468,22 @@ def results_to_columns(field_list, data):
 def extract_result_inner_text(node):
     # TODO: fails if segementation is enabled
     output = []
-    for innernode in node.iter():
+    for innernode in node:
         if innernode.text and innernode.text.strip():
             output.append(innernode.text)
         elif innernode != node:
-            output.append(self._getInnerText(innernode))
+            output.append(extract_result_inner_text(innernode))
         if innernode.tail and innernode.tail.strip():
             output.append(innernode.tail)
     return output
 
 if __name__ == "__main__":
-    print json.dumps(from_job_results(sys.stdin.read(), format=ResultFormat.VERBOSE))
-    #print json.dumps(from_feed(sys.stdin.read()))
+    #time_start = time.time()
+    #incoming = sys.stdin.read()
+    #time_end = time.time()
+    #print "Read: %s" % (time_end - time_start)
+    #print json.dumps(from_job_results(incoming, format=ResultFormat.VERBOSE))
+    #print json.dumps(from_feed(incoming))
+    data = from_job_results(sys.stdin, format=ResultFormat.ROW)
+    print json.dumps(data["timings"], sort_keys=True, indent = 4)
+    print len(data["rows"])
