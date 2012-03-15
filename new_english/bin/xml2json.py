@@ -16,6 +16,7 @@
 
 import time
 import json
+import sys
 
 #import xml.etree.cElementTree as et
 import lxml.etree as et
@@ -26,13 +27,18 @@ OPENSEARCH_NS   = 'http://a9.com/-/spec/opensearch/1.1/'
 
 SPLUNK_TAGF = '{%s}%%s' % SPLUNK_NS
 
+class ResultFormat(object):
+    VERBOSE = 0
+    ROW = 1
+    COLUMN = 2
+
 def extract_messages(node):
     '''
     Inspects an XML node and extracts any messages that have been passed through
     the standard XML messaging spec
     '''
 
-    output = []
+    output = {}
     messages = node.find('messages')
     if messages == None:
         # logger.debug("The atom feed uses the splunk namespace, so check there too")
@@ -40,13 +46,83 @@ def extract_messages(node):
         
     if messages is not None:
         for child in messages:
-            item = {
-                'type': child.get('type'),
-                'code': child.get('code'),
-                'text': child.text
-            }
-            output.append(item)
+            message_type = child.get('type')
+            message_code = child.get('code')
+            message_text = child.text
+            
+            message_store = output.get(message_type, [])
+            message_store.append(message_text)
+            
+            output[message_type] = message_store
+            
     return output
+
+def combine_messages(existing_messages, new_messages):
+    for message_type in new_messages.keys():
+        if existing_messages.has_key(message_type):
+            existing_messages[message_type].extend(new_messages[message_type])
+        else:
+            existing_messages[message_type] = new_messages[message_type]
+
+def normalize_boolean(input, enableStrictMode=False, includeIntegers=True):
+    '''
+    Tries to convert a value to Boolean.  Accepts the following pairs:
+    true/false t/f/ 0/1 yes/no on/off y/n
+
+    If given a dictionary, this function will attempt to iterate over the dictionary
+    and normalize each item.
+    
+    If enableStrictMode is True, then a ValueError will be raised if the input
+    value is not a recognized boolean.
+
+    If enableStrictMode is False (default), then the input will be returned
+    unchanged if it is not recognized as a boolean.  Thus, they will have the
+    truth value of the python language.
+    
+    NOTE: Use this method judiciously, as you may be casting integer values
+    into boolean when you don't want to.  If you do want to get integer values, 
+    the idiom for that is:
+    
+        try: 
+            v = int(v)
+        except ValueError:
+            v = splunk.util.normalizeBoolean(v)
+            
+    This casts integer-like values into 'int', and others into boolean.
+    '''
+    
+    trueThings = ['true', 't', 'on', 'yes', 'y']
+    falseThings = ['false', 'f', 'off', 'no', 'n']
+
+    if includeIntegers:
+        trueThings.append('1')
+        falseThings.append('0')
+        
+    def norm(input):
+        if input == True: return True
+        if input == False: return False
+        
+        try:
+            test = input.strip().lower()
+        except:
+            return input
+
+        if test in trueThings:
+            return True
+        elif test in falseThings:
+            return False
+        elif enableStrictMode:
+            raise ValueError, 'Unable to cast value to boolean: %s' % input
+        else:
+            return input
+
+
+    if isinstance(input, dict):
+        for k,v in input.items():
+            input[k] = norm(v)
+        return input
+    else:
+        return norm(input)
 
 def unesc(str):
     if not str: return str    
@@ -87,6 +163,11 @@ def _list_node_to_primitive(N):
 
 ####################
 
+#def to_json(data):
+#    # In the case where we have a single entry
+#    if isinstance(data.get("entry", []), list) and len(data.get("entry", [])) == 1:
+        
+
 def from_feed(content, timings = {}, messages = {}):
     collection = {}
     
@@ -102,17 +183,17 @@ def from_feed(content, timings = {}, messages = {}):
         try:
             extracted_messages = extract_messages(root)
             if extracted_messages:
-                messages.extend(extracted_messages);
+                combine_messages(messages, extracted_messages);
         except:
             # TODO
-            raise
+            pass
         time_end = time.time()
         timings["extract_messages"] = time_end - time_start
         
         # Handle the case of a single <entry> node (i.e. the feed is an entry)
         if root.tag == '{http://www.w3.org/2005/Atom}entry':
             time_start = time.time()
-            collection["entry"] = from_entry(root, messages, timings)
+            collection["entry"] = from_entry(root, messages)
             time_end = time.time()
             timings["single_entry_convert"] = time_end - time_start    
         else:
@@ -123,13 +204,15 @@ def from_feed(content, timings = {}, messages = {}):
             collection["entry"] = entries
             
             for node in root.xpath('a:entry', namespaces={'a': ATOM_NS}):
-                entries.append(from_entry(node))
+                entries.append(from_entry(node, messages))
                 
             time_end = time.time()
             timings["collection_convert"] = time_end - time_start
             
             # OK, we've converted all the items, now we convert the feed metadata
             # set collection data
+            time_start = time.time();
+            
             try:
                 paging = {}
                 collection["paging"] = paging
@@ -160,12 +243,14 @@ def from_feed(content, timings = {}, messages = {}):
             except:
                 pass
         
+            time_end = time.time()
+            timings["collection_metadata"] = time_end - time_start
     collection["timings"] = timings
     collection["messages"] = messages
     
     return collection
     
-def from_entry(root):
+def from_entry(root, messages):
     entry = {}
     
     # Extract the content
@@ -174,7 +259,7 @@ def from_entry(root):
     if (len(tentative_content) > 0):
         if (len(tentative_content[0]) > 0):
             content_node = tentative_content[0][0]
-            contents = nodeToPrimitive(content_node)
+            contents = node_to_primitive(content_node)
         else:
             contents = {"data": tentative_content[0].text}
     entry["content"] = contents
@@ -188,6 +273,9 @@ def from_entry(root):
                 del contents[k]
             elif k == "eai:attributes":
                 entry["fields"] = from_attributes(contents[k])
+                del contents[k]
+            elif k == "messages":
+                combine_messages(messages, contents[k])
                 del contents[k]
     
     # Get the links
@@ -225,450 +313,150 @@ def from_attributes(attr_dict):
         "optional": optional,
         "wildcard": wildcard
     }
+
+def from_job_results(root, format=ResultFormat.ROW): 
+    if isinstance(root, str):
+        root = et.fromstring(root)
     
-sample_xml = """
-<feed xmlns="http://www.w3.org/2005/Atom" xmlns:s="http://dev.splunk.com/ns/rest" xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/">
-  <title datatype="string">savedsearch</title>
-  <id datatype="string">https://127.0.0.1:8079/services/saved/searches</id>
-  <updated datatype="string">2012-03-13T15:22:54-07:00</updated>
-  <generator build="120438" version="20120313" datatype="string"/>
-  <author>
-    <name datatype="string">Splunk</name>
-  </author>
-  <link href="/services/saved/searches/_new" rel="create"/>
-  <link href="/services/saved/searches/_reload" rel="_reload"/>
-  <opensearch:totalResults datatype="number">6</opensearch:totalResults>
-  <opensearch:itemsPerPage datatype="number">30</opensearch:itemsPerPage>
-  <opensearch:startIndex datatype="number">0</opensearch:startIndex>
-  <s:messages/>
-  <entry>
-    <title datatype="string">Errors in the last 24 hours</title>
-    <id datatype="string">https://127.0.0.1:8079/servicesNS/nobody/search/saved/searches/Errors%20in%20the%20last%2024%20hours</id>
-    <updated datatype="string">2012-03-13T15:22:54-07:00</updated>
-    <link href="/servicesNS/nobody/search/saved/searches/Errors%20in%20the%20last%2024%20hours" rel="alternate"/>
-    <author>
-      <name datatype="string">nobody</name>
-    </author>
-    <link href="/servicesNS/nobody/search/saved/searches/Errors%20in%20the%20last%2024%20hours" rel="list"/>
-    <link href="/servicesNS/nobody/search/saved/searches/Errors%20in%20the%20last%2024%20hours/_reload" rel="_reload"/>
-    <link href="/servicesNS/nobody/search/saved/searches/Errors%20in%20the%20last%2024%20hours" rel="edit"/>
-    <link href="/servicesNS/nobody/search/saved/searches/Errors%20in%20the%20last%2024%20hours/disable" rel="disable"/>
-    <link href="/servicesNS/nobody/search/saved/searches/Errors%20in%20the%20last%2024%20hours/dispatch" rel="dispatch"/>
-    <link href="/servicesNS/nobody/search/saved/searches/Errors%20in%20the%20last%2024%20hours/history" rel="history"/>
-    <content type="text/xml">
-      <s:dict>
-        <s:key name="action.email" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="action.email.sendresults" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="action.email.to" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="action.populate_lookup" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="action.rss" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="action.script" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="action.summary_index" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="alert.digest_mode" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="alert.expires" datatype="DATATYPE_NOT_SET">24h</s:key>
-        <s:key name="alert.severity" datatype="DATATYPE_NOT_SET">3</s:key>
-        <s:key name="alert.suppress" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert.suppress.fields" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert.suppress.period" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert.track" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="alert_comparator" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert_condition" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert_threshold" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert_type" datatype="DATATYPE_NOT_SET">always</s:key>
-        <s:key name="auto_summarize" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="auto_summarize.command" datatype="DATATYPE_NOT_SET">| summarize override=partial timespan=$auto_summarize.timespan$ [ $search$ ]</s:key>
-        <s:key name="auto_summarize.cron_schedule" datatype="DATATYPE_NOT_SET">0 */4 * * *</s:key>
-        <s:key name="auto_summarize.dispatch.earliest_time" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="auto_summarize.dispatch.latest_time" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="auto_summarize.timespan" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="cron_schedule" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="description" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="disabled" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="dispatch.buckets" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="dispatch.earliest_time" datatype="DATATYPE_NOT_SET">-1d</s:key>
-        <s:key name="dispatch.latest_time" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="dispatch.lookups" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="dispatch.max_count" datatype="DATATYPE_NOT_SET">500000</s:key>
-        <s:key name="dispatch.max_time" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="dispatch.reduce_freq" datatype="DATATYPE_NOT_SET">10</s:key>
-        <s:key name="dispatch.rt_backfill" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="dispatch.spawn_process" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="dispatch.time_format" datatype="DATATYPE_NOT_SET">%FT%T.%Q%:z</s:key>
-        <s:key name="dispatch.ttl" datatype="DATATYPE_NOT_SET">2p</s:key>
-        <s:key name="displayview" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="eai:acl"><s:dict><s:key name="app" datatype="string">search</s:key><s:key name="can_change_perms" datatype="boolean">1</s:key><s:key name="can_list" datatype="boolean">1</s:key><s:key name="can_share_app" datatype="boolean">1</s:key><s:key name="can_share_global" datatype="boolean">1</s:key><s:key name="can_share_user" datatype="boolean">0</s:key><s:key name="can_write" datatype="boolean">1</s:key><s:key name="modifiable" datatype="boolean">1</s:key><s:key name="owner" datatype="string">nobody</s:key><s:key name="perms"><s:dict><s:key name="read"><s:list><s:item datatype="string">*</s:item></s:list></s:key><s:key name="write"><s:list><s:item datatype="string">admin</s:item></s:list></s:key></s:dict></s:key><s:key name="removable" datatype="boolean">0</s:key><s:key name="sharing" datatype="string">app</s:key></s:dict></s:key>
-        <s:key name="is_scheduled" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="is_visible" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="max_concurrent" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="next_scheduled_time" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="qualifiedSearch" datatype="DATATYPE_NOT_SET">search error OR failed OR severe OR ( sourcetype=access_* ( 404 OR 500 OR 503 ) )</s:key>
-        <s:key name="realtime_schedule" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="request.ui_dispatch_app" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="request.ui_dispatch_view" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="restart_on_searchpeer_add" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="run_on_startup" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="search" datatype="DATATYPE_NOT_SET">error OR failed OR severe OR ( sourcetype=access_* ( 404 OR 500 OR 503 ) )</s:key>
-        <s:key name="vsid" datatype="DATATYPE_NOT_SET"></s:key>
-      </s:dict>
-    </content>
-  </entry>
-  <entry>
-    <title datatype="string">Errors in the last hour</title>
-    <id datatype="string">https://127.0.0.1:8079/servicesNS/nobody/search/saved/searches/Errors%20in%20the%20last%20hour</id>
-    <updated datatype="string">2012-03-13T15:22:54-07:00</updated>
-    <link href="/servicesNS/nobody/search/saved/searches/Errors%20in%20the%20last%20hour" rel="alternate"/>
-    <author>
-      <name datatype="string">nobody</name>
-    </author>
-    <link href="/servicesNS/nobody/search/saved/searches/Errors%20in%20the%20last%20hour" rel="list"/>
-    <link href="/servicesNS/nobody/search/saved/searches/Errors%20in%20the%20last%20hour/_reload" rel="_reload"/>
-    <link href="/servicesNS/nobody/search/saved/searches/Errors%20in%20the%20last%20hour" rel="edit"/>
-    <link href="/servicesNS/nobody/search/saved/searches/Errors%20in%20the%20last%20hour/disable" rel="disable"/>
-    <link href="/servicesNS/nobody/search/saved/searches/Errors%20in%20the%20last%20hour/dispatch" rel="dispatch"/>
-    <link href="/servicesNS/nobody/search/saved/searches/Errors%20in%20the%20last%20hour/history" rel="history"/>
-    <content type="text/xml">
-      <s:dict>
-        <s:key name="action.email" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="action.email.sendresults" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="action.email.to" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="action.populate_lookup" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="action.rss" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="action.script" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="action.summary_index" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="alert.digest_mode" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="alert.expires" datatype="DATATYPE_NOT_SET">24h</s:key>
-        <s:key name="alert.severity" datatype="DATATYPE_NOT_SET">3</s:key>
-        <s:key name="alert.suppress" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert.suppress.fields" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert.suppress.period" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert.track" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="alert_comparator" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert_condition" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert_threshold" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert_type" datatype="DATATYPE_NOT_SET">always</s:key>
-        <s:key name="auto_summarize" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="auto_summarize.command" datatype="DATATYPE_NOT_SET">| summarize override=partial timespan=$auto_summarize.timespan$ [ $search$ ]</s:key>
-        <s:key name="auto_summarize.cron_schedule" datatype="DATATYPE_NOT_SET">0 */4 * * *</s:key>
-        <s:key name="auto_summarize.dispatch.earliest_time" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="auto_summarize.dispatch.latest_time" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="auto_summarize.timespan" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="cron_schedule" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="description" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="disabled" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="dispatch.buckets" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="dispatch.earliest_time" datatype="DATATYPE_NOT_SET">-1h</s:key>
-        <s:key name="dispatch.latest_time" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="dispatch.lookups" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="dispatch.max_count" datatype="DATATYPE_NOT_SET">500000</s:key>
-        <s:key name="dispatch.max_time" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="dispatch.reduce_freq" datatype="DATATYPE_NOT_SET">10</s:key>
-        <s:key name="dispatch.rt_backfill" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="dispatch.spawn_process" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="dispatch.time_format" datatype="DATATYPE_NOT_SET">%FT%T.%Q%:z</s:key>
-        <s:key name="dispatch.ttl" datatype="DATATYPE_NOT_SET">2p</s:key>
-        <s:key name="displayview" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="eai:acl"><s:dict><s:key name="app" datatype="string">search</s:key><s:key name="can_change_perms" datatype="boolean">1</s:key><s:key name="can_list" datatype="boolean">1</s:key><s:key name="can_share_app" datatype="boolean">1</s:key><s:key name="can_share_global" datatype="boolean">1</s:key><s:key name="can_share_user" datatype="boolean">0</s:key><s:key name="can_write" datatype="boolean">1</s:key><s:key name="modifiable" datatype="boolean">1</s:key><s:key name="owner" datatype="string">nobody</s:key><s:key name="perms"><s:dict><s:key name="read"><s:list><s:item datatype="string">*</s:item></s:list></s:key><s:key name="write"><s:list><s:item datatype="string">admin</s:item></s:list></s:key></s:dict></s:key><s:key name="removable" datatype="boolean">0</s:key><s:key name="sharing" datatype="string">app</s:key></s:dict></s:key>
-        <s:key name="is_scheduled" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="is_visible" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="max_concurrent" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="next_scheduled_time" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="qualifiedSearch" datatype="DATATYPE_NOT_SET">search error OR failed OR severe OR ( sourcetype=access_* ( 404 OR 500 OR 503 ) )</s:key>
-        <s:key name="realtime_schedule" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="request.ui_dispatch_app" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="request.ui_dispatch_view" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="restart_on_searchpeer_add" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="run_on_startup" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="search" datatype="DATATYPE_NOT_SET">error OR failed OR severe OR ( sourcetype=access_* ( 404 OR 500 OR 503 ) )</s:key>
-        <s:key name="vsid" datatype="DATATYPE_NOT_SET"></s:key>
-      </s:dict>
-    </content>
-  </entry>
-  <entry>
-    <title datatype="string">Indexing workload</title>
-    <id datatype="string">https://127.0.0.1:8079/servicesNS/nobody/search/saved/searches/Indexing%20workload</id>
-    <updated datatype="string">2012-03-13T15:22:54-07:00</updated>
-    <link href="/servicesNS/nobody/search/saved/searches/Indexing%20workload" rel="alternate"/>
-    <author>
-      <name datatype="string">nobody</name>
-    </author>
-    <link href="/servicesNS/nobody/search/saved/searches/Indexing%20workload" rel="list"/>
-    <link href="/servicesNS/nobody/search/saved/searches/Indexing%20workload/_reload" rel="_reload"/>
-    <link href="/servicesNS/nobody/search/saved/searches/Indexing%20workload" rel="edit"/>
-    <link href="/servicesNS/nobody/search/saved/searches/Indexing%20workload/disable" rel="disable"/>
-    <link href="/servicesNS/nobody/search/saved/searches/Indexing%20workload/dispatch" rel="dispatch"/>
-    <link href="/servicesNS/nobody/search/saved/searches/Indexing%20workload/history" rel="history"/>
-    <content type="text/xml">
-      <s:dict>
-        <s:key name="action.email" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="action.email.sendresults" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="action.email.to" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="action.populate_lookup" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="action.rss" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="action.script" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="action.summary_index" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="alert.digest_mode" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="alert.expires" datatype="DATATYPE_NOT_SET">24h</s:key>
-        <s:key name="alert.severity" datatype="DATATYPE_NOT_SET">3</s:key>
-        <s:key name="alert.suppress" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert.suppress.fields" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert.suppress.period" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert.track" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="alert_comparator" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert_condition" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert_threshold" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert_type" datatype="DATATYPE_NOT_SET">always</s:key>
-        <s:key name="auto_summarize" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="auto_summarize.command" datatype="DATATYPE_NOT_SET">| summarize override=partial timespan=$auto_summarize.timespan$ [ $search$ ]</s:key>
-        <s:key name="auto_summarize.cron_schedule" datatype="DATATYPE_NOT_SET">0 */4 * * *</s:key>
-        <s:key name="auto_summarize.dispatch.earliest_time" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="auto_summarize.dispatch.latest_time" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="auto_summarize.timespan" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="cron_schedule" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="description" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="disabled" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="dispatch.buckets" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="dispatch.earliest_time" datatype="DATATYPE_NOT_SET">-1445m</s:key>
-        <s:key name="dispatch.latest_time" datatype="DATATYPE_NOT_SET">-5m</s:key>
-        <s:key name="dispatch.lookups" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="dispatch.max_count" datatype="DATATYPE_NOT_SET">500000</s:key>
-        <s:key name="dispatch.max_time" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="dispatch.reduce_freq" datatype="DATATYPE_NOT_SET">10</s:key>
-        <s:key name="dispatch.rt_backfill" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="dispatch.spawn_process" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="dispatch.time_format" datatype="DATATYPE_NOT_SET">%FT%T.%Q%:z</s:key>
-        <s:key name="dispatch.ttl" datatype="DATATYPE_NOT_SET">2p</s:key>
-        <s:key name="displayview" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="eai:acl"><s:dict><s:key name="app" datatype="string">search</s:key><s:key name="can_change_perms" datatype="boolean">1</s:key><s:key name="can_list" datatype="boolean">1</s:key><s:key name="can_share_app" datatype="boolean">1</s:key><s:key name="can_share_global" datatype="boolean">1</s:key><s:key name="can_share_user" datatype="boolean">0</s:key><s:key name="can_write" datatype="boolean">1</s:key><s:key name="modifiable" datatype="boolean">1</s:key><s:key name="owner" datatype="string">nobody</s:key><s:key name="perms"><s:dict><s:key name="read"><s:list><s:item datatype="string">admin</s:item></s:list></s:key><s:key name="write"><s:list><s:item datatype="string">admin</s:item></s:list></s:key></s:dict></s:key><s:key name="removable" datatype="boolean">0</s:key><s:key name="sharing" datatype="string">app</s:key></s:dict></s:key>
-        <s:key name="is_scheduled" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="is_visible" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="max_concurrent" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="next_scheduled_time" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="qualifiedSearch" datatype="DATATYPE_NOT_SET">search index=_internal (source=*/metrics.log* OR source=*\\metrics.log*) group=per_sourcetype_thruput | timechart span=10m per_second(kb) by series</s:key>
-        <s:key name="realtime_schedule" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="request.ui_dispatch_app" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="request.ui_dispatch_view" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="restart_on_searchpeer_add" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="run_on_startup" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="search" datatype="DATATYPE_NOT_SET">index=_internal (source=*/metrics.log* OR source=*\\metrics.log*) group=per_sourcetype_thruput | timechart span=10m per_second(kb) by series</s:key>
-        <s:key name="vsid" datatype="DATATYPE_NOT_SET"></s:key>
-      </s:dict>
-    </content>
-  </entry>
-  <entry>
-    <title datatype="string">Messages by minute last 3 hours</title>
-    <id datatype="string">https://127.0.0.1:8079/servicesNS/nobody/search/saved/searches/Messages%20by%20minute%20last%203%20hours</id>
-    <updated datatype="string">2012-03-13T15:22:54-07:00</updated>
-    <link href="/servicesNS/nobody/search/saved/searches/Messages%20by%20minute%20last%203%20hours" rel="alternate"/>
-    <author>
-      <name datatype="string">nobody</name>
-    </author>
-    <link href="/servicesNS/nobody/search/saved/searches/Messages%20by%20minute%20last%203%20hours" rel="list"/>
-    <link href="/servicesNS/nobody/search/saved/searches/Messages%20by%20minute%20last%203%20hours/_reload" rel="_reload"/>
-    <link href="/servicesNS/nobody/search/saved/searches/Messages%20by%20minute%20last%203%20hours" rel="edit"/>
-    <link href="/servicesNS/nobody/search/saved/searches/Messages%20by%20minute%20last%203%20hours/disable" rel="disable"/>
-    <link href="/servicesNS/nobody/search/saved/searches/Messages%20by%20minute%20last%203%20hours/dispatch" rel="dispatch"/>
-    <link href="/servicesNS/nobody/search/saved/searches/Messages%20by%20minute%20last%203%20hours/history" rel="history"/>
-    <content type="text/xml">
-      <s:dict>
-        <s:key name="action.email" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="action.email.sendresults" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="action.email.to" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="action.populate_lookup" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="action.rss" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="action.script" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="action.summary_index" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="alert.digest_mode" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="alert.expires" datatype="DATATYPE_NOT_SET">24h</s:key>
-        <s:key name="alert.severity" datatype="DATATYPE_NOT_SET">3</s:key>
-        <s:key name="alert.suppress" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert.suppress.fields" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert.suppress.period" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert.track" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="alert_comparator" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert_condition" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert_threshold" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert_type" datatype="DATATYPE_NOT_SET">always</s:key>
-        <s:key name="auto_summarize" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="auto_summarize.command" datatype="DATATYPE_NOT_SET">| summarize override=partial timespan=$auto_summarize.timespan$ [ $search$ ]</s:key>
-        <s:key name="auto_summarize.cron_schedule" datatype="DATATYPE_NOT_SET">0 */4 * * *</s:key>
-        <s:key name="auto_summarize.dispatch.earliest_time" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="auto_summarize.dispatch.latest_time" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="auto_summarize.timespan" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="cron_schedule" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="description" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="disabled" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="dispatch.buckets" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="dispatch.earliest_time" datatype="DATATYPE_NOT_SET">-3h</s:key>
-        <s:key name="dispatch.latest_time" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="dispatch.lookups" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="dispatch.max_count" datatype="DATATYPE_NOT_SET">500000</s:key>
-        <s:key name="dispatch.max_time" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="dispatch.reduce_freq" datatype="DATATYPE_NOT_SET">10</s:key>
-        <s:key name="dispatch.rt_backfill" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="dispatch.spawn_process" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="dispatch.time_format" datatype="DATATYPE_NOT_SET">%FT%T.%Q%:z</s:key>
-        <s:key name="dispatch.ttl" datatype="DATATYPE_NOT_SET">2p</s:key>
-        <s:key name="displayview" datatype="DATATYPE_NOT_SET">report_builder_display</s:key>
-        <s:key name="eai:acl"><s:dict><s:key name="app" datatype="string">search</s:key><s:key name="can_change_perms" datatype="boolean">1</s:key><s:key name="can_list" datatype="boolean">1</s:key><s:key name="can_share_app" datatype="boolean">1</s:key><s:key name="can_share_global" datatype="boolean">1</s:key><s:key name="can_share_user" datatype="boolean">0</s:key><s:key name="can_write" datatype="boolean">1</s:key><s:key name="modifiable" datatype="boolean">1</s:key><s:key name="owner" datatype="string">nobody</s:key><s:key name="perms"><s:dict><s:key name="read"><s:list><s:item datatype="string">admin</s:item></s:list></s:key><s:key name="write"><s:list><s:item datatype="string">admin</s:item></s:list></s:key></s:dict></s:key><s:key name="removable" datatype="boolean">0</s:key><s:key name="sharing" datatype="string">app</s:key></s:dict></s:key>
-        <s:key name="is_scheduled" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="is_visible" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="max_concurrent" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="next_scheduled_time" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="qualifiedSearch" datatype="DATATYPE_NOT_SET">search index=_internal source="*metrics.log" eps "group=per_source_thruput" NOT filetracker | eval events=eps*kb/kbps | timechart fixedrange=t span=1m limit=5 sum(events) by series</s:key>
-        <s:key name="realtime_schedule" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="request.ui_dispatch_app" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="request.ui_dispatch_view" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="restart_on_searchpeer_add" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="run_on_startup" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="search" datatype="DATATYPE_NOT_SET">index=_internal source="*metrics.log" eps "group=per_source_thruput" NOT filetracker | eval events=eps*kb/kbps | timechart fixedrange=t span=1m limit=5 sum(events) by series</s:key>
-        <s:key name="vsid" datatype="DATATYPE_NOT_SET"></s:key>
-      </s:dict>
-    </content>
-  </entry>
-  <entry>
-    <title datatype="string">Splunk errors last 24 hours</title>
-    <id datatype="string">https://127.0.0.1:8079/servicesNS/nobody/search/saved/searches/Splunk%20errors%20last%2024%20hours</id>
-    <updated datatype="string">2012-03-13T15:22:54-07:00</updated>
-    <link href="/servicesNS/nobody/search/saved/searches/Splunk%20errors%20last%2024%20hours" rel="alternate"/>
-    <author>
-      <name datatype="string">nobody</name>
-    </author>
-    <link href="/servicesNS/nobody/search/saved/searches/Splunk%20errors%20last%2024%20hours" rel="list"/>
-    <link href="/servicesNS/nobody/search/saved/searches/Splunk%20errors%20last%2024%20hours/_reload" rel="_reload"/>
-    <link href="/servicesNS/nobody/search/saved/searches/Splunk%20errors%20last%2024%20hours" rel="edit"/>
-    <link href="/servicesNS/nobody/search/saved/searches/Splunk%20errors%20last%2024%20hours/disable" rel="disable"/>
-    <link href="/servicesNS/nobody/search/saved/searches/Splunk%20errors%20last%2024%20hours/dispatch" rel="dispatch"/>
-    <link href="/servicesNS/nobody/search/saved/searches/Splunk%20errors%20last%2024%20hours/history" rel="history"/>
-    <content type="text/xml">
-      <s:dict>
-        <s:key name="action.email" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="action.email.sendresults" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="action.email.to" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="action.populate_lookup" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="action.rss" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="action.script" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="action.summary_index" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="alert.digest_mode" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="alert.expires" datatype="DATATYPE_NOT_SET">24h</s:key>
-        <s:key name="alert.severity" datatype="DATATYPE_NOT_SET">3</s:key>
-        <s:key name="alert.suppress" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert.suppress.fields" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert.suppress.period" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert.track" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="alert_comparator" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert_condition" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert_threshold" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert_type" datatype="DATATYPE_NOT_SET">always</s:key>
-        <s:key name="auto_summarize" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="auto_summarize.command" datatype="DATATYPE_NOT_SET">| summarize override=partial timespan=$auto_summarize.timespan$ [ $search$ ]</s:key>
-        <s:key name="auto_summarize.cron_schedule" datatype="DATATYPE_NOT_SET">0 */4 * * *</s:key>
-        <s:key name="auto_summarize.dispatch.earliest_time" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="auto_summarize.dispatch.latest_time" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="auto_summarize.timespan" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="cron_schedule" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="description" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="disabled" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="dispatch.buckets" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="dispatch.earliest_time" datatype="DATATYPE_NOT_SET">-24h</s:key>
-        <s:key name="dispatch.latest_time" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="dispatch.lookups" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="dispatch.max_count" datatype="DATATYPE_NOT_SET">500000</s:key>
-        <s:key name="dispatch.max_time" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="dispatch.reduce_freq" datatype="DATATYPE_NOT_SET">10</s:key>
-        <s:key name="dispatch.rt_backfill" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="dispatch.spawn_process" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="dispatch.time_format" datatype="DATATYPE_NOT_SET">%FT%T.%Q%:z</s:key>
-        <s:key name="dispatch.ttl" datatype="DATATYPE_NOT_SET">2p</s:key>
-        <s:key name="displayview" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="eai:acl"><s:dict><s:key name="app" datatype="string">search</s:key><s:key name="can_change_perms" datatype="boolean">1</s:key><s:key name="can_list" datatype="boolean">1</s:key><s:key name="can_share_app" datatype="boolean">1</s:key><s:key name="can_share_global" datatype="boolean">1</s:key><s:key name="can_share_user" datatype="boolean">0</s:key><s:key name="can_write" datatype="boolean">1</s:key><s:key name="modifiable" datatype="boolean">1</s:key><s:key name="owner" datatype="string">nobody</s:key><s:key name="perms"><s:dict><s:key name="read"><s:list><s:item datatype="string">admin</s:item></s:list></s:key><s:key name="write"><s:list><s:item datatype="string">admin</s:item></s:list></s:key></s:dict></s:key><s:key name="removable" datatype="boolean">0</s:key><s:key name="sharing" datatype="string">app</s:key></s:dict></s:key>
-        <s:key name="is_scheduled" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="is_visible" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="max_concurrent" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="next_scheduled_time" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="qualifiedSearch" datatype="DATATYPE_NOT_SET">search index=_internal " error " NOT debug source=*splunkd.log*</s:key>
-        <s:key name="realtime_schedule" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="request.ui_dispatch_app" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="request.ui_dispatch_view" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="restart_on_searchpeer_add" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="run_on_startup" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="search" datatype="DATATYPE_NOT_SET">index=_internal " error " NOT debug source=*splunkd.log*</s:key>
-        <s:key name="vsid" datatype="DATATYPE_NOT_SET"></s:key>
-      </s:dict>
-    </content>
-  </entry>
-  <entry>
-    <title datatype="string">Top five sourcetypes</title>
-    <id datatype="string">https://127.0.0.1:8079/servicesNS/nobody/search/saved/searches/Top%20five%20sourcetypes</id>
-    <updated datatype="string">2012-03-13T15:22:54-07:00</updated>
-    <link href="/servicesNS/nobody/search/saved/searches/Top%20five%20sourcetypes" rel="alternate"/>
-    <author>
-      <name datatype="string">nobody</name>
-    </author>
-    <link href="/servicesNS/nobody/search/saved/searches/Top%20five%20sourcetypes" rel="list"/>
-    <link href="/servicesNS/nobody/search/saved/searches/Top%20five%20sourcetypes/_reload" rel="_reload"/>
-    <link href="/servicesNS/nobody/search/saved/searches/Top%20five%20sourcetypes" rel="edit"/>
-    <link href="/servicesNS/nobody/search/saved/searches/Top%20five%20sourcetypes/disable" rel="disable"/>
-    <link href="/servicesNS/nobody/search/saved/searches/Top%20five%20sourcetypes/dispatch" rel="dispatch"/>
-    <link href="/servicesNS/nobody/search/saved/searches/Top%20five%20sourcetypes/history" rel="history"/>
-    <content type="text/xml">
-      <s:dict>
-        <s:key name="action.email" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="action.email.sendresults" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="action.email.to" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="action.populate_lookup" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="action.rss" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="action.script" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="action.summary_index" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="alert.digest_mode" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="alert.expires" datatype="DATATYPE_NOT_SET">24h</s:key>
-        <s:key name="alert.severity" datatype="DATATYPE_NOT_SET">3</s:key>
-        <s:key name="alert.suppress" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert.suppress.fields" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert.suppress.period" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert.track" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="alert_comparator" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert_condition" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert_threshold" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="alert_type" datatype="DATATYPE_NOT_SET">always</s:key>
-        <s:key name="auto_summarize" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="auto_summarize.command" datatype="DATATYPE_NOT_SET">| summarize override=partial timespan=$auto_summarize.timespan$ [ $search$ ]</s:key>
-        <s:key name="auto_summarize.cron_schedule" datatype="DATATYPE_NOT_SET">0 */4 * * *</s:key>
-        <s:key name="auto_summarize.dispatch.earliest_time" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="auto_summarize.dispatch.latest_time" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="auto_summarize.timespan" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="cron_schedule" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="description" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="disabled" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="dispatch.buckets" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="dispatch.earliest_time" datatype="DATATYPE_NOT_SET">-24h</s:key>
-        <s:key name="dispatch.latest_time" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="dispatch.lookups" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="dispatch.max_count" datatype="DATATYPE_NOT_SET">500000</s:key>
-        <s:key name="dispatch.max_time" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="dispatch.reduce_freq" datatype="DATATYPE_NOT_SET">10</s:key>
-        <s:key name="dispatch.rt_backfill" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="dispatch.spawn_process" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="dispatch.time_format" datatype="DATATYPE_NOT_SET">%FT%T.%Q%:z</s:key>
-        <s:key name="dispatch.ttl" datatype="DATATYPE_NOT_SET">2p</s:key>
-        <s:key name="displayview" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="eai:acl"><s:dict><s:key name="app" datatype="string">search</s:key><s:key name="can_change_perms" datatype="boolean">1</s:key><s:key name="can_list" datatype="boolean">1</s:key><s:key name="can_share_app" datatype="boolean">1</s:key><s:key name="can_share_global" datatype="boolean">1</s:key><s:key name="can_share_user" datatype="boolean">0</s:key><s:key name="can_write" datatype="boolean">1</s:key><s:key name="modifiable" datatype="boolean">1</s:key><s:key name="owner" datatype="string">nobody</s:key><s:key name="perms"><s:dict><s:key name="read"><s:list><s:item datatype="string">admin</s:item></s:list></s:key><s:key name="write"><s:list><s:item datatype="string">admin</s:item></s:list></s:key></s:dict></s:key><s:key name="removable" datatype="boolean">0</s:key><s:key name="sharing" datatype="string">app</s:key></s:dict></s:key>
-        <s:key name="is_scheduled" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="is_visible" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="max_concurrent" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="next_scheduled_time" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="qualifiedSearch" datatype="DATATYPE_NOT_SET">search index=_internal (source=*/metrics.log* OR source=*\\metrics.log*) group=per_sourcetype_thruput | chart sum(kb) by series | sort -sum(kb) | head 5</s:key>
-        <s:key name="realtime_schedule" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="request.ui_dispatch_app" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="request.ui_dispatch_view" datatype="DATATYPE_NOT_SET"></s:key>
-        <s:key name="restart_on_searchpeer_add" datatype="DATATYPE_NOT_SET">1</s:key>
-        <s:key name="run_on_startup" datatype="DATATYPE_NOT_SET">0</s:key>
-        <s:key name="search" datatype="DATATYPE_NOT_SET">index=_internal (source=*/metrics.log* OR source=*\\metrics.log*) group=per_sourcetype_thruput | chart sum(kb) by series | sort -sum(kb) | head 5</s:key>
-        <s:key name="vsid" datatype="DATATYPE_NOT_SET"></s:key>
-      </s:dict>
-    </content>
-  </entry>
-</feed>
-"""
+    results = {}
+    messages = {}
+
+    try:
+        extracted_messages = extract_messages(root)
+        if extracted_messages:
+            combine_messages(messages, extracted_messages);
+    except:
+        # TODO
+        pass
+            
+    field_list = []
+    data = []
+    offsets = []
+
+    for node in root.findall('meta/fieldOrder/field'):
+        field_list.append(unicode(node.text))
+    for node in root.findall('result'):
+        row = {}
+        
+        offsets.append(node.get('offset'))
+        for field in node.findall('field'):
+            field_struct = []
+            for subfield in field.findall('value'):
+                field_struct.append({
+                    'value': subfield.findtext('text'),
+                    'tags': [x.text for x in subfield.findall('tag')]
+                })
+            for subfield in field.findall('v'):
+                field_struct.append({
+                    'value': extract_result_inner_text(subfield)
+                })
+            row[field.get('k')] = field_struct
+        data.append(row)
+        
+    
+    if format is ResultFormat.VERBOSE:
+        results = results_to_verbose(field_list, data)
+    elif format is ResultFormat.ROW:
+        results = results_to_rows(field_list, data)
+    elif format is ResultFormat.COLUMN:
+        results = results_to_columns(field_list, data)
+
+    if format is not ResultFormat.VERBOSE:
+        results["preview"] = normalize_boolean(root.get("preview"))
+        results["init_offset"] = int(offsets[0] if len(offsets) else 0)
+        results["messages"] = messages
+
+    return results
+
+def results_to_verbose(field_list, data):
+    results = []
+    for row_data in data:
+        row = {}
+        for field_name in field_list:
+            field_data = row_data.get(field_name, [{ "value": []}])
+            values = []
+            
+            for field_datum in field_data:
+                value = field_datum['value'] or None
+                if isinstance(value, list) and len(value) == 1:
+                    value = value[0]  
+                    
+                values.append(value)
+            
+            row[field_name] = values[0] if len(values) == 1 else values
+    
+        results.append(row)
+    
+    return results
+
+def results_to_rows(field_list, data):
+    results = {}
+    results['fields'] = field_list
+    results['rows'] = []
+    
+    for row_data in data:
+        row = {
+            "data": [],
+        }
+    
+        for field_name in field_list:
+            field_data = row_data.get(field_name, [{ "value": []}])
+            values = []
+            
+            for field_datum in field_data:
+                value = field_datum['value'] or None
+                if isinstance(value, list) and len(value) == 1:
+                    value = value[0]  
+                    
+                values.append(value)
+            
+            values = values[0] if len(values) == 1 else values
+            
+            row['data'].append(values or None)
+    
+        results['rows'].append(row['data'])
+        
+    return results
+
+def results_to_columns(field_list, data):
+    results = {}
+    results['fields'] = field_list
+    results['columns'] = []
+    
+    for field_name in field_list:
+        def extract(row_data):
+            field_data = row_data.get(field_name, [{ "value": []}])
+            values = []
+            tags = []
+            
+            for field_datum in field_data:
+                value = field_datum['value'] or None
+                if isinstance(value, list) and len(value) == 1:
+                    value = value[0]  
+                    
+                values.append(value)
+                
+            values = values[0] if len(values) == 1 else values
+            
+            return values or None
+        
+        column_data = map(extract, data)
+        results['columns'].append(column_data)
+    
+    return results
+    
+def extract_result_inner_text(node):
+    # TODO: fails if segementation is enabled
+    output = []
+    for innernode in node.iter():
+        if innernode.text and innernode.text.strip():
+            output.append(innernode.text)
+        elif innernode != node:
+            output.append(self._getInnerText(innernode))
+        if innernode.tail and innernode.tail.strip():
+            output.append(innernode.tail)
+    return output
 
 if __name__ == "__main__":
-    print json.dumps(from_feed(sample_xml))
+    print json.dumps(from_job_results(sys.stdin.read(), format=ResultFormat.VERBOSE))
+    #print json.dumps(from_feed(sys.stdin.read()))
