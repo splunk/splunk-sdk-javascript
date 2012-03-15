@@ -465,6 +465,44 @@ def results_to_columns(field_list, data):
     
     return results
     
+def from_search_timeline(root, timings = {}):
+    if isinstance(root, str):
+        time_start = time.time()
+        root = et.fromstring(root)
+        time_end = time.time()
+        timings["search_timeline_parse"] = time_end - time_start
+    elif isinstance(root, file):
+        time_start = time.time()
+        root = et.parse(root).getroot()
+        time_end = time.time()
+        timings["search_timeline_parse"] = time_end - time_start
+        
+    output = {
+        'entry': {
+            'event_count': int(root.get('c', 0)),
+            'cursor_time': float(root.get('cursor', 0)),
+            'buckets': []
+        },
+        'timings': timings
+    }
+
+    time_start = time.time()
+    for node in root.findall('bucket'):
+        output['entry']['buckets'].append({
+            'available_count': int(node.get('a', 0)),
+            'duration': float(node.get('d', 0)),
+            'earliest_time': float(node.get('t', 0)),
+            'earliest_time_offset': int(node.get('etz', 0)),
+            'is_finalized': True if (node.get('f', False)) == '1' else False,
+            'latest_time_offset': int(node.get('ltz', 0)),
+            'earliest_strftime': node.text,
+            'total_count': int(node.get('c', 0))
+        })
+    time_end = time.time()    
+    timings["search_timeline_buckets"] = time_end - time_start
+        
+    return output
+    
 def extract_result_inner_text(node):
     # TODO: fails if segementation is enabled
     output = []
@@ -484,6 +522,8 @@ if __name__ == "__main__":
     #print "Read: %s" % (time_end - time_start)
     #print json.dumps(from_job_results(incoming, format=ResultFormat.VERBOSE))
     #print json.dumps(from_feed(incoming))
-    data = from_job_results(sys.stdin, format=ResultFormat.ROW)
-    print json.dumps(data["timings"], sort_keys=True, indent = 4)
-    print len(data["rows"])
+    #data = from_job_results(sys.stdin, format=ResultFormat.ROW)
+    #print json.dumps(data["timings"], sort_keys=True, indent = 4)
+    #print len(data["rows"])
+    data = from_search_timeline(sys.stdin)
+    print json.dumps(data, indent=4)
