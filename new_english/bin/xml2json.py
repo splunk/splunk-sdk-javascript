@@ -386,6 +386,16 @@ def from_job_results(root, format=ResultFormat.ROW, timings={}):
         results["messages"] = messages
         results["timings"] = timings
 
+    messages = {}
+    try:
+        extracted_messages = extract_messages(root)
+        if extracted_messages:
+            combine_messages(messages, extracted_messages);
+    except:
+        # TODO
+        pass
+    results["messages"] = messages
+            
     return results
 
 def results_to_verbose(field_list, data):
@@ -477,18 +487,15 @@ def from_search_timeline(root, timings = {}):
         time_end = time.time()
         timings["search_timeline_parse"] = time_end - time_start
         
-    output = {
-        'entry': {
-            'event_count': int(root.get('c', 0)),
-            'cursor_time': float(root.get('cursor', 0)),
-            'buckets': []
-        },
-        'timings': timings
+    entry = {
+        'event_count': int(root.get('c', 0)),
+        'cursor_time': float(root.get('cursor', 0)),
+        'buckets': []
     }
 
     time_start = time.time()
     for node in root.findall('bucket'):
-        output['entry']['buckets'].append({
+        entry['buckets'].append({
             'available_count': int(node.get('a', 0)),
             'duration': float(node.get('d', 0)),
             'earliest_time': float(node.get('t', 0)),
@@ -501,7 +508,20 @@ def from_search_timeline(root, timings = {}):
     time_end = time.time()    
     timings["search_timeline_buckets"] = time_end - time_start
         
-    return output
+    messages = {}
+    try:
+        extracted_messages = extract_messages(root)
+        if extracted_messages:
+            combine_messages(messages, extracted_messages);
+    except:
+        # TODO
+        pass
+    
+    return {
+        "messages": messages,
+        "entry": entry,
+        "timings": timings
+    }
     
 def from_search_summary(root, timings={}):
     if isinstance(root, str):
@@ -553,7 +573,17 @@ def from_search_summary(root, timings={}):
     time_end = time.time()  
     timings["search_summary_fields"] = time_end - time_start
         
-    output = {
+    messages = {}
+    try:
+        extracted_messages = extract_messages(root)
+        if extracted_messages:
+            combine_messages(messages, extracted_messages);
+    except:
+        # TODO
+        pass
+    
+    return {
+        "messages": messages,
         'entry': summary,
         'timings': timings
     }
@@ -568,10 +598,202 @@ def from_auth(root):
         
     session_key = root.findtext("sessionKey")
     
+    messages = {}
+    try:
+        extracted_messages = extract_messages(root)
+        if extracted_messages:
+            combine_messages(messages, extracted_messages);
+    except:
+        # TODO
+        pass
+    
     return {
+        "messages": messages,
         "entry": {
             "sessionKey": session_key
         }
+    }
+    
+def from_job_create(root):
+    if isinstance(root, str):
+        root = et.fromstring(root)
+    elif isinstance(root, file):
+        root = et.parse(root).getroot()
+        
+    sid = root.findtext("sid")
+    
+    messages = {}
+    try:
+        extracted_messages = extract_messages(root)
+        if extracted_messages:
+            combine_messages(messages, extracted_messages);
+    except:
+        # TODO
+        pass
+    
+    return {
+        "messages": messages,
+        "entry": {
+            "sid": sid
+        }
+    }
+
+def from_http_simple_input(root):
+    if isinstance(root, str):
+        root = et.fromstring(root)
+    elif isinstance(root, file):
+        root = et.parse(root).getroot()
+    
+    entry = {}
+    
+    for field in root.findall("results/result/field"):
+        entry[field.get("k")] = field.findtext("value/text")
+            
+    messages = {}
+    try:
+        extracted_messages = extract_messages(root)
+        if extracted_messages:
+            combine_messages(messages, extracted_messages);
+    except:
+        # TODO
+        pass
+    
+    return {
+        "messages": messages,
+        "entry": entry
+    }
+
+def from_search_parser(root):
+    if isinstance(root, str):
+        root = et.fromstring(root)
+    elif isinstance(root, file):
+        root = et.parse(root).getroot()
+        
+    entry = {}
+    entry["commands"] = []
+    
+    for node in root.findall("dict/key"):
+        entry[node.get("name")] = node.text or ""
+    
+    for node in root.findall("list/item"):
+        command = {}
+        for key in node.findall("dict/key"):
+            if key.get("name") == "args":
+                args = {}
+                for arg_key in key.findall("dict/key"):
+                    if arg_key.get("name") == "search":
+                        search_items = []
+                        for search_item in arg_key.findall("list/item"):
+                            search_items.append(search_item.text or "")
+                        args["search"] = search_items
+                    else:
+                        args[arg_key.get("name")] = arg_key.text or ""
+                command["args"] = args
+            else:
+                command[key.get("name")] = key.text or ""
+        entry["commands"].append(command)
+    
+    messages = {}
+    try:
+        extracted_messages = extract_messages(root)
+        if extracted_messages:
+            combine_messages(messages, extracted_messages);
+    except:
+        # TODO
+        pass
+        
+    return {
+        "messages": messages,
+        "entry": entry
+    }
+
+def from_propertizes_stanza_key(root, key):
+    messages = {}
+    try:
+        extracted_messages = extract_messages(root)
+        if extracted_messages:
+            combine_messages(messages, extracted_messages);
+    except:
+        # TODO
+        pass
+    
+    return {
+        "messages": messages,
+        "entry": {
+            "key": key,
+            "value": root
+        }
+    }
+
+def from_propertizes_stanza(root):
+    if isinstance(root, str):
+        root = et.fromstring(root)
+    elif isinstance(root, file):
+        root = et.parse(root).getroot()
+    
+    collection = {}
+    
+    collection['entry'] = parse_stanza(root)
+    
+    collection['id'] = root.findall('{%s}id' % (ATOM_NS))[0].text
+    collection['name'] = root.findall('{%s}title' % (ATOM_NS))[0].text
+    
+    published_info = root.findall('{%s}published' % (ATOM_NS))
+    if published_info:
+        collection['published'] = published_info[0].text
+        
+    updated_info = root.findall('{%s}updated' % (ATOM_NS))
+    if updated_info:
+        collection['updated'] = updated_info[0].text
+        
+    author_info = root.findall('{%s}author/{%s}name' % (ATOM_NS, ATOM_NS))
+    if author_info:
+        collection['author'] = author_info[0].text
+            
+    messages = {}
+    try:
+        extracted_messages = extract_messages(root)
+        if extracted_messages:
+            combine_messages(messages, extracted_messages);
+    except:
+        # TODO
+        pass
+    collection['messages'] = messages
+    
+    return collection
+
+def parse_stanza(root):
+    content = {}
+    
+    for entry in root.findall('{%s}entry' % (ATOM_NS)):
+        try:
+            key = entry.findall("{%s}title" % (ATOM_NS))[0].text
+            value = entry.findall("{%s}content" % (ATOM_NS))[0].text
+            content[key] = value
+        except:
+            logger.info("Error parsing KV-pair from stanza")
+        
+    return content
+
+def from_messages_only(root):
+    if isinstance(root, str):
+        root = et.fromstring(root)
+    elif isinstance(root, file):
+        root = et.parse(root).getroot()
+    
+    messages = {}
+    
+    try:
+        extracted_messages = extract_messages(root)
+        if extracted_messages:
+            combine_messages(messages, extracted_messages);
+    except:
+        # TODO
+        pass
+        
+    return {
+        "messages": messages,
+        "entry": None
     }
     
 def extract_result_inner_text(node):
@@ -596,5 +818,5 @@ if __name__ == "__main__":
     #data = from_job_results(sys.stdin, format=ResultFormat.ROW)
     #print json.dumps(data["timings"], sort_keys=True, indent = 4)
     #print len(data["rows"])
-    data = from_auth(sys.stdin)
+    data = from_search_parser(sys.stdin)
     print json.dumps(data, indent=4)
