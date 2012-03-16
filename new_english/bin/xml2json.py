@@ -503,6 +503,77 @@ def from_search_timeline(root, timings = {}):
         
     return output
     
+def from_search_summary(root, timings={}):
+    if isinstance(root, str):
+        time_start = time.time()
+        root = et.fromstring(root)
+        time_end = time.time()
+        timings["search_timeline_parse"] = time_end - time_start
+    elif isinstance(root, file):
+        time_start = time.time()
+        root = et.parse(root).getroot()
+        time_end = time.time()
+        timings["search_timeline_parse"] = time_end - time_start
+        
+    summary = {
+        'earliest_time': root.get('earliest_time', ''),
+        'latest_time': root.get('latest_time', ''),
+        'duration': float(root.get('duration', 0)),
+        'event_count': int(root.get('c', 0)),
+        'fields': {}
+    }
+    
+    time_start = time.time()
+    for node in root.findall('field'):
+        field = {
+            'name': node.get('k'),
+            'count': int(node.get('c', 0)),
+            'nc': int(node.get('nc', 0)),
+            'distinct_count': int(node.get('dc', 0)),
+            'is_exact': True if (node.get('exact', False)) == '1' else False,
+            'min': float(node.findtext('min')) if node.findtext('min', None) else None,
+            'max': float(node.findtext('max')) if node.findtext('max', None) else None,
+            'mean': float(node.findtext('mean')) if node.findtext('mean', None) else None,
+            'stdev': float(node.findtext('stdev')) if node.findtext('stdev', None) else None,
+            'modes': []
+        }
+        for val in node.findall('modes/value'):
+            v = val.findtext('text')
+            if field['mean'] != None:
+                try:
+                    v = float(v)
+                except:
+                    pass
+            field['modes'].append({
+                'value': v,
+                'count': int(val.get('c', 0)),
+                'is_exact': True if (node.get('exact', False)) == '1' else False
+            })
+        summary['fields'][node.get('k')] = field
+    time_end = time.time()  
+    timings["search_summary_fields"] = time_end - time_start
+        
+    output = {
+        'entry': summary,
+        'timings': timings
+    }
+        
+    return output
+    
+def from_auth(root):
+    if isinstance(root, str):
+        root = et.fromstring(root)
+    elif isinstance(root, file):
+        root = et.parse(root).getroot()
+        
+    session_key = root.findtext("sessionKey")
+    
+    return {
+        "entry": {
+            "sessionKey": session_key
+        }
+    }
+    
 def extract_result_inner_text(node):
     # TODO: fails if segementation is enabled
     output = []
@@ -525,5 +596,5 @@ if __name__ == "__main__":
     #data = from_job_results(sys.stdin, format=ResultFormat.ROW)
     #print json.dumps(data["timings"], sort_keys=True, indent = 4)
     #print len(data["rows"])
-    data = from_search_timeline(sys.stdin)
+    data = from_auth(sys.stdin)
     print json.dumps(data, indent=4)
