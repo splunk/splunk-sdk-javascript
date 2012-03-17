@@ -14,10 +14,13 @@
 # License for the specific language governing permissions and limitations
 # under the License.
 
+# internal
+import util
+
+# stdlib
 import time
 import json
 import sys
-
 import xml.etree.cElementTree as et
 #import lxml.etree as et
 
@@ -27,6 +30,7 @@ OPENSEARCH_NS   = 'http://a9.com/-/spec/opensearch/1.1/'
 
 SPLUNK_TAGF = '{%s}%%s' % SPLUNK_NS
 
+
 class ResultFormat(object):
     VERBOSE = 0
     ROW = 1
@@ -34,14 +38,13 @@ class ResultFormat(object):
 
 def extract_messages(node):
     '''
-    Inspects an XML node and extracts any messages that have been passed through
-    the standard XML messaging spec
+    Inspects an XML node and extracts any messages
+    that have been passed through the standard XML messaging spec
     '''
 
     output = {}
     messages = node.find('messages')
     if messages == None:
-        # logger.debug("The atom feed uses the splunk namespace, so check there too")
         messages = node.find(SPLUNK_TAGF % 'messages')
         
     if messages is not None:
@@ -57,84 +60,30 @@ def extract_messages(node):
             
     return output
 
+
 def combine_messages(existing_messages, new_messages):
     for message_type in new_messages.keys():
-        if existing_messages.has_key(message_type):
+        if message_type in existing_messages:
             existing_messages[message_type].extend(new_messages[message_type])
         else:
             existing_messages[message_type] = new_messages[message_type]
 
-def normalize_boolean(input, enableStrictMode=False, includeIntegers=True):
-    '''
-    Tries to convert a value to Boolean.  Accepts the following pairs:
-    true/false t/f/ 0/1 yes/no on/off y/n
-
-    If given a dictionary, this function will attempt to iterate over the dictionary
-    and normalize each item.
-    
-    If enableStrictMode is True, then a ValueError will be raised if the input
-    value is not a recognized boolean.
-
-    If enableStrictMode is False (default), then the input will be returned
-    unchanged if it is not recognized as a boolean.  Thus, they will have the
-    truth value of the python language.
-    
-    NOTE: Use this method judiciously, as you may be casting integer values
-    into boolean when you don't want to.  If you do want to get integer values, 
-    the idiom for that is:
-    
-        try: 
-            v = int(v)
-        except ValueError:
-            v = splunk.util.normalizeBoolean(v)
-            
-    This casts integer-like values into 'int', and others into boolean.
-    '''
-    
-    trueThings = ['true', 't', 'on', 'yes', 'y']
-    falseThings = ['false', 'f', 'off', 'no', 'n']
-
-    if includeIntegers:
-        trueThings.append('1')
-        falseThings.append('0')
-        
-    def norm(input):
-        if input == True: return True
-        if input == False: return False
-        
-        try:
-            test = input.strip().lower()
-        except:
-            return input
-
-        if test in trueThings:
-            return True
-        elif test in falseThings:
-            return False
-        elif enableStrictMode:
-            raise ValueError, 'Unable to cast value to boolean: %s' % input
-        else:
-            return input
-
-
-    if isinstance(input, dict):
-        for k,v in input.items():
-            input[k] = norm(v)
-        return input
-    else:
-        return norm(input)
 
 def unesc(str):
-    if not str: return str    
+    if not str:
+        return str
     return su.unescape(str, {'&quot;': '"', '&apos;': "'"})
     
+
 def node_to_primitive(N):
-    if N == None: return None
+    if N == None:
+        return None
     if N.tag in (SPLUNK_TAGF % 'dict', 'dict'):
         return _dict_node_to_primitive(N)
     elif N.tag in (SPLUNK_TAGF % 'list', 'list'):
         return _list_node_to_primitive(N)
     return unesc(str(N))
+    
 
 def _dict_node_to_primitive(N):
     output = {}
@@ -147,6 +96,7 @@ def _dict_node_to_primitive(N):
             output[child.get('name')] = unesc(child.text)
     return output
     
+
 def _list_node_to_primitive(N):
     output = []
     for child in N:
@@ -157,15 +107,23 @@ def _list_node_to_primitive(N):
         else:
             output.append(None)
     return output
+    
+
+def extract_result_inner_text(node):
+    # TODO: fails if segementation is enabled
+    output = []
+    for innernode in node:
+        if innernode.text and innernode.text.strip():
+            output.append(innernode.text)
+        elif innernode != node:
+            output.append(extract_result_inner_text(innernode))
+        if innernode.tail and innernode.tail.strip():
+            output.append(innernode.tail)
+    return output
 
 ####################
 
-#def to_json(data):
-#    # In the case where we have a single entry
-#    if isinstance(data.get("entry", []), list) and len(data.get("entry", [])) == 1:
-        
-
-def from_feed(content, timings = {}, messages = {}):
+def from_feed(content, timings={}, messages={}):
     collection = {}
     
     if content:
@@ -180,7 +138,7 @@ def from_feed(content, timings = {}, messages = {}):
         try:
             extracted_messages = extract_messages(root)
             if extracted_messages:
-                combine_messages(messages, extracted_messages);
+                combine_messages(messages, extracted_messages)
         except:
             # TODO
             pass
@@ -192,7 +150,7 @@ def from_feed(content, timings = {}, messages = {}):
             time_start = time.time()
             collection["entry"] = from_entry(root, messages)
             time_end = time.time()
-            timings["single_entry_convert"] = time_end - time_start    
+            timings["single_entry_convert"] = time_end - time_start
         else:
             # Since we have a proper collection, let's convert each item
             time_start = time.time()
@@ -206,9 +164,9 @@ def from_feed(content, timings = {}, messages = {}):
             time_end = time.time()
             timings["collection_convert"] = time_end - time_start
             
-            # OK, we've converted all the items, now we convert the feed metadata
-            # set collection data
-            time_start = time.time();
+            # OK, we've converted all the items, now we convert the
+            # feed metadata set collection data
+            time_start = time.time()
             
             try:
                 paging = {}
@@ -223,7 +181,8 @@ def from_feed(content, timings = {}, messages = {}):
                     # TODO
                     pass
                   
-                # We might not have a total_count field, so we have to check if it is "none" or actually
+                # We might not have a total_count field, so we have to check
+                # if it is "none" or actually
                 # 0, since they are both false-y values
                 if paging["total"] is None:
                     paging["count"] = len(entries)
@@ -238,7 +197,7 @@ def from_feed(content, timings = {}, messages = {}):
                     collection["links"] = links
                     
                     for link in root.findall('{%s}link' % (ATOM_NS)):
-                        links[link.get('rel')] = link.get('href') 
+                        links[link.get('rel')] = link.get('href')
                 except:
                     pass
             except:
@@ -252,6 +211,7 @@ def from_feed(content, timings = {}, messages = {}):
     
     return collection
     
+
 def from_entry(root, messages):
     entry = {}
     
@@ -279,13 +239,13 @@ def from_entry(root, messages):
             elif k == "messages":
                 combine_messages(messages, contents[k])
                 del contents[k]
-    
+                
     # Get the links
     links = {}
     entry["links"] = links
     
     for link in root.findall('{%s}link' % (ATOM_NS)):
-        links[link.get('rel')] = link.get('href') 
+        links[link.get('rel')] = link.get('href')
         
     # Get the rest of the metadata
     entry["id"] = root.findall('{%s}id' % (ATOM_NS))[0].text
@@ -305,6 +265,7 @@ def from_entry(root, messages):
     
     return entry
         
+
 def from_attributes(attr_dict):
     required = attr_dict.get("requiredFields", [])
     optional = attr_dict.get("optionalFields", [])
@@ -316,7 +277,8 @@ def from_attributes(attr_dict):
         "wildcard": wildcard
     }
 
-def from_job_results(root, format=ResultFormat.ROW, timings={}): 
+
+def from_job_results(root, format=ResultFormat.ROW, timings={}):
     if isinstance(root, str):
         time_start = time.time()
         root = et.fromstring(root)
@@ -330,11 +292,11 @@ def from_job_results(root, format=ResultFormat.ROW, timings={}):
     
     results = {}
     messages = {}
-
+    
     try:
         extracted_messages = extract_messages(root)
         if extracted_messages:
-            combine_messages(messages, extracted_messages);
+            combine_messages(messages, extracted_messages)
     except:
         # TODO
         pass
@@ -355,69 +317,71 @@ def from_job_results(root, format=ResultFormat.ROW, timings={}):
         
         offsets.append(node.get('offset'))
         for field in node.findall('field'):
-           field_struct = []
-           for subfield in field.findall('value'):
-              field_struct.append({
-                  'value': subfield.findtext('text'),
-                  #'tags': [x.text for x in subfield.findall('tag')]
-              })
-           for subfield in field.findall('v'):
-              field_struct.append({
-                  'value': extract_result_inner_text(subfield)
-              })
-           row[field.get('k')] = field_struct
+            field_struct = []
+            for subfield in field.findall('value'):
+                field_struct.append({
+                    'value': subfield.findtext('text'),
+                    #'tags': [x.text for x in subfield.findall('tag')]
+                })
+            for subfield in field.findall('v'):
+                field_struct.append({
+                    'value': extract_result_inner_text(subfield)
+                })
+            row[field.get('k')] = field_struct
         data.append(row)
     time_end = time.time()
     timings["job_results_extract_data"] = time_end - time_start
         
     time_start = time.time()
     if format is ResultFormat.VERBOSE:
-       results = results_to_verbose(field_list, data)
+        results = results_to_verbose(field_list, data)
     elif format is ResultFormat.ROW:
-       results = results_to_rows(field_list, data)
+        results = results_to_rows(field_list, data)
     elif format is ResultFormat.COLUMN:
-       results = results_to_columns(field_list, data)
+        results = results_to_columns(field_list, data)
     time_end = time.time()
     timings["job_results_mold_data"] = time_end - time_start
-
-    if format is not ResultFormat.VERBOSE:
-        results["preview"] = normalize_boolean(root.get("preview"))
-        results["init_offset"] = int(offsets[0] if len(offsets) else 0)
-        results["messages"] = messages
-        results["timings"] = timings
-
+    
     messages = {}
     try:
         extracted_messages = extract_messages(root)
         if extracted_messages:
-            combine_messages(messages, extracted_messages);
+            combine_messages(messages, extracted_messages)
     except:
         # TODO
         pass
-    results["messages"] = messages
-            
+    
+    if format is not ResultFormat.VERBOSE:
+        results["preview"] = util.normalize_boolean(root.get("preview"))
+        results["init_offset"] = int(offsets[0] if len(offsets) else 0)
+        results["messages"] = messages
+        results["timings"] = timings
+        
+                    
     return results
+    
 
 def results_to_verbose(field_list, data):
     results = []
     for row_data in data:
         row = {}
         for field_name in field_list:
-            field_data = row_data.get(field_name, [{ "value": []}])
+            field_data = row_data.get(field_name, [{"value": []}])
             values = []
             
             for field_datum in field_data:
                 value = field_datum['value'] or None
                 if isinstance(value, list) and len(value) == 1:
-                    value = value[0]  
+                    value = value[0]
                     
                 values.append(value)
-            
+                
             row[field_name] = values[0] if len(values) == 1 else values
-    
+            
         results.append(row)
     
     return results
+    
 
 def results_to_rows(field_list, data):
     results = {}
@@ -428,25 +392,26 @@ def results_to_rows(field_list, data):
         row = {
             "data": [],
         }
-    
+        
         for field_name in field_list:
-            field_data = row_data.get(field_name, [{ "value": []}])
+            field_data = row_data.get(field_name, [{"value": []}])
             values = []
             
             for field_datum in field_data:
                 value = field_datum['value'] or None
                 if isinstance(value, list) and len(value) == 1:
-                    value = value[0]  
+                    value = value[0]
                     
                 values.append(value)
-            
+                
             values = values[0] if len(values) == 1 else values
             
             row['data'].append(values or None)
-    
+            
         results['rows'].append(row['data'])
         
     return results
+    
 
 def results_to_columns(field_list, data):
     results = {}
@@ -455,27 +420,28 @@ def results_to_columns(field_list, data):
     
     for field_name in field_list:
         def extract(row_data):
-            field_data = row_data.get(field_name, [{ "value": []}])
+            field_data = row_data.get(field_name, [{"value": []}])
             values = []
             tags = []
             
             for field_datum in field_data:
                 value = field_datum['value'] or None
                 if isinstance(value, list) and len(value) == 1:
-                    value = value[0]  
+                    value = value[0]
                     
                 values.append(value)
                 
             values = values[0] if len(values) == 1 else values
             
             return values or None
-        
+            
         column_data = map(extract, data)
         results['columns'].append(column_data)
-    
+        
     return results
     
-def from_search_timeline(root, timings = {}):
+
+def from_search_timeline(root, timings={}):
     if isinstance(root, str):
         time_start = time.time()
         root = et.fromstring(root)
@@ -492,7 +458,7 @@ def from_search_timeline(root, timings = {}):
         'cursor_time': float(root.get('cursor', 0)),
         'buckets': []
     }
-
+    
     time_start = time.time()
     for node in root.findall('bucket'):
         entry['buckets'].append({
@@ -505,24 +471,25 @@ def from_search_timeline(root, timings = {}):
             'earliest_strftime': node.text,
             'total_count': int(node.get('c', 0))
         })
-    time_end = time.time()    
+    time_end = time.time()
     timings["search_timeline_buckets"] = time_end - time_start
-        
+    
     messages = {}
     try:
         extracted_messages = extract_messages(root)
         if extracted_messages:
-            combine_messages(messages, extracted_messages);
+            combine_messages(messages, extracted_messages)
     except:
         # TODO
         pass
     
     return {
         "messages": messages,
-        "entry": entry,
+        "entry": {"content": entry},
         "timings": timings
     }
     
+
 def from_search_summary(root, timings={}):
     if isinstance(root, str):
         time_start = time.time()
@@ -570,26 +537,27 @@ def from_search_summary(root, timings={}):
                 'is_exact': True if (node.get('exact', False)) == '1' else False
             })
         summary['fields'][node.get('k')] = field
-    time_end = time.time()  
+    time_end = time.time()
     timings["search_summary_fields"] = time_end - time_start
-        
+    
     messages = {}
     try:
         extracted_messages = extract_messages(root)
         if extracted_messages:
-            combine_messages(messages, extracted_messages);
+            combine_messages(messages, extracted_messages)
     except:
         # TODO
         pass
     
     return {
         "messages": messages,
-        'entry': summary,
+        'entry': {"content": summary},
         'timings': timings
     }
-        
+    
     return output
     
+
 def from_auth(root):
     if isinstance(root, str):
         root = et.fromstring(root)
@@ -602,18 +570,21 @@ def from_auth(root):
     try:
         extracted_messages = extract_messages(root)
         if extracted_messages:
-            combine_messages(messages, extracted_messages);
+            combine_messages(messages, extracted_messages)
     except:
         # TODO
         pass
-    
+        
     return {
         "messages": messages,
         "entry": {
-            "sessionKey": session_key
+            "content": {
+                "sessionKey": session_key
+            }
         }
     }
     
+
 def from_job_create(root):
     if isinstance(root, str):
         root = et.fromstring(root)
@@ -626,42 +597,57 @@ def from_job_create(root):
     try:
         extracted_messages = extract_messages(root)
         if extracted_messages:
-            combine_messages(messages, extracted_messages);
+            combine_messages(messages, extracted_messages)
     except:
         # TODO
         pass
-    
+        
     return {
         "messages": messages,
         "entry": {
-            "sid": sid
+            "content": {
+                "sid": sid
+            }
         }
     }
+    
 
 def from_http_simple_input(root):
     if isinstance(root, str):
         root = et.fromstring(root)
     elif isinstance(root, file):
         root = et.parse(root).getroot()
-    
+        
     entry = {}
     
     for field in root.findall("results/result/field"):
         entry[field.get("k")] = field.findtext("value/text")
-            
+        
     messages = {}
     try:
         extracted_messages = extract_messages(root)
         if extracted_messages:
-            combine_messages(messages, extracted_messages);
+            combine_messages(messages, extracted_messages)
     except:
         # TODO
         pass
-    
+        
     return {
         "messages": messages,
-        "entry": entry
+        "entry": {"content": entry}
     }
+    
+
+def from_typeahead(root):
+    if isinstance(root, str):
+        root = json.loads(root)
+    elif isinstance(root, file):
+        root = json.loads(root.read())
+        
+    return {
+        "entry": {"content": root}
+    }
+    
 
 def from_search_parser(root):
     if isinstance(root, str):
@@ -692,45 +678,49 @@ def from_search_parser(root):
             else:
                 command[key.get("name")] = key.text or ""
         entry["commands"].append(command)
-    
+        
     messages = {}
     try:
         extracted_messages = extract_messages(root)
         if extracted_messages:
-            combine_messages(messages, extracted_messages);
+            combine_messages(messages, extracted_messages)
     except:
         # TODO
         pass
         
     return {
         "messages": messages,
-        "entry": entry
+        "entry": {"content": entry}
     }
+    
 
 def from_propertizes_stanza_key(root, key):
     messages = {}
     try:
         extracted_messages = extract_messages(root)
         if extracted_messages:
-            combine_messages(messages, extracted_messages);
+            combine_messages(messages, extracted_messages)
     except:
         # TODO
         pass
-    
+        
     return {
         "messages": messages,
         "entry": {
-            "key": key,
-            "value": root
+            "content": {
+                "key": key,
+                "value": root
+            }
         }
     }
+    
 
 def from_propertizes_stanza(root):
     if isinstance(root, str):
         root = et.fromstring(root)
     elif isinstance(root, file):
         root = et.parse(root).getroot()
-    
+        
     collection = {}
     
     collection['entry'] = parse_stanza(root)
@@ -754,16 +744,18 @@ def from_propertizes_stanza(root):
     try:
         extracted_messages = extract_messages(root)
         if extracted_messages:
-            combine_messages(messages, extracted_messages);
+            combine_messages(messages, extracted_messages)
     except:
         # TODO
         pass
     collection['messages'] = messages
     
     return collection
+    
 
 def parse_stanza(root):
     content = {}
+    stanza = {"content": content}
     
     for entry in root.findall('{%s}entry' % (ATOM_NS)):
         try:
@@ -772,21 +764,22 @@ def parse_stanza(root):
             content[key] = value
         except:
             logger.info("Error parsing KV-pair from stanza")
-        
-    return content
+            
+    return stanza
+    
 
 def from_messages_only(root):
     if isinstance(root, str):
         root = et.fromstring(root)
     elif isinstance(root, file):
         root = et.parse(root).getroot()
-    
+        
     messages = {}
     
     try:
         extracted_messages = extract_messages(root)
         if extracted_messages:
-            combine_messages(messages, extracted_messages);
+            combine_messages(messages, extracted_messages)
     except:
         # TODO
         pass
@@ -796,17 +789,6 @@ def from_messages_only(root):
         "entry": None
     }
     
-def extract_result_inner_text(node):
-    # TODO: fails if segementation is enabled
-    output = []
-    for innernode in node:
-        if innernode.text and innernode.text.strip():
-            output.append(innernode.text)
-        elif innernode != node:
-            output.append(extract_result_inner_text(innernode))
-        if innernode.tail and innernode.tail.strip():
-            output.append(innernode.tail)
-    return output
 
 if __name__ == "__main__":
     #time_start = time.time()
@@ -820,3 +802,4 @@ if __name__ == "__main__":
     #print len(data["rows"])
     data = from_search_parser(sys.stdin)
     print json.dumps(data, indent=4)
+    pass
