@@ -1,20 +1,15 @@
 #
 # Type hinting for EAI endpoint keys
 #
-import splunk, re
+import re, util
 from mappings import mappings, bool_regexes, number_regexes
-import logging
 
-logger = logging.getLogger('splunk.queens_english.formatters')
-
-def get_formatter(endpoint):
+def get_formatter(*args, **kwargs):
     return BaseFormatter()
-    
-    
+        
 class BaseFormatter(object):
-    
     converters = {
-        "bool": splunk.util.normalizeBoolean,
+        "bool": util.normalize_boolean,
         "number": float,
         "string": lambda x: x,
     }
@@ -57,4 +52,3 @@ class BaseFormatter(object):
                 D[k] = self.converters[datatype](D[k])
             except:
                 pass
-    
