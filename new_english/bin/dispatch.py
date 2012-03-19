@@ -185,7 +185,7 @@ def eai(request, *args,  **kwargs):
     if status_ok(status):
         return status, xml2json.from_feed(content)
     else:
-        return status, content
+        return status, xml2json.from_messages_only(content)
         
 
 def auth(request, *args, **kwargs):    
@@ -193,7 +193,7 @@ def auth(request, *args, **kwargs):
     if status_ok(status):
         return status, xml2json.from_auth(content)
     else:
-        return status, content    
+        return status, xml2json.from_messages_only(content)    
 
 def create_job(request, *args, **kwargs):    
     status, content = forward_request(request)
@@ -203,21 +203,21 @@ def create_job(request, *args, **kwargs):
         else:
             return status, xml2json.from_job_create(content)
     else:
-        return status, content
+        return status, xml2json.from_messages_only(content)
 
 def delete_job(request, *args, **kwargs): 
     status, content = forward_request(request)
     if status_ok(status):
         return status, xml2json.from_messages_only(content)
     else:
-        return status, content  
+        return status, xml2json.from_messages_only(content)  
         
 def job_control(request, *args, **kwargs): 
     status, content = forward_request(request)
     if status_ok(status):
        return status, xml2json.from_messages_only(content)
     else:
-       return status, content
+       return status, xml2json.from_messages_only(content)
 
 def job_data(request, data_source, *args, **kwargs):    
     
@@ -232,6 +232,9 @@ def job_data(request, data_source, *args, **kwargs):
         if data_source == "search.log":
             return status, {"entry": {"content": content}}
         else:
+            if not content:
+                return status, content
+            
             root = et.fromstring(content)
             if root.tag in ('events', 'results', 'results_preview'):
                 if mode == "json_rows":
@@ -258,7 +261,7 @@ def parse_query(request, *args, **kwargs):
     if status_ok(status):
         return status, xml2json.from_search_parser(content)
     else:
-        return status, content
+        return status, xml2json.from_messages_only(content)
         
 def typeahead(request, *args, **kwargs):    
     # Modify the arguments
@@ -271,7 +274,7 @@ def typeahead(request, *args, **kwargs):
         else:
             return status, {"entry": {"content": None}}
     else:
-        return status, content
+        return status, xml2json.from_messages_only(content)
 
         
 def modify_or_delete_tag(request, name, *args, **kwargs): 
@@ -279,28 +282,28 @@ def modify_or_delete_tag(request, name, *args, **kwargs):
     if status_ok(status):
        return status, xml2json.from_messages_only(content)
     else:
-       return status, content
+       return status, xml2json.from_messages_only(content)
 
 def http_simple_input(request, *args, **kwargs):
     status, content = forward_request(request)
     if status_ok(status):
         return status, xml2json.from_http_simple_input(content)
     else:
-        return status, content
+        return status, xml2json.from_messages_only(content)
 
 def properties_stanza(request, file, stanza, *args, **kwargs):
     status, content = forward_request(request)
-    if status_ok(status):
+    if status_ok(status) and request["method"] == "GET":
         return status, xml2json.from_propertizes_stanza(content)
     else:
-        return status, content
+        return status, xml2json.from_messages_only(content)
 
 def properties_stanza_key(request, file, stanza, key, *args, **kwargs):
     status, content = forward_request(request)
     if status_ok(status):
         return status, xml2json.from_propertizes_stanza_key(content, key)
     else:
-        return status, content
+        return status, xml2json.from_messages_only(content)
 
 
 router = route.Router()

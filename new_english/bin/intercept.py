@@ -29,7 +29,10 @@ class JsonIntercept(splunk.rest.BaseRestHandler):
         }
     
     def handle(self):
-        status, content = dispatch.dispatch(self.get_request())
+        try:
+            status, content = dispatch.dispatch(self.get_request())
+        finally:
+            self.response.setHeader('Content-Type', 'application/json')
         
         self.response.setStatus(status)
         self.response.write(content)

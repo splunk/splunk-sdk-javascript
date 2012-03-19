@@ -87,8 +87,8 @@ def make_request(url, headers={}, get=None, post=None, payload=None, method={},
     if get:
         get = dict([(k,v) for (k,v) in get.items() if v != None])
         url += '?' + url_encodedict(get)
-        
-    if post:
+    
+    if post and not payload:
         payload = url_encodedict(post)
     
     status, response = h.request(

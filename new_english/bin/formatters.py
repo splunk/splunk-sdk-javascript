@@ -4,6 +4,9 @@
 import re, util
 from mappings import mappings, bool_regexes, number_regexes
 
+import logging
+logger = logging.getLogger('splunk.xml2json.format')
+
 def get_formatter(*args, **kwargs):
     return BaseFormatter()
         
@@ -25,7 +28,7 @@ class BaseFormatter(object):
                 return True
     
     def format(self, D, prefix=""):
-        for k in D:
+        for k in D:            
             datatype = "string"
             composite = prefix + k
             

@@ -112,7 +112,7 @@ def _list_node_to_primitive(N):
 def extract_result_inner_text(node):
     # TODO: fails if segementation is enabled
     output = []
-    for innernode in node:
+    for innernode in node.getiterator():
         if innernode.text and innernode.text.strip():
             output.append(innernode.text)
         elif innernode != node:
@@ -188,9 +188,11 @@ def from_feed(content, timings={}, messages={}):
                     paging["count"] = len(entries)
                     paging["total"] = paging["count"]
                 else:
-                    paging["count"] = min(paging["total"], entries)
+                    paging["count"] = min(paging["total"], len(entries))
                 
                 try:
+                    
+                    collection["name"] = root.findall('{%s}title' % (ATOM_NS))[0].text
                     collection["origin"] = root.findall('{%s}id' % (ATOM_NS))[0].text
               
                     links = {}
