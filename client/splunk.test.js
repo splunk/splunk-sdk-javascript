@@ -447,7 +447,6 @@ require.define("/splunk.js", function (require, module, exports, __dirname, __fi
         Context         : require('./lib/context'),
         Service         : require('./lib/service'),
         Http            : require('./lib/http').Http,
-        ODataResponse   : require('./lib/odata').ODataResponse,
         Utils           : require('./lib/utils'),
         Async           : require('./lib/async'),
         Paths           : require('./lib/paths').Paths,
@@ -586,6 +585,44 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
         },
         
         /**
+         * Print out all messages retrieved from splunkd
+         *
+         * @module splunkjs.Logger
+         */
+        printMessages: function(allMessages) {
+            allMessages = allMessages || {};
+            
+            for(var key in allMessages) {
+                if (allMessages.hasOwnProperty(key)) {
+                    var type = key;
+                    var messages = allMessages[key];
+                    for (var i = 0; i < messages.length; i++) {
+                        var msg = '[SPLUNKD] ' + messages[i];
+                        switch (type) {
+                            case 'HTTP':
+                            case 'FATAL':
+                            case 'ERROR':
+                                this.error(msg);
+                                break;
+                            case 'WARN':
+                                this.warn(msg);
+                                break;
+                            case 'INFO':
+                                this.info(msg);
+                                break;
+                            case 'HTTP':
+                                this.error(msg);
+                                break;
+                            default:
+                                this.info(msg);
+                                break;
+                        }
+                    }
+                }
+            }  
+        },
+        
+        /**
          * Set the global logging level
          *
          * Example:
@@ -684,6 +721,8 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @globals splunkjs.Utils
      */
     root.trim = function(str) {
+        str = str || "";
+        
         if (String.prototype.trim) {
             return String.prototype.trim.call(str);
         }
@@ -927,11 +966,11 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      */
     root.namespaceFromProperties = function(props) {
         return {
-            owner: props.__metadata.acl.owner,
-            app: props.__metadata.acl.app,
-            sharing: props.__metadata.acl.sharing
+            owner: props.acl.owner,
+            app: props.acl.app,
+            sharing: props.acl.sharing
         };
-    };
+    };  
 })();
 });
 
@@ -1021,7 +1060,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
             
             // Store our full prefix, which is just combining together
             // the scheme with the host
-            this.prefix = this.scheme + "://" + this.host + ":" + this.port + "/services/json/v1";
+            this.prefix = this.scheme + "://" + this.host + ":" + this.port + "/services/json/v2";
 
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
@@ -1128,7 +1167,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
                     callback(err, false);
                 }
                 else {
-                    that.sessionKey = response.odata.results.sessionKey;
+                    that.sessionKey = response.data.entry.content.sessionKey;
                     callback(null, true);
                 }
             };
@@ -1375,7 +1414,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
     "use strict";
     
     var Class           = require('./jquery.class').Class;
-    var ODataResponse   = require('./odata').ODataResponse;
+    var logger          = require('./log').Logger;
     var utils           = require('./utils');
 
     var root = exports || this;
@@ -1616,156 +1655,24 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
          * @module splunkjs.Http 
          */
         _buildResponse: function(error, response, data) {            
-            var complete_response, json, odata;
+            var complete_response, json = {};
 
-            // Parse the JSON data and build the OData response
-            // object.
-            if (this.isSplunk) {
-                json = this.parseJson(data);
-                
-                if (error !== "abort") {
-                    odata = ODataResponse.fromJson(json);  
-                    
-                    // Print any messages that came with the response
-                    ODataResponse.printMessages(odata);
-                }
-
-                complete_response = {
-                    response: response,
-                    status: (response ? response.statusCode : 0),
-                    odata: odata,
-                    error: error
-                };
+            if (response && utils.trim(response.headers["content-type"]) === "application/json") {
+                json = this.parseJson(data) || {};
             }
-            else {
-                json = "";
 
-                // We only try to parse JSON if the headers say it is JSON
-                if (response && response.headers["content-type"] === "application/json") {
-                    json = this.parseJson(data);
-                }
-
-                complete_response = {
-                    response: response,
-                    status: (response ? response.statusCode : 0),
-                    json: json,
-                    error: error
-                };
-            }
+            logger.printMessages(json.messages);                
+            
+            complete_response = {
+                response: response,
+                status: (response ? response.statusCode : 0),
+                data: json,
+                error: error
+            };
 
             return complete_response;
         }
     });
-})();
-});
-
-require.define("/lib/odata.js", function (require, module, exports, __dirname, __filename) {
-
-// Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-(function() {
-    "use strict";
-    
-    var Class   = require('./jquery.class').Class;
-    var logger  = require('./log').Logger;
-
-    var root = exports || this;
-
-    // Our basic class to represent an OData resposne object.
-    root.ODataResponse = Class.extend({
-        offset: 0,
-        count: 0,
-        totalCount: 0,
-        messages: [],
-        timings: [],
-        results: null,
-
-        init: function() {
-
-        },
-
-        isCollection: function() {
-            return this.results instanceof Array;
-        }
-    });
-
-    // A static utility function to convert an object derived from JSON
-    // into an ODataResponse
-    root.ODataResponse.fromJson = function(json) {
-        if (!json || !json.d) {
-            var error = new Error('Invalid JSON object passed; cannot parse into OData.');
-            error.json = json;
-            throw error;
-        }
-
-        var d = json.d;
-        
-        var output = new root.ODataResponse();
-
-        // Look for our special keys, and add them to the results
-        var prefixedKeys = ['messages', 'offset', 'count', 'timings', 'total_count'];
-        for (var i=0; i < prefixedKeys.length; i++) {
-            if (d.hasOwnProperty('__' + prefixedKeys[i])) {
-                output[prefixedKeys[i]] = d['__' + prefixedKeys[i]];
-            }
-        }
-
-        output["__metadata"] = d["__metadata"];
-        output["__name"] = d["__name"];
-        if (d.results) {
-            output.results = d.results;
-        }
-
-        return output;
-    };
-
-    // Print any messages that came with the response, as encoded
-    // in the ODataResponse.
-    root.ODataResponse.printMessages = function(struct) {
-        var list = struct.messages || struct.__messages || [];
-
-        if (list) {
-            for (var i = 0; i < list.length; i++) {
-                var msg = '[SPLUNKD] ' + list[i].text;
-                switch (list[i].type) {
-                    case 'HTTP':
-                    case 'FATAL':
-                    case 'ERROR':
-                        // TODO
-                        logger.error(msg);
-                        break;
-                    case 'WARN':
-                        // TODO
-                        logger.warn(msg);
-                        break;
-                    case 'INFO':
-                        // TODO
-                        logger.info(msg);
-                        break;
-                    case 'HTTP':
-                        break;
-                    default:
-                        // TODO
-                        logger.info(msg + (list[i].code ? " -- " + list[i].code : ""));
-                        break;
-                }
-            }
-        }
-
-        return list;  
-    };
 })();
 });
 
@@ -2058,7 +1965,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      var files = svc.configurations();
          *      files.item("props", function(err, propsFile) {
          *          propsFile.read(function(err, props) {
-         *              console.log(props.properties().results); 
+         *              console.log(props.properties().content); 
          *          });
          *      });
          *
@@ -2113,7 +2020,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      var files = svc.properties();
          *      files.item("props", function(err, propsFile) {
          *          propsFile.read(function(err, props) {
-         *              console.log(props.properties().results); 
+         *              console.log(props.properties().content); 
          *          });
          *      });
          *
@@ -2194,7 +2101,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      var users = svc.users();
          *      users.list(function(err, list) {
          *          for(var i = 0; i < list.length; i++) {
-         *              console.log("User " + (i+1) + ": " + list[i].properties().__name);
+         *              console.log("User " + (i+1) + ": " + list[i].properties().name);
          *          }
          *      });
          *
@@ -2221,7 +2128,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      var views = svc.views();
          *      views.list(function(err, list) {
          *          for(var i = 0; i < list.length; i++) {
-         *              console.log("View " + (i+1) + ": " + list[i].properties().__name);
+         *              console.log("View " + (i+1) + ": " + list[i].properties().name);
          *          }
          *      });
          *
@@ -2303,7 +2210,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * Example:
          *
          *      service.currentUser(function(err, user) {
-         *          console.log("Real name: ", user.properties().realname);
+         *          console.log("Real name: ", user.properties().content.realname);
          *      });
          *
          * @param {Function} callback A callback with the user instance: `(err, user)`
@@ -2318,7 +2225,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 } 
                 else {
-                    var username = response.odata.results[0]["username"];
+                    var username = response.data.entry[0].content.username;
                     var user = new root.User(that, username);
                     user.refresh(callback);
                 }
@@ -2501,7 +2408,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.fragmentPath = path;
             this.namespace = namespace;
             this._maybeValid = false;
-            this._properties = {};
+            this._properties = { content: {}, acl: {}, attributes: {}};
             
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
@@ -2691,7 +2598,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 } 
                 else {
-                    that._load(response.odata.results);
+                    that._load(response.data.entry);
                     callback(null, that);
                 }
             });
@@ -2737,7 +2644,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var that = this;
             var req = this.post("", props, function(err, response) {
                 if (!err && that._loadOnUpdate) {
-                    that._load(response.odata.results);
+                    that._load(response.data.entry);
                 }
                 
                 callback(err, that);
@@ -2819,7 +2726,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             var entities = [];
             var entitiesByName = {};
-            var entityPropertyList = properties.results || [];
+            var entityPropertyList = properties.entry || [];
             for(var i = 0; i < entityPropertyList.length; i++) {
                 var props = entityPropertyList[i];
                 var entity = this._item(this, props);
@@ -2868,7 +2775,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    that._load(response.odata);
+                    that._load(response.data);
                     callback(null, that);
                 }
             });
@@ -2941,7 +2848,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    var props = response.odata.results;
+                    var props = response.data.entry;
                     if (utils.isArray(props)) {
                         props = props[0];
                     }
@@ -3026,9 +2933,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     var path = that._itemPath(that, id, namespace);           
                     var fragmentPath = path.fragment;
                     var fullPath = path.full;
-                     
+                    
                     if (that._entitiesByName.hasOwnProperty(fragmentPath)) {
-                        var entities = that._entitiesByName[fragmentPath];
+                        var entities = that._entitiesByName[fragmentPath];                 
                         
                         if (entities.length === 1 && !namespace) {
                             // If there is only one entity with the
@@ -3101,7 +3008,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this._super(service, Paths.savedSearches, options, namespace, {
                 item: function(collection, props) { 
                     var entityNamespace = utils.namespaceFromProperties(props);
-                    return new root.SavedSearch(collection.service, props.__name, entityNamespace);
+                    return new root.SavedSearch(collection.service, props.name, entityNamespace);
                 }
             });
         } 
@@ -3211,7 +3118,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             var that = this;
             return this.get("history", {}, function(err, response) {
-                callback(err, response.odata.results, that);
+                callback(err, response.data.entry.content, that);
             });
         },
         
@@ -3235,7 +3142,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             var that = this;
             return this.get("suppress", {}, function(err, response) {
-                callback(err, response.odata.results, that);
+                callback(err, response.data.entry.content, that);
             });
         },
         
@@ -3262,7 +3169,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                         callback(err);
                     }
                     else {
-                        params.search = search.properties().search;
+                        params.search = search.properties().content.search;
                         update.apply(search, [params, callback]);
                     }
                 });
@@ -3297,7 +3204,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         init: function(service, options) {
             this._super(service, Paths.apps, options, {}, {
                 item: function(collection, props) {
-                    return new root.Application(collection.service, props.__name, {});
+                    return new root.Application(collection.service, props.name, {});
                 }
             });
         }
@@ -3359,7 +3266,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 } 
                 else {
-                    callback(null, response.odata.results, that);
+                    callback(null, response.data.entry.content, that);
                 }
             });
         },
@@ -3388,7 +3295,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 } 
                 else {
-                    callback(null, response.odata.results, that);
+                    callback(null, response.data.entry.content, that);
                 }
             });
         }
@@ -3418,7 +3325,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         init: function(service, options) {
             this._super(service, Paths.users, options, {}, {
                 item: function(collection, props) {
-                    return new root.User(collection.service, props.__name, {});
+                    return new root.User(collection.service, props.name, {});
                 }
             });
         },
@@ -3445,7 +3352,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 else {
                     // This endpoint is buggy, and we have to use the passed
                     // in name
-                    var props = {__name: params.name};
+                    var props = {name: params.name};
                     
                     var entity = that._item(that, props);                    
                     callback(null, entity);
@@ -3510,7 +3417,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this._super(service, Paths.views, options, namespace, {
                 item: function(collection, props) {
                     var entityNamespace = utils.namespaceFromProperties(props);
-                    return new root.View(collection.service, props.__name, entityNamespace);
+                    return new root.View(collection.service, props.name, entityNamespace);
                 }
             });
         },
@@ -3570,7 +3477,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this._super(service, Paths.indexes, options, namespace, {
                 item: function(collection, props) {
                     var entityNamespace = utils.namespaceFromProperties(props);
-                    return new root.Index(collection.service, props.__name, entityNamespace);  
+                    return new root.Index(collection.service, props.name, entityNamespace);  
                 },
                 loadOnCreate: function() { return true; },
                 loadOnItem: function() { return true; }
@@ -3676,7 +3583,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 } 
                 else {
-                    callback(null, response.odata.results, that);
+                    callback(null, response.data.entry.content, that);
                 }
             });
             this._invalidate();
@@ -3713,7 +3620,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var namespace = {owner: "-", app: "-"};
             this._super(service, Paths.properties, options, namespace, {
                 item: function(collection, props) {
-                    var name = props.__name;
+                    var name = props.name;
                     return new root.PropertyFile(collection.service, name, options);
                 },
                 loadOnItem: function() { return false; }
@@ -3787,7 +3694,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             this._super(service, Paths.properties + "/" + encodeURIComponent(name), options, namespace, {
                 item: function(collection, props) {
-                    var name = props.__name;
+                    var name = props.name;
                     return new root.PropertyStanza(collection.service, collection.name, name);
                 },
                 loadOnItem: function() { return false; }
@@ -3894,7 +3801,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             this._super(service, Paths.properties, options, namespace, {
                 item: function(collection, props) {
-                    var name = props.__name;
+                    var name = props.name;
                     return new root.ConfigurationFile(collection.service, name, {}, namespace);
                 },
                 loadOnItem: function() { return false; },
@@ -3974,7 +3881,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var path = Paths.configurations + "/conf-" + encodeURIComponent(name);
             this._super(service, path, options, namespace, {
                 item: function(collection, props) {
-                    var name = props.__name;
+                    var name = props.name;
                     var entityNamespace = utils.namespaceFromProperties(props);
                     return new root.ConfigurationStanza(collection.service, collection.name, name, entityNamespace);
                 },
@@ -4073,7 +3980,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         init: function(service, options, namespace) {
             this._super(service, Paths.jobs, options, namespace, {
                 item: function(collection, props) {
-                    var sid = props.sid;
+                    var sid = props.content.sid;
                     var entityNamespace = utils.namespaceFromProperties(props);
                     return new root.Job(collection.service, sid, entityNamespace);
                 }
@@ -4123,7 +4030,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 }
                 else {
                     that._invalidate();
-                    var job = new root.Job(that.service, response.odata.results.sid);
+                    var job = new root.Job(that.service, response.data.entry.content.sid);
                     callback(null, job);
                 }
             });
@@ -4198,7 +4105,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    callback(null, response.odata.results);
+                    callback(null, response.data);
                 }
             });
         }
@@ -4351,7 +4258,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    callback(null, response.odata.results, that); 
+                    callback(null, response.data, that); 
                 }
             });
         },
@@ -4435,7 +4342,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    callback(null, response.odata.results, that);
+                    callback(null, response.data, that);
                 }
             });
         },
@@ -4467,7 +4374,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    callback(null, response.odata.results, that);
+                    callback(null, response.data, that);
                 }
             });
         },
@@ -4496,7 +4403,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    callback(null, response.odata.results.log, that);
+                    callback(null, response.data.entry.content, that);
                 }
             });
         },
@@ -4582,7 +4489,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    callback(null, response.odata.results, that);
+                    callback(null, response.data.entry.content, that);
                 }
             });
         },
@@ -4612,7 +4519,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    callback(null, response.odata.results, that);
+                    callback(null, response.data.entry.content, that);
                 }
             });
         },
@@ -5302,7 +5209,7 @@ require.define("/lib/searcher.js", function (require, module, exports, __dirname
                             manager._dispatchCallbacks(manager.onFailCallbacks, properties);
                         }
                         
-                        stopLooping = properties.isDone || manager.isJobDone || properties.isFailed;
+                        stopLooping = properties.content.isDone || manager.isJobDone || properties.isFailed;
                         Async.sleep(1000, iterationDone);
                     });
                 },
@@ -5879,7 +5786,7 @@ exports.setup = function(http) {
             
             "Callback#no args": function(test) {
                 this.http.get("http://www.httpbin.org/get", [], {}, 0, function(err, res) {
-                    test.strictEqual(res.json.url, "http://www.httpbin.org/get");
+                    test.strictEqual(res.data.url, "http://www.httpbin.org/get");
                     test.done();
                 });
             },
@@ -5887,7 +5794,7 @@ exports.setup = function(http) {
             "Callback#success success+error": function(test) {
                 this.http.get("http://www.httpbin.org/get", [], {}, 0, function(err, res) {
                     test.ok(!err);
-                    test.strictEqual(res.json.url, "http://www.httpbin.org/get");
+                    test.strictEqual(res.data.url, "http://www.httpbin.org/get");
                     test.done();
                 });
             },
@@ -5901,12 +5808,12 @@ exports.setup = function(http) {
             
             "Callback#args": function(test) {
                 this.http.get("http://www.httpbin.org/get", [], { a: 1, b: 2, c: [1,2,3], d: "a/b"}, 0, function(err, res) {
-                    var args = res.json.args;
+                    var args = res.data.args;
                     test.strictEqual(args.a, "1");
                     test.strictEqual(args.b, "2");
                     test.strictEqual(args.c, "1");
                     test.strictEqual(args.d, "a/b");
-                    test.strictEqual(res.json.url, "http://www.httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
+                    test.strictEqual(res.data.url, "http://www.httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
                     test.done();
                 });
             },
@@ -5915,7 +5822,7 @@ exports.setup = function(http) {
                 var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
                 this.http.get("http://www.httpbin.org/get", {"X-Test1": 1, "X-Test2": "a/b/c"}, {}, 0, function(err, res) {
-                    var returnedHeaders = res.json.headers;
+                    var returnedHeaders = res.data.headers;
                     for(var headerName in headers) {
                         if (headers.hasOwnProperty(headerName)) {
                             // We have to make the header values into strings
@@ -5923,7 +5830,7 @@ exports.setup = function(http) {
                         }
                     }
                     
-                    test.strictEqual(res.json.url, "http://www.httpbin.org/get");
+                    test.strictEqual(res.data.url, "http://www.httpbin.org/get");
                     test.done();
                 });
             },
@@ -5932,7 +5839,7 @@ exports.setup = function(http) {
                 var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
                 this.http.get("http://www.httpbin.org/get", { "X-Test1": 1, "X-Test2": "a/b/c" }, { a: 1, b: 2, c: [1,2,3], d: "a/b"}, 0, function(err, res) {
-                    var returnedHeaders = res.json.headers;
+                    var returnedHeaders = res.data.headers;
                     for(var headerName in headers) {
                         if (headers.hasOwnProperty(headerName)) {
                             // We have to make the header values into strings
@@ -5940,12 +5847,12 @@ exports.setup = function(http) {
                         }
                     }
                     
-                    var args = res.json.args;
+                    var args = res.data.args;
                     test.strictEqual(args.a, "1");
                     test.strictEqual(args.b, "2");
                     test.strictEqual(args.c, "1");
                     test.strictEqual(args.d, "a/b");
-                    test.strictEqual(res.json.url, "http://www.httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
+                    test.strictEqual(res.data.url, "http://www.httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
                     test.done();
                 });
             }
@@ -5959,7 +5866,7 @@ exports.setup = function(http) {
             
             "Callback#no args": function(test) {
                 this.http.post("http://www.httpbin.org/post", {}, {}, 0, function(err, res) {
-                    test.strictEqual(res.json.url, "http://www.httpbin.org/post");
+                    test.strictEqual(res.data.url, "http://www.httpbin.org/post");
                     test.done();
                 });
             },   
@@ -5967,7 +5874,7 @@ exports.setup = function(http) {
             "Callback#success success+error": function(test) {
                 this.http.post("http://www.httpbin.org/post", {}, {}, 0, function(err, res) {
                     test.ok(!err);
-                    test.strictEqual(res.json.url, "http://www.httpbin.org/post");
+                    test.strictEqual(res.data.url, "http://www.httpbin.org/post");
                     test.done();
                 });
             },
@@ -5981,12 +5888,12 @@ exports.setup = function(http) {
             
             "Callback#args": function(test) {
                 this.http.post("http://www.httpbin.org/post", {}, { a: 1, b: 2, c: [1,2,3], d: "a/b"}, 0, function(err, res) {
-                    var args = res.json.form;
+                    var args = res.data.form;
                     test.strictEqual(args.a, "1");
                     test.strictEqual(args.b, "2");
                     test.deepEqual(args.c, ["1", "2", "3"]);
                     test.strictEqual(args.d, "a/b");
-                    test.strictEqual(res.json.url, "http://www.httpbin.org/post");
+                    test.strictEqual(res.data.url, "http://www.httpbin.org/post");
                     test.done();
                 });
             },
@@ -5995,14 +5902,14 @@ exports.setup = function(http) {
                 var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
                 this.http.post("http://www.httpbin.org/post", { "X-Test1": 1, "X-Test2": "a/b/c" }, {}, 0, function(err, res) {
-                    var returnedHeaders = res.json.headers;
+                    var returnedHeaders = res.data.headers;
                     for(var headerName in headers) {
                         if (headers.hasOwnProperty(headerName)) {
                             // We have to make the header values into strings
                             test.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
                         }
                     }
-                    test.strictEqual(res.json.url, "http://www.httpbin.org/post");
+                    test.strictEqual(res.data.url, "http://www.httpbin.org/post");
                     test.done();
                 });
             },
@@ -6011,7 +5918,7 @@ exports.setup = function(http) {
                 var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
                 this.http.post("http://www.httpbin.org/post", { "X-Test1": 1, "X-Test2": "a/b/c" }, { a: 1, b: 2, c: [1,2,3], d: "a/b"}, 0, function(err, res) {
-                    var returnedHeaders = res.json.headers;
+                    var returnedHeaders = res.data.headers;
                     for(var headerName in headers) {
                         if (headers.hasOwnProperty(headerName)) {
                             // We have to make the header values into strings
@@ -6019,12 +5926,12 @@ exports.setup = function(http) {
                         }
                     }
                     
-                    var args = res.json.form;
+                    var args = res.data.form;
                     test.strictEqual(args.a, "1");
                     test.strictEqual(args.b, "2");
                     test.deepEqual(args.c, ["1", "2", "3"]);
                     test.strictEqual(args.d, "a/b");
-                    test.strictEqual(res.json.url, "http://www.httpbin.org/post");
+                    test.strictEqual(res.data.url, "http://www.httpbin.org/post");
                     test.done();
                 });
             }
@@ -6038,7 +5945,7 @@ exports.setup = function(http) {
         
             "Callback#no args": function(test) {
                 this.http.del("http://www.httpbin.org/delete", [], {}, 0, function(err, res) {
-                    test.strictEqual(res.json.url, "http://www.httpbin.org/delete");
+                    test.strictEqual(res.data.url, "http://www.httpbin.org/delete");
                     test.done();
                 });
             },        
@@ -6046,7 +5953,7 @@ exports.setup = function(http) {
             "Callback#success success+error": function(test) {
                 this.http.del("http://www.httpbin.org/delete", [], {}, 0, function(err, res) {
                     test.ok(!err);
-                    test.strictEqual(res.json.url, "http://www.httpbin.org/delete");
+                    test.strictEqual(res.data.url, "http://www.httpbin.org/delete");
                     test.done();
                 });
             },
@@ -6060,7 +5967,7 @@ exports.setup = function(http) {
             
             "Callback#args": function(test) {
                 this.http.del("http://www.httpbin.org/delete", [], { a: 1, b: 2, c: [1,2,3], d: "a/b"}, 0, function(err, res) {
-                    test.strictEqual(res.json.url, "http://www.httpbin.org/delete?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
+                    test.strictEqual(res.data.url, "http://www.httpbin.org/delete?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
                     test.done();
                 });
             },
@@ -6069,14 +5976,14 @@ exports.setup = function(http) {
                 var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
                 this.http.del("http://www.httpbin.org/delete", { "X-Test1": 1, "X-Test2": "a/b/c" }, {}, 0, function(err, res) {
-                    var returnedHeaders = res.json.headers;
+                    var returnedHeaders = res.data.headers;
                     for(var headerName in headers) {
                         if (headers.hasOwnProperty(headerName)) {
                             // We have to make the header values into strings
                             test.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
                         }
                     }
-                    test.strictEqual(res.json.url, "http://www.httpbin.org/delete");
+                    test.strictEqual(res.data.url, "http://www.httpbin.org/delete");
                     test.done();
                 });
             },
@@ -6085,14 +5992,14 @@ exports.setup = function(http) {
                 var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
                 this.http.del("http://www.httpbin.org/delete", { "X-Test1": 1, "X-Test2": "a/b/c" }, { a: 1, b: 2, c: [1,2,3], d: "a/b"}, 0, function(err, res) {
-                    var returnedHeaders = res.json.headers;
+                    var returnedHeaders = res.data.headers;
                     for(var headerName in headers) {
                         if (headers.hasOwnProperty(headerName)) {
                             // We have to make the header values into strings
                             test.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
                         }
                     }
-                    test.strictEqual(res.json.url, "http://www.httpbin.org/delete?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
+                    test.strictEqual(res.data.url, "http://www.httpbin.org/delete?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
                     test.done();
                 });
             }
@@ -6183,11 +6090,11 @@ exports.setup = function(svc) {
 
         "Callback#get": function(test) { 
             this.service.get("search/jobs", {count: 2}, function(err, res) {
-                test.strictEqual(res.odata.offset, 0);
-                test.ok(res.odata.count <= res.odata.total_count);
-                test.strictEqual(res.odata.count, 2);
-                test.strictEqual(res.odata.count, res.odata.results.length);
-                test.ok(res.odata.results[0].sid);
+                test.strictEqual(res.data.paging.offset, 0);
+                test.ok(res.data.paging.count <= res.data.paging.total);
+                test.strictEqual(res.data.paging.count, 2);
+                test.strictEqual(res.data.paging.count, res.data.entry.length);
+                test.ok(res.data.entry[0].content.sid);
                 test.done();
             });
         },
@@ -6203,7 +6110,7 @@ exports.setup = function(svc) {
         "Callback#post": function(test) { 
             var service = this.service;
             this.service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
-                    var sid = res.odata.results.sid;
+                    var sid = res.data.entry.content.sid;
                     test.ok(sid);
 
                     var endpoint = "search/jobs/" + sid + "/control";
@@ -6226,7 +6133,7 @@ exports.setup = function(svc) {
         "Callback#delete": function(test) { 
             var service = this.service;
             this.service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
-                var sid = res.odata.results.sid;
+                var sid = res.data.entry.content.sid;
                 test.ok(sid);
                 
                 var endpoint = "search/jobs/" + sid;
@@ -6246,11 +6153,11 @@ exports.setup = function(svc) {
 
         "Callback#request get": function(test) { 
             this.service.request("search/jobs?count=2", "GET", {"X-TestHeader": 1}, "", function(err, res) {
-                test.strictEqual(res.odata.offset, 0);
-                test.ok(res.odata.count <= res.odata.total_count);
-                test.strictEqual(res.odata.count, 2);
-                test.strictEqual(res.odata.count, res.odata.results.length);
-                test.ok(res.odata.results[0].sid);
+                test.strictEqual(res.data.paging.offset, 0);
+                test.ok(res.data.paging.count <= res.data.paging.total);
+                test.strictEqual(res.data.paging.count, 2);
+                test.strictEqual(res.data.paging.count, res.data.entry.length);
+                test.ok(res.data.entry[0].content.sid);
                 
                 if (res.response.request) {
                     test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
@@ -6267,7 +6174,7 @@ exports.setup = function(svc) {
             };
             var service = this.service;
             this.service.request("search/jobs", "POST", headers, body, function(err, res) {
-                var sid = res.odata.results.sid;
+                var sid = res.data.entry.content.sid;
                 test.ok(sid);
                 
                 var endpoint = "search/jobs/" + sid + "/control";
@@ -6570,7 +6477,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job,
                                 function(j) {
-                                    return j.isValid() && job.properties()["isDone"];
+                                    return j.isValid() && job.properties().content["isDone"];
                                 },
                                 10,
                                 done
@@ -6608,7 +6515,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job,
                                 function(j) {
-                                    return j.isValid() && job.properties()["isDone"];
+                                    return j.isValid() && job.properties().content["isDone"];
                                 },
                                 10,
                                 done
@@ -6644,7 +6551,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job,
                                 function(j) {
-                                    return j.isValid() && job.properties()["isDone"];
+                                    return j.isValid() && job.properties().content["isDone"];
                                 },
                                 10,
                                 done
@@ -6716,7 +6623,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job, 
                                 function(j) {
-                                    return j.isValid() && j.properties()["isPaused"];
+                                    return j.isValid() && j.properties().content["isPaused"];
                                 },
                                 10,
                                 done
@@ -6724,7 +6631,7 @@ exports.setup = function(svc) {
                         },
                         function(job, done) {
                             test.ok(job.isValid());
-                            test.ok(job.properties()["isPaused"]);
+                            test.ok(job.properties().content["isPaused"]);
                             job.unpause(done);
                         },
                         function(job, done) {
@@ -6732,7 +6639,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job, 
                                 function(j) {
-                                    return j.isValid() && !j.properties()["isPaused"];
+                                    return j.isValid() && !j.properties().content["isPaused"];
                                 },
                                 10,
                                 done
@@ -6740,7 +6647,7 @@ exports.setup = function(svc) {
                         },
                         function(job, done) {
                             test.ok(job.isValid());
-                            test.ok(!job.properties()["isPaused"]);
+                            test.ok(!job.properties().content["isPaused"]);
                             job.finalize(done);
                         },
                         function(job, done) {
@@ -6769,7 +6676,7 @@ exports.setup = function(svc) {
                         },
                         function(job, done) {
                             test.ok(job.isValid());
-                            var ttl = job.properties()["ttl"];
+                            var ttl = job.properties().content["ttl"];
                             originalTTL = ttl;
                             
                             job.setTTL(ttl*2, done);
@@ -6780,7 +6687,7 @@ exports.setup = function(svc) {
                         },
                         function(job, done) {
                             test.ok(job.isValid());
-                            var ttl = job.properties()["ttl"];
+                            var ttl = job.properties().content["ttl"];
                             test.ok(ttl > originalTTL);
                             test.ok(ttl <= (originalTTL*2));
                             job.cancel(done);
@@ -6809,7 +6716,7 @@ exports.setup = function(svc) {
                         },
                         function(job, done) {
                             test.ok(job.isValid());
-                            var priority = job.properties()["priority"];
+                            var priority = job.properties().content["priority"];
                             test.ok(priority, 5);
                             job.setPriority(priority + 1, done);
                         },
@@ -6889,6 +6796,7 @@ exports.setup = function(svc) {
                         }
                     ],
                     function(err) {
+                        console.log(err);
                         test.ok(!err);
                         test.done();
                     }
@@ -6949,11 +6857,11 @@ exports.setup = function(svc) {
                         function(job, done) {
                             test.ok(job);
                             test.ok(job.isValid());
-                            originalTime = job.properties().updated;
+                            originalTime = job.properties().content.updated;
                             Async.sleep(1200, function() { job.touch(done); });
                         },
                         function(job, done) {
-                            job.read(done);
+                            job.refresh(done);
                         },
                         function(job, done) {
                             test.ok(job.isValid());
@@ -7040,7 +6948,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job,
                                 function(j) {
-                                    return j.isValid() && job.properties()["isDone"];
+                                    return j.isValid() && job.properties().content["isDone"];
                                 },
                                 10,
                                 done
@@ -7093,7 +7001,7 @@ exports.setup = function(svc) {
                 
                 apps.create({name: name}, function(err, app) {
                     test.ok(app.isValid());
-                    var appName = app.properties().__name;
+                    var appName = app.properties().name;
                     apps.contains(appName, function(err, found, entity) {
                         test.ok(found);
                         test.ok(entity);
@@ -7132,8 +7040,8 @@ exports.setup = function(svc) {
                         test.ok(app.isValid());
                         var properties = app.properties();
                         
-                        test.strictEqual(properties.description, DESCRIPTION);
-                        test.strictEqual(properties.version, VERSION);
+                        test.strictEqual(properties.content.description, DESCRIPTION);
+                        test.strictEqual(properties.content.version, VERSION);
                         
                         app.remove(callback);
                     },
@@ -7152,7 +7060,7 @@ exports.setup = function(svc) {
                     Async.parallelEach(
                         appList,
                         function(app, idx, callback) {
-                            if (utils.startsWith(app.properties().__name, "jssdk_")) {
+                            if (utils.startsWith(app.properties().name, "jssdk_")) {
                                 app.remove(callback);
                             }
                             else {
@@ -7277,9 +7185,9 @@ exports.setup = function(svc) {
                             test.ok(search);
                             test.ok(search.isValid());
                             
-                            test.strictEqual(search.properties().__name, name); 
-                            test.strictEqual(search.properties().search, originalSearch);
-                            test.ok(!search.properties().description);
+                            test.strictEqual(search.properties().name, name); 
+                            test.strictEqual(search.properties().content.search, originalSearch);
+                            test.ok(!search.properties().content.description);
                             
                             search.update({search: updatedSearch}, done);
                         },
@@ -7287,9 +7195,9 @@ exports.setup = function(svc) {
                             test.ok(search);
                             test.ok(search.isValid());
                             
-                            test.strictEqual(search.properties().__name, name); 
-                            test.strictEqual(search.properties().search, updatedSearch);
-                            test.ok(!search.properties().description);
+                            test.strictEqual(search.properties().name, name); 
+                            test.strictEqual(search.properties().content.search, updatedSearch);
+                            test.ok(!search.properties().content.description);
                             
                             search.update({description: updatedDescription}, done);
                         },
@@ -7297,9 +7205,9 @@ exports.setup = function(svc) {
                             test.ok(search);
                             test.ok(search.isValid());
                             
-                            test.strictEqual(search.properties().__name, name); 
-                            test.strictEqual(search.properties().search, updatedSearch);
-                            test.strictEqual(search.properties().description, updatedDescription);
+                            test.strictEqual(search.properties().name, name); 
+                            test.strictEqual(search.properties().content.search, updatedSearch);
+                            test.strictEqual(search.properties().content.description, updatedDescription);
                             
                             search.remove(done);
                         }
@@ -7317,7 +7225,7 @@ exports.setup = function(svc) {
                     Async.parallelEach(
                         searchList,
                         function(search, idx, callback) {
-                            if (utils.startsWith(search.properties().__name, "jssdk_")) {
+                            if (utils.startsWith(search.properties().name, "jssdk_")) {
                                 search.remove(callback);
                             }
                             else {
@@ -7366,7 +7274,7 @@ exports.setup = function(svc) {
                     },
                     function(file, done) {
                         test.ok(file.isValid());
-                        test.strictEqual(file.properties().__name, "web");
+                        test.strictEqual(file.properties().name, "web");
                         done();
                     }
                 ],
@@ -7388,7 +7296,7 @@ exports.setup = function(svc) {
                     },
                     function(file, done) {
                         test.ok(file.isValid());
-                        test.strictEqual(file.properties().__name, "web");
+                        test.strictEqual(file.properties().name, "web");
                         file.contains("settings", done);
                     },
                     function(found, stanza, done) {
@@ -7399,7 +7307,7 @@ exports.setup = function(svc) {
                     },
                     function(stanza, done) {
                         test.ok(stanza.isValid());
-                        test.ok(stanza.properties().hasOwnProperty("httpport"));
+                        test.ok(stanza.properties().content.hasOwnProperty("httpport"));
                         done();
                     }
                 ],
@@ -7434,7 +7342,7 @@ exports.setup = function(svc) {
                         test.ok(!stanza.isValid());
                         tutils.pollUntil(
                             stanza, function(s) {
-                                return s.isValid() && s.properties()["jssdk_foobar"] === value;
+                                return s.isValid() && s.properties().content["jssdk_foobar"] === value;
                             }, 
                             10, 
                             done
@@ -7442,7 +7350,7 @@ exports.setup = function(svc) {
                     },
                     function(stanza, done) {
                         test.ok(stanza.isValid());
-                        test.strictEqual(stanza.properties()["jssdk_foobar"], value);
+                        test.strictEqual(stanza.properties().content["jssdk_foobar"], value);
                         done();
                     },
                     function(done) {
@@ -7500,7 +7408,7 @@ exports.setup = function(svc) {
                     },
                     function(file, done) {
                         test.ok(file.isValid());
-                        test.strictEqual(file.properties().__name, "conf-web");
+                        test.strictEqual(file.properties().name, "conf-web");
                         done();
                     }
                 ],
@@ -7523,14 +7431,14 @@ exports.setup = function(svc) {
                     },
                     function(file, done) {
                         test.ok(file.isValid());
-                        test.strictEqual(file.properties().__name, "conf-web");
+                        test.strictEqual(file.properties().name, "conf-web");
                         file.contains("settings", done);
                     },
                     function(found, stanza, done) {
                         test.ok(found);
                         test.ok(stanza);
                         test.ok(stanza.isValid());
-                        test.ok(stanza.properties().hasOwnProperty("httpport"));
+                        test.ok(stanza.properties().content.hasOwnProperty("httpport"));
                         done();
                     }
                 ],
@@ -7566,7 +7474,7 @@ exports.setup = function(svc) {
                         test.ok(!stanza.isValid());
                         tutils.pollUntil(
                             stanza, function(s) {
-                                return s.isValid() || s.properties()["jssdk_foobar"] === value;
+                                return s.isValid() || s.properties().content["jssdk_foobar"] === value;
                             }, 
                             10, 
                             done
@@ -7574,7 +7482,7 @@ exports.setup = function(svc) {
                     },
                     function(stanza, done) {
                         test.ok(stanza.isValid());
-                        test.strictEqual(stanza.properties()["jssdk_foobar"], value);
+                        test.strictEqual(stanza.properties().content["jssdk_foobar"], value);
                         done();
                     },
                     function(done) {
@@ -7641,7 +7549,7 @@ exports.setup = function(svc) {
                         function(found, index, callback) {
                             test.ok(found);
                             test.ok(index.isValid());
-                            originalAssureUTF8Value = index.properties().assureUTF8;
+                            originalAssureUTF8Value = index.properties().content.assureUTF8;
                             index.update({
                                 assureUTF8: !originalAssureUTF8Value
                             }, callback);
@@ -7651,7 +7559,7 @@ exports.setup = function(svc) {
                             test.ok(index.isValid());
                             var properties = index.properties();
                             
-                            test.strictEqual(!originalAssureUTF8Value, properties.assureUTF8);
+                            test.strictEqual(!originalAssureUTF8Value, properties.content.assureUTF8);
                             
                             index.update({
                                 assureUTF8: !properties.assureUTF8
@@ -7662,7 +7570,7 @@ exports.setup = function(svc) {
                             test.ok(index.isValid());
                             var properties = index.properties();
                             
-                            test.strictEqual(originalAssureUTF8Value, properties.assureUTF8);
+                            test.strictEqual(originalAssureUTF8Value, properties.content.assureUTF8);
                             callback();
                         },
                         function(callback) {
@@ -7690,8 +7598,8 @@ exports.setup = function(svc) {
                         function(index, done) {
                             test.ok(index);
                             test.ok(index.isValid());
-                            test.strictEqual(index.properties().__name, indexName);
-                            originalEventCount = index.properties().totalEventCount;
+                            test.strictEqual(index.properties().name, indexName);
+                            originalEventCount = index.properties().content.totalEventCount;
                             
                             index.submitEvent(message, {sourcetype: sourcetype}, done);
                         },
@@ -7729,7 +7637,7 @@ exports.setup = function(svc) {
                     test.ok(!err);
                     test.ok(user);
                     test.ok(user.isValid());
-                    test.strictEqual(user.properties().__name, service.username);
+                    test.strictEqual(user.properties().name, service.username);
                     test.done();
                 });
             },
@@ -7763,19 +7671,19 @@ exports.setup = function(svc) {
                         function(user, done) {
                             test.ok(user);
                             test.ok(user.isValid());
-                            test.strictEqual(user.properties().__name, name);
-                            test.strictEqual(user.properties().roles.length, 1);
-                            test.strictEqual(user.properties().roles[0], "user");
+                            test.strictEqual(user.properties().name, name);
+                            test.strictEqual(user.properties().content.roles.length, 1);
+                            test.strictEqual(user.properties().content.roles[0], "user");
                         
                             user.update({realname: "JS SDK", roles: ["admin", "user"]}, done);
                         },
                         function(user, done) {
                             test.ok(user);
                             test.ok(user.isValid());
-                            test.strictEqual(user.properties().realname, "JS SDK");
-                            test.strictEqual(user.properties().roles.length, 2);
-                            test.strictEqual(user.properties().roles[0], "admin");
-                            test.strictEqual(user.properties().roles[1], "user");
+                            test.strictEqual(user.properties().content.realname, "JS SDK");
+                            test.strictEqual(user.properties().content.roles.length, 2);
+                            test.strictEqual(user.properties().content.roles[0], "admin");
+                            test.strictEqual(user.properties().content.roles[1], "user");
                             
                             user.remove(done);
                         }
@@ -7825,15 +7733,15 @@ exports.setup = function(svc) {
                             test.ok(view);
                             test.ok(view.isValid());
                             
-                            test.strictEqual(view.properties().__name, name);
-                            test.strictEqual(view.properties().rawdata, originalData);
-                        
+                            test.strictEqual(view.properties().name, name);
+                            test.strictEqual(view.properties().content["eai:data"], originalData);
+                            
                             view.update({"eai:data": newData}, done);
                         },
                         function(view, done) {
                             test.ok(view);
                             test.ok(view.isValid());
-                            test.strictEqual(view.properties().rawdata, newData);
+                            test.strictEqual(view.properties().content["eai:data"], newData);
                             
                             view.remove(done);
                         }
@@ -8427,21 +8335,21 @@ exports.setup = function(svc, opts) {
             },
             
             "List stanzas": function(test) {
-                this.run("stanzas", ["web"], {app: "search", user: "nobody"}, function(err) {
+                this.run("stanzas", ["web"], {app: "search", owner: "nobody"}, function(err) {
                     test.ok(!err);
                     test.done();
                 });
             },
             
             "Show non-existent contents": function(test) {
-                this.run("contents", ["json", "settings"], {app: "search", user: "nobody"}, function(err) {
+                this.run("contents", ["json", "settings"], {app: "search", owner: "nobody"}, function(err) {
                     test.ok(err);
                     test.done();
                 });
             },
             
             "Show contents with specialization": function(test) {
-                this.run("contents", ["json", "settings"], {app: "new_english", user: "nobody"}, function(err) {
+                this.run("contents", ["json", "settings"], {app: "new_english", owner: "nobody"}, function(err) {
                     console.log(err);
                     test.ok(!err);
                     test.done();
@@ -8463,14 +8371,14 @@ exports.setup = function(svc, opts) {
             },
             
             "Edit contents": function(test) {
-                this.run("edit", ["json", "settings", "foo", "bar"], {app: "new_english", user: "admin"}, function(err) {
+                this.run("edit", ["json", "settings", "foo", "bar"], {app: "new_english", owner: "admin"}, function(err) {
                     test.ok(!err);
                     test.done();
                 });
             },
             
             "Create file": function(test) {
-                this.run("create", ["foo"], {app: "new_english", user: "admin"}, function(err) {
+                this.run("create", ["foo"], {app: "new_english", owner: "admin"}, function(err) {
                     test.ok(!err);
                     test.done();
                 });
@@ -8479,7 +8387,7 @@ exports.setup = function(svc, opts) {
             "Create stanza": function(test) {
                 var options = {
                     app: "new_english",
-                    user: "admin"
+                    owner: "admin"
                 };
                 
                 var that = this;
@@ -8495,7 +8403,7 @@ exports.setup = function(svc, opts) {
             "Create key=value": function(test) {
                 var options = {
                     app: "new_english",
-                    user: "admin"
+                    owner: "admin"
                 };
                 
                 var that = this;
@@ -8511,7 +8419,7 @@ exports.setup = function(svc, opts) {
             "Create+delete stanza": function(test) {
                 var options = {
                     app: "new_english",
-                    user: "admin"
+                    owner: "admin"
                 };
                 
                 var that = this;
@@ -8899,7 +8807,7 @@ exports.main = function(opts, done) {
             for(var i = 0; i < searches.length; i++) {
                 var search = searches[i];
                 console.log("  Search " + i + ": " + search.name);
-                console.log("    " + search.properties().search);
+                console.log("    " + search.properties().content.search);
             } 
             
             done();
@@ -8972,7 +8880,7 @@ exports.main = function(opts, callback) {
                 for(var i = 0; i < searches.length; i++) {
                     var search = searches[i];
                     console.log("  Search " + i + ": " + search.name);
-                    console.log("    " + search.properties().search);
+                    console.log("    " + search.properties().content.search);
                 } 
                 
                 done();
@@ -9046,13 +8954,13 @@ exports.main = function(opts, callback) {
             function(job, done) {
                 Async.whilst(
                     // Loop until it is done
-                    function() { return !job.properties().isDone; },
+                    function() { return !job.properties().content.isDone; },
                     // Refresh the job on every iteration, but sleep for 1 second
                     function(iterationDone) {
                         Async.sleep(1000, function() {
                             // Refresh the job and note how many events we've looked at so far
                             job.refresh(function(err) {
-                                console.log("-- refreshing, " + (job.properties().eventCount || 0) + " events so far");
+                                console.log("-- refreshing, " + (job.properties().content.eventCount || 0) + " events so far");
                                 iterationDone();
                             });
                         });
@@ -9068,9 +8976,9 @@ exports.main = function(opts, callback) {
             function(job, done) {
                 // Print out the statics
                 console.log("Job Statistics: ");
-                console.log("  Event Count: " + job.properties().eventCount);
-                console.log("  Disk Usage: " + job.properties().diskUsage + " bytes");
-                console.log("  Priority: " + job.properties().priority);
+                console.log("  Event Count: " + job.properties().content.eventCount);
+                console.log("  Disk Usage: " + job.properties().content.diskUsage + " bytes");
+                console.log("  Priority: " + job.properties().content.priority);
                 
                 // Ask the server for the results
                 job.results({}, done);
@@ -9168,9 +9076,9 @@ exports.main = function(opts, callback) {
             function(job, done) {
                 // Print out the statics
                 console.log("Job Statistics: ");
-                console.log("  Event Count: " + job.properties().eventCount);
-                console.log("  Disk Usage: " + job.properties().diskUsage + " bytes");
-                console.log("  Priority: " + job.properties().priority);
+                console.log("  Event Count: " + job.properties().content.eventCount);
+                console.log("  Disk Usage: " + job.properties().content.diskUsage + " bytes");
+                console.log("  Priority: " + job.properties().content.priority);
                 
                 // Ask the server for the results
                 job.results({}, done);
@@ -9363,10 +9271,11 @@ exports.main = function(opts, callback) {
                             job.preview({}, function(err, results) {
                                 if (err) {
                                     iterationDone(err);
+                                    return;
                                 }
                                 
                                 // Only do something if we have results
-                                if (results.rows) {                                    
+                                if (results.rows) {
                                     // Up the iteration counter
                                     count++;
                                     
@@ -9834,8 +9743,8 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
             err = err.message;
         }
         
-        if (err && err.odata) {
-            err = err.odata.messages;
+        if (err && err.data) {
+            err = err.data.messages;
         }
         
         return err;
@@ -9910,21 +9819,21 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
         stanzas: function(filename, options, callback) {
             var service = this.service;
             
-            if (options.global && (!!options.app || !!options.user)) {
-                callback("Cannot specify both --global and --user or --app");
+            if (options.global && (!!options.app || !!options.owner)) {
+                callback("Cannot specify both --global and --owner or --app");
                 return;
             }
             
-            if (!options.global && (!options.app || !options.user)) {
+            if (!options.global && (!options.app || !options.owner)) {
                 callback("Non-global lookup has to specify --owner and --app");
                 return;
             }
             
             // Specialize our service if necessary
             var namespace = null;
-            if (options.app || options.user) {
-                namespace = {app: options.app, user: options.user};
-                service = service.specialize(options.user, options.app);
+            if (options.app || options.owner) {
+                namespace = {app: options.app, owner: options.owner};
+                service = service.specialize(options.owner, options.app);
             }
             
             Async.chain([
@@ -9958,25 +9867,25 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
         
         // List all the properties in the specified conf file::stanza
         contents: function(filename, stanzaName, options, callback) {
-            var ignore = ["__id", "__metadata", "__name"];
+            var ignore = ["eai:userName", "eai:appName"];
             var service = this.service;
             
-            if (options.global && (!!options.app || !!options.user)) {
-                callback("Cannot specify both --global and --user or --app");
+            if (options.global && (!!options.app || !!options.owner)) {
+                callback("Cannot specify both --global and --owner or --app");
                 return;
             }
             
-            console.log("Missing: ", !options.global && (!options.app || !options.user));
-            if (!options.global && (!options.app || !options.user)) {
+            console.log("Missing: ", !options.global && (!options.app || !options.owner));
+            if (!options.global && (!options.app || !options.owner)) {
                 callback("Non-global lookup has to specify --owner and --app");
                 return;
             }
             
             // Specialize our service if necessary
             var namespace = null;
-            if (options.app || options.user) {
-                namespace = {app: options.app, user: options.user};
-                service = service.specialize(options.user, options.app);
+            if (options.app || options.owner) {
+                namespace = {app: options.app, owner: options.owner};
+                service = service.specialize(options.owner, options.app);
             }
             
             Async.chain([
@@ -10001,7 +9910,7 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
                     function(stanza, done) {
                         // Find all the properties
                         var keys = [];
-                        var properties = stanza.properties();
+                        var properties = stanza.properties().content;
                         for(var key in properties) {
                             if (properties.hasOwnProperty(key) && ignore.indexOf(key) < 0) {
                                 keys.push(key);
@@ -10029,21 +9938,21 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
         edit: function(filename, stanzaName, key, value, options, callback) {
             var service = this.service;
             
-            if (options.global && (!!options.app || !!options.user)) {
-                callback("Cannot specify both --global and --user or --app");
+            if (options.global && (!!options.app || !!options.owner)) {
+                callback("Cannot specify both --global and --owner or --app");
                 return;
             }
             
-            if (!options.global && (!options.app || !options.user)) {
+            if (!options.global && (!options.app || !options.owner)) {
                 callback("Non-global lookup has to specify --owner and --app");
                 return;
             }
             
             // Specialize our service if necessary
             var namespace = null;
-            if (options.app || options.user) {
-                namespace = {app: options.app, user: options.user};
-                service = service.specialize(options.user, options.app);
+            if (options.app || options.owner) {
+                namespace = {app: options.app, owner: options.owner};
+                service = service.specialize(options.owner, options.app);
             }
             
             Async.chain([
@@ -10086,21 +9995,21 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
         create: function(filename, stanzaName, key, value, options, callback) {
             var service = this.service;
             
-            if (options.global && (!!options.app || !!options.user)) {
-                callback("Cannot specify both --global and --user or --app");
+            if (options.global && (!!options.app || !!options.owner)) {
+                callback("Cannot specify both --global and --owner or --app");
                 return;
             }
             
-            if (!options.global && (!options.app || !options.user)) {
+            if (!options.global && (!options.app || !options.owner)) {
                 callback("Non-global lookup has to specify --owner and --app");
                 return;
             }
             
             // Specialize our service if necessary
             var namespace = null;
-            if (options.app || options.user) {
-                namespace = {app: options.app, user: options.user};
-                service = service.specialize(options.user, options.app);
+            if (options.app || options.owner) {
+                namespace = {app: options.app, owner: options.owner};
+                service = service.specialize(options.owner, options.app);
             }
             
             var collection = null;
@@ -10196,21 +10105,21 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
         del: function(filename, stanzaName, options, callback) {
             var service = this.service;
             
-            if (options.global && (!!options.app || !!options.user)) {
-                callback("Cannot specify both --global and --user or --app");
+            if (options.global && (!!options.app || !!options.owner)) {
+                callback("Cannot specify both --global and --owner or --app");
                 return;
             }
             
-            if (!options.global && (!options.app || !options.user)) {
+            if (!options.global && (!options.app || !options.owner)) {
                 callback("Non-global lookup has to specify --owner and --app");
                 return;
             }
             
             // Specialize our service if necessary
             var namespace = null;
-            if (options.app || options.user) {
-                namespace = {app: options.app, user: options.user};
-                service = service.specialize(options.user, options.app);
+            if (options.app || options.owner) {
+                namespace = {app: options.app, owner: options.owner};
+                service = service.specialize(options.owner, options.app);
             }
             
             Async.chain([
@@ -10273,7 +10182,7 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
             .command("stanzas <filename>")
             .description("List all stanzas in the specified configuration file")
             .option("-g, --global", "Get the contents of the file from the global (indexing) view.")
-            .option("-u, --user <user>", "User context to look in")
+            .option("-u, --owner <owner>", "Owner context to look in")
             .option("-a, --app <app>", "App context to look in")
             .action(function(filename, options) {
                 program.run(filename, options, callback);
@@ -10283,7 +10192,7 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
             .command("contents <filename> <stanza>")
             .description("List all key=value properties of the specified file and stanza")
             .option("-g, --global", "Get the contents of the file from the global (indexing) view.")
-            .option("-u, --user <user>", "User context to look in")
+            .option("-u, --owner <owner>", "Owner context to look in")
             .option("-a, --app <app>", "App context to look in")
             .action(function(filename, stanza, options) {
                 program.run(filename, stanza, options, callback);
@@ -10293,7 +10202,7 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
             .command("edit <filename> <stanza> <key> <value>")
             .description("Edit the specified stanza")
             .option("-g, --global", "Get the contents of the file from the global (indexing) view.")
-            .option("-u, --user <user>", "User context to look in")
+            .option("-u, --owner <owner>", "Owner context to look in")
             .option("-a, --app <app>", "App context to look in")
             .action(function(filename, stanza, key, value, options) {
                 program.run(filename, stanza, key, value, options, callback);
@@ -10303,7 +10212,7 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
             .command("create <filename> [stanza] [key] [value]")
             .description("Create a file/stanza/key (will create up to the deepest level")
             .option("-g, --global", "Get the contents of the file from the global (indexing) view.")
-            .option("-u, --user <user>", "User context to look in")
+            .option("-u, --owner <owner>", "Owner context to look in")
             .option("-a, --app <app>", "App context to look in")
             .action(function(filename, stanza, key, value, options) {
                 program.run(filename, stanza, key, value, options, callback);
@@ -10313,7 +10222,7 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
             .command("delete <filename> <stanza>")
             .description("Delete the stanza in the specified file")
             .option("-g, --global", "Get the contents of the file from the global (indexing) view.")
-            .option("-u, --user <user>", "User context to look in")
+            .option("-u, --owner <owner>", "Owner context to look in")
             .option("-a, --app <app>", "App context to look in")
             .action(function(filename, stanza, options) {
                 program.run(filename, stanza, options, callback);
@@ -10332,19 +10241,19 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
             console.log("  > node conf.js stanzas foo");
             console.log("  ");
             console.log("  List the content of stanza 'bar' in file 'foo':");
-            console.log("  > node conf.js content foo bar");
+            console.log("  > node conf.js contents foo bar");
             console.log("  ");
             console.log("  > List the content of stanza 'bar' in file 'foo' in the namespace of user1/app1:");
-            console.log("  node conf.js content foo bar --user user1 --app app1");
+            console.log("  node conf.js contents foo bar --owner user1 --app app1");
             console.log("  ");
             console.log("  Set the key 'mykey' to value 'myval' in stanza 'bar' in file 'foo' in the namespace of user1/app1:");
-            console.log("  > node conf.js edit foo bar mykey myvalue --user user1 --app app1");
+            console.log("  > node conf.js edit foo bar mykey myvalue --owner user1 --app app1");
             console.log("  ");
             console.log("  Create a file 'foo' in the namespace of user1/app1:");
-            console.log("  > node conf.js create foo --user user1 --app app1");
+            console.log("  > node conf.js create foo --owner user1 --app app1");
             console.log("  ");
             console.log("  Create a stanza 'bar' in file 'foo' (and create if it doesn't exist) in the namespace of user1/app1:");
-            console.log("  > node conf.js create foo bar --user user1 --app app1");
+            console.log("  > node conf.js create foo bar --owner user1 --app app1");
             console.log("  ");
             console.log("  Delete stanza 'bar' in file 'foo':");
             console.log("  > node conf.js delete foo bar");
@@ -10431,7 +10340,7 @@ require.define("/examples/node/search.js", function (require, module, exports, _
                 // Poll until the search is complete
                 function(job, done) {
                     Async.whilst(
-                        function() { return !job.properties().isDone; },
+                        function() { return !job.properties().content.isDone; },
                         function(iterationDone) {
                             job.refresh(function(err, job) {
                                 if (err) {

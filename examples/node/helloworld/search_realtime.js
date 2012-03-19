@@ -69,10 +69,11 @@ exports.main = function(opts, callback) {
                             job.preview({}, function(err, results) {
                                 if (err) {
                                     iterationDone(err);
+                                    return;
                                 }
                                 
                                 // Only do something if we have results
-                                if (results.rows) {                                    
+                                if (results.rows) {
                                     // Up the iteration counter
                                     count++;
                                     

@@ -377,7 +377,6 @@ require.define("/splunk.js", function (require, module, exports, __dirname, __fi
         Context         : require('./lib/context'),
         Service         : require('./lib/service'),
         Http            : require('./lib/http').Http,
-        ODataResponse   : require('./lib/odata').ODataResponse,
         Utils           : require('./lib/utils'),
         Async           : require('./lib/async'),
         Paths           : require('./lib/paths').Paths,
@@ -516,6 +515,44 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
         },
         
         /**
+         * Print out all messages retrieved from splunkd
+         *
+         * @module splunkjs.Logger
+         */
+        printMessages: function(allMessages) {
+            allMessages = allMessages || {};
+            
+            for(var key in allMessages) {
+                if (allMessages.hasOwnProperty(key)) {
+                    var type = key;
+                    var messages = allMessages[key];
+                    for (var i = 0; i < messages.length; i++) {
+                        var msg = '[SPLUNKD] ' + messages[i];
+                        switch (type) {
+                            case 'HTTP':
+                            case 'FATAL':
+                            case 'ERROR':
+                                this.error(msg);
+                                break;
+                            case 'WARN':
+                                this.warn(msg);
+                                break;
+                            case 'INFO':
+                                this.info(msg);
+                                break;
+                            case 'HTTP':
+                                this.error(msg);
+                                break;
+                            default:
+                                this.info(msg);
+                                break;
+                        }
+                    }
+                }
+            }  
+        },
+        
+        /**
          * Set the global logging level
          *
          * Example:
@@ -614,6 +651,8 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @globals splunkjs.Utils
      */
     root.trim = function(str) {
+        str = str || "";
+        
         if (String.prototype.trim) {
             return String.prototype.trim.call(str);
         }
@@ -857,11 +896,11 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      */
     root.namespaceFromProperties = function(props) {
         return {
-            owner: props.__metadata.acl.owner,
-            app: props.__metadata.acl.app,
-            sharing: props.__metadata.acl.sharing
+            owner: props.acl.owner,
+            app: props.acl.app,
+            sharing: props.acl.sharing
         };
-    };
+    };  
 })();
 });
 
@@ -951,7 +990,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
             
             // Store our full prefix, which is just combining together
             // the scheme with the host
-            this.prefix = this.scheme + "://" + this.host + ":" + this.port + "/services/json/v1";
+            this.prefix = this.scheme + "://" + this.host + ":" + this.port + "/services/json/v2";
 
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
@@ -1058,7 +1097,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
                     callback(err, false);
                 }
                 else {
-                    that.sessionKey = response.odata.results.sessionKey;
+                    that.sessionKey = response.data.entry.content.sessionKey;
                     callback(null, true);
                 }
             };
@@ -1305,7 +1344,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
     "use strict";
     
     var Class           = require('./jquery.class').Class;
-    var ODataResponse   = require('./odata').ODataResponse;
+    var logger          = require('./log').Logger;
     var utils           = require('./utils');
 
     var root = exports || this;
@@ -1546,156 +1585,24 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
          * @module splunkjs.Http 
          */
         _buildResponse: function(error, response, data) {            
-            var complete_response, json, odata;
+            var complete_response, json = {};
 
-            // Parse the JSON data and build the OData response
-            // object.
-            if (this.isSplunk) {
-                json = this.parseJson(data);
-                
-                if (error !== "abort") {
-                    odata = ODataResponse.fromJson(json);  
-                    
-                    // Print any messages that came with the response
-                    ODataResponse.printMessages(odata);
-                }
-
-                complete_response = {
-                    response: response,
-                    status: (response ? response.statusCode : 0),
-                    odata: odata,
-                    error: error
-                };
+            if (response && utils.trim(response.headers["content-type"]) === "application/json") {
+                json = this.parseJson(data) || {};
             }
-            else {
-                json = "";
 
-                // We only try to parse JSON if the headers say it is JSON
-                if (response && response.headers["content-type"] === "application/json") {
-                    json = this.parseJson(data);
-                }
-
-                complete_response = {
-                    response: response,
-                    status: (response ? response.statusCode : 0),
-                    json: json,
-                    error: error
-                };
-            }
+            logger.printMessages(json.messages);                
+            
+            complete_response = {
+                response: response,
+                status: (response ? response.statusCode : 0),
+                data: json,
+                error: error
+            };
 
             return complete_response;
         }
     });
-})();
-});
-
-require.define("/lib/odata.js", function (require, module, exports, __dirname, __filename) {
-
-// Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-(function() {
-    "use strict";
-    
-    var Class   = require('./jquery.class').Class;
-    var logger  = require('./log').Logger;
-
-    var root = exports || this;
-
-    // Our basic class to represent an OData resposne object.
-    root.ODataResponse = Class.extend({
-        offset: 0,
-        count: 0,
-        totalCount: 0,
-        messages: [],
-        timings: [],
-        results: null,
-
-        init: function() {
-
-        },
-
-        isCollection: function() {
-            return this.results instanceof Array;
-        }
-    });
-
-    // A static utility function to convert an object derived from JSON
-    // into an ODataResponse
-    root.ODataResponse.fromJson = function(json) {
-        if (!json || !json.d) {
-            var error = new Error('Invalid JSON object passed; cannot parse into OData.');
-            error.json = json;
-            throw error;
-        }
-
-        var d = json.d;
-        
-        var output = new root.ODataResponse();
-
-        // Look for our special keys, and add them to the results
-        var prefixedKeys = ['messages', 'offset', 'count', 'timings', 'total_count'];
-        for (var i=0; i < prefixedKeys.length; i++) {
-            if (d.hasOwnProperty('__' + prefixedKeys[i])) {
-                output[prefixedKeys[i]] = d['__' + prefixedKeys[i]];
-            }
-        }
-
-        output["__metadata"] = d["__metadata"];
-        output["__name"] = d["__name"];
-        if (d.results) {
-            output.results = d.results;
-        }
-
-        return output;
-    };
-
-    // Print any messages that came with the response, as encoded
-    // in the ODataResponse.
-    root.ODataResponse.printMessages = function(struct) {
-        var list = struct.messages || struct.__messages || [];
-
-        if (list) {
-            for (var i = 0; i < list.length; i++) {
-                var msg = '[SPLUNKD] ' + list[i].text;
-                switch (list[i].type) {
-                    case 'HTTP':
-                    case 'FATAL':
-                    case 'ERROR':
-                        // TODO
-                        logger.error(msg);
-                        break;
-                    case 'WARN':
-                        // TODO
-                        logger.warn(msg);
-                        break;
-                    case 'INFO':
-                        // TODO
-                        logger.info(msg);
-                        break;
-                    case 'HTTP':
-                        break;
-                    default:
-                        // TODO
-                        logger.info(msg + (list[i].code ? " -- " + list[i].code : ""));
-                        break;
-                }
-            }
-        }
-
-        return list;  
-    };
 })();
 });
 
@@ -1988,7 +1895,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      var files = svc.configurations();
          *      files.item("props", function(err, propsFile) {
          *          propsFile.read(function(err, props) {
-         *              console.log(props.properties().results); 
+         *              console.log(props.properties().content); 
          *          });
          *      });
          *
@@ -2043,7 +1950,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      var files = svc.properties();
          *      files.item("props", function(err, propsFile) {
          *          propsFile.read(function(err, props) {
-         *              console.log(props.properties().results); 
+         *              console.log(props.properties().content); 
          *          });
          *      });
          *
@@ -2124,7 +2031,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      var users = svc.users();
          *      users.list(function(err, list) {
          *          for(var i = 0; i < list.length; i++) {
-         *              console.log("User " + (i+1) + ": " + list[i].properties().__name);
+         *              console.log("User " + (i+1) + ": " + list[i].properties().name);
          *          }
          *      });
          *
@@ -2151,7 +2058,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      var views = svc.views();
          *      views.list(function(err, list) {
          *          for(var i = 0; i < list.length; i++) {
-         *              console.log("View " + (i+1) + ": " + list[i].properties().__name);
+         *              console.log("View " + (i+1) + ": " + list[i].properties().name);
          *          }
          *      });
          *
@@ -2233,7 +2140,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * Example:
          *
          *      service.currentUser(function(err, user) {
-         *          console.log("Real name: ", user.properties().realname);
+         *          console.log("Real name: ", user.properties().content.realname);
          *      });
          *
          * @param {Function} callback A callback with the user instance: `(err, user)`
@@ -2248,7 +2155,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 } 
                 else {
-                    var username = response.odata.results[0]["username"];
+                    var username = response.data.entry[0].content.username;
                     var user = new root.User(that, username);
                     user.refresh(callback);
                 }
@@ -2431,7 +2338,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.fragmentPath = path;
             this.namespace = namespace;
             this._maybeValid = false;
-            this._properties = {};
+            this._properties = { content: {}, acl: {}, attributes: {}};
             
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
@@ -2621,7 +2528,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 } 
                 else {
-                    that._load(response.odata.results);
+                    that._load(response.data.entry);
                     callback(null, that);
                 }
             });
@@ -2667,7 +2574,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var that = this;
             var req = this.post("", props, function(err, response) {
                 if (!err && that._loadOnUpdate) {
-                    that._load(response.odata.results);
+                    that._load(response.data.entry);
                 }
                 
                 callback(err, that);
@@ -2749,7 +2656,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             var entities = [];
             var entitiesByName = {};
-            var entityPropertyList = properties.results || [];
+            var entityPropertyList = properties.entry || [];
             for(var i = 0; i < entityPropertyList.length; i++) {
                 var props = entityPropertyList[i];
                 var entity = this._item(this, props);
@@ -2798,7 +2705,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    that._load(response.odata);
+                    that._load(response.data);
                     callback(null, that);
                 }
             });
@@ -2871,7 +2778,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    var props = response.odata.results;
+                    var props = response.data.entry;
                     if (utils.isArray(props)) {
                         props = props[0];
                     }
@@ -2956,9 +2863,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     var path = that._itemPath(that, id, namespace);           
                     var fragmentPath = path.fragment;
                     var fullPath = path.full;
-                     
+                    
                     if (that._entitiesByName.hasOwnProperty(fragmentPath)) {
-                        var entities = that._entitiesByName[fragmentPath];
+                        var entities = that._entitiesByName[fragmentPath];                 
                         
                         if (entities.length === 1 && !namespace) {
                             // If there is only one entity with the
@@ -3031,7 +2938,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this._super(service, Paths.savedSearches, options, namespace, {
                 item: function(collection, props) { 
                     var entityNamespace = utils.namespaceFromProperties(props);
-                    return new root.SavedSearch(collection.service, props.__name, entityNamespace);
+                    return new root.SavedSearch(collection.service, props.name, entityNamespace);
                 }
             });
         } 
@@ -3141,7 +3048,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             var that = this;
             return this.get("history", {}, function(err, response) {
-                callback(err, response.odata.results, that);
+                callback(err, response.data.entry.content, that);
             });
         },
         
@@ -3165,7 +3072,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             var that = this;
             return this.get("suppress", {}, function(err, response) {
-                callback(err, response.odata.results, that);
+                callback(err, response.data.entry.content, that);
             });
         },
         
@@ -3192,7 +3099,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                         callback(err);
                     }
                     else {
-                        params.search = search.properties().search;
+                        params.search = search.properties().content.search;
                         update.apply(search, [params, callback]);
                     }
                 });
@@ -3227,7 +3134,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         init: function(service, options) {
             this._super(service, Paths.apps, options, {}, {
                 item: function(collection, props) {
-                    return new root.Application(collection.service, props.__name, {});
+                    return new root.Application(collection.service, props.name, {});
                 }
             });
         }
@@ -3289,7 +3196,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 } 
                 else {
-                    callback(null, response.odata.results, that);
+                    callback(null, response.data.entry.content, that);
                 }
             });
         },
@@ -3318,7 +3225,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 } 
                 else {
-                    callback(null, response.odata.results, that);
+                    callback(null, response.data.entry.content, that);
                 }
             });
         }
@@ -3348,7 +3255,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         init: function(service, options) {
             this._super(service, Paths.users, options, {}, {
                 item: function(collection, props) {
-                    return new root.User(collection.service, props.__name, {});
+                    return new root.User(collection.service, props.name, {});
                 }
             });
         },
@@ -3375,7 +3282,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 else {
                     // This endpoint is buggy, and we have to use the passed
                     // in name
-                    var props = {__name: params.name};
+                    var props = {name: params.name};
                     
                     var entity = that._item(that, props);                    
                     callback(null, entity);
@@ -3440,7 +3347,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this._super(service, Paths.views, options, namespace, {
                 item: function(collection, props) {
                     var entityNamespace = utils.namespaceFromProperties(props);
-                    return new root.View(collection.service, props.__name, entityNamespace);
+                    return new root.View(collection.service, props.name, entityNamespace);
                 }
             });
         },
@@ -3500,7 +3407,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this._super(service, Paths.indexes, options, namespace, {
                 item: function(collection, props) {
                     var entityNamespace = utils.namespaceFromProperties(props);
-                    return new root.Index(collection.service, props.__name, entityNamespace);  
+                    return new root.Index(collection.service, props.name, entityNamespace);  
                 },
                 loadOnCreate: function() { return true; },
                 loadOnItem: function() { return true; }
@@ -3606,7 +3513,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 } 
                 else {
-                    callback(null, response.odata.results, that);
+                    callback(null, response.data.entry.content, that);
                 }
             });
             this._invalidate();
@@ -3643,7 +3550,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var namespace = {owner: "-", app: "-"};
             this._super(service, Paths.properties, options, namespace, {
                 item: function(collection, props) {
-                    var name = props.__name;
+                    var name = props.name;
                     return new root.PropertyFile(collection.service, name, options);
                 },
                 loadOnItem: function() { return false; }
@@ -3717,7 +3624,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             this._super(service, Paths.properties + "/" + encodeURIComponent(name), options, namespace, {
                 item: function(collection, props) {
-                    var name = props.__name;
+                    var name = props.name;
                     return new root.PropertyStanza(collection.service, collection.name, name);
                 },
                 loadOnItem: function() { return false; }
@@ -3824,7 +3731,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             this._super(service, Paths.properties, options, namespace, {
                 item: function(collection, props) {
-                    var name = props.__name;
+                    var name = props.name;
                     return new root.ConfigurationFile(collection.service, name, {}, namespace);
                 },
                 loadOnItem: function() { return false; },
@@ -3904,7 +3811,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var path = Paths.configurations + "/conf-" + encodeURIComponent(name);
             this._super(service, path, options, namespace, {
                 item: function(collection, props) {
-                    var name = props.__name;
+                    var name = props.name;
                     var entityNamespace = utils.namespaceFromProperties(props);
                     return new root.ConfigurationStanza(collection.service, collection.name, name, entityNamespace);
                 },
@@ -4003,7 +3910,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         init: function(service, options, namespace) {
             this._super(service, Paths.jobs, options, namespace, {
                 item: function(collection, props) {
-                    var sid = props.sid;
+                    var sid = props.content.sid;
                     var entityNamespace = utils.namespaceFromProperties(props);
                     return new root.Job(collection.service, sid, entityNamespace);
                 }
@@ -4053,7 +3960,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 }
                 else {
                     that._invalidate();
-                    var job = new root.Job(that.service, response.odata.results.sid);
+                    var job = new root.Job(that.service, response.data.entry.content.sid);
                     callback(null, job);
                 }
             });
@@ -4128,7 +4035,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    callback(null, response.odata.results);
+                    callback(null, response.data);
                 }
             });
         }
@@ -4281,7 +4188,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    callback(null, response.odata.results, that); 
+                    callback(null, response.data, that); 
                 }
             });
         },
@@ -4365,7 +4272,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    callback(null, response.odata.results, that);
+                    callback(null, response.data, that);
                 }
             });
         },
@@ -4397,7 +4304,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    callback(null, response.odata.results, that);
+                    callback(null, response.data, that);
                 }
             });
         },
@@ -4426,7 +4333,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    callback(null, response.odata.results.log, that);
+                    callback(null, response.data.entry.content, that);
                 }
             });
         },
@@ -4512,7 +4419,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    callback(null, response.odata.results, that);
+                    callback(null, response.data.entry.content, that);
                 }
             });
         },
@@ -4542,7 +4449,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    callback(null, response.odata.results, that);
+                    callback(null, response.data.entry.content, that);
                 }
             });
         },
@@ -5232,7 +5139,7 @@ require.define("/lib/searcher.js", function (require, module, exports, __dirname
                             manager._dispatchCallbacks(manager.onFailCallbacks, properties);
                         }
                         
-                        stopLooping = properties.isDone || manager.isJobDone || properties.isFailed;
+                        stopLooping = properties.content.isDone || manager.isJobDone || properties.isFailed;
                         Async.sleep(1000, iterationDone);
                     });
                 },

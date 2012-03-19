@@ -68,11 +68,11 @@ exports.setup = function(svc) {
 
         "Callback#get": function(test) { 
             this.service.get("search/jobs", {count: 2}, function(err, res) {
-                test.strictEqual(res.odata.offset, 0);
-                test.ok(res.odata.count <= res.odata.total_count);
-                test.strictEqual(res.odata.count, 2);
-                test.strictEqual(res.odata.count, res.odata.results.length);
-                test.ok(res.odata.results[0].sid);
+                test.strictEqual(res.data.paging.offset, 0);
+                test.ok(res.data.paging.count <= res.data.paging.total);
+                test.strictEqual(res.data.paging.count, 2);
+                test.strictEqual(res.data.paging.count, res.data.entry.length);
+                test.ok(res.data.entry[0].content.sid);
                 test.done();
             });
         },
@@ -88,7 +88,7 @@ exports.setup = function(svc) {
         "Callback#post": function(test) { 
             var service = this.service;
             this.service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
-                    var sid = res.odata.results.sid;
+                    var sid = res.data.entry.content.sid;
                     test.ok(sid);
 
                     var endpoint = "search/jobs/" + sid + "/control";
@@ -111,7 +111,7 @@ exports.setup = function(svc) {
         "Callback#delete": function(test) { 
             var service = this.service;
             this.service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
-                var sid = res.odata.results.sid;
+                var sid = res.data.entry.content.sid;
                 test.ok(sid);
                 
                 var endpoint = "search/jobs/" + sid;
@@ -131,11 +131,11 @@ exports.setup = function(svc) {
 
         "Callback#request get": function(test) { 
             this.service.request("search/jobs?count=2", "GET", {"X-TestHeader": 1}, "", function(err, res) {
-                test.strictEqual(res.odata.offset, 0);
-                test.ok(res.odata.count <= res.odata.total_count);
-                test.strictEqual(res.odata.count, 2);
-                test.strictEqual(res.odata.count, res.odata.results.length);
-                test.ok(res.odata.results[0].sid);
+                test.strictEqual(res.data.paging.offset, 0);
+                test.ok(res.data.paging.count <= res.data.paging.total);
+                test.strictEqual(res.data.paging.count, 2);
+                test.strictEqual(res.data.paging.count, res.data.entry.length);
+                test.ok(res.data.entry[0].content.sid);
                 
                 if (res.response.request) {
                     test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
@@ -152,7 +152,7 @@ exports.setup = function(svc) {
             };
             var service = this.service;
             this.service.request("search/jobs", "POST", headers, body, function(err, res) {
-                var sid = res.odata.results.sid;
+                var sid = res.data.entry.content.sid;
                 test.ok(sid);
                 
                 var endpoint = "search/jobs/" + sid + "/control";

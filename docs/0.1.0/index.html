@@ -267,6 +267,7 @@
                               <li><a href='#splunkjs.Logger-error'>error</a></li>
                               <li><a href='#splunkjs.Logger-warn'>warn</a></li>
                               <li><a href='#splunkjs.Logger-info'>info</a></li>
+                              <li><a href='#splunkjs.Logger-printMessages'>printMessages</a></li>
                               <li><a href='#splunkjs.Logger-setLevel'>setLevel</a></li>
               </ul>
             
@@ -1151,6 +1152,58 @@
               </section>
               
             </section>
+                      <section class='method' id='splunkjs.Logger-printMessages'>
+              <header>
+                <h3>printMessages</h3>
+                <h4>splunkjs.Logger.printMessages</h4>
+                <p class='type'>method</p>
+                </header>
+              <section class='params'>
+                <ul>
+                  </ul>
+              </section>
+              <section class='params'>
+                </section>
+              <section>
+                <p>Print out all messages retrieved from splunkd</p>
+              </section>
+              <section class='source'>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/log.js#L129">lib/log.js:129</a>)</h4>
+                <pre><code>printMessages: function(allMessages) {
+    allMessages = allMessages || {};
+    
+    for(var key in allMessages) {
+        if (allMessages.hasOwnProperty(key)) {
+            var type = key;
+            var messages = allMessages[key];
+            for (var i = 0; i &lt; messages.length; i++) {
+                var msg = '[SPLUNKD] ' + messages[i];
+                switch (type) {
+                    case 'HTTP':
+                    case 'FATAL':
+                    case 'ERROR':
+                        this.error(msg);
+                        break;
+                    case 'WARN':
+                        this.warn(msg);
+                        break;
+                    case 'INFO':
+                        this.info(msg);
+                        break;
+                    case 'HTTP':
+                        this.error(msg);
+                        break;
+                    default:
+                        this.info(msg);
+                        break;
+                }
+            }
+        }
+    }  
+},</code></pre>
+              </section>
+              
+            </section>
                       <section class='method' id='splunkjs.Logger-setLevel'>
               <header>
                 <h3>setLevel</h3>
@@ -1173,7 +1226,7 @@
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/log.js#L136">lib/log.js:136</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/log.js#L174">lib/log.js:174</a>)</h4>
                 <pre><code>setLevel: function(level) {    
     if (utils.isString(level)) {
         if (levels.hasOwnProperty(level)) {
@@ -1464,38 +1517,18 @@
               <section class='source'>
                 <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L260">lib/http.js:260</a>)</h4>
                 <pre><code>_buildResponse: function(error, response, data) {            
-            var complete_response, json, odata;
-            // Parse the JSON data and build the OData response
-            // object.
-            if (this.isSplunk) {
-                json = this.parseJson(data);
-                
-                if (error !== "abort") {
-                    odata = ODataResponse.fromJson(json);  
-                    
-                    // Print any messages that came with the response
-                    ODataResponse.printMessages(odata);
-                }
-                complete_response = {
-                    response: response,
-                    status: (response ? response.statusCode : 0),
-                    odata: odata,
-                    error: error
-                };
+            var complete_response, json = {};
+            if (response &amp;&amp; utils.trim(response.headers["content-type"]) === "application/json") {
+                json = this.parseJson(data) || {};
             }
-            else {
-                json = "";
-                // We only try to parse JSON if the headers say it is JSON
-                if (response &amp;&amp; response.headers["content-type"] === "application/json") {
-                    json = this.parseJson(data);
-                }
-                complete_response = {
-                    response: response,
-                    status: (response ? response.statusCode : 0),
-                    json: json,
-                    error: error
-                };
-            }
+            logger.printMessages(json.messages);                
+            
+            complete_response = {
+                response: response,
+                status: (response ? response.statusCode : 0),
+                data: json,
+                error: error
+            };
             return complete_response;
         }
     });
@@ -1647,6 +1680,8 @@
               <section class='source'>
                 <h4>Source</h4>
                 <pre><code>root.trim = function(str) {
+    str = str || "";
+    
     if (String.prototype.trim) {
         return String.prototype.trim.call(str);
     }
@@ -2058,11 +2093,11 @@ var toString = Object.prototype.toString;</code></pre>
                 <h4>Source</h4>
                 <pre><code>root.namespaceFromProperties = function(props) {
         return {
-            owner: props.__metadata.acl.owner,
-            app: props.__metadata.acl.app,
-            sharing: props.__metadata.acl.sharing
+            owner: props.acl.owner,
+            app: props.acl.app,
+            sharing: props.acl.sharing
         };
-    };
+    };  
 })();</code></pre>
               </section>
               
@@ -2749,7 +2784,7 @@ var toString = Object.prototype.toString;</code></pre>
     
     // Store our full prefix, which is just combining together
     // the scheme with the host
-    this.prefix = this.scheme + "://" + this.host + ":" + this.port + "/services/json/v1";
+    this.prefix = this.scheme + "://" + this.host + ":" + this.port + "/services/json/v2";
     // We perform the bindings so that every function works 
     // properly when it is passed as a callback.
     this._headers   = utils.bind(this, this._headers);
@@ -2902,7 +2937,7 @@ var toString = Object.prototype.toString;</code></pre>
             callback(err, false);
         }
         else {
-            that.sessionKey = response.odata.results.sessionKey;
+            that.sessionKey = response.data.entry.content.sessionKey;
             callback(null, true);
         }
     };
@@ -3205,7 +3240,7 @@ var toString = Object.prototype.toString;</code></pre>
  var files = svc.configurations();
  files.item("props", function(err, propsFile) {
      propsFile.read(function(err, props) {
-         console.log(props.properties().results); 
+         console.log(props.properties().content); 
      });
  });
 </code></pre>
@@ -3283,7 +3318,7 @@ var toString = Object.prototype.toString;</code></pre>
  var files = svc.properties();
  files.item("props", function(err, propsFile) {
      propsFile.read(function(err, props) {
-         console.log(props.properties().results); 
+         console.log(props.properties().content); 
      });
  });
 </code></pre>
@@ -3400,7 +3435,7 @@ var toString = Object.prototype.toString;</code></pre>
  var users = svc.users();
  users.list(function(err, list) {
      for(var i = 0; i &lt; list.length; i++) {
-         console.log("User " + (i+1) + ": " + list[i].properties().__name);
+         console.log("User " + (i+1) + ": " + list[i].properties().name);
      }
  });
 </code></pre>
@@ -3440,7 +3475,7 @@ var toString = Object.prototype.toString;</code></pre>
  var views = svc.views();
  views.list(function(err, list) {
      for(var i = 0; i &lt; list.length; i++) {
-         console.log("View " + (i+1) + ": " + list[i].properties().__name);
+         console.log("View " + (i+1) + ": " + list[i].properties().name);
      }
  });
 </code></pre>
@@ -3555,7 +3590,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>Get the current logged in user</p>
 <h2>Example</h2>
 <pre><code> service.currentUser(function(err, user) {
-     console.log("Real name: ", user.properties().realname);
+     console.log("Real name: ", user.properties().content.realname);
  });
 </code></pre>
               </section>
@@ -3568,7 +3603,7 @@ var toString = Object.prototype.toString;</code></pre>
                 callback(err);
             } 
             else {
-                var username = response.odata.results[0]["username"];
+                var username = response.data.entry[0].content.username;
                 var user = new root.User(that, username);
                 user.refresh(callback);
             }
@@ -3991,7 +4026,7 @@ var toString = Object.prototype.toString;</code></pre>
     this.fragmentPath = path;
     this.namespace = namespace;
     this._maybeValid = false;
-    this._properties = {};
+    this._properties = { content: {}, acl: {}, attributes: {}};
     
     // We perform the bindings so that every function works 
     // properly when it is passed as a callback.
@@ -4437,7 +4472,7 @@ var toString = Object.prototype.toString;</code></pre>
             callback(err);
         } 
         else {
-            that._load(response.odata.results);
+            that._load(response.data.entry);
             callback(null, that);
         }
     });
@@ -4507,7 +4542,7 @@ var toString = Object.prototype.toString;</code></pre>
         var that = this;
         var req = this.post("", props, function(err, response) {
             if (!err &amp;&amp; that._loadOnUpdate) {
-                that._load(response.odata.results);
+                that._load(response.data.entry);
             }
             
             callback(err, that);
@@ -4828,7 +4863,7 @@ var toString = Object.prototype.toString;</code></pre>
     
     var entities = [];
     var entitiesByName = {};
-    var entityPropertyList = properties.results || [];
+    var entityPropertyList = properties.entry || [];
     for(var i = 0; i &lt; entityPropertyList.length; i++) {
         var props = entityPropertyList[i];
         var entity = this._item(this, props);
@@ -4889,7 +4924,7 @@ var toString = Object.prototype.toString;</code></pre>
             callback(err);
         }
         else {
-            that._load(response.odata);
+            that._load(response.data);
             callback(null, that);
         }
     });
@@ -4984,7 +5019,7 @@ var toString = Object.prototype.toString;</code></pre>
             callback(err);
         }
         else {
-            var props = response.odata.results;
+            var props = response.data.entry;
             if (utils.isArray(props)) {
                 props = props[0];
             }
@@ -5091,9 +5126,9 @@ var toString = Object.prototype.toString;</code></pre>
                 var path = that._itemPath(that, id, namespace);           
                 var fragmentPath = path.fragment;
                 var fullPath = path.full;
-                 
+                
                 if (that._entitiesByName.hasOwnProperty(fragmentPath)) {
-                    var entities = that._entitiesByName[fragmentPath];
+                    var entities = that._entitiesByName[fragmentPath];                 
                     
                     if (entities.length === 1 &amp;&amp; !namespace) {
                         // If there is only one entity with the
@@ -5394,7 +5429,7 @@ var toString = Object.prototype.toString;</code></pre>
         this._super(service, Paths.savedSearches, options, namespace, {
             item: function(collection, props) { 
                 var entityNamespace = utils.namespaceFromProperties(props);
-                return new root.SavedSearch(collection.service, props.__name, entityNamespace);
+                return new root.SavedSearch(collection.service, props.name, entityNamespace);
             }
         });
     } 
@@ -5439,7 +5474,7 @@ var toString = Object.prototype.toString;</code></pre>
             callback(err);
         }
         else {
-            that._load(response.odata);
+            that._load(response.data);
             callback(null, that);
         }
     });
@@ -5534,7 +5569,7 @@ var toString = Object.prototype.toString;</code></pre>
             callback(err);
         }
         else {
-            var props = response.odata.results;
+            var props = response.data.entry;
             if (utils.isArray(props)) {
                 props = props[0];
             }
@@ -5641,9 +5676,9 @@ var toString = Object.prototype.toString;</code></pre>
                 var path = that._itemPath(that, id, namespace);           
                 var fragmentPath = path.fragment;
                 var fullPath = path.full;
-                 
+                
                 if (that._entitiesByName.hasOwnProperty(fragmentPath)) {
-                    var entities = that._entitiesByName[fragmentPath];
+                    var entities = that._entitiesByName[fragmentPath];                 
                     
                     if (entities.length === 1 &amp;&amp; !namespace) {
                         // If there is only one entity with the
@@ -6058,7 +6093,7 @@ var toString = Object.prototype.toString;</code></pre>
     
     var that = this;
     return this.get("history", {}, function(err, response) {
-        callback(err, response.odata.results, that);
+        callback(err, response.data.entry.content, that);
     });
 },</code></pre>
               </section>
@@ -6095,7 +6130,7 @@ var toString = Object.prototype.toString;</code></pre>
     
     var that = this;
     return this.get("suppress", {}, function(err, response) {
-        callback(err, response.odata.results, that);
+        callback(err, response.data.entry.content, that);
     });
 },</code></pre>
               </section>
@@ -6132,7 +6167,7 @@ var toString = Object.prototype.toString;</code></pre>
                     callback(err);
                 }
                 else {
-                    params.search = search.properties().search;
+                    params.search = search.properties().content.search;
                     update.apply(search, [params, callback]);
                 }
             });
@@ -6204,7 +6239,7 @@ var toString = Object.prototype.toString;</code></pre>
             callback(err);
         } 
         else {
-            that._load(response.odata.results);
+            that._load(response.data.entry);
             callback(null, that);
         }
     });
@@ -6491,7 +6526,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <pre><code>init: function(service, options) {
         this._super(service, Paths.apps, options, {}, {
             item: function(collection, props) {
-                return new root.Application(collection.service, props.__name, {});
+                return new root.Application(collection.service, props.name, {});
             }
         });
     }
@@ -6536,7 +6571,7 @@ var toString = Object.prototype.toString;</code></pre>
             callback(err);
         }
         else {
-            that._load(response.odata);
+            that._load(response.data);
             callback(null, that);
         }
     });
@@ -6631,7 +6666,7 @@ var toString = Object.prototype.toString;</code></pre>
             callback(err);
         }
         else {
-            var props = response.odata.results;
+            var props = response.data.entry;
             if (utils.isArray(props)) {
                 props = props[0];
             }
@@ -6738,9 +6773,9 @@ var toString = Object.prototype.toString;</code></pre>
                 var path = that._itemPath(that, id, namespace);           
                 var fragmentPath = path.fragment;
                 var fullPath = path.full;
-                 
+                
                 if (that._entitiesByName.hasOwnProperty(fragmentPath)) {
-                    var entities = that._entitiesByName[fragmentPath];
+                    var entities = that._entitiesByName[fragmentPath];                 
                     
                     if (entities.length === 1 &amp;&amp; !namespace) {
                         // If there is only one entity with the
@@ -7081,7 +7116,7 @@ var toString = Object.prototype.toString;</code></pre>
             callback(err);
         } 
         else {
-            callback(null, response.odata.results, that);
+            callback(null, response.data.entry.content, that);
         }
     });
 },</code></pre>
@@ -7123,7 +7158,7 @@ var toString = Object.prototype.toString;</code></pre>
                 callback(err);
             } 
             else {
-                callback(null, response.odata.results, that);
+                callback(null, response.data.entry.content, that);
             }
         });
     }
@@ -7190,7 +7225,7 @@ var toString = Object.prototype.toString;</code></pre>
             callback(err);
         } 
         else {
-            that._load(response.odata.results);
+            that._load(response.data.entry);
             callback(null, that);
         }
     });
@@ -7260,7 +7295,7 @@ var toString = Object.prototype.toString;</code></pre>
         var that = this;
         var req = this.post("", props, function(err, response) {
             if (!err &amp;&amp; that._loadOnUpdate) {
-                that._load(response.odata.results);
+                that._load(response.data.entry);
             }
             
             callback(err, that);
@@ -7521,7 +7556,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <pre><code>init: function(service, options) {
     this._super(service, Paths.users, options, {}, {
         item: function(collection, props) {
-            return new root.User(collection.service, props.__name, {});
+            return new root.User(collection.service, props.name, {});
         }
     });
 },</code></pre>
@@ -7560,7 +7595,7 @@ var toString = Object.prototype.toString;</code></pre>
             else {
                 // This endpoint is buggy, and we have to use the passed
                 // in name
-                var props = {__name: params.name};
+                var props = {name: params.name};
                 
                 var entity = that._item(that, props);                    
                 callback(null, entity);
@@ -7611,7 +7646,7 @@ var toString = Object.prototype.toString;</code></pre>
             callback(err);
         }
         else {
-            that._load(response.odata);
+            that._load(response.data);
             callback(null, that);
         }
     });
@@ -7756,9 +7791,9 @@ var toString = Object.prototype.toString;</code></pre>
                 var path = that._itemPath(that, id, namespace);           
                 var fragmentPath = path.fragment;
                 var fullPath = path.full;
-                 
+                
                 if (that._entitiesByName.hasOwnProperty(fragmentPath)) {
-                    var entities = that._entitiesByName[fragmentPath];
+                    var entities = that._entitiesByName[fragmentPath];                 
                     
                     if (entities.length === 1 &amp;&amp; !namespace) {
                         // If there is only one entity with the
@@ -8118,7 +8153,7 @@ var toString = Object.prototype.toString;</code></pre>
             callback(err);
         } 
         else {
-            that._load(response.odata.results);
+            that._load(response.data.entry);
             callback(null, that);
         }
     });
@@ -8188,7 +8223,7 @@ var toString = Object.prototype.toString;</code></pre>
         var that = this;
         var req = this.post("", props, function(err, response) {
             if (!err &amp;&amp; that._loadOnUpdate) {
-                that._load(response.odata.results);
+                that._load(response.data.entry);
             }
             
             callback(err, that);
@@ -8451,7 +8486,7 @@ var toString = Object.prototype.toString;</code></pre>
         this._super(service, Paths.views, options, namespace, {
             item: function(collection, props) {
                 var entityNamespace = utils.namespaceFromProperties(props);
-                return new root.View(collection.service, props.__name, entityNamespace);
+                return new root.View(collection.service, props.name, entityNamespace);
             }
         });
     },
@@ -8496,7 +8531,7 @@ var toString = Object.prototype.toString;</code></pre>
             callback(err);
         }
         else {
-            that._load(response.odata);
+            that._load(response.data);
             callback(null, that);
         }
     });
@@ -8591,7 +8626,7 @@ var toString = Object.prototype.toString;</code></pre>
             callback(err);
         }
         else {
-            var props = response.odata.results;
+            var props = response.data.entry;
             if (utils.isArray(props)) {
                 props = props[0];
             }
@@ -8698,9 +8733,9 @@ var toString = Object.prototype.toString;</code></pre>
                 var path = that._itemPath(that, id, namespace);           
                 var fragmentPath = path.fragment;
                 var fullPath = path.full;
-                 
+                
                 if (that._entitiesByName.hasOwnProperty(fragmentPath)) {
-                    var entities = that._entitiesByName[fragmentPath];
+                    var entities = that._entitiesByName[fragmentPath];                 
                     
                     if (entities.length === 1 &amp;&amp; !namespace) {
                         // If there is only one entity with the
@@ -9061,7 +9096,7 @@ var toString = Object.prototype.toString;</code></pre>
             callback(err);
         } 
         else {
-            that._load(response.odata.results);
+            that._load(response.data.entry);
             callback(null, that);
         }
     });
@@ -9131,7 +9166,7 @@ var toString = Object.prototype.toString;</code></pre>
         var that = this;
         var req = this.post("", props, function(err, response) {
             if (!err &amp;&amp; that._loadOnUpdate) {
-                that._load(response.odata.results);
+                that._load(response.data.entry);
             }
             
             callback(err, that);
@@ -9394,7 +9429,7 @@ var toString = Object.prototype.toString;</code></pre>
     this._super(service, Paths.indexes, options, namespace, {
         item: function(collection, props) {
             var entityNamespace = utils.namespaceFromProperties(props);
-            return new root.Index(collection.service, props.__name, entityNamespace);  
+            return new root.Index(collection.service, props.name, entityNamespace);  
         },
         loadOnCreate: function() { return true; },
         loadOnItem: function() { return true; }
@@ -9487,7 +9522,7 @@ var toString = Object.prototype.toString;</code></pre>
             callback(err);
         }
         else {
-            that._load(response.odata);
+            that._load(response.data);
             callback(null, that);
         }
     });
@@ -9632,9 +9667,9 @@ var toString = Object.prototype.toString;</code></pre>
                 var path = that._itemPath(that, id, namespace);           
                 var fragmentPath = path.fragment;
                 var fullPath = path.full;
-                 
+                
                 if (that._entitiesByName.hasOwnProperty(fragmentPath)) {
-                    var entities = that._entitiesByName[fragmentPath];
+                    var entities = that._entitiesByName[fragmentPath];                 
                     
                     if (entities.length === 1 &amp;&amp; !namespace) {
                         // If there is only one entity with the
@@ -9983,7 +10018,7 @@ var toString = Object.prototype.toString;</code></pre>
                 callback(err);
             } 
             else {
-                callback(null, response.odata.results, that);
+                callback(null, response.data.entry.content, that);
             }
         });
         this._invalidate();
@@ -10056,7 +10091,7 @@ var toString = Object.prototype.toString;</code></pre>
             callback(err);
         } 
         else {
-            that._load(response.odata.results);
+            that._load(response.data.entry);
             callback(null, that);
         }
     });
@@ -10126,7 +10161,7 @@ var toString = Object.prototype.toString;</code></pre>
         var that = this;
         var req = this.post("", props, function(err, response) {
             if (!err &amp;&amp; that._loadOnUpdate) {
-                that._load(response.odata.results);
+                that._load(response.data.entry);
             }
             
             callback(err, that);
@@ -10388,7 +10423,7 @@ var toString = Object.prototype.toString;</code></pre>
     var namespace = {owner: "-", app: "-"};
     this._super(service, Paths.properties, options, namespace, {
         item: function(collection, props) {
-            var name = props.__name;
+            var name = props.name;
             return new root.PropertyFile(collection.service, name, options);
         },
         loadOnItem: function() { return false; }
@@ -10485,7 +10520,7 @@ var toString = Object.prototype.toString;</code></pre>
             callback(err);
         }
         else {
-            that._load(response.odata);
+            that._load(response.data);
             callback(null, that);
         }
     });
@@ -10630,9 +10665,9 @@ var toString = Object.prototype.toString;</code></pre>
                 var path = that._itemPath(that, id, namespace);           
                 var fragmentPath = path.fragment;
                 var fullPath = path.full;
-                 
+                
                 if (that._entitiesByName.hasOwnProperty(fragmentPath)) {
-                    var entities = that._entitiesByName[fragmentPath];
+                    var entities = that._entitiesByName[fragmentPath];                 
                     
                     if (entities.length === 1 &amp;&amp; !namespace) {
                         // If there is only one entity with the
@@ -10933,7 +10968,7 @@ var toString = Object.prototype.toString;</code></pre>
     
     this._super(service, Paths.properties + "/" + encodeURIComponent(name), options, namespace, {
         item: function(collection, props) {
-            var name = props.__name;
+            var name = props.name;
             return new root.PropertyStanza(collection.service, collection.name, name);
         },
         loadOnItem: function() { return false; }
@@ -11030,7 +11065,7 @@ var toString = Object.prototype.toString;</code></pre>
             callback(err);
         }
         else {
-            that._load(response.odata);
+            that._load(response.data);
             callback(null, that);
         }
     });
@@ -11175,9 +11210,9 @@ var toString = Object.prototype.toString;</code></pre>
                 var path = that._itemPath(that, id, namespace);           
                 var fragmentPath = path.fragment;
                 var fullPath = path.full;
-                 
+                
                 if (that._entitiesByName.hasOwnProperty(fragmentPath)) {
-                    var entities = that._entitiesByName[fragmentPath];
+                    var entities = that._entitiesByName[fragmentPath];                 
                     
                     if (entities.length === 1 &amp;&amp; !namespace) {
                         // If there is only one entity with the
@@ -11543,7 +11578,7 @@ var toString = Object.prototype.toString;</code></pre>
             callback(err);
         } 
         else {
-            that._load(response.odata.results);
+            that._load(response.data.entry);
             callback(null, that);
         }
     });
@@ -11613,7 +11648,7 @@ var toString = Object.prototype.toString;</code></pre>
         var that = this;
         var req = this.post("", props, function(err, response) {
             if (!err &amp;&amp; that._loadOnUpdate) {
-                that._load(response.odata.results);
+                that._load(response.data.entry);
             }
             
             callback(err, that);
@@ -11879,7 +11914,7 @@ var toString = Object.prototype.toString;</code></pre>
     
     this._super(service, Paths.properties, options, namespace, {
         item: function(collection, props) {
-            var name = props.__name;
+            var name = props.name;
             return new root.ConfigurationFile(collection.service, name, {}, namespace);
         },
         loadOnItem: function() { return false; },
@@ -11984,7 +12019,7 @@ var toString = Object.prototype.toString;</code></pre>
             callback(err);
         }
         else {
-            that._load(response.odata);
+            that._load(response.data);
             callback(null, that);
         }
     });
@@ -12129,9 +12164,9 @@ var toString = Object.prototype.toString;</code></pre>
                 var path = that._itemPath(that, id, namespace);           
                 var fragmentPath = path.fragment;
                 var fullPath = path.full;
-                 
+                
                 if (that._entitiesByName.hasOwnProperty(fragmentPath)) {
-                    var entities = that._entitiesByName[fragmentPath];
+                    var entities = that._entitiesByName[fragmentPath];                 
                     
                     if (entities.length === 1 &amp;&amp; !namespace) {
                         // If there is only one entity with the
@@ -12430,7 +12465,7 @@ var toString = Object.prototype.toString;</code></pre>
     var path = Paths.configurations + "/conf-" + encodeURIComponent(name);
     this._super(service, path, options, namespace, {
         item: function(collection, props) {
-            var name = props.__name;
+            var name = props.name;
             var entityNamespace = utils.namespaceFromProperties(props);
             return new root.ConfigurationStanza(collection.service, collection.name, name, entityNamespace);
         },
@@ -12528,7 +12563,7 @@ var toString = Object.prototype.toString;</code></pre>
             callback(err);
         }
         else {
-            that._load(response.odata);
+            that._load(response.data);
             callback(null, that);
         }
     });
@@ -12673,9 +12708,9 @@ var toString = Object.prototype.toString;</code></pre>
                 var path = that._itemPath(that, id, namespace);           
                 var fragmentPath = path.fragment;
                 var fullPath = path.full;
-                 
+                
                 if (that._entitiesByName.hasOwnProperty(fragmentPath)) {
-                    var entities = that._entitiesByName[fragmentPath];
+                    var entities = that._entitiesByName[fragmentPath];                 
                     
                     if (entities.length === 1 &amp;&amp; !namespace) {
                         // If there is only one entity with the
@@ -13036,7 +13071,7 @@ var toString = Object.prototype.toString;</code></pre>
             callback(err);
         } 
         else {
-            that._load(response.odata.results);
+            that._load(response.data.entry);
             callback(null, that);
         }
     });
@@ -13106,7 +13141,7 @@ var toString = Object.prototype.toString;</code></pre>
         var that = this;
         var req = this.post("", props, function(err, response) {
             if (!err &amp;&amp; that._loadOnUpdate) {
-                that._load(response.odata.results);
+                that._load(response.data.entry);
             }
             
             callback(err, that);
@@ -13368,7 +13403,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <pre><code>init: function(service, options, namespace) {
     this._super(service, Paths.jobs, options, namespace, {
         item: function(collection, props) {
-            var sid = props.sid;
+            var sid = props.content.sid;
             var entityNamespace = utils.namespaceFromProperties(props);
             return new root.Job(collection.service, sid, entityNamespace);
         }
@@ -13430,7 +13465,7 @@ var toString = Object.prototype.toString;</code></pre>
         }
         else {
             that._invalidate();
-            var job = new root.Job(that.service, response.odata.results.sid);
+            var job = new root.Job(that.service, response.data.entry.content.sid);
             callback(null, job);
         }
     });
@@ -13526,7 +13561,7 @@ var toString = Object.prototype.toString;</code></pre>
                 callback(err);
             }
             else {
-                callback(null, response.odata.results);
+                callback(null, response.data);
             }
         });
     }
@@ -13571,7 +13606,7 @@ var toString = Object.prototype.toString;</code></pre>
             callback(err);
         }
         else {
-            that._load(response.odata);
+            that._load(response.data);
             callback(null, that);
         }
     });
@@ -13716,9 +13751,9 @@ var toString = Object.prototype.toString;</code></pre>
                 var path = that._itemPath(that, id, namespace);           
                 var fragmentPath = path.fragment;
                 var fullPath = path.full;
-                 
+                
                 if (that._entitiesByName.hasOwnProperty(fragmentPath)) {
-                    var entities = that._entitiesByName[fragmentPath];
+                    var entities = that._entitiesByName[fragmentPath];                 
                     
                     if (entities.length === 1 &amp;&amp; !namespace) {
                         // If there is only one entity with the
@@ -14186,7 +14221,7 @@ var toString = Object.prototype.toString;</code></pre>
             callback(err);
         }
         else {
-            callback(null, response.odata.results, that); 
+            callback(null, response.data, that); 
         }
     });
 },</code></pre>
@@ -14308,7 +14343,7 @@ var toString = Object.prototype.toString;</code></pre>
             callback(err);
         }
         else {
-            callback(null, response.odata.results, that);
+            callback(null, response.data, that);
         }
     });
 },</code></pre>
@@ -14352,7 +14387,7 @@ var toString = Object.prototype.toString;</code></pre>
             callback(err);
         }
         else {
-            callback(null, response.odata.results, that);
+            callback(null, response.data, that);
         }
     });
 },</code></pre>
@@ -14394,7 +14429,7 @@ var toString = Object.prototype.toString;</code></pre>
             callback(err);
         }
         else {
-            callback(null, response.odata.results.log, that);
+            callback(null, response.data.entry.content, that);
         }
     });
 },</code></pre>
@@ -14518,7 +14553,7 @@ var toString = Object.prototype.toString;</code></pre>
             callback(err);
         }
         else {
-            callback(null, response.odata.results, that);
+            callback(null, response.data.entry.content, that);
         }
     });
 },</code></pre>
@@ -14561,7 +14596,7 @@ var toString = Object.prototype.toString;</code></pre>
             callback(err);
         }
         else {
-            callback(null, response.odata.results, that);
+            callback(null, response.data.entry.content, that);
         }
     });
 },</code></pre>
@@ -14707,7 +14742,7 @@ var toString = Object.prototype.toString;</code></pre>
             callback(err);
         } 
         else {
-            that._load(response.odata.results);
+            that._load(response.data.entry);
             callback(null, that);
         }
     });
@@ -14777,7 +14812,7 @@ var toString = Object.prototype.toString;</code></pre>
         var that = this;
         var req = this.post("", props, function(err, response) {
             if (!err &amp;&amp; that._loadOnUpdate) {
-                that._load(response.odata.results);
+                that._load(response.data.entry);
             }
             
             callback(err, that);

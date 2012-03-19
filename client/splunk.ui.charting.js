@@ -475,6 +475,8 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @globals splunkjs.Utils
      */
     root.trim = function(str) {
+        str = str || "";
+        
         if (String.prototype.trim) {
             return String.prototype.trim.call(str);
         }
@@ -718,11 +720,11 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      */
     root.namespaceFromProperties = function(props) {
         return {
-            owner: props.__metadata.acl.owner,
-            app: props.__metadata.acl.app,
-            sharing: props.__metadata.acl.sharing
+            owner: props.acl.owner,
+            app: props.acl.app,
+            sharing: props.acl.sharing
         };
-    };
+    };  
 })();
 });
 

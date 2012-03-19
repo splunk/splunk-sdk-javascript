@@ -25,7 +25,6 @@
         Context         : require('./lib/context'),
         Service         : require('./lib/service'),
         Http            : require('./lib/http').Http,
-        ODataResponse   : require('./lib/odata').ODataResponse,
         Utils           : require('./lib/utils'),
         Async           : require('./lib/async'),
         Paths           : require('./lib/paths').Paths,

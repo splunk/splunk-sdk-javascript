@@ -58,7 +58,7 @@ exports.main = function(opts, done) {
             for(var i = 0; i < searches.length; i++) {
                 var search = searches[i];
                 console.log("  Search " + i + ": " + search.name);
-                console.log("    " + search.properties().search);
+                console.log("    " + search.properties().content.search);
             } 
             
             done();

@@ -115,7 +115,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job,
                                 function(j) {
-                                    return j.isValid() && job.properties()["isDone"];
+                                    return j.isValid() && job.properties().content["isDone"];
                                 },
                                 10,
                                 done
@@ -153,7 +153,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job,
                                 function(j) {
-                                    return j.isValid() && job.properties()["isDone"];
+                                    return j.isValid() && job.properties().content["isDone"];
                                 },
                                 10,
                                 done
@@ -189,7 +189,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job,
                                 function(j) {
-                                    return j.isValid() && job.properties()["isDone"];
+                                    return j.isValid() && job.properties().content["isDone"];
                                 },
                                 10,
                                 done
@@ -261,7 +261,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job, 
                                 function(j) {
-                                    return j.isValid() && j.properties()["isPaused"];
+                                    return j.isValid() && j.properties().content["isPaused"];
                                 },
                                 10,
                                 done
@@ -269,7 +269,7 @@ exports.setup = function(svc) {
                         },
                         function(job, done) {
                             test.ok(job.isValid());
-                            test.ok(job.properties()["isPaused"]);
+                            test.ok(job.properties().content["isPaused"]);
                             job.unpause(done);
                         },
                         function(job, done) {
@@ -277,7 +277,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job, 
                                 function(j) {
-                                    return j.isValid() && !j.properties()["isPaused"];
+                                    return j.isValid() && !j.properties().content["isPaused"];
                                 },
                                 10,
                                 done
@@ -285,7 +285,7 @@ exports.setup = function(svc) {
                         },
                         function(job, done) {
                             test.ok(job.isValid());
-                            test.ok(!job.properties()["isPaused"]);
+                            test.ok(!job.properties().content["isPaused"]);
                             job.finalize(done);
                         },
                         function(job, done) {
@@ -314,7 +314,7 @@ exports.setup = function(svc) {
                         },
                         function(job, done) {
                             test.ok(job.isValid());
-                            var ttl = job.properties()["ttl"];
+                            var ttl = job.properties().content["ttl"];
                             originalTTL = ttl;
                             
                             job.setTTL(ttl*2, done);
@@ -325,7 +325,7 @@ exports.setup = function(svc) {
                         },
                         function(job, done) {
                             test.ok(job.isValid());
-                            var ttl = job.properties()["ttl"];
+                            var ttl = job.properties().content["ttl"];
                             test.ok(ttl > originalTTL);
                             test.ok(ttl <= (originalTTL*2));
                             job.cancel(done);
@@ -354,7 +354,7 @@ exports.setup = function(svc) {
                         },
                         function(job, done) {
                             test.ok(job.isValid());
-                            var priority = job.properties()["priority"];
+                            var priority = job.properties().content["priority"];
                             test.ok(priority, 5);
                             job.setPriority(priority + 1, done);
                         },
@@ -434,6 +434,7 @@ exports.setup = function(svc) {
                         }
                     ],
                     function(err) {
+                        console.log(err);
                         test.ok(!err);
                         test.done();
                     }
@@ -494,11 +495,11 @@ exports.setup = function(svc) {
                         function(job, done) {
                             test.ok(job);
                             test.ok(job.isValid());
-                            originalTime = job.properties().updated;
+                            originalTime = job.properties().content.updated;
                             Async.sleep(1200, function() { job.touch(done); });
                         },
                         function(job, done) {
-                            job.read(done);
+                            job.refresh(done);
                         },
                         function(job, done) {
                             test.ok(job.isValid());
@@ -585,7 +586,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job,
                                 function(j) {
-                                    return j.isValid() && job.properties()["isDone"];
+                                    return j.isValid() && job.properties().content["isDone"];
                                 },
                                 10,
                                 done
@@ -638,7 +639,7 @@ exports.setup = function(svc) {
                 
                 apps.create({name: name}, function(err, app) {
                     test.ok(app.isValid());
-                    var appName = app.properties().__name;
+                    var appName = app.properties().name;
                     apps.contains(appName, function(err, found, entity) {
                         test.ok(found);
                         test.ok(entity);
@@ -677,8 +678,8 @@ exports.setup = function(svc) {
                         test.ok(app.isValid());
                         var properties = app.properties();
                         
-                        test.strictEqual(properties.description, DESCRIPTION);
-                        test.strictEqual(properties.version, VERSION);
+                        test.strictEqual(properties.content.description, DESCRIPTION);
+                        test.strictEqual(properties.content.version, VERSION);
                         
                         app.remove(callback);
                     },
@@ -697,7 +698,7 @@ exports.setup = function(svc) {
                     Async.parallelEach(
                         appList,
                         function(app, idx, callback) {
-                            if (utils.startsWith(app.properties().__name, "jssdk_")) {
+                            if (utils.startsWith(app.properties().name, "jssdk_")) {
                                 app.remove(callback);
                             }
                             else {
@@ -822,9 +823,9 @@ exports.setup = function(svc) {
                             test.ok(search);
                             test.ok(search.isValid());
                             
-                            test.strictEqual(search.properties().__name, name); 
-                            test.strictEqual(search.properties().search, originalSearch);
-                            test.ok(!search.properties().description);
+                            test.strictEqual(search.properties().name, name); 
+                            test.strictEqual(search.properties().content.search, originalSearch);
+                            test.ok(!search.properties().content.description);
                             
                             search.update({search: updatedSearch}, done);
                         },
@@ -832,9 +833,9 @@ exports.setup = function(svc) {
                             test.ok(search);
                             test.ok(search.isValid());
                             
-                            test.strictEqual(search.properties().__name, name); 
-                            test.strictEqual(search.properties().search, updatedSearch);
-                            test.ok(!search.properties().description);
+                            test.strictEqual(search.properties().name, name); 
+                            test.strictEqual(search.properties().content.search, updatedSearch);
+                            test.ok(!search.properties().content.description);
                             
                             search.update({description: updatedDescription}, done);
                         },
@@ -842,9 +843,9 @@ exports.setup = function(svc) {
                             test.ok(search);
                             test.ok(search.isValid());
                             
-                            test.strictEqual(search.properties().__name, name); 
-                            test.strictEqual(search.properties().search, updatedSearch);
-                            test.strictEqual(search.properties().description, updatedDescription);
+                            test.strictEqual(search.properties().name, name); 
+                            test.strictEqual(search.properties().content.search, updatedSearch);
+                            test.strictEqual(search.properties().content.description, updatedDescription);
                             
                             search.remove(done);
                         }
@@ -862,7 +863,7 @@ exports.setup = function(svc) {
                     Async.parallelEach(
                         searchList,
                         function(search, idx, callback) {
-                            if (utils.startsWith(search.properties().__name, "jssdk_")) {
+                            if (utils.startsWith(search.properties().name, "jssdk_")) {
                                 search.remove(callback);
                             }
                             else {
@@ -911,7 +912,7 @@ exports.setup = function(svc) {
                     },
                     function(file, done) {
                         test.ok(file.isValid());
-                        test.strictEqual(file.properties().__name, "web");
+                        test.strictEqual(file.properties().name, "web");
                         done();
                     }
                 ],
@@ -933,7 +934,7 @@ exports.setup = function(svc) {
                     },
                     function(file, done) {
                         test.ok(file.isValid());
-                        test.strictEqual(file.properties().__name, "web");
+                        test.strictEqual(file.properties().name, "web");
                         file.contains("settings", done);
                     },
                     function(found, stanza, done) {
@@ -944,7 +945,7 @@ exports.setup = function(svc) {
                     },
                     function(stanza, done) {
                         test.ok(stanza.isValid());
-                        test.ok(stanza.properties().hasOwnProperty("httpport"));
+                        test.ok(stanza.properties().content.hasOwnProperty("httpport"));
                         done();
                     }
                 ],
@@ -979,7 +980,7 @@ exports.setup = function(svc) {
                         test.ok(!stanza.isValid());
                         tutils.pollUntil(
                             stanza, function(s) {
-                                return s.isValid() && s.properties()["jssdk_foobar"] === value;
+                                return s.isValid() && s.properties().content["jssdk_foobar"] === value;
                             }, 
                             10, 
                             done
@@ -987,7 +988,7 @@ exports.setup = function(svc) {
                     },
                     function(stanza, done) {
                         test.ok(stanza.isValid());
-                        test.strictEqual(stanza.properties()["jssdk_foobar"], value);
+                        test.strictEqual(stanza.properties().content["jssdk_foobar"], value);
                         done();
                     },
                     function(done) {
@@ -1045,7 +1046,7 @@ exports.setup = function(svc) {
                     },
                     function(file, done) {
                         test.ok(file.isValid());
-                        test.strictEqual(file.properties().__name, "conf-web");
+                        test.strictEqual(file.properties().name, "conf-web");
                         done();
                     }
                 ],
@@ -1068,14 +1069,14 @@ exports.setup = function(svc) {
                     },
                     function(file, done) {
                         test.ok(file.isValid());
-                        test.strictEqual(file.properties().__name, "conf-web");
+                        test.strictEqual(file.properties().name, "conf-web");
                         file.contains("settings", done);
                     },
                     function(found, stanza, done) {
                         test.ok(found);
                         test.ok(stanza);
                         test.ok(stanza.isValid());
-                        test.ok(stanza.properties().hasOwnProperty("httpport"));
+                        test.ok(stanza.properties().content.hasOwnProperty("httpport"));
                         done();
                     }
                 ],
@@ -1111,7 +1112,7 @@ exports.setup = function(svc) {
                         test.ok(!stanza.isValid());
                         tutils.pollUntil(
                             stanza, function(s) {
-                                return s.isValid() || s.properties()["jssdk_foobar"] === value;
+                                return s.isValid() || s.properties().content["jssdk_foobar"] === value;
                             }, 
                             10, 
                             done
@@ -1119,7 +1120,7 @@ exports.setup = function(svc) {
                     },
                     function(stanza, done) {
                         test.ok(stanza.isValid());
-                        test.strictEqual(stanza.properties()["jssdk_foobar"], value);
+                        test.strictEqual(stanza.properties().content["jssdk_foobar"], value);
                         done();
                     },
                     function(done) {
@@ -1186,7 +1187,7 @@ exports.setup = function(svc) {
                         function(found, index, callback) {
                             test.ok(found);
                             test.ok(index.isValid());
-                            originalAssureUTF8Value = index.properties().assureUTF8;
+                            originalAssureUTF8Value = index.properties().content.assureUTF8;
                             index.update({
                                 assureUTF8: !originalAssureUTF8Value
                             }, callback);
@@ -1196,7 +1197,7 @@ exports.setup = function(svc) {
                             test.ok(index.isValid());
                             var properties = index.properties();
                             
-                            test.strictEqual(!originalAssureUTF8Value, properties.assureUTF8);
+                            test.strictEqual(!originalAssureUTF8Value, properties.content.assureUTF8);
                             
                             index.update({
                                 assureUTF8: !properties.assureUTF8
@@ -1207,7 +1208,7 @@ exports.setup = function(svc) {
                             test.ok(index.isValid());
                             var properties = index.properties();
                             
-                            test.strictEqual(originalAssureUTF8Value, properties.assureUTF8);
+                            test.strictEqual(originalAssureUTF8Value, properties.content.assureUTF8);
                             callback();
                         },
                         function(callback) {
@@ -1235,8 +1236,8 @@ exports.setup = function(svc) {
                         function(index, done) {
                             test.ok(index);
                             test.ok(index.isValid());
-                            test.strictEqual(index.properties().__name, indexName);
-                            originalEventCount = index.properties().totalEventCount;
+                            test.strictEqual(index.properties().name, indexName);
+                            originalEventCount = index.properties().content.totalEventCount;
                             
                             index.submitEvent(message, {sourcetype: sourcetype}, done);
                         },
@@ -1274,7 +1275,7 @@ exports.setup = function(svc) {
                     test.ok(!err);
                     test.ok(user);
                     test.ok(user.isValid());
-                    test.strictEqual(user.properties().__name, service.username);
+                    test.strictEqual(user.properties().name, service.username);
                     test.done();
                 });
             },
@@ -1308,19 +1309,19 @@ exports.setup = function(svc) {
                         function(user, done) {
                             test.ok(user);
                             test.ok(user.isValid());
-                            test.strictEqual(user.properties().__name, name);
-                            test.strictEqual(user.properties().roles.length, 1);
-                            test.strictEqual(user.properties().roles[0], "user");
+                            test.strictEqual(user.properties().name, name);
+                            test.strictEqual(user.properties().content.roles.length, 1);
+                            test.strictEqual(user.properties().content.roles[0], "user");
                         
                             user.update({realname: "JS SDK", roles: ["admin", "user"]}, done);
                         },
                         function(user, done) {
                             test.ok(user);
                             test.ok(user.isValid());
-                            test.strictEqual(user.properties().realname, "JS SDK");
-                            test.strictEqual(user.properties().roles.length, 2);
-                            test.strictEqual(user.properties().roles[0], "admin");
-                            test.strictEqual(user.properties().roles[1], "user");
+                            test.strictEqual(user.properties().content.realname, "JS SDK");
+                            test.strictEqual(user.properties().content.roles.length, 2);
+                            test.strictEqual(user.properties().content.roles[0], "admin");
+                            test.strictEqual(user.properties().content.roles[1], "user");
                             
                             user.remove(done);
                         }
@@ -1370,15 +1371,15 @@ exports.setup = function(svc) {
                             test.ok(view);
                             test.ok(view.isValid());
                             
-                            test.strictEqual(view.properties().__name, name);
-                            test.strictEqual(view.properties().rawdata, originalData);
-                        
+                            test.strictEqual(view.properties().name, name);
+                            test.strictEqual(view.properties().content["eai:data"], originalData);
+                            
                             view.update({"eai:data": newData}, done);
                         },
                         function(view, done) {
                             test.ok(view);
                             test.ok(view.isValid());
-                            test.strictEqual(view.properties().rawdata, newData);
+                            test.strictEqual(view.properties().content["eai:data"], newData);
                             
                             view.remove(done);
                         }

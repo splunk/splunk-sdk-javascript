@@ -54,13 +54,13 @@ exports.main = function(opts, callback) {
             function(job, done) {
                 Async.whilst(
                     // Loop until it is done
-                    function() { return !job.properties().isDone; },
+                    function() { return !job.properties().content.isDone; },
                     // Refresh the job on every iteration, but sleep for 1 second
                     function(iterationDone) {
                         Async.sleep(1000, function() {
                             // Refresh the job and note how many events we've looked at so far
                             job.refresh(function(err) {
-                                console.log("-- refreshing, " + (job.properties().eventCount || 0) + " events so far");
+                                console.log("-- refreshing, " + (job.properties().content.eventCount || 0) + " events so far");
                                 iterationDone();
                             });
                         });
@@ -76,9 +76,9 @@ exports.main = function(opts, callback) {
             function(job, done) {
                 // Print out the statics
                 console.log("Job Statistics: ");
-                console.log("  Event Count: " + job.properties().eventCount);
-                console.log("  Disk Usage: " + job.properties().diskUsage + " bytes");
-                console.log("  Priority: " + job.properties().priority);
+                console.log("  Event Count: " + job.properties().content.eventCount);
+                console.log("  Disk Usage: " + job.properties().content.diskUsage + " bytes");
+                console.log("  Priority: " + job.properties().content.priority);
                 
                 // Ask the server for the results
                 job.results({}, done);

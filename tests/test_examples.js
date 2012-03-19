@@ -278,21 +278,21 @@ exports.setup = function(svc, opts) {
             },
             
             "List stanzas": function(test) {
-                this.run("stanzas", ["web"], {app: "search", user: "nobody"}, function(err) {
+                this.run("stanzas", ["web"], {app: "search", owner: "nobody"}, function(err) {
                     test.ok(!err);
                     test.done();
                 });
             },
             
             "Show non-existent contents": function(test) {
-                this.run("contents", ["json", "settings"], {app: "search", user: "nobody"}, function(err) {
+                this.run("contents", ["json", "settings"], {app: "search", owner: "nobody"}, function(err) {
                     test.ok(err);
                     test.done();
                 });
             },
             
             "Show contents with specialization": function(test) {
-                this.run("contents", ["json", "settings"], {app: "new_english", user: "nobody"}, function(err) {
+                this.run("contents", ["json", "settings"], {app: "new_english", owner: "nobody"}, function(err) {
                     console.log(err);
                     test.ok(!err);
                     test.done();
@@ -314,14 +314,14 @@ exports.setup = function(svc, opts) {
             },
             
             "Edit contents": function(test) {
-                this.run("edit", ["json", "settings", "foo", "bar"], {app: "new_english", user: "admin"}, function(err) {
+                this.run("edit", ["json", "settings", "foo", "bar"], {app: "new_english", owner: "admin"}, function(err) {
                     test.ok(!err);
                     test.done();
                 });
             },
             
             "Create file": function(test) {
-                this.run("create", ["foo"], {app: "new_english", user: "admin"}, function(err) {
+                this.run("create", ["foo"], {app: "new_english", owner: "admin"}, function(err) {
                     test.ok(!err);
                     test.done();
                 });
@@ -330,7 +330,7 @@ exports.setup = function(svc, opts) {
             "Create stanza": function(test) {
                 var options = {
                     app: "new_english",
-                    user: "admin"
+                    owner: "admin"
                 };
                 
                 var that = this;
@@ -346,7 +346,7 @@ exports.setup = function(svc, opts) {
             "Create key=value": function(test) {
                 var options = {
                     app: "new_english",
-                    user: "admin"
+                    owner: "admin"
                 };
                 
                 var that = this;
@@ -362,7 +362,7 @@ exports.setup = function(svc, opts) {
             "Create+delete stanza": function(test) {
                 var options = {
                     app: "new_english",
-                    user: "admin"
+                    owner: "admin"
                 };
                 
                 var that = this;

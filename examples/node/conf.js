@@ -35,8 +35,8 @@
             err = err.message;
         }
         
-        if (err && err.odata) {
-            err = err.odata.messages;
+        if (err && err.data) {
+            err = err.data.messages;
         }
         
         return err;
@@ -111,21 +111,21 @@
         stanzas: function(filename, options, callback) {
             var service = this.service;
             
-            if (options.global && (!!options.app || !!options.user)) {
-                callback("Cannot specify both --global and --user or --app");
+            if (options.global && (!!options.app || !!options.owner)) {
+                callback("Cannot specify both --global and --owner or --app");
                 return;
             }
             
-            if (!options.global && (!options.app || !options.user)) {
+            if (!options.global && (!options.app || !options.owner)) {
                 callback("Non-global lookup has to specify --owner and --app");
                 return;
             }
             
             // Specialize our service if necessary
             var namespace = null;
-            if (options.app || options.user) {
-                namespace = {app: options.app, user: options.user};
-                service = service.specialize(options.user, options.app);
+            if (options.app || options.owner) {
+                namespace = {app: options.app, owner: options.owner};
+                service = service.specialize(options.owner, options.app);
             }
             
             Async.chain([
@@ -159,25 +159,25 @@
         
         // List all the properties in the specified conf file::stanza
         contents: function(filename, stanzaName, options, callback) {
-            var ignore = ["__id", "__metadata", "__name"];
+            var ignore = ["eai:userName", "eai:appName"];
             var service = this.service;
             
-            if (options.global && (!!options.app || !!options.user)) {
-                callback("Cannot specify both --global and --user or --app");
+            if (options.global && (!!options.app || !!options.owner)) {
+                callback("Cannot specify both --global and --owner or --app");
                 return;
             }
             
-            console.log("Missing: ", !options.global && (!options.app || !options.user));
-            if (!options.global && (!options.app || !options.user)) {
+            console.log("Missing: ", !options.global && (!options.app || !options.owner));
+            if (!options.global && (!options.app || !options.owner)) {
                 callback("Non-global lookup has to specify --owner and --app");
                 return;
             }
             
             // Specialize our service if necessary
             var namespace = null;
-            if (options.app || options.user) {
-                namespace = {app: options.app, user: options.user};
-                service = service.specialize(options.user, options.app);
+            if (options.app || options.owner) {
+                namespace = {app: options.app, owner: options.owner};
+                service = service.specialize(options.owner, options.app);
             }
             
             Async.chain([
@@ -202,7 +202,7 @@
                     function(stanza, done) {
                         // Find all the properties
                         var keys = [];
-                        var properties = stanza.properties();
+                        var properties = stanza.properties().content;
                         for(var key in properties) {
                             if (properties.hasOwnProperty(key) && ignore.indexOf(key) < 0) {
                                 keys.push(key);
@@ -230,21 +230,21 @@
         edit: function(filename, stanzaName, key, value, options, callback) {
             var service = this.service;
             
-            if (options.global && (!!options.app || !!options.user)) {
-                callback("Cannot specify both --global and --user or --app");
+            if (options.global && (!!options.app || !!options.owner)) {
+                callback("Cannot specify both --global and --owner or --app");
                 return;
             }
             
-            if (!options.global && (!options.app || !options.user)) {
+            if (!options.global && (!options.app || !options.owner)) {
                 callback("Non-global lookup has to specify --owner and --app");
                 return;
             }
             
             // Specialize our service if necessary
             var namespace = null;
-            if (options.app || options.user) {
-                namespace = {app: options.app, user: options.user};
-                service = service.specialize(options.user, options.app);
+            if (options.app || options.owner) {
+                namespace = {app: options.app, owner: options.owner};
+                service = service.specialize(options.owner, options.app);
             }
             
             Async.chain([
@@ -287,21 +287,21 @@
         create: function(filename, stanzaName, key, value, options, callback) {
             var service = this.service;
             
-            if (options.global && (!!options.app || !!options.user)) {
-                callback("Cannot specify both --global and --user or --app");
+            if (options.global && (!!options.app || !!options.owner)) {
+                callback("Cannot specify both --global and --owner or --app");
                 return;
             }
             
-            if (!options.global && (!options.app || !options.user)) {
+            if (!options.global && (!options.app || !options.owner)) {
                 callback("Non-global lookup has to specify --owner and --app");
                 return;
             }
             
             // Specialize our service if necessary
             var namespace = null;
-            if (options.app || options.user) {
-                namespace = {app: options.app, user: options.user};
-                service = service.specialize(options.user, options.app);
+            if (options.app || options.owner) {
+                namespace = {app: options.app, owner: options.owner};
+                service = service.specialize(options.owner, options.app);
             }
             
             var collection = null;
@@ -397,21 +397,21 @@
         del: function(filename, stanzaName, options, callback) {
             var service = this.service;
             
-            if (options.global && (!!options.app || !!options.user)) {
-                callback("Cannot specify both --global and --user or --app");
+            if (options.global && (!!options.app || !!options.owner)) {
+                callback("Cannot specify both --global and --owner or --app");
                 return;
             }
             
-            if (!options.global && (!options.app || !options.user)) {
+            if (!options.global && (!options.app || !options.owner)) {
                 callback("Non-global lookup has to specify --owner and --app");
                 return;
             }
             
             // Specialize our service if necessary
             var namespace = null;
-            if (options.app || options.user) {
-                namespace = {app: options.app, user: options.user};
-                service = service.specialize(options.user, options.app);
+            if (options.app || options.owner) {
+                namespace = {app: options.app, owner: options.owner};
+                service = service.specialize(options.owner, options.app);
             }
             
             Async.chain([
@@ -474,7 +474,7 @@
             .command("stanzas <filename>")
             .description("List all stanzas in the specified configuration file")
             .option("-g, --global", "Get the contents of the file from the global (indexing) view.")
-            .option("-u, --user <user>", "User context to look in")
+            .option("-u, --owner <owner>", "Owner context to look in")
             .option("-a, --app <app>", "App context to look in")
             .action(function(filename, options) {
                 program.run(filename, options, callback);
@@ -484,7 +484,7 @@
             .command("contents <filename> <stanza>")
             .description("List all key=value properties of the specified file and stanza")
             .option("-g, --global", "Get the contents of the file from the global (indexing) view.")
-            .option("-u, --user <user>", "User context to look in")
+            .option("-u, --owner <owner>", "Owner context to look in")
             .option("-a, --app <app>", "App context to look in")
             .action(function(filename, stanza, options) {
                 program.run(filename, stanza, options, callback);
@@ -494,7 +494,7 @@
             .command("edit <filename> <stanza> <key> <value>")
             .description("Edit the specified stanza")
             .option("-g, --global", "Get the contents of the file from the global (indexing) view.")
-            .option("-u, --user <user>", "User context to look in")
+            .option("-u, --owner <owner>", "Owner context to look in")
             .option("-a, --app <app>", "App context to look in")
             .action(function(filename, stanza, key, value, options) {
                 program.run(filename, stanza, key, value, options, callback);
@@ -504,7 +504,7 @@
             .command("create <filename> [stanza] [key] [value]")
             .description("Create a file/stanza/key (will create up to the deepest level")
             .option("-g, --global", "Get the contents of the file from the global (indexing) view.")
-            .option("-u, --user <user>", "User context to look in")
+            .option("-u, --owner <owner>", "Owner context to look in")
             .option("-a, --app <app>", "App context to look in")
             .action(function(filename, stanza, key, value, options) {
                 program.run(filename, stanza, key, value, options, callback);
@@ -514,7 +514,7 @@
             .command("delete <filename> <stanza>")
             .description("Delete the stanza in the specified file")
             .option("-g, --global", "Get the contents of the file from the global (indexing) view.")
-            .option("-u, --user <user>", "User context to look in")
+            .option("-u, --owner <owner>", "Owner context to look in")
             .option("-a, --app <app>", "App context to look in")
             .action(function(filename, stanza, options) {
                 program.run(filename, stanza, options, callback);
@@ -533,19 +533,19 @@
             console.log("  > node conf.js stanzas foo");
             console.log("  ");
             console.log("  List the content of stanza 'bar' in file 'foo':");
-            console.log("  > node conf.js content foo bar");
+            console.log("  > node conf.js contents foo bar");
             console.log("  ");
             console.log("  > List the content of stanza 'bar' in file 'foo' in the namespace of user1/app1:");
-            console.log("  node conf.js content foo bar --user user1 --app app1");
+            console.log("  node conf.js contents foo bar --owner user1 --app app1");
             console.log("  ");
             console.log("  Set the key 'mykey' to value 'myval' in stanza 'bar' in file 'foo' in the namespace of user1/app1:");
-            console.log("  > node conf.js edit foo bar mykey myvalue --user user1 --app app1");
+            console.log("  > node conf.js edit foo bar mykey myvalue --owner user1 --app app1");
             console.log("  ");
             console.log("  Create a file 'foo' in the namespace of user1/app1:");
-            console.log("  > node conf.js create foo --user user1 --app app1");
+            console.log("  > node conf.js create foo --owner user1 --app app1");
             console.log("  ");
             console.log("  Create a stanza 'bar' in file 'foo' (and create if it doesn't exist) in the namespace of user1/app1:");
-            console.log("  > node conf.js create foo bar --user user1 --app app1");
+            console.log("  > node conf.js create foo bar --owner user1 --app app1");
             console.log("  ");
             console.log("  Delete stanza 'bar' in file 'foo':");
             console.log("  > node conf.js delete foo bar");
