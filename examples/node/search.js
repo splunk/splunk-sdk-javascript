@@ -135,9 +135,6 @@
             if (err) {
                 console.log(err);
             }
-            else {
-                console.log("=============="); 
-            }
         };
         var cmdline = options.create();
         
