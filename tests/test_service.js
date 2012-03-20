@@ -434,7 +434,6 @@ exports.setup = function(svc) {
                         }
                     ],
                     function(err) {
-                        console.log(err);
                         test.ok(!err);
                         test.done();
                     }
