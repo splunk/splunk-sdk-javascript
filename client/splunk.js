@@ -1894,7 +1894,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      // List all properties in the 'props.conf' file
          *      var files = svc.configurations();
          *      files.item("props", function(err, propsFile) {
-         *          propsFile.read(function(err, props) {
+         *          propsFile.refresh(function(err, props) {
          *              console.log(props.properties().content); 
          *          });
          *      });
@@ -1949,7 +1949,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      // List all properties in the 'props.conf' file
          *      var files = svc.properties();
          *      files.item("props", function(err, propsFile) {
-         *          propsFile.read(function(err, props) {
+         *          propsFile.refresh(function(err, props) {
          *              console.log(props.properties().content); 
          *          });
          *      });
@@ -2343,7 +2343,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             // properly when it is passed as a callback.
             this._load       = utils.bind(this, this._load);
             this.refresh     = utils.bind(this, this.refresh);
-            this.read        = utils.bind(this, this.read);
             this.properties  = utils.bind(this, this.properties);
         },
         
@@ -2386,21 +2385,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         properties: function(callback) {
             return this._properties;
-        },
-        
-        /**
-         * Refresh the resource
-         *
-         * This will unconditionally refresh the object from the server
-         * and load it up.
-         *
-         * @param {Function} callback A callback when the object is retrieved: `(err, resource)`
-         *
-         * @module splunkjs.Service.Resource
-         * @protected
-         */
-        read: function(callback) {
-            return this.refresh(callback);
         }
     });
     

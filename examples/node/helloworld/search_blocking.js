@@ -53,7 +53,7 @@ exports.main = function(opts, callback) {
             },
             // The job is done, but let's some statistics from the server.
             function(job, done) {
-                job.read(done);
+                job.refresh(done);
             },
             // Print out the statistics and get the results
             function(job, done) {

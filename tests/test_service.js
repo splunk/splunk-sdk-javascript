@@ -303,7 +303,7 @@ exports.setup = function(svc) {
                             that.service.jobs().search('search index=_internal | head 1', {id: sid}, done);
                         },
                         function(job, done) {
-                            job.read(done);
+                            job.refresh(done);
                         },
                         function(job, done) {
                             var ttl = job.properties().content["ttl"];
@@ -312,7 +312,7 @@ exports.setup = function(svc) {
                             job.setTTL(ttl*2, done);
                         },
                         function(job, done) {
-                            job.read(done);
+                            job.refresh(done);
                         },
                         function(job, done) {
                             var ttl = job.properties().content["ttl"];
@@ -340,7 +340,7 @@ exports.setup = function(svc) {
                             service.jobs().search('search index=_internal | head 1 | sleep 5', {id: sid}, done);
                         },
                         function(job, done) {
-                            job.read(done);
+                            job.refresh(done);
                         },
                         function(job, done) {
                             var priority = job.properties().content["priority"];
@@ -348,7 +348,7 @@ exports.setup = function(svc) {
                             job.setPriority(priority + 1, done);
                         },
                         function(job, done) {
-                            job.read(done);
+                            job.refresh(done);
                         },
                         function(job, done) {
                             job.cancel(done);
@@ -476,7 +476,7 @@ exports.setup = function(svc) {
                             that.service.jobs().search('search index=_internal | head 1', {id: sid}, done);
                         },
                         function(job, done) {
-                            job.read(done);
+                            job.refresh(done);
                         },
                         function(job, done) {
                             test.ok(job);
@@ -652,7 +652,7 @@ exports.setup = function(svc) {
                     },
                     function(app, callback) {
                         test.ok(app);
-                        app.read(callback);  
+                        app.refresh(callback);  
                     },
                     function(app, callback) {
                         test.ok(app);
@@ -887,7 +887,7 @@ exports.setup = function(svc) {
                     function(done) { that.service.properties().contains("web", done); },
                     function(found, file, done) { 
                         test.ok(found);
-                        file.read(done);
+                        file.refresh(done);
                     },
                     function(file, done) {
                         test.strictEqual(file.properties().name, "web");
@@ -907,7 +907,7 @@ exports.setup = function(svc) {
                     function(done) { that.service.properties().contains("web", done); },
                     function(found, file, done) { 
                         test.ok(found);
-                        file.read(done);
+                        file.refresh(done);
                     },
                     function(file, done) {
                         test.strictEqual(file.properties().name, "web");
@@ -916,7 +916,7 @@ exports.setup = function(svc) {
                     function(found, stanza, done) {
                         test.ok(found);
                         test.ok(stanza);
-                        stanza.read(done);
+                        stanza.refresh(done);
                     },
                     function(stanza, done) {
                         test.ok(stanza.properties().content.hasOwnProperty("httpport"));
@@ -937,7 +937,7 @@ exports.setup = function(svc) {
                 Async.chain([
                     function(done) {
                         var properties = that.service.properties(); 
-                        properties.read(done);
+                        properties.refresh(done);
                     },
                     function(properties, done) {
                         properties.create(fileName, done);
@@ -1007,7 +1007,7 @@ exports.setup = function(svc) {
                     function(done) { that.service.configurations({}, namespace).contains("web", done); },
                     function(found, file, done) {                         
                         test.ok(found);
-                        file.read(done);
+                        file.refresh(done);
                     },
                     function(file, done) {
                         test.strictEqual(file.properties().name, "conf-web");
@@ -1028,7 +1028,7 @@ exports.setup = function(svc) {
                     function(done) { that.service.configurations({}, namespace).contains("web", done); },
                     function(found, file, done) { 
                         test.ok(found);
-                        file.read(done);
+                        file.refresh(done);
                     },
                     function(file, done) {
                         test.strictEqual(file.properties().name, "conf-web");
@@ -1056,7 +1056,7 @@ exports.setup = function(svc) {
                 Async.chain([
                     function(done) {
                         var configs = svc.configurations({}, namespace); 
-                        configs.read(done);
+                        configs.refresh(done);
                     },
                     function(configs, done) {
                         configs.create({__conf: fileName}, done);
@@ -1250,7 +1250,7 @@ exports.setup = function(svc) {
                         function(user, done) {
                             test.ok(user);
                             
-                            user.read(done);
+                            user.refresh(done);
                         },
                         function(user, done) {
                             test.ok(user);
