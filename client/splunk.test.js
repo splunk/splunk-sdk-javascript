@@ -2407,32 +2407,18 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this._super(service, fullpath);
             this.fragmentPath = path;
             this.namespace = namespace;
-            this._maybeValid = false;
             this._properties = { content: {}, acl: {}, attributes: {}};
             
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
-            this._invalidate = utils.bind(this, this._invalidate);
             this._load       = utils.bind(this, this._load);
-            this._validate   = utils.bind(this, this._validate);
             this.refresh     = utils.bind(this, this.refresh);
             this.read        = utils.bind(this, this.read);
-            this.isValid     = utils.bind(this, this.isValid);
             this.properties  = utils.bind(this, this.properties);
         },
         
         /**
-         * Mark the resource as in an invalid state
-         *
-         * @module splunkjs.Service.Resource
-         * @private
-         */
-        _invalidate: function() {
-            this._maybeValid = false;
-        },
-        
-        /**
-         * Load the resource and mark it as valid, also storing the properties.
+         * Load the resource, also storing the properties.
          *
          * @param {Object} properties The properties for this resource
          *
@@ -2440,38 +2426,16 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @protected
          */
         _load: function(properties) {
-            this._maybeValid = true;
             this._properties = properties || {};
         },
         
         /**
-         * Validate if the resource is in a valid state, 
-         * and refresh it if it is not.
-         *
-         * @param {Function} callback A callback when the object is valid: `(err, resource)`
-         *
-         * @module splunkjs.Service.Resource
-         * @private
-         */
-        _validate: function(callback) {
-            callback = callback || function() {};
-            
-            if (!this._maybeValid) {
-                return this.refresh(callback);
-            }
-            else {
-                callback(null, this);
-                return {abort: function(){}};
-            }
-        },
-        
-        /**
-         * Unconditionally refresh the resource
+         * Refresh the resource
          *
          * This will unconditionally refresh the object from the server
-         * and load it up, regardless of whether it is valid or not.
+         * and load it up.
          *
-         * @param {Function} callback A callback when the object is valid: `(err, resource)`
+         * @param {Function} callback A callback when the object is retrieved: `(err, resource)`
          *
          * @module splunkjs.Service.Resource
          * @protected
@@ -2481,21 +2445,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Check whether the resource is in a valid state.
-         *
-         * @return {Boolean} Is this resource valid
-         *
-         * @module splunkjs.Service.Resource
-         */
-        isValid: function() {
-            return this._maybeValid;
-        },
-        
-        /**
          * Retrieve the properties for this resource
          *
          * This will retrieve the current properties for this
-         * resource, whether or not they are valid.
+         * resource.
          *
          * @return {Object} The properties for this resource
          *
@@ -2506,23 +2459,18 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Conditionally refresh the resource
+         * Refresh the resource
          *
-         * This will conditionally refresh the object from the server,
-         * only if it is not in a valid state.
+         * This will unconditionally refresh the object from the server
+         * and load it up.
          *
-         * @param {Function} callback A callback when the object is valid: `(err, resource)`
+         * @param {Function} callback A callback when the object is retrieved: `(err, resource)`
          *
          * @module splunkjs.Service.Resource
          * @protected
          */
         read: function(callback) {
-            callback = callback || function() {};
-            
-            var that = this;
-            return this._validate(function(err) {
-                callback(err, that);
-            });
+            return this.refresh(callback);
         }
     });
     
@@ -2566,7 +2514,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Load the resource and mark it as valid, also storing the properties.    
+         * Load the resource, also storing the properties.
          *
          * @param {Object} properties The properties for this resource
          *
@@ -2580,12 +2528,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Unconditionally refresh the resource
+         * Refresh the resource
          *
          * This will unconditionally refresh the object from the server
-         * and load it up, regardless of whether it is valid or not.
+         * and load it up.
          *
-         * @param {Function} callback A callback when the object is valid: `(err, resource)`
+         * @param {Function} callback A callback when the object is retrieved: `(err, resource)`
          *
          * @module splunkjs.Service.Entity
          */
@@ -2650,7 +2598,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 callback(err, that);
             });
             
-            this._invalidate();
             return req;
         }
     });
@@ -2711,7 +2658,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Load the resource and mark it as valid, also storing the properties.    
+         * Load the resource, also storing the properties.
          *
          * This will load the properties as well as create a map between entity
          * names to entity IDs (for retrieval purposes).
@@ -2731,13 +2678,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 var props = entityPropertyList[i];
                 var entity = this._item(this, props);
                 entity._load(props);
-                
-                // If we don't want to load when we see the item,
-                // we still load it (to get things like ID/name),
-                // and just invalidate it
-                if (!this._loadOnItem()) {
-                    entity._invalidate();
-                }
                 entities.push(entity);
                 
                 if (entitiesByName.hasOwnProperty(entity.fragmentPath)) {
@@ -2752,12 +2692,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Unconditionally refresh the resource
+         * Refresh the resource
          *
          * This will unconditionally refresh the object from the server
-         * and load it up, regardless of whether it is valid or not.
+         * and load it up.
          *
-         * @param {Function} callback A callback when the object is valid: `(err, resource)`
+         * @param {Function} callback A callback when the object is retrieved: `(err, resource)`
          *
          * @module splunkjs.Service.Collection
          */
@@ -2784,8 +2724,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Fetch a specific entity.
          *
-         * Return a specific entity given its name. This will fetch the list
-         * of entities from the server if the collection is not in a valid state.
+         * Return a specific entity given its name.
          *
          * Example:
          *
@@ -2854,24 +2793,18 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     }
                     
                     var entity = that._item(that, props);
-                    entity._load(props);
-                    if (!that._loadOnCreate()) {
-                        that._invalidate();
-                    }
-                    
+                    entity._load(props);                    
                     callback(null, entity);
                 }
             });
             
-            this._invalidate();
             return req;
         },
         
         /**
          * Retrieve a list of all entities in the collection
          *
-         * Return the list of all the entities in this collection, fetching them
-         * from the server if the collection is not in a valid state.
+         * Return the list of all the entities in this collection.
          *
          * Example:
          *
@@ -2888,8 +2821,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             callback = callback || function() {};
             
             var that = this;
-            return this._validate(function(err) {
-                callback(err, that._entities);
+            return this.refresh(function(err) {
+                callback(err, that._entities); 
             });
         },
         
@@ -2925,7 +2858,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             callback = callback || function() {};
             
             var that = this;
-            return this._validate(function(err) {
+            return this.refresh(function(err) {
                 if (err) {
                     callback(err);
                 } 
@@ -3068,7 +3001,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var req = this.post("acknowledge", {}, function(err) {
                 callback(err, that);
             });
-            this._invalidate();
+            
             return req;
         },
         
@@ -3094,7 +3027,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var req = this.post("dispatch", {}, function(err) {
                 callback(err, that);
             });
-            this._invalidate();
+            
             return req;
         },
         
@@ -3359,7 +3292,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 }
             });
             
-            this._invalidate();
             return req;
         }
     });
@@ -3586,7 +3518,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(null, response.data.entry.content, that);
                 }
             });
-            this._invalidate();
+            
             return req;
         },
         
@@ -4029,7 +3961,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    that._invalidate();
+                    
                     var job = new root.Job(that.service, response.data.entry.content.sid);
                     callback(null, job);
                 }
@@ -4175,7 +4107,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         cancel: function(callback) {
             var req = this.post("control", {action: "cancel"}, callback);
-            this._invalidate();
+            
             return req;
         },
 
@@ -4201,7 +4133,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var req = this.post("control", {action: "disablepreview"}, function(err) {
                 callback(err, that);
             });
-            this._invalidate();
+            
             return req;
         },
 
@@ -4227,7 +4159,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var req = this.post("control", {action: "enablepreview"}, function(err) {
                 callback(err, that);
             });
-            this._invalidate();
+            
             return req;
         },
 
@@ -4285,7 +4217,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var req = this.post("control", {action: "finalize"}, function(err) {
                 callback(err, that);
             });
-            this._invalidate();
+            
             return req;
         },
 
@@ -4311,7 +4243,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var req = this.post("control", {action: "pause"}, function(err) {
                 callback(err, that);
             });
-            this._invalidate();
+            
             return req;
         },
 
@@ -4431,7 +4363,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var req = this.post("control", {action: "setpriority", priority: value}, function(err) {
                 callback(err, that);
             });
-            this._invalidate();
+            
             return req;
         },
 
@@ -4458,7 +4390,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var req = this.post("control", {action: "setttl", ttl: value}, function(err) {
                 callback(err, that);
             });
-            this._invalidate();
+            
             return req;
         },
 
@@ -4546,7 +4478,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var req = this.post("control", {action: "touch"}, function(err) {
                 callback(err, that);
             });
-            this._invalidate();
+            
             return req;
         },
 
@@ -4572,7 +4504,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var req = this.post("control", {action: "unpause"}, function(err) {
                 callback(err, that);
             });
-            this._invalidate();
+            
             return req;
         }
     });
@@ -6437,7 +6369,7 @@ exports.setup = function(svc) {
                     test.ok(jobs.length > 0);
                     
                     for(var i = 0; i < jobs.length; i++) {
-                        test.ok(jobs[i].isValid());
+                        test.ok(jobs[i]);
                     }
                     
                     test.done();
@@ -6477,7 +6409,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job,
                                 function(j) {
-                                    return j.isValid() && job.properties().content["isDone"];
+                                    return job.properties().content["isDone"];
                                 },
                                 10,
                                 done
@@ -6515,7 +6447,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job,
                                 function(j) {
-                                    return j.isValid() && job.properties().content["isDone"];
+                                    return job.properties().content["isDone"];
                                 },
                                 10,
                                 done
@@ -6551,7 +6483,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job,
                                 function(j) {
-                                    return j.isValid() && job.properties().content["isDone"];
+                                    return job.properties().content["isDone"];
                                 },
                                 10,
                                 done
@@ -6590,11 +6522,9 @@ exports.setup = function(svc) {
                             
                         },
                         function(job, done) {
-                            test.ok(!job.isValid());
                             job.disablePreview(done);
                         },
                         function(job, done) {
-                            test.ok(!job.isValid());
                             job.cancel(done);
                         }
                     ],
@@ -6619,39 +6549,34 @@ exports.setup = function(svc) {
                             job.pause(done);
                         },
                         function(job, done) {
-                            test.ok(!job.isValid());
                             tutils.pollUntil(
                                 job, 
                                 function(j) {
-                                    return j.isValid() && j.properties().content["isPaused"];
+                                    return j.properties().content["isPaused"];
                                 },
                                 10,
                                 done
                             );
                         },
                         function(job, done) {
-                            test.ok(job.isValid());
                             test.ok(job.properties().content["isPaused"]);
                             job.unpause(done);
                         },
                         function(job, done) {
-                            test.ok(!job.isValid());
                             tutils.pollUntil(
                                 job, 
                                 function(j) {
-                                    return j.isValid() && !j.properties().content["isPaused"];
+                                    return !j.properties().content["isPaused"];
                                 },
                                 10,
                                 done
                             );
                         },
                         function(job, done) {
-                            test.ok(job.isValid());
                             test.ok(!job.properties().content["isPaused"]);
                             job.finalize(done);
                         },
                         function(job, done) {
-                            test.ok(!job.isValid());
                             job.cancel(done);
                         }
                     ],
@@ -6675,18 +6600,15 @@ exports.setup = function(svc) {
                             job.read(done);
                         },
                         function(job, done) {
-                            test.ok(job.isValid());
                             var ttl = job.properties().content["ttl"];
                             originalTTL = ttl;
                             
                             job.setTTL(ttl*2, done);
                         },
                         function(job, done) {
-                            test.ok(!job.isValid());
                             job.read(done);
                         },
                         function(job, done) {
-                            test.ok(job.isValid());
                             var ttl = job.properties().content["ttl"];
                             test.ok(ttl > originalTTL);
                             test.ok(ttl <= (originalTTL*2));
@@ -6715,17 +6637,14 @@ exports.setup = function(svc) {
                             job.read(done);
                         },
                         function(job, done) {
-                            test.ok(job.isValid());
                             var priority = job.properties().content["priority"];
                             test.ok(priority, 5);
                             job.setPriority(priority + 1, done);
                         },
                         function(job, done) {
-                            test.ok(!job.isValid());
                             job.read(done);
                         },
                         function(job, done) {
-                            test.ok(job.isValid());
                             job.cancel(done);
                         }
                     ],
@@ -6796,7 +6715,6 @@ exports.setup = function(svc) {
                         }
                     ],
                     function(err) {
-                        console.log(err);
                         test.ok(!err);
                         test.done();
                     }
@@ -6856,7 +6774,6 @@ exports.setup = function(svc) {
                         },
                         function(job, done) {
                             test.ok(job);
-                            test.ok(job.isValid());
                             originalTime = job.properties().content.updated;
                             Async.sleep(1200, function() { job.touch(done); });
                         },
@@ -6864,7 +6781,6 @@ exports.setup = function(svc) {
                             job.refresh(done);
                         },
                         function(job, done) {
-                            test.ok(job.isValid());
                             test.ok(originalTime !== job.properties().updated);
                             job.cancel(done);
                         }
@@ -6948,7 +6864,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job,
                                 function(j) {
-                                    return j.isValid() && job.properties().content["isDone"];
+                                    return job.properties().content["isDone"];
                                 },
                                 10,
                                 done
@@ -7000,7 +6916,6 @@ exports.setup = function(svc) {
                 var apps = this.service.apps();
                 
                 apps.create({name: name}, function(err, app) {
-                    test.ok(app.isValid());
                     var appName = app.properties().name;
                     apps.contains(appName, function(err, found, entity) {
                         test.ok(found);
@@ -7024,7 +6939,6 @@ exports.setup = function(svc) {
                         apps.create({name: name}, callback);     
                     },
                     function(app, callback) {
-                        test.ok(app.isValid());
                         app.update({
                             description: DESCRIPTION,
                             version: VERSION
@@ -7032,12 +6946,10 @@ exports.setup = function(svc) {
                     },
                     function(app, callback) {
                         test.ok(app);
-                        test.ok(!app.isValid());
                         app.read(callback);  
                     },
                     function(app, callback) {
                         test.ok(app);
-                        test.ok(app.isValid());
                         var properties = app.properties();
                         
                         test.strictEqual(properties.content.description, DESCRIPTION);
@@ -7087,7 +6999,7 @@ exports.setup = function(svc) {
                     test.ok(savedSearches.length > 0);
                     
                     for(var i = 0; i < savedSearches.length; i++) {
-                        test.ok(savedSearches[i].isValid());
+                        test.ok(savedSearches[i]);
                     }
                     
                     test.done();
@@ -7098,7 +7010,7 @@ exports.setup = function(svc) {
                 var searches = this.service.savedSearches();
                 searches.contains("Indexing workload", function(err, found, search) {
                     test.ok(found);
-                    test.ok(search.isValid());
+                    test.ok(search);
                     
                     test.done();
                 });
@@ -7108,7 +7020,7 @@ exports.setup = function(svc) {
                 var searches = this.service.savedSearches();
                 searches.contains("Indexing workload", function(err, found, search) {
                     test.ok(found);
-                    test.ok(search.isValid());
+                    test.ok(search);
                     
                     search.history(function(err, history, search) {
                         test.ok(!err);
@@ -7121,7 +7033,7 @@ exports.setup = function(svc) {
                 var searches = this.service.savedSearches();
                 searches.contains("Indexing workload", function(err, found, search) {
                     test.ok(found);
-                    test.ok(search.isValid());
+                    test.ok(search);
                     
                     search.suppressInfo(function(err, info, search) {
                         test.ok(!err);
@@ -7136,7 +7048,7 @@ exports.setup = function(svc) {
                     test.strictEqual(savedSearches.length, 2);
                     
                     for(var i = 0; i < savedSearches.length; i++) {
-                        test.ok(savedSearches[i].isValid());
+                        test.ok(savedSearches[i]);
                     }
                     
                     test.done();
@@ -7149,7 +7061,7 @@ exports.setup = function(svc) {
                     test.ok(savedSearches.length > 0);
                     
                     for(var i = 0; i < savedSearches.length; i++) {
-                        test.ok(savedSearches[i].isValid());
+                        test.ok(savedSearches[i]);
                     }
                     
                     test.done();
@@ -7162,7 +7074,7 @@ exports.setup = function(svc) {
                     test.strictEqual(savedSearches.length, 1);
                     
                     for(var i = 0; i < savedSearches.length; i++) {
-                        test.ok(savedSearches[i].isValid());
+                        test.ok(savedSearches[i]);
                     }
                     
                     test.done();
@@ -7183,7 +7095,7 @@ exports.setup = function(svc) {
                         },
                         function(search, done) {
                             test.ok(search);
-                            test.ok(search.isValid());
+                            test.ok(search);
                             
                             test.strictEqual(search.properties().name, name); 
                             test.strictEqual(search.properties().content.search, originalSearch);
@@ -7193,7 +7105,7 @@ exports.setup = function(svc) {
                         },
                         function(search, done) {
                             test.ok(search);
-                            test.ok(search.isValid());
+                            test.ok(search);
                             
                             test.strictEqual(search.properties().name, name); 
                             test.strictEqual(search.properties().content.search, updatedSearch);
@@ -7203,7 +7115,7 @@ exports.setup = function(svc) {
                         },
                         function(search, done) {
                             test.ok(search);
-                            test.ok(search.isValid());
+                            test.ok(search);
                             
                             test.strictEqual(search.properties().name, name); 
                             test.strictEqual(search.properties().content.search, updatedSearch);
@@ -7269,11 +7181,9 @@ exports.setup = function(svc) {
                     function(done) { that.service.properties().contains("web", done); },
                     function(found, file, done) { 
                         test.ok(found);
-                        test.ok(!file.isValid());
                         file.read(done);
                     },
                     function(file, done) {
-                        test.ok(file.isValid());
                         test.strictEqual(file.properties().name, "web");
                         done();
                     }
@@ -7291,22 +7201,18 @@ exports.setup = function(svc) {
                     function(done) { that.service.properties().contains("web", done); },
                     function(found, file, done) { 
                         test.ok(found);
-                        test.ok(!file.isValid());
                         file.read(done);
                     },
                     function(file, done) {
-                        test.ok(file.isValid());
                         test.strictEqual(file.properties().name, "web");
                         file.contains("settings", done);
                     },
                     function(found, stanza, done) {
                         test.ok(found);
                         test.ok(stanza);
-                        test.ok(!stanza.isValid());
                         stanza.read(done);
                     },
                     function(stanza, done) {
-                        test.ok(stanza.isValid());
                         test.ok(stanza.properties().content.hasOwnProperty("httpport"));
                         done();
                     }
@@ -7325,43 +7231,35 @@ exports.setup = function(svc) {
                 Async.chain([
                     function(done) {
                         var properties = that.service.properties(); 
-                        test.ok(!properties.isValid());
                         properties.read(done);
                     },
                     function(properties, done) {
-                        test.ok(properties.isValid());
                         properties.create(fileName, done);
                     },
                     function(file, done) {
-                        test.ok(!file.isValid());
                         file.create("stanza", done);
                     },
                     function(stanza, done) {
-                        test.ok(!stanza.isValid());
                         stanza.update({"jssdk_foobar": value});
-                        test.ok(!stanza.isValid());
                         tutils.pollUntil(
                             stanza, function(s) {
-                                return s.isValid() && s.properties().content["jssdk_foobar"] === value;
+                                return s.properties().content["jssdk_foobar"] === value;
                             }, 
                             10, 
                             done
                         );
                     },
                     function(stanza, done) {
-                        test.ok(stanza.isValid());
                         test.strictEqual(stanza.properties().content["jssdk_foobar"], value);
                         done();
                     },
                     function(done) {
                         var file = new splunkjs.Service.PropertyFile(svc, fileName);
-                        test.ok(!file.isValid());
                         file.contains("stanza", done);
                     },
                     function(found, stanza, done) {
                         test.ok(found);
                         test.ok(stanza);
-                        test.ok(!stanza.isValid());
                         stanza.remove(done);
                     }
                 ],
@@ -7403,11 +7301,9 @@ exports.setup = function(svc) {
                     function(done) { that.service.configurations({}, namespace).contains("web", done); },
                     function(found, file, done) {                         
                         test.ok(found);
-                        test.ok(!file.isValid());
                         file.read(done);
                     },
                     function(file, done) {
-                        test.ok(file.isValid());
                         test.strictEqual(file.properties().name, "conf-web");
                         done();
                     }
@@ -7426,18 +7322,15 @@ exports.setup = function(svc) {
                     function(done) { that.service.configurations({}, namespace).contains("web", done); },
                     function(found, file, done) { 
                         test.ok(found);
-                        test.ok(!file.isValid());
                         file.read(done);
                     },
                     function(file, done) {
-                        test.ok(file.isValid());
                         test.strictEqual(file.properties().name, "conf-web");
                         file.contains("settings", done);
                     },
                     function(found, stanza, done) {
                         test.ok(found);
                         test.ok(stanza);
-                        test.ok(stanza.isValid());
                         test.ok(stanza.properties().content.hasOwnProperty("httpport"));
                         done();
                     }
@@ -7457,43 +7350,35 @@ exports.setup = function(svc) {
                 Async.chain([
                     function(done) {
                         var configs = svc.configurations({}, namespace); 
-                        test.ok(!configs.isValid());
                         configs.read(done);
                     },
                     function(configs, done) {
-                        test.ok(configs.isValid());
                         configs.create({__conf: fileName}, done);
                     },
                     function(file, done) {
-                        test.ok(!file.isValid());
                         file.create("stanza", done);
                     },
                     function(stanza, done) {
-                        test.ok(stanza.isValid());
                         stanza.update({"jssdk_foobar": value});
-                        test.ok(!stanza.isValid());
                         tutils.pollUntil(
                             stanza, function(s) {
-                                return s.isValid() || s.properties().content["jssdk_foobar"] === value;
+                                return s.properties().content["jssdk_foobar"] === value;
                             }, 
                             10, 
                             done
                         );
                     },
                     function(stanza, done) {
-                        test.ok(stanza.isValid());
                         test.strictEqual(stanza.properties().content["jssdk_foobar"], value);
                         done();
                     },
                     function(done) {
                         var file = new splunkjs.Service.ConfigurationFile(svc, fileName);
-                        test.ok(!file.isValid());
                         file.contains("stanza", done);
                     },
                     function(found, stanza, done) {
                         test.ok(found);
                         test.ok(stanza);
-                        test.ok(stanza.isValid());
                         stanza.remove(done);
                     }
                 ],
@@ -7548,7 +7433,6 @@ exports.setup = function(svc) {
                         },
                         function(found, index, callback) {
                             test.ok(found);
-                            test.ok(index.isValid());
                             originalAssureUTF8Value = index.properties().content.assureUTF8;
                             index.update({
                                 assureUTF8: !originalAssureUTF8Value
@@ -7556,7 +7440,6 @@ exports.setup = function(svc) {
                         },
                         function(index, callback) {
                             test.ok(index);
-                            test.ok(index.isValid());
                             var properties = index.properties();
                             
                             test.strictEqual(!originalAssureUTF8Value, properties.content.assureUTF8);
@@ -7567,7 +7450,6 @@ exports.setup = function(svc) {
                         },
                         function(index, callback) {
                             test.ok(index);
-                            test.ok(index.isValid());
                             var properties = index.properties();
                             
                             test.strictEqual(originalAssureUTF8Value, properties.content.assureUTF8);
@@ -7597,14 +7479,12 @@ exports.setup = function(svc) {
                         },
                         function(index, done) {
                             test.ok(index);
-                            test.ok(index.isValid());
                             test.strictEqual(index.properties().name, indexName);
                             originalEventCount = index.properties().content.totalEventCount;
                             
                             index.submitEvent(message, {sourcetype: sourcetype}, done);
                         },
                         function(eventInfo, index, done) {
-                            test.ok(!index.isValid());
                             test.ok(eventInfo);
                             test.strictEqual(eventInfo.sourcetype, sourcetype);
                             test.strictEqual(eventInfo.bytes, message.length);
@@ -7636,7 +7516,6 @@ exports.setup = function(svc) {
                 service.currentUser(function(err, user) {
                     test.ok(!err);
                     test.ok(user);
-                    test.ok(user.isValid());
                     test.strictEqual(user.properties().name, service.username);
                     test.done();
                 });
@@ -7664,13 +7543,11 @@ exports.setup = function(svc) {
                         },
                         function(user, done) {
                             test.ok(user);
-                            test.ok(!user.isValid());
                             
                             user.read(done);
                         },
                         function(user, done) {
                             test.ok(user);
-                            test.ok(user.isValid());
                             test.strictEqual(user.properties().name, name);
                             test.strictEqual(user.properties().content.roles.length, 1);
                             test.strictEqual(user.properties().content.roles[0], "user");
@@ -7679,7 +7556,6 @@ exports.setup = function(svc) {
                         },
                         function(user, done) {
                             test.ok(user);
-                            test.ok(user.isValid());
                             test.strictEqual(user.properties().content.realname, "JS SDK");
                             test.strictEqual(user.properties().content.roles.length, 2);
                             test.strictEqual(user.properties().content.roles[0], "admin");
@@ -7712,7 +7588,7 @@ exports.setup = function(svc) {
                     test.ok(views.length > 0);
                     
                     for(var i = 0; i < views.length; i++) {
-                        test.ok(views[i].isValid());
+                        test.ok(views[i]);
                     }
                     
                     test.done();
@@ -7731,7 +7607,6 @@ exports.setup = function(svc) {
                         },
                         function(view, done) {
                             test.ok(view);
-                            test.ok(view.isValid());
                             
                             test.strictEqual(view.properties().name, name);
                             test.strictEqual(view.properties().content["eai:data"], originalData);
@@ -7740,7 +7615,6 @@ exports.setup = function(svc) {
                         },
                         function(view, done) {
                             test.ok(view);
-                            test.ok(view.isValid());
                             test.strictEqual(view.properties().content["eai:data"], newData);
                             
                             view.remove(done);

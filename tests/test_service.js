@@ -75,7 +75,7 @@ exports.setup = function(svc) {
                     test.ok(jobs.length > 0);
                     
                     for(var i = 0; i < jobs.length; i++) {
-                        test.ok(jobs[i].isValid());
+                        test.ok(jobs[i]);
                     }
                     
                     test.done();
@@ -115,7 +115,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job,
                                 function(j) {
-                                    return j.isValid() && job.properties().content["isDone"];
+                                    return job.properties().content["isDone"];
                                 },
                                 10,
                                 done
@@ -153,7 +153,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job,
                                 function(j) {
-                                    return j.isValid() && job.properties().content["isDone"];
+                                    return job.properties().content["isDone"];
                                 },
                                 10,
                                 done
@@ -189,7 +189,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job,
                                 function(j) {
-                                    return j.isValid() && job.properties().content["isDone"];
+                                    return job.properties().content["isDone"];
                                 },
                                 10,
                                 done
@@ -228,11 +228,9 @@ exports.setup = function(svc) {
                             
                         },
                         function(job, done) {
-                            test.ok(!job.isValid());
                             job.disablePreview(done);
                         },
                         function(job, done) {
-                            test.ok(!job.isValid());
                             job.cancel(done);
                         }
                     ],
@@ -257,39 +255,34 @@ exports.setup = function(svc) {
                             job.pause(done);
                         },
                         function(job, done) {
-                            test.ok(!job.isValid());
                             tutils.pollUntil(
                                 job, 
                                 function(j) {
-                                    return j.isValid() && j.properties().content["isPaused"];
+                                    return j.properties().content["isPaused"];
                                 },
                                 10,
                                 done
                             );
                         },
                         function(job, done) {
-                            test.ok(job.isValid());
                             test.ok(job.properties().content["isPaused"]);
                             job.unpause(done);
                         },
                         function(job, done) {
-                            test.ok(!job.isValid());
                             tutils.pollUntil(
                                 job, 
                                 function(j) {
-                                    return j.isValid() && !j.properties().content["isPaused"];
+                                    return !j.properties().content["isPaused"];
                                 },
                                 10,
                                 done
                             );
                         },
                         function(job, done) {
-                            test.ok(job.isValid());
                             test.ok(!job.properties().content["isPaused"]);
                             job.finalize(done);
                         },
                         function(job, done) {
-                            test.ok(!job.isValid());
                             job.cancel(done);
                         }
                     ],
@@ -313,18 +306,15 @@ exports.setup = function(svc) {
                             job.read(done);
                         },
                         function(job, done) {
-                            test.ok(job.isValid());
                             var ttl = job.properties().content["ttl"];
                             originalTTL = ttl;
                             
                             job.setTTL(ttl*2, done);
                         },
                         function(job, done) {
-                            test.ok(!job.isValid());
                             job.read(done);
                         },
                         function(job, done) {
-                            test.ok(job.isValid());
                             var ttl = job.properties().content["ttl"];
                             test.ok(ttl > originalTTL);
                             test.ok(ttl <= (originalTTL*2));
@@ -353,17 +343,14 @@ exports.setup = function(svc) {
                             job.read(done);
                         },
                         function(job, done) {
-                            test.ok(job.isValid());
                             var priority = job.properties().content["priority"];
                             test.ok(priority, 5);
                             job.setPriority(priority + 1, done);
                         },
                         function(job, done) {
-                            test.ok(!job.isValid());
                             job.read(done);
                         },
                         function(job, done) {
-                            test.ok(job.isValid());
                             job.cancel(done);
                         }
                     ],
@@ -493,7 +480,6 @@ exports.setup = function(svc) {
                         },
                         function(job, done) {
                             test.ok(job);
-                            test.ok(job.isValid());
                             originalTime = job.properties().content.updated;
                             Async.sleep(1200, function() { job.touch(done); });
                         },
@@ -501,7 +487,6 @@ exports.setup = function(svc) {
                             job.refresh(done);
                         },
                         function(job, done) {
-                            test.ok(job.isValid());
                             test.ok(originalTime !== job.properties().updated);
                             job.cancel(done);
                         }
@@ -585,7 +570,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job,
                                 function(j) {
-                                    return j.isValid() && job.properties().content["isDone"];
+                                    return job.properties().content["isDone"];
                                 },
                                 10,
                                 done
@@ -637,7 +622,6 @@ exports.setup = function(svc) {
                 var apps = this.service.apps();
                 
                 apps.create({name: name}, function(err, app) {
-                    test.ok(app.isValid());
                     var appName = app.properties().name;
                     apps.contains(appName, function(err, found, entity) {
                         test.ok(found);
@@ -661,7 +645,6 @@ exports.setup = function(svc) {
                         apps.create({name: name}, callback);     
                     },
                     function(app, callback) {
-                        test.ok(app.isValid());
                         app.update({
                             description: DESCRIPTION,
                             version: VERSION
@@ -669,12 +652,10 @@ exports.setup = function(svc) {
                     },
                     function(app, callback) {
                         test.ok(app);
-                        test.ok(!app.isValid());
                         app.read(callback);  
                     },
                     function(app, callback) {
                         test.ok(app);
-                        test.ok(app.isValid());
                         var properties = app.properties();
                         
                         test.strictEqual(properties.content.description, DESCRIPTION);
@@ -724,7 +705,7 @@ exports.setup = function(svc) {
                     test.ok(savedSearches.length > 0);
                     
                     for(var i = 0; i < savedSearches.length; i++) {
-                        test.ok(savedSearches[i].isValid());
+                        test.ok(savedSearches[i]);
                     }
                     
                     test.done();
@@ -735,7 +716,7 @@ exports.setup = function(svc) {
                 var searches = this.service.savedSearches();
                 searches.contains("Indexing workload", function(err, found, search) {
                     test.ok(found);
-                    test.ok(search.isValid());
+                    test.ok(search);
                     
                     test.done();
                 });
@@ -745,7 +726,7 @@ exports.setup = function(svc) {
                 var searches = this.service.savedSearches();
                 searches.contains("Indexing workload", function(err, found, search) {
                     test.ok(found);
-                    test.ok(search.isValid());
+                    test.ok(search);
                     
                     search.history(function(err, history, search) {
                         test.ok(!err);
@@ -758,7 +739,7 @@ exports.setup = function(svc) {
                 var searches = this.service.savedSearches();
                 searches.contains("Indexing workload", function(err, found, search) {
                     test.ok(found);
-                    test.ok(search.isValid());
+                    test.ok(search);
                     
                     search.suppressInfo(function(err, info, search) {
                         test.ok(!err);
@@ -773,7 +754,7 @@ exports.setup = function(svc) {
                     test.strictEqual(savedSearches.length, 2);
                     
                     for(var i = 0; i < savedSearches.length; i++) {
-                        test.ok(savedSearches[i].isValid());
+                        test.ok(savedSearches[i]);
                     }
                     
                     test.done();
@@ -786,7 +767,7 @@ exports.setup = function(svc) {
                     test.ok(savedSearches.length > 0);
                     
                     for(var i = 0; i < savedSearches.length; i++) {
-                        test.ok(savedSearches[i].isValid());
+                        test.ok(savedSearches[i]);
                     }
                     
                     test.done();
@@ -799,7 +780,7 @@ exports.setup = function(svc) {
                     test.strictEqual(savedSearches.length, 1);
                     
                     for(var i = 0; i < savedSearches.length; i++) {
-                        test.ok(savedSearches[i].isValid());
+                        test.ok(savedSearches[i]);
                     }
                     
                     test.done();
@@ -820,7 +801,7 @@ exports.setup = function(svc) {
                         },
                         function(search, done) {
                             test.ok(search);
-                            test.ok(search.isValid());
+                            test.ok(search);
                             
                             test.strictEqual(search.properties().name, name); 
                             test.strictEqual(search.properties().content.search, originalSearch);
@@ -830,7 +811,7 @@ exports.setup = function(svc) {
                         },
                         function(search, done) {
                             test.ok(search);
-                            test.ok(search.isValid());
+                            test.ok(search);
                             
                             test.strictEqual(search.properties().name, name); 
                             test.strictEqual(search.properties().content.search, updatedSearch);
@@ -840,7 +821,7 @@ exports.setup = function(svc) {
                         },
                         function(search, done) {
                             test.ok(search);
-                            test.ok(search.isValid());
+                            test.ok(search);
                             
                             test.strictEqual(search.properties().name, name); 
                             test.strictEqual(search.properties().content.search, updatedSearch);
@@ -906,11 +887,9 @@ exports.setup = function(svc) {
                     function(done) { that.service.properties().contains("web", done); },
                     function(found, file, done) { 
                         test.ok(found);
-                        test.ok(!file.isValid());
                         file.read(done);
                     },
                     function(file, done) {
-                        test.ok(file.isValid());
                         test.strictEqual(file.properties().name, "web");
                         done();
                     }
@@ -928,22 +907,18 @@ exports.setup = function(svc) {
                     function(done) { that.service.properties().contains("web", done); },
                     function(found, file, done) { 
                         test.ok(found);
-                        test.ok(!file.isValid());
                         file.read(done);
                     },
                     function(file, done) {
-                        test.ok(file.isValid());
                         test.strictEqual(file.properties().name, "web");
                         file.contains("settings", done);
                     },
                     function(found, stanza, done) {
                         test.ok(found);
                         test.ok(stanza);
-                        test.ok(!stanza.isValid());
                         stanza.read(done);
                     },
                     function(stanza, done) {
-                        test.ok(stanza.isValid());
                         test.ok(stanza.properties().content.hasOwnProperty("httpport"));
                         done();
                     }
@@ -962,43 +937,35 @@ exports.setup = function(svc) {
                 Async.chain([
                     function(done) {
                         var properties = that.service.properties(); 
-                        test.ok(!properties.isValid());
                         properties.read(done);
                     },
                     function(properties, done) {
-                        test.ok(properties.isValid());
                         properties.create(fileName, done);
                     },
                     function(file, done) {
-                        test.ok(!file.isValid());
                         file.create("stanza", done);
                     },
                     function(stanza, done) {
-                        test.ok(!stanza.isValid());
                         stanza.update({"jssdk_foobar": value});
-                        test.ok(!stanza.isValid());
                         tutils.pollUntil(
                             stanza, function(s) {
-                                return s.isValid() && s.properties().content["jssdk_foobar"] === value;
+                                return s.properties().content["jssdk_foobar"] === value;
                             }, 
                             10, 
                             done
                         );
                     },
                     function(stanza, done) {
-                        test.ok(stanza.isValid());
                         test.strictEqual(stanza.properties().content["jssdk_foobar"], value);
                         done();
                     },
                     function(done) {
                         var file = new splunkjs.Service.PropertyFile(svc, fileName);
-                        test.ok(!file.isValid());
                         file.contains("stanza", done);
                     },
                     function(found, stanza, done) {
                         test.ok(found);
                         test.ok(stanza);
-                        test.ok(!stanza.isValid());
                         stanza.remove(done);
                     }
                 ],
@@ -1040,11 +1007,9 @@ exports.setup = function(svc) {
                     function(done) { that.service.configurations({}, namespace).contains("web", done); },
                     function(found, file, done) {                         
                         test.ok(found);
-                        test.ok(!file.isValid());
                         file.read(done);
                     },
                     function(file, done) {
-                        test.ok(file.isValid());
                         test.strictEqual(file.properties().name, "conf-web");
                         done();
                     }
@@ -1063,18 +1028,15 @@ exports.setup = function(svc) {
                     function(done) { that.service.configurations({}, namespace).contains("web", done); },
                     function(found, file, done) { 
                         test.ok(found);
-                        test.ok(!file.isValid());
                         file.read(done);
                     },
                     function(file, done) {
-                        test.ok(file.isValid());
                         test.strictEqual(file.properties().name, "conf-web");
                         file.contains("settings", done);
                     },
                     function(found, stanza, done) {
                         test.ok(found);
                         test.ok(stanza);
-                        test.ok(stanza.isValid());
                         test.ok(stanza.properties().content.hasOwnProperty("httpport"));
                         done();
                     }
@@ -1094,43 +1056,35 @@ exports.setup = function(svc) {
                 Async.chain([
                     function(done) {
                         var configs = svc.configurations({}, namespace); 
-                        test.ok(!configs.isValid());
                         configs.read(done);
                     },
                     function(configs, done) {
-                        test.ok(configs.isValid());
                         configs.create({__conf: fileName}, done);
                     },
                     function(file, done) {
-                        test.ok(!file.isValid());
                         file.create("stanza", done);
                     },
                     function(stanza, done) {
-                        test.ok(stanza.isValid());
                         stanza.update({"jssdk_foobar": value});
-                        test.ok(!stanza.isValid());
                         tutils.pollUntil(
                             stanza, function(s) {
-                                return s.isValid() || s.properties().content["jssdk_foobar"] === value;
+                                return s.properties().content["jssdk_foobar"] === value;
                             }, 
                             10, 
                             done
                         );
                     },
                     function(stanza, done) {
-                        test.ok(stanza.isValid());
                         test.strictEqual(stanza.properties().content["jssdk_foobar"], value);
                         done();
                     },
                     function(done) {
                         var file = new splunkjs.Service.ConfigurationFile(svc, fileName);
-                        test.ok(!file.isValid());
                         file.contains("stanza", done);
                     },
                     function(found, stanza, done) {
                         test.ok(found);
                         test.ok(stanza);
-                        test.ok(stanza.isValid());
                         stanza.remove(done);
                     }
                 ],
@@ -1185,7 +1139,6 @@ exports.setup = function(svc) {
                         },
                         function(found, index, callback) {
                             test.ok(found);
-                            test.ok(index.isValid());
                             originalAssureUTF8Value = index.properties().content.assureUTF8;
                             index.update({
                                 assureUTF8: !originalAssureUTF8Value
@@ -1193,7 +1146,6 @@ exports.setup = function(svc) {
                         },
                         function(index, callback) {
                             test.ok(index);
-                            test.ok(index.isValid());
                             var properties = index.properties();
                             
                             test.strictEqual(!originalAssureUTF8Value, properties.content.assureUTF8);
@@ -1204,7 +1156,6 @@ exports.setup = function(svc) {
                         },
                         function(index, callback) {
                             test.ok(index);
-                            test.ok(index.isValid());
                             var properties = index.properties();
                             
                             test.strictEqual(originalAssureUTF8Value, properties.content.assureUTF8);
@@ -1234,14 +1185,12 @@ exports.setup = function(svc) {
                         },
                         function(index, done) {
                             test.ok(index);
-                            test.ok(index.isValid());
                             test.strictEqual(index.properties().name, indexName);
                             originalEventCount = index.properties().content.totalEventCount;
                             
                             index.submitEvent(message, {sourcetype: sourcetype}, done);
                         },
                         function(eventInfo, index, done) {
-                            test.ok(!index.isValid());
                             test.ok(eventInfo);
                             test.strictEqual(eventInfo.sourcetype, sourcetype);
                             test.strictEqual(eventInfo.bytes, message.length);
@@ -1273,7 +1222,6 @@ exports.setup = function(svc) {
                 service.currentUser(function(err, user) {
                     test.ok(!err);
                     test.ok(user);
-                    test.ok(user.isValid());
                     test.strictEqual(user.properties().name, service.username);
                     test.done();
                 });
@@ -1301,13 +1249,11 @@ exports.setup = function(svc) {
                         },
                         function(user, done) {
                             test.ok(user);
-                            test.ok(!user.isValid());
                             
                             user.read(done);
                         },
                         function(user, done) {
                             test.ok(user);
-                            test.ok(user.isValid());
                             test.strictEqual(user.properties().name, name);
                             test.strictEqual(user.properties().content.roles.length, 1);
                             test.strictEqual(user.properties().content.roles[0], "user");
@@ -1316,7 +1262,6 @@ exports.setup = function(svc) {
                         },
                         function(user, done) {
                             test.ok(user);
-                            test.ok(user.isValid());
                             test.strictEqual(user.properties().content.realname, "JS SDK");
                             test.strictEqual(user.properties().content.roles.length, 2);
                             test.strictEqual(user.properties().content.roles[0], "admin");
@@ -1349,7 +1294,7 @@ exports.setup = function(svc) {
                     test.ok(views.length > 0);
                     
                     for(var i = 0; i < views.length; i++) {
-                        test.ok(views[i].isValid());
+                        test.ok(views[i]);
                     }
                     
                     test.done();
@@ -1368,7 +1313,6 @@ exports.setup = function(svc) {
                         },
                         function(view, done) {
                             test.ok(view);
-                            test.ok(view.isValid());
                             
                             test.strictEqual(view.properties().name, name);
                             test.strictEqual(view.properties().content["eai:data"], originalData);
@@ -1377,7 +1321,6 @@ exports.setup = function(svc) {
                         },
                         function(view, done) {
                             test.ok(view);
-                            test.ok(view.isValid());
                             test.strictEqual(view.properties().content["eai:data"], newData);
                             
                             view.remove(done);

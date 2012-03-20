@@ -2337,32 +2337,18 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this._super(service, fullpath);
             this.fragmentPath = path;
             this.namespace = namespace;
-            this._maybeValid = false;
             this._properties = { content: {}, acl: {}, attributes: {}};
             
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
-            this._invalidate = utils.bind(this, this._invalidate);
             this._load       = utils.bind(this, this._load);
-            this._validate   = utils.bind(this, this._validate);
             this.refresh     = utils.bind(this, this.refresh);
             this.read        = utils.bind(this, this.read);
-            this.isValid     = utils.bind(this, this.isValid);
             this.properties  = utils.bind(this, this.properties);
         },
         
         /**
-         * Mark the resource as in an invalid state
-         *
-         * @module splunkjs.Service.Resource
-         * @private
-         */
-        _invalidate: function() {
-            this._maybeValid = false;
-        },
-        
-        /**
-         * Load the resource and mark it as valid, also storing the properties.
+         * Load the resource, also storing the properties.
          *
          * @param {Object} properties The properties for this resource
          *
@@ -2370,38 +2356,16 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @protected
          */
         _load: function(properties) {
-            this._maybeValid = true;
             this._properties = properties || {};
         },
         
         /**
-         * Validate if the resource is in a valid state, 
-         * and refresh it if it is not.
-         *
-         * @param {Function} callback A callback when the object is valid: `(err, resource)`
-         *
-         * @module splunkjs.Service.Resource
-         * @private
-         */
-        _validate: function(callback) {
-            callback = callback || function() {};
-            
-            if (!this._maybeValid) {
-                return this.refresh(callback);
-            }
-            else {
-                callback(null, this);
-                return {abort: function(){}};
-            }
-        },
-        
-        /**
-         * Unconditionally refresh the resource
+         * Refresh the resource
          *
          * This will unconditionally refresh the object from the server
-         * and load it up, regardless of whether it is valid or not.
+         * and load it up.
          *
-         * @param {Function} callback A callback when the object is valid: `(err, resource)`
+         * @param {Function} callback A callback when the object is retrieved: `(err, resource)`
          *
          * @module splunkjs.Service.Resource
          * @protected
@@ -2411,21 +2375,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Check whether the resource is in a valid state.
-         *
-         * @return {Boolean} Is this resource valid
-         *
-         * @module splunkjs.Service.Resource
-         */
-        isValid: function() {
-            return this._maybeValid;
-        },
-        
-        /**
          * Retrieve the properties for this resource
          *
          * This will retrieve the current properties for this
-         * resource, whether or not they are valid.
+         * resource.
          *
          * @return {Object} The properties for this resource
          *
@@ -2436,23 +2389,18 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Conditionally refresh the resource
+         * Refresh the resource
          *
-         * This will conditionally refresh the object from the server,
-         * only if it is not in a valid state.
+         * This will unconditionally refresh the object from the server
+         * and load it up.
          *
-         * @param {Function} callback A callback when the object is valid: `(err, resource)`
+         * @param {Function} callback A callback when the object is retrieved: `(err, resource)`
          *
          * @module splunkjs.Service.Resource
          * @protected
          */
         read: function(callback) {
-            callback = callback || function() {};
-            
-            var that = this;
-            return this._validate(function(err) {
-                callback(err, that);
-            });
+            return this.refresh(callback);
         }
     });
     
@@ -2496,7 +2444,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Load the resource and mark it as valid, also storing the properties.    
+         * Load the resource, also storing the properties.
          *
          * @param {Object} properties The properties for this resource
          *
@@ -2510,12 +2458,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Unconditionally refresh the resource
+         * Refresh the resource
          *
          * This will unconditionally refresh the object from the server
-         * and load it up, regardless of whether it is valid or not.
+         * and load it up.
          *
-         * @param {Function} callback A callback when the object is valid: `(err, resource)`
+         * @param {Function} callback A callback when the object is retrieved: `(err, resource)`
          *
          * @module splunkjs.Service.Entity
          */
@@ -2580,7 +2528,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 callback(err, that);
             });
             
-            this._invalidate();
             return req;
         }
     });
@@ -2641,7 +2588,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Load the resource and mark it as valid, also storing the properties.    
+         * Load the resource, also storing the properties.
          *
          * This will load the properties as well as create a map between entity
          * names to entity IDs (for retrieval purposes).
@@ -2661,13 +2608,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 var props = entityPropertyList[i];
                 var entity = this._item(this, props);
                 entity._load(props);
-                
-                // If we don't want to load when we see the item,
-                // we still load it (to get things like ID/name),
-                // and just invalidate it
-                if (!this._loadOnItem()) {
-                    entity._invalidate();
-                }
                 entities.push(entity);
                 
                 if (entitiesByName.hasOwnProperty(entity.fragmentPath)) {
@@ -2682,12 +2622,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Unconditionally refresh the resource
+         * Refresh the resource
          *
          * This will unconditionally refresh the object from the server
-         * and load it up, regardless of whether it is valid or not.
+         * and load it up.
          *
-         * @param {Function} callback A callback when the object is valid: `(err, resource)`
+         * @param {Function} callback A callback when the object is retrieved: `(err, resource)`
          *
          * @module splunkjs.Service.Collection
          */
@@ -2714,8 +2654,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Fetch a specific entity.
          *
-         * Return a specific entity given its name. This will fetch the list
-         * of entities from the server if the collection is not in a valid state.
+         * Return a specific entity given its name.
          *
          * Example:
          *
@@ -2784,24 +2723,18 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     }
                     
                     var entity = that._item(that, props);
-                    entity._load(props);
-                    if (!that._loadOnCreate()) {
-                        that._invalidate();
-                    }
-                    
+                    entity._load(props);                    
                     callback(null, entity);
                 }
             });
             
-            this._invalidate();
             return req;
         },
         
         /**
          * Retrieve a list of all entities in the collection
          *
-         * Return the list of all the entities in this collection, fetching them
-         * from the server if the collection is not in a valid state.
+         * Return the list of all the entities in this collection.
          *
          * Example:
          *
@@ -2818,8 +2751,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             callback = callback || function() {};
             
             var that = this;
-            return this._validate(function(err) {
-                callback(err, that._entities);
+            return this.refresh(function(err) {
+                callback(err, that._entities); 
             });
         },
         
@@ -2855,7 +2788,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             callback = callback || function() {};
             
             var that = this;
-            return this._validate(function(err) {
+            return this.refresh(function(err) {
                 if (err) {
                     callback(err);
                 } 
@@ -2998,7 +2931,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var req = this.post("acknowledge", {}, function(err) {
                 callback(err, that);
             });
-            this._invalidate();
+            
             return req;
         },
         
@@ -3024,7 +2957,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var req = this.post("dispatch", {}, function(err) {
                 callback(err, that);
             });
-            this._invalidate();
+            
             return req;
         },
         
@@ -3289,7 +3222,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 }
             });
             
-            this._invalidate();
             return req;
         }
     });
@@ -3516,7 +3448,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(null, response.data.entry.content, that);
                 }
             });
-            this._invalidate();
+            
             return req;
         },
         
@@ -3959,7 +3891,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    that._invalidate();
+                    
                     var job = new root.Job(that.service, response.data.entry.content.sid);
                     callback(null, job);
                 }
@@ -4105,7 +4037,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         cancel: function(callback) {
             var req = this.post("control", {action: "cancel"}, callback);
-            this._invalidate();
+            
             return req;
         },
 
@@ -4131,7 +4063,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var req = this.post("control", {action: "disablepreview"}, function(err) {
                 callback(err, that);
             });
-            this._invalidate();
+            
             return req;
         },
 
@@ -4157,7 +4089,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var req = this.post("control", {action: "enablepreview"}, function(err) {
                 callback(err, that);
             });
-            this._invalidate();
+            
             return req;
         },
 
@@ -4215,7 +4147,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var req = this.post("control", {action: "finalize"}, function(err) {
                 callback(err, that);
             });
-            this._invalidate();
+            
             return req;
         },
 
@@ -4241,7 +4173,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var req = this.post("control", {action: "pause"}, function(err) {
                 callback(err, that);
             });
-            this._invalidate();
+            
             return req;
         },
 
@@ -4361,7 +4293,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var req = this.post("control", {action: "setpriority", priority: value}, function(err) {
                 callback(err, that);
             });
-            this._invalidate();
+            
             return req;
         },
 
@@ -4388,7 +4320,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var req = this.post("control", {action: "setttl", ttl: value}, function(err) {
                 callback(err, that);
             });
-            this._invalidate();
+            
             return req;
         },
 
@@ -4476,7 +4408,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var req = this.post("control", {action: "touch"}, function(err) {
                 callback(err, that);
             });
-            this._invalidate();
+            
             return req;
         },
 
@@ -4502,7 +4434,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var req = this.post("control", {action: "unpause"}, function(err) {
                 callback(err, that);
             });
-            this._invalidate();
+            
             return req;
         }
     });
