@@ -74,10 +74,15 @@ def make_request(url, headers={}, get=None, post=None, payload=None, method={},
         h = httplib2.Http(
             timeout=SPLUNKD_CONNECTION_TIMEOUT) 
     
+    if "authorization" in headers:
+        del headers["authorization"]
+    if "Authorization" in headers:
+        del headers["Authorization"]
+    
     auth = None
     if session_key:
         auth = "Splunk %s" % session_key
-    elif basic_auth:
+    if basic_auth:
         auth = basic_auth
     headers["Authorization"] = auth
     
