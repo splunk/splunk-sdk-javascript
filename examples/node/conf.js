@@ -131,7 +131,7 @@
             
             Async.chain([
                     function(done) {
-                        var collection = options.global ? service.properties() : service.configurations({}, namespace);
+                        var collection = options.global ? service.properties() : service.configurations(namespace);
                         collection.refresh(done);
                     },
                     function(collection, done) {
@@ -185,7 +185,7 @@
             
             Async.chain([
                     function(done) {
-                        var collection = options.global ? service.properties() : service.configurations({}, namespace);
+                        var collection = options.global ? service.properties() : service.configurations(namespace);
                         collection.refresh(done);
                     },
                     function(collection, done) {
@@ -254,7 +254,7 @@
             
             Async.chain([
                     function(done) {
-                        var collection = options.global ? service.properties() : service.configurations({}, namespace);
+                        var collection = options.global ? service.properties() : service.configurations(namespace);
                         collection.refresh(done);
                     },
                     function(collection, done) {
@@ -314,7 +314,7 @@
             var collection = null;
             Async.chain([
                     function(done) {
-                        collection = options.global ? service.properties() : service.configurations({}, namespace);
+                        collection = options.global ? service.properties() : service.configurations(namespace);
                         collection.refresh(done);
                     },
                     function(collection, done) {
@@ -425,7 +425,7 @@
             
             Async.chain([
                     function(done) {
-                        var collection = options.global ? service.properties() : service.configurations({}, namespace);
+                        var collection = options.global ? service.properties() : service.configurations(namespace);
                         collection.refresh(done);
                     },
                     function(collection, done) {

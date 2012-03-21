@@ -1918,15 +1918,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      var apps = svc.apps();
          *      apps.refresh(function(err) { console.log(apps.list()); });
          *
-         * @param {Object} options Dictionary of collection filtering and pagination options
          * @return {splunkjs.Service.Collection} The Applications collection
          *
          * @endpoint apps/local
          * @module splunkjs.Service
          * @see splunkjs.Service.Collection
          */
-        apps: function(options) {
-            return new root.Applications(this, options);
+        apps: function() {
+            return new root.Applications(this);
         },
         
         /**
@@ -1945,7 +1944,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *          });
          *      });
          *
-         * @param {Object} options Dictionary of collection filtering and pagination options
          * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {splunkjs.Service.Configurations} The Configurations collection
          *
@@ -1953,8 +1951,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @module splunkjs.Service
          * @see splunkjs.Service.Configurations
          */
-        configurations: function(options, namespace) {
-            return new root.Configurations(this, options, namespace);
+        configurations: function(namespace) {
+            return new root.Configurations(this, namespace);
         },
         
         /**
@@ -1973,7 +1971,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *          // `index` contains the Index object.
          *      });
          *
-         * @param {Object} options Dictionary of collection filtering and pagination options
          * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {splunkjs.Service.Indexes} The Indexes collection
          *
@@ -1981,8 +1978,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @module splunkjs.Service
          * @see splunkjs.Service.Indexes
          */        
-        indexes: function(options, namespace) { 
-            return new root.Indexes(this, options, namespace);
+        indexes: function(namespace) { 
+            return new root.Indexes(this, namespace);
         },
         
         /**
@@ -2001,15 +1998,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *          });
          *      });
          *
-         * @param {Object} options Dictionary of collection filtering and pagination options
          * @return {splunkjs.Service.Properties} The Properties collection
          *
          * @endpoint properties
          * @module splunkjs.Service
          * @see splunkjs.Service.Properties
          */
-        properties: function(options) {
-            return new root.Properties(this, options);
+        properties: function() {
+            return new root.Properties(this);
         },
         
         /**
@@ -2026,7 +2022,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *          console.log("# Of Saved Searches: " + savedSearches.list().length);
          *      });
          *
-         * @param {Object} options Dictionary of collection filtering and pagination options
          * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {splunkjs.Service.SavedSearches} The SavedSearches collection
          *
@@ -2034,8 +2029,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @module splunkjs.Service
          * @see splunkjs.Service.SavedSearches
          */
-        savedSearches: function(options, namespace) {
-            return new root.SavedSearches(this, options, namespace);
+        savedSearches: function(namespace) {
+            return new root.SavedSearches(this, namespace);
         },
         
         /**
@@ -2055,7 +2050,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *          }
          *      });
          *
-         * @param {Object} options Dictionary of collection filtering and pagination options
          * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {splunkjs.Service.Jobs} The Jobs collection
          *
@@ -2063,8 +2057,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @module splunkjs.Service
          * @see splunkjs.Service.Jobs
          */
-        jobs: function(options, namespace) {
-            return new root.Jobs(this, options, namespace);  
+        jobs: function(namespace) {
+            return new root.Jobs(this, namespace);  
         },
         
         /**
@@ -2084,15 +2078,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *          }
          *      });
          *
-         * @param {Object} options Dictionary of collection filtering and pagination options
          * @return {splunkjs.Service.Users} The Users collection
          *
          * @endpoint authorization/users
          * @module splunkjs.Service
          * @see splunkjs.Service.Users
          */
-        users: function(options) {
-            return new root.Users(this, options);  
+        users: function() {
+            return new root.Users(this);  
         },
         
         /**
@@ -2112,7 +2105,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *          }
          *      });
          *
-         * @param {Object} options Dictionary of collection filtering and pagination options
          * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {splunkjs.Service.Views} The views collection
          *
@@ -2120,8 +2112,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @module splunkjs.Service
          * @see splunkjs.Service.Views
          */
-        views: function(options, namespace) {
-            return new root.Views(this, options, namespace);  
+        views: function(namespace) {
+            return new root.Views(this, namespace);  
         },
         
         /**
@@ -2585,16 +2577,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @constructor
          * @param {splunkjs.Service} service A service instance
          * @param {String} path A relative endpoint path (e.g. 'search/jobs')
-         * @param {Object} options Dictionary of collection filtering and pagination options
          * @param {Object} namespace Namespace information for this collection (owner, app, sharing)
          * @param {Object} handlers A dictionary of functions to perform specialized operations: item, isSame, loadOnCreate, loadOnItem
          * @return {splunkjs.Service.Collection} A splunkjs.Service.Collection instance
          *
          * @module splunkjs.Service.Collection
          */     
-        init: function(service, path, options, namespace, handlers) {
+        init: function(service, path, namespace, handlers) {
             this._super(service, path, namespace);
-            this._options = options;
             
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
@@ -2665,14 +2655,19 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * This will unconditionally refresh the object from the server
          * and load it up.
          *
+         * @param {Object} options Dictionary of collection filtering and pagination options
          * @param {Function} callback A callback when the object is retrieved: `(err, resource)`
          *
          * @module splunkjs.Service.Collection
          */
-        refresh: function(callback) {
+        refresh: function(options, callback) {
+            if (!callback && utils.isFunction(options)) {
+                callback = options;
+                options = {};
+            }
             callback = callback || function() {};
             
-            var options = this._options || {};
+            var options = options || {};
             if (!options.count) {
                 options.count = 0;
             }
@@ -2703,7 +2698,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @param {String} name The name of the entity to retrieve
          * @param {Object} namespace Namespace information (owner, app, sharing)
-         * @param {Function} callback A callback with the specified entity: `(err, resource)`
+         * @returns {splunkjs.Service.Entity} The entity with that name/namespace or null if none is found
          *
          * @module splunkjs.Service.Collection
          */
@@ -2725,7 +2720,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      });
          *
          * @param {Object} params A dictionary of properties to create the entity with.
-         * @param {Function} callback A callback with the created entity: `(err, createdEntity)`
+         * @returns {Array} Array of splunkjs.Service.Entity objects
          *
          * @module splunkjs.Service.Collection
          */
@@ -2792,7 +2787,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @param {String} id The name of the entity to retrieve
          * @param {Object} namespace Namespace information (owner, app, sharing)
-         * @param {Function} callback A callback with whether the entity was found: `(err, wasFound, entity)`
+         * @returns {splunkjs.Service.Entity} The entity with that name/namespace or null if none is found
          *
          * @module splunkjs.Service.Collection
          */
@@ -2870,14 +2865,13 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @constructor
          * @param {splunkjs.Service} service A service instance
-         * @param {Object} options Dictionary of collection filtering and pagination options
          * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {splunkjs.Service.SavedSearches} A splunkjs.Service.SavedSearches instance
          *
          * @module splunkjs.Service.SavedSearches
          */     
-        init: function(service, options, namespace) {
-            this._super(service, Paths.savedSearches, options, namespace, {
+        init: function(service, namespace) {
+            this._super(service, Paths.savedSearches, namespace, {
                 item: function(collection, props) { 
                     var entityNamespace = utils.namespaceFromProperties(props);
                     return new root.SavedSearch(collection.service, props.name, entityNamespace);
@@ -3068,13 +3062,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @constructor
          * @param {splunkjs.Service} service A service instance
-         * @param {Object} options Dictionary of collection filtering and pagination options
          * @return {splunkjs.Service.Applications} A splunkjs.Service.Applications instance
          *
          * @module splunkjs.Service.Applications
          */  
-        init: function(service, options) {
-            this._super(service, Paths.apps, options, {}, {
+        init: function(service) {
+            this._super(service, Paths.apps, {}, {
                 item: function(collection, props) {
                     return new root.Application(collection.service, props.name, {});
                 }
@@ -3189,13 +3182,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @constructor
          * @param {splunkjs.Service} service A service instance
-         * @param {Object} options Dictionary of collection filtering and pagination options
          * @return {splunkjs.Service.Users} A splunkjs.Service.Users instance
          *
          * @module splunkjs.Service.Users
          */  
-        init: function(service, options) {
-            this._super(service, Paths.users, options, {}, {
+        init: function(service) {
+            this._super(service, Paths.users, {}, {
                 item: function(collection, props) {
                     return new root.User(collection.service, props.name, {});
                 }
@@ -3278,14 +3270,13 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @constructor
          * @param {splunkjs.Service} service A service instance
-         * @param {Object} options Dictionary of collection filtering and pagination options
          * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {splunkjs.Service.Views} A splunkjs.Service.Views instance
          *
          * @module splunkjs.Service.Views
          */  
-        init: function(service, options, namespace) {
-            this._super(service, Paths.views, options, namespace, {
+        init: function(service, namespace) {
+            this._super(service, Paths.views, namespace, {
                 item: function(collection, props) {
                     var entityNamespace = utils.namespaceFromProperties(props);
                     return new root.View(collection.service, props.name, entityNamespace);
@@ -3338,14 +3329,13 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @constructor
          * @param {splunkjs.Service} service A service instance
-         * @param {Object} options Dictionary of collection filtering and pagination options
          * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {splunkjs.Service.Indexes} A splunkjs.Service.Indexes instance
          *
          * @module splunkjs.Service.Indexes
          */  
-        init: function(service, options, namespace) {
-            this._super(service, Paths.indexes, options, namespace, {
+        init: function(service, namespace) {
+            this._super(service, Paths.indexes, namespace, {
                 item: function(collection, props) {
                     var entityNamespace = utils.namespaceFromProperties(props);
                     return new root.Index(collection.service, props.name, entityNamespace);  
@@ -3482,17 +3472,16 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @constructor
          * @param {splunkjs.Service} service A service instance
-         * @param {Object} options Dictionary of collection filtering and pagination options
          * @return {splunkjs.Service.Properties} A splunkjs.Service.Properties instance
          *
          * @module splunkjs.Service.Properties
          */  
-        init: function(service, options) {
+        init: function(service) {
             var namespace = {owner: "-", app: "-"};
-            this._super(service, Paths.properties, options, namespace, {
+            this._super(service, Paths.properties, namespace, {
                 item: function(collection, props) {
                     var name = props.name;
-                    return new root.PropertyFile(collection.service, name, options);
+                    return new root.PropertyFile(collection.service, name);
                 },
                 loadOnItem: function() { return false; }
             });  
@@ -3552,18 +3541,17 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @constructor
          * @param {splunkjs.Service} service A service instance
-         * @param {Object} options Dictionary of collection filtering and pagination options
          * @return {splunkjs.Service.PropertyFile} A splunkjs.Service.PropertyFile instance
          *
          * @module splunkjs.Service.PropertyFile
          */  
-        init: function(service, name, options) {
+        init: function(service, name) {
             this.name = name;
             
             // We always enforce the "globalness" of properties
             var namespace = {owner: "-", app: "-"};
             
-            this._super(service, Paths.properties + "/" + encodeURIComponent(name), options, namespace, {
+            this._super(service, Paths.properties + "/" + encodeURIComponent(name), namespace, {
                 item: function(collection, props) {
                     var name = props.name;
                     return new root.PropertyStanza(collection.service, collection.name, name);
@@ -3659,18 +3647,17 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @constructor
          * @param {splunkjs.Service} service A service instance
-         * @param {Object} options Dictionary of collection filtering and pagination options
          * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {splunkjs.Service.Configurations} A splunkjs.Service.Configurations instance
          *
          * @module splunkjs.Service.Configurations
          */  
-        init: function(service, options, namespace) {
+        init: function(service, namespace) {
             if (!namespace || namespace.owner === "-" || namespace.app === "-") {
                 throw new Error("Configurations requires a non-wildcard owner/app");
             }
             
-            this._super(service, Paths.properties, options, namespace, {
+            this._super(service, Paths.properties, namespace, {
                 item: function(collection, props) {
                     var name = props.name;
                     return new root.ConfigurationFile(collection.service, name, {}, namespace);
@@ -3741,16 +3728,15 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @constructor
          * @param {splunkjs.Service} service A service instance
-         * @param {Object} options Dictionary of collection filtering and pagination options
          * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {splunkjs.Service.ConfigurationFile} A splunkjs.Service.ConfigurationFile instance
          *
          * @module splunkjs.Service.ConfigurationFile
          */  
-        init: function(service, name, options, namespace) {
+        init: function(service, name, namespace) {
             this.name = name;
             var path = Paths.configurations + "/conf-" + encodeURIComponent(name);
-            this._super(service, path, options, namespace, {
+            this._super(service, path, namespace, {
                 item: function(collection, props) {
                     var name = props.name;
                     var entityNamespace = utils.namespaceFromProperties(props);
@@ -3842,14 +3828,13 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @constructor
          * @param {splunkjs.Service} service A service instance
-         * @param {Object} options Dictionary of collection filtering and pagination options
          * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {splunkjs.Service.Jobs} A splunkjs.Service.Jobs instance
          *
          * @module splunkjs.Service.Jobs
          */  
-        init: function(service, options, namespace) {
-            this._super(service, Paths.jobs, options, namespace, {
+        init: function(service, namespace) {
+            this._super(service, Paths.jobs, namespace, {
                 item: function(collection, props) {
                     var sid = props.content.sid;
                     var entityNamespace = utils.namespaceFromProperties(props);

@@ -35,7 +35,7 @@ exports.setup = function(svc) {
             "Callback#Create+abort job": function(test) {
                 var sid = getNextId();
                 var options = {id: sid};
-                var jobs = this.service.jobs({}, {app: "new_english"});
+                var jobs = this.service.jobs({app: "new_english"});
                 var req = jobs.oneshotSearch('search index=_internal |  head 1 | sleep 10', options, function(err, job) {   
                     test.ok(err);
                     test.ok(!job);
@@ -755,8 +755,8 @@ exports.setup = function(svc) {
             },
             
             "Callback#list limit count": function(test) {
-                var searches = this.service.savedSearches({count: 2});
-                searches.refresh(function(err, searches) {
+                var searches = this.service.savedSearches();
+                searches.refresh({count: 2}, function(err, searches) {
                     var savedSearches = searches.list();
                     test.strictEqual(savedSearches.length, 2);
                     
@@ -769,8 +769,8 @@ exports.setup = function(svc) {
             },
             
             "Callback#list filter": function(test) {
-                var searches = this.service.savedSearches({search: "Error"});
-                searches.refresh(function(err, searches) {
+                var searches = this.service.savedSearches();
+                searches.refresh({search: "Error"}, function(err, searches) {
                     var savedSearches = searches.list();
                     test.ok(savedSearches.length > 0);
                     
@@ -783,8 +783,8 @@ exports.setup = function(svc) {
             },
             
             "Callback#list offset": function(test) {
-                var searches = this.service.savedSearches({offset: 2, count: 1});
-                searches.refresh(function(err, searches) {
+                var searches = this.service.savedSearches();
+                searches.refresh({offset: 2, count: 1}, function(err, searches) {
                     var savedSearches = searches.list();
                     test.strictEqual(savedSearches.length, 1);
                     
@@ -802,7 +802,7 @@ exports.setup = function(svc) {
                 var updatedSearch = "search * | head 10";
                 var updatedDescription = "description";
             
-                var searches = this.service.savedSearches({}, {owner: this.service.username, app: "new_english"});
+                var searches = this.service.savedSearches({owner: this.service.username, app: "new_english"});
                 
                 Async.chain([
                         function(done) {
@@ -846,7 +846,7 @@ exports.setup = function(svc) {
             },
             
             "Callback#delete test saved searches": function(test) {
-                var searches = this.service.savedSearches({}, {owner: this.service.username, app: "new_english"});
+                var searches = this.service.savedSearches({owner: this.service.username, app: "new_english"});
                 searches.refresh(function(err, searches) {
                     var searchList = searches.list();                  
                     Async.parallelEach(
@@ -997,7 +997,7 @@ exports.setup = function(svc) {
                 var namespace = {owner: "admin", app: "search"};
                 
                 Async.chain([
-                    function(done) { that.service.configurations({}, namespace).refresh(done); },
+                    function(done) { that.service.configurations(namespace).refresh(done); },
                     function(props, done) { 
                         var files = props.list();
                         test.ok(files.length > 0);
@@ -1015,7 +1015,7 @@ exports.setup = function(svc) {
                 var namespace = {owner: "admin", app: "search"};
                 
                 Async.chain([
-                    function(done) { that.service.configurations({}, namespace).refresh(done); },
+                    function(done) { that.service.configurations(namespace).refresh(done); },
                     function(props, done) { 
                         var file = props.contains("web");
                         test.ok(file);
@@ -1037,7 +1037,7 @@ exports.setup = function(svc) {
                 var namespace = {owner: "admin", app: "search"};
                 
                 Async.chain([
-                    function(done) { that.service.configurations({}, namespace).refresh(done); },
+                    function(done) { that.service.configurations(namespace).refresh(done); },
                     function(props, done) { 
                         var file = props.contains("web");
                         test.ok(file);
@@ -1069,7 +1069,7 @@ exports.setup = function(svc) {
                 
                 Async.chain([
                     function(done) {
-                        var configs = svc.configurations({}, namespace); 
+                        var configs = svc.configurations(namespace); 
                         configs.refresh(done);
                     },
                     function(configs, done) {
@@ -1333,7 +1333,7 @@ exports.setup = function(svc) {
             "Callback#List views": function(test) {
                 var service = this.service;
                 
-                service.views({}, {owner: "admin", app: "search"}).refresh(function(err, views) {
+                service.views({owner: "admin", app: "search"}).refresh(function(err, views) {
                     test.ok(!err);
                     test.ok(views);
                     

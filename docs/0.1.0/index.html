@@ -3219,9 +3219,7 @@ var toString = Object.prototype.toString;</code></pre>
                                   <p class='related'>See: <a href='#splunkjs.Service.Collection'>splunkjs.Service.Collection</a></p>
                 </header>
               <section class='params'>
-                                  <h4>Params</h4>
                 <ul>
-                                      <li><span class="bold">options</span> - <span class="em">Object</span> <p>Dictionary of collection filtering and pagination options</p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -3238,9 +3236,9 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L118">lib/service.js:118</a>)</h4>
-                <pre><code>apps: function(options) {
-    return new root.Applications(this, options);
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L117">lib/service.js:117</a>)</h4>
+                <pre><code>apps: function() {
+    return new root.Applications(this);
 },</code></pre>
               </section>
               
@@ -3256,7 +3254,6 @@ var toString = Object.prototype.toString;</code></pre>
               <section class='params'>
                                   <h4>Params</h4>
                 <ul>
-                                      <li><span class="bold">options</span> - <span class="em">Object</span> <p>Dictionary of collection filtering and pagination options</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
                   </ul>
               </section>
@@ -3278,9 +3275,9 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L146">lib/service.js:146</a>)</h4>
-                <pre><code>configurations: function(options, namespace) {
-    return new root.Configurations(this, options, namespace);
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L144">lib/service.js:144</a>)</h4>
+                <pre><code>configurations: function(namespace) {
+    return new root.Configurations(this, namespace);
 },</code></pre>
               </section>
               
@@ -3296,7 +3293,6 @@ var toString = Object.prototype.toString;</code></pre>
               <section class='params'>
                                   <h4>Params</h4>
                 <ul>
-                                      <li><span class="bold">options</span> - <span class="em">Object</span> <p>Dictionary of collection filtering and pagination options</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
                   </ul>
               </section>
@@ -3318,9 +3314,9 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L174">lib/service.js:174</a>)</h4>
-                <pre><code>indexes: function(options, namespace) { 
-    return new root.Indexes(this, options, namespace);
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L171">lib/service.js:171</a>)</h4>
+                <pre><code>indexes: function(namespace) { 
+    return new root.Indexes(this, namespace);
 },</code></pre>
               </section>
               
@@ -3334,9 +3330,7 @@ var toString = Object.prototype.toString;</code></pre>
                                   <p class='related'>See: <a href='#splunkjs.Service.Properties'>splunkjs.Service.Properties</a></p>
                 </header>
               <section class='params'>
-                                  <h4>Params</h4>
                 <ul>
-                                      <li><span class="bold">options</span> - <span class="em">Object</span> <p>Dictionary of collection filtering and pagination options</p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -3357,9 +3351,9 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L201">lib/service.js:201</a>)</h4>
-                <pre><code>properties: function(options) {
-    return new root.Properties(this, options);
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L197">lib/service.js:197</a>)</h4>
+                <pre><code>properties: function() {
+    return new root.Properties(this);
 },</code></pre>
               </section>
               
@@ -3375,7 +3369,6 @@ var toString = Object.prototype.toString;</code></pre>
               <section class='params'>
                                   <h4>Params</h4>
                 <ul>
-                                      <li><span class="bold">options</span> - <span class="em">Object</span> <p>Dictionary of collection filtering and pagination options</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
                   </ul>
               </section>
@@ -3395,9 +3388,9 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L227">lib/service.js:227</a>)</h4>
-                <pre><code>savedSearches: function(options, namespace) {
-    return new root.SavedSearches(this, options, namespace);
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L222">lib/service.js:222</a>)</h4>
+                <pre><code>savedSearches: function(namespace) {
+    return new root.SavedSearches(this, namespace);
 },</code></pre>
               </section>
               
@@ -3413,7 +3406,6 @@ var toString = Object.prototype.toString;</code></pre>
               <section class='params'>
                                   <h4>Params</h4>
                 <ul>
-                                      <li><span class="bold">options</span> - <span class="em">Object</span> <p>Dictionary of collection filtering and pagination options</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
                   </ul>
               </section>
@@ -3436,9 +3428,9 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L256">lib/service.js:256</a>)</h4>
-                <pre><code>jobs: function(options, namespace) {
-    return new root.Jobs(this, options, namespace);  
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L250">lib/service.js:250</a>)</h4>
+                <pre><code>jobs: function(namespace) {
+    return new root.Jobs(this, namespace);  
 },</code></pre>
               </section>
               
@@ -3452,9 +3444,7 @@ var toString = Object.prototype.toString;</code></pre>
                                   <p class='related'>See: <a href='#splunkjs.Service.Users'>splunkjs.Service.Users</a></p>
                 </header>
               <section class='params'>
-                                  <h4>Params</h4>
                 <ul>
-                                      <li><span class="bold">options</span> - <span class="em">Object</span> <p>Dictionary of collection filtering and pagination options</p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -3476,9 +3466,9 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L284">lib/service.js:284</a>)</h4>
-                <pre><code>users: function(options) {
-    return new root.Users(this, options);  
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L277">lib/service.js:277</a>)</h4>
+                <pre><code>users: function() {
+    return new root.Users(this);  
 },</code></pre>
               </section>
               
@@ -3494,7 +3484,6 @@ var toString = Object.prototype.toString;</code></pre>
               <section class='params'>
                                   <h4>Params</h4>
                 <ul>
-                                      <li><span class="bold">options</span> - <span class="em">Object</span> <p>Dictionary of collection filtering and pagination options</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
                   </ul>
               </section>
@@ -3517,9 +3506,9 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L313">lib/service.js:313</a>)</h4>
-                <pre><code>views: function(options, namespace) {
-    return new root.Views(this, options, namespace);  
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L305">lib/service.js:305</a>)</h4>
+                <pre><code>views: function(namespace) {
+    return new root.Views(this, namespace);  
 },</code></pre>
               </section>
               
@@ -3552,7 +3541,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L336">lib/service.js:336</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L328">lib/service.js:328</a>)</h4>
                 <pre><code>search: function(query, params, namespace, callback) {
     if (!callback &amp;&amp; utils.isFunction(namespace)) {
         callback = namespace;
@@ -3593,7 +3582,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L365">lib/service.js:365</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L357">lib/service.js:357</a>)</h4>
                 <pre><code>oneshotSearch: function(query, params, namespace, callback) {
     if (!callback &amp;&amp; utils.isFunction(namespace)) {
         callback = namespace;
@@ -3631,7 +3620,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L391">lib/service.js:391</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L383">lib/service.js:383</a>)</h4>
                 <pre><code>currentUser: function(callback) {
         var that = this;
         return this.get(Paths.currentUser, {}, function(err, response) {
@@ -3873,7 +3862,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.Endpoint</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L429">lib/service.js:429</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L421">lib/service.js:421</a>)</h4>
                 <pre><code>init: function(service, path) {
     if (!service) {
         throw new Error("Passed in a null Service.");
@@ -3917,7 +3906,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L465">lib/service.js:465</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L457">lib/service.js:457</a>)</h4>
                 <pre><code>get: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -3960,7 +3949,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L499">lib/service.js:499</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L491">lib/service.js:491</a>)</h4>
                 <pre><code>post: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -4003,7 +3992,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L533">lib/service.js:533</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L525">lib/service.js:525</a>)</h4>
                 <pre><code>del: function(relpath, params, callback) {
         var url = this.path;
         // If we have a relative path, we will append it with a preceding
@@ -4054,7 +4043,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.Resource</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L574">lib/service.js:574</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L566">lib/service.js:566</a>)</h4>
                 <pre><code>init: function(service, path, namespace) {
     var fullpath = service.fullpath(path, namespace);
     
@@ -4090,7 +4079,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Load the resource, also storing the properties.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L597">lib/service.js:597</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L589">lib/service.js:589</a>)</h4>
                 <pre><code>_load: function(properties) {
     this._properties = properties || {};
 },</code></pre>
@@ -4116,7 +4105,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will unconditionally refresh the object from the server and load it up.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L612">lib/service.js:612</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L604">lib/service.js:604</a>)</h4>
                 <pre><code>refresh: function(callback) {
     throw new Error("MUST BE OVERRIDDEN");
 },</code></pre>
@@ -4142,7 +4131,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will retrieve the current properties for this resource.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L626">lib/service.js:626</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L618">lib/service.js:618</a>)</h4>
                 <pre><code>properties: function(callback) {
         return this._properties;
     }
@@ -4316,7 +4305,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.Entity</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L655">lib/service.js:655</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L647">lib/service.js:647</a>)</h4>
                 <pre><code>init: function(service, path, namespace) {
     this._super(service, path, namespace);
     
@@ -4352,7 +4341,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Load the resource, also storing the properties.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L678">lib/service.js:678</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L670">lib/service.js:670</a>)</h4>
                 <pre><code>_load: function(properties) {
     properties = utils.isArray(properties) ? properties[0] : properties;
     
@@ -4380,7 +4369,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will unconditionally refresh the object from the server and load it up.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L694">lib/service.js:694</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L686">lib/service.js:686</a>)</h4>
                 <pre><code>refresh: function(callback) {
     callback = callback || function() {};
     
@@ -4417,7 +4406,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will tell the server to delete this entity.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L719">lib/service.js:719</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L711">lib/service.js:711</a>)</h4>
                 <pre><code>remove: function(callback) {
     callback = callback || function() {};
     
@@ -4449,7 +4438,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will update the entity on the server.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L739">lib/service.js:739</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L731">lib/service.js:731</a>)</h4>
                 <pre><code>update: function(props, callback) {
         callback = callback || function() {};
         
@@ -4654,7 +4643,6 @@ var toString = Object.prototype.toString;</code></pre>
                 <ul>
                                       <li><span class="bold">service</span> - <span class="em">splunkjs.Service</span> <p>A service instance</p></li>
                                       <li><span class="bold">path</span> - <span class="em">String</span> <p>A relative endpoint path (e.g. 'search/jobs')</p></li>
-                                      <li><span class="bold">options</span> - <span class="em">Object</span> <p>Dictionary of collection filtering and pagination options</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information for this collection (owner, app, sharing)</p></li>
                                       <li><span class="bold">handlers</span> - <span class="em">Object</span> <p>A dictionary of functions to perform specialized operations: item, isSame, loadOnCreate, loadOnItem</p></li>
                   </ul>
@@ -4667,10 +4655,9 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.Collection</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L785">lib/service.js:785</a>)</h4>
-                <pre><code>init: function(service, path, options, namespace, handlers) {
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L776">lib/service.js:776</a>)</h4>
+                <pre><code>init: function(service, path, namespace, handlers) {
     this._super(service, path, namespace);
-    this._options = options;
     
     // We perform the bindings so that every function works 
     // properly when it is passed as a callback.
@@ -4722,7 +4709,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will load the properties as well as create a map between entity names to entity IDs (for retrieval purposes).</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L829">lib/service.js:829</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L819">lib/service.js:819</a>)</h4>
                 <pre><code>_load: function(properties) {
     this._super(properties);
     
@@ -4757,6 +4744,7 @@ var toString = Object.prototype.toString;</code></pre>
               <section class='params'>
                                   <h4>Params</h4>
                 <ul>
+                                      <li><span class="bold">options</span> - <span class="em">Object</span> <p>Dictionary of collection filtering and pagination options</p></li>
                                       <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback when the object is retrieved: <code>(err, resource)</code></p></li>
                   </ul>
               </section>
@@ -4767,11 +4755,15 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will unconditionally refresh the object from the server and load it up.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L862">lib/service.js:862</a>)</h4>
-                <pre><code>refresh: function(callback) {
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L853">lib/service.js:853</a>)</h4>
+                <pre><code>refresh: function(options, callback) {
+    if (!callback &amp;&amp; utils.isFunction(options)) {
+        callback = options;
+        options = {};
+    }
     callback = callback || function() {};
     
-    var options = this._options || {};
+    var options = options || {};
     if (!options.count) {
         options.count = 0;
     }
@@ -4816,7 +4808,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L900">lib/service.js:900</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L895">lib/service.js:895</a>)</h4>
                 <pre><code>item: function(name, namespace) {    
     return this.contains(name, namespace);     
 },</code></pre>
@@ -4848,7 +4840,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L922">lib/service.js:922</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L917">lib/service.js:917</a>)</h4>
                 <pre><code>create: function(params, callback) {
     callback = callback || function() {};
     
@@ -4900,7 +4892,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L962">lib/service.js:962</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L957">lib/service.js:957</a>)</h4>
                 <pre><code>list: function(callback) {
     callback = callback || function() {};
     
@@ -4937,7 +4929,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L989">lib/service.js:989</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L984">lib/service.js:984</a>)</h4>
                 <pre><code>contains: function(id, namespace) {                
         if (utils.isEmpty(namespace)) {
             namespace = null;
@@ -5177,7 +5169,6 @@ var toString = Object.prototype.toString;</code></pre>
                                   <h4>Params</h4>
                 <ul>
                                       <li><span class="bold">service</span> - <span class="em">splunkjs.Service</span> <p>A service instance</p></li>
-                                      <li><span class="bold">options</span> - <span class="em">Object</span> <p>Dictionary of collection filtering and pagination options</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
                   </ul>
               </section>
@@ -5189,9 +5180,9 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.SavedSearches</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1069">lib/service.js:1069</a>)</h4>
-                <pre><code>init: function(service, options, namespace) {
-        this._super(service, Paths.savedSearches, options, namespace, {
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1063">lib/service.js:1063</a>)</h4>
+                <pre><code>init: function(service, namespace) {
+        this._super(service, Paths.savedSearches, namespace, {
             item: function(collection, props) { 
                 var entityNamespace = utils.namespaceFromProperties(props);
                 return new root.SavedSearch(collection.service, props.name, entityNamespace);
@@ -5214,6 +5205,7 @@ var toString = Object.prototype.toString;</code></pre>
               <section class='params'>
                                   <h4>Params</h4>
                 <ul>
+                                      <li><span class="bold">options</span> - <span class="em">Object</span> <p>Dictionary of collection filtering and pagination options</p></li>
                                       <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback when the object is retrieved: <code>(err, resource)</code></p></li>
                   </ul>
               </section>
@@ -5225,10 +5217,14 @@ var toString = Object.prototype.toString;</code></pre>
               </section>
               <section class='source'>
                 <h4>Source</h4>
-                <pre><code>refresh: function(callback) {
+                <pre><code>refresh: function(options, callback) {
+    if (!callback &amp;&amp; utils.isFunction(options)) {
+        callback = options;
+        options = {};
+    }
     callback = callback || function() {};
     
-    var options = this._options || {};
+    var options = options || {};
     if (!options.count) {
         options.count = 0;
     }
@@ -5643,7 +5639,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.SavedSearch</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1101">lib/service.js:1101</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1095">lib/service.js:1095</a>)</h4>
                 <pre><code>init: function(service, name, namespace) {
     this.name = name;
     this._super(service, Paths.savedSearches + "/" + encodeURIComponent(name), namespace);
@@ -5681,7 +5677,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1126">lib/service.js:1126</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1120">lib/service.js:1120</a>)</h4>
                 <pre><code>acknowledge: function(callback) {
     callback = callback || function() {};
     
@@ -5720,7 +5716,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1152">lib/service.js:1152</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1146">lib/service.js:1146</a>)</h4>
                 <pre><code>dispatch: function(callback) {
     callback = callback || function() {};
     
@@ -5759,7 +5755,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1178">lib/service.js:1178</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1172">lib/service.js:1172</a>)</h4>
                 <pre><code>history: function(callback) {
     callback = callback || function() {};
     
@@ -5796,7 +5792,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1202">lib/service.js:1202</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1196">lib/service.js:1196</a>)</h4>
                 <pre><code>suppressInfo: function(callback) {
     callback = callback || function() {};
     
@@ -5828,7 +5824,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will update the saved search on the server. Because saved searches require the presence of the search parameter, even if it is not being modified, the SDK will fetch it from the server (or from the local cache) if it is not present in the user-supplied input.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1224">lib/service.js:1224</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1218">lib/service.js:1218</a>)</h4>
                 <pre><code>update: function(params, callback) {
         params = params || {};
         
@@ -6127,7 +6123,6 @@ var toString = Object.prototype.toString;</code></pre>
                                   <h4>Params</h4>
                 <ul>
                                       <li><span class="bold">service</span> - <span class="em">splunkjs.Service</span> <p>A service instance</p></li>
-                                      <li><span class="bold">options</span> - <span class="em">Object</span> <p>Dictionary of collection filtering and pagination options</p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -6138,9 +6133,9 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.Applications</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1266">lib/service.js:1266</a>)</h4>
-                <pre><code>init: function(service, options) {
-        this._super(service, Paths.apps, options, {}, {
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1259">lib/service.js:1259</a>)</h4>
+                <pre><code>init: function(service) {
+        this._super(service, Paths.apps, {}, {
             item: function(collection, props) {
                 return new root.Application(collection.service, props.name, {});
             }
@@ -6162,6 +6157,7 @@ var toString = Object.prototype.toString;</code></pre>
               <section class='params'>
                                   <h4>Params</h4>
                 <ul>
+                                      <li><span class="bold">options</span> - <span class="em">Object</span> <p>Dictionary of collection filtering and pagination options</p></li>
                                       <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback when the object is retrieved: <code>(err, resource)</code></p></li>
                   </ul>
               </section>
@@ -6173,10 +6169,14 @@ var toString = Object.prototype.toString;</code></pre>
               </section>
               <section class='source'>
                 <h4>Source</h4>
-                <pre><code>refresh: function(callback) {
+                <pre><code>refresh: function(options, callback) {
+    if (!callback &amp;&amp; utils.isFunction(options)) {
+        callback = options;
+        options = {};
+    }
     callback = callback || function() {};
     
-    var options = this._options || {};
+    var options = options || {};
     if (!options.count) {
         options.count = 0;
     }
@@ -6590,7 +6590,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.Application</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1296">lib/service.js:1296</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1289">lib/service.js:1289</a>)</h4>
                 <pre><code>init: function(service, name) {
     this.name = name;
     this._super(service, Paths.apps + "/" + encodeURIComponent(name), {});
@@ -6629,7 +6629,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1322">lib/service.js:1322</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1315">lib/service.js:1315</a>)</h4>
                 <pre><code>setupInfo: function(callback) {
     callback = callback || function() {};
     
@@ -6671,7 +6671,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1351">lib/service.js:1351</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1344">lib/service.js:1344</a>)</h4>
                 <pre><code>updateInfo: function(callback) {
         callback = callback || function() {};
         
@@ -7007,7 +7007,6 @@ var toString = Object.prototype.toString;</code></pre>
                                   <h4>Params</h4>
                 <ul>
                                       <li><span class="bold">service</span> - <span class="em">splunkjs.Service</span> <p>A service instance</p></li>
-                                      <li><span class="bold">options</span> - <span class="em">Object</span> <p>Dictionary of collection filtering and pagination options</p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -7018,9 +7017,9 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.Users</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1387">lib/service.js:1387</a>)</h4>
-                <pre><code>init: function(service, options) {
-    this._super(service, Paths.users, options, {}, {
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1379">lib/service.js:1379</a>)</h4>
+                <pre><code>init: function(service) {
+    this._super(service, Paths.users, {}, {
         item: function(collection, props) {
             return new root.User(collection.service, props.name, {});
         }
@@ -7049,7 +7048,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>The User endpoint is broken for creates, so we have to have a special-case implementation.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1406">lib/service.js:1406</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1398">lib/service.js:1398</a>)</h4>
                 <pre><code>create: function(params, callback) {
         callback = callback || function() {};
         
@@ -7086,6 +7085,7 @@ var toString = Object.prototype.toString;</code></pre>
               <section class='params'>
                                   <h4>Params</h4>
                 <ul>
+                                      <li><span class="bold">options</span> - <span class="em">Object</span> <p>Dictionary of collection filtering and pagination options</p></li>
                                       <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback when the object is retrieved: <code>(err, resource)</code></p></li>
                   </ul>
               </section>
@@ -7097,10 +7097,14 @@ var toString = Object.prototype.toString;</code></pre>
               </section>
               <section class='source'>
                 <h4>Source</h4>
-                <pre><code>refresh: function(callback) {
+                <pre><code>refresh: function(options, callback) {
+    if (!callback &amp;&amp; utils.isFunction(options)) {
+        callback = options;
+        options = {};
+    }
     callback = callback || function() {};
     
-    var options = this._options || {};
+    var options = options || {};
     if (!options.count) {
         options.count = 0;
     }
@@ -7463,7 +7467,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.User</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1449">lib/service.js:1449</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1441">lib/service.js:1441</a>)</h4>
                 <pre><code>init: function(service, name) {
         this.name = name;
         this._super(service, Paths.users + "/" + encodeURIComponent(name), {});
@@ -7790,7 +7794,6 @@ var toString = Object.prototype.toString;</code></pre>
                                   <h4>Params</h4>
                 <ul>
                                       <li><span class="bold">service</span> - <span class="em">splunkjs.Service</span> <p>A service instance</p></li>
-                                      <li><span class="bold">options</span> - <span class="em">Object</span> <p>Dictionary of collection filtering and pagination options</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
                   </ul>
               </section>
@@ -7802,9 +7805,9 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.Views</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1477">lib/service.js:1477</a>)</h4>
-                <pre><code>init: function(service, options, namespace) {
-        this._super(service, Paths.views, options, namespace, {
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1468">lib/service.js:1468</a>)</h4>
+                <pre><code>init: function(service, namespace) {
+        this._super(service, Paths.views, namespace, {
             item: function(collection, props) {
                 var entityNamespace = utils.namespaceFromProperties(props);
                 return new root.View(collection.service, props.name, entityNamespace);
@@ -7827,6 +7830,7 @@ var toString = Object.prototype.toString;</code></pre>
               <section class='params'>
                                   <h4>Params</h4>
                 <ul>
+                                      <li><span class="bold">options</span> - <span class="em">Object</span> <p>Dictionary of collection filtering and pagination options</p></li>
                                       <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback when the object is retrieved: <code>(err, resource)</code></p></li>
                   </ul>
               </section>
@@ -7838,10 +7842,14 @@ var toString = Object.prototype.toString;</code></pre>
               </section>
               <section class='source'>
                 <h4>Source</h4>
-                <pre><code>refresh: function(callback) {
+                <pre><code>refresh: function(options, callback) {
+    if (!callback &amp;&amp; utils.isFunction(options)) {
+        callback = options;
+        options = {};
+    }
     callback = callback || function() {};
     
-    var options = this._options || {};
+    var options = options || {};
     if (!options.count) {
         options.count = 0;
     }
@@ -8256,7 +8264,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.View</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1509">lib/service.js:1509</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1500">lib/service.js:1500</a>)</h4>
                 <pre><code>init: function(service, name, namespace) {
         this.name = name;
         this._super(service, Paths.views + "/" + encodeURIComponent(name), namespace);
@@ -8583,7 +8591,6 @@ var toString = Object.prototype.toString;</code></pre>
                                   <h4>Params</h4>
                 <ul>
                                       <li><span class="bold">service</span> - <span class="em">splunkjs.Service</span> <p>A service instance</p></li>
-                                      <li><span class="bold">options</span> - <span class="em">Object</span> <p>Dictionary of collection filtering and pagination options</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
                   </ul>
               </section>
@@ -8595,9 +8602,9 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.Indexes</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1537">lib/service.js:1537</a>)</h4>
-                <pre><code>init: function(service, options, namespace) {
-    this._super(service, Paths.indexes, options, namespace, {
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1527">lib/service.js:1527</a>)</h4>
+                <pre><code>init: function(service, namespace) {
+    this._super(service, Paths.indexes, namespace, {
         item: function(collection, props) {
             var entityNamespace = utils.namespaceFromProperties(props);
             return new root.Index(collection.service, props.name, entityNamespace);  
@@ -8637,7 +8644,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1567">lib/service.js:1567</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1557">lib/service.js:1557</a>)</h4>
                 <pre><code>create: function(name, params, callback) {
         // If someone called us with the default style of (params, callback),
         // lets make it work
@@ -8668,6 +8675,7 @@ var toString = Object.prototype.toString;</code></pre>
               <section class='params'>
                                   <h4>Params</h4>
                 <ul>
+                                      <li><span class="bold">options</span> - <span class="em">Object</span> <p>Dictionary of collection filtering and pagination options</p></li>
                                       <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback when the object is retrieved: <code>(err, resource)</code></p></li>
                   </ul>
               </section>
@@ -8679,10 +8687,14 @@ var toString = Object.prototype.toString;</code></pre>
               </section>
               <section class='source'>
                 <h4>Source</h4>
-                <pre><code>refresh: function(callback) {
+                <pre><code>refresh: function(options, callback) {
+    if (!callback &amp;&amp; utils.isFunction(options)) {
+        callback = options;
+        options = {};
+    }
     callback = callback || function() {};
     
-    var options = this._options || {};
+    var options = options || {};
     if (!options.count) {
         options.count = 0;
     }
@@ -9046,7 +9058,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.Index</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1605">lib/service.js:1605</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1595">lib/service.js:1595</a>)</h4>
                 <pre><code>init: function(service, name, namespace) {
     this.name = name;
     this._super(service, Paths.indexes + "/" + encodeURIComponent(name), namespace);
@@ -9083,7 +9095,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1629">lib/service.js:1629</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1619">lib/service.js:1619</a>)</h4>
                 <pre><code>submitEvent: function(event, params, callback) {
         callback = callback || function() {};
         params = params || {};
@@ -9434,7 +9446,6 @@ var toString = Object.prototype.toString;</code></pre>
                                   <h4>Params</h4>
                 <ul>
                                       <li><span class="bold">service</span> - <span class="em">splunkjs.Service</span> <p>A service instance</p></li>
-                                      <li><span class="bold">options</span> - <span class="em">Object</span> <p>Dictionary of collection filtering and pagination options</p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -9445,13 +9456,13 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.Properties</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1680">lib/service.js:1680</a>)</h4>
-                <pre><code>init: function(service, options) {
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1669">lib/service.js:1669</a>)</h4>
+                <pre><code>init: function(service) {
     var namespace = {owner: "-", app: "-"};
-    this._super(service, Paths.properties, options, namespace, {
+    this._super(service, Paths.properties, namespace, {
         item: function(collection, props) {
             var name = props.name;
-            return new root.PropertyFile(collection.service, name, options);
+            return new root.PropertyFile(collection.service, name);
         },
         loadOnItem: function() { return false; }
     });  
@@ -9485,7 +9496,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1707">lib/service.js:1707</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1696">lib/service.js:1696</a>)</h4>
                 <pre><code>create: function(filename, callback) {
         // If someone called us with the default style of (params, callback),
         // lets make it work
@@ -9522,6 +9533,7 @@ var toString = Object.prototype.toString;</code></pre>
               <section class='params'>
                                   <h4>Params</h4>
                 <ul>
+                                      <li><span class="bold">options</span> - <span class="em">Object</span> <p>Dictionary of collection filtering and pagination options</p></li>
                                       <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback when the object is retrieved: <code>(err, resource)</code></p></li>
                   </ul>
               </section>
@@ -9533,10 +9545,14 @@ var toString = Object.prototype.toString;</code></pre>
               </section>
               <section class='source'>
                 <h4>Source</h4>
-                <pre><code>refresh: function(callback) {
+                <pre><code>refresh: function(options, callback) {
+    if (!callback &amp;&amp; utils.isFunction(options)) {
+        callback = options;
+        options = {};
+    }
     callback = callback || function() {};
     
-    var options = this._options || {};
+    var options = options || {};
     if (!options.count) {
         options.count = 0;
     }
@@ -9888,7 +9904,6 @@ var toString = Object.prototype.toString;</code></pre>
                                   <h4>Params</h4>
                 <ul>
                                       <li><span class="bold">service</span> - <span class="em">splunkjs.Service</span> <p>A service instance</p></li>
-                                      <li><span class="bold">options</span> - <span class="em">Object</span> <p>Dictionary of collection filtering and pagination options</p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -9899,14 +9914,14 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.PropertyFile</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1750">lib/service.js:1750</a>)</h4>
-                <pre><code>init: function(service, name, options) {
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1738">lib/service.js:1738</a>)</h4>
+                <pre><code>init: function(service, name) {
     this.name = name;
     
     // We always enforce the "globalness" of properties
     var namespace = {owner: "-", app: "-"};
     
-    this._super(service, Paths.properties + "/" + encodeURIComponent(name), options, namespace, {
+    this._super(service, Paths.properties + "/" + encodeURIComponent(name), namespace, {
         item: function(collection, props) {
             var name = props.name;
             return new root.PropertyStanza(collection.service, collection.name, name);
@@ -9943,7 +9958,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1781">lib/service.js:1781</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1769">lib/service.js:1769</a>)</h4>
                 <pre><code>create: function(stanzaName, callback) {
         // If someone called us with the default style of (params, callback),
         // lets make it work
@@ -9980,6 +9995,7 @@ var toString = Object.prototype.toString;</code></pre>
               <section class='params'>
                                   <h4>Params</h4>
                 <ul>
+                                      <li><span class="bold">options</span> - <span class="em">Object</span> <p>Dictionary of collection filtering and pagination options</p></li>
                                       <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback when the object is retrieved: <code>(err, resource)</code></p></li>
                   </ul>
               </section>
@@ -9991,10 +10007,14 @@ var toString = Object.prototype.toString;</code></pre>
               </section>
               <section class='source'>
                 <h4>Source</h4>
-                <pre><code>refresh: function(callback) {
+                <pre><code>refresh: function(options, callback) {
+    if (!callback &amp;&amp; utils.isFunction(options)) {
+        callback = options;
+        options = {};
+    }
     callback = callback || function() {};
     
-    var options = this._options || {};
+    var options = options || {};
     if (!options.count) {
         options.count = 0;
     }
@@ -10357,7 +10377,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.PropertyStanza</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1824">lib/service.js:1824</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1812">lib/service.js:1812</a>)</h4>
                 <pre><code>init: function(service, file, name) {
         this.name = name;
         // We always enforce the "globalness" of properties
@@ -10690,7 +10710,6 @@ var toString = Object.prototype.toString;</code></pre>
                                   <h4>Params</h4>
                 <ul>
                                       <li><span class="bold">service</span> - <span class="em">splunkjs.Service</span> <p>A service instance</p></li>
-                                      <li><span class="bold">options</span> - <span class="em">Object</span> <p>Dictionary of collection filtering and pagination options</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
                   </ul>
               </section>
@@ -10702,13 +10721,13 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.Configurations</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1858">lib/service.js:1858</a>)</h4>
-                <pre><code>init: function(service, options, namespace) {
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1845">lib/service.js:1845</a>)</h4>
+                <pre><code>init: function(service, namespace) {
     if (!namespace || namespace.owner === "-" || namespace.app === "-") {
         throw new Error("Configurations requires a non-wildcard owner/app");
     }
     
-    this._super(service, Paths.properties, options, namespace, {
+    this._super(service, Paths.properties, namespace, {
         item: function(collection, props) {
             var name = props.name;
             return new root.ConfigurationFile(collection.service, name, {}, namespace);
@@ -10753,7 +10772,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1896">lib/service.js:1896</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1883">lib/service.js:1883</a>)</h4>
                 <pre><code>create: function(filename, callback) {
         // If someone called us with the default style of (params, callback),
         // lets make it work
@@ -10790,6 +10809,7 @@ var toString = Object.prototype.toString;</code></pre>
               <section class='params'>
                                   <h4>Params</h4>
                 <ul>
+                                      <li><span class="bold">options</span> - <span class="em">Object</span> <p>Dictionary of collection filtering and pagination options</p></li>
                                       <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback when the object is retrieved: <code>(err, resource)</code></p></li>
                   </ul>
               </section>
@@ -10801,10 +10821,14 @@ var toString = Object.prototype.toString;</code></pre>
               </section>
               <section class='source'>
                 <h4>Source</h4>
-                <pre><code>refresh: function(callback) {
+                <pre><code>refresh: function(options, callback) {
+    if (!callback &amp;&amp; utils.isFunction(options)) {
+        callback = options;
+        options = {};
+    }
     callback = callback || function() {};
     
-    var options = this._options || {};
+    var options = options || {};
     if (!options.count) {
         options.count = 0;
     }
@@ -11156,7 +11180,6 @@ var toString = Object.prototype.toString;</code></pre>
                                   <h4>Params</h4>
                 <ul>
                                       <li><span class="bold">service</span> - <span class="em">splunkjs.Service</span> <p>A service instance</p></li>
-                                      <li><span class="bold">options</span> - <span class="em">Object</span> <p>Dictionary of collection filtering and pagination options</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
                   </ul>
               </section>
@@ -11168,11 +11191,11 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.ConfigurationFile</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1940">lib/service.js:1940</a>)</h4>
-                <pre><code>init: function(service, name, options, namespace) {
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1926">lib/service.js:1926</a>)</h4>
+                <pre><code>init: function(service, name, namespace) {
     this.name = name;
     var path = Paths.configurations + "/conf-" + encodeURIComponent(name);
-    this._super(service, path, options, namespace, {
+    this._super(service, path, namespace, {
         item: function(collection, props) {
             var name = props.name;
             var entityNamespace = utils.namespaceFromProperties(props);
@@ -11211,7 +11234,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1970">lib/service.js:1970</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1956">lib/service.js:1956</a>)</h4>
                 <pre><code>create: function(stanzaName, values, callback) {
         // If someone called us with the default style of (params, callback),
         // lets make it work
@@ -11247,6 +11270,7 @@ var toString = Object.prototype.toString;</code></pre>
               <section class='params'>
                                   <h4>Params</h4>
                 <ul>
+                                      <li><span class="bold">options</span> - <span class="em">Object</span> <p>Dictionary of collection filtering and pagination options</p></li>
                                       <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback when the object is retrieved: <code>(err, resource)</code></p></li>
                   </ul>
               </section>
@@ -11258,10 +11282,14 @@ var toString = Object.prototype.toString;</code></pre>
               </section>
               <section class='source'>
                 <h4>Source</h4>
-                <pre><code>refresh: function(callback) {
+                <pre><code>refresh: function(options, callback) {
+    if (!callback &amp;&amp; utils.isFunction(options)) {
+        callback = options;
+        options = {};
+    }
     callback = callback || function() {};
     
-    var options = this._options || {};
+    var options = options || {};
     if (!options.count) {
         options.count = 0;
     }
@@ -11625,7 +11653,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.ConfigurationStanza</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2013">lib/service.js:2013</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1999">lib/service.js:1999</a>)</h4>
                 <pre><code>init: function(service, file, name, namespace) {
         this.name = name;
         this._super(service, Paths.configurations + "/conf-" + encodeURIComponent(file) + "/" + encodeURIComponent(name), namespace);
@@ -11952,7 +11980,6 @@ var toString = Object.prototype.toString;</code></pre>
                                   <h4>Params</h4>
                 <ul>
                                       <li><span class="bold">service</span> - <span class="em">splunkjs.Service</span> <p>A service instance</p></li>
-                                      <li><span class="bold">options</span> - <span class="em">Object</span> <p>Dictionary of collection filtering and pagination options</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
                   </ul>
               </section>
@@ -11964,9 +11991,9 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.Jobs</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2041">lib/service.js:2041</a>)</h4>
-                <pre><code>init: function(service, options, namespace) {
-    this._super(service, Paths.jobs, options, namespace, {
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2026">lib/service.js:2026</a>)</h4>
+                <pre><code>init: function(service, namespace) {
+    this._super(service, Paths.jobs, namespace, {
         item: function(collection, props) {
             var sid = props.content.sid;
             var entityNamespace = utils.namespaceFromProperties(props);
@@ -12002,7 +12029,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Create an asyncronous search job</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2066">lib/service.js:2066</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2051">lib/service.js:2051</a>)</h4>
                 <pre><code>create: function(query, params, callback) {
     // If someone called us with the default style of (params, callback),
     // lets make it work
@@ -12067,7 +12094,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2122">lib/service.js:2122</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2107">lib/service.js:2107</a>)</h4>
                 <pre><code>search: function(query, params, callback) {
     return this.create(query, params, callback);
 },</code></pre>
@@ -12102,7 +12129,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2145">lib/service.js:2145</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2130">lib/service.js:2130</a>)</h4>
                 <pre><code>oneshotSearch: function(query, params, callback) {
         // If someone called us with the default style of (params, callback),
         // lets make it work
@@ -12146,6 +12173,7 @@ var toString = Object.prototype.toString;</code></pre>
               <section class='params'>
                                   <h4>Params</h4>
                 <ul>
+                                      <li><span class="bold">options</span> - <span class="em">Object</span> <p>Dictionary of collection filtering and pagination options</p></li>
                                       <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback when the object is retrieved: <code>(err, resource)</code></p></li>
                   </ul>
               </section>
@@ -12157,10 +12185,14 @@ var toString = Object.prototype.toString;</code></pre>
               </section>
               <section class='source'>
                 <h4>Source</h4>
-                <pre><code>refresh: function(callback) {
+                <pre><code>refresh: function(options, callback) {
+    if (!callback &amp;&amp; utils.isFunction(options)) {
+        callback = options;
+        options = {};
+    }
     callback = callback || function() {};
     
-    var options = this._options || {};
+    var options = options || {};
     if (!options.count) {
         options.count = 0;
     }
@@ -12524,7 +12556,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.Job</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2198">lib/service.js:2198</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2183">lib/service.js:2183</a>)</h4>
                 <pre><code>init: function(service, sid, namespace) {
     this._super(service, Paths.jobs + "/" + sid, namespace);
     this.sid = sid;
@@ -12575,7 +12607,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2237">lib/service.js:2237</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2222">lib/service.js:2222</a>)</h4>
                 <pre><code>cancel: function(callback) {
     var req = this.post("control", {action: "cancel"}, callback);
     
@@ -12609,7 +12641,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2258">lib/service.js:2258</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2243">lib/service.js:2243</a>)</h4>
                 <pre><code>disablePreview: function(callback) {
     callback = callback || function() {};
     
@@ -12648,7 +12680,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2284">lib/service.js:2284</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2269">lib/service.js:2269</a>)</h4>
                 <pre><code>enablePreview: function(callback) {
     callback = callback || function() {};
     
@@ -12689,7 +12721,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2313">lib/service.js:2313</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2298">lib/service.js:2298</a>)</h4>
                 <pre><code>events: function(params, callback) {
     callback = callback || function() {};
     
@@ -12731,7 +12763,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2342">lib/service.js:2342</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2327">lib/service.js:2327</a>)</h4>
                 <pre><code>finalize: function(callback) {
     callback = callback || function() {};
     
@@ -12770,7 +12802,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2368">lib/service.js:2368</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2353">lib/service.js:2353</a>)</h4>
                 <pre><code>pause: function(callback) {
     callback = callback || function() {};
     
@@ -12811,7 +12843,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2397">lib/service.js:2397</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2382">lib/service.js:2382</a>)</h4>
                 <pre><code>preview: function(params, callback) {
     callback = callback || function() {};
     
@@ -12855,7 +12887,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2429">lib/service.js:2429</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2414">lib/service.js:2414</a>)</h4>
                 <pre><code>results: function(params, callback) {
     callback = callback || function() {};
     
@@ -12897,7 +12929,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2458">lib/service.js:2458</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2443">lib/service.js:2443</a>)</h4>
                 <pre><code>searchlog: function(callback) {
     callback = callback || function() {};
     
@@ -12940,7 +12972,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2488">lib/service.js:2488</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2473">lib/service.js:2473</a>)</h4>
                 <pre><code>setPriority: function(value, callback) {
     callback = callback || function() {};
     
@@ -12980,7 +13012,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2515">lib/service.js:2515</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2500">lib/service.js:2500</a>)</h4>
                 <pre><code>setTTL: function(value, callback) {
     callback = callback || function() {};
     
@@ -13021,7 +13053,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2544">lib/service.js:2544</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2529">lib/service.js:2529</a>)</h4>
                 <pre><code>summary: function(params, callback) {
     callback = callback || function() {};
     
@@ -13064,7 +13096,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2574">lib/service.js:2574</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2559">lib/service.js:2559</a>)</h4>
                 <pre><code>timeline: function(params, callback) {
     callback = callback || function() {};
     
@@ -13106,7 +13138,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2603">lib/service.js:2603</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2588">lib/service.js:2588</a>)</h4>
                 <pre><code>touch: function(callback) {
     callback = callback || function() {};
     
@@ -13145,7 +13177,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2629">lib/service.js:2629</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2614">lib/service.js:2614</a>)</h4>
                 <pre><code>unpause: function(callback) {
             callback = callback || function() {};
             

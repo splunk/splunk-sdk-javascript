@@ -31,10 +31,10 @@
     var FLAGS_EVENTS = [
         "offset", "count", "earliest_time", "latest_time", "search",
         "time_format", "output_time_format", "field_list", "f", "max_lines",
-        "truncation_mode", "json_mode", "segmentation"
+        "truncation_mode", "output_mode", "segmentation"
     ];
     var FLAGS_RESULTS = [
-        "offset", "count", "search", "field_list", "f", "json_mode"
+        "offset", "count", "search", "field_list", "f", "output_mode"
     ];
     
     var printRows = function(data) {
@@ -170,11 +170,11 @@
                         return;
                     }
                     
-                    var json_mode = options.json_mode || "rows";
-                    if (json_mode === "rows") {
+                    var output_mode = options.output_mode || "rows";
+                    if (output_mode === "json_rows") {
                         printRows(data);
                     }
-                    else if (json_mode === "column") {
+                    else if (output_mode === "json_cols") {
                         console.log(data);
                         printCols(data);
                     }
@@ -267,11 +267,11 @@
                         return;
                     }
 
-                    var json_mode = options.json_mode || "rows";
-                    if (json_mode === "rows") {
+                    var output_mode = options.output_mode || "rows";
+                    if (output_mode === "json_rows") {
                         printRows(data);
                     }
-                    else if (json_mode === "column") {
+                    else if (output_mode === "json_cols") {
                         console.log(data);
                         printCols(data);
                     }
@@ -295,11 +295,11 @@
                         return;
                     }
                     
-                    var json_mode = options.json_mode || "rows";
-                    if (json_mode === "rows") {
+                    var output_mode = options.output_mode || "rows";
+                    if (output_mode === "json_rows") {
                         printRows(data);
                     }
-                    else if (json_mode === "column") {
+                    else if (output_mode === "json_cols") {
                         console.log(data);
                         printCols(data);
                     }

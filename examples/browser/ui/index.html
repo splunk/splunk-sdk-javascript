@@ -370,10 +370,10 @@ Async.chain([
   },
   // Get the final results data
   function(searcher, callback) {
-    searcher.job.results({json_mode: "column"}, callback);
+    searcher.job.results({output_mode: "json_cols"}, callback);
   },
   // Update the chart
-  function(results, job, callback) {  
+  function(results, job, callback) { 
     splunkjs.UI.ready(chartToken, function() {
       chart.setData(results, {
         "chart.stackMode": "stacked"

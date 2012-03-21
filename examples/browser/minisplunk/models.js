@@ -124,7 +124,7 @@ var Job = Backbone.Model.extend({
     
     var job = this;
     this.job.cancel(function(err) {
-      job.destroy();
+      job.collection.remove(job);
       callback();
     });
   },
@@ -149,7 +149,7 @@ var Jobs = Backbone.Collection.extend({
       return;
     }
     
-    var jobs = this;
+    var that = this;
     App.service().jobs().refresh(function(err, jobs) {
       var list = jobs.list();
       var models = [];
@@ -160,7 +160,7 @@ var Jobs = Backbone.Collection.extend({
         models.push(jobModel);
       }
       
-      jobs.reset(models);
+      that.reset(models);
       callback();
     });
   },

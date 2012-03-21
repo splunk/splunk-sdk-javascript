@@ -248,7 +248,9 @@ def job_data(request, data_source, *args, **kwargs):
                     
                 return status, xml2json.from_job_results(root, format=format)
             elif root.tag == 'timeline':
-                return status, xml2json.from_search_timeline(root)
+                foo = xml2json.from_search_timeline(root)
+                logger.info("FOO %s" % foo)
+                return status, foo
             elif root.tag == 'summary':
                 return status, xml2json.from_search_summary(root)
 
