@@ -19,9 +19,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-var sys = require('sys');
-var fs = require('fs');
-var path = require('path');
+var fs      = require("fs");
+var path    = require("path");
+var sys     = null;
+
+try {
+    sys = require("util");
+}
+catch(ex) {
+    sys = require("sys");
+}
 
 Handler = module.exports = function(rootPath) {
     this.rootPath = rootPath;
