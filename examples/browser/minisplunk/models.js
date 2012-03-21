@@ -150,7 +150,8 @@ var Jobs = Backbone.Collection.extend({
     }
     
     var jobs = this;
-    App.service().jobs().list(function(err, list) {
+    App.service().jobs().refresh(function(err, jobs) {
+      var list = jobs.list();
       var models = [];
       for(var i = 0; i < list.length; i++) {
         var job = list[i];

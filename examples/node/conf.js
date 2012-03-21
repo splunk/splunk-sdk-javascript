@@ -81,9 +81,10 @@
             var service = this.service;
             Async.chain([
                     function(done) {
-                        service.properties().list(done);
+                        service.properties().refresh(done);
                     },
-                    function(files, done) {
+                    function(props, done) {
+                        var files = props.list();
                         // Find all the files that match the pattern
                         var regex = new RegExp(pattern);
                         files = files.filter(function(file) {
@@ -131,16 +132,18 @@
             Async.chain([
                     function(done) {
                         var collection = options.global ? service.properties() : service.configurations({}, namespace);
-                        collection.contains(filename, namespace, done);
+                        collection.refresh(done);
                     },
-                    function(found, file, done) {
-                        if (!found) {
+                    function(collection, done) {
+                        var file = collection.contains(filename, namespace);
+                        if (!file) {
                             done("Could not find file '" + filename + "'");
                             return;
                         }
-                        file.list(done);
+                        file.refresh(done);
                     },
-                    function(stanzas, done) {
+                    function(file, done) {
+                        var stanzas = file.list();
                         // If there any stanzas, print their names
                         if (stanzas.length > 0) {
                             console.log("Stanzas for '" + filename + "': ");
@@ -183,17 +186,19 @@
             Async.chain([
                     function(done) {
                         var collection = options.global ? service.properties() : service.configurations({}, namespace);
-                        collection.contains(filename, namespace, done);
+                        collection.refresh(done);
                     },
-                    function(found, file, done) {
-                        if (!found) {
+                    function(collection, done) {
+                        var file = collection.contains(filename, namespace);
+                        if (!file) {
                             done("Could not find file: '" + filename + "'");
                             return;
                         }
-                        file.contains(stanzaName, done);  
+                        file.refresh(done);  
                     },
-                    function(found, stanza, done) {
-                        if (!found) {
+                    function(file, done) {
+                        var stanza = file.contains(stanzaName);
+                        if (!stanza) {
                             done("Could not find stanza '" + stanzaName + "' in file '" + filename + "'");
                             return;
                         }
@@ -250,17 +255,19 @@
             Async.chain([
                     function(done) {
                         var collection = options.global ? service.properties() : service.configurations({}, namespace);
-                        collection.contains(filename, namespace, done);
+                        collection.refresh(done);
                     },
-                    function(found, file, done) {
-                        if (!found) {
+                    function(collection, done) {
+                        var file = collection.contains(filename, namespace);
+                        if (!file) {
                             done("Could not find file: '" + filename + "'");
                             return;
                         }
-                        file.contains(stanzaName, done);  
+                        file.refresh(done);  
                     },
-                    function(found, stanza, done) {
-                        if (!found) {
+                    function(file, done) {
+                        var stanza = file.contains(stanzaName);
+                        if (!stanza) {
                             done("Could not find stanza '" + stanzaName + "' in file '" + filename + "'");
                             return;
                         }
@@ -308,13 +315,14 @@
             Async.chain([
                     function(done) {
                         collection = options.global ? service.properties() : service.configurations({}, namespace);
-                        collection.contains(filename, namespace, done);
+                        collection.refresh(done);
                     },
-                    function(found, file, done) {
+                    function(collection, done) {
+                        var file = collection.contains(filename, namespace);
+                        
                         // If we can't find the file, create it
-                        if (!found) {
+                        if (!file) {
                             collection.create(filename, function(err, file) {
-                    
                                 if (!err) {
                                     console.log("Created file '" + filename + "'");
                                 }
@@ -322,11 +330,11 @@
                                 // Don't do anything with the stanza if we 
                                 // didn't specify one
                                 if (stanzaName) {
-                                    done(null, null, null);
-                                    return;   
+                                    done(null, file);
+                                    return;
                                 }
                                 
-                                file.contains(stanzaName, done);
+                                file.refresh(done);
                             });
                             
                             return;
@@ -335,20 +343,21 @@
                         // Don't do anything with the stanza if we 
                         // didn't specify one
                         if (!stanzaName) {
-                            done(null, null, null);
+                            done(null, file);
                             return;
                         }
                         
-                        file.contains(stanzaName, done);
+                        file.refresh(done);
                     },
-                    function(found, stanza, done) {
+                    function(file, done) {
+                        var stanza = stanzaName ? file.contains(stanzaName) : null;
                         if (!stanzaName) {
-                            done(null, null);
+                            done(null, stanza);
                             return;
                         }
                         
                         // If we can't find the stanza, then create it
-                        if (!found) {
+                        if (!stanza) {
                             var file = options.global ?
                                 new splunkjs.Service.PropertyFile(service, filename) :
                                 new splunkjs.Service.ConfigurationFile(service, filename);
@@ -417,17 +426,19 @@
             Async.chain([
                     function(done) {
                         var collection = options.global ? service.properties() : service.configurations({}, namespace);
-                        collection.contains(filename, namespace, done);
+                        collection.refresh(done);
                     },
-                    function(found, file, done) {
-                        if (!found) {
+                    function(collection, done) {
+                        var file = collection.contains(filename, namespace);
+                        if (!file) {
                             done("Could not find file: '" + filename + "'");
                             return;
                         }
-                        file.contains(stanzaName, done);  
+                        file.refresh( done);
                     },
-                    function(found, stanza, done) {
-                        if (!found) {
+                    function(file, done) {
+                        var stanza = file.contains(stanzaName);
+                        if (!stanza) {
                             done("Could not find stanza '" + stanzaName + "' in file '" + filename + "'");
                             return;
                         }

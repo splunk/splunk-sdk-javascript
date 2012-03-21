@@ -711,6 +711,52 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     };
     
     /**
+     * Extend a given object with all the properties in passed-in objects
+     *
+     * Example:
+     *      
+     *      function() { 
+     *          console.log(splunkjs.Utils.extend({foo: "bar"}, {a: 2})); // {foo: "bar", a: 2}
+     *      }
+     *
+     * @param {Object} obj Object to extend
+     * @param {Object...} sources Sources to extend from
+     * @return {Object} The extended object
+     *
+     * @globals splunkjs.Utils
+     */
+    root.extend = function(obj) {
+        each(slice.call(arguments, 1), function(source) {
+            for (var prop in source) {
+                obj[prop] = source[prop];
+            }
+        });
+        return obj;
+    };
+  
+    /**
+     * Create a shallow-cloned copy of the object/array
+     *
+     * Example:
+     *      
+     *      function() { 
+     *          console.log(splunkjs.Utils.clone({foo: "bar"})); // {foo: "bar"}
+     *          console.log(splunkjs.Utils.clone([1,2,3])); // [1,2,3]
+     *      }
+     *
+     * @param {Object|Array} obj Object/array to clone
+     * @return {Object|Array} The cloned object/array
+     *
+     * @globals splunkjs.Utils
+     */
+    root.clone = function(obj) {
+        if (!root.isObject(obj)) {
+            return obj;
+        }
+        return root.isArray(obj) ? obj.slice() : root.extend({}, obj);
+    };
+    
+    /**
      * Extract namespace information from a properties dictionary
      *
      * @param {Object} props Properties dictionary

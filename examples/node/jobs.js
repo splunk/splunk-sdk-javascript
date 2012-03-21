@@ -90,13 +90,13 @@
             // we check whether it is the job we're looking for.
             // If it is, we wrap it up in a splunkjs.Job object, and invoke
             // our function on it.
-            var jobs = [];
-            this.service.jobs().list(function(err, list) {
-                list = list || [];
+            var jobsList = [];
+            this.service.jobs().refresh(function(err, jobs) {
+                list = jobs.list() || [];
                 for(var i = 0; i < list.length; i++) {
                     if (utils.contains(sids, list[i].sid)) {
                         var job = list[i];
-                        jobs.push(job);
+                        jobsList.push(job);
                     }
                 }
                 
@@ -215,13 +215,13 @@
             if (sids.length === 0) {
                 // If no job SIDs are provided, we list all jobs.
                 var jobs = this.service.jobs();
-                jobs.list(function(err, list) {
+                jobs.refresh(function(err, jobs) {
                     if (err) {
                         callback(err);
                         return;
                     }
                     
-                    list = list || [];
+                    list = jobs.list() || [];
                     for(var i = 0; i < list.length; i++) {
                         console.log("  Job " + (i + 1) + " sid: "+ list[i].sid);
                     }

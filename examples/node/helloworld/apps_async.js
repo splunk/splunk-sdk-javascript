@@ -49,13 +49,14 @@ exports.main = function(opts, callback) {
                     done("Error logging in");
                 }
                 
-                service.apps().list(done);
+                service.apps().refresh(done);
             },
             // Print them out
-            function(apps, done) {            
+            function(apps, done) {           
+                var appList = apps.list();
                 console.log("Applications:");
-                for(var i = 0; i < apps.length; i++) {
-                    var app = apps[i];
+                for(var i = 0; i < appList.length; i++) {
+                    var app = appList[i];
                     console.log("  App " + i + ": " + app.name);
                 } 
                 done();

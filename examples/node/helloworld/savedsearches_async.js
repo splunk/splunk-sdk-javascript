@@ -49,16 +49,17 @@ exports.main = function(opts, callback) {
                     done("Error logging in");
                 }
                 
-                service.savedSearches().list(done);
+                service.savedSearches().refresh(done);
             },
             // Print them out
             function(searches, done) {
+                var searchList = searches.list();
                 console.log("Saved searches:");
-                for(var i = 0; i < searches.length; i++) {
-                    var search = searches[i];
+                for(var i = 0; i < searchList.length; i++) {
+                    var search = searchList[i];
                     console.log("  Search " + i + ": " + search.name);
                     console.log("    " + search.properties().content.search);
-                } 
+                }
                 
                 done();
             }

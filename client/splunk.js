@@ -887,6 +887,52 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     };
     
     /**
+     * Extend a given object with all the properties in passed-in objects
+     *
+     * Example:
+     *      
+     *      function() { 
+     *          console.log(splunkjs.Utils.extend({foo: "bar"}, {a: 2})); // {foo: "bar", a: 2}
+     *      }
+     *
+     * @param {Object} obj Object to extend
+     * @param {Object...} sources Sources to extend from
+     * @return {Object} The extended object
+     *
+     * @globals splunkjs.Utils
+     */
+    root.extend = function(obj) {
+        each(slice.call(arguments, 1), function(source) {
+            for (var prop in source) {
+                obj[prop] = source[prop];
+            }
+        });
+        return obj;
+    };
+  
+    /**
+     * Create a shallow-cloned copy of the object/array
+     *
+     * Example:
+     *      
+     *      function() { 
+     *          console.log(splunkjs.Utils.clone({foo: "bar"})); // {foo: "bar"}
+     *          console.log(splunkjs.Utils.clone([1,2,3])); // [1,2,3]
+     *      }
+     *
+     * @param {Object|Array} obj Object/array to clone
+     * @return {Object|Array} The cloned object/array
+     *
+     * @globals splunkjs.Utils
+     */
+    root.clone = function(obj) {
+        if (!root.isObject(obj)) {
+            return obj;
+        }
+        return root.isArray(obj) ? obj.slice() : root.extend({}, obj);
+    };
+    
+    /**
      * Extract namespace information from a properties dictionary
      *
      * @param {Object} props Properties dictionary
@@ -1870,7 +1916,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // List installed apps
          *      var apps = svc.apps();
-         *      apps.list(function(err, list) { console.log(list); });
+         *      apps.refresh(function(err) { console.log(apps.list()); });
          *
          * @param {Object} options Dictionary of collection filtering and pagination options
          * @return {splunkjs.Service.Collection} The Applications collection
@@ -1921,8 +1967,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // Check if we have an _internal index
          *      var indexes = svc.configurations();
-         *      indexes.contains("_internal", function(err, found, index) {
-         *          console.log("Was index found: " + true);
+         *      indexes.refresh(function(err, indexes) {
+         *          var index = indexes.contains("_internal");
+         *          console.log("Was index found: " + !!index);
          *          // `index` contains the Index object.
          *      });
          *
@@ -1975,8 +2022,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // List all # of saved searches
          *      var savedSearches = svc.savedSearches();
-         *      savedSearches.list(function(err, list) {
-         *          console.log("# Of Saved Searches: " + list.length);
+         *      savedSearches.refresh(function(err, savedSearches) {
+         *          console.log("# Of Saved Searches: " + savedSearches.list().length);
          *      });
          *
          * @param {Object} options Dictionary of collection filtering and pagination options
@@ -2001,7 +2048,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // List all job IDs
          *      var jobs = svc.jobs();
-         *      jobs.list(function(err, list) {
+         *      jobs.refresh(function(err, jobs) {
+         *          var list = jobs.list();
          *          for(var i = 0; i < list.length; i++) {
          *              console.log("Job " + (i+1) + ": " + list[i].sid);
          *          }
@@ -2029,7 +2077,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // List all usernames
          *      var users = svc.users();
-         *      users.list(function(err, list) {
+         *      users.refresh(function(err, users) {
+         *          var list = users.list();
          *          for(var i = 0; i < list.length; i++) {
          *              console.log("User " + (i+1) + ": " + list[i].properties().name);
          *          }
@@ -2056,7 +2105,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // List all views
          *      var views = svc.views();
-         *      views.list(function(err, list) {
+         *      views.refresh(function(err, views) {
+         *          var list = views.list();
          *          for(var i = 0; i < list.length; i++) {
          *              console.log("View " + (i+1) + ": " + list[i].properties().name);
          *          }
@@ -2555,6 +2605,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.contains = utils.bind(this, this.contains);
             this.item     = utils.bind(this, this.item);
             
+            this._entities = [];
+            this._entitiesByName = {};
+            
+            
             var that = this;
             handlers = handlers || {};
             this._item = handlers.item || function(collection, props) { 
@@ -2653,25 +2707,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @module splunkjs.Service.Collection
          */
-        item: function(name, namespace, callback) {             
-            if (!callback && utils.isFunction(namespace)) {
-                callback = namespace;
-                namespace = null;
-            }
-            
-            return this.contains(name, namespace, function(err, contains, entity) {
-                if (err) {
-                    callback(err);
-                } 
-                else {
-                    if (contains) {
-                        callback(null, entity);
-                    }
-                    else {
-                        callback(new Error("No entity with name: " + name));
-                    }
-                }
-            });
+        item: function(name, namespace) {    
+            return this.contains(name, namespace);     
         },
         
         /**
@@ -2723,7 +2760,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * Example:
          *
          *      var apps = service.apps();
-         *      apps.list(function(err, appList) {
+         *      apps.refresh(function(err, apps) {
+         *          var appList = apps.list();
          *          console.log(appList.length);
          *      });
          *
@@ -2734,10 +2772,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         list: function(callback) {
             callback = callback || function() {};
             
-            var that = this;
-            return this.refresh(function(err) {
-                callback(err, that._entities); 
-            });
+            return utils.clone(this._entities);
         },
         
         /**
@@ -2749,8 +2784,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * Example:
          *
          *      var apps = service.apps();
-         *      apps.contains("search", function(err, found, searchApp) {
-         *          console.log("Search App Found: " + found);
+         *      apps.refresh(function(err, apps) {
+         *          var app = apps.contains("search");
+         *          console.log("Search App Found: " + !!app);
+         *          // `app` contains the Application object.
          *      });
          *
          * @param {String} id The name of the entity to retrieve
@@ -2759,72 +2796,60 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @module splunkjs.Service.Collection
          */
-        contains: function(id, namespace, callback) {                
-            if (!callback && utils.isFunction(namespace)) {
-                callback = namespace;
-                namespace = null;
-            }
-            
+        contains: function(id, namespace) {                
             if (utils.isEmpty(namespace)) {
                 namespace = null;
+            }          
+            
+            if (!id) {
+                throw new Error("Must suply a non-empty name.");
             }
             
-            callback = callback || function() {};
+            var path = this._itemPath(this, id, namespace);           
+            var fragmentPath = path.fragment;
+            var fullPath = path.full;
             
-            var that = this;
-            return this.refresh(function(err) {
-                if (err) {
-                    callback(err);
-                } 
-                else {             
-                    var path = that._itemPath(that, id, namespace);           
-                    var fragmentPath = path.fragment;
-                    var fullPath = path.full;
-                    
-                    if (that._entitiesByName.hasOwnProperty(fragmentPath)) {
-                        var entities = that._entitiesByName[fragmentPath];                 
-                        
-                        if (entities.length === 1 && !namespace) {
-                            // If there is only one entity with the
-                            // specified name and the user did not
-                            // specify a namespace, then we just
-                            // return it
-                            callback(null, true, entities[0]);
-                        }
-                        else if (entities.length === 1 && namespace) {
-                            // If we specified a namespace, then we 
-                            // only return the entity if it matches
-                            // the full path
-                            if (entities[0].path === fullPath) {
-                                callback(null, true, entities[0]);
-                            }
-                            else {
-                                callback(null, false, null);
-                            }
-                        }
-                        else if (entities.length > 1 && !namespace) {
-                            // If there is more than one entity and we didn't
-                            // specify a namespace, then we return an error
-                            // saying the match is ambiguous
-                            callback(new Error("Ambiguous match for name '" + id + "'"), false, null);
-                        }
-                        else {
-                            // There is more than one entity, and we do have
-                            // a namespace, so we try and find it
-                            for(var i = 0; i < entities.length; i++) {
-                                var entity = entities[i];
-                                if (entity.path === fullPath) {
-                                    callback(null, true, entity);
-                                    break;
-                                }
-                            }                            
-                        }
+            if (this._entitiesByName.hasOwnProperty(fragmentPath)) {
+                var entities = this._entitiesByName[fragmentPath];                 
+                
+                if (entities.length === 1 && !namespace) {
+                    // If there is only one entity with the
+                    // specified name and the user did not
+                    // specify a namespace, then we just
+                    // return it
+                    return entities[0];
+                }
+                else if (entities.length === 1 && namespace) {
+                    // If we specified a namespace, then we 
+                    // only return the entity if it matches
+                    // the full path
+                    if (entities[0].path === fullPath) {
+                        return entities[0];
                     }
                     else {
-                        callback(null, false, null);
+                        return null;
                     }
                 }
-            });
+                else if (entities.length > 1 && !namespace) {
+                    // If there is more than one entity and we didn't
+                    // specify a namespace, then we return an error
+                    // saying the match is ambiguous
+                    throw new Error("Ambiguous match for name '" + id + "'");
+                }
+                else {
+                    // There is more than one entity, and we do have
+                    // a namespace, so we try and find it
+                    for(var i = 0; i < entities.length; i++) {
+                        var entity = entities[i];
+                        if (entity.path === fullPath) {
+                            return entity;
+                        }
+                    }                            
+                }
+            }
+            else {
+                return null;
+            }
         },
     });
     

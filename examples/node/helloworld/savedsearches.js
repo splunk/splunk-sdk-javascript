@@ -47,16 +47,17 @@ exports.main = function(opts, done) {
         } 
         
         // Now that we're logged in, let's get a listing of all the saved searches.
-        service.savedSearches().list(function(err, searches) {
+        service.savedSearches().refresh(function(err, searches) {
             if (err) {
                 console.log("There was an error retrieving the list of saved searches:", err);
                 done(err);
                 return;
             }
             
+            var searchList = searches.list();
             console.log("Saved searches:");
-            for(var i = 0; i < searches.length; i++) {
-                var search = searches[i];
+            for(var i = 0; i < searchList.length; i++) {
+                var search = searchList[i];
                 console.log("  Search " + i + ": " + search.name);
                 console.log("    " + search.properties().content.search);
             } 

@@ -957,6 +957,52 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     };
     
     /**
+     * Extend a given object with all the properties in passed-in objects
+     *
+     * Example:
+     *      
+     *      function() { 
+     *          console.log(splunkjs.Utils.extend({foo: "bar"}, {a: 2})); // {foo: "bar", a: 2}
+     *      }
+     *
+     * @param {Object} obj Object to extend
+     * @param {Object...} sources Sources to extend from
+     * @return {Object} The extended object
+     *
+     * @globals splunkjs.Utils
+     */
+    root.extend = function(obj) {
+        each(slice.call(arguments, 1), function(source) {
+            for (var prop in source) {
+                obj[prop] = source[prop];
+            }
+        });
+        return obj;
+    };
+  
+    /**
+     * Create a shallow-cloned copy of the object/array
+     *
+     * Example:
+     *      
+     *      function() { 
+     *          console.log(splunkjs.Utils.clone({foo: "bar"})); // {foo: "bar"}
+     *          console.log(splunkjs.Utils.clone([1,2,3])); // [1,2,3]
+     *      }
+     *
+     * @param {Object|Array} obj Object/array to clone
+     * @return {Object|Array} The cloned object/array
+     *
+     * @globals splunkjs.Utils
+     */
+    root.clone = function(obj) {
+        if (!root.isObject(obj)) {
+            return obj;
+        }
+        return root.isArray(obj) ? obj.slice() : root.extend({}, obj);
+    };
+    
+    /**
      * Extract namespace information from a properties dictionary
      *
      * @param {Object} props Properties dictionary
@@ -1940,7 +1986,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // List installed apps
          *      var apps = svc.apps();
-         *      apps.list(function(err, list) { console.log(list); });
+         *      apps.refresh(function(err) { console.log(apps.list()); });
          *
          * @param {Object} options Dictionary of collection filtering and pagination options
          * @return {splunkjs.Service.Collection} The Applications collection
@@ -1991,8 +2037,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // Check if we have an _internal index
          *      var indexes = svc.configurations();
-         *      indexes.contains("_internal", function(err, found, index) {
-         *          console.log("Was index found: " + true);
+         *      indexes.refresh(function(err, indexes) {
+         *          var index = indexes.contains("_internal");
+         *          console.log("Was index found: " + !!index);
          *          // `index` contains the Index object.
          *      });
          *
@@ -2045,8 +2092,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // List all # of saved searches
          *      var savedSearches = svc.savedSearches();
-         *      savedSearches.list(function(err, list) {
-         *          console.log("# Of Saved Searches: " + list.length);
+         *      savedSearches.refresh(function(err, savedSearches) {
+         *          console.log("# Of Saved Searches: " + savedSearches.list().length);
          *      });
          *
          * @param {Object} options Dictionary of collection filtering and pagination options
@@ -2071,7 +2118,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // List all job IDs
          *      var jobs = svc.jobs();
-         *      jobs.list(function(err, list) {
+         *      jobs.refresh(function(err, jobs) {
+         *          var list = jobs.list();
          *          for(var i = 0; i < list.length; i++) {
          *              console.log("Job " + (i+1) + ": " + list[i].sid);
          *          }
@@ -2099,7 +2147,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // List all usernames
          *      var users = svc.users();
-         *      users.list(function(err, list) {
+         *      users.refresh(function(err, users) {
+         *          var list = users.list();
          *          for(var i = 0; i < list.length; i++) {
          *              console.log("User " + (i+1) + ": " + list[i].properties().name);
          *          }
@@ -2126,7 +2175,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // List all views
          *      var views = svc.views();
-         *      views.list(function(err, list) {
+         *      views.refresh(function(err, views) {
+         *          var list = views.list();
          *          for(var i = 0; i < list.length; i++) {
          *              console.log("View " + (i+1) + ": " + list[i].properties().name);
          *          }
@@ -2625,6 +2675,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.contains = utils.bind(this, this.contains);
             this.item     = utils.bind(this, this.item);
             
+            this._entities = [];
+            this._entitiesByName = {};
+            
+            
             var that = this;
             handlers = handlers || {};
             this._item = handlers.item || function(collection, props) { 
@@ -2723,25 +2777,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @module splunkjs.Service.Collection
          */
-        item: function(name, namespace, callback) {             
-            if (!callback && utils.isFunction(namespace)) {
-                callback = namespace;
-                namespace = null;
-            }
-            
-            return this.contains(name, namespace, function(err, contains, entity) {
-                if (err) {
-                    callback(err);
-                } 
-                else {
-                    if (contains) {
-                        callback(null, entity);
-                    }
-                    else {
-                        callback(new Error("No entity with name: " + name));
-                    }
-                }
-            });
+        item: function(name, namespace) {    
+            return this.contains(name, namespace);     
         },
         
         /**
@@ -2793,7 +2830,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * Example:
          *
          *      var apps = service.apps();
-         *      apps.list(function(err, appList) {
+         *      apps.refresh(function(err, apps) {
+         *          var appList = apps.list();
          *          console.log(appList.length);
          *      });
          *
@@ -2804,10 +2842,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         list: function(callback) {
             callback = callback || function() {};
             
-            var that = this;
-            return this.refresh(function(err) {
-                callback(err, that._entities); 
-            });
+            return utils.clone(this._entities);
         },
         
         /**
@@ -2819,8 +2854,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * Example:
          *
          *      var apps = service.apps();
-         *      apps.contains("search", function(err, found, searchApp) {
-         *          console.log("Search App Found: " + found);
+         *      apps.refresh(function(err, apps) {
+         *          var app = apps.contains("search");
+         *          console.log("Search App Found: " + !!app);
+         *          // `app` contains the Application object.
          *      });
          *
          * @param {String} id The name of the entity to retrieve
@@ -2829,72 +2866,60 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @module splunkjs.Service.Collection
          */
-        contains: function(id, namespace, callback) {                
-            if (!callback && utils.isFunction(namespace)) {
-                callback = namespace;
-                namespace = null;
-            }
-            
+        contains: function(id, namespace) {                
             if (utils.isEmpty(namespace)) {
                 namespace = null;
+            }          
+            
+            if (!id) {
+                throw new Error("Must suply a non-empty name.");
             }
             
-            callback = callback || function() {};
+            var path = this._itemPath(this, id, namespace);           
+            var fragmentPath = path.fragment;
+            var fullPath = path.full;
             
-            var that = this;
-            return this.refresh(function(err) {
-                if (err) {
-                    callback(err);
-                } 
-                else {             
-                    var path = that._itemPath(that, id, namespace);           
-                    var fragmentPath = path.fragment;
-                    var fullPath = path.full;
-                    
-                    if (that._entitiesByName.hasOwnProperty(fragmentPath)) {
-                        var entities = that._entitiesByName[fragmentPath];                 
-                        
-                        if (entities.length === 1 && !namespace) {
-                            // If there is only one entity with the
-                            // specified name and the user did not
-                            // specify a namespace, then we just
-                            // return it
-                            callback(null, true, entities[0]);
-                        }
-                        else if (entities.length === 1 && namespace) {
-                            // If we specified a namespace, then we 
-                            // only return the entity if it matches
-                            // the full path
-                            if (entities[0].path === fullPath) {
-                                callback(null, true, entities[0]);
-                            }
-                            else {
-                                callback(null, false, null);
-                            }
-                        }
-                        else if (entities.length > 1 && !namespace) {
-                            // If there is more than one entity and we didn't
-                            // specify a namespace, then we return an error
-                            // saying the match is ambiguous
-                            callback(new Error("Ambiguous match for name '" + id + "'"), false, null);
-                        }
-                        else {
-                            // There is more than one entity, and we do have
-                            // a namespace, so we try and find it
-                            for(var i = 0; i < entities.length; i++) {
-                                var entity = entities[i];
-                                if (entity.path === fullPath) {
-                                    callback(null, true, entity);
-                                    break;
-                                }
-                            }                            
-                        }
+            if (this._entitiesByName.hasOwnProperty(fragmentPath)) {
+                var entities = this._entitiesByName[fragmentPath];                 
+                
+                if (entities.length === 1 && !namespace) {
+                    // If there is only one entity with the
+                    // specified name and the user did not
+                    // specify a namespace, then we just
+                    // return it
+                    return entities[0];
+                }
+                else if (entities.length === 1 && namespace) {
+                    // If we specified a namespace, then we 
+                    // only return the entity if it matches
+                    // the full path
+                    if (entities[0].path === fullPath) {
+                        return entities[0];
                     }
                     else {
-                        callback(null, false, null);
+                        return null;
                     }
                 }
-            });
+                else if (entities.length > 1 && !namespace) {
+                    // If there is more than one entity and we didn't
+                    // specify a namespace, then we return an error
+                    // saying the match is ambiguous
+                    throw new Error("Ambiguous match for name '" + id + "'");
+                }
+                else {
+                    // There is more than one entity, and we do have
+                    // a namespace, so we try and find it
+                    for(var i = 0; i < entities.length; i++) {
+                        var entity = entities[i];
+                        if (entity.path === fullPath) {
+                            return entity;
+                        }
+                    }                            
+                }
+            }
+            else {
+                return null;
+            }
         },
     });
     
@@ -6223,8 +6248,7 @@ require.define("/internal/cmdline.js", function (require, module, exports, __dir
             .option('--password <password>', "Username to login with", undefined, false)
             .option('--scheme <scheme>', "Scheme to use", "https", false)
             .option('--host <host>', "Hostname to use", "localhost", false)
-            .option('--port <port>', "Port to use", 8089, false)
-            .option('--namespace <namespace>', "Namespace to use (of the form app:owner)", undefined, false);
+            .option('--port <port>', "Port to use", 8089, false);
         
         parser.parse = function(argv) {
             argv = (argv || []).slice(2);
@@ -6347,13 +6371,15 @@ exports.setup = function(svc) {
             },
 
             "Callback#List jobs": function(test) {
-                this.service.jobs().list(function(err, jobs) {
+                this.service.jobs().refresh(function(err, jobs) {
                     test.ok(!err);
                     test.ok(jobs);
-                    test.ok(jobs.length > 0);
                     
-                    for(var i = 0; i < jobs.length; i++) {
-                        test.ok(jobs[i]);
+                    var jobsList = jobs.list();
+                    test.ok(jobsList.length > 0);
+                    
+                    for(var i = 0; i < jobsList.length; i++) {
+                        test.ok(jobsList[i]);
                     }
                     
                     test.done();
@@ -6369,8 +6395,9 @@ exports.setup = function(svc) {
                     test.ok(job);
                     test.strictEqual(job.sid, sid);
 
-                    jobs.contains(sid, function(err, contains) {
-                        test.ok(contains);
+                    jobs.refresh(function(err, jobs) {
+                        var job = jobs.contains(sid);
+                        test.ok(job);
 
                         job.cancel(function() {
                             test.done();
@@ -6881,7 +6908,8 @@ exports.setup = function(svc) {
                          
             "Callback#list applications": function(test) {
                 var apps = this.service.apps();
-                apps.list(function(err, appList) {
+                apps.refresh(function(err, apps) {
+                    var appList = apps.list();
                     test.ok(appList.length > 0);
                     test.done();
                 });
@@ -6889,8 +6917,9 @@ exports.setup = function(svc) {
                    
             "Callback#contains applications": function(test) {
                 var apps = this.service.apps();
-                apps.contains("search", function(err, found) {
-                    test.ok(found);
+                apps.refresh(function(err, apps) {
+                    var app = apps.contains("search");
+                    test.ok(app);
                     test.done();
                 });
             },
@@ -6901,8 +6930,8 @@ exports.setup = function(svc) {
                 
                 apps.create({name: name}, function(err, app) {
                     var appName = app.properties().name;
-                    apps.contains(appName, function(err, found, entity) {
-                        test.ok(found);
+                    apps.refresh(function(err, apps) {
+                        var entity = apps.contains(appName);
                         test.ok(entity);
                         app.remove(function() {
                             test.done();
@@ -6950,8 +6979,8 @@ exports.setup = function(svc) {
             
             "Callback#delete test applications": function(test) {
                 var apps = this.service.apps();
-                apps.list(function(err, appList) {
-                    test.ok(appList.length > 0);
+                apps.refresh(function(err, apps) {
+                    var appList = apps.list();
                     
                     Async.parallelEach(
                         appList,
@@ -6979,7 +7008,8 @@ exports.setup = function(svc) {
                    
             "Callback#list": function(test) {
                 var searches = this.service.savedSearches();
-                searches.list(function(err, savedSearches) {
+                searches.refresh(function(err, searches) {
+                    var savedSearches = searches.list();
                     test.ok(savedSearches.length > 0);
                     
                     for(var i = 0; i < savedSearches.length; i++) {
@@ -6992,8 +7022,8 @@ exports.setup = function(svc) {
             
             "Callback#contains": function(test) {
                 var searches = this.service.savedSearches();
-                searches.contains("Indexing workload", function(err, found, search) {
-                    test.ok(found);
+                searches.refresh(function(err, searches) {
+                    var search = searches.contains("Indexing workload");
                     test.ok(search);
                     
                     test.done();
@@ -7002,8 +7032,8 @@ exports.setup = function(svc) {
             
             "Callback#history": function(test) {
                 var searches = this.service.savedSearches();
-                searches.contains("Indexing workload", function(err, found, search) {
-                    test.ok(found);
+                searches.refresh(function(err, searches) {
+                    var search = searches.contains("Indexing workload");
                     test.ok(search);
                     
                     search.history(function(err, history, search) {
@@ -7015,8 +7045,8 @@ exports.setup = function(svc) {
             
             "Callback#suppress": function(test) {
                 var searches = this.service.savedSearches();
-                searches.contains("Indexing workload", function(err, found, search) {
-                    test.ok(found);
+                searches.refresh(function(err, searches) {
+                    var search = searches.contains("Indexing workload");
                     test.ok(search);
                     
                     search.suppressInfo(function(err, info, search) {
@@ -7028,7 +7058,8 @@ exports.setup = function(svc) {
             
             "Callback#list limit count": function(test) {
                 var searches = this.service.savedSearches({count: 2});
-                searches.list(function(err, savedSearches) {
+                searches.refresh(function(err, searches) {
+                    var savedSearches = searches.list();
                     test.strictEqual(savedSearches.length, 2);
                     
                     for(var i = 0; i < savedSearches.length; i++) {
@@ -7041,7 +7072,8 @@ exports.setup = function(svc) {
             
             "Callback#list filter": function(test) {
                 var searches = this.service.savedSearches({search: "Error"});
-                searches.list(function(err, savedSearches) {
+                searches.refresh(function(err, searches) {
+                    var savedSearches = searches.list();
                     test.ok(savedSearches.length > 0);
                     
                     for(var i = 0; i < savedSearches.length; i++) {
@@ -7054,7 +7086,8 @@ exports.setup = function(svc) {
             
             "Callback#list offset": function(test) {
                 var searches = this.service.savedSearches({offset: 2, count: 1});
-                searches.list(function(err, savedSearches) {
+                searches.refresh(function(err, searches) {
+                    var savedSearches = searches.list();
                     test.strictEqual(savedSearches.length, 1);
                     
                     for(var i = 0; i < savedSearches.length; i++) {
@@ -7078,7 +7111,6 @@ exports.setup = function(svc) {
                             searches.create({search: originalSearch, name: name}, done);
                         },
                         function(search, done) {
-                            test.ok(search);
                             test.ok(search);
                             
                             test.strictEqual(search.properties().name, name); 
@@ -7117,7 +7149,8 @@ exports.setup = function(svc) {
             
             "Callback#delete test saved searches": function(test) {
                 var searches = this.service.savedSearches({}, {owner: this.service.username, app: "new_english"});
-                searches.list(function(err, searchList) {                    
+                searches.refresh(function(err, searches) {
+                    var searchList = searches.list();                  
                     Async.parallelEach(
                         searchList,
                         function(search, idx, callback) {
@@ -7146,8 +7179,9 @@ exports.setup = function(svc) {
                 var that = this;
                 
                 Async.chain([
-                    function(done) { that.service.properties().list(done); },
-                    function(files, done) { 
+                    function(done) { that.service.properties().refresh(done); },
+                    function(props, done) { 
+                        var files = props.list();
                         test.ok(files.length > 0);
                         done();
                     }
@@ -7162,9 +7196,10 @@ exports.setup = function(svc) {
                 var that = this;
                 
                 Async.chain([
-                    function(done) { that.service.properties().contains("web", done); },
-                    function(found, file, done) { 
-                        test.ok(found);
+                    function(done) { that.service.properties().refresh(done); },
+                    function(props, done) { 
+                        var file = props.contains("web");
+                        test.ok(file);
                         file.refresh(done);
                     },
                     function(file, done) {
@@ -7182,17 +7217,16 @@ exports.setup = function(svc) {
                 var that = this;
                 
                 Async.chain([
-                    function(done) { that.service.properties().contains("web", done); },
-                    function(found, file, done) { 
-                        test.ok(found);
+                    function(done) { that.service.properties().refresh(done); },
+                    function(props, done) { 
+                        var file = props.contains("web");
+                        test.ok(file);
                         file.refresh(done);
                     },
                     function(file, done) {
                         test.strictEqual(file.properties().name, "web");
-                        file.contains("settings", done);
-                    },
-                    function(found, stanza, done) {
-                        test.ok(found);
+                        
+                        var stanza = file.contains("settings");
                         test.ok(stanza);
                         stanza.refresh(done);
                     },
@@ -7239,10 +7273,10 @@ exports.setup = function(svc) {
                     },
                     function(done) {
                         var file = new splunkjs.Service.PropertyFile(svc, fileName);
-                        file.contains("stanza", done);
+                        file.refresh(done);
                     },
-                    function(found, stanza, done) {
-                        test.ok(found);
+                    function(file, done) {
+                        var stanza = file.contains("stanza");
                         test.ok(stanza);
                         stanza.remove(done);
                     }
@@ -7265,8 +7299,9 @@ exports.setup = function(svc) {
                 var namespace = {owner: "admin", app: "search"};
                 
                 Async.chain([
-                    function(done) { that.service.configurations({}, namespace).list(done); },
-                    function(files, done) { 
+                    function(done) { that.service.configurations({}, namespace).refresh(done); },
+                    function(props, done) { 
+                        var files = props.list();
                         test.ok(files.length > 0);
                         done();
                     }
@@ -7282,9 +7317,10 @@ exports.setup = function(svc) {
                 var namespace = {owner: "admin", app: "search"};
                 
                 Async.chain([
-                    function(done) { that.service.configurations({}, namespace).contains("web", done); },
-                    function(found, file, done) {                         
-                        test.ok(found);
+                    function(done) { that.service.configurations({}, namespace).refresh(done); },
+                    function(props, done) { 
+                        var file = props.contains("web");
+                        test.ok(file);
                         file.refresh(done);
                     },
                     function(file, done) {
@@ -7303,18 +7339,20 @@ exports.setup = function(svc) {
                 var namespace = {owner: "admin", app: "search"};
                 
                 Async.chain([
-                    function(done) { that.service.configurations({}, namespace).contains("web", done); },
-                    function(found, file, done) { 
-                        test.ok(found);
+                    function(done) { that.service.configurations({}, namespace).refresh(done); },
+                    function(props, done) { 
+                        var file = props.contains("web");
+                        test.ok(file);
                         file.refresh(done);
                     },
                     function(file, done) {
                         test.strictEqual(file.properties().name, "conf-web");
-                        file.contains("settings", done);
-                    },
-                    function(found, stanza, done) {
-                        test.ok(found);
+                        
+                        var stanza = file.contains("settings");
                         test.ok(stanza);
+                        stanza.refresh(done);
+                    },
+                    function(stanza, done) {
                         test.ok(stanza.properties().content.hasOwnProperty("httpport"));
                         done();
                     }
@@ -7358,10 +7396,10 @@ exports.setup = function(svc) {
                     },
                     function(done) {
                         var file = new splunkjs.Service.ConfigurationFile(svc, fileName);
-                        file.contains("stanza", done);
+                        file.refresh(done);
                     },
-                    function(found, stanza, done) {
-                        test.ok(found);
+                    function(file, done) {
+                        var stanza = file.contains("stanza");
                         test.ok(stanza);
                         stanza.remove(done);
                     }
@@ -7391,7 +7429,8 @@ exports.setup = function(svc) {
                          
             "Callback#list indexes": function(test) {
                 var indexes = this.service.indexes();
-                indexes.list(function(err, indexList) {
+                indexes.refresh(function(err, indexes) {
+                    var indexList = indexes.list();
                     test.ok(indexList.length > 0);
                     test.done();
                 });
@@ -7399,8 +7438,11 @@ exports.setup = function(svc) {
                    
             "Callback#contains index": function(test) {
                 var indexes = this.service.indexes();
-                indexes.contains(this.indexName, function(err, found) {
-                    test.ok(found);
+                var indexName = this.indexName;
+                
+                indexes.refresh(function(err, indexes) {
+                    var index = indexes.contains(indexName);
+                    test.ok(index);
                     test.done();
                 });
             },
@@ -7413,10 +7455,12 @@ exports.setup = function(svc) {
                 
                 Async.chain([
                         function(callback) {
-                            indexes.contains(name, callback);     
+                            indexes.refresh(callback);     
                         },
-                        function(found, index, callback) {
-                            test.ok(found);
+                        function(indexes, callback) {
+                            var index = indexes.contains(name);
+                            test.ok(index);
+                            
                             originalAssureUTF8Value = index.properties().content.assureUTF8;
                             index.update({
                                 assureUTF8: !originalAssureUTF8Value
@@ -7459,10 +7503,12 @@ exports.setup = function(svc) {
                 var indexes = this.service.indexes();
                 Async.chain([
                         function(done) {
-                            indexes.item(indexName, done);
+                            indexes.refresh(done);     
                         },
-                        function(index, done) {
+                        function(indexes, done) {
+                            var index = indexes.contains(indexName);
                             test.ok(index);
+                            
                             test.strictEqual(index.properties().name, indexName);
                             originalEventCount = index.properties().content.totalEventCount;
                             
@@ -7508,11 +7554,13 @@ exports.setup = function(svc) {
             "Callback#List users": function(test) {
                 var service = this.service;
                 
-                service.users().list(function(err, users) {
+                service.users().refresh(function(err, users) {
+                    var userList = users.list();
                     test.ok(!err);
                     test.ok(users);
                     
-                    test.ok(users.length > 0);
+                    test.ok(userList);
+                    test.ok(userList.length > 0);
                     test.done();
                 });
             },
@@ -7553,6 +7601,28 @@ exports.setup = function(svc) {
                         test.done();
                     }
                 );
+            },
+            
+            "Callback#delete test users": function(test) {
+                var users = this.service.users();
+                users.refresh(function(err, users) {
+                    var userList = users.list();
+                    
+                    Async.parallelEach(
+                        userList,
+                        function(user, idx, callback) {
+                            if (utils.startsWith(user.properties().name, "jssdk_")) {
+                                user.remove(callback);
+                            }
+                            else {
+                                callback();
+                            }
+                        }, function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
+                });
             }
         },
         
@@ -7565,14 +7635,16 @@ exports.setup = function(svc) {
             "Callback#List views": function(test) {
                 var service = this.service;
                 
-                service.views({}, {owner: "admin", app: "search"}).list(function(err, views) {
+                service.views({}, {owner: "admin", app: "search"}).refresh(function(err, views) {
                     test.ok(!err);
                     test.ok(views);
                     
-                    test.ok(views.length > 0);
+                    var viewsList = views.list();
+                    test.ok(viewsList);
+                    test.ok(viewsList.length > 0);
                     
-                    for(var i = 0; i < views.length; i++) {
-                        test.ok(views[i]);
+                    for(var i = 0; i < viewsList.length; i++) {
+                        test.ok(viewsList[i]);
                     }
                     
                     test.done();
@@ -8506,16 +8578,17 @@ exports.main = function(opts, done) {
         } 
         
         // Now that we're logged in, let's get a listing of all the apps.
-        service.apps().list(function(err, apps) {
+        service.apps().refresh(function(err, apps) {
             if (err) {
                 console.log("There was an error retrieving the list of applications:", err);
                 done(err);
                 return;
             }
             
+            var appList = apps.list();
             console.log("Applications:");
-            for(var i = 0; i < apps.length; i++) {
-                var app = apps[i];
+            for(var i = 0; i < appList.length; i++) {
+                var app = appList[i];
                 console.log("  App " + i + ": " + app.name);
             } 
             
@@ -8581,13 +8654,14 @@ exports.main = function(opts, callback) {
                     done("Error logging in");
                 }
                 
-                service.apps().list(done);
+                service.apps().refresh(done);
             },
             // Print them out
-            function(apps, done) {            
+            function(apps, done) {           
+                var appList = apps.list();
                 console.log("Applications:");
-                for(var i = 0; i < apps.length; i++) {
-                    var app = apps[i];
+                for(var i = 0; i < appList.length; i++) {
+                    var app = appList[i];
                     console.log("  App " + i + ": " + app.name);
                 } 
                 done();
@@ -8654,16 +8728,17 @@ exports.main = function(opts, done) {
         } 
         
         // Now that we're logged in, let's get a listing of all the saved searches.
-        service.savedSearches().list(function(err, searches) {
+        service.savedSearches().refresh(function(err, searches) {
             if (err) {
                 console.log("There was an error retrieving the list of saved searches:", err);
                 done(err);
                 return;
             }
             
+            var searchList = searches.list();
             console.log("Saved searches:");
-            for(var i = 0; i < searches.length; i++) {
-                var search = searches[i];
+            for(var i = 0; i < searchList.length; i++) {
+                var search = searchList[i];
                 console.log("  Search " + i + ": " + search.name);
                 console.log("    " + search.properties().content.search);
             } 
@@ -8730,16 +8805,17 @@ exports.main = function(opts, callback) {
                     done("Error logging in");
                 }
                 
-                service.savedSearches().list(done);
+                service.savedSearches().refresh(done);
             },
             // Print them out
             function(searches, done) {
+                var searchList = searches.list();
                 console.log("Saved searches:");
-                for(var i = 0; i < searches.length; i++) {
-                    var search = searches[i];
+                for(var i = 0; i < searchList.length; i++) {
+                    var search = searchList[i];
                     console.log("  Search " + i + ": " + search.name);
                     console.log("    " + search.properties().content.search);
-                } 
+                }
                 
                 done();
             }
@@ -9270,13 +9346,13 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
             // we check whether it is the job we're looking for.
             // If it is, we wrap it up in a splunkjs.Job object, and invoke
             // our function on it.
-            var jobs = [];
-            this.service.jobs().list(function(err, list) {
-                list = list || [];
+            var jobsList = [];
+            this.service.jobs().refresh(function(err, jobs) {
+                list = jobs.list() || [];
                 for(var i = 0; i < list.length; i++) {
                     if (utils.contains(sids, list[i].sid)) {
                         var job = list[i];
-                        jobs.push(job);
+                        jobsList.push(job);
                     }
                 }
                 
@@ -9395,13 +9471,13 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
             if (sids.length === 0) {
                 // If no job SIDs are provided, we list all jobs.
                 var jobs = this.service.jobs();
-                jobs.list(function(err, list) {
+                jobs.refresh(function(err, jobs) {
                     if (err) {
                         callback(err);
                         return;
                     }
                     
-                    list = list || [];
+                    list = jobs.list() || [];
                     for(var i = 0; i < list.length; i++) {
                         console.log("  Job " + (i + 1) + " sid: "+ list[i].sid);
                     }
@@ -9647,9 +9723,10 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
             var service = this.service;
             Async.chain([
                     function(done) {
-                        service.properties().list(done);
+                        service.properties().refresh(done);
                     },
-                    function(files, done) {
+                    function(props, done) {
+                        var files = props.list();
                         // Find all the files that match the pattern
                         var regex = new RegExp(pattern);
                         files = files.filter(function(file) {
@@ -9697,16 +9774,18 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
             Async.chain([
                     function(done) {
                         var collection = options.global ? service.properties() : service.configurations({}, namespace);
-                        collection.contains(filename, namespace, done);
+                        collection.refresh(done);
                     },
-                    function(found, file, done) {
-                        if (!found) {
+                    function(collection, done) {
+                        var file = collection.contains(filename, namespace);
+                        if (!file) {
                             done("Could not find file '" + filename + "'");
                             return;
                         }
-                        file.list(done);
+                        file.refresh(done);
                     },
-                    function(stanzas, done) {
+                    function(file, done) {
+                        var stanzas = file.list();
                         // If there any stanzas, print their names
                         if (stanzas.length > 0) {
                             console.log("Stanzas for '" + filename + "': ");
@@ -9749,17 +9828,19 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
             Async.chain([
                     function(done) {
                         var collection = options.global ? service.properties() : service.configurations({}, namespace);
-                        collection.contains(filename, namespace, done);
+                        collection.refresh(done);
                     },
-                    function(found, file, done) {
-                        if (!found) {
+                    function(collection, done) {
+                        var file = collection.contains(filename, namespace);
+                        if (!file) {
                             done("Could not find file: '" + filename + "'");
                             return;
                         }
-                        file.contains(stanzaName, done);  
+                        file.refresh(done);  
                     },
-                    function(found, stanza, done) {
-                        if (!found) {
+                    function(file, done) {
+                        var stanza = file.contains(stanzaName);
+                        if (!stanza) {
                             done("Could not find stanza '" + stanzaName + "' in file '" + filename + "'");
                             return;
                         }
@@ -9816,17 +9897,19 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
             Async.chain([
                     function(done) {
                         var collection = options.global ? service.properties() : service.configurations({}, namespace);
-                        collection.contains(filename, namespace, done);
+                        collection.refresh(done);
                     },
-                    function(found, file, done) {
-                        if (!found) {
+                    function(collection, done) {
+                        var file = collection.contains(filename, namespace);
+                        if (!file) {
                             done("Could not find file: '" + filename + "'");
                             return;
                         }
-                        file.contains(stanzaName, done);  
+                        file.refresh(done);  
                     },
-                    function(found, stanza, done) {
-                        if (!found) {
+                    function(file, done) {
+                        var stanza = file.contains(stanzaName);
+                        if (!stanza) {
                             done("Could not find stanza '" + stanzaName + "' in file '" + filename + "'");
                             return;
                         }
@@ -9874,13 +9957,14 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
             Async.chain([
                     function(done) {
                         collection = options.global ? service.properties() : service.configurations({}, namespace);
-                        collection.contains(filename, namespace, done);
+                        collection.refresh(done);
                     },
-                    function(found, file, done) {
+                    function(collection, done) {
+                        var file = collection.contains(filename, namespace);
+                        
                         // If we can't find the file, create it
-                        if (!found) {
+                        if (!file) {
                             collection.create(filename, function(err, file) {
-                    
                                 if (!err) {
                                     console.log("Created file '" + filename + "'");
                                 }
@@ -9888,11 +9972,11 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
                                 // Don't do anything with the stanza if we 
                                 // didn't specify one
                                 if (stanzaName) {
-                                    done(null, null, null);
-                                    return;   
+                                    done(null, file);
+                                    return;
                                 }
                                 
-                                file.contains(stanzaName, done);
+                                file.refresh(done);
                             });
                             
                             return;
@@ -9901,20 +9985,21 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
                         // Don't do anything with the stanza if we 
                         // didn't specify one
                         if (!stanzaName) {
-                            done(null, null, null);
+                            done(null, file);
                             return;
                         }
                         
-                        file.contains(stanzaName, done);
+                        file.refresh(done);
                     },
-                    function(found, stanza, done) {
+                    function(file, done) {
+                        var stanza = stanzaName ? file.contains(stanzaName) : null;
                         if (!stanzaName) {
-                            done(null, null);
+                            done(null, stanza);
                             return;
                         }
                         
                         // If we can't find the stanza, then create it
-                        if (!found) {
+                        if (!stanza) {
                             var file = options.global ?
                                 new splunkjs.Service.PropertyFile(service, filename) :
                                 new splunkjs.Service.ConfigurationFile(service, filename);
@@ -9983,17 +10068,19 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
             Async.chain([
                     function(done) {
                         var collection = options.global ? service.properties() : service.configurations({}, namespace);
-                        collection.contains(filename, namespace, done);
+                        collection.refresh(done);
                     },
-                    function(found, file, done) {
-                        if (!found) {
+                    function(collection, done) {
+                        var file = collection.contains(filename, namespace);
+                        if (!file) {
                             done("Could not find file: '" + filename + "'");
                             return;
                         }
-                        file.contains(stanzaName, done);  
+                        file.refresh( done);
                     },
-                    function(found, stanza, done) {
-                        if (!found) {
+                    function(file, done) {
+                        var stanza = file.contains(stanzaName);
+                        if (!stanza) {
                             done("Could not find stanza '" + stanzaName + "' in file '" + filename + "'");
                             return;
                         }
@@ -10272,9 +10359,6 @@ require.define("/examples/node/search.js", function (require, module, exports, _
         callback = callback || function(err) { 
             if (err) {
                 console.log(err);
-            }
-            else {
-                callback();
             }
         };
         var cmdline = options.create();

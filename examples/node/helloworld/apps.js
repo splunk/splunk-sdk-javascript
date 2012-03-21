@@ -47,16 +47,17 @@ exports.main = function(opts, done) {
         } 
         
         // Now that we're logged in, let's get a listing of all the apps.
-        service.apps().list(function(err, apps) {
+        service.apps().refresh(function(err, apps) {
             if (err) {
                 console.log("There was an error retrieving the list of applications:", err);
                 done(err);
                 return;
             }
             
+            var appList = apps.list();
             console.log("Applications:");
-            for(var i = 0; i < apps.length; i++) {
-                var app = apps[i];
+            for(var i = 0; i < appList.length; i++) {
+                var app = appList[i];
                 console.log("  App " + i + ": " + app.name);
             } 
             

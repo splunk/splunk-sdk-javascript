@@ -326,6 +326,8 @@
                               <li><a href='#splunkjs.Utils+isString'>isString</a></li>
                               <li><a href='#splunkjs.Utils+isObject'>isObject</a></li>
                               <li><a href='#splunkjs.Utils+isEmpty'>isEmpty</a></li>
+                              <li><a href='#splunkjs.Utils+extend'>extend</a></li>
+                              <li><a href='#splunkjs.Utils+clone'>clone</a></li>
                               <li><a href='#splunkjs.Utils+namespaceFromProperties'>namespaceFromProperties</a></li>
               </ul>
             
@@ -2026,6 +2028,80 @@ var toString = Object.prototype.toString;</code></pre>
               </section>
               
             </section>
+                      <section class='method' id='splunkjs.Utils+extend'>
+              <header>
+                <h3>extend</h3>
+                <h4>splunkjs.Utils.extend</h4>
+                <p class='type'>method</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">obj</span> - <span class="em">Object</span> <p>Object to extend</p></li>
+                                      <li><span class="bold">sources</span> - <span class="em">Object...</span> <p>Sources to extend from</p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                                  <h4>Returns</h4>
+                                      <p><span class="em">Object</span> The extended object</p>
+                  </section>
+              <section>
+                <p>Extend a given object with all the properties in passed-in objects</p>
+<h2>Example</h2>
+<pre><code> function() { 
+     console.log(splunkjs.Utils.extend({foo: "bar"}, {a: 2})); // {foo: "bar", a: 2}
+ }
+</code></pre>
+              </section>
+              <section class='source'>
+                <h4>Source</h4>
+                <pre><code>root.extend = function(obj) {
+    each(slice.call(arguments, 1), function(source) {
+        for (var prop in source) {
+            obj[prop] = source[prop];
+        }
+    });
+    return obj;
+};</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Utils+clone'>
+              <header>
+                <h3>clone</h3>
+                <h4>splunkjs.Utils.clone</h4>
+                <p class='type'>method</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">obj</span> - <span class="em">Object,Array</span> <p>Object/array to clone</p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                                  <h4>Returns</h4>
+                                      <p><span class="em">Object,Array</span> The cloned object/array</p>
+                  </section>
+              <section>
+                <p>Create a shallow-cloned copy of the object/array</p>
+<h2>Example</h2>
+<pre><code> function() { 
+     console.log(splunkjs.Utils.clone({foo: "bar"})); // {foo: "bar"}
+     console.log(splunkjs.Utils.clone([1,2,3])); // [1,2,3]
+ }
+</code></pre>
+              </section>
+              <section class='source'>
+                <h4>Source</h4>
+                <pre><code>root.clone = function(obj) {
+    if (!root.isObject(obj)) {
+        return obj;
+    }
+    return root.isArray(obj) ? obj.slice() : root.extend({}, obj);
+};</code></pre>
+              </section>
+              
+            </section>
                       <section class='method' id='splunkjs.Utils+namespaceFromProperties'>
               <header>
                 <h3>namespaceFromProperties</h3>
@@ -3158,7 +3234,7 @@ var toString = Object.prototype.toString;</code></pre>
 <h2>Example</h2>
 <pre><code> // List installed apps
  var apps = svc.apps();
- apps.list(function(err, list) { console.log(list); });
+ apps.refresh(function(err) { console.log(apps.list()); });
 </code></pre>
               </section>
               <section class='source'>
@@ -3234,14 +3310,15 @@ var toString = Object.prototype.toString;</code></pre>
 <h2>Example</h2>
 <pre><code> // Check if we have an _internal index
  var indexes = svc.configurations();
- indexes.contains("_internal", function(err, found, index) {
-     console.log("Was index found: " + true);
+ indexes.refresh(function(err, indexes) {
+     var index = indexes.contains("_internal");
+     console.log("Was index found: " + !!index);
      // `index` contains the Index object.
  });
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L173">lib/service.js:173</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L174">lib/service.js:174</a>)</h4>
                 <pre><code>indexes: function(options, namespace) { 
     return new root.Indexes(this, options, namespace);
 },</code></pre>
@@ -3280,7 +3357,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L200">lib/service.js:200</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L201">lib/service.js:201</a>)</h4>
                 <pre><code>properties: function(options) {
     return new root.Properties(this, options);
 },</code></pre>
@@ -3312,13 +3389,13 @@ var toString = Object.prototype.toString;</code></pre>
 <h2>Example</h2>
 <pre><code> // List all # of saved searches
  var savedSearches = svc.savedSearches();
- savedSearches.list(function(err, list) {
-     console.log("# Of Saved Searches: " + list.length);
+ savedSearches.refresh(function(err, savedSearches) {
+     console.log("# Of Saved Searches: " + savedSearches.list().length);
  });
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L226">lib/service.js:226</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L227">lib/service.js:227</a>)</h4>
                 <pre><code>savedSearches: function(options, namespace) {
     return new root.SavedSearches(this, options, namespace);
 },</code></pre>
@@ -3350,7 +3427,8 @@ var toString = Object.prototype.toString;</code></pre>
 <h2>Example</h2>
 <pre><code> // List all job IDs
  var jobs = svc.jobs();
- jobs.list(function(err, list) {
+ jobs.refresh(function(err, jobs) {
+     var list = jobs.list();
      for(var i = 0; i &lt; list.length; i++) {
          console.log("Job " + (i+1) + ": " + list[i].sid);
      }
@@ -3358,7 +3436,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L254">lib/service.js:254</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L256">lib/service.js:256</a>)</h4>
                 <pre><code>jobs: function(options, namespace) {
     return new root.Jobs(this, options, namespace);  
 },</code></pre>
@@ -3389,7 +3467,8 @@ var toString = Object.prototype.toString;</code></pre>
 <h2>Example</h2>
 <pre><code> // List all usernames
  var users = svc.users();
- users.list(function(err, list) {
+ users.refresh(function(err, users) {
+     var list = users.list();
      for(var i = 0; i &lt; list.length; i++) {
          console.log("User " + (i+1) + ": " + list[i].properties().name);
      }
@@ -3397,7 +3476,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L281">lib/service.js:281</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L284">lib/service.js:284</a>)</h4>
                 <pre><code>users: function(options) {
     return new root.Users(this, options);  
 },</code></pre>
@@ -3429,7 +3508,8 @@ var toString = Object.prototype.toString;</code></pre>
 <h2>Example</h2>
 <pre><code> // List all views
  var views = svc.views();
- views.list(function(err, list) {
+ views.refresh(function(err, views) {
+     var list = views.list();
      for(var i = 0; i &lt; list.length; i++) {
          console.log("View " + (i+1) + ": " + list[i].properties().name);
      }
@@ -3437,7 +3517,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L309">lib/service.js:309</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L313">lib/service.js:313</a>)</h4>
                 <pre><code>views: function(options, namespace) {
     return new root.Views(this, options, namespace);  
 },</code></pre>
@@ -3472,7 +3552,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L332">lib/service.js:332</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L336">lib/service.js:336</a>)</h4>
                 <pre><code>search: function(query, params, namespace, callback) {
     if (!callback &amp;&amp; utils.isFunction(namespace)) {
         callback = namespace;
@@ -3513,7 +3593,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L361">lib/service.js:361</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L365">lib/service.js:365</a>)</h4>
                 <pre><code>oneshotSearch: function(query, params, namespace, callback) {
     if (!callback &amp;&amp; utils.isFunction(namespace)) {
         callback = namespace;
@@ -3551,7 +3631,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L387">lib/service.js:387</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L391">lib/service.js:391</a>)</h4>
                 <pre><code>currentUser: function(callback) {
         var that = this;
         return this.get(Paths.currentUser, {}, function(err, response) {
@@ -3793,7 +3873,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.Endpoint</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L425">lib/service.js:425</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L429">lib/service.js:429</a>)</h4>
                 <pre><code>init: function(service, path) {
     if (!service) {
         throw new Error("Passed in a null Service.");
@@ -3837,7 +3917,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L461">lib/service.js:461</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L465">lib/service.js:465</a>)</h4>
                 <pre><code>get: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -3880,7 +3960,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L495">lib/service.js:495</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L499">lib/service.js:499</a>)</h4>
                 <pre><code>post: function(relpath, params, callback) {
     var url = this.path;
     // If we have a relative path, we will append it with a preceding
@@ -3923,7 +4003,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L529">lib/service.js:529</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L533">lib/service.js:533</a>)</h4>
                 <pre><code>del: function(relpath, params, callback) {
         var url = this.path;
         // If we have a relative path, we will append it with a preceding
@@ -3974,7 +4054,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.Resource</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L570">lib/service.js:570</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L574">lib/service.js:574</a>)</h4>
                 <pre><code>init: function(service, path, namespace) {
     var fullpath = service.fullpath(path, namespace);
     
@@ -4010,7 +4090,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Load the resource, also storing the properties.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L593">lib/service.js:593</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L597">lib/service.js:597</a>)</h4>
                 <pre><code>_load: function(properties) {
     this._properties = properties || {};
 },</code></pre>
@@ -4036,7 +4116,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will unconditionally refresh the object from the server and load it up.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L608">lib/service.js:608</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L612">lib/service.js:612</a>)</h4>
                 <pre><code>refresh: function(callback) {
     throw new Error("MUST BE OVERRIDDEN");
 },</code></pre>
@@ -4062,7 +4142,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will retrieve the current properties for this resource.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L622">lib/service.js:622</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L626">lib/service.js:626</a>)</h4>
                 <pre><code>properties: function(callback) {
         return this._properties;
     }
@@ -4236,7 +4316,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.Entity</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L651">lib/service.js:651</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L655">lib/service.js:655</a>)</h4>
                 <pre><code>init: function(service, path, namespace) {
     this._super(service, path, namespace);
     
@@ -4272,7 +4352,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Load the resource, also storing the properties.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L674">lib/service.js:674</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L678">lib/service.js:678</a>)</h4>
                 <pre><code>_load: function(properties) {
     properties = utils.isArray(properties) ? properties[0] : properties;
     
@@ -4300,7 +4380,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will unconditionally refresh the object from the server and load it up.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L690">lib/service.js:690</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L694">lib/service.js:694</a>)</h4>
                 <pre><code>refresh: function(callback) {
     callback = callback || function() {};
     
@@ -4337,7 +4417,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will tell the server to delete this entity.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L715">lib/service.js:715</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L719">lib/service.js:719</a>)</h4>
                 <pre><code>remove: function(callback) {
     callback = callback || function() {};
     
@@ -4369,7 +4449,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will update the entity on the server.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L735">lib/service.js:735</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L739">lib/service.js:739</a>)</h4>
                 <pre><code>update: function(props, callback) {
         callback = callback || function() {};
         
@@ -4587,7 +4667,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.Collection</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L781">lib/service.js:781</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L785">lib/service.js:785</a>)</h4>
                 <pre><code>init: function(service, path, options, namespace, handlers) {
     this._super(service, path, namespace);
     this._options = options;
@@ -4600,6 +4680,10 @@ var toString = Object.prototype.toString;</code></pre>
     this.list     = utils.bind(this, this.list);
     this.contains = utils.bind(this, this.contains);
     this.item     = utils.bind(this, this.item);
+    
+    this._entities = [];
+    this._entitiesByName = {};
+    
     
     var that = this;
     handlers = handlers || {};
@@ -4638,7 +4722,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will load the properties as well as create a map between entity names to entity IDs (for retrieval purposes).</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L821">lib/service.js:821</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L829">lib/service.js:829</a>)</h4>
                 <pre><code>_load: function(properties) {
     this._super(properties);
     
@@ -4683,7 +4767,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will unconditionally refresh the object from the server and load it up.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L854">lib/service.js:854</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L862">lib/service.js:862</a>)</h4>
                 <pre><code>refresh: function(callback) {
     callback = callback || function() {};
     
@@ -4717,7 +4801,6 @@ var toString = Object.prototype.toString;</code></pre>
                 <ul>
                                       <li><span class="bold">name</span> - <span class="em">String</span> <p>The name of the entity to retrieve</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with the specified entity: <code>(err, resource)</code></p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -4733,26 +4816,9 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L892">lib/service.js:892</a>)</h4>
-                <pre><code>item: function(name, namespace, callback) {             
-    if (!callback &amp;&amp; utils.isFunction(namespace)) {
-        callback = namespace;
-        namespace = null;
-    }
-    
-    return this.contains(name, namespace, function(err, contains, entity) {
-        if (err) {
-            callback(err);
-        } 
-        else {
-            if (contains) {
-                callback(null, entity);
-            }
-            else {
-                callback(new Error("No entity with name: " + name));
-            }
-        }
-    });
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L900">lib/service.js:900</a>)</h4>
+                <pre><code>item: function(name, namespace) {    
+    return this.contains(name, namespace);     
 },</code></pre>
               </section>
               
@@ -4767,7 +4833,6 @@ var toString = Object.prototype.toString;</code></pre>
                                   <h4>Params</h4>
                 <ul>
                                       <li><span class="bold">params</span> - <span class="em">Object</span> <p>A dictionary of properties to create the entity with.</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with the created entity: <code>(err, createdEntity)</code></p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -4783,7 +4848,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L931">lib/service.js:931</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L922">lib/service.js:922</a>)</h4>
                 <pre><code>create: function(params, callback) {
     callback = callback || function() {};
     
@@ -4828,20 +4893,18 @@ var toString = Object.prototype.toString;</code></pre>
 <p>Return the list of all the entities in this collection.</p>
 <h2>Example</h2>
 <pre><code> var apps = service.apps();
- apps.list(function(err, appList) {
+ apps.refresh(function(err, apps) {
+     var appList = apps.list();
      console.log(appList.length);
  });
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L970">lib/service.js:970</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L962">lib/service.js:962</a>)</h4>
                 <pre><code>list: function(callback) {
     callback = callback || function() {};
     
-    var that = this;
-    return this.refresh(function(err) {
-        callback(err, that._entities); 
-    });
+    return utils.clone(this._entities);
 },</code></pre>
               </section>
               
@@ -4857,7 +4920,6 @@ var toString = Object.prototype.toString;</code></pre>
                 <ul>
                                       <li><span class="bold">id</span> - <span class="em">String</span> <p>The name of the entity to retrieve</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with whether the entity was found: <code>(err, wasFound, entity)</code></p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -4867,79 +4929,69 @@ var toString = Object.prototype.toString;</code></pre>
 <p>Check to see if the collection contains a specific entity, and if so, return that entity.</p>
 <h2>Example</h2>
 <pre><code> var apps = service.apps();
- apps.contains("search", function(err, found, searchApp) {
-     console.log("Search App Found: " + found);
+ apps.refresh(function(err, apps) {
+     var app = apps.contains("search");
+     console.log("Search App Found: " + !!app);
+     // `app` contains the Application object.
  });
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L998">lib/service.js:998</a>)</h4>
-                <pre><code>contains: function(id, namespace, callback) {                
-        if (!callback &amp;&amp; utils.isFunction(namespace)) {
-            callback = namespace;
-            namespace = null;
-        }
-        
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L989">lib/service.js:989</a>)</h4>
+                <pre><code>contains: function(id, namespace) {                
         if (utils.isEmpty(namespace)) {
             namespace = null;
+        }          
+        
+        if (!id) {
+            throw new Error("Must suply a non-empty name.");
         }
         
-        callback = callback || function() {};
+        var path = this._itemPath(this, id, namespace);           
+        var fragmentPath = path.fragment;
+        var fullPath = path.full;
         
-        var that = this;
-        return this.refresh(function(err) {
-            if (err) {
-                callback(err);
-            } 
-            else {             
-                var path = that._itemPath(that, id, namespace);           
-                var fragmentPath = path.fragment;
-                var fullPath = path.full;
-                
-                if (that._entitiesByName.hasOwnProperty(fragmentPath)) {
-                    var entities = that._entitiesByName[fragmentPath];                 
-                    
-                    if (entities.length === 1 &amp;&amp; !namespace) {
-                        // If there is only one entity with the
-                        // specified name and the user did not
-                        // specify a namespace, then we just
-                        // return it
-                        callback(null, true, entities[0]);
-                    }
-                    else if (entities.length === 1 &amp;&amp; namespace) {
-                        // If we specified a namespace, then we 
-                        // only return the entity if it matches
-                        // the full path
-                        if (entities[0].path === fullPath) {
-                            callback(null, true, entities[0]);
-                        }
-                        else {
-                            callback(null, false, null);
-                        }
-                    }
-                    else if (entities.length &gt; 1 &amp;&amp; !namespace) {
-                        // If there is more than one entity and we didn't
-                        // specify a namespace, then we return an error
-                        // saying the match is ambiguous
-                        callback(new Error("Ambiguous match for name '" + id + "'"), false, null);
-                    }
-                    else {
-                        // There is more than one entity, and we do have
-                        // a namespace, so we try and find it
-                        for(var i = 0; i &lt; entities.length; i++) {
-                            var entity = entities[i];
-                            if (entity.path === fullPath) {
-                                callback(null, true, entity);
-                                break;
-                            }
-                        }                            
-                    }
+        if (this._entitiesByName.hasOwnProperty(fragmentPath)) {
+            var entities = this._entitiesByName[fragmentPath];                 
+            
+            if (entities.length === 1 &amp;&amp; !namespace) {
+                // If there is only one entity with the
+                // specified name and the user did not
+                // specify a namespace, then we just
+                // return it
+                return entities[0];
+            }
+            else if (entities.length === 1 &amp;&amp; namespace) {
+                // If we specified a namespace, then we 
+                // only return the entity if it matches
+                // the full path
+                if (entities[0].path === fullPath) {
+                    return entities[0];
                 }
                 else {
-                    callback(null, false, null);
+                    return null;
                 }
             }
-        });
+            else if (entities.length &gt; 1 &amp;&amp; !namespace) {
+                // If there is more than one entity and we didn't
+                // specify a namespace, then we return an error
+                // saying the match is ambiguous
+                throw new Error("Ambiguous match for name '" + id + "'");
+            }
+            else {
+                // There is more than one entity, and we do have
+                // a namespace, so we try and find it
+                for(var i = 0; i &lt; entities.length; i++) {
+                    var entity = entities[i];
+                    if (entity.path === fullPath) {
+                        return entity;
+                    }
+                }                            
+            }
+        }
+        else {
+            return null;
+        }
     },
 });</code></pre>
               </section>
@@ -5137,7 +5189,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.SavedSearches</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1090">lib/service.js:1090</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1069">lib/service.js:1069</a>)</h4>
                 <pre><code>init: function(service, options, namespace) {
         this._super(service, Paths.savedSearches, options, namespace, {
             item: function(collection, props) { 
@@ -5206,7 +5258,6 @@ var toString = Object.prototype.toString;</code></pre>
                 <ul>
                                       <li><span class="bold">name</span> - <span class="em">String</span> <p>The name of the entity to retrieve</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with the specified entity: <code>(err, resource)</code></p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -5223,25 +5274,8 @@ var toString = Object.prototype.toString;</code></pre>
               </section>
               <section class='source'>
                 <h4>Source</h4>
-                <pre><code>item: function(name, namespace, callback) {             
-    if (!callback &amp;&amp; utils.isFunction(namespace)) {
-        callback = namespace;
-        namespace = null;
-    }
-    
-    return this.contains(name, namespace, function(err, contains, entity) {
-        if (err) {
-            callback(err);
-        } 
-        else {
-            if (contains) {
-                callback(null, entity);
-            }
-            else {
-                callback(new Error("No entity with name: " + name));
-            }
-        }
-    });
+                <pre><code>item: function(name, namespace) {    
+    return this.contains(name, namespace);     
 },</code></pre>
               </section>
               
@@ -5256,7 +5290,6 @@ var toString = Object.prototype.toString;</code></pre>
                                   <h4>Params</h4>
                 <ul>
                                       <li><span class="bold">params</span> - <span class="em">Object</span> <p>A dictionary of properties to create the entity with.</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with the created entity: <code>(err, createdEntity)</code></p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -5317,7 +5350,8 @@ var toString = Object.prototype.toString;</code></pre>
 <p>Return the list of all the entities in this collection.</p>
 <h2>Example</h2>
 <pre><code> var apps = service.apps();
- apps.list(function(err, appList) {
+ apps.refresh(function(err, apps) {
+     var appList = apps.list();
      console.log(appList.length);
  });
 </code></pre>
@@ -5327,10 +5361,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <pre><code>list: function(callback) {
     callback = callback || function() {};
     
-    var that = this;
-    return this.refresh(function(err) {
-        callback(err, that._entities); 
-    });
+    return utils.clone(this._entities);
 },</code></pre>
               </section>
               
@@ -5346,7 +5377,6 @@ var toString = Object.prototype.toString;</code></pre>
                 <ul>
                                       <li><span class="bold">id</span> - <span class="em">String</span> <p>The name of the entity to retrieve</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with whether the entity was found: <code>(err, wasFound, entity)</code></p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -5356,79 +5386,69 @@ var toString = Object.prototype.toString;</code></pre>
 <p>Check to see if the collection contains a specific entity, and if so, return that entity.</p>
 <h2>Example</h2>
 <pre><code> var apps = service.apps();
- apps.contains("search", function(err, found, searchApp) {
-     console.log("Search App Found: " + found);
+ apps.refresh(function(err, apps) {
+     var app = apps.contains("search");
+     console.log("Search App Found: " + !!app);
+     // `app` contains the Application object.
  });
 </code></pre>
               </section>
               <section class='source'>
                 <h4>Source</h4>
-                <pre><code>contains: function(id, namespace, callback) {                
-        if (!callback &amp;&amp; utils.isFunction(namespace)) {
-            callback = namespace;
-            namespace = null;
-        }
-        
+                <pre><code>contains: function(id, namespace) {                
         if (utils.isEmpty(namespace)) {
             namespace = null;
+        }          
+        
+        if (!id) {
+            throw new Error("Must suply a non-empty name.");
         }
         
-        callback = callback || function() {};
+        var path = this._itemPath(this, id, namespace);           
+        var fragmentPath = path.fragment;
+        var fullPath = path.full;
         
-        var that = this;
-        return this.refresh(function(err) {
-            if (err) {
-                callback(err);
-            } 
-            else {             
-                var path = that._itemPath(that, id, namespace);           
-                var fragmentPath = path.fragment;
-                var fullPath = path.full;
-                
-                if (that._entitiesByName.hasOwnProperty(fragmentPath)) {
-                    var entities = that._entitiesByName[fragmentPath];                 
-                    
-                    if (entities.length === 1 &amp;&amp; !namespace) {
-                        // If there is only one entity with the
-                        // specified name and the user did not
-                        // specify a namespace, then we just
-                        // return it
-                        callback(null, true, entities[0]);
-                    }
-                    else if (entities.length === 1 &amp;&amp; namespace) {
-                        // If we specified a namespace, then we 
-                        // only return the entity if it matches
-                        // the full path
-                        if (entities[0].path === fullPath) {
-                            callback(null, true, entities[0]);
-                        }
-                        else {
-                            callback(null, false, null);
-                        }
-                    }
-                    else if (entities.length &gt; 1 &amp;&amp; !namespace) {
-                        // If there is more than one entity and we didn't
-                        // specify a namespace, then we return an error
-                        // saying the match is ambiguous
-                        callback(new Error("Ambiguous match for name '" + id + "'"), false, null);
-                    }
-                    else {
-                        // There is more than one entity, and we do have
-                        // a namespace, so we try and find it
-                        for(var i = 0; i &lt; entities.length; i++) {
-                            var entity = entities[i];
-                            if (entity.path === fullPath) {
-                                callback(null, true, entity);
-                                break;
-                            }
-                        }                            
-                    }
+        if (this._entitiesByName.hasOwnProperty(fragmentPath)) {
+            var entities = this._entitiesByName[fragmentPath];                 
+            
+            if (entities.length === 1 &amp;&amp; !namespace) {
+                // If there is only one entity with the
+                // specified name and the user did not
+                // specify a namespace, then we just
+                // return it
+                return entities[0];
+            }
+            else if (entities.length === 1 &amp;&amp; namespace) {
+                // If we specified a namespace, then we 
+                // only return the entity if it matches
+                // the full path
+                if (entities[0].path === fullPath) {
+                    return entities[0];
                 }
                 else {
-                    callback(null, false, null);
+                    return null;
                 }
             }
-        });
+            else if (entities.length &gt; 1 &amp;&amp; !namespace) {
+                // If there is more than one entity and we didn't
+                // specify a namespace, then we return an error
+                // saying the match is ambiguous
+                throw new Error("Ambiguous match for name '" + id + "'");
+            }
+            else {
+                // There is more than one entity, and we do have
+                // a namespace, so we try and find it
+                for(var i = 0; i &lt; entities.length; i++) {
+                    var entity = entities[i];
+                    if (entity.path === fullPath) {
+                        return entity;
+                    }
+                }                            
+            }
+        }
+        else {
+            return null;
+        }
     },
 });</code></pre>
               </section>
@@ -5623,7 +5643,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.SavedSearch</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1122">lib/service.js:1122</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1101">lib/service.js:1101</a>)</h4>
                 <pre><code>init: function(service, name, namespace) {
     this.name = name;
     this._super(service, Paths.savedSearches + "/" + encodeURIComponent(name), namespace);
@@ -5661,7 +5681,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1147">lib/service.js:1147</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1126">lib/service.js:1126</a>)</h4>
                 <pre><code>acknowledge: function(callback) {
     callback = callback || function() {};
     
@@ -5700,7 +5720,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1173">lib/service.js:1173</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1152">lib/service.js:1152</a>)</h4>
                 <pre><code>dispatch: function(callback) {
     callback = callback || function() {};
     
@@ -5739,7 +5759,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1199">lib/service.js:1199</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1178">lib/service.js:1178</a>)</h4>
                 <pre><code>history: function(callback) {
     callback = callback || function() {};
     
@@ -5776,7 +5796,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1223">lib/service.js:1223</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1202">lib/service.js:1202</a>)</h4>
                 <pre><code>suppressInfo: function(callback) {
     callback = callback || function() {};
     
@@ -5808,7 +5828,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>This will update the saved search on the server. Because saved searches require the presence of the search parameter, even if it is not being modified, the SDK will fetch it from the server (or from the local cache) if it is not present in the user-supplied input.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1245">lib/service.js:1245</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1224">lib/service.js:1224</a>)</h4>
                 <pre><code>update: function(params, callback) {
         params = params || {};
         
@@ -6118,7 +6138,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.Applications</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1287">lib/service.js:1287</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1266">lib/service.js:1266</a>)</h4>
                 <pre><code>init: function(service, options) {
         this._super(service, Paths.apps, options, {}, {
             item: function(collection, props) {
@@ -6186,7 +6206,6 @@ var toString = Object.prototype.toString;</code></pre>
                 <ul>
                                       <li><span class="bold">name</span> - <span class="em">String</span> <p>The name of the entity to retrieve</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with the specified entity: <code>(err, resource)</code></p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -6203,25 +6222,8 @@ var toString = Object.prototype.toString;</code></pre>
               </section>
               <section class='source'>
                 <h4>Source</h4>
-                <pre><code>item: function(name, namespace, callback) {             
-    if (!callback &amp;&amp; utils.isFunction(namespace)) {
-        callback = namespace;
-        namespace = null;
-    }
-    
-    return this.contains(name, namespace, function(err, contains, entity) {
-        if (err) {
-            callback(err);
-        } 
-        else {
-            if (contains) {
-                callback(null, entity);
-            }
-            else {
-                callback(new Error("No entity with name: " + name));
-            }
-        }
-    });
+                <pre><code>item: function(name, namespace) {    
+    return this.contains(name, namespace);     
 },</code></pre>
               </section>
               
@@ -6236,7 +6238,6 @@ var toString = Object.prototype.toString;</code></pre>
                                   <h4>Params</h4>
                 <ul>
                                       <li><span class="bold">params</span> - <span class="em">Object</span> <p>A dictionary of properties to create the entity with.</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with the created entity: <code>(err, createdEntity)</code></p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -6297,7 +6298,8 @@ var toString = Object.prototype.toString;</code></pre>
 <p>Return the list of all the entities in this collection.</p>
 <h2>Example</h2>
 <pre><code> var apps = service.apps();
- apps.list(function(err, appList) {
+ apps.refresh(function(err, apps) {
+     var appList = apps.list();
      console.log(appList.length);
  });
 </code></pre>
@@ -6307,10 +6309,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <pre><code>list: function(callback) {
     callback = callback || function() {};
     
-    var that = this;
-    return this.refresh(function(err) {
-        callback(err, that._entities); 
-    });
+    return utils.clone(this._entities);
 },</code></pre>
               </section>
               
@@ -6326,7 +6325,6 @@ var toString = Object.prototype.toString;</code></pre>
                 <ul>
                                       <li><span class="bold">id</span> - <span class="em">String</span> <p>The name of the entity to retrieve</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with whether the entity was found: <code>(err, wasFound, entity)</code></p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -6336,79 +6334,69 @@ var toString = Object.prototype.toString;</code></pre>
 <p>Check to see if the collection contains a specific entity, and if so, return that entity.</p>
 <h2>Example</h2>
 <pre><code> var apps = service.apps();
- apps.contains("search", function(err, found, searchApp) {
-     console.log("Search App Found: " + found);
+ apps.refresh(function(err, apps) {
+     var app = apps.contains("search");
+     console.log("Search App Found: " + !!app);
+     // `app` contains the Application object.
  });
 </code></pre>
               </section>
               <section class='source'>
                 <h4>Source</h4>
-                <pre><code>contains: function(id, namespace, callback) {                
-        if (!callback &amp;&amp; utils.isFunction(namespace)) {
-            callback = namespace;
-            namespace = null;
-        }
-        
+                <pre><code>contains: function(id, namespace) {                
         if (utils.isEmpty(namespace)) {
             namespace = null;
+        }          
+        
+        if (!id) {
+            throw new Error("Must suply a non-empty name.");
         }
         
-        callback = callback || function() {};
+        var path = this._itemPath(this, id, namespace);           
+        var fragmentPath = path.fragment;
+        var fullPath = path.full;
         
-        var that = this;
-        return this.refresh(function(err) {
-            if (err) {
-                callback(err);
-            } 
-            else {             
-                var path = that._itemPath(that, id, namespace);           
-                var fragmentPath = path.fragment;
-                var fullPath = path.full;
-                
-                if (that._entitiesByName.hasOwnProperty(fragmentPath)) {
-                    var entities = that._entitiesByName[fragmentPath];                 
-                    
-                    if (entities.length === 1 &amp;&amp; !namespace) {
-                        // If there is only one entity with the
-                        // specified name and the user did not
-                        // specify a namespace, then we just
-                        // return it
-                        callback(null, true, entities[0]);
-                    }
-                    else if (entities.length === 1 &amp;&amp; namespace) {
-                        // If we specified a namespace, then we 
-                        // only return the entity if it matches
-                        // the full path
-                        if (entities[0].path === fullPath) {
-                            callback(null, true, entities[0]);
-                        }
-                        else {
-                            callback(null, false, null);
-                        }
-                    }
-                    else if (entities.length &gt; 1 &amp;&amp; !namespace) {
-                        // If there is more than one entity and we didn't
-                        // specify a namespace, then we return an error
-                        // saying the match is ambiguous
-                        callback(new Error("Ambiguous match for name '" + id + "'"), false, null);
-                    }
-                    else {
-                        // There is more than one entity, and we do have
-                        // a namespace, so we try and find it
-                        for(var i = 0; i &lt; entities.length; i++) {
-                            var entity = entities[i];
-                            if (entity.path === fullPath) {
-                                callback(null, true, entity);
-                                break;
-                            }
-                        }                            
-                    }
+        if (this._entitiesByName.hasOwnProperty(fragmentPath)) {
+            var entities = this._entitiesByName[fragmentPath];                 
+            
+            if (entities.length === 1 &amp;&amp; !namespace) {
+                // If there is only one entity with the
+                // specified name and the user did not
+                // specify a namespace, then we just
+                // return it
+                return entities[0];
+            }
+            else if (entities.length === 1 &amp;&amp; namespace) {
+                // If we specified a namespace, then we 
+                // only return the entity if it matches
+                // the full path
+                if (entities[0].path === fullPath) {
+                    return entities[0];
                 }
                 else {
-                    callback(null, false, null);
+                    return null;
                 }
             }
-        });
+            else if (entities.length &gt; 1 &amp;&amp; !namespace) {
+                // If there is more than one entity and we didn't
+                // specify a namespace, then we return an error
+                // saying the match is ambiguous
+                throw new Error("Ambiguous match for name '" + id + "'");
+            }
+            else {
+                // There is more than one entity, and we do have
+                // a namespace, so we try and find it
+                for(var i = 0; i &lt; entities.length; i++) {
+                    var entity = entities[i];
+                    if (entity.path === fullPath) {
+                        return entity;
+                    }
+                }                            
+            }
+        }
+        else {
+            return null;
+        }
     },
 });</code></pre>
               </section>
@@ -6602,7 +6590,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.Application</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1317">lib/service.js:1317</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1296">lib/service.js:1296</a>)</h4>
                 <pre><code>init: function(service, name) {
     this.name = name;
     this._super(service, Paths.apps + "/" + encodeURIComponent(name), {});
@@ -6641,7 +6629,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1343">lib/service.js:1343</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1322">lib/service.js:1322</a>)</h4>
                 <pre><code>setupInfo: function(callback) {
     callback = callback || function() {};
     
@@ -6683,7 +6671,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1372">lib/service.js:1372</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1351">lib/service.js:1351</a>)</h4>
                 <pre><code>updateInfo: function(callback) {
         callback = callback || function() {};
         
@@ -7030,7 +7018,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.Users</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1408">lib/service.js:1408</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1387">lib/service.js:1387</a>)</h4>
                 <pre><code>init: function(service, options) {
     this._super(service, Paths.users, options, {}, {
         item: function(collection, props) {
@@ -7061,7 +7049,7 @@ var toString = Object.prototype.toString;</code></pre>
 <p>The User endpoint is broken for creates, so we have to have a special-case implementation.</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1427">lib/service.js:1427</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1406">lib/service.js:1406</a>)</h4>
                 <pre><code>create: function(params, callback) {
         callback = callback || function() {};
         
@@ -7142,7 +7130,6 @@ var toString = Object.prototype.toString;</code></pre>
                 <ul>
                                       <li><span class="bold">name</span> - <span class="em">String</span> <p>The name of the entity to retrieve</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with the specified entity: <code>(err, resource)</code></p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -7159,25 +7146,8 @@ var toString = Object.prototype.toString;</code></pre>
               </section>
               <section class='source'>
                 <h4>Source</h4>
-                <pre><code>item: function(name, namespace, callback) {             
-    if (!callback &amp;&amp; utils.isFunction(namespace)) {
-        callback = namespace;
-        namespace = null;
-    }
-    
-    return this.contains(name, namespace, function(err, contains, entity) {
-        if (err) {
-            callback(err);
-        } 
-        else {
-            if (contains) {
-                callback(null, entity);
-            }
-            else {
-                callback(new Error("No entity with name: " + name));
-            }
-        }
-    });
+                <pre><code>item: function(name, namespace) {    
+    return this.contains(name, namespace);     
 },</code></pre>
               </section>
               
@@ -7201,7 +7171,8 @@ var toString = Object.prototype.toString;</code></pre>
 <p>Return the list of all the entities in this collection.</p>
 <h2>Example</h2>
 <pre><code> var apps = service.apps();
- apps.list(function(err, appList) {
+ apps.refresh(function(err, apps) {
+     var appList = apps.list();
      console.log(appList.length);
  });
 </code></pre>
@@ -7211,10 +7182,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <pre><code>list: function(callback) {
     callback = callback || function() {};
     
-    var that = this;
-    return this.refresh(function(err) {
-        callback(err, that._entities); 
-    });
+    return utils.clone(this._entities);
 },</code></pre>
               </section>
               
@@ -7230,7 +7198,6 @@ var toString = Object.prototype.toString;</code></pre>
                 <ul>
                                       <li><span class="bold">id</span> - <span class="em">String</span> <p>The name of the entity to retrieve</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with whether the entity was found: <code>(err, wasFound, entity)</code></p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -7240,79 +7207,69 @@ var toString = Object.prototype.toString;</code></pre>
 <p>Check to see if the collection contains a specific entity, and if so, return that entity.</p>
 <h2>Example</h2>
 <pre><code> var apps = service.apps();
- apps.contains("search", function(err, found, searchApp) {
-     console.log("Search App Found: " + found);
+ apps.refresh(function(err, apps) {
+     var app = apps.contains("search");
+     console.log("Search App Found: " + !!app);
+     // `app` contains the Application object.
  });
 </code></pre>
               </section>
               <section class='source'>
                 <h4>Source</h4>
-                <pre><code>contains: function(id, namespace, callback) {                
-        if (!callback &amp;&amp; utils.isFunction(namespace)) {
-            callback = namespace;
-            namespace = null;
-        }
-        
+                <pre><code>contains: function(id, namespace) {                
         if (utils.isEmpty(namespace)) {
             namespace = null;
+        }          
+        
+        if (!id) {
+            throw new Error("Must suply a non-empty name.");
         }
         
-        callback = callback || function() {};
+        var path = this._itemPath(this, id, namespace);           
+        var fragmentPath = path.fragment;
+        var fullPath = path.full;
         
-        var that = this;
-        return this.refresh(function(err) {
-            if (err) {
-                callback(err);
-            } 
-            else {             
-                var path = that._itemPath(that, id, namespace);           
-                var fragmentPath = path.fragment;
-                var fullPath = path.full;
-                
-                if (that._entitiesByName.hasOwnProperty(fragmentPath)) {
-                    var entities = that._entitiesByName[fragmentPath];                 
-                    
-                    if (entities.length === 1 &amp;&amp; !namespace) {
-                        // If there is only one entity with the
-                        // specified name and the user did not
-                        // specify a namespace, then we just
-                        // return it
-                        callback(null, true, entities[0]);
-                    }
-                    else if (entities.length === 1 &amp;&amp; namespace) {
-                        // If we specified a namespace, then we 
-                        // only return the entity if it matches
-                        // the full path
-                        if (entities[0].path === fullPath) {
-                            callback(null, true, entities[0]);
-                        }
-                        else {
-                            callback(null, false, null);
-                        }
-                    }
-                    else if (entities.length &gt; 1 &amp;&amp; !namespace) {
-                        // If there is more than one entity and we didn't
-                        // specify a namespace, then we return an error
-                        // saying the match is ambiguous
-                        callback(new Error("Ambiguous match for name '" + id + "'"), false, null);
-                    }
-                    else {
-                        // There is more than one entity, and we do have
-                        // a namespace, so we try and find it
-                        for(var i = 0; i &lt; entities.length; i++) {
-                            var entity = entities[i];
-                            if (entity.path === fullPath) {
-                                callback(null, true, entity);
-                                break;
-                            }
-                        }                            
-                    }
+        if (this._entitiesByName.hasOwnProperty(fragmentPath)) {
+            var entities = this._entitiesByName[fragmentPath];                 
+            
+            if (entities.length === 1 &amp;&amp; !namespace) {
+                // If there is only one entity with the
+                // specified name and the user did not
+                // specify a namespace, then we just
+                // return it
+                return entities[0];
+            }
+            else if (entities.length === 1 &amp;&amp; namespace) {
+                // If we specified a namespace, then we 
+                // only return the entity if it matches
+                // the full path
+                if (entities[0].path === fullPath) {
+                    return entities[0];
                 }
                 else {
-                    callback(null, false, null);
+                    return null;
                 }
             }
-        });
+            else if (entities.length &gt; 1 &amp;&amp; !namespace) {
+                // If there is more than one entity and we didn't
+                // specify a namespace, then we return an error
+                // saying the match is ambiguous
+                throw new Error("Ambiguous match for name '" + id + "'");
+            }
+            else {
+                // There is more than one entity, and we do have
+                // a namespace, so we try and find it
+                for(var i = 0; i &lt; entities.length; i++) {
+                    var entity = entities[i];
+                    if (entity.path === fullPath) {
+                        return entity;
+                    }
+                }                            
+            }
+        }
+        else {
+            return null;
+        }
     },
 });</code></pre>
               </section>
@@ -7506,7 +7463,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.User</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1470">lib/service.js:1470</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1449">lib/service.js:1449</a>)</h4>
                 <pre><code>init: function(service, name) {
         this.name = name;
         this._super(service, Paths.users + "/" + encodeURIComponent(name), {});
@@ -7845,7 +7802,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.Views</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1498">lib/service.js:1498</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1477">lib/service.js:1477</a>)</h4>
                 <pre><code>init: function(service, options, namespace) {
         this._super(service, Paths.views, options, namespace, {
             item: function(collection, props) {
@@ -7914,7 +7871,6 @@ var toString = Object.prototype.toString;</code></pre>
                 <ul>
                                       <li><span class="bold">name</span> - <span class="em">String</span> <p>The name of the entity to retrieve</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with the specified entity: <code>(err, resource)</code></p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -7931,25 +7887,8 @@ var toString = Object.prototype.toString;</code></pre>
               </section>
               <section class='source'>
                 <h4>Source</h4>
-                <pre><code>item: function(name, namespace, callback) {             
-    if (!callback &amp;&amp; utils.isFunction(namespace)) {
-        callback = namespace;
-        namespace = null;
-    }
-    
-    return this.contains(name, namespace, function(err, contains, entity) {
-        if (err) {
-            callback(err);
-        } 
-        else {
-            if (contains) {
-                callback(null, entity);
-            }
-            else {
-                callback(new Error("No entity with name: " + name));
-            }
-        }
-    });
+                <pre><code>item: function(name, namespace) {    
+    return this.contains(name, namespace);     
 },</code></pre>
               </section>
               
@@ -7964,7 +7903,6 @@ var toString = Object.prototype.toString;</code></pre>
                                   <h4>Params</h4>
                 <ul>
                                       <li><span class="bold">params</span> - <span class="em">Object</span> <p>A dictionary of properties to create the entity with.</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with the created entity: <code>(err, createdEntity)</code></p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -8025,7 +7963,8 @@ var toString = Object.prototype.toString;</code></pre>
 <p>Return the list of all the entities in this collection.</p>
 <h2>Example</h2>
 <pre><code> var apps = service.apps();
- apps.list(function(err, appList) {
+ apps.refresh(function(err, apps) {
+     var appList = apps.list();
      console.log(appList.length);
  });
 </code></pre>
@@ -8035,10 +7974,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <pre><code>list: function(callback) {
     callback = callback || function() {};
     
-    var that = this;
-    return this.refresh(function(err) {
-        callback(err, that._entities); 
-    });
+    return utils.clone(this._entities);
 },</code></pre>
               </section>
               
@@ -8054,7 +7990,6 @@ var toString = Object.prototype.toString;</code></pre>
                 <ul>
                                       <li><span class="bold">id</span> - <span class="em">String</span> <p>The name of the entity to retrieve</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with whether the entity was found: <code>(err, wasFound, entity)</code></p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -8064,79 +7999,69 @@ var toString = Object.prototype.toString;</code></pre>
 <p>Check to see if the collection contains a specific entity, and if so, return that entity.</p>
 <h2>Example</h2>
 <pre><code> var apps = service.apps();
- apps.contains("search", function(err, found, searchApp) {
-     console.log("Search App Found: " + found);
+ apps.refresh(function(err, apps) {
+     var app = apps.contains("search");
+     console.log("Search App Found: " + !!app);
+     // `app` contains the Application object.
  });
 </code></pre>
               </section>
               <section class='source'>
                 <h4>Source</h4>
-                <pre><code>contains: function(id, namespace, callback) {                
-        if (!callback &amp;&amp; utils.isFunction(namespace)) {
-            callback = namespace;
-            namespace = null;
-        }
-        
+                <pre><code>contains: function(id, namespace) {                
         if (utils.isEmpty(namespace)) {
             namespace = null;
+        }          
+        
+        if (!id) {
+            throw new Error("Must suply a non-empty name.");
         }
         
-        callback = callback || function() {};
+        var path = this._itemPath(this, id, namespace);           
+        var fragmentPath = path.fragment;
+        var fullPath = path.full;
         
-        var that = this;
-        return this.refresh(function(err) {
-            if (err) {
-                callback(err);
-            } 
-            else {             
-                var path = that._itemPath(that, id, namespace);           
-                var fragmentPath = path.fragment;
-                var fullPath = path.full;
-                
-                if (that._entitiesByName.hasOwnProperty(fragmentPath)) {
-                    var entities = that._entitiesByName[fragmentPath];                 
-                    
-                    if (entities.length === 1 &amp;&amp; !namespace) {
-                        // If there is only one entity with the
-                        // specified name and the user did not
-                        // specify a namespace, then we just
-                        // return it
-                        callback(null, true, entities[0]);
-                    }
-                    else if (entities.length === 1 &amp;&amp; namespace) {
-                        // If we specified a namespace, then we 
-                        // only return the entity if it matches
-                        // the full path
-                        if (entities[0].path === fullPath) {
-                            callback(null, true, entities[0]);
-                        }
-                        else {
-                            callback(null, false, null);
-                        }
-                    }
-                    else if (entities.length &gt; 1 &amp;&amp; !namespace) {
-                        // If there is more than one entity and we didn't
-                        // specify a namespace, then we return an error
-                        // saying the match is ambiguous
-                        callback(new Error("Ambiguous match for name '" + id + "'"), false, null);
-                    }
-                    else {
-                        // There is more than one entity, and we do have
-                        // a namespace, so we try and find it
-                        for(var i = 0; i &lt; entities.length; i++) {
-                            var entity = entities[i];
-                            if (entity.path === fullPath) {
-                                callback(null, true, entity);
-                                break;
-                            }
-                        }                            
-                    }
+        if (this._entitiesByName.hasOwnProperty(fragmentPath)) {
+            var entities = this._entitiesByName[fragmentPath];                 
+            
+            if (entities.length === 1 &amp;&amp; !namespace) {
+                // If there is only one entity with the
+                // specified name and the user did not
+                // specify a namespace, then we just
+                // return it
+                return entities[0];
+            }
+            else if (entities.length === 1 &amp;&amp; namespace) {
+                // If we specified a namespace, then we 
+                // only return the entity if it matches
+                // the full path
+                if (entities[0].path === fullPath) {
+                    return entities[0];
                 }
                 else {
-                    callback(null, false, null);
+                    return null;
                 }
             }
-        });
+            else if (entities.length &gt; 1 &amp;&amp; !namespace) {
+                // If there is more than one entity and we didn't
+                // specify a namespace, then we return an error
+                // saying the match is ambiguous
+                throw new Error("Ambiguous match for name '" + id + "'");
+            }
+            else {
+                // There is more than one entity, and we do have
+                // a namespace, so we try and find it
+                for(var i = 0; i &lt; entities.length; i++) {
+                    var entity = entities[i];
+                    if (entity.path === fullPath) {
+                        return entity;
+                    }
+                }                            
+            }
+        }
+        else {
+            return null;
+        }
     },
 });</code></pre>
               </section>
@@ -8331,7 +8256,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.View</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1530">lib/service.js:1530</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1509">lib/service.js:1509</a>)</h4>
                 <pre><code>init: function(service, name, namespace) {
         this.name = name;
         this._super(service, Paths.views + "/" + encodeURIComponent(name), namespace);
@@ -8670,7 +8595,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.Indexes</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1558">lib/service.js:1558</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1537">lib/service.js:1537</a>)</h4>
                 <pre><code>init: function(service, options, namespace) {
     this._super(service, Paths.indexes, options, namespace, {
         item: function(collection, props) {
@@ -8712,7 +8637,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1588">lib/service.js:1588</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1567">lib/service.js:1567</a>)</h4>
                 <pre><code>create: function(name, params, callback) {
         // If someone called us with the default style of (params, callback),
         // lets make it work
@@ -8787,7 +8712,6 @@ var toString = Object.prototype.toString;</code></pre>
                 <ul>
                                       <li><span class="bold">name</span> - <span class="em">String</span> <p>The name of the entity to retrieve</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with the specified entity: <code>(err, resource)</code></p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -8804,25 +8728,8 @@ var toString = Object.prototype.toString;</code></pre>
               </section>
               <section class='source'>
                 <h4>Source</h4>
-                <pre><code>item: function(name, namespace, callback) {             
-    if (!callback &amp;&amp; utils.isFunction(namespace)) {
-        callback = namespace;
-        namespace = null;
-    }
-    
-    return this.contains(name, namespace, function(err, contains, entity) {
-        if (err) {
-            callback(err);
-        } 
-        else {
-            if (contains) {
-                callback(null, entity);
-            }
-            else {
-                callback(new Error("No entity with name: " + name));
-            }
-        }
-    });
+                <pre><code>item: function(name, namespace) {    
+    return this.contains(name, namespace);     
 },</code></pre>
               </section>
               
@@ -8846,7 +8753,8 @@ var toString = Object.prototype.toString;</code></pre>
 <p>Return the list of all the entities in this collection.</p>
 <h2>Example</h2>
 <pre><code> var apps = service.apps();
- apps.list(function(err, appList) {
+ apps.refresh(function(err, apps) {
+     var appList = apps.list();
      console.log(appList.length);
  });
 </code></pre>
@@ -8856,10 +8764,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <pre><code>list: function(callback) {
     callback = callback || function() {};
     
-    var that = this;
-    return this.refresh(function(err) {
-        callback(err, that._entities); 
-    });
+    return utils.clone(this._entities);
 },</code></pre>
               </section>
               
@@ -8875,7 +8780,6 @@ var toString = Object.prototype.toString;</code></pre>
                 <ul>
                                       <li><span class="bold">id</span> - <span class="em">String</span> <p>The name of the entity to retrieve</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with whether the entity was found: <code>(err, wasFound, entity)</code></p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -8885,79 +8789,69 @@ var toString = Object.prototype.toString;</code></pre>
 <p>Check to see if the collection contains a specific entity, and if so, return that entity.</p>
 <h2>Example</h2>
 <pre><code> var apps = service.apps();
- apps.contains("search", function(err, found, searchApp) {
-     console.log("Search App Found: " + found);
+ apps.refresh(function(err, apps) {
+     var app = apps.contains("search");
+     console.log("Search App Found: " + !!app);
+     // `app` contains the Application object.
  });
 </code></pre>
               </section>
               <section class='source'>
                 <h4>Source</h4>
-                <pre><code>contains: function(id, namespace, callback) {                
-        if (!callback &amp;&amp; utils.isFunction(namespace)) {
-            callback = namespace;
-            namespace = null;
-        }
-        
+                <pre><code>contains: function(id, namespace) {                
         if (utils.isEmpty(namespace)) {
             namespace = null;
+        }          
+        
+        if (!id) {
+            throw new Error("Must suply a non-empty name.");
         }
         
-        callback = callback || function() {};
+        var path = this._itemPath(this, id, namespace);           
+        var fragmentPath = path.fragment;
+        var fullPath = path.full;
         
-        var that = this;
-        return this.refresh(function(err) {
-            if (err) {
-                callback(err);
-            } 
-            else {             
-                var path = that._itemPath(that, id, namespace);           
-                var fragmentPath = path.fragment;
-                var fullPath = path.full;
-                
-                if (that._entitiesByName.hasOwnProperty(fragmentPath)) {
-                    var entities = that._entitiesByName[fragmentPath];                 
-                    
-                    if (entities.length === 1 &amp;&amp; !namespace) {
-                        // If there is only one entity with the
-                        // specified name and the user did not
-                        // specify a namespace, then we just
-                        // return it
-                        callback(null, true, entities[0]);
-                    }
-                    else if (entities.length === 1 &amp;&amp; namespace) {
-                        // If we specified a namespace, then we 
-                        // only return the entity if it matches
-                        // the full path
-                        if (entities[0].path === fullPath) {
-                            callback(null, true, entities[0]);
-                        }
-                        else {
-                            callback(null, false, null);
-                        }
-                    }
-                    else if (entities.length &gt; 1 &amp;&amp; !namespace) {
-                        // If there is more than one entity and we didn't
-                        // specify a namespace, then we return an error
-                        // saying the match is ambiguous
-                        callback(new Error("Ambiguous match for name '" + id + "'"), false, null);
-                    }
-                    else {
-                        // There is more than one entity, and we do have
-                        // a namespace, so we try and find it
-                        for(var i = 0; i &lt; entities.length; i++) {
-                            var entity = entities[i];
-                            if (entity.path === fullPath) {
-                                callback(null, true, entity);
-                                break;
-                            }
-                        }                            
-                    }
+        if (this._entitiesByName.hasOwnProperty(fragmentPath)) {
+            var entities = this._entitiesByName[fragmentPath];                 
+            
+            if (entities.length === 1 &amp;&amp; !namespace) {
+                // If there is only one entity with the
+                // specified name and the user did not
+                // specify a namespace, then we just
+                // return it
+                return entities[0];
+            }
+            else if (entities.length === 1 &amp;&amp; namespace) {
+                // If we specified a namespace, then we 
+                // only return the entity if it matches
+                // the full path
+                if (entities[0].path === fullPath) {
+                    return entities[0];
                 }
                 else {
-                    callback(null, false, null);
+                    return null;
                 }
             }
-        });
+            else if (entities.length &gt; 1 &amp;&amp; !namespace) {
+                // If there is more than one entity and we didn't
+                // specify a namespace, then we return an error
+                // saying the match is ambiguous
+                throw new Error("Ambiguous match for name '" + id + "'");
+            }
+            else {
+                // There is more than one entity, and we do have
+                // a namespace, so we try and find it
+                for(var i = 0; i &lt; entities.length; i++) {
+                    var entity = entities[i];
+                    if (entity.path === fullPath) {
+                        return entity;
+                    }
+                }                            
+            }
+        }
+        else {
+            return null;
+        }
     },
 });</code></pre>
               </section>
@@ -9152,7 +9046,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.Index</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1626">lib/service.js:1626</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1605">lib/service.js:1605</a>)</h4>
                 <pre><code>init: function(service, name, namespace) {
     this.name = name;
     this._super(service, Paths.indexes + "/" + encodeURIComponent(name), namespace);
@@ -9189,7 +9083,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1650">lib/service.js:1650</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1629">lib/service.js:1629</a>)</h4>
                 <pre><code>submitEvent: function(event, params, callback) {
         callback = callback || function() {};
         params = params || {};
@@ -9551,7 +9445,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.Properties</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1701">lib/service.js:1701</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1680">lib/service.js:1680</a>)</h4>
                 <pre><code>init: function(service, options) {
     var namespace = {owner: "-", app: "-"};
     this._super(service, Paths.properties, options, namespace, {
@@ -9591,7 +9485,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1728">lib/service.js:1728</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1707">lib/service.js:1707</a>)</h4>
                 <pre><code>create: function(filename, callback) {
         // If someone called us with the default style of (params, callback),
         // lets make it work
@@ -9672,7 +9566,6 @@ var toString = Object.prototype.toString;</code></pre>
                 <ul>
                                       <li><span class="bold">name</span> - <span class="em">String</span> <p>The name of the entity to retrieve</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with the specified entity: <code>(err, resource)</code></p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -9689,25 +9582,8 @@ var toString = Object.prototype.toString;</code></pre>
               </section>
               <section class='source'>
                 <h4>Source</h4>
-                <pre><code>item: function(name, namespace, callback) {             
-    if (!callback &amp;&amp; utils.isFunction(namespace)) {
-        callback = namespace;
-        namespace = null;
-    }
-    
-    return this.contains(name, namespace, function(err, contains, entity) {
-        if (err) {
-            callback(err);
-        } 
-        else {
-            if (contains) {
-                callback(null, entity);
-            }
-            else {
-                callback(new Error("No entity with name: " + name));
-            }
-        }
-    });
+                <pre><code>item: function(name, namespace) {    
+    return this.contains(name, namespace);     
 },</code></pre>
               </section>
               
@@ -9731,7 +9607,8 @@ var toString = Object.prototype.toString;</code></pre>
 <p>Return the list of all the entities in this collection.</p>
 <h2>Example</h2>
 <pre><code> var apps = service.apps();
- apps.list(function(err, appList) {
+ apps.refresh(function(err, apps) {
+     var appList = apps.list();
      console.log(appList.length);
  });
 </code></pre>
@@ -9741,10 +9618,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <pre><code>list: function(callback) {
     callback = callback || function() {};
     
-    var that = this;
-    return this.refresh(function(err) {
-        callback(err, that._entities); 
-    });
+    return utils.clone(this._entities);
 },</code></pre>
               </section>
               
@@ -9760,7 +9634,6 @@ var toString = Object.prototype.toString;</code></pre>
                 <ul>
                                       <li><span class="bold">id</span> - <span class="em">String</span> <p>The name of the entity to retrieve</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with whether the entity was found: <code>(err, wasFound, entity)</code></p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -9770,79 +9643,69 @@ var toString = Object.prototype.toString;</code></pre>
 <p>Check to see if the collection contains a specific entity, and if so, return that entity.</p>
 <h2>Example</h2>
 <pre><code> var apps = service.apps();
- apps.contains("search", function(err, found, searchApp) {
-     console.log("Search App Found: " + found);
+ apps.refresh(function(err, apps) {
+     var app = apps.contains("search");
+     console.log("Search App Found: " + !!app);
+     // `app` contains the Application object.
  });
 </code></pre>
               </section>
               <section class='source'>
                 <h4>Source</h4>
-                <pre><code>contains: function(id, namespace, callback) {                
-        if (!callback &amp;&amp; utils.isFunction(namespace)) {
-            callback = namespace;
-            namespace = null;
-        }
-        
+                <pre><code>contains: function(id, namespace) {                
         if (utils.isEmpty(namespace)) {
             namespace = null;
+        }          
+        
+        if (!id) {
+            throw new Error("Must suply a non-empty name.");
         }
         
-        callback = callback || function() {};
+        var path = this._itemPath(this, id, namespace);           
+        var fragmentPath = path.fragment;
+        var fullPath = path.full;
         
-        var that = this;
-        return this.refresh(function(err) {
-            if (err) {
-                callback(err);
-            } 
-            else {             
-                var path = that._itemPath(that, id, namespace);           
-                var fragmentPath = path.fragment;
-                var fullPath = path.full;
-                
-                if (that._entitiesByName.hasOwnProperty(fragmentPath)) {
-                    var entities = that._entitiesByName[fragmentPath];                 
-                    
-                    if (entities.length === 1 &amp;&amp; !namespace) {
-                        // If there is only one entity with the
-                        // specified name and the user did not
-                        // specify a namespace, then we just
-                        // return it
-                        callback(null, true, entities[0]);
-                    }
-                    else if (entities.length === 1 &amp;&amp; namespace) {
-                        // If we specified a namespace, then we 
-                        // only return the entity if it matches
-                        // the full path
-                        if (entities[0].path === fullPath) {
-                            callback(null, true, entities[0]);
-                        }
-                        else {
-                            callback(null, false, null);
-                        }
-                    }
-                    else if (entities.length &gt; 1 &amp;&amp; !namespace) {
-                        // If there is more than one entity and we didn't
-                        // specify a namespace, then we return an error
-                        // saying the match is ambiguous
-                        callback(new Error("Ambiguous match for name '" + id + "'"), false, null);
-                    }
-                    else {
-                        // There is more than one entity, and we do have
-                        // a namespace, so we try and find it
-                        for(var i = 0; i &lt; entities.length; i++) {
-                            var entity = entities[i];
-                            if (entity.path === fullPath) {
-                                callback(null, true, entity);
-                                break;
-                            }
-                        }                            
-                    }
+        if (this._entitiesByName.hasOwnProperty(fragmentPath)) {
+            var entities = this._entitiesByName[fragmentPath];                 
+            
+            if (entities.length === 1 &amp;&amp; !namespace) {
+                // If there is only one entity with the
+                // specified name and the user did not
+                // specify a namespace, then we just
+                // return it
+                return entities[0];
+            }
+            else if (entities.length === 1 &amp;&amp; namespace) {
+                // If we specified a namespace, then we 
+                // only return the entity if it matches
+                // the full path
+                if (entities[0].path === fullPath) {
+                    return entities[0];
                 }
                 else {
-                    callback(null, false, null);
+                    return null;
                 }
             }
-        });
+            else if (entities.length &gt; 1 &amp;&amp; !namespace) {
+                // If there is more than one entity and we didn't
+                // specify a namespace, then we return an error
+                // saying the match is ambiguous
+                throw new Error("Ambiguous match for name '" + id + "'");
+            }
+            else {
+                // There is more than one entity, and we do have
+                // a namespace, so we try and find it
+                for(var i = 0; i &lt; entities.length; i++) {
+                    var entity = entities[i];
+                    if (entity.path === fullPath) {
+                        return entity;
+                    }
+                }                            
+            }
+        }
+        else {
+            return null;
+        }
     },
 });</code></pre>
               </section>
@@ -10036,7 +9899,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.PropertyFile</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1771">lib/service.js:1771</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1750">lib/service.js:1750</a>)</h4>
                 <pre><code>init: function(service, name, options) {
     this.name = name;
     
@@ -10080,7 +9943,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1802">lib/service.js:1802</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1781">lib/service.js:1781</a>)</h4>
                 <pre><code>create: function(stanzaName, callback) {
         // If someone called us with the default style of (params, callback),
         // lets make it work
@@ -10161,7 +10024,6 @@ var toString = Object.prototype.toString;</code></pre>
                 <ul>
                                       <li><span class="bold">name</span> - <span class="em">String</span> <p>The name of the entity to retrieve</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with the specified entity: <code>(err, resource)</code></p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -10178,25 +10040,8 @@ var toString = Object.prototype.toString;</code></pre>
               </section>
               <section class='source'>
                 <h4>Source</h4>
-                <pre><code>item: function(name, namespace, callback) {             
-    if (!callback &amp;&amp; utils.isFunction(namespace)) {
-        callback = namespace;
-        namespace = null;
-    }
-    
-    return this.contains(name, namespace, function(err, contains, entity) {
-        if (err) {
-            callback(err);
-        } 
-        else {
-            if (contains) {
-                callback(null, entity);
-            }
-            else {
-                callback(new Error("No entity with name: " + name));
-            }
-        }
-    });
+                <pre><code>item: function(name, namespace) {    
+    return this.contains(name, namespace);     
 },</code></pre>
               </section>
               
@@ -10220,7 +10065,8 @@ var toString = Object.prototype.toString;</code></pre>
 <p>Return the list of all the entities in this collection.</p>
 <h2>Example</h2>
 <pre><code> var apps = service.apps();
- apps.list(function(err, appList) {
+ apps.refresh(function(err, apps) {
+     var appList = apps.list();
      console.log(appList.length);
  });
 </code></pre>
@@ -10230,10 +10076,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <pre><code>list: function(callback) {
     callback = callback || function() {};
     
-    var that = this;
-    return this.refresh(function(err) {
-        callback(err, that._entities); 
-    });
+    return utils.clone(this._entities);
 },</code></pre>
               </section>
               
@@ -10249,7 +10092,6 @@ var toString = Object.prototype.toString;</code></pre>
                 <ul>
                                       <li><span class="bold">id</span> - <span class="em">String</span> <p>The name of the entity to retrieve</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with whether the entity was found: <code>(err, wasFound, entity)</code></p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -10259,79 +10101,69 @@ var toString = Object.prototype.toString;</code></pre>
 <p>Check to see if the collection contains a specific entity, and if so, return that entity.</p>
 <h2>Example</h2>
 <pre><code> var apps = service.apps();
- apps.contains("search", function(err, found, searchApp) {
-     console.log("Search App Found: " + found);
+ apps.refresh(function(err, apps) {
+     var app = apps.contains("search");
+     console.log("Search App Found: " + !!app);
+     // `app` contains the Application object.
  });
 </code></pre>
               </section>
               <section class='source'>
                 <h4>Source</h4>
-                <pre><code>contains: function(id, namespace, callback) {                
-        if (!callback &amp;&amp; utils.isFunction(namespace)) {
-            callback = namespace;
-            namespace = null;
-        }
-        
+                <pre><code>contains: function(id, namespace) {                
         if (utils.isEmpty(namespace)) {
             namespace = null;
+        }          
+        
+        if (!id) {
+            throw new Error("Must suply a non-empty name.");
         }
         
-        callback = callback || function() {};
+        var path = this._itemPath(this, id, namespace);           
+        var fragmentPath = path.fragment;
+        var fullPath = path.full;
         
-        var that = this;
-        return this.refresh(function(err) {
-            if (err) {
-                callback(err);
-            } 
-            else {             
-                var path = that._itemPath(that, id, namespace);           
-                var fragmentPath = path.fragment;
-                var fullPath = path.full;
-                
-                if (that._entitiesByName.hasOwnProperty(fragmentPath)) {
-                    var entities = that._entitiesByName[fragmentPath];                 
-                    
-                    if (entities.length === 1 &amp;&amp; !namespace) {
-                        // If there is only one entity with the
-                        // specified name and the user did not
-                        // specify a namespace, then we just
-                        // return it
-                        callback(null, true, entities[0]);
-                    }
-                    else if (entities.length === 1 &amp;&amp; namespace) {
-                        // If we specified a namespace, then we 
-                        // only return the entity if it matches
-                        // the full path
-                        if (entities[0].path === fullPath) {
-                            callback(null, true, entities[0]);
-                        }
-                        else {
-                            callback(null, false, null);
-                        }
-                    }
-                    else if (entities.length &gt; 1 &amp;&amp; !namespace) {
-                        // If there is more than one entity and we didn't
-                        // specify a namespace, then we return an error
-                        // saying the match is ambiguous
-                        callback(new Error("Ambiguous match for name '" + id + "'"), false, null);
-                    }
-                    else {
-                        // There is more than one entity, and we do have
-                        // a namespace, so we try and find it
-                        for(var i = 0; i &lt; entities.length; i++) {
-                            var entity = entities[i];
-                            if (entity.path === fullPath) {
-                                callback(null, true, entity);
-                                break;
-                            }
-                        }                            
-                    }
+        if (this._entitiesByName.hasOwnProperty(fragmentPath)) {
+            var entities = this._entitiesByName[fragmentPath];                 
+            
+            if (entities.length === 1 &amp;&amp; !namespace) {
+                // If there is only one entity with the
+                // specified name and the user did not
+                // specify a namespace, then we just
+                // return it
+                return entities[0];
+            }
+            else if (entities.length === 1 &amp;&amp; namespace) {
+                // If we specified a namespace, then we 
+                // only return the entity if it matches
+                // the full path
+                if (entities[0].path === fullPath) {
+                    return entities[0];
                 }
                 else {
-                    callback(null, false, null);
+                    return null;
                 }
             }
-        });
+            else if (entities.length &gt; 1 &amp;&amp; !namespace) {
+                // If there is more than one entity and we didn't
+                // specify a namespace, then we return an error
+                // saying the match is ambiguous
+                throw new Error("Ambiguous match for name '" + id + "'");
+            }
+            else {
+                // There is more than one entity, and we do have
+                // a namespace, so we try and find it
+                for(var i = 0; i &lt; entities.length; i++) {
+                    var entity = entities[i];
+                    if (entity.path === fullPath) {
+                        return entity;
+                    }
+                }                            
+            }
+        }
+        else {
+            return null;
+        }
     },
 });</code></pre>
               </section>
@@ -10525,7 +10357,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.PropertyStanza</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1845">lib/service.js:1845</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1824">lib/service.js:1824</a>)</h4>
                 <pre><code>init: function(service, file, name) {
         this.name = name;
         // We always enforce the "globalness" of properties
@@ -10870,7 +10702,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.Configurations</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1879">lib/service.js:1879</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1858">lib/service.js:1858</a>)</h4>
                 <pre><code>init: function(service, options, namespace) {
     if (!namespace || namespace.owner === "-" || namespace.app === "-") {
         throw new Error("Configurations requires a non-wildcard owner/app");
@@ -10921,7 +10753,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1917">lib/service.js:1917</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1896">lib/service.js:1896</a>)</h4>
                 <pre><code>create: function(filename, callback) {
         // If someone called us with the default style of (params, callback),
         // lets make it work
@@ -11002,7 +10834,6 @@ var toString = Object.prototype.toString;</code></pre>
                 <ul>
                                       <li><span class="bold">name</span> - <span class="em">String</span> <p>The name of the entity to retrieve</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with the specified entity: <code>(err, resource)</code></p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -11019,25 +10850,8 @@ var toString = Object.prototype.toString;</code></pre>
               </section>
               <section class='source'>
                 <h4>Source</h4>
-                <pre><code>item: function(name, namespace, callback) {             
-    if (!callback &amp;&amp; utils.isFunction(namespace)) {
-        callback = namespace;
-        namespace = null;
-    }
-    
-    return this.contains(name, namespace, function(err, contains, entity) {
-        if (err) {
-            callback(err);
-        } 
-        else {
-            if (contains) {
-                callback(null, entity);
-            }
-            else {
-                callback(new Error("No entity with name: " + name));
-            }
-        }
-    });
+                <pre><code>item: function(name, namespace) {    
+    return this.contains(name, namespace);     
 },</code></pre>
               </section>
               
@@ -11061,7 +10875,8 @@ var toString = Object.prototype.toString;</code></pre>
 <p>Return the list of all the entities in this collection.</p>
 <h2>Example</h2>
 <pre><code> var apps = service.apps();
- apps.list(function(err, appList) {
+ apps.refresh(function(err, apps) {
+     var appList = apps.list();
      console.log(appList.length);
  });
 </code></pre>
@@ -11071,10 +10886,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <pre><code>list: function(callback) {
     callback = callback || function() {};
     
-    var that = this;
-    return this.refresh(function(err) {
-        callback(err, that._entities); 
-    });
+    return utils.clone(this._entities);
 },</code></pre>
               </section>
               
@@ -11090,7 +10902,6 @@ var toString = Object.prototype.toString;</code></pre>
                 <ul>
                                       <li><span class="bold">id</span> - <span class="em">String</span> <p>The name of the entity to retrieve</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with whether the entity was found: <code>(err, wasFound, entity)</code></p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -11100,79 +10911,69 @@ var toString = Object.prototype.toString;</code></pre>
 <p>Check to see if the collection contains a specific entity, and if so, return that entity.</p>
 <h2>Example</h2>
 <pre><code> var apps = service.apps();
- apps.contains("search", function(err, found, searchApp) {
-     console.log("Search App Found: " + found);
+ apps.refresh(function(err, apps) {
+     var app = apps.contains("search");
+     console.log("Search App Found: " + !!app);
+     // `app` contains the Application object.
  });
 </code></pre>
               </section>
               <section class='source'>
                 <h4>Source</h4>
-                <pre><code>contains: function(id, namespace, callback) {                
-        if (!callback &amp;&amp; utils.isFunction(namespace)) {
-            callback = namespace;
-            namespace = null;
-        }
-        
+                <pre><code>contains: function(id, namespace) {                
         if (utils.isEmpty(namespace)) {
             namespace = null;
+        }          
+        
+        if (!id) {
+            throw new Error("Must suply a non-empty name.");
         }
         
-        callback = callback || function() {};
+        var path = this._itemPath(this, id, namespace);           
+        var fragmentPath = path.fragment;
+        var fullPath = path.full;
         
-        var that = this;
-        return this.refresh(function(err) {
-            if (err) {
-                callback(err);
-            } 
-            else {             
-                var path = that._itemPath(that, id, namespace);           
-                var fragmentPath = path.fragment;
-                var fullPath = path.full;
-                
-                if (that._entitiesByName.hasOwnProperty(fragmentPath)) {
-                    var entities = that._entitiesByName[fragmentPath];                 
-                    
-                    if (entities.length === 1 &amp;&amp; !namespace) {
-                        // If there is only one entity with the
-                        // specified name and the user did not
-                        // specify a namespace, then we just
-                        // return it
-                        callback(null, true, entities[0]);
-                    }
-                    else if (entities.length === 1 &amp;&amp; namespace) {
-                        // If we specified a namespace, then we 
-                        // only return the entity if it matches
-                        // the full path
-                        if (entities[0].path === fullPath) {
-                            callback(null, true, entities[0]);
-                        }
-                        else {
-                            callback(null, false, null);
-                        }
-                    }
-                    else if (entities.length &gt; 1 &amp;&amp; !namespace) {
-                        // If there is more than one entity and we didn't
-                        // specify a namespace, then we return an error
-                        // saying the match is ambiguous
-                        callback(new Error("Ambiguous match for name '" + id + "'"), false, null);
-                    }
-                    else {
-                        // There is more than one entity, and we do have
-                        // a namespace, so we try and find it
-                        for(var i = 0; i &lt; entities.length; i++) {
-                            var entity = entities[i];
-                            if (entity.path === fullPath) {
-                                callback(null, true, entity);
-                                break;
-                            }
-                        }                            
-                    }
+        if (this._entitiesByName.hasOwnProperty(fragmentPath)) {
+            var entities = this._entitiesByName[fragmentPath];                 
+            
+            if (entities.length === 1 &amp;&amp; !namespace) {
+                // If there is only one entity with the
+                // specified name and the user did not
+                // specify a namespace, then we just
+                // return it
+                return entities[0];
+            }
+            else if (entities.length === 1 &amp;&amp; namespace) {
+                // If we specified a namespace, then we 
+                // only return the entity if it matches
+                // the full path
+                if (entities[0].path === fullPath) {
+                    return entities[0];
                 }
                 else {
-                    callback(null, false, null);
+                    return null;
                 }
             }
-        });
+            else if (entities.length &gt; 1 &amp;&amp; !namespace) {
+                // If there is more than one entity and we didn't
+                // specify a namespace, then we return an error
+                // saying the match is ambiguous
+                throw new Error("Ambiguous match for name '" + id + "'");
+            }
+            else {
+                // There is more than one entity, and we do have
+                // a namespace, so we try and find it
+                for(var i = 0; i &lt; entities.length; i++) {
+                    var entity = entities[i];
+                    if (entity.path === fullPath) {
+                        return entity;
+                    }
+                }                            
+            }
+        }
+        else {
+            return null;
+        }
     },
 });</code></pre>
               </section>
@@ -11367,7 +11168,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.ConfigurationFile</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1961">lib/service.js:1961</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1940">lib/service.js:1940</a>)</h4>
                 <pre><code>init: function(service, name, options, namespace) {
     this.name = name;
     var path = Paths.configurations + "/conf-" + encodeURIComponent(name);
@@ -11410,7 +11211,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1991">lib/service.js:1991</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1970">lib/service.js:1970</a>)</h4>
                 <pre><code>create: function(stanzaName, values, callback) {
         // If someone called us with the default style of (params, callback),
         // lets make it work
@@ -11490,7 +11291,6 @@ var toString = Object.prototype.toString;</code></pre>
                 <ul>
                                       <li><span class="bold">name</span> - <span class="em">String</span> <p>The name of the entity to retrieve</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with the specified entity: <code>(err, resource)</code></p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -11507,25 +11307,8 @@ var toString = Object.prototype.toString;</code></pre>
               </section>
               <section class='source'>
                 <h4>Source</h4>
-                <pre><code>item: function(name, namespace, callback) {             
-    if (!callback &amp;&amp; utils.isFunction(namespace)) {
-        callback = namespace;
-        namespace = null;
-    }
-    
-    return this.contains(name, namespace, function(err, contains, entity) {
-        if (err) {
-            callback(err);
-        } 
-        else {
-            if (contains) {
-                callback(null, entity);
-            }
-            else {
-                callback(new Error("No entity with name: " + name));
-            }
-        }
-    });
+                <pre><code>item: function(name, namespace) {    
+    return this.contains(name, namespace);     
 },</code></pre>
               </section>
               
@@ -11549,7 +11332,8 @@ var toString = Object.prototype.toString;</code></pre>
 <p>Return the list of all the entities in this collection.</p>
 <h2>Example</h2>
 <pre><code> var apps = service.apps();
- apps.list(function(err, appList) {
+ apps.refresh(function(err, apps) {
+     var appList = apps.list();
      console.log(appList.length);
  });
 </code></pre>
@@ -11559,10 +11343,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <pre><code>list: function(callback) {
     callback = callback || function() {};
     
-    var that = this;
-    return this.refresh(function(err) {
-        callback(err, that._entities); 
-    });
+    return utils.clone(this._entities);
 },</code></pre>
               </section>
               
@@ -11578,7 +11359,6 @@ var toString = Object.prototype.toString;</code></pre>
                 <ul>
                                       <li><span class="bold">id</span> - <span class="em">String</span> <p>The name of the entity to retrieve</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with whether the entity was found: <code>(err, wasFound, entity)</code></p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -11588,79 +11368,69 @@ var toString = Object.prototype.toString;</code></pre>
 <p>Check to see if the collection contains a specific entity, and if so, return that entity.</p>
 <h2>Example</h2>
 <pre><code> var apps = service.apps();
- apps.contains("search", function(err, found, searchApp) {
-     console.log("Search App Found: " + found);
+ apps.refresh(function(err, apps) {
+     var app = apps.contains("search");
+     console.log("Search App Found: " + !!app);
+     // `app` contains the Application object.
  });
 </code></pre>
               </section>
               <section class='source'>
                 <h4>Source</h4>
-                <pre><code>contains: function(id, namespace, callback) {                
-        if (!callback &amp;&amp; utils.isFunction(namespace)) {
-            callback = namespace;
-            namespace = null;
-        }
-        
+                <pre><code>contains: function(id, namespace) {                
         if (utils.isEmpty(namespace)) {
             namespace = null;
+        }          
+        
+        if (!id) {
+            throw new Error("Must suply a non-empty name.");
         }
         
-        callback = callback || function() {};
+        var path = this._itemPath(this, id, namespace);           
+        var fragmentPath = path.fragment;
+        var fullPath = path.full;
         
-        var that = this;
-        return this.refresh(function(err) {
-            if (err) {
-                callback(err);
-            } 
-            else {             
-                var path = that._itemPath(that, id, namespace);           
-                var fragmentPath = path.fragment;
-                var fullPath = path.full;
-                
-                if (that._entitiesByName.hasOwnProperty(fragmentPath)) {
-                    var entities = that._entitiesByName[fragmentPath];                 
-                    
-                    if (entities.length === 1 &amp;&amp; !namespace) {
-                        // If there is only one entity with the
-                        // specified name and the user did not
-                        // specify a namespace, then we just
-                        // return it
-                        callback(null, true, entities[0]);
-                    }
-                    else if (entities.length === 1 &amp;&amp; namespace) {
-                        // If we specified a namespace, then we 
-                        // only return the entity if it matches
-                        // the full path
-                        if (entities[0].path === fullPath) {
-                            callback(null, true, entities[0]);
-                        }
-                        else {
-                            callback(null, false, null);
-                        }
-                    }
-                    else if (entities.length &gt; 1 &amp;&amp; !namespace) {
-                        // If there is more than one entity and we didn't
-                        // specify a namespace, then we return an error
-                        // saying the match is ambiguous
-                        callback(new Error("Ambiguous match for name '" + id + "'"), false, null);
-                    }
-                    else {
-                        // There is more than one entity, and we do have
-                        // a namespace, so we try and find it
-                        for(var i = 0; i &lt; entities.length; i++) {
-                            var entity = entities[i];
-                            if (entity.path === fullPath) {
-                                callback(null, true, entity);
-                                break;
-                            }
-                        }                            
-                    }
+        if (this._entitiesByName.hasOwnProperty(fragmentPath)) {
+            var entities = this._entitiesByName[fragmentPath];                 
+            
+            if (entities.length === 1 &amp;&amp; !namespace) {
+                // If there is only one entity with the
+                // specified name and the user did not
+                // specify a namespace, then we just
+                // return it
+                return entities[0];
+            }
+            else if (entities.length === 1 &amp;&amp; namespace) {
+                // If we specified a namespace, then we 
+                // only return the entity if it matches
+                // the full path
+                if (entities[0].path === fullPath) {
+                    return entities[0];
                 }
                 else {
-                    callback(null, false, null);
+                    return null;
                 }
             }
-        });
+            else if (entities.length &gt; 1 &amp;&amp; !namespace) {
+                // If there is more than one entity and we didn't
+                // specify a namespace, then we return an error
+                // saying the match is ambiguous
+                throw new Error("Ambiguous match for name '" + id + "'");
+            }
+            else {
+                // There is more than one entity, and we do have
+                // a namespace, so we try and find it
+                for(var i = 0; i &lt; entities.length; i++) {
+                    var entity = entities[i];
+                    if (entity.path === fullPath) {
+                        return entity;
+                    }
+                }                            
+            }
+        }
+        else {
+            return null;
+        }
     },
 });</code></pre>
               </section>
@@ -11855,7 +11625,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.ConfigurationStanza</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2034">lib/service.js:2034</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2013">lib/service.js:2013</a>)</h4>
                 <pre><code>init: function(service, file, name, namespace) {
         this.name = name;
         this._super(service, Paths.configurations + "/conf-" + encodeURIComponent(file) + "/" + encodeURIComponent(name), namespace);
@@ -12194,7 +11964,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.Jobs</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2062">lib/service.js:2062</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2041">lib/service.js:2041</a>)</h4>
                 <pre><code>init: function(service, options, namespace) {
     this._super(service, Paths.jobs, options, namespace, {
         item: function(collection, props) {
@@ -12232,7 +12002,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Create an asyncronous search job</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2087">lib/service.js:2087</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2066">lib/service.js:2066</a>)</h4>
                 <pre><code>create: function(query, params, callback) {
     // If someone called us with the default style of (params, callback),
     // lets make it work
@@ -12297,7 +12067,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2143">lib/service.js:2143</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2122">lib/service.js:2122</a>)</h4>
                 <pre><code>search: function(query, params, callback) {
     return this.create(query, params, callback);
 },</code></pre>
@@ -12332,7 +12102,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2166">lib/service.js:2166</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2145">lib/service.js:2145</a>)</h4>
                 <pre><code>oneshotSearch: function(query, params, callback) {
         // If someone called us with the default style of (params, callback),
         // lets make it work
@@ -12420,7 +12190,6 @@ var toString = Object.prototype.toString;</code></pre>
                 <ul>
                                       <li><span class="bold">name</span> - <span class="em">String</span> <p>The name of the entity to retrieve</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with the specified entity: <code>(err, resource)</code></p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -12437,25 +12206,8 @@ var toString = Object.prototype.toString;</code></pre>
               </section>
               <section class='source'>
                 <h4>Source</h4>
-                <pre><code>item: function(name, namespace, callback) {             
-    if (!callback &amp;&amp; utils.isFunction(namespace)) {
-        callback = namespace;
-        namespace = null;
-    }
-    
-    return this.contains(name, namespace, function(err, contains, entity) {
-        if (err) {
-            callback(err);
-        } 
-        else {
-            if (contains) {
-                callback(null, entity);
-            }
-            else {
-                callback(new Error("No entity with name: " + name));
-            }
-        }
-    });
+                <pre><code>item: function(name, namespace) {    
+    return this.contains(name, namespace);     
 },</code></pre>
               </section>
               
@@ -12479,7 +12231,8 @@ var toString = Object.prototype.toString;</code></pre>
 <p>Return the list of all the entities in this collection.</p>
 <h2>Example</h2>
 <pre><code> var apps = service.apps();
- apps.list(function(err, appList) {
+ apps.refresh(function(err, apps) {
+     var appList = apps.list();
      console.log(appList.length);
  });
 </code></pre>
@@ -12489,10 +12242,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <pre><code>list: function(callback) {
     callback = callback || function() {};
     
-    var that = this;
-    return this.refresh(function(err) {
-        callback(err, that._entities); 
-    });
+    return utils.clone(this._entities);
 },</code></pre>
               </section>
               
@@ -12508,7 +12258,6 @@ var toString = Object.prototype.toString;</code></pre>
                 <ul>
                                       <li><span class="bold">id</span> - <span class="em">String</span> <p>The name of the entity to retrieve</p></li>
                                       <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with whether the entity was found: <code>(err, wasFound, entity)</code></p></li>
                   </ul>
               </section>
               <section class='params'>
@@ -12518,79 +12267,69 @@ var toString = Object.prototype.toString;</code></pre>
 <p>Check to see if the collection contains a specific entity, and if so, return that entity.</p>
 <h2>Example</h2>
 <pre><code> var apps = service.apps();
- apps.contains("search", function(err, found, searchApp) {
-     console.log("Search App Found: " + found);
+ apps.refresh(function(err, apps) {
+     var app = apps.contains("search");
+     console.log("Search App Found: " + !!app);
+     // `app` contains the Application object.
  });
 </code></pre>
               </section>
               <section class='source'>
                 <h4>Source</h4>
-                <pre><code>contains: function(id, namespace, callback) {                
-        if (!callback &amp;&amp; utils.isFunction(namespace)) {
-            callback = namespace;
-            namespace = null;
-        }
-        
+                <pre><code>contains: function(id, namespace) {                
         if (utils.isEmpty(namespace)) {
             namespace = null;
+        }          
+        
+        if (!id) {
+            throw new Error("Must suply a non-empty name.");
         }
         
-        callback = callback || function() {};
+        var path = this._itemPath(this, id, namespace);           
+        var fragmentPath = path.fragment;
+        var fullPath = path.full;
         
-        var that = this;
-        return this.refresh(function(err) {
-            if (err) {
-                callback(err);
-            } 
-            else {             
-                var path = that._itemPath(that, id, namespace);           
-                var fragmentPath = path.fragment;
-                var fullPath = path.full;
-                
-                if (that._entitiesByName.hasOwnProperty(fragmentPath)) {
-                    var entities = that._entitiesByName[fragmentPath];                 
-                    
-                    if (entities.length === 1 &amp;&amp; !namespace) {
-                        // If there is only one entity with the
-                        // specified name and the user did not
-                        // specify a namespace, then we just
-                        // return it
-                        callback(null, true, entities[0]);
-                    }
-                    else if (entities.length === 1 &amp;&amp; namespace) {
-                        // If we specified a namespace, then we 
-                        // only return the entity if it matches
-                        // the full path
-                        if (entities[0].path === fullPath) {
-                            callback(null, true, entities[0]);
-                        }
-                        else {
-                            callback(null, false, null);
-                        }
-                    }
-                    else if (entities.length &gt; 1 &amp;&amp; !namespace) {
-                        // If there is more than one entity and we didn't
-                        // specify a namespace, then we return an error
-                        // saying the match is ambiguous
-                        callback(new Error("Ambiguous match for name '" + id + "'"), false, null);
-                    }
-                    else {
-                        // There is more than one entity, and we do have
-                        // a namespace, so we try and find it
-                        for(var i = 0; i &lt; entities.length; i++) {
-                            var entity = entities[i];
-                            if (entity.path === fullPath) {
-                                callback(null, true, entity);
-                                break;
-                            }
-                        }                            
-                    }
+        if (this._entitiesByName.hasOwnProperty(fragmentPath)) {
+            var entities = this._entitiesByName[fragmentPath];                 
+            
+            if (entities.length === 1 &amp;&amp; !namespace) {
+                // If there is only one entity with the
+                // specified name and the user did not
+                // specify a namespace, then we just
+                // return it
+                return entities[0];
+            }
+            else if (entities.length === 1 &amp;&amp; namespace) {
+                // If we specified a namespace, then we 
+                // only return the entity if it matches
+                // the full path
+                if (entities[0].path === fullPath) {
+                    return entities[0];
                 }
                 else {
-                    callback(null, false, null);
+                    return null;
                 }
             }
-        });
+            else if (entities.length &gt; 1 &amp;&amp; !namespace) {
+                // If there is more than one entity and we didn't
+                // specify a namespace, then we return an error
+                // saying the match is ambiguous
+                throw new Error("Ambiguous match for name '" + id + "'");
+            }
+            else {
+                // There is more than one entity, and we do have
+                // a namespace, so we try and find it
+                for(var i = 0; i &lt; entities.length; i++) {
+                    var entity = entities[i];
+                    if (entity.path === fullPath) {
+                        return entity;
+                    }
+                }                            
+            }
+        }
+        else {
+            return null;
+        }
     },
 });</code></pre>
               </section>
@@ -12785,7 +12524,7 @@ var toString = Object.prototype.toString;</code></pre>
                 <p>Constructor for splunkjs.Service.Job</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2219">lib/service.js:2219</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2198">lib/service.js:2198</a>)</h4>
                 <pre><code>init: function(service, sid, namespace) {
     this._super(service, Paths.jobs + "/" + sid, namespace);
     this.sid = sid;
@@ -12836,7 +12575,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2258">lib/service.js:2258</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2237">lib/service.js:2237</a>)</h4>
                 <pre><code>cancel: function(callback) {
     var req = this.post("control", {action: "cancel"}, callback);
     
@@ -12870,7 +12609,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2279">lib/service.js:2279</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2258">lib/service.js:2258</a>)</h4>
                 <pre><code>disablePreview: function(callback) {
     callback = callback || function() {};
     
@@ -12909,7 +12648,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2305">lib/service.js:2305</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2284">lib/service.js:2284</a>)</h4>
                 <pre><code>enablePreview: function(callback) {
     callback = callback || function() {};
     
@@ -12950,7 +12689,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2334">lib/service.js:2334</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2313">lib/service.js:2313</a>)</h4>
                 <pre><code>events: function(params, callback) {
     callback = callback || function() {};
     
@@ -12992,7 +12731,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2363">lib/service.js:2363</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2342">lib/service.js:2342</a>)</h4>
                 <pre><code>finalize: function(callback) {
     callback = callback || function() {};
     
@@ -13031,7 +12770,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2389">lib/service.js:2389</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2368">lib/service.js:2368</a>)</h4>
                 <pre><code>pause: function(callback) {
     callback = callback || function() {};
     
@@ -13072,7 +12811,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2418">lib/service.js:2418</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2397">lib/service.js:2397</a>)</h4>
                 <pre><code>preview: function(params, callback) {
     callback = callback || function() {};
     
@@ -13116,7 +12855,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2450">lib/service.js:2450</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2429">lib/service.js:2429</a>)</h4>
                 <pre><code>results: function(params, callback) {
     callback = callback || function() {};
     
@@ -13158,7 +12897,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2479">lib/service.js:2479</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2458">lib/service.js:2458</a>)</h4>
                 <pre><code>searchlog: function(callback) {
     callback = callback || function() {};
     
@@ -13201,7 +12940,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2509">lib/service.js:2509</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2488">lib/service.js:2488</a>)</h4>
                 <pre><code>setPriority: function(value, callback) {
     callback = callback || function() {};
     
@@ -13241,7 +12980,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2536">lib/service.js:2536</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2515">lib/service.js:2515</a>)</h4>
                 <pre><code>setTTL: function(value, callback) {
     callback = callback || function() {};
     
@@ -13282,7 +13021,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2565">lib/service.js:2565</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2544">lib/service.js:2544</a>)</h4>
                 <pre><code>summary: function(params, callback) {
     callback = callback || function() {};
     
@@ -13325,7 +13064,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2595">lib/service.js:2595</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2574">lib/service.js:2574</a>)</h4>
                 <pre><code>timeline: function(params, callback) {
     callback = callback || function() {};
     
@@ -13367,7 +13106,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2624">lib/service.js:2624</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2603">lib/service.js:2603</a>)</h4>
                 <pre><code>touch: function(callback) {
     callback = callback || function() {};
     
@@ -13406,7 +13145,7 @@ var toString = Object.prototype.toString;</code></pre>
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2650">lib/service.js:2650</a>)</h4>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2629">lib/service.js:2629</a>)</h4>
                 <pre><code>unpause: function(callback) {
             callback = callback || function() {};
             

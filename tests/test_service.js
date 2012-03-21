@@ -69,13 +69,15 @@ exports.setup = function(svc) {
             },
 
             "Callback#List jobs": function(test) {
-                this.service.jobs().list(function(err, jobs) {
+                this.service.jobs().refresh(function(err, jobs) {
                     test.ok(!err);
                     test.ok(jobs);
-                    test.ok(jobs.length > 0);
                     
-                    for(var i = 0; i < jobs.length; i++) {
-                        test.ok(jobs[i]);
+                    var jobsList = jobs.list();
+                    test.ok(jobsList.length > 0);
+                    
+                    for(var i = 0; i < jobsList.length; i++) {
+                        test.ok(jobsList[i]);
                     }
                     
                     test.done();
@@ -91,8 +93,9 @@ exports.setup = function(svc) {
                     test.ok(job);
                     test.strictEqual(job.sid, sid);
 
-                    jobs.contains(sid, function(err, contains) {
-                        test.ok(contains);
+                    jobs.refresh(function(err, jobs) {
+                        var job = jobs.contains(sid);
+                        test.ok(job);
 
                         job.cancel(function() {
                             test.done();
@@ -603,7 +606,8 @@ exports.setup = function(svc) {
                          
             "Callback#list applications": function(test) {
                 var apps = this.service.apps();
-                apps.list(function(err, appList) {
+                apps.refresh(function(err, apps) {
+                    var appList = apps.list();
                     test.ok(appList.length > 0);
                     test.done();
                 });
@@ -611,8 +615,9 @@ exports.setup = function(svc) {
                    
             "Callback#contains applications": function(test) {
                 var apps = this.service.apps();
-                apps.contains("search", function(err, found) {
-                    test.ok(found);
+                apps.refresh(function(err, apps) {
+                    var app = apps.contains("search");
+                    test.ok(app);
                     test.done();
                 });
             },
@@ -623,8 +628,8 @@ exports.setup = function(svc) {
                 
                 apps.create({name: name}, function(err, app) {
                     var appName = app.properties().name;
-                    apps.contains(appName, function(err, found, entity) {
-                        test.ok(found);
+                    apps.refresh(function(err, apps) {
+                        var entity = apps.contains(appName);
                         test.ok(entity);
                         app.remove(function() {
                             test.done();
@@ -672,8 +677,8 @@ exports.setup = function(svc) {
             
             "Callback#delete test applications": function(test) {
                 var apps = this.service.apps();
-                apps.list(function(err, appList) {
-                    test.ok(appList.length > 0);
+                apps.refresh(function(err, apps) {
+                    var appList = apps.list();
                     
                     Async.parallelEach(
                         appList,
@@ -701,7 +706,8 @@ exports.setup = function(svc) {
                    
             "Callback#list": function(test) {
                 var searches = this.service.savedSearches();
-                searches.list(function(err, savedSearches) {
+                searches.refresh(function(err, searches) {
+                    var savedSearches = searches.list();
                     test.ok(savedSearches.length > 0);
                     
                     for(var i = 0; i < savedSearches.length; i++) {
@@ -714,8 +720,8 @@ exports.setup = function(svc) {
             
             "Callback#contains": function(test) {
                 var searches = this.service.savedSearches();
-                searches.contains("Indexing workload", function(err, found, search) {
-                    test.ok(found);
+                searches.refresh(function(err, searches) {
+                    var search = searches.contains("Indexing workload");
                     test.ok(search);
                     
                     test.done();
@@ -724,8 +730,8 @@ exports.setup = function(svc) {
             
             "Callback#history": function(test) {
                 var searches = this.service.savedSearches();
-                searches.contains("Indexing workload", function(err, found, search) {
-                    test.ok(found);
+                searches.refresh(function(err, searches) {
+                    var search = searches.contains("Indexing workload");
                     test.ok(search);
                     
                     search.history(function(err, history, search) {
@@ -737,8 +743,8 @@ exports.setup = function(svc) {
             
             "Callback#suppress": function(test) {
                 var searches = this.service.savedSearches();
-                searches.contains("Indexing workload", function(err, found, search) {
-                    test.ok(found);
+                searches.refresh(function(err, searches) {
+                    var search = searches.contains("Indexing workload");
                     test.ok(search);
                     
                     search.suppressInfo(function(err, info, search) {
@@ -750,7 +756,8 @@ exports.setup = function(svc) {
             
             "Callback#list limit count": function(test) {
                 var searches = this.service.savedSearches({count: 2});
-                searches.list(function(err, savedSearches) {
+                searches.refresh(function(err, searches) {
+                    var savedSearches = searches.list();
                     test.strictEqual(savedSearches.length, 2);
                     
                     for(var i = 0; i < savedSearches.length; i++) {
@@ -763,7 +770,8 @@ exports.setup = function(svc) {
             
             "Callback#list filter": function(test) {
                 var searches = this.service.savedSearches({search: "Error"});
-                searches.list(function(err, savedSearches) {
+                searches.refresh(function(err, searches) {
+                    var savedSearches = searches.list();
                     test.ok(savedSearches.length > 0);
                     
                     for(var i = 0; i < savedSearches.length; i++) {
@@ -776,7 +784,8 @@ exports.setup = function(svc) {
             
             "Callback#list offset": function(test) {
                 var searches = this.service.savedSearches({offset: 2, count: 1});
-                searches.list(function(err, savedSearches) {
+                searches.refresh(function(err, searches) {
+                    var savedSearches = searches.list();
                     test.strictEqual(savedSearches.length, 1);
                     
                     for(var i = 0; i < savedSearches.length; i++) {
@@ -800,7 +809,6 @@ exports.setup = function(svc) {
                             searches.create({search: originalSearch, name: name}, done);
                         },
                         function(search, done) {
-                            test.ok(search);
                             test.ok(search);
                             
                             test.strictEqual(search.properties().name, name); 
@@ -839,7 +847,8 @@ exports.setup = function(svc) {
             
             "Callback#delete test saved searches": function(test) {
                 var searches = this.service.savedSearches({}, {owner: this.service.username, app: "new_english"});
-                searches.list(function(err, searchList) {                    
+                searches.refresh(function(err, searches) {
+                    var searchList = searches.list();                  
                     Async.parallelEach(
                         searchList,
                         function(search, idx, callback) {
@@ -868,8 +877,9 @@ exports.setup = function(svc) {
                 var that = this;
                 
                 Async.chain([
-                    function(done) { that.service.properties().list(done); },
-                    function(files, done) { 
+                    function(done) { that.service.properties().refresh(done); },
+                    function(props, done) { 
+                        var files = props.list();
                         test.ok(files.length > 0);
                         done();
                     }
@@ -884,9 +894,10 @@ exports.setup = function(svc) {
                 var that = this;
                 
                 Async.chain([
-                    function(done) { that.service.properties().contains("web", done); },
-                    function(found, file, done) { 
-                        test.ok(found);
+                    function(done) { that.service.properties().refresh(done); },
+                    function(props, done) { 
+                        var file = props.contains("web");
+                        test.ok(file);
                         file.refresh(done);
                     },
                     function(file, done) {
@@ -904,17 +915,16 @@ exports.setup = function(svc) {
                 var that = this;
                 
                 Async.chain([
-                    function(done) { that.service.properties().contains("web", done); },
-                    function(found, file, done) { 
-                        test.ok(found);
+                    function(done) { that.service.properties().refresh(done); },
+                    function(props, done) { 
+                        var file = props.contains("web");
+                        test.ok(file);
                         file.refresh(done);
                     },
                     function(file, done) {
                         test.strictEqual(file.properties().name, "web");
-                        file.contains("settings", done);
-                    },
-                    function(found, stanza, done) {
-                        test.ok(found);
+                        
+                        var stanza = file.contains("settings");
                         test.ok(stanza);
                         stanza.refresh(done);
                     },
@@ -961,10 +971,10 @@ exports.setup = function(svc) {
                     },
                     function(done) {
                         var file = new splunkjs.Service.PropertyFile(svc, fileName);
-                        file.contains("stanza", done);
+                        file.refresh(done);
                     },
-                    function(found, stanza, done) {
-                        test.ok(found);
+                    function(file, done) {
+                        var stanza = file.contains("stanza");
                         test.ok(stanza);
                         stanza.remove(done);
                     }
@@ -987,8 +997,9 @@ exports.setup = function(svc) {
                 var namespace = {owner: "admin", app: "search"};
                 
                 Async.chain([
-                    function(done) { that.service.configurations({}, namespace).list(done); },
-                    function(files, done) { 
+                    function(done) { that.service.configurations({}, namespace).refresh(done); },
+                    function(props, done) { 
+                        var files = props.list();
                         test.ok(files.length > 0);
                         done();
                     }
@@ -1004,9 +1015,10 @@ exports.setup = function(svc) {
                 var namespace = {owner: "admin", app: "search"};
                 
                 Async.chain([
-                    function(done) { that.service.configurations({}, namespace).contains("web", done); },
-                    function(found, file, done) {                         
-                        test.ok(found);
+                    function(done) { that.service.configurations({}, namespace).refresh(done); },
+                    function(props, done) { 
+                        var file = props.contains("web");
+                        test.ok(file);
                         file.refresh(done);
                     },
                     function(file, done) {
@@ -1025,18 +1037,20 @@ exports.setup = function(svc) {
                 var namespace = {owner: "admin", app: "search"};
                 
                 Async.chain([
-                    function(done) { that.service.configurations({}, namespace).contains("web", done); },
-                    function(found, file, done) { 
-                        test.ok(found);
+                    function(done) { that.service.configurations({}, namespace).refresh(done); },
+                    function(props, done) { 
+                        var file = props.contains("web");
+                        test.ok(file);
                         file.refresh(done);
                     },
                     function(file, done) {
                         test.strictEqual(file.properties().name, "conf-web");
-                        file.contains("settings", done);
-                    },
-                    function(found, stanza, done) {
-                        test.ok(found);
+                        
+                        var stanza = file.contains("settings");
                         test.ok(stanza);
+                        stanza.refresh(done);
+                    },
+                    function(stanza, done) {
                         test.ok(stanza.properties().content.hasOwnProperty("httpport"));
                         done();
                     }
@@ -1080,10 +1094,10 @@ exports.setup = function(svc) {
                     },
                     function(done) {
                         var file = new splunkjs.Service.ConfigurationFile(svc, fileName);
-                        file.contains("stanza", done);
+                        file.refresh(done);
                     },
-                    function(found, stanza, done) {
-                        test.ok(found);
+                    function(file, done) {
+                        var stanza = file.contains("stanza");
                         test.ok(stanza);
                         stanza.remove(done);
                     }
@@ -1113,7 +1127,8 @@ exports.setup = function(svc) {
                          
             "Callback#list indexes": function(test) {
                 var indexes = this.service.indexes();
-                indexes.list(function(err, indexList) {
+                indexes.refresh(function(err, indexes) {
+                    var indexList = indexes.list();
                     test.ok(indexList.length > 0);
                     test.done();
                 });
@@ -1121,8 +1136,11 @@ exports.setup = function(svc) {
                    
             "Callback#contains index": function(test) {
                 var indexes = this.service.indexes();
-                indexes.contains(this.indexName, function(err, found) {
-                    test.ok(found);
+                var indexName = this.indexName;
+                
+                indexes.refresh(function(err, indexes) {
+                    var index = indexes.contains(indexName);
+                    test.ok(index);
                     test.done();
                 });
             },
@@ -1135,10 +1153,12 @@ exports.setup = function(svc) {
                 
                 Async.chain([
                         function(callback) {
-                            indexes.contains(name, callback);     
+                            indexes.refresh(callback);     
                         },
-                        function(found, index, callback) {
-                            test.ok(found);
+                        function(indexes, callback) {
+                            var index = indexes.contains(name);
+                            test.ok(index);
+                            
                             originalAssureUTF8Value = index.properties().content.assureUTF8;
                             index.update({
                                 assureUTF8: !originalAssureUTF8Value
@@ -1181,10 +1201,12 @@ exports.setup = function(svc) {
                 var indexes = this.service.indexes();
                 Async.chain([
                         function(done) {
-                            indexes.item(indexName, done);
+                            indexes.refresh(done);     
                         },
-                        function(index, done) {
+                        function(indexes, done) {
+                            var index = indexes.contains(indexName);
                             test.ok(index);
+                            
                             test.strictEqual(index.properties().name, indexName);
                             originalEventCount = index.properties().content.totalEventCount;
                             
@@ -1230,11 +1252,13 @@ exports.setup = function(svc) {
             "Callback#List users": function(test) {
                 var service = this.service;
                 
-                service.users().list(function(err, users) {
+                service.users().refresh(function(err, users) {
+                    var userList = users.list();
                     test.ok(!err);
                     test.ok(users);
                     
-                    test.ok(users.length > 0);
+                    test.ok(userList);
+                    test.ok(userList.length > 0);
                     test.done();
                 });
             },
@@ -1275,6 +1299,28 @@ exports.setup = function(svc) {
                         test.done();
                     }
                 );
+            },
+            
+            "Callback#delete test users": function(test) {
+                var users = this.service.users();
+                users.refresh(function(err, users) {
+                    var userList = users.list();
+                    
+                    Async.parallelEach(
+                        userList,
+                        function(user, idx, callback) {
+                            if (utils.startsWith(user.properties().name, "jssdk_")) {
+                                user.remove(callback);
+                            }
+                            else {
+                                callback();
+                            }
+                        }, function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
+                });
             }
         },
         
@@ -1287,14 +1333,16 @@ exports.setup = function(svc) {
             "Callback#List views": function(test) {
                 var service = this.service;
                 
-                service.views({}, {owner: "admin", app: "search"}).list(function(err, views) {
+                service.views({}, {owner: "admin", app: "search"}).refresh(function(err, views) {
                     test.ok(!err);
                     test.ok(views);
                     
-                    test.ok(views.length > 0);
+                    var viewsList = views.list();
+                    test.ok(viewsList);
+                    test.ok(viewsList.length > 0);
                     
-                    for(var i = 0; i < views.length; i++) {
-                        test.ok(views[i]);
+                    for(var i = 0; i < viewsList.length; i++) {
+                        test.ok(viewsList[i]);
                     }
                     
                     test.done();
