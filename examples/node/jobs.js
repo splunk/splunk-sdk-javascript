@@ -92,7 +92,7 @@
             // our function on it.
             var jobsList = [];
             this.service.jobs().refresh(function(err, jobs) {
-                list = jobs.list() || [];
+                var list = jobs.list() || [];
                 for(var i = 0; i < list.length; i++) {
                     if (utils.contains(sids, list[i].sid)) {
                         var job = list[i];
@@ -221,7 +221,7 @@
                         return;
                     }
                     
-                    list = jobs.list() || [];
+                    var list = jobs.list() || [];
                     for(var i = 0; i < list.length; i++) {
                         console.log("  Job " + (i + 1) + " sid: "+ list[i].sid);
                     }
