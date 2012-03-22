@@ -887,6 +887,42 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     };
     
     /**
+     * Apply the iterator function to each element in the object
+     *
+     * Example:
+     *      
+     *      splunkjs.Utils.forEach([1,2,3], function(el) { console.log(el); }); // 1,2,3
+     *
+     * @param {Object|Array} obj Object/array to iterate over
+     * @param {Function} iterator Function to apply with each element: `(element, list, index)`
+     * @param {Object} context An optional context to apply the function on
+     *
+     * @globals splunkjs.Utils
+     */
+    root.forEach = function(obj, iterator, context) {
+        if (obj === null) {
+            return;
+        }
+        if (Array.prototype.forEach && obj.forEach === Array.prototype.forEach) {
+            obj.forEach(iterator, context);
+        } else if (obj.length === +obj.length) {
+            for (var i = 0, l = obj.length; i < l; i++) {
+                if (i in obj && iterator.call(context, obj[i], i, obj) === {}) {
+                    return;
+                }
+            }
+        } else {
+            for (var key in obj) {
+                if (obj.hasOwnProperty(key)) {
+                    if (iterator.call(context, obj[key], key, obj) === {}) {
+                        return;
+                    }
+                }
+            }
+        }
+    };
+    
+    /**
      * Extend a given object with all the properties in passed-in objects
      *
      * Example:
@@ -902,7 +938,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @globals splunkjs.Utils
      */
     root.extend = function(obj) {
-        each(slice.call(arguments, 1), function(source) {
+        root.forEach(Array.prototype.slice.call(arguments, 1), function(source) {
             for (var prop in source) {
                 obj[prop] = source[prop];
             }
@@ -2223,22 +2259,22 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @constructor
          * @param {splunkjs.Service} service A service instance
-         * @param {String} path A relative endpoint path (e.g. 'search/jobs')
+         * @param {String} qualifiedPath A fully-qualified relative endpoint path (e.g. '/services/search/jobs')
          * @return {splunkjs.Service.Endpoint} A splunkjs.Service.Endpoint instance
          *
          * @module splunkjs.Service.Endpoint
          */
-        init: function(service, path) {
+        init: function(service, qualifiedPath) {
             if (!service) {
                 throw new Error("Passed in a null Service.");
             }
 
-            if (!path) {
+            if (!qualifiedPath) {
                 throw new Error("Passed in an empty path.");
             }
 
             this.service = service;
-            this.path = path;
+            this.qualifiedPath = qualifiedPath;
 
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
@@ -2265,7 +2301,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @module splunkjs.Service.Endpoint
          */
         get: function(relpath, params, callback) {
-            var url = this.path;
+            var url = this.qualifiedPath;
 
             // If we have a relative path, we will append it with a preceding
             // slash.
@@ -2299,7 +2335,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @module splunkjs.Service.Endpoint
          */
         post: function(relpath, params, callback) {
-            var url = this.path;
+            var url = this.qualifiedPath;
 
             // If we have a relative path, we will append it with a preceding
             // slash.
@@ -2333,7 +2369,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @module splunkjs.Service.Endpoint
          */
         del: function(relpath, params, callback) {
-            var url = this.path;
+            var url = this.qualifiedPath;
 
             // If we have a relative path, we will append it with a preceding
             // slash.
@@ -2377,7 +2413,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var fullpath = service.fullpath(path, namespace);
             
             this._super(service, fullpath);
-            this.fragmentPath = path;
             this.namespace = namespace;
             this._properties = { content: {}, acl: {}, attributes: {}};
             
@@ -2444,6 +2479,16 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      */
     root.Entity = root.Resource.extend({
         /**
+         * Whether or not to call `refresh()` after an update
+         * to fetch the updated item. By default we don't refresh
+         * the entity, as the endpoint will return (echo) the updated
+         * entity
+         *
+         * @module splunkjs.Service.Entity
+         */
+        refreshOnUpdate: false,
+        
+        /**
          * Constructor for splunkjs.Service.Entity
          *
          * @constructor
@@ -2463,10 +2508,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.refresh    = utils.bind(this, this.refresh);
             this.remove     = utils.bind(this, this.remove);
             this.update     = utils.bind(this, this.update);
-            
-            // By default, we will "load" entities when they are updated,
-            // based on the returned value.
-            this._loadOnUpdate = true;
         },
         
         /**
@@ -2522,8 +2563,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             callback = callback || function() {};
             
             var that = this;
-            return this.del("", {}, function() {
-                callback();
+            return this.del("", {}, function(err) {
+                callback(err);
             });
         },
         
@@ -2547,8 +2588,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             var that = this;
             var req = this.post("", props, function(err, response) {
-                if (!err && that._loadOnUpdate) {
+                if (!err && !that.refreshOnUpdate) {
                     that._load(response.data.entry);
+                }
+                else if (!err && that.refreshOnUpdate) {
+                    that.refresh(callback);
+                    return;
                 }
                 
                 callback(err, that);
@@ -2570,7 +2615,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      * @moduleRoot splunkjs.Service.Collection
      * @extends splunkjs.Service.Resource
      */
-    root.Collection = root.Resource.extend({   
+    root.Collection = root.Resource.extend({        
         /**
          * Constructor for splunkjs.Service.Collection
          *
@@ -2578,12 +2623,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {splunkjs.Service} service A service instance
          * @param {String} path A relative endpoint path (e.g. 'search/jobs')
          * @param {Object} namespace Namespace information for this collection (owner, app, sharing)
-         * @param {Object} handlers A dictionary of functions to perform specialized operations: item, isSame, loadOnCreate, loadOnItem
          * @return {splunkjs.Service.Collection} A splunkjs.Service.Collection instance
          *
          * @module splunkjs.Service.Collection
          */     
-        init: function(service, path, namespace, handlers) {
+        init: function(service, path, namespace) {
             this._super(service, path, namespace);
             
             // We perform the bindings so that every function works 
@@ -2596,23 +2640,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.item     = utils.bind(this, this.item);
             
             this._entities = [];
-            this._entitiesByName = {};
-            
-            
-            var that = this;
-            handlers = handlers || {};
-            this._item = handlers.item || function(collection, props) { 
-                throw new Error("SHOULD NEVER BE CALLED!");
-            };
-            this._itemPath = handlers.itemPath || function(collection, name, namespace) {
-                var fragmentPath = collection.fragmentPath + "/" + encodeURIComponent(name);
-                var fullPath = service.fullpath(fragmentPath, namespace);  
-                
-                return {fragment: fragmentPath, full: fullPath};
-            };
-            this._loadOnCreate = handlers.loadOnCreate || function() { return false; };
-            this._loadOnItem = handlers.loadOnItem || function() { return true; };
-            
+            this._entitiesByName = {};            
         },
         
         /**
@@ -2634,15 +2662,15 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var entityPropertyList = properties.entry || [];
             for(var i = 0; i < entityPropertyList.length; i++) {
                 var props = entityPropertyList[i];
-                var entity = this._item(this, props);
+                var entity = this.instantiateEntity(props);
                 entity._load(props);
                 entities.push(entity);
                 
-                if (entitiesByName.hasOwnProperty(entity.fragmentPath)) {
-                    entitiesByName[entity.fragmentPath].push(entity);
+                if (entitiesByName.hasOwnProperty(entity.name)) {
+                    entitiesByName[entity.name].push(entity);
                 }
                 else {
-                    entitiesByName[entity.fragmentPath] = [entity];
+                    entitiesByName[entity.name] = [entity];
                 }
             }
             this._entities = entities;
@@ -2667,7 +2695,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             }
             callback = callback || function() {};
             
-            var options = options || {};
+            options = options || {};
             if (!options.count) {
                 options.count = 0;
             }
@@ -2738,7 +2766,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                         props = props[0];
                     }
                     
-                    var entity = that._item(that, props);
+                    var entity = that.instantiateEntity(props);
                     entity._load(props);                    
                     callback(null, entity);
                 }
@@ -2800,12 +2828,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 throw new Error("Must suply a non-empty name.");
             }
             
-            var path = this._itemPath(this, id, namespace);           
-            var fragmentPath = path.fragment;
-            var fullPath = path.full;
-            
-            if (this._entitiesByName.hasOwnProperty(fragmentPath)) {
-                var entities = this._entitiesByName[fragmentPath];                 
+            var fullPath = null;
+            if (this._entitiesByName.hasOwnProperty(id)) {
+                var entities = this._entitiesByName[id];                 
                 
                 if (entities.length === 1 && !namespace) {
                     // If there is only one entity with the
@@ -2818,7 +2843,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     // If we specified a namespace, then we 
                     // only return the entity if it matches
                     // the full path
-                    if (entities[0].path === fullPath) {
+                    fullPath = this.service.fullpath(entities[0].path(), namespace);
+                    if (entities[0].qualifiedPath === fullPath) {
                         return entities[0];
                     }
                     else {
@@ -2836,7 +2862,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     // a namespace, so we try and find it
                     for(var i = 0; i < entities.length; i++) {
                         var entity = entities[i];
-                        if (entity.path === fullPath) {
+                        fullPath = this.service.fullpath(entities[i].path(), namespace);
+                        if (entity.qualifiedPath === fullPath) {
                             return entity;
                         }
                     }                            
@@ -2846,38 +2873,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 return null;
             }
         },
-    });
-    
-    /**
-     * splunkjs.Service.SavedSearches
-     * 
-     * Represents the Splunk collection of saved searches.  You can create and
-     * list saved searches using this container, or get a specific one.
-     *
-     *
-     * @endpoint saved/searches
-     * @moduleRoot splunkjs.Service.SavedSearches
-     * @extends splunkjs.Service.Collection
-     */
-    root.SavedSearches = root.Collection.extend({
-        /**
-         * Constructor for splunkjs.Service.SavedSearches
-         *
-         * @constructor
-         * @param {splunkjs.Service} service A service instance
-         * @param {Object} namespace Namespace information (owner, app, sharing)
-         * @return {splunkjs.Service.SavedSearches} A splunkjs.Service.SavedSearches instance
-         *
-         * @module splunkjs.Service.SavedSearches
-         */     
-        init: function(service, namespace) {
-            this._super(service, Paths.savedSearches, namespace, {
-                item: function(collection, props) { 
-                    var entityNamespace = utils.namespaceFromProperties(props);
-                    return new root.SavedSearch(collection.service, props.name, entityNamespace);
-                }
-            });
-        } 
     });
     
     /**
@@ -2891,6 +2886,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      * @extends splunkjs.Service.Entity
      */
     root.SavedSearch = root.Entity.extend({
+        path: function() {
+            return Paths.savedSearches + "/" + encodeURIComponent(this.name);
+        },
+        
         /**
          * Constructor for splunkjs.Service.SavedSearch
          *
@@ -2904,7 +2903,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */     
         init: function(service, name, namespace) {
             this.name = name;
-            this._super(service, Paths.savedSearches + "/" + encodeURIComponent(name), namespace);
+            this._super(service, this.path(), namespace);
             
             this.acknowledge  = utils.bind(this, this.acknowledge);
             this.dispatch     = utils.bind(this, this.dispatch);
@@ -3047,31 +3046,40 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
     
     /**
-     * splunkjs.Service.Applications
+     * splunkjs.Service.SavedSearches
      * 
-     * Represents the Splunk collection of applications.  You can create and
-     * list applications using this container, or get a specific one.
+     * Represents the Splunk collection of saved searches.  You can create and
+     * list saved searches using this container, or get a specific one.
      *
-     * @endpoint apps/local
-     * @moduleRoot splunkjs.Service.Applications
+     *
+     * @endpoint saved/searches
+     * @moduleRoot splunkjs.Service.SavedSearches
      * @extends splunkjs.Service.Collection
-     */  
-    root.Applications = root.Collection.extend({
+     */
+    root.SavedSearches = root.Collection.extend({
+        entityClass: root.SavedSearch,
+        
+        path: function() {
+            return Paths.savedSearches;
+        },
+        
+        instantiateEntity: function(props) {
+            var entityNamespace = utils.namespaceFromProperties(props);
+            return new root.SavedSearch(this.service, props.name, entityNamespace);
+        },
+        
         /**
-         * Constructor for splunkjs.Service.Applications
+         * Constructor for splunkjs.Service.SavedSearches
          *
          * @constructor
          * @param {splunkjs.Service} service A service instance
-         * @return {splunkjs.Service.Applications} A splunkjs.Service.Applications instance
+         * @param {Object} namespace Namespace information (owner, app, sharing)
+         * @return {splunkjs.Service.SavedSearches} A splunkjs.Service.SavedSearches instance
          *
-         * @module splunkjs.Service.Applications
-         */  
-        init: function(service) {
-            this._super(service, Paths.apps, {}, {
-                item: function(collection, props) {
-                    return new root.Application(collection.service, props.name, {});
-                }
-            });
+         * @module splunkjs.Service.SavedSearches
+         */     
+        init: function(service, namespace) {
+            this._super(service, this.path(), namespace);
         }
     });
     
@@ -3087,6 +3095,18 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      */
     root.Application = root.Entity.extend({
         /**
+         * Whether or not to call `refresh()` after an update
+         * to fetch the updated item.
+         *
+         * @module splunkjs.Service.Entity
+         */
+        refreshOnUpdate: true,
+        
+        path: function() {
+            return Paths.apps + "/" + encodeURIComponent(this.name);
+        },
+        
+        /**
          * Constructor for splunkjs.Service.Application
          *
          * @constructor
@@ -3098,13 +3118,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */ 
         init: function(service, name) {
             this.name = name;
-            this._super(service, Paths.apps + "/" + encodeURIComponent(name), {});
+            this._super(service, this.path(), {});
             
             this.setupInfo  = utils.bind(this, this.setupInfo);
             this.updateInfo = utils.bind(this, this.updateInfo);
-            
-            // Applications do not return their updated data
-            this._loadOnUpdate = false;
         },
         
         /**
@@ -3167,6 +3184,72 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
     
     /**
+     * splunkjs.Service.Applications
+     * 
+     * Represents the Splunk collection of applications.  You can create and
+     * list applications using this container, or get a specific one.
+     *
+     * @endpoint apps/local
+     * @moduleRoot splunkjs.Service.Applications
+     * @extends splunkjs.Service.Collection
+     */  
+    root.Applications = root.Collection.extend({
+        entityClass: root.Application,
+        
+        path: function() {
+            return Paths.apps;
+        },
+        
+        instantiateEntity: function(props) {
+            return new root.Application(this.service, props.name, {});
+        },
+                
+        /**
+         * Constructor for splunkjs.Service.Applications
+         *
+         * @constructor
+         * @param {splunkjs.Service} service A service instance
+         * @return {splunkjs.Service.Applications} A splunkjs.Service.Applications instance
+         *
+         * @module splunkjs.Service.Applications
+         */  
+        init: function(service) {
+            this._super(service, this.path(), {});
+        }
+    });
+    
+    /**
+     * splunkjs.Service.User
+     * 
+     * Represents a specific Splunk user.  You can update, remove and
+     * perform various operations on this user.
+     *
+     * @endpoint authentication/users/{name}
+     * @moduleRoot splunkjs.Service.User
+     * @extends splunkjs.Service.Entity
+     */
+    root.User = root.Entity.extend({
+        path: function() {
+            return Paths.users + "/" + encodeURIComponent(this.name);
+        },
+        
+        /**
+         * Constructor for splunkjs.Service.User
+         *
+         * @constructor
+         * @param {splunkjs.Service} service A service instance
+         * @param {String} name The username of the user
+         * @return {splunkjs.Service.User} A splunkjs.Service.User instance
+         *
+         * @module splunkjs.Service.User
+         */ 
+        init: function(service, name) {
+            this.name = name;
+            this._super(service, this.path(), {});
+        }
+    });
+    
+    /**
      * splunkjs.Service.Users
      * 
      * Represents the Splunk collection of users.  You can create and
@@ -3177,6 +3260,16 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      * @extends splunkjs.Service.Collection
      */  
     root.Users = root.Collection.extend({
+        entityClass: root.User,
+        
+        path: function() {
+            return Paths.users;
+        },
+        
+        instantiateEntity: function(props) {
+            return new root.User(this.service, props.name, {});
+        },
+        
         /**
          * Constructor for splunkjs.Service.Users
          *
@@ -3187,11 +3280,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @module splunkjs.Service.Users
          */  
         init: function(service) {
-            this._super(service, Paths.users, {}, {
-                item: function(collection, props) {
-                    return new root.User(collection.service, props.name, {});
-                }
-            });
+            this._super(service, this.path(), {});
         },
         
         /**
@@ -3218,7 +3307,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     // in name
                     var props = {name: params.name};
                     
-                    var entity = that._item(that, props);                    
+                    var entity = that.instantiateEntity(props);                    
                     callback(null, entity);
                 }
             });
@@ -3228,29 +3317,34 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
     
     /**
-     * splunkjs.Service.User
+     * splunkjs.Service.View
      * 
-     * Represents a specific Splunk user.  You can update, remove and
-     * perform various operations on this user.
+     * Represents a specific Splunk view.  You can update, remove and
+     * perform various operations on this view.
      *
-     * @endpoint authentication/users/{name}
-     * @moduleRoot splunkjs.Service.User
+     * @endpoint data/ui/views/{name}
+     * @moduleRoot splunkjs.Service.View
      * @extends splunkjs.Service.Entity
      */
-    root.User = root.Entity.extend({
+    root.View = root.Entity.extend({
+        path: function() {
+            return Paths.views + "/" + encodeURIComponent(this.name);
+        },
+        
         /**
-         * Constructor for splunkjs.Service.User
+         * Constructor for splunkjs.Service.View
          *
          * @constructor
          * @param {splunkjs.Service} service A service instance
-         * @param {String} name The username of the user
-         * @return {splunkjs.Service.User} A splunkjs.Service.User instance
+         * @param {String} name The name of the view
+         * @param {Object} namespace Namespace information (owner, app, sharing)
+         * @return {splunkjs.Service.View} A splunkjs.Service.View instance
          *
-         * @module splunkjs.Service.User
+         * @module splunkjs.Service.View
          */ 
-        init: function(service, name) {
+        init: function(service, name, namespace) {
             this.name = name;
-            this._super(service, Paths.users + "/" + encodeURIComponent(name), {});
+            this._super(service, this.path(), namespace);
         }
     });
     
@@ -3265,6 +3359,17 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      * @extends splunkjs.Service.Collection
      */  
     root.Views = root.Collection.extend({
+        entityClass: root.View,
+        
+        path: function() {
+            return Paths.views;
+        },
+        
+        instantiateEntity: function(props) {
+            var entityNamespace = utils.namespaceFromProperties(props);
+            return new root.View(this.service, props.name, entityNamespace);
+        },
+        
         /**
          * Constructor for splunkjs.Service.Views
          *
@@ -3276,108 +3381,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @module splunkjs.Service.Views
          */  
         init: function(service, namespace) {
-            this._super(service, Paths.views, namespace, {
-                item: function(collection, props) {
-                    var entityNamespace = utils.namespaceFromProperties(props);
-                    return new root.View(collection.service, props.name, entityNamespace);
-                }
-            });
+            this._super(service, this.path(), namespace);
         },
-    });
-    
-    /**
-     * splunkjs.Service.View
-     * 
-     * Represents a specific Splunk view.  You can update, remove and
-     * perform various operations on this view.
-     *
-     * @endpoint data/ui/views/{name}
-     * @moduleRoot splunkjs.Service.View
-     * @extends splunkjs.Service.Entity
-     */
-    root.View = root.Entity.extend({
-        /**
-         * Constructor for splunkjs.Service.View
-         *
-         * @constructor
-         * @param {splunkjs.Service} service A service instance
-         * @param {String} name The name of the view
-         * @param {Object} namespace Namespace information (owner, app, sharing)
-         * @return {splunkjs.Service.View} A splunkjs.Service.View instance
-         *
-         * @module splunkjs.Service.View
-         */ 
-        init: function(service, name, namespace) {
-            this.name = name;
-            this._super(service, Paths.views + "/" + encodeURIComponent(name), namespace);
-        }
-    });
-        
-    /**
-     * splunkjs.Service.Indexes
-     * 
-     * Represents the Splunk collection of indexes.  You can create and
-     * list indexes using this container, or get a specific one.
-     *
-     * @endpoint data/indexes
-     * @moduleRoot splunkjs.Service.Indexes
-     * @extends splunkjs.Service.Collection
-     */  
-    root.Indexes = root.Collection.extend({
-        /**
-         * Constructor for splunkjs.Service.Indexes
-         *
-         * @constructor
-         * @param {splunkjs.Service} service A service instance
-         * @param {Object} namespace Namespace information (owner, app, sharing)
-         * @return {splunkjs.Service.Indexes} A splunkjs.Service.Indexes instance
-         *
-         * @module splunkjs.Service.Indexes
-         */  
-        init: function(service, namespace) {
-            this._super(service, Paths.indexes, namespace, {
-                item: function(collection, props) {
-                    var entityNamespace = utils.namespaceFromProperties(props);
-                    return new root.Index(collection.service, props.name, entityNamespace);  
-                },
-                loadOnCreate: function() { return true; },
-                loadOnItem: function() { return true; }
-            });
-        },
-        
-        /**
-         * Create an index
-         *
-         * Create an index with the given name and parameters
-         *
-         * Example:
-         *
-         *      var indexes = service.indexes();
-         *      indexes.create("NewIndex", {assureUTF8: true}, function(err, newIndex) {
-         *          console.log("CREATED");
-         *      });
-         *
-         * @param {String} name A name for this index
-         * @param {Object} params A dictionary of properties to create the entity with.
-         * @param {Function} callback A callback with the created entity: `(err, createdIndex)`
-         *
-         * @endpoint data/indexes
-         * @module splunkjs.Service.Indexes
-         */
-        create: function(name, params, callback) {
-            // If someone called us with the default style of (params, callback),
-            // lets make it work
-            if (utils.isObject(name) && utils.isFunction(params) && !callback) {
-                callback = params;
-                params = name;
-                name = params.name;
-            }
-            
-            params = params || {};
-            params["name"] = name;
-            
-            return this._super(params, callback);
-        }
     });
     
     /**
@@ -3391,6 +3396,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      * @extends splunkjs.Service.Entity
      */
     root.Index = root.Entity.extend({
+        path: function() {
+            return Paths.indexes + "/" + encodeURIComponent(this.name);
+        },
+        
         /**
          * Constructor for splunkjs.Service.Index
          *
@@ -3404,7 +3413,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */ 
         init: function(service, name, namespace) {
             this.name = name;
-            this._super(service, Paths.indexes + "/" + encodeURIComponent(name), namespace);
+            this._super(service, this.path(), namespace);
             
             this.submitEvent = utils.bind(this, this.submitEvent);
         },
@@ -3455,74 +3464,118 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             throw new Error("Indexes cannot be removed");
         }
     });
-    
+        
     /**
-     * splunkjs.Service.Properties
+     * splunkjs.Service.Indexes
      * 
-     * Represents the Splunk collection of property files.  You can create and
-     * list files using this container, or get a specific one.
+     * Represents the Splunk collection of indexes.  You can create and
+     * list indexes using this container, or get a specific one.
      *
-     * @endpoint properties
-     * @moduleRoot splunkjs.Service.Properties
+     * @endpoint data/indexes
+     * @moduleRoot splunkjs.Service.Indexes
      * @extends splunkjs.Service.Collection
      */  
-    root.Properties = root.Collection.extend({
+    root.Indexes = root.Collection.extend({
+        entityClass: root.Index,
+        
+        path: function() {
+            return Paths.indexes;
+        },
+        
+        instantiateEntity: function(props) {
+            var entityNamespace = utils.namespaceFromProperties(props);
+            return new root.Index(this.service, props.name, entityNamespace);
+        },
+        
         /**
-         * Constructor for splunkjs.Service.Properties
+         * Constructor for splunkjs.Service.Indexes
          *
          * @constructor
          * @param {splunkjs.Service} service A service instance
-         * @return {splunkjs.Service.Properties} A splunkjs.Service.Properties instance
+         * @param {Object} namespace Namespace information (owner, app, sharing)
+         * @return {splunkjs.Service.Indexes} A splunkjs.Service.Indexes instance
          *
-         * @module splunkjs.Service.Properties
+         * @module splunkjs.Service.Indexes
          */  
-        init: function(service) {
-            var namespace = {owner: "-", app: "-"};
-            this._super(service, Paths.properties, namespace, {
-                item: function(collection, props) {
-                    var name = props.name;
-                    return new root.PropertyFile(collection.service, name);
-                },
-                loadOnItem: function() { return false; }
-            });  
+        init: function(service, namespace) {
+            this._super(service, this.path(), namespace);
         },
-
+        
         /**
-         * Create a property file
+         * Create an index
+         *
+         * Create an index with the given name and parameters
          *
          * Example:
          *
-         *      var properties = service.properties();
-         *      properties.create("myprops", function(err, newFile) {
+         *      var indexes = service.indexes();
+         *      indexes.create("NewIndex", {assureUTF8: true}, function(err, newIndex) {
          *          console.log("CREATED");
          *      });
          *
-         * @param {String} filename A name for this property file
-         * @param {Function} callback A callback with the created property file: `(err, createdFile)`
+         * @param {String} name A name for this index
+         * @param {Object} params A dictionary of properties to create the entity with.
+         * @param {Function} callback A callback with the created entity: `(err, createdIndex)`
          *
-         * @endpoint properties
-         * @module splunkjs.Service.Properties
+         * @endpoint data/indexes
+         * @module splunkjs.Service.Indexes
          */
-        create: function(filename, callback) {
+        create: function(name, params, callback) {
             // If someone called us with the default style of (params, callback),
             // lets make it work
-            if (utils.isObject(filename)) {
-                filename = filename["__conf"];
+            if (utils.isObject(name) && utils.isFunction(params) && !callback) {
+                callback = params;
+                params = name;
+                name = params.name;
             }
             
-            callback = callback || function() {};
+            params = params || {};
+            params["name"] = name;
             
-            var that = this;
-            return this.post("", {__conf: filename}, function(err, response) {
-                if (err) {
-                    callback(err);
-                }
-                else {
-                    var entity = new root.PropertyFile(that.service, filename);
-                    callback(null, entity);
-                }
-            });
+            return this._super(params, callback);
         }
+    });
+    
+    /**
+     * splunkjs.Service.PropertyStanza
+     * 
+     * Represents a specific Splunk stanza.  You can update and remove this
+     * stanza.
+     *
+     * @endpoint properties/{file_name}/{stanza_name}
+     * @moduleRoot splunkjs.Service.PropertyStanza
+     * @extends splunkjs.Service.Entity
+     */
+    root.PropertyStanza = root.Entity.extend({
+        /**
+         * Whether or not to call `refresh()` after an update
+         * to fetch the updated item.
+         *
+         * @module splunkjs.Service.Entity
+         */
+        refreshOnUpdate: true,
+        
+        path: function() {
+            return Paths.properties + "/" + encodeURIComponent(this.file) + "/" + encodeURIComponent(this.name);
+        },
+        
+        /**
+         * Constructor for splunkjs.Service.PropertyStanza
+         *
+         * @constructor
+         * @param {splunkjs.Service} service A service instance
+         * @param {String} name The name of the index
+         * @return {splunkjs.Service.PropertyStanza} A splunkjs.Service.PropertyStanza instance
+         *
+         * @module splunkjs.Service.PropertyStanza
+         */ 
+        init: function(service, file, name) {
+            this.name = name;
+            this.file = file;
+            // We always enforce the "globalness" of properties
+            var namespace = {owner: "-", app: "-"};
+            this._super(service, this.path(), namespace);
+        } 
     });
     
     /**
@@ -3536,6 +3589,16 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      * @extends splunkjs.Service.Collection
      */  
     root.PropertyFile = root.Collection.extend({
+        entityClass: root.PropertyStanza,
+        
+        path: function() {
+            return Paths.properties + "/" + encodeURIComponent(this.name);
+        },
+        
+        instantiateEntity: function(props) {
+            return new root.PropertyStanza(this.service, this.name, props.name);
+        },
+        
         /**
          * Constructor for splunkjs.Service.PropertyFile
          *
@@ -3551,13 +3614,29 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             // We always enforce the "globalness" of properties
             var namespace = {owner: "-", app: "-"};
             
-            this._super(service, Paths.properties + "/" + encodeURIComponent(name), namespace, {
-                item: function(collection, props) {
-                    var name = props.name;
-                    return new root.PropertyStanza(collection.service, collection.name, name);
-                },
-                loadOnItem: function() { return false; }
-            });
+            this._super(service, this.path(), namespace);
+        },
+        
+        /**
+         * Refresh the resource
+         *
+         * This will unconditionally refresh the object from the server
+         * and load it up.
+         *
+         * @param {Object} options Dictionary of collection filtering and pagination options
+         * @param {Function} callback A callback when the object is retrieved: `(err, resource)`
+         *
+         * @module splunkjs.Service.PropertyFile
+         */
+        refresh: function(options, callback) {
+            if (!callback && utils.isFunction(options)) {
+                callback = options;
+                options = {};
+            }
+            
+            // Add fillcontents so we get a full stanzas
+            options.fillcontents = 1;
+            return this._super(options, callback);
         },
         
         /**
@@ -3599,79 +3678,38 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
     
     /**
-     * splunkjs.Service.PropertyStanza
+     * splunkjs.Service.Properties
      * 
-     * Represents a specific Splunk stanza.  You can update and remove this
-     * stanza.
-     *
-     * @endpoint properties/{file_name}/{stanza_name}
-     * @moduleRoot splunkjs.Service.PropertyStanza
-     * @extends splunkjs.Service.Entity
-     */
-    root.PropertyStanza = root.Entity.extend({
-        /**
-         * Constructor for splunkjs.Service.PropertyStanza
-         *
-         * @constructor
-         * @param {splunkjs.Service} service A service instance
-         * @param {String} name The name of the index
-         * @return {splunkjs.Service.PropertyStanza} A splunkjs.Service.PropertyStanza instance
-         *
-         * @module splunkjs.Service.PropertyStanza
-         */ 
-        init: function(service, file, name) {
-            this.name = name;
-            // We always enforce the "globalness" of properties
-            var namespace = {owner: "-", app: "-"};
-            this._super(service, Paths.properties + "/" + encodeURIComponent(file) + "/" + encodeURIComponent(name), namespace);
-            
-            // This endpoint does not behave correctly, and so we do not load
-            // on update
-            this._loadOnUpdate = false;
-        } 
-    });
-    
-    /**
-     * splunkjs.Service.Configurations
-     * 
-     * Represents the Splunk collection of configuration files.  You can create and
+     * Represents the Splunk collection of property files.  You can create and
      * list files using this container, or get a specific one.
      *
      * @endpoint properties
-     * @moduleRoot splunkjs.Service.Configurations
+     * @moduleRoot splunkjs.Service.Properties
      * @extends splunkjs.Service.Collection
      */  
-    root.Configurations = root.Collection.extend({
+    root.Properties = root.Collection.extend({
+        entityClass: root.PropertyFile,
+        
+        path: function() {
+            return Paths.properties;
+        },
+        
+        instantiateEntity: function(props) {
+            return new root.PropertyFile(this.service, props.name, this.namespace);
+        },
+        
         /**
-         * Constructor for splunkjs.Service.Configurations
+         * Constructor for splunkjs.Service.Properties
          *
          * @constructor
          * @param {splunkjs.Service} service A service instance
-         * @param {Object} namespace Namespace information (owner, app, sharing)
-         * @return {splunkjs.Service.Configurations} A splunkjs.Service.Configurations instance
+         * @return {splunkjs.Service.Properties} A splunkjs.Service.Properties instance
          *
-         * @module splunkjs.Service.Configurations
+         * @module splunkjs.Service.Properties
          */  
-        init: function(service, namespace) {
-            if (!namespace || namespace.owner === "-" || namespace.app === "-") {
-                throw new Error("Configurations requires a non-wildcard owner/app");
-            }
-            
-            this._super(service, Paths.properties, namespace, {
-                item: function(collection, props) {
-                    var name = props.name;
-                    return new root.ConfigurationFile(collection.service, name, {}, namespace);
-                },
-                loadOnItem: function() { return false; },
-                itemPath: function(collection, name, namespace) {
-                    // We move from the /properties to /configs/conf-{file}, so we special
-                    // case this to work.
-                    var fragment = Paths.configurations + "/conf-" + encodeURIComponent(name);
-                    var fullPath = service.fullpath(fragment, namespace);
-                    
-                    return {fragment: fragment, full: fullPath};
-                }
-           });  
+        init: function(service) {
+            var namespace = {owner: "-", app: "-"};
+            this._super(service, this.path(), namespace);
         },
 
         /**
@@ -3679,16 +3717,16 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * Example:
          *
-         *      var properties = service.configurations();
-         *      configurations.create("myprops", function(err, newFile) {
+         *      var properties = service.properties();
+         *      properties.create("myprops", function(err, newFile) {
          *          console.log("CREATED");
          *      });
          *
          * @param {String} filename A name for this property file
-         * @param {Function} callback A callback with the created configuration file: `(err, createdFile)`
+         * @param {Function} callback A callback with the created property file: `(err, createdFile)`
          *
          * @endpoint properties
-         * @module splunkjs.Service.Configurations
+         * @module splunkjs.Service.Properties
          */
         create: function(filename, callback) {
             // If someone called us with the default style of (params, callback),
@@ -3705,11 +3743,44 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    var entity = new root.ConfigurationFile(that.service, filename);
+                    var entity = new root.PropertyFile(that.service, filename);
                     callback(null, entity);
                 }
             });
         }
+    });
+    
+    /**
+     * splunkjs.Service.ConfigurationStanza
+     * 
+     * Represents a specific Splunk stanza.  You can update and remove this
+     * stanza.
+     *
+     * @endpoint configs/conf-{file}/{name}`
+     * @moduleRoot splunkjs.Service.ConfigurationStanza
+     * @extends splunkjs.Service.Entity
+     */
+    root.ConfigurationStanza = root.Entity.extend({
+        path: function() {
+            return Paths.configurations + "/conf-" + encodeURIComponent(this.file) + "/" + encodeURIComponent(this.name);
+        },
+        
+        /**
+         * Constructor for splunkjs.Service.ConfigurationStanza
+         *
+         * @constructor
+         * @param {splunkjs.Service} service A service instance
+         * @param {String} name The name of the index
+         * @param {Object} namespace Namespace information (owner, app, sharing)
+         * @return {splunkjs.Service.ConfigurationStanza} A splunkjs.Service.ConfigurationStanza instance
+         *
+         * @module splunkjs.Service.ConfigurationStanza
+         */ 
+        init: function(service, file, name, namespace) {
+            this.name = name;
+            this.file = file;
+            this._super(service, this.path(), namespace);
+        } 
     });
     
     /**
@@ -3723,6 +3794,17 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      * @extends splunkjs.Service.Collection
      */  
     root.ConfigurationFile = root.Collection.extend({
+        entityClass: root.ConfigurationStanza,
+        
+        path: function() {
+            return Paths.configurations + "/conf-" + encodeURIComponent(this.name);
+        },
+        
+        instantiateEntity: function(props) {
+            var entityNamespace = utils.namespaceFromProperties(props);
+            return new root.ConfigurationStanza(this.service, this.name, props.name, entityNamespace);
+        },
+        
         /**
          * Constructor for splunkjs.Service.ConfigurationFile
          *
@@ -3735,15 +3817,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */  
         init: function(service, name, namespace) {
             this.name = name;
-            var path = Paths.configurations + "/conf-" + encodeURIComponent(name);
-            this._super(service, path, namespace, {
-                item: function(collection, props) {
-                    var name = props.name;
-                    var entityNamespace = utils.namespaceFromProperties(props);
-                    return new root.ConfigurationStanza(collection.service, collection.name, name, entityNamespace);
-                },
-                loadOnCreate: function() { return true; }
-            });
+            this._super(service, this.path(), namespace);
         },
         
         /**
@@ -3785,183 +3859,77 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
     
     /**
-     * splunkjs.Service.ConfigurationStanza
+     * splunkjs.Service.Configurations
      * 
-     * Represents a specific Splunk stanza.  You can update and remove this
-     * stanza.
+     * Represents the Splunk collection of configuration files.  You can create and
+     * list files using this container, or get a specific one.
      *
-     * @endpoint configs/conf-{file}/{name}`
-     * @moduleRoot splunkjs.Service.ConfigurationStanza
-     * @extends splunkjs.Service.Entity
-     */
-    root.ConfigurationStanza = root.Entity.extend({
-        /**
-         * Constructor for splunkjs.Service.ConfigurationStanza
-         *
-         * @constructor
-         * @param {splunkjs.Service} service A service instance
-         * @param {String} name The name of the index
-         * @param {Object} namespace Namespace information (owner, app, sharing)
-         * @return {splunkjs.Service.ConfigurationStanza} A splunkjs.Service.ConfigurationStanza instance
-         *
-         * @module splunkjs.Service.ConfigurationStanza
-         */ 
-        init: function(service, file, name, namespace) {
-            this.name = name;
-            this._super(service, Paths.configurations + "/conf-" + encodeURIComponent(file) + "/" + encodeURIComponent(name), namespace);
-        } 
-    });
-
-    /**
-     * splunkjs.Service.Jobs
-     * 
-     * Represents the Splunk collection of jobs.  You can create and
-     * list search jobs using this container, or get a specific one.
-     *
-     * @endpoint search/jobs
-     * @moduleRoot splunkjs.Service.Jobs
+     * @endpoint properties
+     * @moduleRoot splunkjs.Service.Configurations
      * @extends splunkjs.Service.Collection
      */  
-    root.Jobs = root.Collection.extend({
+    root.Configurations = root.Collection.extend({
+        entityClass: root.ConfigurationFile,
+        
+        path: function() {
+            return Paths.properties;
+        },
+        
+        instantiateEntity: function(props) {
+            return new root.ConfigurationFile(this.service, props.name, this.namespace);
+        },
+        
         /**
-         * Constructor for splunkjs.Service.Jobs
+         * Constructor for splunkjs.Service.Configurations
          *
          * @constructor
          * @param {splunkjs.Service} service A service instance
          * @param {Object} namespace Namespace information (owner, app, sharing)
-         * @return {splunkjs.Service.Jobs} A splunkjs.Service.Jobs instance
+         * @return {splunkjs.Service.Configurations} A splunkjs.Service.Configurations instance
          *
-         * @module splunkjs.Service.Jobs
+         * @module splunkjs.Service.Configurations
          */  
         init: function(service, namespace) {
-            this._super(service, Paths.jobs, namespace, {
-                item: function(collection, props) {
-                    var sid = props.content.sid;
-                    var entityNamespace = utils.namespaceFromProperties(props);
-                    return new root.Job(collection.service, sid, entityNamespace);
-                }
-            });
-
-            // We perform the bindings so that every function works 
-            // properly when it is passed as a callback.
-            this.create     = utils.bind(this, this.create);
+            if (!namespace || namespace.owner === "-" || namespace.app === "-") {
+                throw new Error("Configurations requires a non-wildcard owner/app");
+            }
+            
+            this._super(service, this.path(), namespace);
         },
 
         /**
-         * Create an asyncronous search job
+         * Create a property file
          *
-         * @param {String} query The search query
-         * @param {Object} params A dictionary of properties for the job.
-         * @param {Function} callback A callback with the created job: `(err, createdJob)`
+         * Example:
          *
-         * @endpoint search/jobs
-         * @module splunkjs.Service.Jobs
-         * @see splunkjs.Service.Jobs.search
+         *      var properties = service.configurations();
+         *      configurations.create("myprops", function(err, newFile) {
+         *          console.log("CREATED");
+         *      });
+         *
+         * @param {String} filename A name for this property file
+         * @param {Function} callback A callback with the created configuration file: `(err, createdFile)`
+         *
+         * @endpoint properties
+         * @module splunkjs.Service.Configurations
          */
-        create: function(query, params, callback) {
+        create: function(filename, callback) {
             // If someone called us with the default style of (params, callback),
             // lets make it work
-            if (utils.isObject(query) && utils.isFunction(params) && !callback) {
-                callback = params;
-                params = query;
-                query = params.search;
+            if (utils.isObject(filename)) {
+                filename = filename["__conf"];
             }
             
             callback = callback || function() {};
-            params = params || {};
-            params.search = query; 
             
-            if ((params.exec_mode || "").toLowerCase() === "oneshot") {
-                throw new Error("Please use splunkjs.Service.Jobs.oneshotSearch for exec_mode=oneshot");
-            }
-            
-            if (!params.search) {
-                callback("Must provide a query to create a search job");
-            } 
-
             var that = this;
-            return this.post("", params, function(err, response) {
+            return this.post("", {__conf: filename}, function(err, response) {
                 if (err) {
                     callback(err);
                 }
                 else {
-                    
-                    var job = new root.Job(that.service, response.data.entry.content.sid);
-                    callback(null, job);
-                }
-            });
-        },
-                
-        /**
-         * Create an asyncronous search job
-         *
-         * Create a search job using the specified query and parameters.
-         *
-         * This method will throw an error if exec_mode=oneshot is passed in the params
-         * variable.
-         *
-         * Example:
-         *
-         *      var jobs = service.jobs();
-         *      jobs.search("search ERROR", {id: "myjob_123"}, function(err, newJob) {
-         *          console.log("CREATED": newJob.sid);
-         *      });
-         *
-         * @param {String} query The search query
-         * @param {Object} params A dictionary of properties for the job.
-         * @param {Function} callback A callback with the created job: `(err, createdJob)`
-         *
-         * @endpoint search/jobs
-         * @module splunkjs.Service.Jobs
-         */
-        search: function(query, params, callback) {
-            return this.create(query, params, callback);
-        },
-                
-        /**
-         * Create a oneshot search job
-         *
-         * Create a oneshot search job using the specified query and parameters.
-         *
-         * Example:
-         *
-         *      var jobs = service.jobs();
-         *      jobs.oneshotSearch("search ERROR", {id: "myjob_123"}, function(err, results) {
-         *          console.log("RESULT FIELDS": results.fields);
-         *      });
-         *
-         * @param {String} query The search query
-         * @param {Object} params A dictionary of properties for the job.
-         * @param {Function} callback A callback with the results of the job: `(err, results)`
-         *
-         * @endpoint search/jobs
-         * @module splunkjs.Service.Jobs
-         */
-        oneshotSearch: function(query, params, callback) {
-            // If someone called us with the default style of (params, callback),
-            // lets make it work
-            if (utils.isObject(query) && utils.isFunction(params) && !callback) {
-                callback = params;
-                params = query;
-                query = params.search;
-            }
-            
-            callback = callback || function() {};
-            params = params || {};
-            params.search = query; 
-            params.exec_mode = "oneshot";
-            
-            if (!params.search) {
-                callback("Must provide a query to create a search job");
-            } 
-
-            var that = this;
-            return this.post("", params, function(err, response) {
-                if (err) {
-                    callback(err);
-                }
-                else {
-                    callback(null, response.data);
+                    var entity = new root.ConfigurationFile(that.service, filename);
+                    callback(null, entity);
                 }
             });
         }
@@ -3979,6 +3947,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      * @extends splunkjs.Service.Entity
      */
     root.Job = root.Entity.extend({
+        path: function() {
+            return Paths.jobs + "/" + encodeURIComponent(this.name);
+        },
+        
         /**
          * Constructor for splunkjs.Service.Job
          *
@@ -3991,9 +3963,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @module splunkjs.Service.Job
          */ 
         init: function(service, sid, namespace) {
-            this._super(service, Paths.jobs + "/" + sid, namespace);
-            this.sid = sid;
             this.name = sid;
+            this._super(service, this.path(), namespace);
+            this.sid = sid;
 
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
@@ -4430,6 +4402,167 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             });
             
             return req;
+        }
+    });
+
+    /**
+     * splunkjs.Service.Jobs
+     * 
+     * Represents the Splunk collection of jobs.  You can create and
+     * list search jobs using this container, or get a specific one.
+     *
+     * @endpoint search/jobs
+     * @moduleRoot splunkjs.Service.Jobs
+     * @extends splunkjs.Service.Collection
+     */  
+    root.Jobs = root.Collection.extend({
+        entityClass: root.Job,
+        
+        path: function() {
+            return Paths.jobs;
+        },
+        
+        instantiateEntity: function(props) {
+            var sid = props.content.sid;
+            var entityNamespace = utils.namespaceFromProperties(props);
+            return new root.Job(this.service, sid, entityNamespace);
+        },
+        
+        /**
+         * Constructor for splunkjs.Service.Jobs
+         *
+         * @constructor
+         * @param {splunkjs.Service} service A service instance
+         * @param {Object} namespace Namespace information (owner, app, sharing)
+         * @return {splunkjs.Service.Jobs} A splunkjs.Service.Jobs instance
+         *
+         * @module splunkjs.Service.Jobs
+         */  
+        init: function(service, namespace) {
+            this._super(service, this.path(), namespace);
+
+            // We perform the bindings so that every function works 
+            // properly when it is passed as a callback.
+            this.create     = utils.bind(this, this.create);
+        },
+
+        /**
+         * Create an asyncronous search job
+         *
+         * @param {String} query The search query
+         * @param {Object} params A dictionary of properties for the job.
+         * @param {Function} callback A callback with the created job: `(err, createdJob)`
+         *
+         * @endpoint search/jobs
+         * @module splunkjs.Service.Jobs
+         * @see splunkjs.Service.Jobs.search
+         */
+        create: function(query, params, callback) {
+            // If someone called us with the default style of (params, callback),
+            // lets make it work
+            if (utils.isObject(query) && utils.isFunction(params) && !callback) {
+                callback = params;
+                params = query;
+                query = params.search;
+            }
+            
+            callback = callback || function() {};
+            params = params || {};
+            params.search = query; 
+            
+            if ((params.exec_mode || "").toLowerCase() === "oneshot") {
+                throw new Error("Please use splunkjs.Service.Jobs.oneshotSearch for exec_mode=oneshot");
+            }
+            
+            if (!params.search) {
+                callback("Must provide a query to create a search job");
+            } 
+
+            var that = this;
+            return this.post("", params, function(err, response) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    
+                    var job = new root.Job(that.service, response.data.entry.content.sid);
+                    callback(null, job);
+                }
+            });
+        },
+                
+        /**
+         * Create an asyncronous search job
+         *
+         * Create a search job using the specified query and parameters.
+         *
+         * This method will throw an error if exec_mode=oneshot is passed in the params
+         * variable.
+         *
+         * Example:
+         *
+         *      var jobs = service.jobs();
+         *      jobs.search("search ERROR", {id: "myjob_123"}, function(err, newJob) {
+         *          console.log("CREATED": newJob.sid);
+         *      });
+         *
+         * @param {String} query The search query
+         * @param {Object} params A dictionary of properties for the job.
+         * @param {Function} callback A callback with the created job: `(err, createdJob)`
+         *
+         * @endpoint search/jobs
+         * @module splunkjs.Service.Jobs
+         */
+        search: function(query, params, callback) {
+            return this.create(query, params, callback);
+        },
+                
+        /**
+         * Create a oneshot search job
+         *
+         * Create a oneshot search job using the specified query and parameters.
+         *
+         * Example:
+         *
+         *      var jobs = service.jobs();
+         *      jobs.oneshotSearch("search ERROR", {id: "myjob_123"}, function(err, results) {
+         *          console.log("RESULT FIELDS": results.fields);
+         *      });
+         *
+         * @param {String} query The search query
+         * @param {Object} params A dictionary of properties for the job.
+         * @param {Function} callback A callback with the results of the job: `(err, results)`
+         *
+         * @endpoint search/jobs
+         * @module splunkjs.Service.Jobs
+         */
+        oneshotSearch: function(query, params, callback) {
+            // If someone called us with the default style of (params, callback),
+            // lets make it work
+            if (utils.isObject(query) && utils.isFunction(params) && !callback) {
+                callback = params;
+                params = query;
+                query = params.search;
+            }
+            
+            callback = callback || function() {};
+            params = params || {};
+            params.search = query; 
+            params.exec_mode = "oneshot";
+            
+            if (!params.search) {
+                callback("Must provide a query to create a search job");
+            } 
+
+            var that = this;
+            return this.post("", params, function(err, response) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    callback(null, response.data);
+                }
+            });
         }
     });
 })();

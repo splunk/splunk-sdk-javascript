@@ -711,6 +711,42 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     };
     
     /**
+     * Apply the iterator function to each element in the object
+     *
+     * Example:
+     *      
+     *      splunkjs.Utils.forEach([1,2,3], function(el) { console.log(el); }); // 1,2,3
+     *
+     * @param {Object|Array} obj Object/array to iterate over
+     * @param {Function} iterator Function to apply with each element: `(element, list, index)`
+     * @param {Object} context An optional context to apply the function on
+     *
+     * @globals splunkjs.Utils
+     */
+    root.forEach = function(obj, iterator, context) {
+        if (obj === null) {
+            return;
+        }
+        if (Array.prototype.forEach && obj.forEach === Array.prototype.forEach) {
+            obj.forEach(iterator, context);
+        } else if (obj.length === +obj.length) {
+            for (var i = 0, l = obj.length; i < l; i++) {
+                if (i in obj && iterator.call(context, obj[i], i, obj) === {}) {
+                    return;
+                }
+            }
+        } else {
+            for (var key in obj) {
+                if (obj.hasOwnProperty(key)) {
+                    if (iterator.call(context, obj[key], key, obj) === {}) {
+                        return;
+                    }
+                }
+            }
+        }
+    };
+    
+    /**
      * Extend a given object with all the properties in passed-in objects
      *
      * Example:
@@ -726,7 +762,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @globals splunkjs.Utils
      */
     root.extend = function(obj) {
-        each(slice.call(arguments, 1), function(source) {
+        root.forEach(Array.prototype.slice.call(arguments, 1), function(source) {
             for (var prop in source) {
                 obj[prop] = source[prop];
             }
