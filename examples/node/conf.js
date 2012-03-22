@@ -357,11 +357,7 @@
                         }
                         
                         // If we can't find the stanza, then create it
-                        if (!stanza) {
-                            var file = options.global ?
-                                new splunkjs.Service.PropertyFile(service, filename) :
-                                new splunkjs.Service.ConfigurationFile(service, filename);
-                                
+                        if (!stanza) {                                
                             file.create(stanzaName, {}, function(err, stanza) {
                                 if (err) {
                                     done(err);
