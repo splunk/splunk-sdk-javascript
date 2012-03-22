@@ -31,7 +31,6 @@ import xml.etree.cElementTree as et
 import logging
 logger = logging.getLogger('splunk.xml2json.dispatch')
         
-        
 REMOTEORIGIN_HEADER = "x-remoteorigin"
 
 # TODO UNDONE

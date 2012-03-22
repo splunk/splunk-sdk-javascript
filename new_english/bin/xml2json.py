@@ -24,6 +24,9 @@ import sys
 import xml.etree.cElementTree as et
 #import lxml.etree as et
 
+import logging
+logger = logging.getLogger('splunk.xml2json.xml2json')
+
 ATOM_NS         = 'http://www.w3.org/2005/Atom'
 SPLUNK_NS       = 'http://dev.splunk.com/ns/rest'
 OPENSEARCH_NS   = 'http://a9.com/-/spec/opensearch/1.1/'
@@ -61,7 +64,7 @@ def extract_messages(node):
     return output
 
 
-def combine_messages(existing_messages, new_messages):
+def combine_messages(existing_messages = {}, new_messages = {}):
     for message_type in new_messages.keys():
         if message_type in existing_messages:
             existing_messages[message_type].extend(new_messages[message_type])
@@ -238,7 +241,7 @@ def from_entry(root, messages):
             elif k == "eai:attributes":
                 entry["fields"] = from_attributes(contents[k])
                 del contents[k]
-            elif k == "messages":
+            elif k == "messages" and isinstance(contents[k], dict):
                 combine_messages(messages, contents[k])
                 del contents[k]
                 
