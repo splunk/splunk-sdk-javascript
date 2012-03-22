@@ -45,13 +45,6 @@ exports.setup = function(svc) {
                 this.namespace21 = {owner: userName2, app: appName1};
                 this.namespace22 = {owner: userName2, app: appName2};
                 
-                console.log(
-                    this.namespace11, 
-                    this.namespace12,
-                    this.namespace21,
-                    this.namespace22
-                );
-                
                 Async.chain([
                         function(done) {
                             apps.create({name: appName1}, done);
@@ -905,14 +898,14 @@ exports.setup = function(svc) {
                         apps.create({name: name}, callback);     
                     },
                     function(app, callback) {
+                        test.ok(app);
+                        test.strictEqual(app.properties().name, name);  
+                        test.strictEqual(app.properties().content.version, "1.0");
+                        
                         app.update({
                             description: DESCRIPTION,
                             version: VERSION
                         }, callback);
-                    },
-                    function(app, callback) {
-                        test.ok(app);
-                        app.refresh(callback);  
                     },
                     function(app, callback) {
                         test.ok(app);
@@ -1211,14 +1204,7 @@ exports.setup = function(svc) {
                         file.create("stanza", done);
                     },
                     function(stanza, done) {
-                        stanza.update({"jssdk_foobar": value});
-                        tutils.pollUntil(
-                            stanza, function(s) {
-                                return s.properties().content["jssdk_foobar"] === value;
-                            }, 
-                            10, 
-                            done
-                        );
+                        stanza.update({"jssdk_foobar": value}, done);
                     },
                     function(stanza, done) {
                         test.strictEqual(stanza.properties().content["jssdk_foobar"], value);
@@ -1334,14 +1320,7 @@ exports.setup = function(svc) {
                         file.create("stanza", done);
                     },
                     function(stanza, done) {
-                        stanza.update({"jssdk_foobar": value});
-                        tutils.pollUntil(
-                            stanza, function(s) {
-                                return s.properties().content["jssdk_foobar"] === value;
-                            }, 
-                            10, 
-                            done
-                        );
+                        stanza.update({"jssdk_foobar": value}, done);
                     },
                     function(stanza, done) {
                         test.strictEqual(stanza.properties().content["jssdk_foobar"], value);
@@ -1525,11 +1504,6 @@ exports.setup = function(svc) {
                 Async.chain([
                         function(done) {
                             service.users().create({name: "jssdk_testuser", password: "abc", roles: "user"}, done);
-                        },
-                        function(user, done) {
-                            test.ok(user);
-                            
-                            user.refresh(done);
                         },
                         function(user, done) {
                             test.ok(user);

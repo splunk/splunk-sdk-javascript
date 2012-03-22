@@ -1934,6 +1934,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     
     var Context     = require('./context');
     var Http        = require('./http');
+    var Async       = require('./async');
     var Paths       = require('./paths').Paths;
     var Class       = require('./jquery.class').Class;
     var utils       = require('./utils');
@@ -2491,6 +2492,16 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this._load       = utils.bind(this, this._load);
             this.refresh     = utils.bind(this, this.refresh);
             this.properties  = utils.bind(this, this.properties);
+            this.path        = utils.bind(this, this.path);
+        },
+        
+        /**
+         * REST path for this resource (with no namespace)
+         *
+         * @module splunkjs.Service.Resource
+         */
+        path: function() {
+            throw new Error("MUST BE OVERRIDDEN");
         },
         
         /**
@@ -2600,15 +2611,22 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * This will unconditionally refresh the object from the server
          * and load it up.
          *
+         * @param {Object} options Optional dictionary of collection filtering and pagination options
          * @param {Function} callback A callback when the object is retrieved: `(err, resource)`
          *
          * @module splunkjs.Service.Entity
          */
-        refresh: function(callback) {
+        refresh: function(options, callback) {
+            if (!callback && utils.isFunction(options)) {
+                callback = options;
+                options = {};
+            }
             callback = callback || function() {};
             
+            options = options || {};
+            
             var that = this;
-            return this.get("", {}, function(err, response) {
+            return this.get("", options, function(err, response) {
                 if (err) {
                     callback(err);
                 } 
@@ -2685,7 +2703,27 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      * @moduleRoot splunkjs.Service.Collection
      * @extends splunkjs.Service.Resource
      */
-    root.Collection = root.Resource.extend({        
+    root.Collection = root.Resource.extend({
+        /**
+         * Whether or not to call `refresh()` after an entity
+         * is created. By default we don't refresh
+         * the entity, as the endpoint will return (echo) the created
+         * entity
+         *
+         * @module splunkjs.Service.Collection
+         */
+        refreshOnEntityCreation: false,
+        
+        /**
+         * Whether or not to call `refresh()` after an entity
+         * is instantiated locally. By default we don't refresh
+         * the entity, as the endpoint will return (echo) the created
+         * entities when we list it.
+         *
+         * @module splunkjs.Service.Collection
+         */
+        refreshOnEntityInstantiation: false,
+        
         /**
          * Constructor for splunkjs.Service.Collection
          *
@@ -2711,6 +2749,18 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             this._entities = [];
             this._entitiesByName = {};            
+        },
+        
+        /**
+         * Create a local instance of an entity
+         *
+         * @param {Object} props The properties for this entity
+         * @return {splunkjs.Service.Entity} A splunkjs.Service.Entity instance
+         
+         * @module splunkjs.Service.Collection
+         */
+        instantiateEntity: function(props) {
+            throw new Error("MUST BE OVERRIDDEN");
         },
         
         /**
@@ -2770,6 +2820,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 options.count = 0;
             }
             
+            var recursive = false;
+            if (options.hasOwnProperty("recursive")) {
+                recursive = options.recursive;
+                delete options.recursive;
+            }
+            
             var that = this;
             return that.get("", options, function(err, response) {
                 if (err) {
@@ -2777,7 +2833,22 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 }
                 else {
                     that._load(response.data);
-                    callback(null, that);
+                    
+                    if (that.refreshOnEntityInstantiation && recursive) {
+                        var fns = [];
+                        utils.forEach(that._entities, function(entity) {
+                            fns.push(function(done) {
+                                entity.refresh({recursive: true}, done); 
+                            });
+                        });
+                        
+                        Async.parallel(fns, function(err) {
+                            callback(err, that); 
+                        });
+                    }
+                    else {
+                        callback(null, that);
+                    }
                 }
             });
         },
@@ -2837,8 +2908,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     }
                     
                     var entity = that.instantiateEntity(props);
-                    entity._load(props);                    
-                    callback(null, entity);
+                    entity._load(props); 
+                    
+                    if (that.refreshOnEntityCreation) {
+                        entity.refresh(callback);
+                    }
+                    else {                   
+                        callback(null, entity);
+                    }
                 }
             });
             
@@ -2956,6 +3033,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      * @extends splunkjs.Service.Entity
      */
     root.SavedSearch = root.Entity.extend({
+        /**
+         * REST path for this resource (with no namespace)
+         *
+         * @module splunkjs.Service.SavedSearch
+         */
         path: function() {
             return Paths.savedSearches + "/" + encodeURIComponent(this.name);
         },
@@ -3127,12 +3209,23 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      * @extends splunkjs.Service.Collection
      */
     root.SavedSearches = root.Collection.extend({
-        entityClass: root.SavedSearch,
-        
+        /**
+         * REST path for this resource (with no namespace)
+         *
+         * @module splunkjs.Service.SavedSearches
+         */
         path: function() {
             return Paths.savedSearches;
         },
         
+        /**
+         * Create a local instance of an entity
+         *
+         * @param {Object} props The properties for this entity
+         * @return {splunkjs.Service.SavedSearch} A splunkjs.Service.SavedSearch instance
+         
+         * @module splunkjs.Service.SavedSearches
+         */
         instantiateEntity: function(props) {
             var entityNamespace = utils.namespaceFromProperties(props);
             return new root.SavedSearch(this.service, props.name, entityNamespace);
@@ -3168,10 +3261,15 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * Whether or not to call `refresh()` after an update
          * to fetch the updated item.
          *
-         * @module splunkjs.Service.Entity
+         * @module splunkjs.Service.Application
          */
         refreshOnUpdate: true,
         
+        /**
+         * REST path for this resource (with no namespace)
+         *
+         * @module splunkjs.Service.Application
+         */
         path: function() {
             return Paths.apps + "/" + encodeURIComponent(this.name);
         },
@@ -3264,12 +3362,33 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      * @extends splunkjs.Service.Collection
      */  
     root.Applications = root.Collection.extend({
-        entityClass: root.Application,
+        /**
+         * Whether or not to call `refresh()` after an entity
+         * is created. By default we don't refresh
+         * the entity, as the endpoint will return (echo) the created
+         * entity
+         *
+         * @module splunkjs.Service.Applications
+         */
+        refreshOnEntityCreation: true,
         
+        /**
+         * REST path for this resource (with no namespace)
+         *
+         * @module splunkjs.Service.Applications
+         */
         path: function() {
             return Paths.apps;
         },
         
+        /**
+         * Create a local instance of an entity
+         *
+         * @param {Object} props The properties for this entity
+         * @return {splunkjs.Service.Application} A splunkjs.Service.Application instance
+         
+         * @module splunkjs.Service.Applications
+         */
         instantiateEntity: function(props) {
             return new root.Application(this.service, props.name, {});
         },
@@ -3299,6 +3418,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      * @extends splunkjs.Service.Entity
      */
     root.User = root.Entity.extend({
+        /**
+         * REST path for this resource (with no namespace)
+         *
+         * @module splunkjs.Service.User
+         */
         path: function() {
             return Paths.users + "/" + encodeURIComponent(this.name);
         },
@@ -3330,12 +3454,33 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      * @extends splunkjs.Service.Collection
      */  
     root.Users = root.Collection.extend({
-        entityClass: root.User,
+        /**
+         * Whether or not to call `refresh()` after an entity
+         * is created. By default we don't refresh
+         * the entity, as the endpoint will return (echo) the created
+         * entity
+         *
+         * @module splunkjs.Service.Users
+         */
+        refreshOnEntityCreation: true,
         
+        /**
+         * REST path for this resource (with no namespace)
+         *
+         * @module splunkjs.Service.Users
+         */
         path: function() {
             return Paths.users;
         },
         
+        /**
+         * Create a local instance of an entity
+         *
+         * @param {Object} props The properties for this entity
+         * @return {splunkjs.Service.User} A splunkjs.Service.User instance
+         
+         * @module splunkjs.Service.Users
+         */
         instantiateEntity: function(props) {
             return new root.User(this.service, props.name, {});
         },
@@ -3378,7 +3523,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     var props = {name: params.name};
                     
                     var entity = that.instantiateEntity(props);                    
-                    callback(null, entity);
+                    entity.refresh(callback);
                 }
             });
             
@@ -3397,6 +3542,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      * @extends splunkjs.Service.Entity
      */
     root.View = root.Entity.extend({
+        /**
+         * REST path for this resource (with no namespace)
+         *
+         * @module splunkjs.Service.View
+         */
         path: function() {
             return Paths.views + "/" + encodeURIComponent(this.name);
         },
@@ -3429,12 +3579,23 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      * @extends splunkjs.Service.Collection
      */  
     root.Views = root.Collection.extend({
-        entityClass: root.View,
-        
+        /**
+         * REST path for this resource (with no namespace)
+         *
+         * @module splunkjs.Service.Views
+         */
         path: function() {
             return Paths.views;
         },
         
+        /**
+         * Create a local instance of an entity
+         *
+         * @param {Object} props The properties for this entity
+         * @return {splunkjs.Service.View} A splunkjs.Service.View instance
+         
+         * @module splunkjs.Service.Views
+         */
         instantiateEntity: function(props) {
             var entityNamespace = utils.namespaceFromProperties(props);
             return new root.View(this.service, props.name, entityNamespace);
@@ -3466,6 +3627,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      * @extends splunkjs.Service.Entity
      */
     root.Index = root.Entity.extend({
+        /**
+         * REST path for this resource (with no namespace)
+         *
+         * @module splunkjs.Service.Index
+         */
         path: function() {
             return Paths.indexes + "/" + encodeURIComponent(this.name);
         },
@@ -3546,12 +3712,23 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      * @extends splunkjs.Service.Collection
      */  
     root.Indexes = root.Collection.extend({
-        entityClass: root.Index,
-        
+        /**
+         * REST path for this resource (with no namespace)
+         *
+         * @module splunkjs.Service.Indexes
+         */
         path: function() {
             return Paths.indexes;
         },
         
+        /**
+         * Create a local instance of an entity
+         *
+         * @param {Object} props The properties for this entity
+         * @return {splunkjs.Service.Index} A splunkjs.Service.Index instance
+         
+         * @module splunkjs.Service.Indexes
+         */
         instantiateEntity: function(props) {
             var entityNamespace = utils.namespaceFromProperties(props);
             return new root.Index(this.service, props.name, entityNamespace);
@@ -3621,10 +3798,15 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * Whether or not to call `refresh()` after an update
          * to fetch the updated item.
          *
-         * @module splunkjs.Service.Entity
+         * @module splunkjs.Service.PropertyStanza
          */
         refreshOnUpdate: true,
         
+        /**
+         * REST path for this resource (with no namespace)
+         *
+         * @module splunkjs.Service.PropertyStanza
+         */
         path: function() {
             return Paths.properties + "/" + encodeURIComponent(this.file) + "/" + encodeURIComponent(this.name);
         },
@@ -3659,12 +3841,33 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      * @extends splunkjs.Service.Collection
      */  
     root.PropertyFile = root.Collection.extend({
-        entityClass: root.PropertyStanza,
+        /**
+         * Whether or not to call `refresh()` after an entity
+         * is created. By default we don't refresh
+         * the entity, as the endpoint will return (echo) the created
+         * entity
+         *
+         * @module splunkjs.Service.PropertyFile
+         */
+        refreshOnEntityCreation: true,
         
+        /**
+         * REST path for this resource (with no namespace)
+         *
+         * @module splunkjs.Service.PropertyFile
+         */
         path: function() {
             return Paths.properties + "/" + encodeURIComponent(this.name);
         },
         
+        /**
+         * Create a local instance of an entity
+         *
+         * @param {Object} props The properties for this entity
+         * @return {splunkjs.Service.PropertyStanza} A splunkjs.Service.PropertyStanza instance
+         
+         * @module splunkjs.Service.PropertyFile
+         */
         instantiateEntity: function(props) {
             return new root.PropertyStanza(this.service, this.name, props.name);
         },
@@ -3741,7 +3944,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 }
                 else {
                     var entity = new root.PropertyStanza(that.service, that.name, stanzaName);
-                    callback(null, entity);
+                    entity.refresh(callback);
                 }
             });
         }
@@ -3758,12 +3961,43 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      * @extends splunkjs.Service.Collection
      */  
     root.Properties = root.Collection.extend({
-        entityClass: root.PropertyFile,
+        /**
+         * Whether or not to call `refresh()` after an entity
+         * is created. By default we don't refresh
+         * the entity, as the endpoint will return (echo) the created
+         * entity
+         *
+         * @module splunkjs.Service.Properties
+         */
+        refreshOnEntityCreation: true,
         
+        /**
+         * Whether or not to call `refresh()` after an entity
+         * is instantiated locally. By default we don't refresh
+         * the entity, as the endpoint will return (echo) the created
+         * entities when we list it.
+         *
+         * @module splunkjs.Service.Properties
+         */
+        refreshOnEntityInstantiation: true,
+        
+        /**
+         * REST path for this resource (with no namespace)
+         *
+         * @module splunkjs.Service.Properties
+         */
         path: function() {
             return Paths.properties;
         },
         
+        /**
+         * Create a local instance of an entity
+         *
+         * @param {Object} props The properties for this entity
+         * @return {splunkjs.Service.PropertyFile} A splunkjs.Service.PropertyFile instance
+         
+         * @module splunkjs.Service.Properties
+         */
         instantiateEntity: function(props) {
             return new root.PropertyFile(this.service, props.name, this.namespace);
         },
@@ -3814,7 +4048,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 }
                 else {
                     var entity = new root.PropertyFile(that.service, filename);
-                    callback(null, entity);
+                    entity.refresh(callback);
                 }
             });
         }
@@ -3831,6 +4065,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      * @extends splunkjs.Service.Entity
      */
     root.ConfigurationStanza = root.Entity.extend({
+        /**
+         * REST path for this resource (with no namespace)
+         *
+         * @module splunkjs.Service.ConfigurationStanza
+         */
         path: function() {
             return Paths.configurations + "/conf-" + encodeURIComponent(this.file) + "/" + encodeURIComponent(this.name);
         },
@@ -3863,13 +4102,24 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      * @moduleRoot splunkjs.Service.ConfigurationFile
      * @extends splunkjs.Service.Collection
      */  
-    root.ConfigurationFile = root.Collection.extend({
-        entityClass: root.ConfigurationStanza,
-        
+    root.ConfigurationFile = root.Collection.extend({ 
+        /**
+         * REST path for this resource (with no namespace)
+         *
+         * @module splunkjs.Service.ConfigurationFile
+         */
         path: function() {
             return Paths.configurations + "/conf-" + encodeURIComponent(this.name);
         },
         
+        /**
+         * Create a local instance of an entity
+         *
+         * @param {Object} props The properties for this entity
+         * @return {splunkjs.Service.ConfigurationStanza} A splunkjs.Service.ConfigurationStanza instance
+         
+         * @module splunkjs.Service.ConfigurationFile
+         */
         instantiateEntity: function(props) {
             var entityNamespace = utils.namespaceFromProperties(props);
             return new root.ConfigurationStanza(this.service, this.name, props.name, entityNamespace);
@@ -3939,12 +4189,43 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      * @extends splunkjs.Service.Collection
      */  
     root.Configurations = root.Collection.extend({
-        entityClass: root.ConfigurationFile,
+        /**
+         * Whether or not to call `refresh()` after an entity
+         * is created. By default we don't refresh
+         * the entity, as the endpoint will return (echo) the created
+         * entity
+         *
+         * @module splunkjs.Service.Configurations
+         */
+        refreshOnEntityCreation: true,
         
+        /**
+         * Whether or not to call `refresh()` after an entity
+         * is instantiated locally. By default we don't refresh
+         * the entity, as the endpoint will return (echo) the created
+         * entities when we list it.
+         *
+         * @module splunkjs.Service.Configurations
+         */
+        refreshOnEntityInstantiation: true,
+        
+        /**
+         * REST path for this resource (with no namespace)
+         *
+         * @module splunkjs.Service.Configurations
+         */
         path: function() {
             return Paths.properties;
         },
         
+        /**
+         * Create a local instance of an entity
+         *
+         * @param {Object} props The properties for this entity
+         * @return {splunkjs.Service.ConfigurationFile} A splunkjs.Service.ConfigurationFile instance
+         
+         * @module splunkjs.Service.Configurations
+         */
         instantiateEntity: function(props) {
             return new root.ConfigurationFile(this.service, props.name, this.namespace);
         },
@@ -3999,7 +4280,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 }
                 else {
                     var entity = new root.ConfigurationFile(that.service, filename);
-                    callback(null, entity);
+                    entity.refresh(callback);
                 }
             });
         }
@@ -4017,6 +4298,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      * @extends splunkjs.Service.Entity
      */
     root.Job = root.Entity.extend({
+        /**
+         * REST path for this resource (with no namespace)
+         *
+         * @module splunkjs.Service.Job
+         */
         path: function() {
             return Paths.jobs + "/" + encodeURIComponent(this.name);
         },
@@ -4486,12 +4772,23 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      * @extends splunkjs.Service.Collection
      */  
     root.Jobs = root.Collection.extend({
-        entityClass: root.Job,
-        
+        /**
+         * REST path for this resource (with no namespace)
+         *
+         * @module splunkjs.Service.Jobs
+         */
         path: function() {
             return Paths.jobs;
         },
         
+        /**
+         * Create a local instance of an entity
+         *
+         * @param {Object} props The properties for this entity
+         * @return {splunkjs.Service.Job} A splunkjs.Service.Job instance
+         
+         * @module splunkjs.Service.Jobs
+         */
         instantiateEntity: function(props) {
             var sid = props.content.sid;
             var entityNamespace = utils.namespaceFromProperties(props);
@@ -4761,7 +5058,9 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
             return function(err) {
                 
                 if (err) {
-                    callback(err);
+                    if (callback) {
+                        callback(err);
+                    }
                     callback = null;
                 }
                 else {
@@ -4839,7 +5138,9 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
             
             task(function(err) {
                 if (err) {
-                    callback(err);
+                    if (callback) {
+                        callback(err);
+                    }
                     callback = null;
                 }
                 else {
@@ -4903,7 +5204,9 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
         
         root.parallel(tasks, function(err) {
             if (err) {
-                callback(err);
+                if (callback) {
+                    callback(err);
+                }
                 callback = null;
             }
             else {
@@ -4956,7 +5259,9 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
         
         root.series(tasks, function(err) {
             if (err) {
-                callback(err);
+                if (callback) {
+                    callback(err);
+                }
             }
             else {
                 var args = utils.toArray(arguments);
@@ -6465,13 +6770,6 @@ exports.setup = function(svc) {
                 this.namespace21 = {owner: userName2, app: appName1};
                 this.namespace22 = {owner: userName2, app: appName2};
                 
-                console.log(
-                    this.namespace11, 
-                    this.namespace12,
-                    this.namespace21,
-                    this.namespace22
-                );
-                
                 Async.chain([
                         function(done) {
                             apps.create({name: appName1}, done);
@@ -7325,14 +7623,14 @@ exports.setup = function(svc) {
                         apps.create({name: name}, callback);     
                     },
                     function(app, callback) {
+                        test.ok(app);
+                        test.strictEqual(app.properties().name, name);  
+                        test.strictEqual(app.properties().content.version, "1.0");
+                        
                         app.update({
                             description: DESCRIPTION,
                             version: VERSION
                         }, callback);
-                    },
-                    function(app, callback) {
-                        test.ok(app);
-                        app.refresh(callback);  
                     },
                     function(app, callback) {
                         test.ok(app);
@@ -7631,14 +7929,7 @@ exports.setup = function(svc) {
                         file.create("stanza", done);
                     },
                     function(stanza, done) {
-                        stanza.update({"jssdk_foobar": value});
-                        tutils.pollUntil(
-                            stanza, function(s) {
-                                return s.properties().content["jssdk_foobar"] === value;
-                            }, 
-                            10, 
-                            done
-                        );
+                        stanza.update({"jssdk_foobar": value}, done);
                     },
                     function(stanza, done) {
                         test.strictEqual(stanza.properties().content["jssdk_foobar"], value);
@@ -7754,14 +8045,7 @@ exports.setup = function(svc) {
                         file.create("stanza", done);
                     },
                     function(stanza, done) {
-                        stanza.update({"jssdk_foobar": value});
-                        tutils.pollUntil(
-                            stanza, function(s) {
-                                return s.properties().content["jssdk_foobar"] === value;
-                            }, 
-                            10, 
-                            done
-                        );
+                        stanza.update({"jssdk_foobar": value}, done);
                     },
                     function(stanza, done) {
                         test.strictEqual(stanza.properties().content["jssdk_foobar"], value);
@@ -7945,11 +8229,6 @@ exports.setup = function(svc) {
                 Async.chain([
                         function(done) {
                             service.users().create({name: "jssdk_testuser", password: "abc", roles: "user"}, done);
-                        },
-                        function(user, done) {
-                            test.ok(user);
-                            
-                            user.refresh(done);
                         },
                         function(user, done) {
                             test.ok(user);
