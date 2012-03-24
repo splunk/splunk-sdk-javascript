@@ -1669,7 +1669,12 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
         _buildResponse: function(error, response, data) {            
             var complete_response, json = {};
 
-            if (response && utils.trim(response.headers["content-type"]) === "application/json") {
+            var contentType = null;
+            if (response && response.headers) {
+                contentType = utils.trim(response.headers["content-type"] || response.headers["Content-Type"]);
+            }
+
+            if (contentType === "application/json") {
                 json = this.parseJson(data) || {};
             }
 
