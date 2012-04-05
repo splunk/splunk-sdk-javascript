@@ -1,52 +1,51 @@
-# The Splunk Software Development Kit for JavaScript (Preview Release)
+# The Splunk JavaScript Software Development Kit (Preview Release)
 
-This SDK contains library code and examples designed to enable developers to
-build applications using Splunk and JavaScript. The SDK supports both 
-server- and client-side JavaScript. 
+The Splunk JavaScript Software Development Kit (SDK) contains library code and examples
+designed to enable developers to build applications using Splunk and JavaScript. This SDK
+supports both server- and client-side JavaScript. 
 
 ## License
 
-The Splunk Software Development Kit for JavaScript is licensed under the Apache
-License 2.0. Details can be found in the file LICENSE.
+The Splunk JavaScript SDK is licensed under the Apache License 2.0. Details can be found
+in the LICENSE file.
 
-## This SDK is a Preview Release
+## The Splunk JavaScript SDK is a Preview release
 
-1.  This Preview release a pre-beta release.  There will also be a beta release 
-    prior to a general release. It is incomplete and may have bugs.
+1.  This Preview is a pre-Beta release that is incomplete and may have
+    bugs. There will be a Beta release prior to a general release.
 
-2.  The Apache license only applies to the SDK and no other Software provided 
-    by Splunk.
+2.  The Apache License only applies to the Splunk JavaScript SDK and no other Software
+    provided by Splunk.
 
-3.  Splunk in using the Apache license is not providing any warranties, 
-    indemnification or accepting any liabilities  with the Preview SDK.
+3.  Splunk, in using the Apache License, does not provide any warranties or indemnification,
+    and does not accept any liabilities with the Preview release of the SDK.
 
-4.  Splunk is not accepting any Contributions to the Preview release of the SDK.
-    All Contributions during the Preview SDK will be returned without review.
+4.  We are now accepting contributions from individuals and companies to our Splunk open
+    source projects. See the [Open Source][contributions] page for more information.
 
 ## Installation
 
-Installing the JavaScript SDK can be done in a few simple steps. For more
-detailed instructions, you can go to the [Splunk Dev Portal][install].
+You can install the Splunk JavaScript SDK in a few simple steps. For more
+detailed instructions, go to the [Splunk Developer Portal][install].
 
-### Get the SDK
+### Get the Splunk JavaScript SDK
 
-You can get the SDK by either [downloading it][zip] or by cloning it using
-Git:
+You can get the SDK by [downloading it][zip] from GitHub, or by cloning it:
 
 > git clone https://github.com/splunk/splunk-sdk-javascript.git
 
-### XML to JSON Splunk App
+### Install the XML to JSON Splunk app
 
-To install the XML to JSON translation app, [`new_english`][new_english], you
-can copy it to `$SPLUNK_HOME/etc/apps/`
+To install the XML to JSON Splunk app, [`new_english`][new_english], copy it 
+to `$SPLUNK_HOME/etc/apps/`.
 
-### Installing the SDK on your web page
+### Use the Splunk JavaScript SDK components on your web page
 
-If you want to use the SDK on your web page, you can simply include the 
-`splunk.js` or `splunk.min.js` file in your page. You can find both of them
-in the [`splunk-sdk-javascript/client`][client_dir] directory.
+To use the components from the Splunk JavaScript SDK on your web page, copy the 
+[`splunk-sdk-javascript/client`][client_dir] directory to your web server and 
+include the `splunk.js` or `splunk.min.js` file from this directory in your code. 
 
-To include them in your page:
+So, include one of the following tags in your code:
 
     <script type="text/javascript" src="/yourpath/splunk.js"></script>
 
@@ -54,17 +53,18 @@ Or:
 
     <script type="text/javascript" src="/yourpath/splunk.min.js"></script>
 
-To include the SDK UI components (e.g. the Timeline and Charting controls),
-simply put those files in the same folder as `splunk.js` or `splunk.min.js`.
+You can also include the UI components, such as the Timeline and Charting controls. 
+The UI component files (such as `splunk.ui.timeline` and `splunk.ui.charting`) 
+are also in the [`splunk-sdk-javascript/client`][client_dir] directory.
 
-### Installing the SDK For Node.js
+### Install the Splunk JavaScript SDK for Node.js
 
-If you want to use the SDK with your Node.js program, you can install it
+If you want to use the SDK with your Node.js programs, install the SDK
 by using `npm` in *your* project's directory:
 
 > npm install splunk-sdk
 
-To include then, you can use the `require` function:
+To include the SDK, use the `require` function in your code:
 
     var splunkjs = require('splunk-sdk');
 
@@ -72,7 +72,7 @@ To include then, you can use the `require` function:
 
 ### Client-side code example
 
-The following contains sample HTML that uses the Splunk JavaScript SDK to list all jobs: 
+This HTML example uses the Splunk JavaScript SDK to list all jobs: 
     
     <script type="text/javascript" src="splunk.js"></script>
     
@@ -84,17 +84,18 @@ The following contains sample HTML that uses the Splunk JavaScript SDK to list a
             }
 
             console.log("Login was successful: " + success);
-            service.jobs().list(function(err, jobs) {
-                for(var i = 0; i < jobs.length; i++) {
-                    console.log("Job " + i + ": " + jobs[i].sid);
-                } 
+            service.jobs().refresh(function(err, jobs) {
+                var jobList = jobs.list();
+                for(var i = 0; i < jobList.length; i++) {
+                    console.log("Job " + i + ": " + jobList[i].sid);
+                }
             });
         });
     </script>
 
 ### Node.js code example
 
-Here is how you can use the JavaScript SDK and Node.js to list all jobs:
+This example shows how to use the Splunk JavaScript SDK and Node.js to list all jobs:
 
     var splunkjs = require('splunk-sdk');
 
@@ -105,17 +106,18 @@ Here is how you can use the JavaScript SDK and Node.js to list all jobs:
         }
 
         console.log("Login was successful: " + success);
-        service.jobs().list(function(err, jobs) {
-            for(var i = 0; i < jobs.length; i++) {
-                console.log("Job " + i + ": " + jobs[i].sid);
-            } 
+        service.jobs().refresh(function(err, jobs) {
+            var jobList = jobs.list();
+            for(var i = 0; i < jobList.length; i++) {
+                console.log("Job " + i + ": " + jobList[i].sid);
+            }
         });
     });
 
-## Examples
+## SDK examples
 
-The SDK contains several examples, both server- and client-based. You can read
-detailed instructions on how to get them running on the [Splunk Dev Portal][examples].
+The Splunk JavaScript SDK contains several server- and client-based examples. For
+detailed instructions about getting them running, see the [Splunk Developer Portal][examples].
 
 ### Set up the `.splunkrc` file
 
@@ -138,27 +140,24 @@ with the following format:
     password=changeme
     # Access scheme (OPTIONAL)
     scheme=https
-    # Namespace to use (OPTIONAL)
-    namespace=*:*
 
 Save the file as `.splunkrc` in the current user's home directory or in the root 
 directory of the Splunk JavaScript SDK.
 
 ### Client-side examples
 
-The JavaScript SDK includes several browser-based examples. To run them, you 
-can enter:
+The Splunk JavaScript SDK includes several browser-based examples, which you can run
+from the Examples web page. To start a simple web server and open this page in a
+web browser, enter:
 
 > node sdkdo examples
 
-This will start a small web-server and launch your browser to the examples page.
-
 ### Node.js examples
 
-The JavaScript SDK includes several command-line examples, which are located in 
+The Splunk JavaScript SDK includes several command-line examples, which are located in 
 the [`/splunk-sdk-javascript/examples/node`][node_examples_dir] directory. These
 examples run with Node.js and use the command-line arguments from the 
-`.splunkrc` file. 
+`.splunkrc` file, if you set this up with your login credentials. 
 
 For example, to run the jobs.js sample, go to the 
 [`splunk-sdk-javascript/examples/node`][node_examples_dir] directory and enter: 
@@ -170,7 +169,7 @@ command:
 
 > node jobs.js --username yourusername --password yourpassword list
 
-If it executed correctly, your output will look something like this:
+Your output should look something like this:
 
     ~\splunk-sdk-javascript\examples\node> node .\jobs.js list
       Job 1 sid: scheduler__nobody__search_VG9wIGZpdmUgc291cmNldHlwZXM_at_1323917700_79740ae7e22350d6
@@ -185,21 +184,23 @@ If it executed correctly, your output will look something like this:
 
 The Splunk JavaScript SDK infrastructure relies on Node.js, so if you want to
 build files, run examples, run tests, or generate documentation, you must
-install Node.js. You can read more about how to setup your environment
-on the [Splunk Dev Portal][requirements].
+install Node.js. You can read more about how to set up your environment
+on the [Splunk Developer Portal][requirements].
 
 
 All development activities are managed by a helper script called sdkdo. For a
-list of possible commands and options, open a command prompt and go to the
+list of possible commands and options, open a command prompt in the
 `splunk-sdk-javascript` directory, then enter the following command:
 
 > node sdkdo --help
 
-### Compiling (combining and minifying) the browser files
+### Compile (combine and minify) the browser files
+
+To rebuild and minify the browser files, enter:
 
 > node compile
 
-### Running unit tests
+### Run unit tests
 
 The SDK includes several unit tests for each component. You can run individual
 test modules or run all tests. Open a command prompt and go to the splunk-sdk-
@@ -217,14 +218,14 @@ To run the browser tests, enter:
 
 ## Documentation
 
-* Reference documentation can be found [here][refdocs]
-* Conceptual documentation, tutorials and HOWTOs can be found at the Splunk 
-[Dev Portal][devportal]
+* For API reference documentation, go [here][refdocs].
+* For conceptual and how-to documentation and tutorials, see the 
+  [Splunk Developer Portal][devportal].
 
 ### Changelog
 
-The file `CHANGELOG.md` in the root of the repository contains a description
-of changes for each version of the SDK. You can also find it online at:
+The `CHANGELOG.md` file contains a description of changes for each version of the SDK.
+You can find this file in the root of the SDK repository, and online at:
 
 * https://github.com/splunk/splunk-sdk-javascript/blob/master/CHANGELOG.md
 
@@ -240,7 +241,7 @@ You can read more about our branching model on our Wiki:
 <table>
 <tr>
 <td><em>bin</em><td>
-<td>Directory for executable files (such as `sdkdo`)</td>
+<td>Executable files (such as `sdkdo`)</td>
 </tr>
 
 <tr>
@@ -250,7 +251,7 @@ You can read more about our branching model on our Wiki:
 
 <tr>
 <td><em>contrib</em><td>
-<td>Packaged 3rd party dependencies (such as test runners, etc)</td>
+<td>Packaged third-party dependencies (such as test runners)</td>
 </tr>
 
 <tr>
@@ -265,22 +266,22 @@ You can read more about our branching model on our Wiki:
 
 <tr>
 <td><em>internal</em><td>
-<td>Internal files used by the SDK for testing/example purposes</td>
+<td>Internal files used by the SDK for testing and examples</td>
 </tr>
 
 <tr>
 <td><em>lib</em><td>
-<td>The SDK itself</td>
+<td>The SDK code files</td>
 </tr>
 
 <tr>
 <td><em>licenses</em><td>
-<td>License information for packaged 3rd party dependencies</td>
+<td>License information for packaged third-party dependencies</td>
 </tr>
 
 <tr>
 <td><em>new_english</em><td>
-<td>Source for the `new_english` XML -&gt; JSON translation app</td>
+<td>Source for the `new_english` XML -&gt; JSON app</td>
 </tr>
 
 <tr>
@@ -290,26 +291,26 @@ You can read more about our branching model on our Wiki:
 
 <tr>
 <td><em>ui</em><td>
-<td>Beginning of the Splunk UI SDK</td>
+<td>UI components of the SDK</td>
 </tr>
 </table>
 
 ## Resources
 
-You can find anything having to do with developing on Splunk at the Splunk
-developer portal:
+Find anything having to do with developing on Splunk at the Splunk
+Developer Portal:
 
 * http://dev.splunk.com
 
-You can also find reference documentation for the REST API:
+Find reference documentation for the Splunk REST API:
 
 * http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI
 
-For an introduction to the Splunk product and some of its capabilities:
+For information about Splunk and its capabilities:
 
-* http://docs.splunk.com/Documentation/Splunk/latest/User/SplunkOverview
+* http://docs.splunk.com/Documentation/Splunk
 
-For more information on the SDK and this repository check out our GitHub Wiki
+For more information about the SDK and this repository, see our GitHub Wiki:
 
 * https://github.com/splunk/splunk-sdk-javascript/wiki/
 
@@ -346,30 +347,32 @@ Stay connected with other developers building on Splunk.
 
 </table>
 
-### How to contribute
+### Contributions
 
-We aren't ready to accept code contributions yet, but will be shortly. Check 
-this README for more updates soon.
+If you want to make a code contribution, go to the [Open Source][contributions] 
+page for more information.
+
 
 ### Support
 
-* SDKs in Preview will not be Splunk supported. Once the JavaScript SDK moves 
-  to an Open Beta we will provide more detail on support.  
+* The Preview release of the SDK is not supported by Splunk. Once the Beta version
+  has been released, we will provide more details about support.  
 
-* Issues should be filed here: 
-  https://github.com/splunk/splunk-sdk-javascript/issues
+* File any issues here: 
+  https://github.com/splunk/splunk-sdk-javascript/issues.
 
-### Contact Us
+### Contact us
 
-You can reach the Dev Platform team at devinfo@splunk.com
+You can reach the Dev Platform team at devinfo@splunk.com.
+
 ## License
 
-The Splunk Software Development Kit for JavaScript is licensed under the Apache
-License 2.0. Details can be found in the file LICENSE.
+The Splunk JavaScript Software Development Kit is licensed under the Apache
+License 2.0. Details can be found in the LICENSE file.
 
-### Third-Party Libraries
+### Third-party libraries
 
-The third-party libraries embedded may have different licenses. This is the list
+The embedded third-party libraries may have different licenses. Here is a list
 of embedded libraries and their licenses:
 
 1. [dox]: [MIT][dox-license]
@@ -419,3 +422,4 @@ of embedded libraries and their licenses:
 [install]:                  http://dev.splunk.com/view/javascript-sdk-getting-started/SP-CAAAEFN
 [examples]:                 http://dev.splunk.com/view/javascript-sdk-getting-started/SP-CAAAEDD
 [requirements]:             http://dev.splunk.com/view/javascript-sdk-getting-started/SP-CAAAED6
+[contributions]:            http://dev.splunk.com/view/opensource/SP-CAAAEDM
