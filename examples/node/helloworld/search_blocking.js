@@ -59,9 +59,9 @@ exports.main = function(opts, callback) {
             function(job, done) {
                 // Print out the statics
                 console.log("Job Statistics: ");
-                console.log("  Event Count: " + job.properties().content.eventCount);
-                console.log("  Disk Usage: " + job.properties().content.diskUsage + " bytes");
-                console.log("  Priority: " + job.properties().content.priority);
+                console.log("  Event Count: " + job.properties().eventCount);
+                console.log("  Disk Usage: " + job.properties().diskUsage + " bytes");
+                console.log("  Priority: " + job.properties().priority);
                 
                 // Ask the server for the results
                 job.results({}, done);

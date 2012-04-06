@@ -207,7 +207,7 @@
                     function(stanza, done) {
                         // Find all the properties
                         var keys = [];
-                        var properties = stanza.properties().content;
+                        var properties = stanza.properties();
                         for(var key in properties) {
                             if (properties.hasOwnProperty(key) && ignore.indexOf(key) < 0) {
                                 keys.push(key);

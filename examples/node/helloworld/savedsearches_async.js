@@ -58,7 +58,7 @@ exports.main = function(opts, callback) {
                 for(var i = 0; i < searchList.length; i++) {
                     var search = searchList[i];
                     console.log("  Search " + i + ": " + search.name);
-                    console.log("    " + search.properties().content.search);
+                    console.log("    " + search.properties().search);
                 }
                 
                 done();

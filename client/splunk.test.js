@@ -2052,7 +2052,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      var files = svc.configurations();
          *      files.item("props", function(err, propsFile) {
          *          propsFile.refresh(function(err, props) {
-         *              console.log(props.properties().content); 
+         *              console.log(props.properties()); 
          *          });
          *      });
          *
@@ -2106,7 +2106,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      var files = svc.properties();
          *      files.item("props", function(err, propsFile) {
          *          propsFile.refresh(function(err, props) {
-         *              console.log(props.properties().content); 
+         *              console.log(props.properties()); 
          *          });
          *      });
          *
@@ -2294,7 +2294,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * Example:
          *
          *      service.currentUser(function(err, user) {
-         *          console.log("Real name: ", user.properties().content.realname);
+         *          console.log("Real name: ", user.properties().realname);
          *      });
          *
          * @param {Function} callback A callback with the user instance: `(err, user)`
@@ -2490,7 +2490,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             this._super(service, fullpath);
             this.namespace = namespace;
-            this._properties = { content: {}, acl: {}, attributes: {}};
+            this._properties = {};
+            this._state = {};
             
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
@@ -2519,6 +2520,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         _load: function(properties) {
             this._properties = properties || {};
+            this._state = properties || {};
         },
         
         /**
@@ -2546,8 +2548,22 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @module splunkjs.Service.Resource
          */
-        properties: function(callback) {
+        properties: function() {
             return this._properties;
+        },
+        
+        /**
+         * Retrieve the state for this resource
+         *
+         * This will retrieve the current full state for this
+         * resource.
+         *
+         * @return {Object} The full state for this resource
+         *
+         * @module splunkjs.Service.Resource
+         */
+        state: function() {
+            return this._state;
         }
     });
     
@@ -2608,6 +2624,81 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             properties = utils.isArray(properties) ? properties[0] : properties;
             
             this._super(properties);
+            
+            // Take out the entity-specific content
+            this._properties = properties.content   || {};
+            this._fields     = properties.fields    || {};
+            this._acl        = properties.acl       || {};
+            this._links      = properties.links     || {};
+            this._author     = properties.author    || null;
+            this._updated    = properties.updated   || null;
+            this._published  = properties.published || null;
+        },
+        
+        /**
+         * Retrieve the fields information for this entity
+         *
+         * @return {Object} The fields for this entity
+         *
+         * @module splunkjs.Service.Entity
+         */
+        fields: function() {
+            return this._fields;
+        },
+        
+        /**
+         * Retrieve the ACL information for this entity
+         *
+         * @return {Object} The ACL for this entity
+         *
+         * @module splunkjs.Service.Entity
+         */
+        acl: function() {
+            return this._acl;
+        },
+        
+        /**
+         * Retrieve the links information for this entity
+         *
+         * @return {Object} The links for this entity
+         *
+         * @module splunkjs.Service.Entity
+         */
+        links: function() {
+            return this._links;
+        },
+        
+        /**
+         * Retrieve the author information for this entity
+         *
+         * @return {String} The author for this entity
+         *
+         * @module splunkjs.Service.Entity
+         */
+        author: function() {
+            return this._author;
+        },
+        
+        /**
+         * Retrieve the updated time for this entity
+         *
+         * @return {String} The updated time for this entity
+         *
+         * @module splunkjs.Service.Entity
+         */
+        updated: function() {
+            return this._updated;
+        },
+        
+        /**
+         * Retrieve the published time for this entity
+         *
+         * @return {String} The published time for this entity
+         *
+         * @module splunkjs.Service.Entity
+         */
+        published: function() {
+            return this._published;
         },
         
         /**
@@ -3191,7 +3282,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                         callback(err);
                     }
                     else {
-                        params.search = search.properties().content.search;
+                        params.search = search.properties().search;
                         update.apply(search, [params, callback]);
                     }
                 });
@@ -5568,7 +5659,7 @@ require.define("/lib/searcher.js", function (require, module, exports, __dirname
                             iterationDone(err);
                         }
                         
-                        properties = job.properties() || {};
+                        properties = job.state() || {};
                         
                         // Dispatch for progress
                         manager._dispatchCallbacks(manager.onProgressCallbacks, properties);
@@ -6835,8 +6926,8 @@ exports.setup = function(svc) {
                             
                             // Make sure the saved search exists in the 11 namespace
                             test.ok(entity11);
-                            test.strictEqual(entity11.properties().name, searchName);
-                            test.strictEqual(entity11.properties().content.search, search);
+                            test.strictEqual(entity11.name, searchName);
+                            test.strictEqual(entity11.properties().search, search);
                             
                             // Make sure the saved search doesn't exist in the 11 namespace
                             test.ok(!entity21);
@@ -6892,15 +6983,15 @@ exports.setup = function(svc) {
                             
                             // Ensure that the saved search exists in the 11 namespace
                             test.ok(entity11);
-                            test.strictEqual(entity11.properties().name, searchName);
-                            test.strictEqual(entity11.properties().content.search, search);
+                            test.strictEqual(entity11.name, searchName);
+                            test.strictEqual(entity11.properties().search, search);
                             test.strictEqual(entity11.namespace.owner, that.namespace11.owner);
                             test.strictEqual(entity11.namespace.app, that.namespace11.app);
                             
                             // Ensure that the saved search exists in the 21 namespace
                             test.ok(entity21);
-                            test.strictEqual(entity21.properties().name, searchName);
-                            test.strictEqual(entity21.properties().content.search, search);
+                            test.strictEqual(entity21.name, searchName);
+                            test.strictEqual(entity21.properties().search, search);
                             test.strictEqual(entity21.namespace.owner, that.namespace21.owner);
                             test.strictEqual(entity21.namespace.app, that.namespace21.app);
                             
@@ -6926,7 +7017,6 @@ exports.setup = function(svc) {
                                 var entity = savedSearches_1.item(searchName);
                             }
                             catch(ex) {
-                                console.log("Thrown", ex.stack);
                                 thrown = true;
                             }
                             
@@ -6938,14 +7028,14 @@ exports.setup = function(svc) {
                             var entity21 = savedSearches_1.item(searchName, that.namespace21);
                             
                             test.ok(entity11);
-                            test.strictEqual(entity11.properties().name, searchName);
-                            test.strictEqual(entity11.properties().content.search, search);
+                            test.strictEqual(entity11.name, searchName);
+                            test.strictEqual(entity11.properties().search, search);
                             test.strictEqual(entity11.namespace.owner, that.namespace11.owner);
                             test.strictEqual(entity11.namespace.app, that.namespace11.app);
                             
                             test.ok(entity21);
-                            test.strictEqual(entity21.properties().name, searchName);
-                            test.strictEqual(entity21.properties().content.search, search);
+                            test.strictEqual(entity21.name, searchName);
+                            test.strictEqual(entity21.properties().search, search);
                             test.strictEqual(entity21.namespace.owner, that.namespace21.owner);
                             test.strictEqual(entity21.namespace.app, that.namespace21.app);
                             
@@ -6967,7 +7057,7 @@ exports.setup = function(svc) {
                     Async.parallelEach(
                         appList,
                         function(app, idx, callback) {
-                            if (utils.startsWith(app.properties().name, "jssdk_")) {
+                            if (utils.startsWith(app.name, "jssdk_")) {
                                 app.remove(callback);
                             }
                             else {
@@ -6989,7 +7079,7 @@ exports.setup = function(svc) {
                     Async.parallelEach(
                         userList,
                         function(user, idx, callback) {
-                            if (utils.startsWith(user.properties().name, "jssdk_")) {
+                            if (utils.startsWith(user.name, "jssdk_")) {
                                 user.remove(callback);
                             }
                             else {
@@ -7096,7 +7186,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job,
                                 function(j) {
-                                    return job.properties().content["isDone"];
+                                    return job.properties()["isDone"];
                                 },
                                 10,
                                 done
@@ -7134,7 +7224,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job,
                                 function(j) {
-                                    return job.properties().content["isDone"];
+                                    return job.properties()["isDone"];
                                 },
                                 10,
                                 done
@@ -7170,7 +7260,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job,
                                 function(j) {
-                                    return job.properties().content["isDone"];
+                                    return job.properties()["isDone"];
                                 },
                                 10,
                                 done
@@ -7239,28 +7329,28 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job, 
                                 function(j) {
-                                    return j.properties().content["isPaused"];
+                                    return j.properties()["isPaused"];
                                 },
                                 10,
                                 done
                             );
                         },
                         function(job, done) {
-                            test.ok(job.properties().content["isPaused"]);
+                            test.ok(job.properties()["isPaused"]);
                             job.unpause(done);
                         },
                         function(job, done) {
                             tutils.pollUntil(
                                 job, 
                                 function(j) {
-                                    return !j.properties().content["isPaused"];
+                                    return !j.properties()["isPaused"];
                                 },
                                 10,
                                 done
                             );
                         },
                         function(job, done) {
-                            test.ok(!job.properties().content["isPaused"]);
+                            test.ok(!job.properties()["isPaused"]);
                             job.finalize(done);
                         },
                         function(job, done) {
@@ -7287,7 +7377,7 @@ exports.setup = function(svc) {
                             job.refresh(done);
                         },
                         function(job, done) {
-                            var ttl = job.properties().content["ttl"];
+                            var ttl = job.properties()["ttl"];
                             originalTTL = ttl;
                             
                             job.setTTL(ttl*2, done);
@@ -7296,7 +7386,7 @@ exports.setup = function(svc) {
                             job.refresh(done);
                         },
                         function(job, done) {
-                            var ttl = job.properties().content["ttl"];
+                            var ttl = job.properties()["ttl"];
                             test.ok(ttl > originalTTL);
                             test.ok(ttl <= (originalTTL*2));
                             job.cancel(done);
@@ -7324,7 +7414,7 @@ exports.setup = function(svc) {
                             job.refresh(done);
                         },
                         function(job, done) {
-                            var priority = job.properties().content["priority"];
+                            var priority = job.properties()["priority"];
                             test.ok(priority, 5);
                             job.setPriority(priority + 1, done);
                         },
@@ -7461,14 +7551,14 @@ exports.setup = function(svc) {
                         },
                         function(job, done) {
                             test.ok(job);
-                            originalTime = job.properties().content.updated;
+                            originalTime = job.properties().updated;
                             Async.sleep(1200, function() { job.touch(done); });
                         },
                         function(job, done) {
                             job.refresh(done);
                         },
                         function(job, done) {
-                            test.ok(originalTime !== job.properties().updated);
+                            test.ok(originalTime !== job.updated());
                             job.cancel(done);
                         }
                     ],
@@ -7551,7 +7641,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job,
                                 function(j) {
-                                    return job.properties().content["isDone"];
+                                    return job.properties()["isDone"];
                                 },
                                 10,
                                 done
@@ -7605,7 +7695,7 @@ exports.setup = function(svc) {
                 var apps = this.service.apps();
                 
                 apps.create({name: name}, function(err, app) {
-                    var appName = app.properties().name;
+                    var appName = app.name;
                     apps.refresh(function(err, apps) {
                         var entity = apps.contains(appName);
                         test.ok(entity);
@@ -7629,8 +7719,8 @@ exports.setup = function(svc) {
                     },
                     function(app, callback) {
                         test.ok(app);
-                        test.strictEqual(app.properties().name, name);  
-                        test.strictEqual(app.properties().content.version, "1.0");
+                        test.strictEqual(app.name, name);  
+                        test.strictEqual(app.properties().version, "1.0");
                         
                         app.update({
                             description: DESCRIPTION,
@@ -7641,8 +7731,8 @@ exports.setup = function(svc) {
                         test.ok(app);
                         var properties = app.properties();
                         
-                        test.strictEqual(properties.content.description, DESCRIPTION);
-                        test.strictEqual(properties.content.version, VERSION);
+                        test.strictEqual(properties.description, DESCRIPTION);
+                        test.strictEqual(properties.version, VERSION);
                         
                         app.remove(callback);
                     },
@@ -7661,7 +7751,7 @@ exports.setup = function(svc) {
                     Async.parallelEach(
                         appList,
                         function(app, idx, callback) {
-                            if (utils.startsWith(app.properties().name, "jssdk_")) {
+                            if (utils.startsWith(app.name, "jssdk_")) {
                                 app.remove(callback);
                             }
                             else {
@@ -7789,9 +7879,9 @@ exports.setup = function(svc) {
                         function(search, done) {
                             test.ok(search);
                             
-                            test.strictEqual(search.properties().name, name); 
-                            test.strictEqual(search.properties().content.search, originalSearch);
-                            test.ok(!search.properties().content.description);
+                            test.strictEqual(search.name, name); 
+                            test.strictEqual(search.properties().search, originalSearch);
+                            test.ok(!search.properties().description);
                             
                             search.update({search: updatedSearch}, done);
                         },
@@ -7799,9 +7889,9 @@ exports.setup = function(svc) {
                             test.ok(search);
                             test.ok(search);
                             
-                            test.strictEqual(search.properties().name, name); 
-                            test.strictEqual(search.properties().content.search, updatedSearch);
-                            test.ok(!search.properties().content.description);
+                            test.strictEqual(search.name, name); 
+                            test.strictEqual(search.properties().search, updatedSearch);
+                            test.ok(!search.properties().description);
                             
                             search.update({description: updatedDescription}, done);
                         },
@@ -7809,9 +7899,9 @@ exports.setup = function(svc) {
                             test.ok(search);
                             test.ok(search);
                             
-                            test.strictEqual(search.properties().name, name); 
-                            test.strictEqual(search.properties().content.search, updatedSearch);
-                            test.strictEqual(search.properties().content.description, updatedDescription);
+                            test.strictEqual(search.name, name); 
+                            test.strictEqual(search.properties().search, updatedSearch);
+                            test.strictEqual(search.properties().description, updatedDescription);
                             
                             search.remove(done);
                         }
@@ -7830,7 +7920,7 @@ exports.setup = function(svc) {
                     Async.parallelEach(
                         searchList,
                         function(search, idx, callback) {
-                            if (utils.startsWith(search.properties().name, "jssdk_")) {
+                            if (utils.startsWith(search.name, "jssdk_")) {
                                 search.remove(callback);
                             }
                             else {
@@ -7879,7 +7969,7 @@ exports.setup = function(svc) {
                         file.refresh(done);
                     },
                     function(file, done) {
-                        test.strictEqual(file.properties().name, "web");
+                        test.strictEqual(file.name, "web");
                         done();
                     }
                 ],
@@ -7900,14 +7990,14 @@ exports.setup = function(svc) {
                         file.refresh(done);
                     },
                     function(file, done) {
-                        test.strictEqual(file.properties().name, "web");
+                        test.strictEqual(file.name, "web");
                         
                         var stanza = file.contains("settings");
                         test.ok(stanza);
                         stanza.refresh(done);
                     },
                     function(stanza, done) {
-                        test.ok(stanza.properties().content.hasOwnProperty("httpport"));
+                        test.ok(stanza.properties().hasOwnProperty("httpport"));
                         done();
                     }
                 ],
@@ -7937,7 +8027,7 @@ exports.setup = function(svc) {
                         stanza.update({"jssdk_foobar": value}, done);
                     },
                     function(stanza, done) {
-                        test.strictEqual(stanza.properties().content["jssdk_foobar"], value);
+                        test.strictEqual(stanza.properties()["jssdk_foobar"], value);
                         done();
                     },
                     function(done) {
@@ -7993,7 +8083,7 @@ exports.setup = function(svc) {
                         file.refresh(done);
                     },
                     function(file, done) {
-                        test.strictEqual(file.properties().name, "conf-web");
+                        test.strictEqual(file.name, "web");
                         done();
                     }
                 ],
@@ -8015,14 +8105,14 @@ exports.setup = function(svc) {
                         file.refresh(done);
                     },
                     function(file, done) {
-                        test.strictEqual(file.properties().name, "conf-web");
+                        test.strictEqual(file.name, "web");
                         
                         var stanza = file.contains("settings");
                         test.ok(stanza);
                         stanza.refresh(done);
                     },
                     function(stanza, done) {
-                        test.ok(stanza.properties().content.hasOwnProperty("httpport"));
+                        test.ok(stanza.properties().hasOwnProperty("httpport"));
                         done();
                     }
                 ],
@@ -8053,7 +8143,7 @@ exports.setup = function(svc) {
                         stanza.update({"jssdk_foobar": value}, done);
                     },
                     function(stanza, done) {
-                        test.strictEqual(stanza.properties().content["jssdk_foobar"], value);
+                        test.strictEqual(stanza.properties()["jssdk_foobar"], value);
                         done();
                     },
                     function(done) {
@@ -8123,7 +8213,7 @@ exports.setup = function(svc) {
                             var index = indexes.contains(name);
                             test.ok(index);
                             
-                            originalAssureUTF8Value = index.properties().content.assureUTF8;
+                            originalAssureUTF8Value = index.properties().assureUTF8;
                             index.update({
                                 assureUTF8: !originalAssureUTF8Value
                             }, callback);
@@ -8132,7 +8222,7 @@ exports.setup = function(svc) {
                             test.ok(index);
                             var properties = index.properties();
                             
-                            test.strictEqual(!originalAssureUTF8Value, properties.content.assureUTF8);
+                            test.strictEqual(!originalAssureUTF8Value, properties.assureUTF8);
                             
                             index.update({
                                 assureUTF8: !properties.assureUTF8
@@ -8142,7 +8232,7 @@ exports.setup = function(svc) {
                             test.ok(index);
                             var properties = index.properties();
                             
-                            test.strictEqual(originalAssureUTF8Value, properties.content.assureUTF8);
+                            test.strictEqual(originalAssureUTF8Value, properties.assureUTF8);
                             callback();
                         },
                         function(callback) {
@@ -8171,8 +8261,8 @@ exports.setup = function(svc) {
                             var index = indexes.contains(indexName);
                             test.ok(index);
                             
-                            test.strictEqual(index.properties().name, indexName);
-                            originalEventCount = index.properties().content.totalEventCount;
+                            test.strictEqual(index.name, indexName);
+                            originalEventCount = index.properties().totalEventCount;
                             
                             index.submitEvent(message, {sourcetype: sourcetype}, done);
                         },
@@ -8208,7 +8298,8 @@ exports.setup = function(svc) {
                 service.currentUser(function(err, user) {
                     test.ok(!err);
                     test.ok(user);
-                    test.strictEqual(user.properties().name, service.username);
+                    console.log("USER ERR", err);
+                    test.strictEqual(user.name, service.username);
                     test.done();
                 });
             },
@@ -8237,18 +8328,18 @@ exports.setup = function(svc) {
                         },
                         function(user, done) {
                             test.ok(user);
-                            test.strictEqual(user.properties().name, name);
-                            test.strictEqual(user.properties().content.roles.length, 1);
-                            test.strictEqual(user.properties().content.roles[0], "user");
+                            test.strictEqual(user.name, name);
+                            test.strictEqual(user.properties().roles.length, 1);
+                            test.strictEqual(user.properties().roles[0], "user");
                         
                             user.update({realname: "JS SDK", roles: ["admin", "user"]}, done);
                         },
                         function(user, done) {
                             test.ok(user);
-                            test.strictEqual(user.properties().content.realname, "JS SDK");
-                            test.strictEqual(user.properties().content.roles.length, 2);
-                            test.strictEqual(user.properties().content.roles[0], "admin");
-                            test.strictEqual(user.properties().content.roles[1], "user");
+                            test.strictEqual(user.properties().realname, "JS SDK");
+                            test.strictEqual(user.properties().roles.length, 2);
+                            test.strictEqual(user.properties().roles[0], "admin");
+                            test.strictEqual(user.properties().roles[1], "user");
                             
                             user.remove(done);
                         }
@@ -8268,7 +8359,7 @@ exports.setup = function(svc) {
                     Async.parallelEach(
                         userList,
                         function(user, idx, callback) {
-                            if (utils.startsWith(user.properties().name, "jssdk_")) {
+                            if (utils.startsWith(user.name, "jssdk_")) {
                                 user.remove(callback);
                             }
                             else {
@@ -8321,14 +8412,14 @@ exports.setup = function(svc) {
                         function(view, done) {
                             test.ok(view);
                             
-                            test.strictEqual(view.properties().name, name);
-                            test.strictEqual(view.properties().content["eai:data"], originalData);
+                            test.strictEqual(view.name, name);
+                            test.strictEqual(view.properties()["eai:data"], originalData);
                             
                             view.update({"eai:data": newData}, done);
                         },
                         function(view, done) {
                             test.ok(view);
-                            test.strictEqual(view.properties().content["eai:data"], newData);
+                            test.strictEqual(view.properties()["eai:data"], newData);
                             
                             view.remove(done);
                         }
@@ -9397,7 +9488,7 @@ exports.main = function(opts, done) {
             for(var i = 0; i < searchList.length; i++) {
                 var search = searchList[i];
                 console.log("  Search " + i + ": " + search.name);
-                console.log("    " + search.properties().content.search);
+                console.log("    " + search.properties().search);
             } 
             
             done();
@@ -9471,7 +9562,7 @@ exports.main = function(opts, callback) {
                 for(var i = 0; i < searchList.length; i++) {
                     var search = searchList[i];
                     console.log("  Search " + i + ": " + search.name);
-                    console.log("    " + search.properties().content.search);
+                    console.log("    " + search.properties().search);
                 }
                 
                 done();
@@ -9545,13 +9636,13 @@ exports.main = function(opts, callback) {
             function(job, done) {
                 Async.whilst(
                     // Loop until it is done
-                    function() { return !job.properties().content.isDone; },
+                    function() { return !job.properties().isDone; },
                     // Refresh the job on every iteration, but sleep for 1 second
                     function(iterationDone) {
                         Async.sleep(1000, function() {
                             // Refresh the job and note how many events we've looked at so far
                             job.refresh(function(err) {
-                                console.log("-- refreshing, " + (job.properties().content.eventCount || 0) + " events so far");
+                                console.log("-- refreshing, " + (job.properties().eventCount || 0) + " events so far");
                                 iterationDone();
                             });
                         });
@@ -9567,9 +9658,9 @@ exports.main = function(opts, callback) {
             function(job, done) {
                 // Print out the statics
                 console.log("Job Statistics: ");
-                console.log("  Event Count: " + job.properties().content.eventCount);
-                console.log("  Disk Usage: " + job.properties().content.diskUsage + " bytes");
-                console.log("  Priority: " + job.properties().content.priority);
+                console.log("  Event Count: " + job.properties().eventCount);
+                console.log("  Disk Usage: " + job.properties().diskUsage + " bytes");
+                console.log("  Priority: " + job.properties().priority);
                 
                 // Ask the server for the results
                 job.results({}, done);
@@ -9667,9 +9758,9 @@ exports.main = function(opts, callback) {
             function(job, done) {
                 // Print out the statics
                 console.log("Job Statistics: ");
-                console.log("  Event Count: " + job.properties().content.eventCount);
-                console.log("  Disk Usage: " + job.properties().content.diskUsage + " bytes");
-                console.log("  Priority: " + job.properties().content.priority);
+                console.log("  Event Count: " + job.properties().eventCount);
+                console.log("  Disk Usage: " + job.properties().diskUsage + " bytes");
+                console.log("  Priority: " + job.properties().priority);
                 
                 // Ask the server for the results
                 job.results({}, done);
@@ -10506,7 +10597,7 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
                     function(stanza, done) {
                         // Find all the properties
                         var keys = [];
-                        var properties = stanza.properties().content;
+                        var properties = stanza.properties();
                         for(var key in properties) {
                             if (properties.hasOwnProperty(key) && ignore.indexOf(key) < 0) {
                                 keys.push(key);
@@ -10938,7 +11029,7 @@ require.define("/examples/node/search.js", function (require, module, exports, _
                 // Poll until the search is complete
                 function(job, done) {
                     Async.whilst(
-                        function() { return !job.properties().content.isDone; },
+                        function() { return !job.properties().isDone; },
                         function(iterationDone) {
                             job.refresh(function(err, job) {
                                 if (err) {

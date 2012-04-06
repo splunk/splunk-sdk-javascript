@@ -155,7 +155,7 @@ var Jobs = Backbone.Collection.extend({
       var models = [];
       for(var i = 0; i < list.length; i++) {
         var job = list[i];
-        var properties = job.properties();
+        var properties = job.state();
         var jobModel = new Job(properties, {job: job});
         models.push(jobModel);
       }

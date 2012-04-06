@@ -1982,7 +1982,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      var files = svc.configurations();
          *      files.item("props", function(err, propsFile) {
          *          propsFile.refresh(function(err, props) {
-         *              console.log(props.properties().content); 
+         *              console.log(props.properties()); 
          *          });
          *      });
          *
@@ -2036,7 +2036,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      var files = svc.properties();
          *      files.item("props", function(err, propsFile) {
          *          propsFile.refresh(function(err, props) {
-         *              console.log(props.properties().content); 
+         *              console.log(props.properties()); 
          *          });
          *      });
          *
@@ -2224,7 +2224,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * Example:
          *
          *      service.currentUser(function(err, user) {
-         *          console.log("Real name: ", user.properties().content.realname);
+         *          console.log("Real name: ", user.properties().realname);
          *      });
          *
          * @param {Function} callback A callback with the user instance: `(err, user)`
@@ -2420,7 +2420,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             this._super(service, fullpath);
             this.namespace = namespace;
-            this._properties = { content: {}, acl: {}, attributes: {}};
+            this._properties = {};
+            this._state = {};
             
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
@@ -2449,6 +2450,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         _load: function(properties) {
             this._properties = properties || {};
+            this._state = properties || {};
         },
         
         /**
@@ -2476,8 +2478,22 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @module splunkjs.Service.Resource
          */
-        properties: function(callback) {
+        properties: function() {
             return this._properties;
+        },
+        
+        /**
+         * Retrieve the state for this resource
+         *
+         * This will retrieve the current full state for this
+         * resource.
+         *
+         * @return {Object} The full state for this resource
+         *
+         * @module splunkjs.Service.Resource
+         */
+        state: function() {
+            return this._state;
         }
     });
     
@@ -2538,6 +2554,81 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             properties = utils.isArray(properties) ? properties[0] : properties;
             
             this._super(properties);
+            
+            // Take out the entity-specific content
+            this._properties = properties.content   || {};
+            this._fields     = properties.fields    || {};
+            this._acl        = properties.acl       || {};
+            this._links      = properties.links     || {};
+            this._author     = properties.author    || null;
+            this._updated    = properties.updated   || null;
+            this._published  = properties.published || null;
+        },
+        
+        /**
+         * Retrieve the fields information for this entity
+         *
+         * @return {Object} The fields for this entity
+         *
+         * @module splunkjs.Service.Entity
+         */
+        fields: function() {
+            return this._fields;
+        },
+        
+        /**
+         * Retrieve the ACL information for this entity
+         *
+         * @return {Object} The ACL for this entity
+         *
+         * @module splunkjs.Service.Entity
+         */
+        acl: function() {
+            return this._acl;
+        },
+        
+        /**
+         * Retrieve the links information for this entity
+         *
+         * @return {Object} The links for this entity
+         *
+         * @module splunkjs.Service.Entity
+         */
+        links: function() {
+            return this._links;
+        },
+        
+        /**
+         * Retrieve the author information for this entity
+         *
+         * @return {String} The author for this entity
+         *
+         * @module splunkjs.Service.Entity
+         */
+        author: function() {
+            return this._author;
+        },
+        
+        /**
+         * Retrieve the updated time for this entity
+         *
+         * @return {String} The updated time for this entity
+         *
+         * @module splunkjs.Service.Entity
+         */
+        updated: function() {
+            return this._updated;
+        },
+        
+        /**
+         * Retrieve the published time for this entity
+         *
+         * @return {String} The published time for this entity
+         *
+         * @module splunkjs.Service.Entity
+         */
+        published: function() {
+            return this._published;
         },
         
         /**
@@ -3121,7 +3212,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                         callback(err);
                     }
                     else {
-                        params.search = search.properties().content.search;
+                        params.search = search.properties().search;
                         update.apply(search, [params, callback]);
                     }
                 });
@@ -5498,7 +5589,7 @@ require.define("/lib/searcher.js", function (require, module, exports, __dirname
                             iterationDone(err);
                         }
                         
-                        properties = job.properties() || {};
+                        properties = job.state() || {};
                         
                         // Dispatch for progress
                         manager._dispatchCallbacks(manager.onProgressCallbacks, properties);

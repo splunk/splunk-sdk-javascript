@@ -60,7 +60,7 @@
                 // Poll until the search is complete
                 function(job, done) {
                     Async.whilst(
-                        function() { return !job.properties().content.isDone; },
+                        function() { return !job.properties().isDone; },
                         function(iterationDone) {
                             job.refresh(function(err, job) {
                                 if (err) {
