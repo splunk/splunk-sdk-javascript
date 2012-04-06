@@ -1477,7 +1477,6 @@ exports.setup = function(svc) {
                 service.currentUser(function(err, user) {
                     test.ok(!err);
                     test.ok(user);
-                    console.log("USER ERR", err);
                     test.strictEqual(user.name, service.username);
                     test.done();
                 });

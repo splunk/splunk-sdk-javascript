@@ -1,5 +1,7 @@
 import splunk
 import splunk.rest
+import traceback
+import json
 import dispatch
 
 import logging
@@ -29,8 +31,22 @@ class JsonIntercept(splunk.rest.BaseRestHandler):
         }
     
     def handle(self):
+        status = None
+        content = None
         try:
             status, content = dispatch.dispatch(self.get_request())
+        except Exception, e:
+            # Log the exception
+            logger.exception(e)
+            
+            # Return a 500 and the exception
+            status = 500
+            exc = traceback.format_exc()
+            content = json.dumps({
+                "messages": {
+                    "ERROR": ["%s" % (str(exc))]
+                }
+            })
         finally:
             self.response.setHeader('Content-Type', 'application/json')
         
