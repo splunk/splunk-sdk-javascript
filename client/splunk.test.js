@@ -1841,8 +1841,26 @@ require.define("/lib/platform/client/easyxdm_http.js", function (require, module
                 headers: message.headers,
                 data: message.body
             };
+            
+            var req = {
+                abort: function() {
+                    // Note that we were aborted
+                    req.wasAborted = true;
+                    
+                    var res = { headers: {}, statusCode: "abort" };
+                    var data = "{}";
+                    var complete_response = that._buildResponse("abort", res, data);
+                    
+                    callback(complete_response);
+                }
+            };
 
             var success = utils.bind(this, function(res) {
+                // If we already aborted this request, then do nothing
+                if (req.wasAborted) {
+                    return;
+                }
+                
                 var data = res.data;
                 var status = res.status;
                 var headers = res.headers;
@@ -1860,6 +1878,11 @@ require.define("/lib/platform/client/easyxdm_http.js", function (require, module
             });
             
             var error = utils.bind(this, function(res) {
+                // If we already aborted this request, then do nothing
+                if (req.wasAborted) {
+                    return;
+                }
+                
                 var data = res.data.data;
                 var status = res.data.status;
                 var message = res.message;
@@ -1879,9 +1902,7 @@ require.define("/lib/platform/client/easyxdm_http.js", function (require, module
             
             this.xhr.request(params, success, error);
             
-            return {
-                abort: function() {}
-            };
+            return req;
         },
 
         parseJson: function(json) {
@@ -8298,7 +8319,6 @@ exports.setup = function(svc) {
                 service.currentUser(function(err, user) {
                     test.ok(!err);
                     test.ok(user);
-                    console.log("USER ERR", err);
                     test.strictEqual(user.name, service.username);
                     test.done();
                 });
