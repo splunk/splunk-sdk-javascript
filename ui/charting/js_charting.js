@@ -1,4 +1,3 @@
-
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -33,7 +32,7 @@
     var format_datetime_range        = i18n.format_datetime_range;
     
     exports.Splunk = Splunk;
-    
+
     ////////////////////////////////////////////////////////////////////////
     // Splunk.JSCharting
     //
@@ -52,7 +51,6 @@
             // methods HC will call in an attempt to catch the problem here
             if(!container.appendChild || !container.cloneNode) {
                 throw new Error("Invalid argument to createChart, container must be a valid DOM element");
-                return;
             }
             var getConstructorByType = function(chartType) {
                     switch(chartType) {
@@ -84,7 +82,9 @@
                 },
                 chartConstructor = getConstructorByType(properties.chart);
                 
-            if(properties['layout.splitSeries'] === 'true') {
+            // split series only applies to bar/column/line/area charts
+            if(properties['layout.splitSeries'] === 'true'
+                    && (!properties.chart || properties.chart in {bar: true, column: true, line: true, area: true})) {
                 return new Splunk.JSCharting.SplitSeriesChart(container, chartConstructor);
             }
             return new chartConstructor(container);
@@ -94,7 +94,7 @@
             if(!rawData || !rawData.columns) {
                 return {
                     fieldNames: []
-                }
+                };
             }
             var i, loopField, xAxisKey, xAxisSeriesIndex, spanSeriesIndex,
                 xAxisKeyFound = false,
@@ -130,7 +130,7 @@
                 xAxisSeriesIndex: xAxisSeriesIndex,
                 spanSeriesIndex: spanSeriesIndex,
                 isTimeData: isTimeData
-            }
+            };
         },
         
         extractChartReadyData: function(rawData, fieldInfo) {
@@ -169,7 +169,7 @@
                         name: xSeries[j],
                         y: loopYVal,
                         rawY: loopYVal
-                    }
+                    };
                     if(xAxisType === "time" && _spanSeries) {
                         loopDataPoint._span = _spanSeries[j];
                     }
@@ -213,6 +213,9 @@
             this.backgroundColor = "#ffffff";
             this.foregroundColor = "#000000";
             this.fontColor = "#000000";
+            
+            this.testMode = false;
+            this.exportMode = false;
         },
         
         applyProperties: function(properties) {
@@ -236,8 +239,18 @@
                 case 'fontColor':
                     this.fontColor = value;
                     break;
+                case 'testMode':
+                    this.testMode = (value === true);
+                    break;
+                case 'exportMode':
+                    if(value === "true") {
+                        this.exportMode = true;
+                        this.setExportDimensions();
+                    }
+                    break;
                 default:
                     // no-op, ignore unrecognized properties
+                    break;
             
             }
         },
@@ -273,6 +286,30 @@
                     this.eventMap[type][i](event);
                 }
             }
+        },
+
+        // TODO: this should be migrated to another object, formatting helper maybe?
+        addClassToElement: function(elem, className) {
+            // the className can potentially come from the search results, so make sure it is valid before
+            // attempting to insert it...
+            
+            // if the className doesn't start with a letter or a '-' followed by a letter, don't insert
+            if(!/^[-]?[A-Za-z]/.test(className)) {
+                return;
+            }
+            // now filter out anything that is not a letter, number, '-', or '_'
+            className = className.replace(/[^A-Za-z0-9_-]/g, "");
+            if(this.hasSVG) {
+                if(elem.className.baseVal) {
+                    elem.className.baseVal += " " + className;
+                }
+                else {
+                    elem.className.baseVal = className;
+                }
+            }
+            else {
+                $(elem).addClass(className);
+            }  
         }
         
     });
@@ -284,7 +321,6 @@
 
     Splunk.JSCharting.AbstractChart = $.klass(Splunk.JSCharting.AbstractVisualization, {
 
-        needsColorPalette: true,
         axesAreInverted: false,
         
         focusedElementOpacity: 1,
@@ -294,6 +330,8 @@
         // override
         initialize: function($super, container) {
             $super(container);
+            
+            this.needsLegendMapping = true;
             
             this.hcChart = false;
             this.chartIsDrawing = false;
@@ -313,6 +351,9 @@
             this.fieldListMode = "hide_show";
             this.fieldHideList = [];
             this.fieldShowList = [];
+            this.legendLabels = [];
+            
+            this.colorPalette = new Splunk.JSCharting.ListColorPalette();
         },
 
         prepare: function(data, fieldInfo, properties) {
@@ -337,15 +378,39 @@
             if(this.chartIsEmpty) {
                 return [];
             }
+            // response needs to be adjusted if the user has explicitly defined legend label list
+            if(this.legendLabels.length > 0) {
+                var adjustedList = $.extend(true, [], this.legendLabels);
+                for(var i = 0; i < this.processedData.fieldNames.length; i++) {
+                    var name = this.processedData.fieldNames[i];
+                    if($.inArray(name, adjustedList) === -1) {
+                        adjustedList.push(name);
+                    }
+                }
+                return adjustedList;
+            }
             return this.processedData.fieldNames;
         },
         
-        setColors: function(colors) {
-            var colorsCopy = [];
-            for(var i = 0; i < colors.length; i++) {
-                colorsCopy[i] = this.colorUtils.addAlphaToColor(colors[i], this.focusedElementOpacity);
+        setColorMapping: function(list, map, legendSize) {
+            var i, color,
+                newColors = [];
+            
+            for(i = 0; i < list.length; i++) {
+                color = this.colorPalette.getColor(list[i], map[list[i]], legendSize);
+                newColors.push(this.colorUtils.addAlphaToColor(color, this.focusedElementOpacity));
             }
-            this.hcConfig.colors = colorsCopy;
+            this.hcConfig.colors = newColors;
+        },
+        
+        setColorList: function(list) {
+            var i,
+                newColors = [];
+            
+            for(i = 0; i < list.length; i++) {
+                newColors.push(this.colorUtils.addAlphaToColor(list[i], this.focusedElementOpacity));
+            }
+            this.hcConfig.colors = newColors;
         },
         
         draw: function(callback) {
@@ -423,10 +488,10 @@
                     renderTo: this.renderTo,
                     height: this.chartHeight,
                     className: this.typeName
-                },
-                colors: Splunk.JSCharting.ListColorPalette.DEFAULT_COLORS_CSS
+                }
             });
             this.mapper = new Splunk.JSCharting.PropertyMapper(this.hcConfig);
+            this.setColorList(Splunk.JSCharting.ListColorPalette.DEFAULT_COLORS);
         },
         
         addRenderHooks: function() {
@@ -468,7 +533,9 @@
             if(this.hcConfig.legend.enabled) {
                 this.addLegendHoverEffects(chart);
             }
-            this.addTestingMetadata(chart);
+            if(this.testMode) {
+                this.addTestingMetadata(chart);
+            }
             this.onDrawOrResize(chart);
             this.chartIsDrawing = false;
             this.hcObjectId = chart.container.id;
@@ -562,6 +629,21 @@
                 case 'legend.labelStyle.overflowMode':
                     this.legendEllipsizeMode = value;
                     break;
+                case 'legend.masterLegend':
+                    // at this point in the partial implementation, the fact that legend.masterLegend is set means 
+                    // that it has been explicitly disabled
+                    this.needsLegendMapping = false;
+                    break;
+                case 'legend.labels':
+                    this.legendLabels = this.parseUtils.stringToArray(value) || [];
+                    break;
+                case 'seriesColors':
+                    var hexArray = this.parseUtils.stringToHexArray(value);
+                    if(hexArray) {
+                        this.colorPalette = new Splunk.JSCharting.ListColorPalette(hexArray);
+                        this.setColorList(hexArray);
+                    }
+                    break;
                 case 'data.fieldListMode':
                     this.fieldListMode = value;
                     break;
@@ -598,6 +680,16 @@
                     borderColor: this.foregroundColorSoft
                 }
             });
+            if(this.exportMode) {
+                $.extend(true, this.hcConfig, {
+                    plotOptions: {
+                        series: {
+                            enableMouseTracking: false,
+                            shadow: false
+                        }
+                    }
+                });
+            }
         },
 
         mapStackMode: function(name, properties) {
@@ -644,6 +736,16 @@
             }
         },
         
+        setExportDimensions: function() {
+            this.chartWidth = 600;
+            this.chartHeight = 400;
+            this.mapper.mapObject({
+                chart: {
+                width: 600,
+                height: 400
+                }
+            });
+        },
 
         ////////////////////////////////////////////////////////////////////////////
         // helper methods for handling label and axis formatting
@@ -713,7 +815,7 @@
                     formatter: function() {
                         var seriesColorRgb = Splunk.JSCharting.ColorUtils.removeAlphaFromColor(this.point.series.color);
                         return [
-                          '<span style="color:#cccccc">', ((data.xAxisType == 'time') ? '' : xAxisKey + ': '), '</span>',
+                          '<span style="color:#cccccc">', ((data.xAxisType == 'time') ? 'time: ' : xAxisKey + ': '), '</span>',
                           '<span style="color:#ffffff">', resolveX(this, "x"), '</span>', '<br/>',
                           '<span style="color:', seriesColorRgb, '">', this.series.name, ': </span>',
                           '<span style="color:#ffffff">', resolveY(this, "y"), '</span>'
@@ -764,8 +866,10 @@
                 formatter = new Splunk.JSCharting.FormattingHelper(renderer),
                 ellipsisModeMap = {
                     'default': 'start',
+                    'ellipsisStart': 'start',
                     'ellipsisMiddle': 'middle',
-                    'ellipsisEnd': 'end'
+                    'ellipsisEnd': 'end',
+                    'ellipsisNone': 'none'
                 };
             
             if(horizontalLayout) {
@@ -864,7 +968,7 @@
                     fields: [xAxisKey, point.series.name],
                     data: {},
                     domEvent: domEvent
-                }
+                };
             
             event.data[point.series.name] = point.y;
             if(xAxisType == "time") {
@@ -1064,7 +1168,7 @@
                         loopSeries.legendLine.attr('stroke', this.fadedElementColor);
                     }
                     if(loopSeries.legendSymbol) {
-                        loopSeries.legendSymbol.attr('fill', this.fadedElementColor)
+                        loopSeries.legendSymbol.attr('fill', this.fadedElementColor);
                     }
                 }
             }
@@ -1125,6 +1229,46 @@
                     this.hcConfig.series.push(seriesObject);
                 }
             }
+            // if the legend labels have been set by the user, honor them here
+            if(this.legendLabels.length > 0) {
+                var label, loopSeries, name,
+                    newSeriesList = [],
+                    
+                    // helper function for finding a series by its name
+                    findInSeriesList = function(name) {
+                        for(var j = 0; j < this.hcConfig.series.length; j++) {
+                            if(this.hcConfig.series[j].name === name) {
+                                return this.hcConfig.series[j];
+                            }
+                        }
+                        return false;
+                    }.bind(this);
+                
+                // first loop through the legend labels, either get the series for that field if it already exists
+                // or add an empty field if it doesn't
+                for(i = 0; i < this.legendLabels.length; i++) {
+                    label = this.legendLabels[i];
+                    loopSeries = findInSeriesList(label);
+                    if(loopSeries) {
+                        newSeriesList.push(loopSeries);
+                    }
+                    else {
+                        newSeriesList.push({
+                            name: label,
+                            data: []
+                        });
+                    }
+                }
+                
+                // then loop through the series data and add back any series that weren't in the legend label list
+                for(i = 0; i < this.hcConfig.series.length; i++) {
+                    name = this.hcConfig.series[i].name;
+                    if($.inArray(name, this.legendLabels) === -1) {
+                        newSeriesList.push(this.hcConfig.series[i]);
+                    }
+                }
+                this.hcConfig.series = newSeriesList;
+            }
         },
         
         // returns false if series should not be added to the chart
@@ -1183,7 +1327,6 @@
                 decorateTooltip = (this.processedData.xAxisType === 'time') ? 
                         this.addTimeTooltipClasses.bind(this) : this.addTooltipClasses.bind(this);
             
-            $("#" + chart.container.id).attr('chart-type', this.typeName);
             this.addDataClasses(chart);
             this.addAxisClasses(chart);
             if(chart.options.legend.enabled) {
@@ -1209,7 +1352,7 @@
                 }
                 dataElements.each(function(j, elem) {
                     this.addClassToElement(elem, 'spl-display-object');
-                }.bind(this))
+                }.bind(this));
             }.bind(this));
         },
 
@@ -1245,7 +1388,7 @@
                 }
                 labelElements.each(function(j, label) {
                     this.addClassToElement(label, 'spl-text-label');
-                }.bind(this))
+                }.bind(this));
             }.bind(this));
 
             for(i = 0; i < chart.xAxis.length; i++) {
@@ -1324,30 +1467,6 @@
                     this.addClassToElement(series.legendItem.element, 'legend-label');
                 }
             }.bind(this));
-        },
-
-        // TODO: this should be migrated to another object, formatting helper maybe?
-        addClassToElement: function(elem, className) {
-            // the className can potentially come from the search results, so make sure it is valid before
-            // attempting to insert it...
-            
-            // if the className doesn't start with a letter or a '-' followed by a letter, don't insert
-            if(!/^[-]?[A-Za-z]/.test(className)) {
-                return;
-            }
-            // now filter out anything that is not a letter, number, '-', or '_'
-            className = className.replace(/[^A-Za-z0-9_-]/g, "");
-            if(this.hasSVG) {
-                if(elem.className.baseVal) {
-                    elem.className.baseVal += " " + className;
-                }
-                else {
-                    elem.className.baseVal = className;
-                }
-            }
-            else {
-                $(elem).addClass(className);
-            }  
         }
 
     });
@@ -1742,6 +1861,7 @@
                     break;
                 default:
                     // no-op, ignore unsupported properties
+                    break;
             
             }
         },
@@ -1824,7 +1944,7 @@
                     break;
                 default:
                     // no-op, ignore unsupported properties
-            
+                    break;
             }
         },
         
@@ -1889,7 +2009,7 @@
                     break;
                 default:
                     // no-op, ignore unsupported properties
-            
+                    break;
             }
         },
         
@@ -1946,6 +2066,7 @@
             $super(container);
             this.mode = 'multiSeries';
             this.legendFieldNames = [];
+            this.logXAxis = false;
         },
         
         // override
@@ -1971,9 +2092,17 @@
                 case 'chart.markerSize':
                     this.mapMarkerSize(value);
                     break;
+                case 'primaryAxis.scale':
+                    if(!properties['axisX.scale']) {
+                        this.logXAxis = (value === 'log');
+                    }
+                    break;
+                case 'axisX.scale':
+                    this.logXAxis = (value === 'log');
+                    break;
                 default:
                     // no-op, ignore unsupported properties
-                    
+                    break;
             }
         },
         
@@ -2009,7 +2138,19 @@
             this.xAxis = new Splunk.JSCharting.NumericAxis(axisProperties, data, orientation, colorScheme);
             this.hcConfig.xAxis = $.extend(true, this.xAxis.getConfig(), {
                 startOnTick: true,
-                endOnTick: true
+                endOnTick: true,
+                minPadding: 0,
+                maxPadding: 0
+            });
+        },
+        
+        // override
+        // remove the min/max padding from the y-axis
+        formatYAxis: function($super, properties, data) {
+            $super(properties, data);
+            $.extend(true, this.hcConfig.yAxis, {
+                minPadding: 0,
+                maxPadding: 0
             });
         },
 
@@ -2029,7 +2170,7 @@
                         formatter: function() {
                             var seriesColorRgb = Splunk.JSCharting.ColorUtils.removeAlphaFromColor(this.series.color);
                             return [
-                               '<span style="color:#cccccc">', (useTimeNames ? '' : xAxisKey + ': '), '</span>',
+                               '<span style="color:#cccccc">', (useTimeNames ? 'time: ' : xAxisKey + ': '), '</span>',
                                '<span style="color:', seriesColorRgb, '">', resolveName(this, useTimeNames), '</span> <br/>',
                                '<span style="color:#cccccc">', xFieldName, ': </span>',
                                '<span style="color:#ffffff">', resolveX(this, "x"), '</span> <br/>',
@@ -2076,7 +2217,7 @@
                         return resolveLabel(this, useTimeNames);
                     }
                 }
-            })
+            });
         },
 
         getLegendName: function(element, useTimeNames) {
@@ -2098,14 +2239,14 @@
                     fields: (this.mode === 'multiSeries') ? [xAxisKey, xFieldName, yFieldName] : [xFieldName, yFieldName],
                     data: {},
                     domEvent: domEvent
-                }
+                };
             
             event.data[xAxisKey] = (xAxisType == 'time') ? Splunk.util.getEpochTimeFromISO(point.series.name) : point.series.name;
-            event.data[yFieldName] = point.y;
+            event.data[yFieldName] = point.rawY;
             if(xAxisType == "time") {
                 event.data._span = point._span;
             }
-            event.data[xFieldName] = point.x;
+            event.data[xFieldName] = point.rawX;
             this.dispatchEvent('chartClicked', event);
         },
 
@@ -2143,14 +2284,18 @@
                 if(this.logYAxis) {
                     loopYVal = this.mathUtils.absLogBaseTen(loopYVal);
                 }
+                if(this.logXAxis) {
+                    loopXVal = this.mathUtils.absLogBaseTen(loopXVal);
+                }
                 loopName = series[fieldNames[0]][i].name;
                 loopDataPoint = {
                     x: loopXVal,
                     y: loopYVal,
-                    rawY: series[fieldNames[1]][i].rawY
-                }
+                    rawY: series[fieldNames[1]][i].rawY,
+                    rawX: series[fieldNames[0]][i].rawY
+                };
                 if(this.processedData.xAxisType == 'time') {
-                    loopDataPoint._span = series[fieldNames[0]][i]._span
+                    loopDataPoint._span = series[fieldNames[0]][i]._span;
                 }
                 if(collapsedSeries[loopName]) {
                     collapsedSeries[loopName].push(loopDataPoint);
@@ -2161,7 +2306,7 @@
             }
             for(i = 0; i < series[fieldNames[0]].length; i++) {
                 fieldName = series[fieldNames[0]][i].name;
-                if(!fieldsAdded[fieldName]) {
+                if(fieldName && !fieldsAdded[fieldName]) {
                     this.hcConfig.series.push({
                         name: fieldName,
                         data: collapsedSeries[fieldName]
@@ -2187,7 +2332,7 @@
                 xValue = this.mathUtils.parseFloat(xSeries[i], 10);
                 if(!isNaN(xValue)) {
                     loopDataPoint = {
-                        x: xValue,
+                        rawX: xValue,
                         rawY: series[fieldNames[0]][i].rawY
                     };
                     if(this.logYAxis) {
@@ -2195,6 +2340,12 @@
                     }
                     else {
                         loopDataPoint.y = loopDataPoint.rawY;
+                    }
+                    if(this.logXAxis) {
+                        loopDataPoint.x = this.mathUtils.absLogBaseTen(loopDataPoint.rawX);
+                    }
+                    else {
+                        loopDataPoint.x = loopDataPoint.rawX;
                     }
                     this.hcConfig.series[0].data.push(loopDataPoint);
                 }
@@ -2369,7 +2520,8 @@
                     this.showPercent = (value === 'true');
                     break;
                 case 'secondaryAxisTitle.text':
-                    if(!properties['axisTitleY']) {
+                    // secondaryAxisTitle.text is trumped by axisTitleY.text
+                    if(!properties['axisTitleY.text']) {
                         this.mapper.mapValue(((value || value === '') ? value : null), ["yAxis", "title", "text"]);
                     }
                     break;
@@ -2378,7 +2530,7 @@
                     break;
                 default:
                     // no-op, ignore unsupported properties
-                    
+                    break;
             }
         },
         
@@ -2562,8 +2714,9 @@
                 };
             
             // define the update path and swap it into the original array
-            // if the resulting path would back-track on the x-axis, just draw a line directly from the first point to the last
-            var wouldBacktrack = (firstPoint.x >= newSecondPoint.x && newSecondPoint.x <= thirdPoint.x)
+            // if the resulting path would back-track on the x-axis (or is a horizontal line), 
+            // just draw a line directly from the first point to the last
+            var wouldBacktrack = isNaN(newSecondPoint.x) || (firstPoint.x >= newSecondPoint.x && newSecondPoint.x <= thirdPoint.x)
                                     || (firstPoint.x <= newSecondPoint.x && newSecondPoint.x >= thirdPoint.x),
                 newPath = (wouldBacktrack) ?
                     [
@@ -2602,7 +2755,7 @@
                 series.data[i].name = adjusted.labels[i];
                 // check for a redraw, update the font size in place
                 if(series.data[i].dataLabel && series.data[i].dataLabel.css) {
-                    series.data[i].dataLabel.css({'font-size': adjusted.fontSize + 'px'})
+                    series.data[i].dataLabel.css({'font-size': adjusted.fontSize + 'px'});
                 }
             }
             $.extend(true, options.dataLabels, {
@@ -2637,7 +2790,7 @@
                     formatter: function() {
                         var seriesColorRgb = Splunk.JSCharting.ColorUtils.removeAlphaFromColor(this.point.color);
                         return [
-                            '<span style="color:#cccccc">', (useTimeNames ? '' : xAxisKey + ': '), '</span>',
+                            '<span style="color:#cccccc">', (useTimeNames ? 'time: ' : xAxisKey + ': '), '</span>',
                             '<span style="color:', seriesColorRgb, '">', resolveName(this, useTimeNames), '</span> <br/>',
                             '<span style="color:#cccccc">', this.series.name, ': </span>',
                             '<span style="color:#ffffff">', this.y, '</span> <br/>',
@@ -2709,20 +2862,24 @@
                         numCollapsed++;
                     }
                     else {
-                        loopObject.rawName = loopObject.name;
+                        // push the field name to the legend name list before we possibly decorate it
+                        this.legendFieldNames.push(loopObject.name);
                         if(this.showPercent) {
                             loopObject.name += ', ' + format_percent(loopPercent);
                         }
+                        // store a raw name which will be used later by the ellipsization routine
+                        loopObject.rawName = loopObject.name;
                         prunedData.push(loopObject);
-                        this.legendFieldNames.push(loopObject.rawName);
                     }
                 }
             }
             if(numCollapsed > 0) {
+                var otherFieldName = this.collapseFieldName + ' (' + numCollapsed + ')' 
+                        + ((this.showPercent) ? ', ' + format_percent(collapsedY / totalY) : '');
+                
                 prunedData.push({
-                    name: this.collapseFieldName + ' (' + numCollapsed + ')' 
-                                + ((this.showPercent) ? ', ' + format_percent(collapsedY / totalY) : ''),
-                    rawName: this.collapseFieldName + ' (' + numCollapsed + ')',
+                    name: otherFieldName,
+                    rawName: otherFieldName,
                     y: collapsedY
                 });
                 this.legendFieldNames.push('__other');
@@ -2902,8 +3059,7 @@
 
     Splunk.JSCharting.SplitSeriesChart = $.klass(Splunk.JSCharting.AbstractChart, {
         
-        needsColorPalette: true,
-        interChartSpacing: 10,
+        interChartSpacing: 5,
         hiddenAxisConfig: {
             labels: {
                 enabled: false
@@ -2925,12 +3081,14 @@
             this.innerHeights = [];
             this.innerTops = [];
             this.innerWidth = 0;
-            this.innerLeft = 0
+            this.innerLeft = 0;
             this.innerCharts = [];
             this.bottomSpacing = 0;
 
             this.yMin = Infinity;
             this.yMax = -Infinity;
+            
+            this.colorList = Splunk.JSCharting.ListColorPalette.DEFAULT_COLORS;
         },
         
         // override
@@ -2948,8 +3106,20 @@
         
         // override
         // the inner charts will handle adding opacity to their color schemes
-        setColors: function(colors) {
-            this.hcConfig.colors = $.extend(true, [], colors);
+        setColorMapping: function(list, map, legendSize) {
+            var hexColor;
+            this.colorList = [];
+            this.hcConfig.colors = [];
+            for(i = 0; i < list.length; i++) {
+                hexColor = this.colorPalette.getColor(list[i], map[list[i]], legendSize);
+                this.colorList.push(hexColor);
+                this.hcConfig.colors.push(this.colorUtils.addAlphaToColor(hexColor, 1.0));
+            }
+        },
+        
+        setColorList: function($super, list) {
+            $super(list);
+            this.colorList = list;
         },
         
         guessBottomSpacing: function(data) {
@@ -3066,7 +3236,7 @@
             return {
                 name: name,
                 data: []
-            }
+            };
         },
         
         // override
@@ -3131,21 +3301,21 @@
         },
         
         calculateInnerSizes: function(chart) {
+            chart = chart || this.hcChart;
             var i, loopHeight, loopTop,
-                chart = chart || this.hcChart,
-                totalHeight = chart.plotHeight - this.bottomSpacing,
-                unadjustedInnerHeight = ((totalHeight - (this.numSeries - 1) * this.interChartSpacing) / this.numSeries),
-                firstTop = chart.plotTop + totalHeight + this.interChartSpacing - unadjustedInnerHeight;
+                totalHeight = chart.chartHeight - this.bottomSpacing,
+                unadjustedInnerHeight = ((totalHeight - (this.numSeries - 2) * this.interChartSpacing) / this.numSeries),
+                // using numSeries - 2 as a multiplier above because we are also adding an interChartSpacing below the chart
+                firstTop = chart.plotTop + totalHeight - unadjustedInnerHeight - this.interChartSpacing;
             
             this.innerWidth = chart.plotWidth;
             this.innerLeft = chart.plotLeft;
-            this.innerHeights = [];
-            this.innerTops = [];
+            this.innerHeights = [unadjustedInnerHeight + this.bottomSpacing];
+            this.innerTops = [firstTop];
             
-            for(i = 0; i < this.fieldsToShow.length; i++) {
-                loopHeight = (i === 0) ? (unadjustedInnerHeight + this.bottomSpacing - this.interChartSpacing) : (unadjustedInnerHeight - this.interChartSpacing);
-                this.innerHeights.push(loopHeight);
-                loopTop = (firstTop - (i * loopHeight));
+            for(i = 1; i < this.fieldsToShow.length; i++) {
+                this.innerHeights.push(unadjustedInnerHeight);
+                loopTop = firstTop - (i * (unadjustedInnerHeight + this.interChartSpacing));
                 this.innerTops.push(loopTop);
             }
         },
@@ -3195,11 +3365,14 @@
                 innerProps = $.extend(true, {}, this.properties, {
                     'legend.placement': 'none'
                 });
+                // passing the legend labels to the inner charts will disrupt hover effects
+                delete(innerProps['legend.labels']);
                 
                 loopChart = new this.innerConstructor($innerContainers[i], i, (i === fieldNames.length - 1));
                 this.innerCharts.push(loopChart);
                 loopChart.prepare(innerData, this.fieldInfo, innerProps);
-                loopChart.setColors([this.hcConfig.colors[i]]);
+                // by passing two copies of the same color, make sure the right color will show up in all cases
+                loopChart.setColorList([this.colorList[i], this.colorList[i]]);
                 loopChart.draw(innerCallback);
             }
         },
@@ -3210,8 +3383,9 @@
         },
         
         onInnerChartsDrawn: function() {
+            var i;
             // add event listeners to pass click events up
-            for(var i = 0; i < this.innerCharts.length; i++) {            
+            for(i = 0; i < this.innerCharts.length; i++) {            
                 var loopChart = this.innerCharts[i];
                 loopChart.addEventListener('chartClicked', function(event) {
                     this.dispatchEvent('chartClicked', event);
@@ -3220,8 +3394,8 @@
             // here is where we create a new chart object for external reference and call the original draw callback
             var externalChartReference = {
                 series: []
-            }
-            for(var i = 0; i < this.innerCharts.length; i++) {            
+            };
+            for(i = 0; i < this.innerCharts.length; i++) {            
                 externalChartReference.series.push({
                     data: this.innerCharts[i].hcChart.series[0].data
                 });
@@ -3245,7 +3419,7 @@
         
         highlightThisChild: function(index) {
             var i, innerChart;
-            for(var i = 0; i < this.innerCharts.length; i++) {
+            for(i = 0; i < this.innerCharts.length; i++) {
                 if(i !== index) {
                     innerChart = this.innerCharts[i];
                     innerChart.fadeSeries(innerChart.hcChart.series[0]);
@@ -3255,7 +3429,7 @@
         
         unHighlightThisChild: function(index) {
             var i, innerChart;
-            for(var i = 0; i < this.innerCharts.length; i++) {
+            for(i = 0; i < this.innerCharts.length; i++) {
                 if(i !== index) {
                     innerChart = this.innerCharts[i];
                     innerChart.focusSeries(innerChart.hcChart.series[0]);
@@ -3444,7 +3618,7 @@
             this.hcConfig.id = this.id;
             this.hcConfig.labels.formatter = function() {
                 return self.formatLabel.call(self, this);
-            }
+            };
         },
         
         applyProperties: function() {
@@ -3487,7 +3661,7 @@
                     break;
                 case 'axisLabels.extendsAxisRange':
                     this.extendsAxisRange = (value === 'true');
-                    this.mapper.mapValue(this.extendsAxisRange, ["endOnTick"])
+                    this.mapper.mapValue(this.extendsAxisRange, ["endOnTick"]);
                     break;
                 case 'gridLines.showMajorLines':
                     this.mapper.mapValue(((value === 'false') ? 0 : 1), ["gridLineWidth"]);
@@ -3623,7 +3797,7 @@
         
         // override
         initialize: function($super, properties, data, orientation, colorScheme) {
-            this.includeZero = false;
+            this.includeZero = (orientation === 'vertical' && properties.chartType !== 'scatter');
             this.logScale = false;
             this.userMin = -Infinity;
             this.userMax = Infinity;
@@ -3642,17 +3816,24 @@
         // override
         applyPropertyByName: function($super, key, value) {
             $super(key, value);
+            var floatVal;
             switch(key) {
                 case 'axis.minimumNumber':
-                    var floatVal = parseFloat(value, 10);
+                    floatVal = parseFloat(value, 10);
                     if(!isNaN(floatVal)) {
                         this.userMin = floatVal;
+                        if(floatVal > 0) {
+                            this.includeZero = false;
+                        }
                     }
                     break;
                 case 'axis.maximumNumber':
-                    var floatVal = parseFloat(value, 10);
+                    floatVal = parseFloat(value, 10);
                     if(!isNaN(floatVal)) {
                         this.userMax = floatVal;
+                        if(floatVal < 0) {
+                            this.includeZero = false;
+                        }
                     }
                     break;
                 case 'axis.includeZero':
@@ -3724,7 +3905,7 @@
                 value = this.mathUtils.absPowerTen(element.value);
             }
             else {
-                value = element.value
+                value = element.value;
             }
             return this.formatNumber(value);
         },
@@ -3735,7 +3916,7 @@
                 var toRawMap = {
                     "y": "rawY",
                     "x": "rawX"
-                }
+                };
                 return this.formatNumber(element.point[toRawMap[valueKey]]);
             }
             return this.formatNumber(element[valueKey]);
@@ -3813,11 +3994,19 @@
         },
         
         enforceIncludeZero: function(options, extremes) {
-            if(extremes.min > 0) {
+            // if there are no extremes (i.e. no meaningful data was extracted), go with 0 to 100
+            if(!extremes.min && !extremes.max) {
                 options.min = 0;
+                options.max = 100;
+                return;
             }
-            else if(extremes.max < 0) {
+            if(extremes.min >= 0) {
+                options.min = 0;
+                options.minPadding = 0;
+            }
+            else if(extremes.max <= 0) {
                 options.max = 0;
+                options.maxPadding = 0;
             }
         },
         
@@ -3838,18 +4027,14 @@
                 options.min = (this.logScale) ? extremes.max - 2 : extremes.max * 2;
                 return;
             }
-            // if either extreme is less than the padding interval away from zero we remove the padding and clip it to zero
-            // unless of course the extreme was set by the user
-            var range = Math.abs(extremes.max - extremes.min),
-                minPaddingNumber = range * options.minPadding,
-                maxPaddingNumber = range * options.maxPadding;
-            if(extremes.dataMin >= 0 && extremes.dataMin < minPaddingNumber && this.userMin === -Infinity) {
-                options.minPadding = 0;
+            // if either data extreme is exactly zero, remove the padding on that side so the axis doesn't extend beyond zero
+            if(extremes.dataMin === 0 && this.userMin === -Infinity) {
                 options.min = 0;
+                options.minPadding = 0;
             }
-            else if(extremes.dataMax <= 0 && extremes.dataMax > -maxPaddingNumber && this.userMax === Infinity) {
-                options.maxPadding = 0;
+            if(extremes.dataMax === 0 && this.userMax === Infinity) {
                 options.max = 0;
+                options.maxPadding = 0;
             }
         },
         
@@ -3910,6 +4095,21 @@
         
         type: 'category',
         
+        applyPropertyByName: function($super, key, value) {
+            $super(key, value);
+            switch(key) {
+                case 'axisLabels.hideCategories':
+                    if(value === true) {
+                        this.mapper.mapValue(false, ['labels', 'enabled']);
+                        this.mapper.mapValue(0, ['tickWidth']);
+                        break;
+                    }
+                default:
+                    // no-op for unsupported keys
+                    break;
+            }
+        },
+        
         // override
         generateConfig: function($super) {
             $super();
@@ -3946,15 +4146,19 @@
         },
         
         tickLabelsRenderStartHook: function(options, categories, chart) {
-            var formatter = new Splunk.JSCharting.FormattingHelper(chart.renderer);
+            if(!options.labels.enabled) {
+                return;
+            }
+            var maxWidth,
+                formatter = new Splunk.JSCharting.FormattingHelper(chart.renderer);
             
             if(!options.originalCategories) {
                 options.originalCategories = $.extend(true, [], categories);
             }
             if(this.isVertical) {
-                var adjustedFontSize, labelHeight,
-                    maxWidth = Math.floor(chart.chartWidth / 6);
+                var adjustedFontSize, labelHeight;
                 
+                maxWidth = Math.floor(chart.chartWidth / 6);
                 adjustedFontSize = this.fitLabelsToWidth(options, categories, formatter, maxWidth);
                 labelHeight = formatter.predictTextHeight("Test", adjustedFontSize);
                 options.labels.y = (labelHeight / 3);
@@ -3962,9 +4166,9 @@
             else {
                 var tickLabelPadding = 5,
                     axisWidth = chart.plotWidth,
-                    tickSpacing = (categories.length > 0) ? (axisWidth / categories.length) : axisWidth,
-                    maxWidth = tickSpacing - (2 * tickLabelPadding);
+                    tickSpacing = (categories.length > 0) ? (axisWidth / categories.length) : axisWidth;
                 
+                maxWidth = tickSpacing - (2 * tickLabelPadding);
                 this.fitLabelsToWidth(options, categories, formatter, maxWidth);
                 if(options.tickmarkPlacement === 'between') {  
                     options.labels.align = 'left';
@@ -4109,22 +4313,23 @@
             if(!lastTick.label) {
                 return;
             }
+            var tickLabelPadding;
             if(this.isVertical) {
-                var availableHeight,
-                    tickLabelPadding = 3;
-                
+                var availableHeight;
+                    
+                tickLabelPadding = 3;
                 availableHeight = (chart.plotTop + chart.plotHeight - lastTick.label.getBBox().y) - tickLabelPadding;
                 if(lastTick.labelBBox.height > availableHeight) {
                     return false;
                 }
             }
             else {
-                var availableWidth,
-                    tickLabelPadding = 5;
-                
+                var availableWidth;
+                    
+                tickLabelPadding = 5;
                 availableWidth = (chart.plotLeft + chart.plotWidth - lastTick.label.getBBox().x) - tickLabelPadding;
                 if(lastTick.labelBBox.width > availableWidth) {
-                    return false
+                    return false;
                 }  
             }
             return true;
@@ -4392,7 +4597,8 @@
                     break;
                 }
             }
-            if(!longestFits) {
+            var shouldEllipsize = (!longestFits && ellipsisMode !== 'none');
+            if(shouldEllipsize) {
                 for(i = 0; i < labels.length; i++) {
                     labels[i] = formatter.ellipsize(labels[i], width, fontSize, ellipsisMode);
                 }
@@ -4400,15 +4606,15 @@
             return {
                 labels: labels,
                 fontSize: fontSize,
-                areEllipsized: !longestFits,
+                areEllipsized: shouldEllipsize,
                 longestWidth: formatter.predictTextWidth(longestLabel, fontSize)
             };
         };
         
         formatter.bBoxesOverlap = function(bBox1, bBox2, marginX, marginY) {
-            var marginX = marginX || 0,
-                marginY = marginY || 0,
-                box1Left = bBox1.x - marginX,
+            marginX = marginX || 0;
+            marginY = marginY || 0;
+            var box1Left = bBox1.x - marginX,
                 box2Left = bBox2.x - marginX,
                 box1Right = bBox1.x + bBox1.width + 2 * marginX,
                 box2Right = bBox2.x + bBox2.width + 2 * marginX,
@@ -4430,7 +4636,7 @@
         
         return formatter;
         
-    }
+    };
 
 
     ////////////////////////////////////////////////////////////////////////////////
@@ -4439,9 +4645,9 @@
 
     Splunk.JSCharting.ListColorPalette = function(colors, useInterpolation) {
 
-        var self = this,
-            colors = colors || Splunk.JSCharting.ListColorPalette.DEFAULT_COLORS,
-            useInterpolation = (useInterpolation) ? true : false;
+        colors = colors || Splunk.JSCharting.ListColorPalette.DEFAULT_COLORS;
+        useInterpolation = (useInterpolation) ? true : false;
+        var self = this;
 
         self.getColor = function(field, index, count) {
             var p, index1, index2,
@@ -4529,45 +4735,6 @@
         0x602935
     ];
 
-    Splunk.JSCharting.ListColorPalette.DEFAULT_COLORS_CSS = [
-       "#6BB7C8",
-       "#FAC61D",
-       "#D85E3D",
-       "#956E96",
-       "#F7912C",
-       "#9AC23C",
-       "#998C55",
-       "#DD87B0",
-       "#5479AF",
-       "#E0A93B",
-       "#6B8930",
-       "#A04558",
-       "#A7D4DF",
-       "#FCDD77",
-       "#E89E8B",
-       "#BFA8C0",
-       "#FABD80",
-       "#C2DA8A",
-       "#C2BA99",
-       "#EBB7D0",
-       "#98AFCF",
-       "#ECCB89",
-       "#A6B883",
-       "#C68F9B",
-       "#416E79",
-       "#967711",
-       "#823825",
-       "#59425A",
-       "#94571A",
-       "#5C7424",
-       "#5C5433",
-       "#85516A",
-       "#324969",
-       "#866523",
-       "#40521D",
-       "#602935"
-    ];
-
 
     ////////////////////////////////////////////////////////////////////////////////
     // Splunk.JSCharting.AbstractGauge
@@ -4577,7 +4744,7 @@
 
         DEFAULT_COLORS: [0x69a847, 0xd5c43b, 0xa6352d],
 
-        needsColorPalette: false,
+        needsLegendMapping: false,
         maxTicksPerRange: 10,
 
         // override
@@ -4611,6 +4778,7 @@
                     }.bind(this), 100);
                 }
             }.bind(this));
+
         },
         
         prepare: function(data, fieldInfo, properties) {
@@ -4619,6 +4787,12 @@
             this.processData(data, fieldInfo, properties);
             this.colorPalette = new Splunk.JSCharting.ListColorPalette(this.colors, true);
             this.propertiesAreStale = true;
+        
+        // in export mode, hard-code a height and width for gauges
+        if(this.exportMode) {
+            this.chartWidth = 600;
+            this.chartHeight = 400;
+        }
         },
 
         draw: function(callback) {
@@ -4631,7 +4805,7 @@
                 // if the ranges haven't changed, we can do an animated update in place
                 if(this.parseUtils.arraysAreEquivalent(oldRanges, this.ranges)) {
                     this.updateValue(oldValue, this.value);
-                    needsRedraw = false
+                    needsRedraw = false;
                 }
                 this.pendingData = false;
                 this.pendingFieldInfo = false;
@@ -4643,9 +4817,25 @@
                 $(this.renderTo).css('backgroundColor', this.backgroundColor);
                 this.renderGauge();
                 this.nudgeChart();
-                this.gaugeIsRendered = true;
+                this.gaugeIsRendered = true; 
+            $(this.renderTo).addClass('highcharts-container');
                 // add this class and attribute on successful draw for UI testing
-                $(this.renderTo).addClass('highcharts-container').attr('chart-type', this.typeName);
+                if(this.testMode) {
+                    $(this.renderTo).addClass(this.typeName);
+                    $(this.renderTo).attr('data-gauge-value', this.value);
+                    if(this.elements.valueDisplay) {
+                        this.addClassToElement(this.elements.valueDisplay.element, 'gauge-value');
+                    }
+                }
+            
+            // in export mode, need to make sure each circle element has cx and cy attributes
+            if(this.exportMode) {
+                $(this.renderTo).find('circle').each(function(i, elem) {
+                    var $elem = $(elem);
+                    $elem.attr('cx', $elem.attr('x'));
+                    $elem.attr('cy', $elem.attr('y'));
+                });
+            }
                 this.propertiesAreStale = false;
             }
             if(callback) {
@@ -4688,6 +4878,10 @@
             this.elements = {};
             $(this.renderTo).empty();
             $(this.renderTo).css('backgroundColor', '');
+            // remove the UI testing hooks
+            if(this.testMode) {
+                $(this.renderTo).removeClass('highcharts-container').removeClass(this.typeName);
+            }
             this.gaugeIsRendered = false;
         },
         
@@ -4704,7 +4898,7 @@
                         ]
                     }
                 ]
-            }
+            };
         },
 
         // override
@@ -4747,6 +4941,7 @@
                     break;
                 default:
                     // no-op, ignore unsupported properties
+                    break;
             }
         },
         
@@ -4754,34 +4949,43 @@
             if(!value) {
                 return;
             }
-            var colors = this.colorStringToHexArray(value);
+            var colors = this.parseUtils.stringToHexArray(value);
             if(colors && colors.length > 0) {
                 this.colors = colors;
             }
         },
         
         mapRangeValues: function(value) {
-            var i, ranges, rangeNumber;
-            try {
-                ranges = JSON.parse(value);
-            }
-            catch(e) {
-                return;
-            }
-            if(!ranges || ranges.length < 2) {
-                return;
-            }
-            for(i = 0; i < ranges.length; i++) {
-                rangeNumber = this.mathUtils.parseFloat(ranges[i]);
+            var i, rangeNumber,
+                prevRange = -Infinity,
+                unprocessedRanges = this.parseUtils.stringToArray(value),
+                ranges = [];
+            
+            for(i = 0; i < unprocessedRanges.length; i++) {
+                rangeNumber = this.mathUtils.parseFloat(unprocessedRanges[i]);
                 if(isNaN(rangeNumber)) {
+                    // ignore the entire range list if an invalid entry is present
                     return;
                 }
-                ranges[i] = rangeNumber;
+                // de-dupe the ranges and ensure ascending order
+                if(rangeNumber > prevRange) {
+                    ranges.push(rangeNumber);
+                    prevRange = rangeNumber;
+                }
+            }
+            // if we couldn't extract at least two valid range numbers, ignore the list altogether
+            if(!ranges || ranges.length < 2) {
+                return;
             }
             this.ranges = ranges;
             this.rangesCameFromXML = true;
         },
 
+        setExportDimensions: function() {
+            this.chartWidth = 600;
+            this.chartHeight = 400;
+        },
+        
         processData: function(data, fieldInfo, properties) {
             if(!data || !data.series || !data.xSeries) {
                 this.value = 0;
@@ -4799,7 +5003,7 @@
             // about to do a bunch of work to make sure we draw a reasonable gauge even if the data
             // is not what we expected, but only if there were no ranges specified in the XML
             if(!this.rangesCameFromXML) {
-                prevValue = -Infinity
+                prevValue = -Infinity;
                 for(i = 0; i < fieldNames.length; i++) {
                     loopField = fieldNames[i];
                     if(data.series[loopField].length > 0) {
@@ -4837,6 +5041,9 @@
             if(this.showValue) {
                 var valueText = this.formatValue(newValue);
                 this.updateValueDisplay(valueText);
+            }
+            if(this.testMode) {
+                $(this.renderTo).attr('data-gauge-value', newValue);
             }
         },
         
@@ -4936,7 +5143,7 @@
             if(finishCallback) {
                 animationProperties.complete = function() {
                     finishCallback(endVal);
-                }
+                };
             }
             // for the animation start and end values, use 0 and animationRange for consistency with the way jQuery handles
             // css properties that it doesn't recognize
@@ -5080,28 +5287,6 @@
             }
             return tickValues;
         },
-
-        colorStringToHexArray: function(colorStr) {
-            var i, colors, hexColor,
-                strLen = colorStr.length;
-               
-            if(colorStr.charAt(0) !== '[' || colorStr.charAt(strLen - 1) !== ']') {
-                return false;
-            }
-            colorStr = colorStr.substr(1, strLen - 2);
-            colors = Splunk.util.stringToFieldList(colorStr);
-            if(!colors) {
-                return false;
-            }
-            for(i = 0; i < colors.length; i++) {
-                hexColor = parseInt(colors[i], 16);
-                if(isNaN(hexColor)) {
-                    return false;
-                }
-                colors[i] = hexColor;
-            }
-            return colors;
-        },
         
         getColorByIndex: function(index) {
             return this.colorUtils.colorFromHex(this.colorPalette.getColor(null, index, this.ranges.length - 1));
@@ -5179,6 +5364,7 @@
                     break;
                 default:
                     // no-op, ignore unsupported properties
+                    break;
             }
         },
 
@@ -5848,8 +6034,8 @@
             }
             
             // no actual dependency here, but want to be consistent with sibling class
-            this.tickStartY = (this.chartHeight + this.backgroundHeight) / 2 + this.tickOffset,
-            this.tickEndY = this.tickStartY + this.tickLength,
+            this.tickStartY = (this.chartHeight + this.backgroundHeight) / 2 + this.tickOffset;
+            this.tickEndY = this.tickStartY + this.tickLength;
             this.tickLabelStartY = this.tickEndY + this.tickLabelOffset;
         },
         
@@ -6285,11 +6471,13 @@
                          markerStartX,
                             markerStartY + this.markerWindowHeight / 2,
                          markerStartX,
-                            markerStartY - this.markerWindowHeight / 2,
-                    'M', markerStartX,
-                            markerStartY + 1,
-                    'L', markerEndX,
-                            markerStartY + 1
+                            markerStartY - this.markerWindowHeight / 2
+                 ],
+                 markerUnderlinePath = [
+                     'M', markerStartX,
+                             markerStartY + 1,
+                     'L', markerEndX,
+                             markerStartY + 1              
                 ];
                 markerLineStroke = 'red';
                 markerLineWidth = 1;
@@ -6326,6 +6514,15 @@
                     this.elements.markerBorder.destroy();
                 }
                 this.elements.markerBorder = this.renderer.path(markerBorderPath)
+                    .attr({
+                        stroke: 'white',
+                        'stroke-width': 2
+                    })
+                    .add();
+                if(this.elements.markerUnderline) {
+                    this.elements.markerUnderline.destroy();
+                }
+                this.elements.markerUnderline = this.renderer.path(markerUnderlinePath)
                     .attr({
                         stroke: 'white',
                         'stroke-width': 2
@@ -6431,8 +6628,8 @@
         },
         
         drawBackground: function(tickValues) {
-            var tickValues = this.calculateTickValues(this.ranges[0], this.ranges[this.ranges.length - 1], this.maxTicksPerRange),
-                maxTickValue = tickValues[tickValues.length - 1],
+            tickValues = this.calculateTickValues(this.ranges[0], this.ranges[this.ranges.length - 1], this.maxTicksPerRange);
+            var maxTickValue = tickValues[tickValues.length - 1],
                 maxTickWidth = this.predictTextWidth(this.formatValue(maxTickValue), this.tickFontSize);
             
             this.bandOffsetBottom = Math.max(this.bandOffsetBottom, maxTickWidth);
@@ -6598,11 +6795,13 @@
                          markerStartX + this.markerWindowHeight / 2,
                             markerStartY,
                          markerStartX - this.markerWindowHeight / 2,
-                            markerStartY,
+                            markerStartY
+                ],
+                markerUnderlinePath = [
                     'M', markerStartX - 1,
                             markerStartY,
                     'L', markerStartX - 1,
-                            markerEndY
+                            markerEndY       
                 ];
                 markerLineStroke = 'red';
                 markerLineWidth = 1;
@@ -6636,6 +6835,15 @@
                     this.elements.markerBorder.destroy();
                 }
                 this.elements.markerBorder = this.renderer.path(markerBorderPath)
+                    .attr({
+                        stroke: 'white',
+                        'stroke-width': 2
+                    })
+                    .add();
+                if(this.elements.markerUnderline) {
+                    this.elements.markerUnderline.destroy();
+                }
+                this.elements.markerUnderline = this.renderer.path(markerUnderlinePath)
                     .attr({
                         stroke: 'white',
                         'stroke-width': 2
@@ -6762,9 +6970,9 @@
             if(typeof num !== "number") {
                 return NaN;
             }
-            var isNegative = num < 0,
-                num = (isNegative) ? -num : num,
-                log = this.logBaseTen(num),
+            var isNegative = num < 0;
+            num = (isNegative) ? -num : num;
+            var log = this.logBaseTen(num),
                 result = Math.pow(10, Math.floor(log));
             
             return (isNegative) ? -result: result;
@@ -6787,8 +6995,8 @@
         // returns the number of digits of precision after the decimal point
         // optionally accepts a maximum number, after which point it will stop looking and return the max
         getDecimalPrecision: function(num, max) {
-            var precision = 0,
-                max = max || Infinity;
+            max = max || Infinity;
+            var precision = 0;
             
             while(precision < max && num.toFixed(precision) !== num.toString()) {
                 precision += 1;
@@ -6923,7 +7131,7 @@
             return {
                 categories: categories,
                 rawLabels: rawLabels
-            }
+            };
         },
         
         // this method is a catch-all that needs to be able to handle all cases when a user has chosen a small bucket size for a large time range
@@ -6966,7 +7174,7 @@
                     if(loopBdTime[bdTestIndex] !== prevBdValue) {
                         // advance the counter if our time index of interest has changed
                         if(counter > -1) {
-                            counter++
+                            counter++;
                         }
                         prevBdValue = loopBdTime[bdTestIndex];
                     }
@@ -7053,7 +7261,8 @@
         },
 
         formatBdTimeAsLabel: function(bdTime, labelSpan, prevBdTime) {
-            var dateTime = this.bdTimeToDateObject(bdTime),
+            var i18n = Splunk.JSCharting.i18nUtils,
+                dateTime = this.bdTimeToDateObject(bdTime),
 
                 showDay = (labelSpan < 28 * this.secsPerDay),
                 showTimes = (labelSpan < (23 * this.secsPerHour) || 
@@ -7065,7 +7274,7 @@
                 dateFormat = (showDay) ? 'ccc MMM d' : 'MMMM';
 
             if(labelSpan > 364 * this.secsPerDay) {
-                return format_date(dateTime, 'YYYY');
+                return i18n.format_date(dateTime, 'YYYY');
             }
             if(bdTime[this.bdMonth] === prevBdTime[this.bdMonth] && bdTime[this.bdDay] === prevBdTime[this.bdDay]) {
                 return format_time(dateTime, timeFormat);
@@ -7074,13 +7283,14 @@
                 dateFormat += '<br/>YYYY';
             }
             return (showTimes) ?
-                format_time(dateTime, timeFormat) + '<br/>' + format_date(dateTime, dateFormat) :
-                format_date(dateTime, dateFormat);
+                format_time(dateTime, timeFormat) + '<br/>' + i18n.format_date(dateTime, dateFormat) :
+                i18n.format_date(dateTime, dateFormat);
         },
         
         // returns false if string cannot be parsed
         formatIsoStringAsTooltip: function(isoString, pointSpan) {
-            var bdTime = this.extractBdTime(isoString),
+            var i18n = Splunk.JSCharting.i18nUtils,
+                bdTime = this.extractBdTime(isoString),
                 dateObject;
             
             if(!bdTime) {
@@ -7089,7 +7299,7 @@
             dateObject = this.bdTimeToDateObject(bdTime);
             
             if (pointSpan >= 86400) { // day or larger
-                return format_date(dateObject);
+                return i18n.format_date(dateObject);
             } 
             else if (pointSpan >= 60) { // minute or longer
                 return format_datetime(dateObject, 'medium', 'short');
@@ -7291,11 +7501,38 @@
             return map;
         },
         
+        stringToArray: function(str) {
+            var strLen = str.length;
+            
+            if(str.charAt(0) !== '[' || str.charAt(strLen - 1) !== ']') {
+                return false;
+            }
+            str = str.substr(1, strLen - 2);
+            return Splunk.util.stringToFieldList(str);
+        },
+
+        stringToHexArray: function(colorStr) {
+            var i, hexColor,
+                colors = this.stringToArray(colorStr);
+            
+            if(!colors) {
+                return false;
+            }
+            for(i = 0; i < colors.length; i++) {
+                hexColor = parseInt(colors[i], 16);
+                if(isNaN(hexColor)) {
+                    return false;
+                }
+                colors[i] = hexColor;
+            }
+            return colors;
+        },
+        
         // a simple utility method for comparing arrays, assumes one-dimensional arrays of primitives, performs strict comparisons
         arraysAreEquivalent: function(array1, array2) {
             // make sure these are actually arrays
             if(!(array1 instanceof Array) || !(array2 instanceof Array)) {
-                return false
+                return false;
             }
             if(array1 === array2) {
                 // true if they are the same object
@@ -7315,4 +7552,58 @@
         }
         
     };
+
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Splunk.JSCharting.i18nUtils
+
+    Splunk.JSCharting.i18nUtils = {
+        
+        // maintain a hash of locales where custom string replacements are needed to get correct translation
+        CUSTOM_LOCALE_FORMATS: {
+            'ja_JP': [
+                ['d', 'd\u65e5'],
+                ['YYYY', 'YYYY\u5e74']
+            ],
+            'ko_KR': [
+                ['d', 'd\uc77c'],
+                ['YYYY', 'YYYY\ub144']
+            ],
+            'zh_CN': [
+                ['d', 'd\u65e5'],
+                ['YYYY', 'YYYY\u5e74']
+            ],
+            'zh_TW': [
+                ['d', 'd\u65e5'],
+                ['YYYY', 'YYYY\u5e74']
+            ]
+        },
+        
+        // maintain a list of replacements needed when a locale specifies that day comes before month
+        DAY_FIRST_FORMATS: [
+            ['MMM d', 'd MMM'] 
+        ],
+        
+        // a special-case hack to handle some i18n bugs, see SPL-42469
+        format_date: function(date, format) {
+            var i, replacements,
+                locale = locale_name();
+            if(format && locale_uses_day_before_month()) {
+                replacements = this.DAY_FIRST_FORMATS;
+                for(i = 0; i < replacements.length; i++) {
+                    format = format.replace(replacements[i][0], replacements[i][1]);
+                }
+            }
+            if(format && locale in this.CUSTOM_LOCALE_FORMATS) {
+                replacements = this.CUSTOM_LOCALE_FORMATS[locale];
+                
+                for(i = 0; i < replacements.length; i++) {
+                    format = format.replace(replacements[i][0], replacements[i][1]);
+                }
+            }
+            return format_date(date, format);
+        }
+        
+    };
+
 })();
