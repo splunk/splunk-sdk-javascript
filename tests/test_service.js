@@ -1033,6 +1033,9 @@ exports.setup = function(svc) {
                 var searches = this.service.savedSearches();
                 searches.refresh({offset: 2, count: 1}, function(err, searches) {
                     var savedSearches = searches.list();
+                    test.strictEqual(searches.paging().offset, 2);
+                    test.strictEqual(searches.paging().count, 1);
+                    test.strictEqual(searches.paging().page, 1);
                     test.strictEqual(savedSearches.length, 1);
                     
                     for(var i = 0; i < savedSearches.length; i++) {
