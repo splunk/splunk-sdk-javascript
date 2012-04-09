@@ -1085,6 +1085,12 @@ exports.setup = function(svc) {
                             test.strictEqual(search.properties().search, updatedSearch);
                             test.strictEqual(search.properties().description, updatedDescription);
                             
+                            search.refresh(done);
+                        },
+                        function(search, done) {
+                            // Verify that we have the required fields
+                            test.strictEqual(search.fields().required[0], "search");
+                            
                             search.remove(done);
                         }
                     ],
