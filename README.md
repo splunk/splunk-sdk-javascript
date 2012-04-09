@@ -36,7 +36,7 @@ You can get the SDK by [downloading it][zip] from GitHub, or by cloning it:
 
 ### Install the XML to JSON Splunk app
 
-To install the XML to JSON Splunk app, [`new_english`][new_english], copy it 
+To install the XML to JSON Splunk app, [`xml2json`][xml2json], copy it 
 to `$SPLUNK_HOME/etc/apps/`.
 
 ### Use the Splunk JavaScript SDK components on your web page
@@ -280,8 +280,8 @@ You can read more about our branching model on our Wiki:
 </tr>
 
 <tr>
-<td><em>new_english</em><td>
-<td>Source for the `new_english` XML -&gt; JSON app</td>
+<td><em>xml2json</em><td>
+<td>Source for the `xml2json` XML -&gt; JSON app</td>
 </tr>
 
 <tr>
@@ -409,7 +409,7 @@ of embedded libraries and their licenses:
 [scriptjs-license]:         https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-SCRIPTJS
 
 [json2]:                    http://www.json.org/js.html
-[new_english]:              https://github.com/splunk/splunk-sdk-javascript/tree/master/new_english
+[xml2json]:                 https://github.com/splunk/splunk-sdk-javascript/tree/master/xml2json
 [splunkrc]:                 https://github.com/splunk/splunk-sdk-javascript/blob/master/splunkrc.spec
 [node_examples_dir]:        https://github.com/splunk/splunk-sdk-javascript/blob/master/examples/node
 [browser_examples_dir]:     https://github.com/splunk/splunk-sdk-javascript/blob/master/examples/browser

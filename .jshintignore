@@ -11,6 +11,7 @@ examples\\browser\\minisplunk
 examples\\browser\\resources
 old_english
 new_english
+xml2json
 contrib
 external-nocheckin
 ui/timeline

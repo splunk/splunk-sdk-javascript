@@ -292,7 +292,7 @@ exports.setup = function(svc, opts) {
             },
             
             "Show contents with specialization": function(test) {
-                this.run("contents", ["json", "settings"], {app: "new_english", owner: "nobody"}, function(err) {
+                this.run("contents", ["json", "settings"], {app: "xml2json", owner: "nobody"}, function(err) {
                     console.log(err);
                     test.ok(!err);
                     test.done();
@@ -307,21 +307,21 @@ exports.setup = function(svc, opts) {
             },
             
             "Edit contents with no user set": function(test) {
-                this.run("edit", ["json", "settings", "foo", "bar"], {app: "new_english"}, function(err) {
+                this.run("edit", ["json", "settings", "foo", "bar"], {app: "xml2json"}, function(err) {
                     test.ok(err);
                     test.done();
                 });
             },
             
             "Edit contents": function(test) {
-                this.run("edit", ["json", "settings", "foo", "bar"], {app: "new_english", owner: "admin"}, function(err) {
+                this.run("edit", ["json", "settings", "foo", "bar"], {app: "xml2json", owner: "admin"}, function(err) {
                     test.ok(!err);
                     test.done();
                 });
             },
             
             "Create file": function(test) {
-                this.run("create", ["foo"], {app: "new_english", owner: "admin"}, function(err) {
+                this.run("create", ["foo"], {app: "xml2json", owner: "admin"}, function(err) {
                     test.ok(!err);
                     test.done();
                 });
@@ -329,7 +329,7 @@ exports.setup = function(svc, opts) {
             
             "Create stanza": function(test) {
                 var options = {
-                    app: "new_english",
+                    app: "xml2json",
                     owner: "admin"
                 };
                 
@@ -345,7 +345,7 @@ exports.setup = function(svc, opts) {
             
             "Create key=value": function(test) {
                 var options = {
-                    app: "new_english",
+                    app: "xml2json",
                     owner: "admin"
                 };
                 
@@ -361,7 +361,7 @@ exports.setup = function(svc, opts) {
             
             "Create+delete stanza": function(test) {
                 var options = {
-                    app: "new_english",
+                    app: "xml2json",
                     owner: "admin"
                 };
                 

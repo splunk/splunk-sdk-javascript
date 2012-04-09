@@ -282,7 +282,7 @@ exports.setup = function(svc) {
             "Callback#Create+abort job": function(test) {
                 var sid = getNextId();
                 var options = {id: sid};
-                var jobs = this.service.jobs({app: "new_english"});
+                var jobs = this.service.jobs({app: "xml2json"});
                 var req = jobs.oneshotSearch('search index=_internal |  head 1 | sleep 10', options, function(err, job) {   
                     test.ok(err);
                     test.ok(!job);
@@ -467,7 +467,7 @@ exports.setup = function(svc) {
                 var that = this;
                 var sid = getNextId();
                 
-                var service = this.service.specialize("nobody", "new_english");
+                var service = this.service.specialize("nobody", "xml2json");
                 
                 Async.chain([
                         function(done) {
@@ -495,7 +495,7 @@ exports.setup = function(svc) {
                 var that = this;
                 var sid = getNextId();
                 
-                var service = this.service.specialize("nobody", "new_english");
+                var service = this.service.specialize("nobody", "xml2json");
                 
                 Async.chain([
                         function(done) {
@@ -583,7 +583,7 @@ exports.setup = function(svc) {
                 var originalPriority = 0;
                 var that = this;
                 
-                var service = this.service.specialize("nobody", "new_english");
+                var service = this.service.specialize("nobody", "xml2json");
                 
                 Async.chain([
                         function(done) {
@@ -1049,7 +1049,7 @@ exports.setup = function(svc) {
                 var updatedSearch = "search * | head 10";
                 var updatedDescription = "description";
             
-                var searches = this.service.savedSearches({owner: this.service.username, app: "new_english"});
+                var searches = this.service.savedSearches({owner: this.service.username, app: "xml2json"});
                 
                 Async.chain([
                         function(done) {
@@ -1093,7 +1093,7 @@ exports.setup = function(svc) {
             },
             
             "Callback#delete test saved searches": function(test) {
-                var searches = this.service.savedSearches({owner: this.service.username, app: "new_english"});
+                var searches = this.service.savedSearches({owner: this.service.username, app: "xml2json"});
                 searches.refresh(function(err, searches) {
                     var searchList = searches.list();                  
                     Async.parallelEach(
@@ -1585,7 +1585,7 @@ exports.setup = function(svc) {
                 
                 Async.chain([
                         function(done) {
-                            service.views({owner: "admin", app: "new_english"}).create({name: name, "eai:data": originalData}, done);
+                            service.views({owner: "admin", app: "xml2json"}).create({name: name, "eai:data": originalData}, done);
                         },
                         function(view, done) {
                             test.ok(view);

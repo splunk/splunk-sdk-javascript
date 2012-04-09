@@ -7262,7 +7262,7 @@ exports.setup = function(svc) {
             "Callback#Create+abort job": function(test) {
                 var sid = getNextId();
                 var options = {id: sid};
-                var jobs = this.service.jobs({app: "new_english"});
+                var jobs = this.service.jobs({app: "xml2json"});
                 var req = jobs.oneshotSearch('search index=_internal |  head 1 | sleep 10', options, function(err, job) {   
                     test.ok(err);
                     test.ok(!job);
@@ -7447,7 +7447,7 @@ exports.setup = function(svc) {
                 var that = this;
                 var sid = getNextId();
                 
-                var service = this.service.specialize("nobody", "new_english");
+                var service = this.service.specialize("nobody", "xml2json");
                 
                 Async.chain([
                         function(done) {
@@ -7475,7 +7475,7 @@ exports.setup = function(svc) {
                 var that = this;
                 var sid = getNextId();
                 
-                var service = this.service.specialize("nobody", "new_english");
+                var service = this.service.specialize("nobody", "xml2json");
                 
                 Async.chain([
                         function(done) {
@@ -7563,7 +7563,7 @@ exports.setup = function(svc) {
                 var originalPriority = 0;
                 var that = this;
                 
-                var service = this.service.specialize("nobody", "new_english");
+                var service = this.service.specialize("nobody", "xml2json");
                 
                 Async.chain([
                         function(done) {
@@ -8029,7 +8029,7 @@ exports.setup = function(svc) {
                 var updatedSearch = "search * | head 10";
                 var updatedDescription = "description";
             
-                var searches = this.service.savedSearches({owner: this.service.username, app: "new_english"});
+                var searches = this.service.savedSearches({owner: this.service.username, app: "xml2json"});
                 
                 Async.chain([
                         function(done) {
@@ -8073,7 +8073,7 @@ exports.setup = function(svc) {
             },
             
             "Callback#delete test saved searches": function(test) {
-                var searches = this.service.savedSearches({owner: this.service.username, app: "new_english"});
+                var searches = this.service.savedSearches({owner: this.service.username, app: "xml2json"});
                 searches.refresh(function(err, searches) {
                     var searchList = searches.list();                  
                     Async.parallelEach(
@@ -8565,7 +8565,7 @@ exports.setup = function(svc) {
                 
                 Async.chain([
                         function(done) {
-                            service.views({owner: "admin", app: "new_english"}).create({name: name, "eai:data": originalData}, done);
+                            service.views({owner: "admin", app: "xml2json"}).create({name: name, "eai:data": originalData}, done);
                         },
                         function(view, done) {
                             test.ok(view);
@@ -9185,7 +9185,7 @@ exports.setup = function(svc, opts) {
             },
             
             "Show contents with specialization": function(test) {
-                this.run("contents", ["json", "settings"], {app: "new_english", owner: "nobody"}, function(err) {
+                this.run("contents", ["json", "settings"], {app: "xml2json", owner: "nobody"}, function(err) {
                     console.log(err);
                     test.ok(!err);
                     test.done();
@@ -9200,21 +9200,21 @@ exports.setup = function(svc, opts) {
             },
             
             "Edit contents with no user set": function(test) {
-                this.run("edit", ["json", "settings", "foo", "bar"], {app: "new_english"}, function(err) {
+                this.run("edit", ["json", "settings", "foo", "bar"], {app: "xml2json"}, function(err) {
                     test.ok(err);
                     test.done();
                 });
             },
             
             "Edit contents": function(test) {
-                this.run("edit", ["json", "settings", "foo", "bar"], {app: "new_english", owner: "admin"}, function(err) {
+                this.run("edit", ["json", "settings", "foo", "bar"], {app: "xml2json", owner: "admin"}, function(err) {
                     test.ok(!err);
                     test.done();
                 });
             },
             
             "Create file": function(test) {
-                this.run("create", ["foo"], {app: "new_english", owner: "admin"}, function(err) {
+                this.run("create", ["foo"], {app: "xml2json", owner: "admin"}, function(err) {
                     test.ok(!err);
                     test.done();
                 });
@@ -9222,7 +9222,7 @@ exports.setup = function(svc, opts) {
             
             "Create stanza": function(test) {
                 var options = {
-                    app: "new_english",
+                    app: "xml2json",
                     owner: "admin"
                 };
                 
@@ -9238,7 +9238,7 @@ exports.setup = function(svc, opts) {
             
             "Create key=value": function(test) {
                 var options = {
-                    app: "new_english",
+                    app: "xml2json",
                     owner: "admin"
                 };
                 
@@ -9254,7 +9254,7 @@ exports.setup = function(svc, opts) {
             
             "Create+delete stanza": function(test) {
                 var options = {
-                    app: "new_english",
+                    app: "xml2json",
                     owner: "admin"
                 };
                 
