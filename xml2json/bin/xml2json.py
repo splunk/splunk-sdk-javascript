@@ -203,6 +203,8 @@ def from_feed(content, timings={}, messages={}):
                     
                     for link in root.findall('{%s}link' % (ATOM_NS)):
                         links[link.get('rel')] = link.get('href')
+                        
+                    collection["updated"] = root.findall('{%s}updated' % (ATOM_NS))[0].text
                 except:
                     pass
             except:
