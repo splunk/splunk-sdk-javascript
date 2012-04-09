@@ -1772,6 +1772,7 @@ require.define("/lib/platform/client/easyxdm_http.js", function (require, module
                 data: message.body
             };
             
+            var that = this;
             var req = {
                 abort: function() {
                     // Note that we were aborted
