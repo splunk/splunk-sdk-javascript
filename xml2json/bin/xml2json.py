@@ -195,7 +195,6 @@ def from_feed(content, timings={}, messages={}):
                 
                 try:
                     
-                    collection["name"] = root.findall('{%s}title' % (ATOM_NS))[0].text
                     collection["origin"] = root.findall('{%s}id' % (ATOM_NS))[0].text
               
                     links = {}
