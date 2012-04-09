@@ -2254,17 +2254,28 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @module splunkjs.Service
          */
         currentUser: function(callback) {
+            callback = callback || function() {};
+            
             var that = this;
-            return this.get(Paths.currentUser, {}, function(err, response) {
+            var req = this.get(Paths.currentUser, {}, function(err, response) {
                 if (err) {
                     callback(err);
                 } 
                 else {
                     var username = response.data.entry[0].content.username;
                     var user = new root.User(that, username);
-                    user.refresh(callback);
+                    user.refresh(function() {
+                        if (req.wasAborted) {
+                            callback("abort");
+                        }
+                        else {
+                            callback.apply(null, arguments);
+                        }
+                    });
                 }
             });
+            
+            return req;
         }
     });
 
@@ -2733,13 +2744,21 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var req = this.post("", props, function(err, response) {
                 if (!err && !that.refreshOnUpdate) {
                     that._load(response.data.entry);
+                    callback(err, that);
                 }
                 else if (!err && that.refreshOnUpdate) {
-                    that.refresh(callback);
-                    return;
+                    that.refresh(function() {
+                        if (req.wasAborted) {
+                            callback("abort");
+                        }
+                        else {
+                            callback.apply(null, arguments);
+                        }
+                    });
                 }
-                
-                callback(err, that);
+                else {
+                    callback(err, that);
+                }
             });
             
             return req;
@@ -2883,7 +2902,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             }
             
             var that = this;
-            return that.get("", options, function(err, response) {
+            var req = that.get("", options, function(err, response) {
                 if (err) {
                     callback(err);
                 }
@@ -2891,10 +2910,21 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     that._load(response.data);
                     
                     if (that.refreshOnEntityInstantiation && recursive) {
+                        var wasAbortedAlready = false;
                         var fns = [];
                         utils.forEach(that._entities, function(entity) {
                             fns.push(function(done) {
-                                entity.refresh({recursive: true}, done); 
+                                entity.refresh({recursive: true}, function() {
+                                    if (req.wasAborted) {
+                                        if (!wasAbortedAlready) {
+                                            wasAbortedAlready = true;
+                                            callback("abort");    
+                                        }
+                                    }
+                                    else {
+                                        callback.apply(null, arguments);
+                                    }
+                                }); 
                             });
                         });
                         
@@ -2907,6 +2937,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     }
                 }
             });
+            
+            return req;
         },
         
         /**
@@ -2967,7 +2999,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     entity._load(props); 
                     
                     if (that.refreshOnEntityCreation) {
-                        entity.refresh(callback);
+                        entity.refresh(function() {
+                            if (req.wasAborted) {
+                                callback("abort");
+                            }
+                            else {
+                                callback.apply(null, arguments);
+                            }
+                        });
                     }
                     else {                   
                         callback(null, entity);
@@ -3237,15 +3276,24 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             if (!params.search) {
                 var update = this._super;
-                return this.refresh(function(err, search) {
+                var req = this.refresh(function(err, search) {
                     if (err) {
                         callback(err);
                     }
                     else {
                         params.search = search.properties().search;
-                        update.apply(search, [params, callback]);
+                        update.call(search, params, function() {
+                            if (req.wasAborted) {
+                                callback("abort");
+                            }
+                            else {
+                                callback.apply(null, arguments);
+                            }
+                        });
                     }
                 });
+                
+                return req;
             }
             else {
                 return this._super(params, callback);
@@ -3579,7 +3627,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     var props = {name: params.name};
                     
                     var entity = that.instantiateEntity(props);                    
-                    entity.refresh(callback);
+                    entity.refresh(function() {
+                        if (req.wasAborted) {
+                            callback("abort");
+                        }
+                        else {
+                            callback.apply(null, arguments);
+                        }
+                    });
                 }
             });
             
@@ -3994,15 +4049,24 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             callback = callback || function() {};
             
             var that = this;
-            return this.post("", {__stanza: stanzaName}, function(err, response) {
+            var req = this.post("", {__stanza: stanzaName}, function(err, response) {
                 if (err) {
                     callback(err);
                 }
                 else {
                     var entity = new root.PropertyStanza(that.service, that.name, stanzaName);
-                    entity.refresh(callback);
+                    entity.refresh(function() {
+                        if (req.wasAborted) {
+                            callback("abort");
+                        }
+                        else {
+                            callback.apply(null, arguments);
+                        }
+                    });
                 }
             });
+            
+            return req;
         }
     });
     
@@ -4098,15 +4162,24 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             callback = callback || function() {};
             
             var that = this;
-            return this.post("", {__conf: filename}, function(err, response) {
+            var req = this.post("", {__conf: filename}, function(err, response) {
                 if (err) {
                     callback(err);
                 }
                 else {
                     var entity = new root.PropertyFile(that.service, filename);
-                    entity.refresh(callback);
+                    entity.refresh(function() {
+                        if (req.wasAborted) {
+                            callback("abort");
+                        }
+                        else {
+                            callback.apply(null, arguments);
+                        }
+                    });
                 }
             });
+            
+            return req;
         }
     });
     
@@ -4330,15 +4403,24 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             callback = callback || function() {};
             
             var that = this;
-            return this.post("", {__conf: filename}, function(err, response) {
+            var req = this.post("", {__conf: filename}, function(err, response) {
                 if (err) {
                     callback(err);
                 }
                 else {
                     var entity = new root.ConfigurationFile(that.service, filename);
-                    entity.refresh(callback);
+                    entity.refresh(function() {
+                        if (req.wasAborted) {
+                            callback("abort");
+                        }
+                        else {
+                            callback.apply(null, arguments);
+                        }
+                    });
                 }
             });
+            
+            return req;
         }
     });
 
