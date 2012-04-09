@@ -2307,6 +2307,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             // properly when it is passed as a callback.
             this.get    = utils.bind(this, this.get);
             this.post   = utils.bind(this, this.post);
+            this.del    = utils.bind(this, this.del);
         },
 
         /**
@@ -2449,6 +2450,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this._load       = utils.bind(this, this._load);
             this.refresh     = utils.bind(this, this.refresh);
             this.properties  = utils.bind(this, this.properties);
+            this.state       = utils.bind(this, this.state);
             this.path        = utils.bind(this, this.path);
         },
         
@@ -2557,10 +2559,16 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
-            this._load      = utils.bind(this, this._load);
-            this.refresh    = utils.bind(this, this.refresh);
-            this.remove     = utils.bind(this, this.remove);
-            this.update     = utils.bind(this, this.update);
+            this._load     = utils.bind(this, this._load);
+            this.refresh   = utils.bind(this, this.refresh);
+            this.remove    = utils.bind(this, this.remove);
+            this.update    = utils.bind(this, this.update);
+            this.fields    = utils.bind(this, this.fields);
+            this.links     = utils.bind(this, this.links);
+            this.acl       = utils.bind(this, this.acl);
+            this.author    = utils.bind(this, this.author);
+            this.updated   = utils.bind(this, this.updated);
+            this.published = utils.bind(this, this.published);
         },
         
         /**
@@ -2787,12 +2795,13 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
-            this._load    = utils.bind(this, this._load);
-            this.refresh  = utils.bind(this, this.refresh);
-            this.create   = utils.bind(this, this.create);
-            this.list     = utils.bind(this, this.list);
-            this.contains = utils.bind(this, this.contains);
-            this.item     = utils.bind(this, this.item);
+            this._load             = utils.bind(this, this._load);
+            this.refresh           = utils.bind(this, this.refresh);
+            this.create            = utils.bind(this, this.create);
+            this.list              = utils.bind(this, this.list);
+            this.contains          = utils.bind(this, this.contains);
+            this.item              = utils.bind(this, this.item);
+            this.instantiateEntity = utils.bind(this, this.instantiateEntity);
             
             this._entities = [];
             this._entitiesByName = {};            
@@ -5092,6 +5101,13 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      * @globals splunkjs.Async
      */
     root.parallel = function(tasks, callback) {
+        // Allow for just a list of functions
+        if (arguments.length > 1 && utils.isFunction(arguments[0])) {
+            var args = utils.toArray(arguments);
+            tasks = args.slice(0, args.length - 1);
+            callback = args[args.length - 1];
+        }
+        
         tasks = tasks || [];
         callback = callback || function() {};
         
@@ -5173,7 +5189,15 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      *
      * @globals splunkjs.Async
      */
-    root.series = function(tasks, callback) {        
+    root.series = function(tasks, callback) {
+        // Allow for just a list of functions
+        if (arguments.length > 1 && utils.isFunction(arguments[0])) {
+            var args = utils.toArray(arguments);
+            tasks = args.slice(0, args.length - 1);
+            callback = args[args.length - 1];
+        }
+        
+        tasks = tasks || [];
         callback = callback || function() {};
         
         var innerSeries = function(task, restOfTasks, resultsSoFar, callback) {
@@ -5238,6 +5262,7 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      * @globals splunkjs.Async
      */
     root.parallelMap = function(vals, fn, callback) {     
+        vals = vals || [];
         callback = callback || function() {};
         
         var tasks = [];
@@ -5293,6 +5318,7 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      * @globals splunkjs.Async
      */
     root.seriesMap = function(vals, fn, callback) {     
+        vals = vals || [];
         callback = callback || function() {};
         
         var tasks = [];
@@ -5355,7 +5381,8 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      *
      * @globals splunkjs.Async
      */
-    root.parallelEach = function(vals, fn, callback) {     
+    root.parallelEach = function(vals, fn, callback) {  
+        vals = vals || [];   
         callback = callback || function() {};
         
         root.parallelMap(vals, fn, function(err, result) {
@@ -5393,7 +5420,8 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      *
      * @globals splunkjs.Async
      */
-    root.seriesEach = function(vals, fn, callback) {     
+    root.seriesEach = function(vals, fn, callback) {    
+        vals = vals || []; 
         callback = callback || function() {};
         
         root.seriesMap(vals, fn, function(err, result) {
@@ -5440,6 +5468,14 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      * @globals splunkjs.Async
      */
     root.chain = function(tasks, callback) {
+        // Allow for just a list of functions
+        if (arguments.length > 1 && utils.isFunction(arguments[0])) {
+            var args = utils.toArray(arguments);
+            tasks = args.slice(0, args.length - 1);
+            callback = args[args.length - 1];
+        }
+        
+        tasks = tasks || [];
         callback = callback || function() {};
         
         if (!tasks.length) {
