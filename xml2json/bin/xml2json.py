@@ -243,9 +243,6 @@ def from_entry(root, messages):
             elif k == "eai:attributes":
                 entry["fields"] = from_attributes(contents[k])
                 del contents[k]
-            elif k == "messages" and isinstance(contents[k], dict):
-                combine_messages(messages, contents[k])
-                del contents[k]
                 
     # Get the links
     links = {}
