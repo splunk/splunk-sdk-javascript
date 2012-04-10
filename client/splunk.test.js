@@ -451,7 +451,8 @@ require.define("/splunk.js", function (require, module, exports, __dirname, __fi
         Async           : require('./lib/async'),
         Paths           : require('./lib/paths').Paths,
         Class           : require('./lib/jquery.class').Class,
-        Searcher        : require('./lib/searcher.js')
+        Searcher        : require('./lib/searcher.js'),
+        StormService    : require('./lib/storm.js')
     };
     
     if (typeof(window) === 'undefined') {
@@ -1114,14 +1115,16 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
             
             params = params || {};
             
-            this.scheme     = params.scheme || "https";
-            this.host       = params.host || "localhost";
-            this.port       = params.port || 8089;
-            this.username   = params.username || null;  
-            this.password   = params.password || null;  
-            this.owner      = params.owner;  
-            this.app        = params.app;  
-            this.sessionKey = params.sessionKey || "";
+            this.scheme        = params.scheme || "https";
+            this.host          = params.host || "localhost";
+            this.port          = params.port || 8089;
+            this.username      = params.username || null;  
+            this.password      = params.password || null;  
+            this.owner         = params.owner;  
+            this.app           = params.app;  
+            this.sessionKey    = params.sessionKey || "";
+            this.authorization = params.authorization || "Splunk";
+            this.paths         = params.paths || Paths;
             
             if (!http) {
                 // If there is no HTTP implementation set, we check what platform
@@ -1166,7 +1169,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
          */
         _headers: function (headers) {
             headers = headers || {};
-            headers["Authorization"] = "Splunk " + this.sessionKey;
+            headers["Authorization"] = this.authorization + " " + this.sessionKey;
             return headers;
         },
 
@@ -1240,7 +1243,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
          */
         login: function(callback) {
             var that = this;
-            var url = Paths.login;
+            var url = this.paths.login;
             var params = { username: this.username, password: this.password };
 
             callback = callback || function() {};
@@ -1402,7 +1405,11 @@ require.define("/lib/paths.js", function (require, module, exports, __dirname, _
         views: "data/ui/views",
         
         currentUser: "/services/authentication/current-context",
-        submitEvent: "receivers/simple"
+        submitEvent: "receivers/simple",
+        
+        storm: {
+            submitEvent: "/inputs/http"
+        }
     };
 })();
 });
@@ -1744,7 +1751,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
                 contentType = utils.trim(response.headers["content-type"] || response.headers["Content-Type"]);
             }
 
-            if (contentType === "application/json") {
+            if (utils.startsWith(contentType, "application/json")) {
                 json = this.parseJson(data) || {};
             }
 
@@ -2374,7 +2381,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             callback = callback || function() {};
             params = params || {};
             
-            var path = Paths.submitEvent + "?" + Http.encode(params);
+            var path = this.paths.submitEvent + "?" + Http.encode(params);
             var method = "POST";
             var headers = {};
             var body = event;
@@ -2384,7 +2391,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 } 
                 else {
-                    callback(null, response.data.entry.content);
+                    // TODO
+                    // Extract the content (format undecided)
+                    var content = response.data.entry ? response.data.entry.content : response.data;
+                    callback(null, content);
                 }
             });
             
@@ -5959,6 +5969,320 @@ require.define("/lib/searcher.js", function (require, module, exports, __dirname
 })();
 });
 
+require.define("/lib/storm.js", function (require, module, exports, __dirname, __filename) {
+/*!*/
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+(function() {
+    "use strict";
+    
+    var Service         = require('./service');
+    var Http            = require('./http').Http;
+    var Paths           = require('./paths').Paths;
+    var utils           = require('./utils');
+    var base64          = require('../contrib/base64');
+
+    var root = exports || this;
+    var StormService = null;
+    
+    /**
+     * splunkjs.StormService
+     * 
+     * Root access point to the Splunk Storm REST API
+     *
+     * @moduleRoot splunkjs.StormService
+     * @extends splunkjs.Service
+     */
+    module.exports = root = StormService = Service.extend({
+        init: function(http, params) {
+            if (!(http instanceof Http) && !params) {
+                // Move over the params
+                params = http;
+                http = null;
+            }
+            
+            params = params || {};
+            
+            var username = params.token || params.username || null;
+            var password = "x";
+            
+            // Setup the parameters
+            params.paths         = Paths.storm;
+            params.scheme        = "https";
+            params.host          = "api.splunkstorm.com";
+            params.port          = 443;
+            params.sessionKey    = base64.encode(username + ":x");
+            params.authorization = "Basic";
+            
+            // Initialize
+            this._super.call(this, http, params);
+            
+            // Override computed parameters
+            this.prefix = this.scheme + "://" + this.host + ":" + this.port + "/1";
+        },
+        
+        log: function(event, params, callback) {
+            if (!callback && utils.isFunction(params)) {
+                callback = params;
+                params = {};
+            }
+            
+            callback = callback || function() {};
+            params = params || {};
+            
+            if (!params.project && !params.index) {
+                throw new Error("Cannot submit events to Storm without specifying a project");
+            }
+            
+            if (params.project) {
+                params.index = params.project;
+                delete params["project"];
+            }
+            
+            if (utils.isObject(event)) {
+                event = JSON.stringify(event);
+            }
+            
+            return this._super(event, params, callback);
+        }
+    });  
+})();
+});
+
+require.define("/contrib/base64.js", function (require, module, exports, __dirname, __filename) {
+/*
+Copyright (c) 2008 Fred Palmer fred.palmer_at_gmail.com
+
+Permission is hereby granted, free of charge, to any person
+obtaining a copy of this software and associated documentation
+files (the "Software"), to deal in the Software without
+restriction, including without limitation the rights to use,
+copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the
+Software is furnished to do so, subject to the following
+conditions:
+
+The above copyright notice and this permission notice shall be
+included in all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+OTHER DEALINGS IN THE SOFTWARE.
+*/
+
+(function() {
+    function StringBuffer()
+    { 
+        this.buffer = []; 
+    } 
+    
+    StringBuffer.prototype.append = function append(string)
+    { 
+        this.buffer.push(string); 
+        return this; 
+    }; 
+    
+    StringBuffer.prototype.toString = function toString()
+    { 
+        return this.buffer.join(""); 
+    }; 
+    
+    var Base64 = module.exports = 
+    {
+        codex : "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
+    
+        encode : function (input)
+        {
+            var output = new StringBuffer();
+    
+            var enumerator = new Utf8EncodeEnumerator(input);
+            while (enumerator.moveNext())
+            {
+                var chr1 = enumerator.current;
+    
+                enumerator.moveNext();
+                var chr2 = enumerator.current;
+    
+                enumerator.moveNext();
+                var chr3 = enumerator.current;
+    
+                var enc1 = chr1 >> 2;
+                var enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
+                var enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
+                var enc4 = chr3 & 63;
+    
+                if (isNaN(chr2))
+                {
+                    enc3 = enc4 = 64;
+                }
+                else if (isNaN(chr3))
+                {
+                    enc4 = 64;
+                }
+    
+                output.append(this.codex.charAt(enc1) + this.codex.charAt(enc2) + this.codex.charAt(enc3) + this.codex.charAt(enc4));
+            }
+    
+            return output.toString();
+        },
+    
+        decode : function (input)
+        {
+            var output = new StringBuffer();
+    
+            var enumerator = new Base64DecodeEnumerator(input);
+            while (enumerator.moveNext())
+            {
+                var charCode = enumerator.current;
+    
+                if (charCode < 128)
+                    output.append(String.fromCharCode(charCode));
+                else if ((charCode > 191) && (charCode < 224))
+                {
+                    enumerator.moveNext();
+                    var charCode2 = enumerator.current;
+    
+                    output.append(String.fromCharCode(((charCode & 31) << 6) | (charCode2 & 63)));
+                }
+                else
+                {
+                    enumerator.moveNext();
+                    var charCode2 = enumerator.current;
+    
+                    enumerator.moveNext();
+                    var charCode3 = enumerator.current;
+    
+                    output.append(String.fromCharCode(((charCode & 15) << 12) | ((charCode2 & 63) << 6) | (charCode3 & 63)));
+                }
+            }
+    
+            return output.toString();
+        }
+    }
+    
+    
+    function Utf8EncodeEnumerator(input)
+    {
+        this._input = input;
+        this._index = -1;
+        this._buffer = [];
+    }
+    
+    Utf8EncodeEnumerator.prototype =
+    {
+        current: Number.NaN,
+    
+        moveNext: function()
+        {
+            if (this._buffer.length > 0)
+            {
+                this.current = this._buffer.shift();
+                return true;
+            }
+            else if (this._index >= (this._input.length - 1))
+            {
+                this.current = Number.NaN;
+                return false;
+            }
+            else
+            {
+                var charCode = this._input.charCodeAt(++this._index);
+    
+                // "\r\n" -> "\n"
+                //
+                if ((charCode == 13) && (this._input.charCodeAt(this._index + 1) == 10))
+                {
+                    charCode = 10;
+                    this._index += 2;
+                }
+    
+                if (charCode < 128)
+                {
+                    this.current = charCode;
+                }
+                else if ((charCode > 127) && (charCode < 2048))
+                {
+                    this.current = (charCode >> 6) | 192;
+                    this._buffer.push((charCode & 63) | 128);
+                }
+                else
+                {
+                    this.current = (charCode >> 12) | 224;
+                    this._buffer.push(((charCode >> 6) & 63) | 128);
+                    this._buffer.push((charCode & 63) | 128);
+                }
+    
+                return true;
+            }
+        }
+    }
+    
+    function Base64DecodeEnumerator(input)
+    {
+        this._input = input;
+        this._index = -1;
+        this._buffer = [];
+    }
+    
+    Base64DecodeEnumerator.prototype =
+    {
+        current: 64,
+    
+        moveNext: function()
+        {
+            if (this._buffer.length > 0)
+            {
+                this.current = this._buffer.shift();
+                return true;
+            }
+            else if (this._index >= (this._input.length - 1))
+            {
+                this.current = 64;
+                return false;
+            }
+            else
+            {
+                var enc1 = Base64.codex.indexOf(this._input.charAt(++this._index));
+                var enc2 = Base64.codex.indexOf(this._input.charAt(++this._index));
+                var enc3 = Base64.codex.indexOf(this._input.charAt(++this._index));
+                var enc4 = Base64.codex.indexOf(this._input.charAt(++this._index));
+    
+                var chr1 = (enc1 << 2) | (enc2 >> 4);
+                var chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
+                var chr3 = ((enc3 & 3) << 6) | enc4;
+    
+                this.current = chr1;
+    
+                if (enc3 != 64)
+                    this._buffer.push(chr2);
+    
+                if (enc4 != 64)
+                    this._buffer.push(chr3);
+    
+                return true;
+            }
+        }
+    };
+})();
+});
+
 require.define("/tests/test_async.js", function (require, module, exports, __dirname, __filename) {
 
 // Copyright 2011 Splunk, Inc.
@@ -8784,6 +9108,111 @@ require.define("/tests/utils.js", function (require, module, exports, __dirname,
         );
     };
 })();
+});
+
+require.define("/tests/test_storm.js", function (require, module, exports, __dirname, __filename) {
+
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+exports.setup = function(http) {
+    var splunkjs    = require('../splunk');
+    var utils       = splunkjs.Utils;
+    var Async       = splunkjs.Async;
+    var tutils      = require('./utils');
+
+    splunkjs.Logger.setLevel("ALL");
+    var idCounter = 0;
+    var getNextId = function() {
+        return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
+    };
+    
+    var token = "p-n8SwuWEqPlyOXdDU4PjxavFdAn1CnJea9LirgTvzmIhMEBys6w7UJUCtxp_7g7Q9XopR5dW0w=";
+    var project = "0e8a2df0834211e1a6fe123139335741";
+    var svc = null;
+    
+    if (http) {
+        svc = new splunkjs.StormService(http, {token: token});
+    }
+    else {
+        svc = new splunkjs.StormService({token: token});
+    }
+
+    return {
+        "Storm Input Tests": {
+            setUp: function(finished) {
+                this.service = svc;
+                finished();
+            },
+            
+            "Callback#Submit event no index error 1": function(test) {
+                var didFail = false;
+                try {
+                    this.service.log("SHOULDNT WORK", {sourcetype: "sdk-test"}, function(err) {
+                        test.ok(false);
+                    });
+                }
+                catch(ex) {
+                    didFail = true;
+                }
+                
+                test.ok(didFail);
+                test.done();
+            },
+            
+            "Callback#Submit event no index error 2": function(test) {
+                var didFail = false;
+                try {
+                    this.service.log("SHOULDNT WORK", function(err) {
+                        test.ok(false);
+                    });
+                } 
+                catch(ex) {
+                    didFail = true;
+                }
+                
+                test.ok(didFail);
+                test.done();
+            },
+            
+            "Callback#Submit event text": function(test) {
+                var didFail = false;
+                var message = "GO GO SDK -- " + getNextId();
+                this.service.log(message, {sourcetype: "sdk-test", project: project}, function(err, data) {
+                    test.strictEqual(data.length, message.length);
+                    test.done();
+                });
+            },
+            
+            "Callback#Submit event json": function(test) {
+                var didFail = false;
+                var message = { id: getNextId() };
+                this.service.log(message, {sourcetype: "json", project: project}, function(err, data) {
+                    test.strictEqual(data.length, JSON.stringify(message).length);
+                    test.done();
+                });
+            }
+        }
+    };
+};
+
+if (module === require.main) {
+    var suite       = exports.setup();
+    var test        = require('../contrib/nodeunit/test_reporter');
+    
+    test.run([{"Tests": suite}]);
+}
 });
 
 require.define("/tests/test_searcher.js", function (require, module, exports, __dirname, __filename) {
@@ -12085,6 +12514,7 @@ window.SplunkTest = {
     Http     : require('../tests/test_http'),
     Context  : require('../tests/test_context'),
     Service  : require('../tests/test_service'),
+    Storm    : require('../tests/test_storm'),
     Searcher : require('../tests/test_searcher'),
     Examples : require('../tests/test_examples')
 };
