@@ -29,7 +29,8 @@
         Async           : require('./lib/async'),
         Paths           : require('./lib/paths').Paths,
         Class           : require('./lib/jquery.class').Class,
-        Searcher        : require('./lib/searcher.js')
+        Searcher        : require('./lib/searcher.js'),
+        StormService    : require('./lib/storm.js')
     };
     
     if (typeof(window) === 'undefined') {
