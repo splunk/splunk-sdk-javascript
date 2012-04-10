@@ -97,7 +97,7 @@
                     headers: {
                         "Content-Length": req.headers["content-length"],
                         "Content-Type": req.headers["content-type"],
-                        "Authorization": req.headers["authorization"],
+                        "Authorization": req.headers["authorization"]
                     },
                     body: body,
                     jar: false
@@ -394,7 +394,7 @@
                     "})();"
                 ].join("\n");
                 return code;
-            },
+            }
         });
 
         var js = bundle.bundle();

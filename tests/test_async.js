@@ -461,7 +461,7 @@ exports.setup = function() {
             
             var augmented = Async.augment(callback, 2);
             augmented(1);
-        },
+        }
     };
 };
 

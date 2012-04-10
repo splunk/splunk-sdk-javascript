@@ -2347,6 +2347,48 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             });
             
             return req;
+        },
+        
+        /**
+         * Log an event to splunk
+         *
+         * Example:
+         *
+         *      service.log("A new event", {index: "_internal", sourcetype: "mysourcetype"}, function(err, result) {
+         *          console.log("Submitted event: ", result);
+         *      });
+         *
+         * @param {String} event The text for this event
+         * @param {Object} params A dictionary of parameters for indexing: index, host, host_regex, source, sourcetype
+         * @param {Function} callback A callback when the event was submitted: `(err, result)`
+         *
+         * @endpoint receivers/simple
+         * @module splunkjs.Service
+         */
+        log: function(event, params, callback) {
+            if (!callback && utils.isFunction(params)) {
+                callback = params;
+                params = {};
+            }
+            
+            callback = callback || function() {};
+            params = params || {};
+            
+            var path = Paths.submitEvent + "?" + Http.encode(params);
+            var method = "POST";
+            var headers = {};
+            var body = event;
+            
+            var req = this.request(path, method, headers, body, function(err, response) {
+                if (err) {
+                    callback(err);
+                } 
+                else {
+                    callback(null, response.data.entry.content);
+                }
+            });
+            
+            return req;
         }
     });
 
@@ -2651,6 +2693,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.author    = utils.bind(this, this.author);
             this.updated   = utils.bind(this, this.updated);
             this.published = utils.bind(this, this.published);
+            
+            // Initial values
+            this._properties = {};
+            this._fields     = {};
+            this._acl        = {};
+            this._links      = {};
         },
         
         /**
@@ -2668,7 +2716,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             // Take out the entity-specific content
             this._properties = properties.content   || {};
-            this._fields     = properties.fields    || {};
+            this._fields     = properties.fields    || this._fields || {};
             this._acl        = properties.acl       || {};
             this._links      = properties.links     || {};
             this._author     = properties.author    || null;
@@ -2893,8 +2941,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.item              = utils.bind(this, this.item);
             this.instantiateEntity = utils.bind(this, this.instantiateEntity);
             
-            this._entities = [];
-            this._entitiesByName = {};            
+            // Initial values
+            this._entities       = [];
+            this._entitiesByName = {};    
+            this._properties     = {};
+            this._paging         = {};
+            this._links          = {}; 
         },
         
         /**
@@ -2939,8 +2991,44 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     entitiesByName[entity.name] = [entity];
                 }
             }
-            this._entities = entities;
+            this._entities       = entities;
             this._entitiesByName = entitiesByName;
+            this._paging         = properties.paging    || {};
+            this._links          = properties.links     || {};
+            this._updated        = properties.updated   || null;
+        },
+        
+        /**
+         * Retrieve the links information for this collection
+         *
+         * @return {Object} The links for this collection
+         *
+         * @module splunkjs.Service.Collection
+         */
+        links: function() {
+            return this._links;
+        },
+        
+        /**
+         * Retrieve the author information for this collection
+         *
+         * @return {String} The author for this collection
+         *
+         * @module splunkjs.Service.Collection
+         */
+        paging: function() {
+            return this._paging;
+        },
+        
+        /**
+         * Retrieve the updated time for this collection
+         *
+         * @return {String} The updated time for this collection
+         *
+         * @module splunkjs.Service.Collection
+         */
+        updated: function() {
+            return this._updated;
         },
         
         /**
@@ -3185,7 +3273,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             else {
                 return null;
             }
-        },
+        }
     });
     
     /**
@@ -3795,7 +3883,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */  
         init: function(service, namespace) {
             this._super(service, this.path(), namespace);
-        },
+        }
     });
     
     /**
@@ -3854,28 +3942,21 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @module splunkjs.Service.Index
          */
         submitEvent: function(event, params, callback) {
+            if (!callback && utils.isFunction(params)) {
+                callback = params;
+                params = {};
+            }
+            
             callback = callback || function() {};
             params = params || {};
             
-            // Add the index name to the parameters
+            // Add the index name
             params["index"] = this.name;
             
-            var path = Paths.submitEvent + "?" + Http.encode(params);
-            var method = "POST";
-            var headers = {};
-            var body = event;
-            
             var that = this;
-            var req = this.service.request(path, method, headers, body, function(err, response) {
-                if (err) {
-                    callback(err);
-                } 
-                else {
-                    callback(null, response.data.entry.content, that);
-                }
+            return this.service.log(event, params, function(err, result) {
+                callback(err, result, that); 
             });
-            
-            return req;
         },
         
         remove: function() {
@@ -6342,7 +6423,7 @@ exports.setup = function() {
             
             var augmented = Async.augment(callback, 2);
             augmented(1);
-        },
+        }
     };
 };
 
@@ -6826,7 +6907,7 @@ exports.setup = function(svc) {
             });
             
             req.abort();
-        },
+        }
     };
 };
 
@@ -6848,7 +6929,7 @@ if (module === require.main) {
         host: cmdline.opts.host,
         port: cmdline.opts.port,
         username: cmdline.opts.username,
-        password: cmdline.opts.password,
+        password: cmdline.opts.password
     });
     
     var suite = exports.setup(svc);
@@ -8013,6 +8094,9 @@ exports.setup = function(svc) {
                 var searches = this.service.savedSearches();
                 searches.refresh({offset: 2, count: 1}, function(err, searches) {
                     var savedSearches = searches.list();
+                    test.strictEqual(searches.paging().offset, 2);
+                    test.strictEqual(searches.paging().count, 1);
+                    test.strictEqual(searches.paging().page, 1);
                     test.strictEqual(savedSearches.length, 1);
                     
                     for(var i = 0; i < savedSearches.length; i++) {
@@ -8061,6 +8145,12 @@ exports.setup = function(svc) {
                             test.strictEqual(search.name, name); 
                             test.strictEqual(search.properties().search, updatedSearch);
                             test.strictEqual(search.properties().description, updatedDescription);
+                            
+                            search.refresh(done);
+                        },
+                        function(search, done) {
+                            // Verify that we have the required fields
+                            test.strictEqual(search.fields().required[0], "search");
                             
                             search.remove(done);
                         }
@@ -8203,7 +8293,7 @@ exports.setup = function(svc) {
                     test.ok(!err);
                     test.done();
                 });
-            },
+            }
         },
         
         "Configuration Tests": {        
@@ -8319,7 +8409,7 @@ exports.setup = function(svc) {
                     test.ok(!err);
                     test.done();
                 });
-            },
+            }
         },
         
         "Index Tests": {      
@@ -8405,11 +8495,38 @@ exports.setup = function(svc) {
                 );
             },
                    
+            "Callback#Service submit event": function(test) {
+                var message = "Hello World -- " + getNextId();
+                var sourcetype = "sdk-tests";
+                
+                var service = this.service;
+                var indexName = this.indexName;
+                Async.chain(
+                    function(done) {
+                        service.log(message, {sourcetype: sourcetype, index: indexName}, done);
+                    },
+                    function(eventInfo, done) {
+                        test.ok(eventInfo);
+                        test.strictEqual(eventInfo.sourcetype, sourcetype);
+                        test.strictEqual(eventInfo.bytes, message.length);
+                        test.strictEqual(eventInfo._index, indexName);
+                        
+                        // We could poll to make sure the index has eaten up the event,
+                        // but unfortunately this can take an unbounded amount of time.
+                        // As such, since we got a good response, we'll just be done with it.
+                        done();
+                    },
+                    function(err) {
+                        test.ok(!err);
+                        test.done(); 
+                    }
+                );
+            },
+                   
             "Callback#Index submit event": function(test) {
                 var message = "Hello World -- " + getNextId();
                 var sourcetype = "sdk-tests";
                 
-                var originalEventCount = null;
                 var indexName = this.indexName;
                 var indexes = this.service.indexes();
                 Async.chain([
@@ -8419,10 +8536,7 @@ exports.setup = function(svc) {
                         function(indexes, done) {
                             var index = indexes.contains(indexName);
                             test.ok(index);
-                            
-                            test.strictEqual(index.name, indexName);
-                            originalEventCount = index.properties().totalEventCount;
-                            
+                            test.strictEqual(index.name, indexName);                            
                             index.submitEvent(message, {sourcetype: sourcetype}, done);
                         },
                         function(eventInfo, index, done) {
@@ -8435,7 +8549,7 @@ exports.setup = function(svc) {
                             // but unfortunately this can take an unbounded amount of time.
                             // As such, since we got a good response, we'll just be done with it.
                             done();
-                        },
+                        }
                     ],
                     function(err) {
                         test.ok(!err);
@@ -8854,7 +8968,7 @@ exports.setup = function(svc) {
                 test.ok(!err);
                 test.done();  
             });
-        },
+        }
     };
 };
 
@@ -8876,7 +8990,7 @@ if (module === require.main) {
         host: cmdline.opts.host,
         port: cmdline.opts.port,
         username: cmdline.opts.username,
-        password: cmdline.opts.password,
+        password: cmdline.opts.password
     });
     
     var suite = exports.setup(svc);
@@ -9420,7 +9534,7 @@ if (module === require.main) {
         host: cmdline.opts.host,
         port: cmdline.opts.port,
         username: cmdline.opts.username,
-        password: cmdline.opts.password,
+        password: cmdline.opts.password
     });
     
     var suite = exports.setup(svc, cmdline.opts);
@@ -10188,7 +10302,7 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
         "rt_maxblocksecs", "rt_indexfilter", "id", "status_buckets",
         "max_count", "max_time", "timeout", "auto_finalize_ec", "enable_lookups",
         "reload_macros", "reduce_freq", "spawn_process", "required_field_list",
-        "rf", "auto_cancel", "auto_pause",
+        "rf", "auto_cancel", "auto_pause"
     ];
     var FLAGS_EVENTS = [
         "offset", "count", "earliest_time", "latest_time", "search",
@@ -10997,7 +11111,7 @@ require.define("/examples/node/conf.js", function (require, module, exports, __d
                     callback(extractError(err));
                 }
             );
-        },
+        }
     });
 
     exports.main = function(argv, callback) {     

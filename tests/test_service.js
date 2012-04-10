@@ -1232,7 +1232,7 @@ exports.setup = function(svc) {
                     test.ok(!err);
                     test.done();
                 });
-            },
+            }
         },
         
         "Configuration Tests": {        
@@ -1348,7 +1348,7 @@ exports.setup = function(svc) {
                     test.ok(!err);
                     test.done();
                 });
-            },
+            }
         },
         
         "Index Tests": {      
@@ -1434,11 +1434,38 @@ exports.setup = function(svc) {
                 );
             },
                    
+            "Callback#Service submit event": function(test) {
+                var message = "Hello World -- " + getNextId();
+                var sourcetype = "sdk-tests";
+                
+                var service = this.service;
+                var indexName = this.indexName;
+                Async.chain(
+                    function(done) {
+                        service.log(message, {sourcetype: sourcetype, index: indexName}, done);
+                    },
+                    function(eventInfo, done) {
+                        test.ok(eventInfo);
+                        test.strictEqual(eventInfo.sourcetype, sourcetype);
+                        test.strictEqual(eventInfo.bytes, message.length);
+                        test.strictEqual(eventInfo._index, indexName);
+                        
+                        // We could poll to make sure the index has eaten up the event,
+                        // but unfortunately this can take an unbounded amount of time.
+                        // As such, since we got a good response, we'll just be done with it.
+                        done();
+                    },
+                    function(err) {
+                        test.ok(!err);
+                        test.done(); 
+                    }
+                );
+            },
+                   
             "Callback#Index submit event": function(test) {
                 var message = "Hello World -- " + getNextId();
                 var sourcetype = "sdk-tests";
                 
-                var originalEventCount = null;
                 var indexName = this.indexName;
                 var indexes = this.service.indexes();
                 Async.chain([
@@ -1448,10 +1475,7 @@ exports.setup = function(svc) {
                         function(indexes, done) {
                             var index = indexes.contains(indexName);
                             test.ok(index);
-                            
-                            test.strictEqual(index.name, indexName);
-                            originalEventCount = index.properties().totalEventCount;
-                            
+                            test.strictEqual(index.name, indexName);                            
                             index.submitEvent(message, {sourcetype: sourcetype}, done);
                         },
                         function(eventInfo, index, done) {
@@ -1464,7 +1488,7 @@ exports.setup = function(svc) {
                             // but unfortunately this can take an unbounded amount of time.
                             // As such, since we got a good response, we'll just be done with it.
                             done();
-                        },
+                        }
                     ],
                     function(err) {
                         test.ok(!err);

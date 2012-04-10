@@ -449,7 +449,7 @@
                     callback(extractError(err));
                 }
             );
-        },
+        }
     });
 
     exports.main = function(argv, callback) {     

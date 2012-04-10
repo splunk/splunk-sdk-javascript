@@ -179,7 +179,7 @@ exports.setup = function(svc) {
                 test.ok(!err);
                 test.done();  
             });
-        },
+        }
     };
 };
 
@@ -201,7 +201,7 @@ if (module === require.main) {
         host: cmdline.opts.host,
         port: cmdline.opts.port,
         username: cmdline.opts.username,
-        password: cmdline.opts.password,
+        password: cmdline.opts.password
     });
     
     var suite = exports.setup(svc);

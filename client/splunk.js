@@ -2277,6 +2277,48 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             });
             
             return req;
+        },
+        
+        /**
+         * Log an event to splunk
+         *
+         * Example:
+         *
+         *      service.log("A new event", {index: "_internal", sourcetype: "mysourcetype"}, function(err, result) {
+         *          console.log("Submitted event: ", result);
+         *      });
+         *
+         * @param {String} event The text for this event
+         * @param {Object} params A dictionary of parameters for indexing: index, host, host_regex, source, sourcetype
+         * @param {Function} callback A callback when the event was submitted: `(err, result)`
+         *
+         * @endpoint receivers/simple
+         * @module splunkjs.Service
+         */
+        log: function(event, params, callback) {
+            if (!callback && utils.isFunction(params)) {
+                callback = params;
+                params = {};
+            }
+            
+            callback = callback || function() {};
+            params = params || {};
+            
+            var path = Paths.submitEvent + "?" + Http.encode(params);
+            var method = "POST";
+            var headers = {};
+            var body = event;
+            
+            var req = this.request(path, method, headers, body, function(err, response) {
+                if (err) {
+                    callback(err);
+                } 
+                else {
+                    callback(null, response.data.entry.content);
+                }
+            });
+            
+            return req;
         }
     });
 
@@ -2581,6 +2623,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.author    = utils.bind(this, this.author);
             this.updated   = utils.bind(this, this.updated);
             this.published = utils.bind(this, this.published);
+            
+            // Initial values
+            this._properties = {};
+            this._fields     = {};
+            this._acl        = {};
+            this._links      = {};
         },
         
         /**
@@ -2598,7 +2646,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             // Take out the entity-specific content
             this._properties = properties.content   || {};
-            this._fields     = properties.fields    || {};
+            this._fields     = properties.fields    || this._fields || {};
             this._acl        = properties.acl       || {};
             this._links      = properties.links     || {};
             this._author     = properties.author    || null;
@@ -2823,8 +2871,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.item              = utils.bind(this, this.item);
             this.instantiateEntity = utils.bind(this, this.instantiateEntity);
             
-            this._entities = [];
-            this._entitiesByName = {};            
+            // Initial values
+            this._entities       = [];
+            this._entitiesByName = {};    
+            this._properties     = {};
+            this._paging         = {};
+            this._links          = {}; 
         },
         
         /**
@@ -2869,8 +2921,44 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     entitiesByName[entity.name] = [entity];
                 }
             }
-            this._entities = entities;
+            this._entities       = entities;
             this._entitiesByName = entitiesByName;
+            this._paging         = properties.paging    || {};
+            this._links          = properties.links     || {};
+            this._updated        = properties.updated   || null;
+        },
+        
+        /**
+         * Retrieve the links information for this collection
+         *
+         * @return {Object} The links for this collection
+         *
+         * @module splunkjs.Service.Collection
+         */
+        links: function() {
+            return this._links;
+        },
+        
+        /**
+         * Retrieve the author information for this collection
+         *
+         * @return {String} The author for this collection
+         *
+         * @module splunkjs.Service.Collection
+         */
+        paging: function() {
+            return this._paging;
+        },
+        
+        /**
+         * Retrieve the updated time for this collection
+         *
+         * @return {String} The updated time for this collection
+         *
+         * @module splunkjs.Service.Collection
+         */
+        updated: function() {
+            return this._updated;
         },
         
         /**
@@ -3115,7 +3203,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             else {
                 return null;
             }
-        },
+        }
     });
     
     /**
@@ -3725,7 +3813,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */  
         init: function(service, namespace) {
             this._super(service, this.path(), namespace);
-        },
+        }
     });
     
     /**
@@ -3784,28 +3872,21 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @module splunkjs.Service.Index
          */
         submitEvent: function(event, params, callback) {
+            if (!callback && utils.isFunction(params)) {
+                callback = params;
+                params = {};
+            }
+            
             callback = callback || function() {};
             params = params || {};
             
-            // Add the index name to the parameters
+            // Add the index name
             params["index"] = this.name;
             
-            var path = Paths.submitEvent + "?" + Http.encode(params);
-            var method = "POST";
-            var headers = {};
-            var body = event;
-            
             var that = this;
-            var req = this.service.request(path, method, headers, body, function(err, response) {
-                if (err) {
-                    callback(err);
-                } 
-                else {
-                    callback(null, response.data.entry.content, that);
-                }
+            return this.service.log(event, params, function(err, result) {
+                callback(err, result, that); 
             });
-            
-            return req;
         },
         
         remove: function() {

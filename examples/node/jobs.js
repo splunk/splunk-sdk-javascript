@@ -26,7 +26,7 @@
         "rt_maxblocksecs", "rt_indexfilter", "id", "status_buckets",
         "max_count", "max_time", "timeout", "auto_finalize_ec", "enable_lookups",
         "reload_macros", "reduce_freq", "spawn_process", "required_field_list",
-        "rf", "auto_cancel", "auto_pause",
+        "rf", "auto_cancel", "auto_pause"
     ];
     var FLAGS_EVENTS = [
         "offset", "count", "earliest_time", "latest_time", "search",
