@@ -1119,7 +1119,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
             
             if (utils.startsWith(path, "/")) {
                 return path;
-            }  
+            }
 
             // If we don't have an app name (explicitly or implicitly), we default to /services/
             if (!namespace.app && !this.app && namespace.sharing !== root.Sharing.SYSTEM) {
@@ -1327,11 +1327,13 @@ require.define("/lib/paths.js", function (require, module, exports, __dirname, _
         login: "/services/auth/login",
         messages: "messages",
         passwords: "admin/passwords",
+        parser: "search/parser",
         properties: "properties",
         roles: "authentication/roles",
         savedSearches: "saved/searches",
         settings: "server/settings",
         users: "/services/authentication/users",
+        typeahead: "search/typeahead",
         views: "data/ui/views",
         
         currentUser: "/services/authentication/current-context",
@@ -2305,6 +2307,75 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             var serverInfo = new root.ServerInfo(this);
             return serverInfo.refresh(callback);
+        },
+        
+        /**
+         * Parse a search string
+         *
+         * Example:
+         *
+         *      service.parse("search index=_internal | head 1", function(err, parse) {
+         *          console.log("Commands: ", parse.commands);
+         *      });
+         *
+         * @param {String} query The search query to parse
+         * @param {Object} params An object of options for the parser
+         * @param {Function} callback A callback with the parse info: `(err, parse)`
+         *
+         * @endpoint search/parser
+         * @module splunkjs.Service
+         */
+        parse: function(query, params, callback) {
+            if (!callback && utils.isFunction(params)) {
+                callback = params;
+                params = {};
+            }
+            
+            callback = callback || function() {};
+            params = params || {};
+            
+            params.q = query;
+            
+            return this.get(Paths.parser, params, function(err, response) {
+                if (err) {
+                    callback(err);
+                } 
+                else {
+                    var data = response.data;
+                    if (response.data.entry) {
+                        data = response.data.entry.content;
+                    }
+                    
+                    callback(null, data);
+                }
+            });
+        },
+        
+        typeahead: function(prefix, count, callback) {
+            if (!callback && utils.isFunction(count)) {
+                callback = count;
+                count = 10;
+            }
+            
+            callback = callback || function() {};
+            var params = {
+                count: count || 10,
+                prefix: prefix
+            };
+            
+            return this.get(Paths.typeahead, params, function(err, response) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    var data = response.data;
+                    if (response.data.entry) {
+                        data = response.data.entry.content;
+                    }
+                    
+                    callback(null, data);
+                }
+            });
         },
         
         /**

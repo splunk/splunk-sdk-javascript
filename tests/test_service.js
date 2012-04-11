@@ -1797,6 +1797,52 @@ exports.setup = function(svc) {
                     }
                 );
             }
+        },
+        
+        "Parser Tests": {
+            setUp: function(done) {
+                this.service = svc;
+                done();
+            },
+            
+            "Callback#Basic parse": function(test) {
+                var service = this.service;
+                
+                service.parse("search index=_internal | head 1", function(err, parse) {
+                    test.ok(!err);
+                    test.ok(parse);
+                    test.ok(parse.commands.length > 0); 
+                    test.done();
+                });
+            },
+            
+            "Callback#Parse error": function(test) {
+                var service = this.service;
+                
+                service.parse("ABCXYZ", function(err, parse) {
+                    test.ok(err);
+                    test.strictEqual(err.status, 400);
+                    test.done();
+                });
+            }
+        },
+        
+        "Typeahead Tests": {
+            setUp: function(done) {
+                this.service = svc;
+                done();
+            },
+            
+            "Callback#Basic typeahead": function(test) {
+                var service = this.service;
+                
+                service.typeahead("index=", 1, function(err, options) {
+                    test.ok(!err);
+                    test.ok(options);
+                    test.strictEqual(options.length, 1); 
+                    test.done();
+                });
+            }
         }
     };
 
