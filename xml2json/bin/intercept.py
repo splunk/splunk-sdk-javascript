@@ -19,12 +19,16 @@ class JsonIntercept(splunk.rest.BaseRestHandler):
         return uri
     
     def get_request(self):
+        headers = {}
+        for key, value in self.request["headers"].iteritems():
+            headers[key.lower()] = value
+                
         return {
             "path": self.request["path"],
             "get": self.request["query"],
             "post": self.request["form"],
             "payload": self.request["payload"],
-            "headers": self.request["headers"],
+            "headers": headers,
             "origin": self.request["remoteAddr"],
             "method": self.method,
             "base_path": self.get_basepath()

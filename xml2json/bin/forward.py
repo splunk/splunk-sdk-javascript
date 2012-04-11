@@ -76,18 +76,16 @@ def make_request(url, headers={}, get=None, post=None, payload=None, method={},
     
     if "authorization" in headers:
         del headers["authorization"]
-    if "Authorization" in headers:
-        del headers["Authorization"]
     
     auth = None
     if session_key:
         auth = "Splunk %s" % session_key
     if basic_auth:
         auth = basic_auth
-    headers["Authorization"] = auth
+    headers["authorization"] = auth
     
-    if not headers["Authorization"]:
-        del headers["Authorization"]
+    if not headers["authorization"]:
+        del headers["authorization"]
     
     if get:
         get = dict([(k,v) for (k,v) in get.items() if v != None])
