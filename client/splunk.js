@@ -1314,7 +1314,7 @@ require.define("/lib/paths.js", function (require, module, exports, __dirname, _
         deploymentTenants: "deployment/tenants",
         eventTypes: "saved/eventTypes",
         indexes: "data/indexes",
-        info: "server/info",
+        info: "/services/server/info",
         inputs: null,
         jobs: "search/jobs",
         licenseGroups: "licenser/groups",
@@ -2287,6 +2287,27 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
+         * Get the server info
+         *
+         * Example:
+         *
+         *      service.serverInfo(function(err, info) {
+         *          console.log("Splunk Version: ", info.properties().version);
+         *      });
+         *
+         * @param {Function} callback A callback with the server info: `(err, info)`
+         *
+         * @endpoint server/info
+         * @module splunkjs.Service
+         */
+        serverInfo: function(callback) {
+            callback = callback || function() {};
+            
+            var serverInfo = new root.ServerInfo(this);
+            return serverInfo.refresh(callback);
+        },
+        
+        /**
          * Log an event to splunk
          *
          * Example:
@@ -2633,6 +2654,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.author    = utils.bind(this, this.author);
             this.updated   = utils.bind(this, this.updated);
             this.published = utils.bind(this, this.published);
+            this.enable    = utils.bind(this, this.enable);
+            this.disable   = utils.bind(this, this.disable);
+            this.reload    = utils.bind(this, this.reload);
             
             // Initial values
             this._properties = {};
@@ -2821,6 +2845,78 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             });
             
             return req;
+        },
+        
+        /**
+         * Disable the entity
+         *
+         * This will disable the entity on the server.
+         *
+         * @param {Function} callback A callback when the object is disabled: `(err, entity)`
+         *
+         * @module splunkjs.Service.Entity
+         * @protected
+         */
+        disable: function(callback) {
+            callback = callback || function() {};
+            
+            var that = this;
+            this.post("disable", {}, function(err, response) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    callback(null, that);
+                }
+            });
+        },
+        
+        /**
+         * Enable the entity
+         *
+         * This will enable the entity on the server.
+         *
+         * @param {Function} callback A callback when the object is enabled: `(err, entity)`
+         *
+         * @module splunkjs.Service.Entity
+         * @protected
+         */
+        enable: function(callback) {
+            callback = callback || function() {};
+            
+            var that = this;
+            this.post("enable", {}, function(err, response) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    callback(null, that);
+                }
+            });
+        },
+        
+        /**
+         * Reload the entity
+         *
+         * This will reload the entity on the server.
+         *
+         * @param {Function} callback A callback when the object is reloaded: `(err, entity)`
+         *
+         * @module splunkjs.Service.Entity
+         * @protected
+         */
+        reload: function(callback) {
+            callback = callback || function() {};
+            
+            var that = this;
+            this.post("_reload", {}, function(err, response) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    callback(null, that);
+                }
+            });
         }
     });
 
@@ -3605,6 +3701,40 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @module splunkjs.Service.Applications
          */  
         init: function(service) {
+            this._super(service, this.path(), {});
+        }
+    });
+    
+    /**
+     * splunkjs.Service.ServerInfo
+     * 
+     * Represents the server info
+     *
+     * @endpoint server/info
+     * @moduleRoot splunkjs.Service.ServerInfo
+     * @extends splunkjs.Service.Entity
+     */
+    root.ServerInfo = root.Entity.extend({
+        /**
+         * REST path for this resource (with no namespace)
+         *
+         * @module splunkjs.Service.ServerInfo
+         */
+        path: function() {
+            return Paths.info;
+        },
+        
+        /**
+         * Constructor for splunkjs.Service.ServerInfo
+         *
+         * @constructor
+         * @param {splunkjs.Service} service A service instance
+         * @return {splunkjs.Service.ServerInfo} A splunkjs.Service.ServerInfo instance
+         *
+         * @module splunkjs.Service.ServerInfo
+         */ 
+        init: function(service) {
+            this.name = "server-info";
             this._super(service, this.path(), {});
         }
     });

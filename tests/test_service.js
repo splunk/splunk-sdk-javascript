@@ -26,7 +26,7 @@ exports.setup = function(svc) {
     };
 
     return {
-        /*"Namespace Tests": {
+        "Namespace Tests": {
             setUp: function(finished) {
                 this.service = svc;
                 var that = this;
@@ -1433,6 +1433,49 @@ exports.setup = function(svc) {
                     }
                 );
             },
+            
+            "Callback#Enable+disable index": function(test) {
+                
+                var name = this.indexName;
+                var indexes = this.service.indexes();
+                
+                Async.chain([
+                        function(callback) {
+                            indexes.refresh(callback);     
+                        },
+                        function(indexes, callback) {
+                            var index = indexes.contains(name);
+                            test.ok(index);
+                            
+                            index.disable(callback);
+                        },
+                        function(index, callback) {
+                            test.ok(index);
+                            index.refresh(callback);
+                        },
+                        function(index, callback) {
+                            test.ok(index);
+                            test.ok(index.properties().disabled);
+                            
+                            index.enable(callback);
+                        },
+                        function(index, callback) {
+                            test.ok(index);
+                            index.refresh(callback);
+                        },
+                        function(index, callback) {
+                            test.ok(index);
+                            test.ok(!index.properties().disabled);
+                            
+                            callback();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
                    
             "Callback#Service submit event": function(test) {
                 var message = "Hello World -- " + getNextId();
@@ -1496,7 +1539,7 @@ exports.setup = function(svc) {
                     }
                 );
             }
-        },*/
+        },
         
         "User Tests": {
             setUp: function(done) {
@@ -1617,7 +1660,7 @@ exports.setup = function(svc) {
                             test.strictEqual(user.properties().roles.length, 1);
                             test.strictEqual(user.properties().roles[0], "user");
                         
-                            newService = new splunkjs.Service({
+                            newService = new splunkjs.Service(service.http, {
                                 username: name, 
                                 password: "abc",
                                 host: service.host,
@@ -1694,7 +1737,7 @@ exports.setup = function(svc) {
                     test.ok(info.properties().hasOwnProperty("os_version"));
                     
                     test.done();
-                })
+                });
             }
         },
         
