@@ -2274,7 +2274,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     var user = new root.User(that, username);
                     user.refresh(function() {
                         if (req.wasAborted) {
-                            callback("abort");
+                            return; // aborted, so ignore
                         }
                         else {
                             callback.apply(null, arguments);
@@ -2808,7 +2808,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 else if (!err && that.refreshOnUpdate) {
                     that.refresh(function() {
                         if (req.wasAborted) {
-                            callback("abort");
+                            return; // aborted, so ignore
                         }
                         else {
                             callback.apply(null, arguments);
@@ -3017,7 +3017,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                                     if (req.wasAborted) {
                                         if (!wasAbortedAlready) {
                                             wasAbortedAlready = true;
-                                            callback("abort");    
                                         }
                                     }
                                     else {
@@ -3100,7 +3099,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     if (that.refreshOnEntityCreation) {
                         entity.refresh(function() {
                             if (req.wasAborted) {
-                                callback("abort");
+                                return; // aborted, so ignore
                             }
                             else {
                                 callback.apply(null, arguments);
@@ -3383,7 +3382,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                         params.search = search.properties().search;
                         update.call(search, params, function() {
                             if (req.wasAborted) {
-                                callback("abort");
+                                return; // aborted, so ignore
                             }
                             else {
                                 callback.apply(null, arguments);
@@ -3728,7 +3727,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     var entity = that.instantiateEntity(props);                    
                     entity.refresh(function() {
                         if (req.wasAborted) {
-                            callback("abort");
+                            return; // aborted, so ignore
                         }
                         else {
                             callback.apply(null, arguments);
@@ -4149,7 +4148,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     var entity = new root.PropertyStanza(that.service, that.name, stanzaName);
                     entity.refresh(function() {
                         if (req.wasAborted) {
-                            callback("abort");
+                            return; // aborted, so ignore
                         }
                         else {
                             callback.apply(null, arguments);
@@ -4262,7 +4261,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     var entity = new root.PropertyFile(that.service, filename);
                     entity.refresh(function() {
                         if (req.wasAborted) {
-                            callback("abort");
+                            return; // aborted, so ignore
                         }
                         else {
                             callback.apply(null, arguments);
@@ -4503,7 +4502,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     var entity = new root.ConfigurationFile(that.service, filename);
                     entity.refresh(function() {
                         if (req.wasAborted) {
-                            callback("abort");
+                            return; // aborted, so ignore
                         }
                         else {
                             callback.apply(null, arguments);

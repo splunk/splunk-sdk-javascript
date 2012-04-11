@@ -2344,7 +2344,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     var user = new root.User(that, username);
                     user.refresh(function() {
                         if (req.wasAborted) {
-                            callback("abort");
+                            return; // aborted, so ignore
                         }
                         else {
                             callback.apply(null, arguments);
@@ -2878,7 +2878,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 else if (!err && that.refreshOnUpdate) {
                     that.refresh(function() {
                         if (req.wasAborted) {
-                            callback("abort");
+                            return; // aborted, so ignore
                         }
                         else {
                             callback.apply(null, arguments);
@@ -3087,7 +3087,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                                     if (req.wasAborted) {
                                         if (!wasAbortedAlready) {
                                             wasAbortedAlready = true;
-                                            callback("abort");    
                                         }
                                     }
                                     else {
@@ -3170,7 +3169,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     if (that.refreshOnEntityCreation) {
                         entity.refresh(function() {
                             if (req.wasAborted) {
-                                callback("abort");
+                                return; // aborted, so ignore
                             }
                             else {
                                 callback.apply(null, arguments);
@@ -3453,7 +3452,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                         params.search = search.properties().search;
                         update.call(search, params, function() {
                             if (req.wasAborted) {
-                                callback("abort");
+                                return; // aborted, so ignore
                             }
                             else {
                                 callback.apply(null, arguments);
@@ -3798,7 +3797,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     var entity = that.instantiateEntity(props);                    
                     entity.refresh(function() {
                         if (req.wasAborted) {
-                            callback("abort");
+                            return; // aborted, so ignore
                         }
                         else {
                             callback.apply(null, arguments);
@@ -4219,7 +4218,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     var entity = new root.PropertyStanza(that.service, that.name, stanzaName);
                     entity.refresh(function() {
                         if (req.wasAborted) {
-                            callback("abort");
+                            return; // aborted, so ignore
                         }
                         else {
                             callback.apply(null, arguments);
@@ -4332,7 +4331,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     var entity = new root.PropertyFile(that.service, filename);
                     entity.refresh(function() {
                         if (req.wasAborted) {
-                            callback("abort");
+                            return; // aborted, so ignore
                         }
                         else {
                             callback.apply(null, arguments);
@@ -4573,7 +4572,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     var entity = new root.ConfigurationFile(that.service, filename);
                     entity.refresh(function() {
                         if (req.wasAborted) {
-                            callback("abort");
+                            return; // aborted, so ignore
                         }
                         else {
                             callback.apply(null, arguments);
@@ -8938,6 +8937,97 @@ exports.setup = function(svc) {
                             test.strictEqual(user.properties().roles[1], "user");
                             
                             user.remove(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            
+            "Callback#Roles": function(test) {
+                var service = this.service;
+                var name = "jssdk_testuser_" + getNextId();
+                
+                Async.chain([
+                        function(done) {
+                            service.users().create({name: name, password: "abc", roles: "user"}, done);
+                        },
+                        function(user, done) {
+                            test.ok(user);
+                            test.strictEqual(user.name, name);
+                            test.strictEqual(user.properties().roles.length, 1);
+                            test.strictEqual(user.properties().roles[0], "user");
+                        
+                            user.update({roles: ["admin", "user"]}, done);
+                        },
+                        function(user, done) {
+                            test.ok(user);
+                            test.strictEqual(user.properties().roles.length, 2);
+                            test.strictEqual(user.properties().roles[0], "admin");
+                            test.strictEqual(user.properties().roles[1], "user");
+                            
+                            user.update({roles: "user"}, done);
+                        },
+                        function(user, done) {
+                            test.ok(user);
+                            test.strictEqual(user.properties().roles.length, 1);
+                            test.strictEqual(user.properties().roles[0], "user");
+                            
+                            user.update({roles: "__unknown__"}, done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(err);
+                        test.strictEqual(err.status, 400);
+                        test.done();
+                    }
+                );
+            },
+            
+            "Callback#Passwords": function(test) {
+                var service = this.service;
+                var newService = null;
+                var name = "jssdk_testuser_" + getNextId();
+                
+                Async.chain([
+                        function(done) {
+                            service.users().create({name: name, password: "abc", roles: "user"}, done);
+                        },
+                        function(user, done) {
+                            test.ok(user);
+                            test.strictEqual(user.name, name);
+                            test.strictEqual(user.properties().roles.length, 1);
+                            test.strictEqual(user.properties().roles[0], "user");
+                        
+                            newService = new splunkjs.Service({
+                                username: name, 
+                                password: "abc",
+                                host: service.host,
+                                port: service.port,
+                                scheme: service.scheme
+                            });
+                        
+                            newService.login(Async.augment(done, user));
+                        },
+                        function(success, user, done) {
+                            test.ok(success);
+                            test.ok(user);
+                            
+                            user.update({password: "abc2"}, done);
+                        },
+                        function(user, done) {
+                            newService.login(function(err, success) {
+                                test.ok(err);
+                                test.ok(!success);
+                                
+                                user.update({password: "abc"}, done);
+                            });
+                        },
+                        function(user, done) {
+                            test.ok(user);
+                            newService.login(done);
                         }
                     ],
                     function(err) {

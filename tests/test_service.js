@@ -1592,7 +1592,7 @@ exports.setup = function(svc) {
                             test.strictEqual(user.properties().roles[0], "user");
                             
                             user.update({roles: "__unknown__"}, done);
-                        },
+                        }
                     ],
                     function(err) {
                         test.ok(err);
