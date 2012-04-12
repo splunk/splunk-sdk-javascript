@@ -280,17 +280,17 @@ Async.chain([
   },
   // Loop until the job is "done"
   function(job, callback) {
-    var searcher = new splunkjs.Searcher.JobManager(job.service, job);
+    var searcher = new splunkjs.JobManager(job.service, job);
     
     // Queue up timeline displays while we are querying the job
-    searcher.onProgress(function(properties) {
+    searcher.on("progress", function(properties) {
       job.timeline({}, function(err, data) { 
         if (!err) updateTimeline(data);
       });
     });
     
     // Move forward once the search is done
-    searcher.done(callback);
+    searcher.on("done", callback);
   },
   // Get the final timeline data
   function(searcher, callback) {
@@ -363,10 +363,10 @@ Async.chain([
   },
   // Loop until the job is "done"
   function(job, callback) {
-    var searcher = new splunkjs.Searcher.JobManager(job.service, job);
+    var searcher = new splunkjs.JobManager(job.service, job);
     
     // Move forward once the search is done
-    searcher.done(callback);
+    searcher.on("done", callback);
   },
   // Get the final results data
   function(searcher, callback) {

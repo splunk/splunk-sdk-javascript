@@ -50,13 +50,13 @@ var performSearch = function(svc, query, callback) {
       App.events.trigger("search:new", createdJob);
         
       job = createdJob;
-      searcher = new splunkjs.Searcher.JobManager(svc, job);
+      searcher = new splunkjs.JobManager(svc, job);
       
-      searcher.onProgress(function(err, properties) {
+      searcher.on("progress", function(properties) {
         App.events.trigger("search:stats", properties);
       });
       
-      searcher.done(function(err) {
+      searcher.on("done", function(err) {
         if (err) {
           callback(err)
         }

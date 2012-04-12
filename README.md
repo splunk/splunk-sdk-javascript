@@ -386,6 +386,7 @@ of embedded libraries and their licenses:
 7. [commander]: [MIT][commander-license]
 8. [script.js]: [Apache][scriptjs-license]
 9. [base64.js]: [MIT][base64-license]
+10.[eventemitter.js]: [MIT][event-license]
 
 
 [dox]:                      https://github.com/visionmedia/dox
@@ -398,6 +399,8 @@ of embedded libraries and their licenses:
 [webapp2]:                  http://code.google.com/p/webapp-improved/
 [commander]:                https://github.com/visionmedia/commander.js/
 [script.js]:                https://github.com/ded/script.js/
+[base64.js]:                http://code.google.com/p/javascriptbase64/
+[eventemitter.js]:          https://github.com/Wolfy87/EventEmitter
 [dox-license]:              https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-DOX
 [davis-license]:            https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-DAVIS
 [xdm-license]:              https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-EASYXDM
@@ -409,6 +412,7 @@ of embedded libraries and their licenses:
 [commander-license]:        https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-COMMANDER
 [scriptjs-license]:         https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-SCRIPTJS
 [base64-license]:           https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-BASE64
+[event-license]:            https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-BASE64
 
 [json2]:                    http://www.json.org/js.html
 [xml2json]:                 https://github.com/splunk/splunk-sdk-javascript/tree/master/xml2json

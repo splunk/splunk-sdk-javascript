@@ -451,7 +451,7 @@ require.define("/splunk.js", function (require, module, exports, __dirname, __fi
         Async           : require('./lib/async'),
         Paths           : require('./lib/paths').Paths,
         Class           : require('./lib/jquery.class').Class,
-        Searcher        : require('./lib/searcher.js'),
+        JobManager      : require('./lib/searcher.js'),
         StormService    : require('./lib/storm.js')
     };
     
@@ -6069,55 +6069,42 @@ require.define("/lib/searcher.js", function (require, module, exports, __dirname
 (function() {
     "use strict";
     
-    var Service = require('./service');
-    var Class   = require('./jquery.class').Class;
-    var utils   = require('./utils');
-    var Async   = require('./async');
+    var Service      = require('./service');
+    var Class        = require('./jquery.class').Class;
+    var utils        = require('./utils');
+    var Async        = require('./async');
+    var EventEmitter = require('../contrib/eventemitter').EventEmitter;
     
     var root = exports || this;
+    var JobManager = null;
 
     // An endpoint is the basic handler. It is associated with an instance
     // of a Service and a path (such as /search/jobs/{SID}/), and
     // provide the relevant functionality.
-    root.JobManager = Class.extend({
-        init: function(service, job) {
+    module.exports = root = JobManager = Class.extend({
+        init: function(service, job, options) {
+            options = options || {};
+            
             this.service = service;
             this.job = job;
             this.isJobDone = false;
-            this.onProgressCallbacks = [];
-            this.onFailCallbacks = [];
+            this.events = new EventEmitter();
             
-            this._dispatchCallbacks = utils.bind(this, this._dispatchCallbacks);
-            this.onProgress         = utils.bind(this, this.onProgress);
-            this.onFail             = utils.bind(this, this.onFail);
-            this.done               = utils.bind(this, this.done);
-            this.cancel             = utils.bind(this, this.cancel);
-            this.isDone             = utils.bind(this, this.isDone);
-            this.eventsIterator     = utils.bind(this, this.eventsIterator);
-            this.resultsIterator    = utils.bind(this, this.resultsIterator);
-            this.previewIterator    = utils.bind(this, this.previewIterator);
+            this.sleep = options.hasOwnProperty("sleep") ? options.sleep : 1000;
+            
+            this.on              = utils.bind(this, this.on);
+            this._start          = utils.bind(this, this._start);
+            this.cancel          = utils.bind(this, this.cancel);
+            this.isDone          = utils.bind(this, this.isDone);
+            this.eventsIterator  = utils.bind(this, this.eventsIterator);
+            this.resultsIterator = utils.bind(this, this.resultsIterator);
+            this.previewIterator = utils.bind(this, this.previewIterator);
+            
+            this._start();
         },
         
-        _dispatchCallbacks: function(callbacks, properties) {
-            callbacks = callbacks || [];
-            for(var i = 0; i < callbacks.length; i++) {
-                var callback = callbacks[i];
-                callback.call(null, null, properties, this);
-            }
-        },
-        
-        onProgress: function(callback) {
-            this.onProgressCallbacks.push(callback);  
-        },
-        
-        onFail: function(callback) {
-            this.onFailCallbacks.push(callback); 
-        },
-        
-        done: function(callback) {    
-            callback = callback || function() {};
-                    
-            var manager = this;
+        _start: function() {                        
+            var that = this;
             var job = this.job;
             var properties = {};
             var stopLooping = false;
@@ -6127,27 +6114,32 @@ require.define("/lib/searcher.js", function (require, module, exports, __dirname
                     job.refresh(function(err, job) {
                         if (err) {
                             iterationDone(err);
+                            return;
                         }
                         
                         properties = job.state() || {};
                         
                         // Dispatch for progress
-                        manager._dispatchCallbacks(manager.onProgressCallbacks, properties);
+                        that.events.emit("progress", properties);
                         
                         // Dispatch for failure if necessary
                         if (properties.isFailed) {
-                            manager._dispatchCallbacks(manager.onFailCallbacks, properties);
+                            that.events.emit("fail", properties);
                         }
                         
-                        stopLooping = properties.content.isDone || manager.isJobDone || properties.isFailed;
-                        Async.sleep(1000, iterationDone);
+                        stopLooping = properties.content.isDone || that.isJobDone || properties.content.isFailed;
+                        Async.sleep(that.sleep, iterationDone);
                     });
                 },
                 function(err) {
-                    manager.isJobDone = true;
-                    callback.apply(null, [err, manager]);
+                    that.isJobDone = true;
+                    that.events.emit("done", err, that);
                 }
             );
+        },
+        
+        on: function(event, action) {
+            this.events.on(event, action);  
         },
         
         cancel: function(callback) {
@@ -6206,6 +6198,16 @@ require.define("/lib/searcher.js", function (require, module, exports, __dirname
         }
     });
 })();
+});
+
+require.define("/contrib/eventemitter.js", function (require, module, exports, __dirname, __filename) {
+/**
+ * EventEmitter v3.1.4
+ * https://github.com/Wolfy87/EventEmitter
+ * 
+ * Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
+ * Oliver Caldwell (olivercaldwell.co.uk)
+ */(function(a){function b(){this._events={},this._maxListeners=10}function c(a,b,c,d,e){this.type=a,this.listener=b,this.scope=c,this.once=d,this.instance=e}"use strict",c.prototype.fire=function(a){this.listener.apply(this.scope||this.instance,a);if(this.once)return this.instance.removeListener(this.type,this.listener,this.scope),!1},b.prototype.eachListener=function(a,b){var c=null,d=null,e=null;if(this._events.hasOwnProperty(a)){d=this._events[a];for(c=0;c<d.length;c+=1){e=b.call(this,d[c],c);if(e===!1)c-=1;else if(e===!0)break}}return this},b.prototype.addListener=function(a,b,d,e){return this._events.hasOwnProperty(a)||(this._events[a]=[]),this._events[a].push(new c(a,b,d,e,this)),this.emit("newListener",a,b,d,e),this._maxListeners&&!this._events[a].warned&&this._events[a].length>this._maxListeners&&(typeof console!="undefined"&&console.warn("Possible EventEmitter memory leak detected. "+this._events[a].length+" listeners added. Use emitter.setMaxListeners() to increase limit."),this._events[a].warned=!0),this},b.prototype.on=b.prototype.addListener,b.prototype.once=function(a,b,c){return this.addListener(a,b,c,!0)},b.prototype.removeListener=function(a,b,c){return this.eachListener(a,function(d,e){d.listener===b&&(!c||d.scope===c)&&this._events[a].splice(e,1)}),this._events[a]&&this._events[a].length===0&&delete this._events[a],this},b.prototype.off=b.prototype.removeListener,b.prototype.removeAllListeners=function(a){return a&&this._events.hasOwnProperty(a)?delete this._events[a]:a||(this._events={}),this},b.prototype.listeners=function(a){if(this._events.hasOwnProperty(a)){var b=[];return this.eachListener(a,function(a){b.push(a.listener)}),b}return[]},b.prototype.emit=function(a){var b=[],c=null;for(c=1;c<arguments.length;c+=1)b.push(arguments[c]);return this.eachListener(a,function(a){return a.fire(b)}),this},b.prototype.setMaxListeners=function(a){return this._maxListeners=a,this},typeof define=="function"&&define.amd?define(function(){return b}):a.EventEmitter=b})(this);
 });
 
 require.define("/lib/storm.js", function (require, module, exports, __dirname, __filename) {
@@ -9737,7 +9739,7 @@ exports.setup = function(svc) {
     var splunkjs    = require('../splunk');
     var utils       = splunkjs.Utils;
     var Async       = splunkjs.Async;
-    var Searcher    = splunkjs.Searcher;
+    var JobManager  = splunkjs.JobManager;
     
     splunkjs.Logger.setLevel("ALL");
     var idCounter = 0;
@@ -9759,8 +9761,8 @@ exports.setup = function(svc) {
                     that.service.jobs().create('search index=_internal | head 10', {id: sid}, callback);
                 },
                 function(job, callback) {
-                    var searcher = new Searcher.JobManager(test.service, job);
-                    searcher.done(callback);
+                    var searcher = new JobManager(test.service, job);
+                    searcher.on("done", callback);
                 },
                 function(searcher, callback) {
                     var iterator = searcher.resultsIterator(2);
@@ -9809,8 +9811,8 @@ exports.setup = function(svc) {
                     that.service.jobs().create('search index=_internal | head 10', {id: sid}, callback);
                 },
                 function(job, callback) {
-                    var searcher = new Searcher.JobManager(test.service, job);
-                    searcher.done(callback);
+                    var searcher = new JobManager(test.service, job);
+                    searcher.on("done", callback);
                 },
                 function(searcher, callback) {
                     var iterator = searcher.eventsIterator(2);
@@ -9859,8 +9861,8 @@ exports.setup = function(svc) {
                     that.service.jobs().create('search index=_internal | head 10', {id: sid}, callback);
                 },
                 function(job, callback) {
-                    var searcher = new Searcher.JobManager(test.service, job);
-                    searcher.done(callback);
+                    var searcher = new JobManager(test.service, job);
+                    searcher.on("done", callback);
                 },
                 function(searcher, callback) {
                     var iterator = searcher.previewIterator(2);

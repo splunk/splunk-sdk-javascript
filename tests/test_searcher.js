@@ -17,7 +17,7 @@ exports.setup = function(svc) {
     var splunkjs    = require('../splunk');
     var utils       = splunkjs.Utils;
     var Async       = splunkjs.Async;
-    var Searcher    = splunkjs.Searcher;
+    var JobManager  = splunkjs.JobManager;
     
     splunkjs.Logger.setLevel("ALL");
     var idCounter = 0;
@@ -39,8 +39,8 @@ exports.setup = function(svc) {
                     that.service.jobs().create('search index=_internal | head 10', {id: sid}, callback);
                 },
                 function(job, callback) {
-                    var searcher = new Searcher.JobManager(test.service, job);
-                    searcher.done(callback);
+                    var searcher = new JobManager(test.service, job);
+                    searcher.on("done", callback);
                 },
                 function(searcher, callback) {
                     var iterator = searcher.resultsIterator(2);
@@ -89,8 +89,8 @@ exports.setup = function(svc) {
                     that.service.jobs().create('search index=_internal | head 10', {id: sid}, callback);
                 },
                 function(job, callback) {
-                    var searcher = new Searcher.JobManager(test.service, job);
-                    searcher.done(callback);
+                    var searcher = new JobManager(test.service, job);
+                    searcher.on("done", callback);
                 },
                 function(searcher, callback) {
                     var iterator = searcher.eventsIterator(2);
@@ -139,8 +139,8 @@ exports.setup = function(svc) {
                     that.service.jobs().create('search index=_internal | head 10', {id: sid}, callback);
                 },
                 function(job, callback) {
-                    var searcher = new Searcher.JobManager(test.service, job);
-                    searcher.done(callback);
+                    var searcher = new JobManager(test.service, job);
+                    searcher.on("done", callback);
                 },
                 function(searcher, callback) {
                     var iterator = searcher.previewIterator(2);
