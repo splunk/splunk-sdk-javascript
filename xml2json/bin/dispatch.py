@@ -305,6 +305,12 @@ def properties_stanza_key(request, file, stanza, key, *args, **kwargs):
     else:
         return status, xml2json.from_messages_only(content)
 
+def saved_dispatch(request, name, *args, **kwargs):
+    status, content = forward_request(request)
+    if status_ok(status) and request["method"] == "GET":
+        return status, xml2json.from_propertizes_stanza(content)
+    else:
+        return status, xml2json.from_job_create(content)
 
 router = route.Router()
 
@@ -323,6 +329,7 @@ router.add(route.Route('/search/tags/<name>',
     }, 
     'tag_info'
 ))
+router.add(route.Route('/saved/searches/<name>/dispatch', {"POST": saved_dispatch}, 'dispatch_saved_search'))
 router.add(route.Route('/properties/<file>/<stanza>', properties_stanza, 'properties_stanza_info'))
 router.add(route.Route('/properties/<file>/<stanza>/<key>', properties_stanza_key, 'properties_stanza_key'))
 router.add(route.Route('/receivers/simple', http_simple_input, 'http_simple_input'))

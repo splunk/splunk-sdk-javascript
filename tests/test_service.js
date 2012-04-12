@@ -975,19 +975,6 @@ exports.setup = function(svc) {
                 });
             },
             
-            "Callback#history": function(test) {
-                var searches = this.service.savedSearches();
-                searches.refresh(function(err, searches) {
-                    var search = searches.contains("Indexing workload");
-                    test.ok(search);
-                    
-                    search.history(function(err, history, search) {
-                        test.ok(!err);
-                        test.done();
-                    });
-                });
-            },
-            
             "Callback#suppress": function(test) {
                 var searches = this.service.savedSearches();
                 searches.refresh(function(err, searches) {
@@ -1101,13 +1088,87 @@ exports.setup = function(svc) {
                 );
             },
             
+            "Callback#Create + dispatch + history": function(test) {
+                var name = "jssdk_savedsearch_" + getNextId();
+                var originalSearch = "search index=_internal | head 1";
+            
+                var searches = this.service.savedSearches({owner: this.service.username, app: "xml2json"});
+                
+                Async.chain(
+                    function(done) {
+                        searches.create({search: originalSearch, name: name}, done);
+                    },
+                    function(search, done) {
+                        test.ok(search);
+                        
+                        test.strictEqual(search.name, name); 
+                        test.strictEqual(search.properties().search, originalSearch);
+                        test.ok(!search.properties().description);
+                        
+                        search.dispatch({force_dispatch: false, "dispatch.buckets": 295}, done);
+                    },
+                    function(job, search, done) {
+                        test.ok(job);
+                        test.ok(search);
+                        
+                        tutils.pollUntil(
+                            job,
+                            function(j) {
+                                return job.properties()["isDone"];
+                            },
+                            10,
+                            Async.augment(done, search)
+                        );
+                    },
+                    function(job, search, done) {
+                        test.strictEqual(job.properties().statusBuckets, 295);
+                        search.history(Async.augment(done, job));
+                    },
+                    function(jobs, search, originalJob, done) {
+                        test.ok(jobs);
+                        test.ok(jobs.length > 0);
+                        test.ok(search);
+                        test.ok(originalJob);
+                        
+                        var cancel = function(job) {
+                            return function(cb) {
+                                job.cancel(cb);
+                            };
+                        };
+                        
+                        var found = false;
+                        var cancellations = [];
+                        for(var i = 0; i < jobs.length; i++) {
+                            cancellations.push(cancel(jobs[i]));
+                            found = found || (jobs[i].sid === originalJob.sid);
+                        }
+                        
+                        test.ok(found);
+                        
+                        search.remove(function(err) {
+                            if (err) {
+                                done(err);
+                            }
+                            else {
+                                Async.parallel(cancellations, done);
+                            }
+                        });
+                    },
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            
             "Callback#delete test saved searches": function(test) {
                 var searches = this.service.savedSearches({owner: this.service.username, app: "xml2json"});
                 searches.refresh(function(err, searches) {
-                    var searchList = searches.list();                  
+                    var searchList = searches.list();            
                     Async.parallelEach(
                         searchList,
                         function(search, idx, callback) {
+                            console.log(search.name);
                             if (utils.startsWith(search.name, "jssdk_")) {
                                 search.remove(callback);
                             }

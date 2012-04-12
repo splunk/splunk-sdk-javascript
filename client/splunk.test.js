@@ -3525,21 +3525,36 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * Example:
          *
          *      var savedSearch = service.savedSearches().item("MySavedSearch");
-         *      savedSearch.dispatch(function(err, search) {
-         *          console.log("ACKNOWLEDGED);
+         *      savedSearch.dispatch({force:dispatch: false}, function(err, job) {
+         *          console.log("Job SID: ", job.sid);
          *      });
          *
-         * @param {Function} callback A callback when the saved search was dispatched: `(err, savedSearch)`
+         * @param {Object} options An object of options for dispatching this saved search
+         * @param {Function} callback A callback when the saved search was dispatched: `(err, job)`
          *
          * @endpoint saved/searches/{name}/dispatch
          * @module splunkjs.Service.SavedSearch
          */
-        dispatch: function(callback) {
+        dispatch: function(options, callback) {
+            if (!callback && utils.isFunction(options)) {
+                callback = options;
+                options = {};
+            }
+            
             callback = callback || function() {};
+            options = options || {};
             
             var that = this;
-            var req = this.post("dispatch", {}, function(err) {
-                callback(err, that);
+            var req = this.post("dispatch", options, function(err, response) {
+                if (err) {
+                    callback(err);
+                    return;
+                }
+                
+                var sid = response.data.entry.content.sid;
+                var job = new root.Job(that.service, sid, that.namespace);
+                
+                callback(null, job, that);
             });
             
             return req;
@@ -3565,7 +3580,23 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             var that = this;
             return this.get("history", {}, function(err, response) {
-                callback(err, response.data.entry.content, that);
+                if (err) {
+                    callback(err);
+                    return;
+                }
+                
+                var jobs = [];
+                var data = response.data.entry;
+                for(var i = 0; i < data.length; i++) {
+                    var jobData = response.data.entry[i];
+                    var namespace = utils.namespaceFromProperties(jobData);
+                    var job = new root.Job(that.service, jobData.name, namespace);
+                    
+                    job._load(jobData);
+                    jobs.push(job);
+                }
+                
+                callback(null, jobs, that);
             });
         },
         
@@ -5352,7 +5383,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 }
                 else {
                     
-                    var job = new root.Job(that.service, response.data.entry.content.sid);
+                    var job = new root.Job(that.service, response.data.entry.content.sid, that.namespace);
                     callback(null, job);
                 }
             });
@@ -8560,19 +8591,6 @@ exports.setup = function(svc) {
                 });
             },
             
-            "Callback#history": function(test) {
-                var searches = this.service.savedSearches();
-                searches.refresh(function(err, searches) {
-                    var search = searches.contains("Indexing workload");
-                    test.ok(search);
-                    
-                    search.history(function(err, history, search) {
-                        test.ok(!err);
-                        test.done();
-                    });
-                });
-            },
-            
             "Callback#suppress": function(test) {
                 var searches = this.service.savedSearches();
                 searches.refresh(function(err, searches) {
@@ -8686,13 +8704,87 @@ exports.setup = function(svc) {
                 );
             },
             
+            "Callback#Create + dispatch + history": function(test) {
+                var name = "jssdk_savedsearch_" + getNextId();
+                var originalSearch = "search index=_internal | head 1";
+            
+                var searches = this.service.savedSearches({owner: this.service.username, app: "xml2json"});
+                
+                Async.chain(
+                    function(done) {
+                        searches.create({search: originalSearch, name: name}, done);
+                    },
+                    function(search, done) {
+                        test.ok(search);
+                        
+                        test.strictEqual(search.name, name); 
+                        test.strictEqual(search.properties().search, originalSearch);
+                        test.ok(!search.properties().description);
+                        
+                        search.dispatch({force_dispatch: false, "dispatch.buckets": 295}, done);
+                    },
+                    function(job, search, done) {
+                        test.ok(job);
+                        test.ok(search);
+                        
+                        tutils.pollUntil(
+                            job,
+                            function(j) {
+                                return job.properties()["isDone"];
+                            },
+                            10,
+                            Async.augment(done, search)
+                        );
+                    },
+                    function(job, search, done) {
+                        test.strictEqual(job.properties().statusBuckets, 295);
+                        search.history(Async.augment(done, job));
+                    },
+                    function(jobs, search, originalJob, done) {
+                        test.ok(jobs);
+                        test.ok(jobs.length > 0);
+                        test.ok(search);
+                        test.ok(originalJob);
+                        
+                        var cancel = function(job) {
+                            return function(cb) {
+                                job.cancel(cb);
+                            };
+                        };
+                        
+                        var found = false;
+                        var cancellations = [];
+                        for(var i = 0; i < jobs.length; i++) {
+                            cancellations.push(cancel(jobs[i]));
+                            found = found || (jobs[i].sid === originalJob.sid);
+                        }
+                        
+                        test.ok(found);
+                        
+                        search.remove(function(err) {
+                            if (err) {
+                                done(err);
+                            }
+                            else {
+                                Async.parallel(cancellations, done);
+                            }
+                        });
+                    },
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            
             "Callback#delete test saved searches": function(test) {
                 var searches = this.service.savedSearches({owner: this.service.username, app: "xml2json"});
                 searches.refresh(function(err, searches) {
-                    var searchList = searches.list();                  
+                    var searchList = searches.list();            
                     Async.parallelEach(
                         searchList,
                         function(search, idx, callback) {
+                            console.log(search.name);
                             if (utils.startsWith(search.name, "jssdk_")) {
                                 search.remove(callback);
                             }
