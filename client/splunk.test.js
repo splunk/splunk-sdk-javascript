@@ -3522,6 +3522,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Dispatch a saved search
          *
+         * Dispatching a saved search will result in a search job being
+         * created and a splunkjs.Service.Job instance returned in the
+         * callback.
+         *
          * Example:
          *
          *      var savedSearch = service.savedSearches().item("MySavedSearch");
@@ -3561,16 +3565,20 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Retrieve the history for a saved search.
+         * Retrieve the job history for a saved search.
+         *
+         * The history is a list of splunkjs.Service.Job instances
          *
          * Example:
          *
          *      var savedSearch = service.savedSearches().item("MySavedSearch");
-         *      savedSearch.history(function(err, history, search) {
-         *          console.log("HISTORY: ", history);
+         *      savedSearch.history(function(err, jobs, search) {
+         *          for(var i = 0; i < jobs.length; i++) {
+         *              console.log("Job " + i + ": ", jobs[i].sid);
+         *          }
          *      });
          *
-         * @param {Function} callback A callback when the history is retrieved: `(err, history, savedSearch)`
+         * @param {Function} callback A callback when the history is retrieved: `(err, job, savedSearch)`
          *
          * @endpoint saved/searches/{name}/history
          * @module splunkjs.Service.SavedSearch
