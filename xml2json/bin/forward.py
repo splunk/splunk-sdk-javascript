@@ -67,6 +67,10 @@ def to_utf8(obj, decodeFrom='utf-8', encodeTo='utf-8'):
 def make_request(url, headers={}, get=None, post=None, payload=None, method={}, 
                 session_key=None, basic_auth=None, *args, **kwargs):
     try:
+        # In Splunk 4.3's version of httplib, we have the new
+        # disable_ssl_certificate_validation kwarg. However,
+        # it will throw an error if it isn't available, so we try
+        # without it.
         h = httplib2.Http(
             timeout=SPLUNKD_CONNECTION_TIMEOUT, 
             disable_ssl_certificate_validation=True)
