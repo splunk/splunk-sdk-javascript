@@ -269,7 +269,6 @@
             module.inherited = newMethods.filter(function(method) {
                 return (module.methods.indexOf(method) < 0);
             });
-            //console.log(module.inherited.map(function(method) { return method.name; })); 
             module.has_inherited = module.inherited.length;
         }
     });
