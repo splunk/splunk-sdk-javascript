@@ -279,19 +279,6 @@
         modules: modules,
         version: version
     }
-    var allMethods = [];
-    modules.forEach(function(module) {
-        (module.methods || []).forEach(function(fn) {
-            allMethods.push({id: fn.id, name: fn.name, parent: fn.parent});
-        });
-        (module.helpers || []).forEach(function(fn) {
-            allMethods.push({id: fn.id, name: fn.name, parent: fn.parent, global: true});
-        });
-        (module.inherited || []).forEach(function(fn) {
-            allMethods.push({id: fn.id, name: fn.name, parent: fn.parent, inherited: true});
-        });
-    });
-    var raw = JSON.stringify(allMethods);
     
     var outputs = {};
     modules.forEach(function(module) {
@@ -308,8 +295,7 @@
         var context = {
             modules: moduleList,
             module: module,
-            version: version,
-            raw: raw
+            version: version
         }
         
         outputs[module.name] = mustache.to_html(template, context, null);
@@ -317,8 +303,7 @@
     
     var context = {
         modules: modules.map(function(mod) { return {name: mod.name}; }),
-        version: version,
-        raw: raw
+        version: version
     }
     outputs["index"] = mustache.to_html(template, context, null);
     
