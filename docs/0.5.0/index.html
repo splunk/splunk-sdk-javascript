@@ -263,15 +263,18 @@
               <h3>splunkjs.Logger</h3>
             </a>
             <ul>
-                              <li><a href='#splunkjs.Logger-log'>log</a></li>
-                              <li><a href='#splunkjs.Logger-error'>error</a></li>
-                              <li><a href='#splunkjs.Logger-warn'>warn</a></li>
-                              <li><a href='#splunkjs.Logger-info'>info</a></li>
-                              <li><a href='#splunkjs.Logger-printMessages'>printMessages</a></li>
-                              <li><a href='#splunkjs.Logger-setLevel'>setLevel</a></li>
               </ul>
             
+                          <a href='#splunkjs.Logger-globals'>
+                <h4>Module Globals</h4>
+              </a>
             <ul>
+                              <li><a href='#splunkjs.Logger+log'>log</a></li>
+                              <li><a href='#splunkjs.Logger+error'>error</a></li>
+                              <li><a href='#splunkjs.Logger+warn'>warn</a></li>
+                              <li><a href='#splunkjs.Logger+info'>info</a></li>
+                              <li><a href='#splunkjs.Logger+printMessages'>printMessages</a></li>
+                              <li><a href='#splunkjs.Logger+setLevel'>setLevel</a></li>
               </ul>
             
             <ul>
@@ -1249,7 +1252,10 @@
             <p>splunkjs.Logger</p>
 <p>A controllable logging module.</p>
           </section>
-                      <section class='method' id='splunkjs.Logger-log'>
+                      <header id='splunkjs.Logger-globals'>
+              <h3>splunkjs.Logger Module Globals</h3>
+            </header>
+                      <section class='method' id='splunkjs.Logger+log'>
               <header>
                 <h3>log</h3>
                 <h4>splunkjs.Logger.log</h4>
@@ -1265,7 +1271,7 @@
                 <p>Log to the console (equivalent to <code>console.log</code>)</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/log.js#L85">lib/log.js:85</a>)</h4>
+                <h4>Source</h4>
                 <pre><code>log: function() {
     if (process.env.LOG_LEVEL &gt;= levels.ALL) {
         _log.apply(null, arguments);
@@ -1274,7 +1280,7 @@
               </section>
               
             </section>
-                      <section class='method' id='splunkjs.Logger-error'>
+                      <section class='method' id='splunkjs.Logger+error'>
               <header>
                 <h3>error</h3>
                 <h4>splunkjs.Logger.error</h4>
@@ -1290,7 +1296,7 @@
                 <p>Log error to the console (equivalent to <code>console.error</code>)</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/log.js#L96">lib/log.js:96</a>)</h4>
+                <h4>Source</h4>
                 <pre><code>error: function() {
     if (process.env.LOG_LEVEL &gt;= levels.ERROR) {
         _error.apply(null, arguments);
@@ -1299,7 +1305,7 @@
               </section>
               
             </section>
-                      <section class='method' id='splunkjs.Logger-warn'>
+                      <section class='method' id='splunkjs.Logger+warn'>
               <header>
                 <h3>warn</h3>
                 <h4>splunkjs.Logger.warn</h4>
@@ -1315,7 +1321,7 @@
                 <p>Log warning to the console (equivalent to <code>console.warn</code>)</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/log.js#L107">lib/log.js:107</a>)</h4>
+                <h4>Source</h4>
                 <pre><code>warn: function() {
     if (process.env.LOG_LEVEL &gt;= levels.WARN) {
         _warn.apply(null, arguments);
@@ -1324,7 +1330,7 @@
               </section>
               
             </section>
-                      <section class='method' id='splunkjs.Logger-info'>
+                      <section class='method' id='splunkjs.Logger+info'>
               <header>
                 <h3>info</h3>
                 <h4>splunkjs.Logger.info</h4>
@@ -1340,7 +1346,7 @@
                 <p>Log info to the console (equivalent to <code>console.info</code>)</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/log.js#L118">lib/log.js:118</a>)</h4>
+                <h4>Source</h4>
                 <pre><code>info: function() {
     if (process.env.LOG_LEVEL &gt;= levels.INFO) {
         _info.apply(null, arguments);
@@ -1349,7 +1355,7 @@
               </section>
               
             </section>
-                      <section class='method' id='splunkjs.Logger-printMessages'>
+                      <section class='method' id='splunkjs.Logger+printMessages'>
               <header>
                 <h3>printMessages</h3>
                 <h4>splunkjs.Logger.printMessages</h4>
@@ -1365,7 +1371,7 @@
                 <p>Print out all messages retrieved from splunkd</p>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/log.js#L129">lib/log.js:129</a>)</h4>
+                <h4>Source</h4>
                 <pre><code>printMessages: function(allMessages) {
     allMessages = allMessages || {};
     
@@ -1401,7 +1407,7 @@
               </section>
               
             </section>
-                      <section class='method' id='splunkjs.Logger-setLevel'>
+                      <section class='method' id='splunkjs.Logger+setLevel'>
               <header>
                 <h3>setLevel</h3>
                 <h4>splunkjs.Logger.setLevel</h4>
@@ -1423,7 +1429,7 @@
 </code></pre>
               </section>
               <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/log.js#L174">lib/log.js:174</a>)</h4>
+                <h4>Source</h4>
                 <pre><code>setLevel: function(level) {    
     if (utils.isString(level)) {
         if (levels.hasOwnProperty(level)) {

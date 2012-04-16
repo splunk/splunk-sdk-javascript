@@ -68,10 +68,10 @@
         var module = "Global";
         for(var i = 0; i < doc.tags.length; i++) {
             var tag = doc.tags[i];
-            if (tag.type === "module") {
+            if (tag.type === "method") {
                 module = tag.content;
             }
-            else if (tag.type === "globals") {
+            else if (tag.type === "function") {
                 module = tag.content;
             }
         }
@@ -99,7 +99,11 @@
     // name of this module?
     var moduleName = "";
     var isModule = doc.tags.some(function (tag) { 
-        if (tag.type === "moduleRoot") {
+        if (tag.type === "class") {
+            moduleName = tag.content;
+            return true;
+        }
+        else if (tag.type === "module") {
             moduleName = tag.content;
             return true;
         }
@@ -111,7 +115,7 @@
     // containing module?
     var globalName = "";
     var isGlobal = doc.tags.some(function (tag) { 
-        if (tag.type === "globals") {
+        if (tag.type === "function") {
             globalName = tag.content;
             return true;
         }
