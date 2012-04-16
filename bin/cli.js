@@ -32,6 +32,7 @@
      */
     var DEFAULT_PORT        = 6969;
     var DOC_DIRECTORY       = "docs";
+    var REFDOC_DIRECTORY    = "refs";
     var CLIENT_DIRECTORY    = "client";
     var TEST_DIRECTORY      = "tests";
     var TEST_PREFIX         = "test_";
@@ -61,13 +62,14 @@
     /**
      * Generated files
      */
-    var COMPILED_SDK      = path.join(CLIENT_DIRECTORY, "splunk.js");
-    var COMPILED_SDK_MIN  = path.join(CLIENT_DIRECTORY, "splunk.min.js");
-    var COMPILED_TEST     = path.join(CLIENT_DIRECTORY, "splunk.test.js");
-    var COMPILED_TEST_MIN = path.join(CLIENT_DIRECTORY, "splunk.test.min.js");
-    var COMPILED_UI       = path.join(CLIENT_DIRECTORY, "splunk.ui.js");
-    var COMPILED_UI_MIN   = path.join(CLIENT_DIRECTORY, "splunk.ui.min.js");
-    var GENERATED_DOCS    = path.join(DOC_DIRECTORY, SDK_VERSION, DOC_FILE);
+    var COMPILED_SDK       = path.join(CLIENT_DIRECTORY, "splunk.js");
+    var COMPILED_SDK_MIN   = path.join(CLIENT_DIRECTORY, "splunk.min.js");
+    var COMPILED_TEST      = path.join(CLIENT_DIRECTORY, "splunk.test.js");
+    var COMPILED_TEST_MIN  = path.join(CLIENT_DIRECTORY, "splunk.test.min.js");
+    var COMPILED_UI        = path.join(CLIENT_DIRECTORY, "splunk.ui.js");
+    var COMPILED_UI_MIN    = path.join(CLIENT_DIRECTORY, "splunk.ui.min.js");
+    var GENERATED_DOCS     = path.join(DOC_DIRECTORY, SDK_VERSION, DOC_FILE);
+    var GENERATED_REF_DOCS = path.join(DOC_DIRECTORY, SDK_VERSION, REFDOC_DIRECTORY, DOC_FILE);
     
     /**
      * Helpers
@@ -550,8 +552,14 @@
             
             ensureDirectoryExists(DOC_DIRECTORY);
             ensureDirectoryExists(path.join(DOC_DIRECTORY, SDK_VERSION));
+            ensureDirectoryExists(path.join(DOC_DIRECTORY, SDK_VERSION, REFDOC_DIRECTORY));
             
-            fs.writeFileSync(GENERATED_DOCS, data);
+            for(var name in data) {
+                var htmlPath = path.join(DOC_DIRECTORY, SDK_VERSION, REFDOC_DIRECTORY, name + ".html");
+                fs.writeFileSync(htmlPath, data[name]);
+            }
+            
+            //fs.writeFileSync(GENERATED_REF_DOCS, data[1]);
             
             callback(null);
         });
@@ -573,7 +581,7 @@
                 var tempDirPath = temp.mkdirSync();
                 
                 tempPath = path.join(tempDirPath, DOC_FILE);
-                fs.link(GENERATED_DOCS, tempPath);
+                fs.link(GENERATED_REF_DOCS, tempPath);
                 
                 done();
             },
@@ -587,15 +595,15 @@
                 ensureDirectoryExists(DOC_DIRECTORY);
                 ensureDirectoryExists(path.join(DOC_DIRECTORY, SDK_VERSION));
                 
-                if (path.existsSync(GENERATED_DOCS)) {
-                    fs.unlinkSync(GENERATED_DOCS);
+                if (path.existsSync(GENERATED_REF_DOCS)) {
+                    fs.unlinkSync(GENERATED_REF_DOCS);
                 }
-                fs.link(tempPath, GENERATED_DOCS);
+                fs.link(tempPath, GENERATED_REF_DOCS);
                 
                 done();
             },
             function(done) {
-                git.add(GENERATED_DOCS, done);
+                git.add(GENERATED_REF_DOCS, done);
             },
             function(done) {
                 git.commit("Updating v" + SDK_VERSION + " docs: " + (new Date()), done);  

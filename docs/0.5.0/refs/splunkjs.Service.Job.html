@@ -1,0 +1,2094 @@
+<head>
+  <script>
+    var raw = [{"id":"1-1334615826847","name":"log","parent":"splunkjs.Logger","global":true},{"id":"2-1334615826847","name":"error","parent":"splunkjs.Logger","global":true},{"id":"3-1334615826847","name":"warn","parent":"splunkjs.Logger","global":true},{"id":"4-1334615826847","name":"info","parent":"splunkjs.Logger","global":true},{"id":"5-1334615826847","name":"printMessages","parent":"splunkjs.Logger","global":true},{"id":"6-1334615826847","name":"setLevel","parent":"splunkjs.Logger","global":true},{"id":"9-1334615826847","name":"init","parent":"splunkjs.Http"},{"id":"16-1334615826847","name":"_buildResponse","parent":"splunkjs.Http"},{"id":"15-1334615826847","name":"parseJson","parent":"splunkjs.Http"},{"id":"14-1334615826847","name":"makeRequest","parent":"splunkjs.Http"},{"id":"13-1334615826847","name":"request","parent":"splunkjs.Http"},{"id":"12-1334615826847","name":"del","parent":"splunkjs.Http"},{"id":"11-1334615826847","name":"post","parent":"splunkjs.Http"},{"id":"10-1334615826847","name":"get","parent":"splunkjs.Http"},{"id":"7-1334615826847","name":"encode","parent":"splunkjs.Http","global":true},{"id":"18-1334615826847","name":"bind","parent":"splunkjs.Utils","global":true},{"id":"19-1334615826847","name":"trim","parent":"splunkjs.Utils","global":true},{"id":"20-1334615826847","name":"indexOf","parent":"splunkjs.Utils","global":true},{"id":"21-1334615826848","name":"contains","parent":"splunkjs.Utils","global":true},{"id":"22-1334615826848","name":"startsWith","parent":"splunkjs.Utils","global":true},{"id":"23-1334615826848","name":"endsWith","parent":"splunkjs.Utils","global":true},{"id":"24-1334615826848","name":"toArray","parent":"splunkjs.Utils","global":true},{"id":"25-1334615826848","name":"isArray","parent":"splunkjs.Utils","global":true},{"id":"26-1334615826848","name":"isFunction","parent":"splunkjs.Utils","global":true},{"id":"27-1334615826848","name":"isNumber","parent":"splunkjs.Utils","global":true},{"id":"28-1334615826848","name":"isString","parent":"splunkjs.Utils","global":true},{"id":"29-1334615826848","name":"isObject","parent":"splunkjs.Utils","global":true},{"id":"30-1334615826848","name":"isEmpty","parent":"splunkjs.Utils","global":true},{"id":"31-1334615826848","name":"forEach","parent":"splunkjs.Utils","global":true},{"id":"32-1334615826848","name":"extend","parent":"splunkjs.Utils","global":true},{"id":"33-1334615826848","name":"clone","parent":"splunkjs.Utils","global":true},{"id":"34-1334615826848","name":"namespaceFromProperties","parent":"splunkjs.Utils","global":true},{"id":"36-1334615826848","name":"whilst","parent":"splunkjs.Async","global":true},{"id":"37-1334615826848","name":"parallel","parent":"splunkjs.Async","global":true},{"id":"38-1334615826848","name":"series","parent":"splunkjs.Async","global":true},{"id":"39-1334615826848","name":"parallelMap","parent":"splunkjs.Async","global":true},{"id":"40-1334615826848","name":"seriesMap","parent":"splunkjs.Async","global":true},{"id":"41-1334615826848","name":"parallelEach","parent":"splunkjs.Async","global":true},{"id":"42-1334615826848","name":"seriesEach","parent":"splunkjs.Async","global":true},{"id":"43-1334615826848","name":"chain","parent":"splunkjs.Async","global":true},{"id":"44-1334615826848","name":"sleep","parent":"splunkjs.Async","global":true},{"id":"45-1334615826848","name":"augment","parent":"splunkjs.Async","global":true},{"id":"47-1334615826848","name":"init","parent":"splunkjs.Context"},{"id":"55-1334615826849","name":"request","parent":"splunkjs.Context"},{"id":"54-1334615826849","name":"post","parent":"splunkjs.Context"},{"id":"53-1334615826849","name":"del","parent":"splunkjs.Context"},{"id":"52-1334615826849","name":"get","parent":"splunkjs.Context"},{"id":"51-1334615826849","name":"login","parent":"splunkjs.Context"},{"id":"50-1334615826849","name":"urlify","parent":"splunkjs.Context"},{"id":"49-1334615826848","name":"fullpath","parent":"splunkjs.Context"},{"id":"48-1334615826848","name":"_headers","parent":"splunkjs.Context"},{"id":"57-1334615826849","name":"init","parent":"splunkjs.Service"},{"id":"65-1334615826849","name":"users","parent":"splunkjs.Service"},{"id":"66-1334615826849","name":"views","parent":"splunkjs.Service"},{"id":"72-1334615826849","name":"log","parent":"splunkjs.Service"},{"id":"67-1334615826849","name":"search","parent":"splunkjs.Service"},{"id":"59-1334615826849","name":"apps","parent":"splunkjs.Service"},{"id":"61-1334615826849","name":"indexes","parent":"splunkjs.Service"},{"id":"71-1334615826849","name":"parse","parent":"splunkjs.Service"},{"id":"70-1334615826849","name":"serverInfo","parent":"splunkjs.Service"},{"id":"69-1334615826849","name":"currentUser","parent":"splunkjs.Service"},{"id":"68-1334615826849","name":"oneshotSearch","parent":"splunkjs.Service"},{"id":"62-1334615826849","name":"properties","parent":"splunkjs.Service"},{"id":"60-1334615826849","name":"configurations","parent":"splunkjs.Service"},{"id":"58-1334615826849","name":"specialize","parent":"splunkjs.Service"},{"id":"64-1334615826849","name":"jobs","parent":"splunkjs.Service"},{"id":"63-1334615826849","name":"savedSearches","parent":"splunkjs.Service"},{"id":"55-133461582684956-1334615826849","name":"request","parent":"splunkjs.Service","inherited":true},{"id":"54-133461582684956-1334615826849","name":"post","parent":"splunkjs.Service","inherited":true},{"id":"53-133461582684956-1334615826849","name":"del","parent":"splunkjs.Service","inherited":true},{"id":"52-133461582684956-1334615826849","name":"get","parent":"splunkjs.Service","inherited":true},{"id":"49-133461582684856-1334615826849","name":"fullpath","parent":"splunkjs.Service","inherited":true},{"id":"74-1334615826850","name":"init","parent":"splunkjs.Service.Endpoint"},{"id":"77-1334615826850","name":"del","parent":"splunkjs.Service.Endpoint"},{"id":"76-1334615826850","name":"post","parent":"splunkjs.Service.Endpoint"},{"id":"75-1334615826850","name":"get","parent":"splunkjs.Service.Endpoint"},{"id":"79-1334615826850","name":"init","parent":"splunkjs.Service.Resource"},{"id":"84-1334615826850","name":"state","parent":"splunkjs.Service.Resource"},{"id":"83-1334615826850","name":"properties","parent":"splunkjs.Service.Resource"},{"id":"82-1334615826850","name":"refresh","parent":"splunkjs.Service.Resource"},{"id":"81-1334615826850","name":"_load","parent":"splunkjs.Service.Resource"},{"id":"80-1334615826850","name":"path","parent":"splunkjs.Service.Resource"},{"id":"77-133461582685078-1334615826850","name":"del","parent":"splunkjs.Service.Resource","inherited":true},{"id":"76-133461582685078-1334615826850","name":"post","parent":"splunkjs.Service.Resource","inherited":true},{"id":"75-133461582685078-1334615826850","name":"get","parent":"splunkjs.Service.Resource","inherited":true},{"id":"87-1334615826850","name":"init","parent":"splunkjs.Service.Entity"},{"id":"93-1334615826850","name":"updated","parent":"splunkjs.Service.Entity"},{"id":"100-1334615826850","name":"reload","parent":"splunkjs.Service.Entity"},{"id":"95-1334615826850","name":"refresh","parent":"splunkjs.Service.Entity"},{"id":"86-1334615826850","name":"refreshOnUpdate","parent":"splunkjs.Service.Entity"},{"id":"89-1334615826850","name":"fields","parent":"splunkjs.Service.Entity"},{"id":"99-1334615826850","name":"enable","parent":"splunkjs.Service.Entity"},{"id":"98-1334615826850","name":"disable","parent":"splunkjs.Service.Entity"},{"id":"97-1334615826850","name":"update","parent":"splunkjs.Service.Entity"},{"id":"96-1334615826850","name":"remove","parent":"splunkjs.Service.Entity"},{"id":"90-1334615826850","name":"acl","parent":"splunkjs.Service.Entity"},{"id":"94-1334615826850","name":"published","parent":"splunkjs.Service.Entity"},{"id":"88-1334615826850","name":"_load","parent":"splunkjs.Service.Entity"},{"id":"92-1334615826850","name":"author","parent":"splunkjs.Service.Entity"},{"id":"91-1334615826850","name":"links","parent":"splunkjs.Service.Entity"},{"id":"84-133461582685085-1334615826850","name":"state","parent":"splunkjs.Service.Entity","inherited":true},{"id":"83-133461582685085-1334615826850","name":"properties","parent":"splunkjs.Service.Entity","inherited":true},{"id":"80-133461582685085-1334615826850","name":"path","parent":"splunkjs.Service.Entity","inherited":true},{"id":"77-133461582685078-133461582685085-1334615826850","name":"del","parent":"splunkjs.Service.Entity","inherited":true},{"id":"76-133461582685078-133461582685085-1334615826850","name":"post","parent":"splunkjs.Service.Entity","inherited":true},{"id":"75-133461582685078-133461582685085-1334615826850","name":"get","parent":"splunkjs.Service.Entity","inherited":true},{"id":"104-1334615826850","name":"init","parent":"splunkjs.Service.Collection"},{"id":"108-1334615826850","name":"paging","parent":"splunkjs.Service.Collection"},{"id":"114-1334615826851","name":"contains","parent":"splunkjs.Service.Collection"},{"id":"102-1334615826850","name":"refreshOnEntityCreation","parent":"splunkjs.Service.Collection"},{"id":"113-1334615826851","name":"list","parent":"splunkjs.Service.Collection"},{"id":"112-1334615826851","name":"create","parent":"splunkjs.Service.Collection"},{"id":"111-1334615826851","name":"item","parent":"splunkjs.Service.Collection"},{"id":"110-1334615826851","name":"refresh","parent":"splunkjs.Service.Collection"},{"id":"109-1334615826850","name":"updated","parent":"splunkjs.Service.Collection"},{"id":"103-1334615826850","name":"refreshOnEntityInstantiation","parent":"splunkjs.Service.Collection"},{"id":"107-1334615826850","name":"links","parent":"splunkjs.Service.Collection"},{"id":"106-1334615826850","name":"_load","parent":"splunkjs.Service.Collection"},{"id":"105-1334615826850","name":"instantiateEntity","parent":"splunkjs.Service.Collection"},{"id":"84-1334615826850101-1334615826850","name":"state","parent":"splunkjs.Service.Collection","inherited":true},{"id":"83-1334615826850101-1334615826850","name":"properties","parent":"splunkjs.Service.Collection","inherited":true},{"id":"80-1334615826850101-1334615826850","name":"path","parent":"splunkjs.Service.Collection","inherited":true},{"id":"77-133461582685078-1334615826850101-1334615826850","name":"del","parent":"splunkjs.Service.Collection","inherited":true},{"id":"76-133461582685078-1334615826850101-1334615826850","name":"post","parent":"splunkjs.Service.Collection","inherited":true},{"id":"75-133461582685078-1334615826850101-1334615826850","name":"get","parent":"splunkjs.Service.Collection","inherited":true},{"id":"117-1334615826851","name":"init","parent":"splunkjs.Service.SavedSearch"},{"id":"122-1334615826851","name":"update","parent":"splunkjs.Service.SavedSearch"},{"id":"121-1334615826851","name":"suppressInfo","parent":"splunkjs.Service.SavedSearch"},{"id":"120-1334615826851","name":"history","parent":"splunkjs.Service.SavedSearch"},{"id":"119-1334615826851","name":"dispatch","parent":"splunkjs.Service.SavedSearch"},{"id":"118-1334615826851","name":"acknowledge","parent":"splunkjs.Service.SavedSearch"},{"id":"116-1334615826851","name":"path","parent":"splunkjs.Service.SavedSearch"},{"id":"93-1334615826850115-1334615826851","name":"updated","parent":"splunkjs.Service.SavedSearch","inherited":true},{"id":"100-1334615826850115-1334615826851","name":"reload","parent":"splunkjs.Service.SavedSearch","inherited":true},{"id":"95-1334615826850115-1334615826851","name":"refresh","parent":"splunkjs.Service.SavedSearch","inherited":true},{"id":"86-1334615826850115-1334615826851","name":"refreshOnUpdate","parent":"splunkjs.Service.SavedSearch","inherited":true},{"id":"89-1334615826850115-1334615826851","name":"fields","parent":"splunkjs.Service.SavedSearch","inherited":true},{"id":"99-1334615826850115-1334615826851","name":"enable","parent":"splunkjs.Service.SavedSearch","inherited":true},{"id":"98-1334615826850115-1334615826851","name":"disable","parent":"splunkjs.Service.SavedSearch","inherited":true},{"id":"96-1334615826850115-1334615826851","name":"remove","parent":"splunkjs.Service.SavedSearch","inherited":true},{"id":"90-1334615826850115-1334615826851","name":"acl","parent":"splunkjs.Service.SavedSearch","inherited":true},{"id":"94-1334615826850115-1334615826851","name":"published","parent":"splunkjs.Service.SavedSearch","inherited":true},{"id":"88-1334615826850115-1334615826851","name":"_load","parent":"splunkjs.Service.SavedSearch","inherited":true},{"id":"92-1334615826850115-1334615826851","name":"author","parent":"splunkjs.Service.SavedSearch","inherited":true},{"id":"91-1334615826850115-1334615826851","name":"links","parent":"splunkjs.Service.SavedSearch","inherited":true},{"id":"84-133461582685085-1334615826850115-1334615826851","name":"state","parent":"splunkjs.Service.SavedSearch","inherited":true},{"id":"83-133461582685085-1334615826850115-1334615826851","name":"properties","parent":"splunkjs.Service.SavedSearch","inherited":true},{"id":"77-133461582685078-133461582685085-1334615826850115-1334615826851","name":"del","parent":"splunkjs.Service.SavedSearch","inherited":true},{"id":"76-133461582685078-133461582685085-1334615826850115-1334615826851","name":"post","parent":"splunkjs.Service.SavedSearch","inherited":true},{"id":"75-133461582685078-133461582685085-1334615826850115-1334615826851","name":"get","parent":"splunkjs.Service.SavedSearch","inherited":true},{"id":"126-1334615826851","name":"init","parent":"splunkjs.Service.SavedSearches"},{"id":"125-1334615826851","name":"instantiateEntity","parent":"splunkjs.Service.SavedSearches"},{"id":"124-1334615826851","name":"path","parent":"splunkjs.Service.SavedSearches"},{"id":"108-1334615826850123-1334615826851","name":"paging","parent":"splunkjs.Service.SavedSearches","inherited":true},{"id":"114-1334615826851123-1334615826851","name":"contains","parent":"splunkjs.Service.SavedSearches","inherited":true},{"id":"102-1334615826850123-1334615826851","name":"refreshOnEntityCreation","parent":"splunkjs.Service.SavedSearches","inherited":true},{"id":"113-1334615826851123-1334615826851","name":"list","parent":"splunkjs.Service.SavedSearches","inherited":true},{"id":"112-1334615826851123-1334615826851","name":"create","parent":"splunkjs.Service.SavedSearches","inherited":true},{"id":"111-1334615826851123-1334615826851","name":"item","parent":"splunkjs.Service.SavedSearches","inherited":true},{"id":"110-1334615826851123-1334615826851","name":"refresh","parent":"splunkjs.Service.SavedSearches","inherited":true},{"id":"109-1334615826850123-1334615826851","name":"updated","parent":"splunkjs.Service.SavedSearches","inherited":true},{"id":"103-1334615826850123-1334615826851","name":"refreshOnEntityInstantiation","parent":"splunkjs.Service.SavedSearches","inherited":true},{"id":"107-1334615826850123-1334615826851","name":"links","parent":"splunkjs.Service.SavedSearches","inherited":true},{"id":"84-1334615826850101-1334615826850123-1334615826851","name":"state","parent":"splunkjs.Service.SavedSearches","inherited":true},{"id":"83-1334615826850101-1334615826850123-1334615826851","name":"properties","parent":"splunkjs.Service.SavedSearches","inherited":true},{"id":"77-133461582685078-1334615826850101-1334615826850123-1334615826851","name":"del","parent":"splunkjs.Service.SavedSearches","inherited":true},{"id":"76-133461582685078-1334615826850101-1334615826850123-1334615826851","name":"post","parent":"splunkjs.Service.SavedSearches","inherited":true},{"id":"75-133461582685078-1334615826850101-1334615826850123-1334615826851","name":"get","parent":"splunkjs.Service.SavedSearches","inherited":true},{"id":"130-1334615826851","name":"init","parent":"splunkjs.Service.Application"},{"id":"132-1334615826851","name":"updateInfo","parent":"splunkjs.Service.Application"},{"id":"131-1334615826851","name":"setupInfo","parent":"splunkjs.Service.Application"},{"id":"129-1334615826851","name":"path","parent":"splunkjs.Service.Application"},{"id":"128-1334615826851","name":"refreshOnUpdate","parent":"splunkjs.Service.Application"},{"id":"93-1334615826850127-1334615826851","name":"updated","parent":"splunkjs.Service.Application","inherited":true},{"id":"100-1334615826850127-1334615826851","name":"reload","parent":"splunkjs.Service.Application","inherited":true},{"id":"95-1334615826850127-1334615826851","name":"refresh","parent":"splunkjs.Service.Application","inherited":true},{"id":"89-1334615826850127-1334615826851","name":"fields","parent":"splunkjs.Service.Application","inherited":true},{"id":"99-1334615826850127-1334615826851","name":"enable","parent":"splunkjs.Service.Application","inherited":true},{"id":"98-1334615826850127-1334615826851","name":"disable","parent":"splunkjs.Service.Application","inherited":true},{"id":"97-1334615826850127-1334615826851","name":"update","parent":"splunkjs.Service.Application","inherited":true},{"id":"96-1334615826850127-1334615826851","name":"remove","parent":"splunkjs.Service.Application","inherited":true},{"id":"90-1334615826850127-1334615826851","name":"acl","parent":"splunkjs.Service.Application","inherited":true},{"id":"94-1334615826850127-1334615826851","name":"published","parent":"splunkjs.Service.Application","inherited":true},{"id":"88-1334615826850127-1334615826851","name":"_load","parent":"splunkjs.Service.Application","inherited":true},{"id":"92-1334615826850127-1334615826851","name":"author","parent":"splunkjs.Service.Application","inherited":true},{"id":"91-1334615826850127-1334615826851","name":"links","parent":"splunkjs.Service.Application","inherited":true},{"id":"84-133461582685085-1334615826850127-1334615826851","name":"state","parent":"splunkjs.Service.Application","inherited":true},{"id":"83-133461582685085-1334615826850127-1334615826851","name":"properties","parent":"splunkjs.Service.Application","inherited":true},{"id":"77-133461582685078-133461582685085-1334615826850127-1334615826851","name":"del","parent":"splunkjs.Service.Application","inherited":true},{"id":"76-133461582685078-133461582685085-1334615826850127-1334615826851","name":"post","parent":"splunkjs.Service.Application","inherited":true},{"id":"75-133461582685078-133461582685085-1334615826850127-1334615826851","name":"get","parent":"splunkjs.Service.Application","inherited":true},{"id":"137-1334615826852","name":"init","parent":"splunkjs.Service.Applications"},{"id":"136-1334615826852","name":"instantiateEntity","parent":"splunkjs.Service.Applications"},{"id":"135-1334615826851","name":"path","parent":"splunkjs.Service.Applications"},{"id":"134-1334615826851","name":"refreshOnEntityCreation","parent":"splunkjs.Service.Applications"},{"id":"108-1334615826850133-1334615826851","name":"paging","parent":"splunkjs.Service.Applications","inherited":true},{"id":"114-1334615826851133-1334615826851","name":"contains","parent":"splunkjs.Service.Applications","inherited":true},{"id":"113-1334615826851133-1334615826851","name":"list","parent":"splunkjs.Service.Applications","inherited":true},{"id":"112-1334615826851133-1334615826851","name":"create","parent":"splunkjs.Service.Applications","inherited":true},{"id":"111-1334615826851133-1334615826851","name":"item","parent":"splunkjs.Service.Applications","inherited":true},{"id":"110-1334615826851133-1334615826851","name":"refresh","parent":"splunkjs.Service.Applications","inherited":true},{"id":"109-1334615826850133-1334615826851","name":"updated","parent":"splunkjs.Service.Applications","inherited":true},{"id":"103-1334615826850133-1334615826851","name":"refreshOnEntityInstantiation","parent":"splunkjs.Service.Applications","inherited":true},{"id":"107-1334615826850133-1334615826851","name":"links","parent":"splunkjs.Service.Applications","inherited":true},{"id":"84-1334615826850101-1334615826850133-1334615826851","name":"state","parent":"splunkjs.Service.Applications","inherited":true},{"id":"83-1334615826850101-1334615826850133-1334615826851","name":"properties","parent":"splunkjs.Service.Applications","inherited":true},{"id":"77-133461582685078-1334615826850101-1334615826850133-1334615826851","name":"del","parent":"splunkjs.Service.Applications","inherited":true},{"id":"76-133461582685078-1334615826850101-1334615826850133-1334615826851","name":"post","parent":"splunkjs.Service.Applications","inherited":true},{"id":"75-133461582685078-1334615826850101-1334615826850133-1334615826851","name":"get","parent":"splunkjs.Service.Applications","inherited":true},{"id":"140-1334615826852","name":"init","parent":"splunkjs.Service.ServerInfo"},{"id":"139-1334615826852","name":"path","parent":"splunkjs.Service.ServerInfo"},{"id":"93-1334615826850138-1334615826852","name":"updated","parent":"splunkjs.Service.ServerInfo","inherited":true},{"id":"100-1334615826850138-1334615826852","name":"reload","parent":"splunkjs.Service.ServerInfo","inherited":true},{"id":"95-1334615826850138-1334615826852","name":"refresh","parent":"splunkjs.Service.ServerInfo","inherited":true},{"id":"86-1334615826850138-1334615826852","name":"refreshOnUpdate","parent":"splunkjs.Service.ServerInfo","inherited":true},{"id":"89-1334615826850138-1334615826852","name":"fields","parent":"splunkjs.Service.ServerInfo","inherited":true},{"id":"99-1334615826850138-1334615826852","name":"enable","parent":"splunkjs.Service.ServerInfo","inherited":true},{"id":"98-1334615826850138-1334615826852","name":"disable","parent":"splunkjs.Service.ServerInfo","inherited":true},{"id":"97-1334615826850138-1334615826852","name":"update","parent":"splunkjs.Service.ServerInfo","inherited":true},{"id":"96-1334615826850138-1334615826852","name":"remove","parent":"splunkjs.Service.ServerInfo","inherited":true},{"id":"90-1334615826850138-1334615826852","name":"acl","parent":"splunkjs.Service.ServerInfo","inherited":true},{"id":"94-1334615826850138-1334615826852","name":"published","parent":"splunkjs.Service.ServerInfo","inherited":true},{"id":"88-1334615826850138-1334615826852","name":"_load","parent":"splunkjs.Service.ServerInfo","inherited":true},{"id":"92-1334615826850138-1334615826852","name":"author","parent":"splunkjs.Service.ServerInfo","inherited":true},{"id":"91-1334615826850138-1334615826852","name":"links","parent":"splunkjs.Service.ServerInfo","inherited":true},{"id":"84-133461582685085-1334615826850138-1334615826852","name":"state","parent":"splunkjs.Service.ServerInfo","inherited":true},{"id":"83-133461582685085-1334615826850138-1334615826852","name":"properties","parent":"splunkjs.Service.ServerInfo","inherited":true},{"id":"77-133461582685078-133461582685085-1334615826850138-1334615826852","name":"del","parent":"splunkjs.Service.ServerInfo","inherited":true},{"id":"76-133461582685078-133461582685085-1334615826850138-1334615826852","name":"post","parent":"splunkjs.Service.ServerInfo","inherited":true},{"id":"75-133461582685078-133461582685085-1334615826850138-1334615826852","name":"get","parent":"splunkjs.Service.ServerInfo","inherited":true},{"id":"143-1334615826852","name":"init","parent":"splunkjs.Service.User"},{"id":"142-1334615826852","name":"path","parent":"splunkjs.Service.User"},{"id":"93-1334615826850141-1334615826852","name":"updated","parent":"splunkjs.Service.User","inherited":true},{"id":"100-1334615826850141-1334615826852","name":"reload","parent":"splunkjs.Service.User","inherited":true},{"id":"95-1334615826850141-1334615826852","name":"refresh","parent":"splunkjs.Service.User","inherited":true},{"id":"86-1334615826850141-1334615826852","name":"refreshOnUpdate","parent":"splunkjs.Service.User","inherited":true},{"id":"89-1334615826850141-1334615826852","name":"fields","parent":"splunkjs.Service.User","inherited":true},{"id":"99-1334615826850141-1334615826852","name":"enable","parent":"splunkjs.Service.User","inherited":true},{"id":"98-1334615826850141-1334615826852","name":"disable","parent":"splunkjs.Service.User","inherited":true},{"id":"97-1334615826850141-1334615826852","name":"update","parent":"splunkjs.Service.User","inherited":true},{"id":"96-1334615826850141-1334615826852","name":"remove","parent":"splunkjs.Service.User","inherited":true},{"id":"90-1334615826850141-1334615826852","name":"acl","parent":"splunkjs.Service.User","inherited":true},{"id":"94-1334615826850141-1334615826852","name":"published","parent":"splunkjs.Service.User","inherited":true},{"id":"88-1334615826850141-1334615826852","name":"_load","parent":"splunkjs.Service.User","inherited":true},{"id":"92-1334615826850141-1334615826852","name":"author","parent":"splunkjs.Service.User","inherited":true},{"id":"91-1334615826850141-1334615826852","name":"links","parent":"splunkjs.Service.User","inherited":true},{"id":"84-133461582685085-1334615826850141-1334615826852","name":"state","parent":"splunkjs.Service.User","inherited":true},{"id":"83-133461582685085-1334615826850141-1334615826852","name":"properties","parent":"splunkjs.Service.User","inherited":true},{"id":"77-133461582685078-133461582685085-1334615826850141-1334615826852","name":"del","parent":"splunkjs.Service.User","inherited":true},{"id":"76-133461582685078-133461582685085-1334615826850141-1334615826852","name":"post","parent":"splunkjs.Service.User","inherited":true},{"id":"75-133461582685078-133461582685085-1334615826850141-1334615826852","name":"get","parent":"splunkjs.Service.User","inherited":true},{"id":"148-1334615826852","name":"init","parent":"splunkjs.Service.Users"},{"id":"149-1334615826852","name":"create","parent":"splunkjs.Service.Users"},{"id":"147-1334615826852","name":"instantiateEntity","parent":"splunkjs.Service.Users"},{"id":"146-1334615826852","name":"path","parent":"splunkjs.Service.Users"},{"id":"145-1334615826852","name":"refreshOnEntityCreation","parent":"splunkjs.Service.Users"},{"id":"108-1334615826850144-1334615826852","name":"paging","parent":"splunkjs.Service.Users","inherited":true},{"id":"114-1334615826851144-1334615826852","name":"contains","parent":"splunkjs.Service.Users","inherited":true},{"id":"113-1334615826851144-1334615826852","name":"list","parent":"splunkjs.Service.Users","inherited":true},{"id":"111-1334615826851144-1334615826852","name":"item","parent":"splunkjs.Service.Users","inherited":true},{"id":"110-1334615826851144-1334615826852","name":"refresh","parent":"splunkjs.Service.Users","inherited":true},{"id":"109-1334615826850144-1334615826852","name":"updated","parent":"splunkjs.Service.Users","inherited":true},{"id":"103-1334615826850144-1334615826852","name":"refreshOnEntityInstantiation","parent":"splunkjs.Service.Users","inherited":true},{"id":"107-1334615826850144-1334615826852","name":"links","parent":"splunkjs.Service.Users","inherited":true},{"id":"84-1334615826850101-1334615826850144-1334615826852","name":"state","parent":"splunkjs.Service.Users","inherited":true},{"id":"83-1334615826850101-1334615826850144-1334615826852","name":"properties","parent":"splunkjs.Service.Users","inherited":true},{"id":"77-133461582685078-1334615826850101-1334615826850144-1334615826852","name":"del","parent":"splunkjs.Service.Users","inherited":true},{"id":"76-133461582685078-1334615826850101-1334615826850144-1334615826852","name":"post","parent":"splunkjs.Service.Users","inherited":true},{"id":"75-133461582685078-1334615826850101-1334615826850144-1334615826852","name":"get","parent":"splunkjs.Service.Users","inherited":true},{"id":"152-1334615826852","name":"init","parent":"splunkjs.Service.View"},{"id":"151-1334615826852","name":"path","parent":"splunkjs.Service.View"},{"id":"93-1334615826850150-1334615826852","name":"updated","parent":"splunkjs.Service.View","inherited":true},{"id":"100-1334615826850150-1334615826852","name":"reload","parent":"splunkjs.Service.View","inherited":true},{"id":"95-1334615826850150-1334615826852","name":"refresh","parent":"splunkjs.Service.View","inherited":true},{"id":"86-1334615826850150-1334615826852","name":"refreshOnUpdate","parent":"splunkjs.Service.View","inherited":true},{"id":"89-1334615826850150-1334615826852","name":"fields","parent":"splunkjs.Service.View","inherited":true},{"id":"99-1334615826850150-1334615826852","name":"enable","parent":"splunkjs.Service.View","inherited":true},{"id":"98-1334615826850150-1334615826852","name":"disable","parent":"splunkjs.Service.View","inherited":true},{"id":"97-1334615826850150-1334615826852","name":"update","parent":"splunkjs.Service.View","inherited":true},{"id":"96-1334615826850150-1334615826852","name":"remove","parent":"splunkjs.Service.View","inherited":true},{"id":"90-1334615826850150-1334615826852","name":"acl","parent":"splunkjs.Service.View","inherited":true},{"id":"94-1334615826850150-1334615826852","name":"published","parent":"splunkjs.Service.View","inherited":true},{"id":"88-1334615826850150-1334615826852","name":"_load","parent":"splunkjs.Service.View","inherited":true},{"id":"92-1334615826850150-1334615826852","name":"author","parent":"splunkjs.Service.View","inherited":true},{"id":"91-1334615826850150-1334615826852","name":"links","parent":"splunkjs.Service.View","inherited":true},{"id":"84-133461582685085-1334615826850150-1334615826852","name":"state","parent":"splunkjs.Service.View","inherited":true},{"id":"83-133461582685085-1334615826850150-1334615826852","name":"properties","parent":"splunkjs.Service.View","inherited":true},{"id":"77-133461582685078-133461582685085-1334615826850150-1334615826852","name":"del","parent":"splunkjs.Service.View","inherited":true},{"id":"76-133461582685078-133461582685085-1334615826850150-1334615826852","name":"post","parent":"splunkjs.Service.View","inherited":true},{"id":"75-133461582685078-133461582685085-1334615826850150-1334615826852","name":"get","parent":"splunkjs.Service.View","inherited":true},{"id":"156-1334615826852","name":"init","parent":"splunkjs.Service.Views"},{"id":"155-1334615826852","name":"instantiateEntity","parent":"splunkjs.Service.Views"},{"id":"154-1334615826852","name":"path","parent":"splunkjs.Service.Views"},{"id":"108-1334615826850153-1334615826852","name":"paging","parent":"splunkjs.Service.Views","inherited":true},{"id":"114-1334615826851153-1334615826852","name":"contains","parent":"splunkjs.Service.Views","inherited":true},{"id":"102-1334615826850153-1334615826852","name":"refreshOnEntityCreation","parent":"splunkjs.Service.Views","inherited":true},{"id":"113-1334615826851153-1334615826852","name":"list","parent":"splunkjs.Service.Views","inherited":true},{"id":"112-1334615826851153-1334615826852","name":"create","parent":"splunkjs.Service.Views","inherited":true},{"id":"111-1334615826851153-1334615826852","name":"item","parent":"splunkjs.Service.Views","inherited":true},{"id":"110-1334615826851153-1334615826852","name":"refresh","parent":"splunkjs.Service.Views","inherited":true},{"id":"109-1334615826850153-1334615826852","name":"updated","parent":"splunkjs.Service.Views","inherited":true},{"id":"103-1334615826850153-1334615826852","name":"refreshOnEntityInstantiation","parent":"splunkjs.Service.Views","inherited":true},{"id":"107-1334615826850153-1334615826852","name":"links","parent":"splunkjs.Service.Views","inherited":true},{"id":"84-1334615826850101-1334615826850153-1334615826852","name":"state","parent":"splunkjs.Service.Views","inherited":true},{"id":"83-1334615826850101-1334615826850153-1334615826852","name":"properties","parent":"splunkjs.Service.Views","inherited":true},{"id":"77-133461582685078-1334615826850101-1334615826850153-1334615826852","name":"del","parent":"splunkjs.Service.Views","inherited":true},{"id":"76-133461582685078-1334615826850101-1334615826850153-1334615826852","name":"post","parent":"splunkjs.Service.Views","inherited":true},{"id":"75-133461582685078-1334615826850101-1334615826850153-1334615826852","name":"get","parent":"splunkjs.Service.Views","inherited":true},{"id":"159-1334615826852","name":"init","parent":"splunkjs.Service.Index"},{"id":"160-1334615826852","name":"submitEvent","parent":"splunkjs.Service.Index"},{"id":"158-1334615826852","name":"path","parent":"splunkjs.Service.Index"},{"id":"93-1334615826850157-1334615826852","name":"updated","parent":"splunkjs.Service.Index","inherited":true},{"id":"100-1334615826850157-1334615826852","name":"reload","parent":"splunkjs.Service.Index","inherited":true},{"id":"95-1334615826850157-1334615826852","name":"refresh","parent":"splunkjs.Service.Index","inherited":true},{"id":"86-1334615826850157-1334615826852","name":"refreshOnUpdate","parent":"splunkjs.Service.Index","inherited":true},{"id":"89-1334615826850157-1334615826852","name":"fields","parent":"splunkjs.Service.Index","inherited":true},{"id":"99-1334615826850157-1334615826852","name":"enable","parent":"splunkjs.Service.Index","inherited":true},{"id":"98-1334615826850157-1334615826852","name":"disable","parent":"splunkjs.Service.Index","inherited":true},{"id":"97-1334615826850157-1334615826852","name":"update","parent":"splunkjs.Service.Index","inherited":true},{"id":"96-1334615826850157-1334615826852","name":"remove","parent":"splunkjs.Service.Index","inherited":true},{"id":"90-1334615826850157-1334615826852","name":"acl","parent":"splunkjs.Service.Index","inherited":true},{"id":"94-1334615826850157-1334615826852","name":"published","parent":"splunkjs.Service.Index","inherited":true},{"id":"88-1334615826850157-1334615826852","name":"_load","parent":"splunkjs.Service.Index","inherited":true},{"id":"92-1334615826850157-1334615826852","name":"author","parent":"splunkjs.Service.Index","inherited":true},{"id":"91-1334615826850157-1334615826852","name":"links","parent":"splunkjs.Service.Index","inherited":true},{"id":"84-133461582685085-1334615826850157-1334615826852","name":"state","parent":"splunkjs.Service.Index","inherited":true},{"id":"83-133461582685085-1334615826850157-1334615826852","name":"properties","parent":"splunkjs.Service.Index","inherited":true},{"id":"77-133461582685078-133461582685085-1334615826850157-1334615826852","name":"del","parent":"splunkjs.Service.Index","inherited":true},{"id":"76-133461582685078-133461582685085-1334615826850157-1334615826852","name":"post","parent":"splunkjs.Service.Index","inherited":true},{"id":"75-133461582685078-133461582685085-1334615826850157-1334615826852","name":"get","parent":"splunkjs.Service.Index","inherited":true},{"id":"164-1334615826852","name":"init","parent":"splunkjs.Service.Indexes"},{"id":"165-1334615826852","name":"create","parent":"splunkjs.Service.Indexes"},{"id":"163-1334615826852","name":"instantiateEntity","parent":"splunkjs.Service.Indexes"},{"id":"162-1334615826852","name":"path","parent":"splunkjs.Service.Indexes"},{"id":"108-1334615826850161-1334615826852","name":"paging","parent":"splunkjs.Service.Indexes","inherited":true},{"id":"114-1334615826851161-1334615826852","name":"contains","parent":"splunkjs.Service.Indexes","inherited":true},{"id":"102-1334615826850161-1334615826852","name":"refreshOnEntityCreation","parent":"splunkjs.Service.Indexes","inherited":true},{"id":"113-1334615826851161-1334615826852","name":"list","parent":"splunkjs.Service.Indexes","inherited":true},{"id":"111-1334615826851161-1334615826852","name":"item","parent":"splunkjs.Service.Indexes","inherited":true},{"id":"110-1334615826851161-1334615826852","name":"refresh","parent":"splunkjs.Service.Indexes","inherited":true},{"id":"109-1334615826850161-1334615826852","name":"updated","parent":"splunkjs.Service.Indexes","inherited":true},{"id":"103-1334615826850161-1334615826852","name":"refreshOnEntityInstantiation","parent":"splunkjs.Service.Indexes","inherited":true},{"id":"107-1334615826850161-1334615826852","name":"links","parent":"splunkjs.Service.Indexes","inherited":true},{"id":"84-1334615826850101-1334615826850161-1334615826852","name":"state","parent":"splunkjs.Service.Indexes","inherited":true},{"id":"83-1334615826850101-1334615826850161-1334615826852","name":"properties","parent":"splunkjs.Service.Indexes","inherited":true},{"id":"77-133461582685078-1334615826850101-1334615826850161-1334615826852","name":"del","parent":"splunkjs.Service.Indexes","inherited":true},{"id":"76-133461582685078-1334615826850101-1334615826850161-1334615826852","name":"post","parent":"splunkjs.Service.Indexes","inherited":true},{"id":"75-133461582685078-1334615826850101-1334615826850161-1334615826852","name":"get","parent":"splunkjs.Service.Indexes","inherited":true},{"id":"169-1334615826852","name":"init","parent":"splunkjs.Service.PropertyStanza"},{"id":"168-1334615826852","name":"path","parent":"splunkjs.Service.PropertyStanza"},{"id":"167-1334615826852","name":"refreshOnUpdate","parent":"splunkjs.Service.PropertyStanza"},{"id":"93-1334615826850166-1334615826852","name":"updated","parent":"splunkjs.Service.PropertyStanza","inherited":true},{"id":"100-1334615826850166-1334615826852","name":"reload","parent":"splunkjs.Service.PropertyStanza","inherited":true},{"id":"95-1334615826850166-1334615826852","name":"refresh","parent":"splunkjs.Service.PropertyStanza","inherited":true},{"id":"89-1334615826850166-1334615826852","name":"fields","parent":"splunkjs.Service.PropertyStanza","inherited":true},{"id":"99-1334615826850166-1334615826852","name":"enable","parent":"splunkjs.Service.PropertyStanza","inherited":true},{"id":"98-1334615826850166-1334615826852","name":"disable","parent":"splunkjs.Service.PropertyStanza","inherited":true},{"id":"97-1334615826850166-1334615826852","name":"update","parent":"splunkjs.Service.PropertyStanza","inherited":true},{"id":"96-1334615826850166-1334615826852","name":"remove","parent":"splunkjs.Service.PropertyStanza","inherited":true},{"id":"90-1334615826850166-1334615826852","name":"acl","parent":"splunkjs.Service.PropertyStanza","inherited":true},{"id":"94-1334615826850166-1334615826852","name":"published","parent":"splunkjs.Service.PropertyStanza","inherited":true},{"id":"88-1334615826850166-1334615826852","name":"_load","parent":"splunkjs.Service.PropertyStanza","inherited":true},{"id":"92-1334615826850166-1334615826852","name":"author","parent":"splunkjs.Service.PropertyStanza","inherited":true},{"id":"91-1334615826850166-1334615826852","name":"links","parent":"splunkjs.Service.PropertyStanza","inherited":true},{"id":"84-133461582685085-1334615826850166-1334615826852","name":"state","parent":"splunkjs.Service.PropertyStanza","inherited":true},{"id":"83-133461582685085-1334615826850166-1334615826852","name":"properties","parent":"splunkjs.Service.PropertyStanza","inherited":true},{"id":"77-133461582685078-133461582685085-1334615826850166-1334615826852","name":"del","parent":"splunkjs.Service.PropertyStanza","inherited":true},{"id":"76-133461582685078-133461582685085-1334615826850166-1334615826852","name":"post","parent":"splunkjs.Service.PropertyStanza","inherited":true},{"id":"75-133461582685078-133461582685085-1334615826850166-1334615826852","name":"get","parent":"splunkjs.Service.PropertyStanza","inherited":true},{"id":"174-1334615826852","name":"init","parent":"splunkjs.Service.PropertyFile"},{"id":"176-1334615826852","name":"create","parent":"splunkjs.Service.PropertyFile"},{"id":"175-1334615826852","name":"refresh","parent":"splunkjs.Service.PropertyFile"},{"id":"173-1334615826852","name":"instantiateEntity","parent":"splunkjs.Service.PropertyFile"},{"id":"172-1334615826852","name":"path","parent":"splunkjs.Service.PropertyFile"},{"id":"171-1334615826852","name":"refreshOnEntityCreation","parent":"splunkjs.Service.PropertyFile"},{"id":"108-1334615826850170-1334615826852","name":"paging","parent":"splunkjs.Service.PropertyFile","inherited":true},{"id":"114-1334615826851170-1334615826852","name":"contains","parent":"splunkjs.Service.PropertyFile","inherited":true},{"id":"113-1334615826851170-1334615826852","name":"list","parent":"splunkjs.Service.PropertyFile","inherited":true},{"id":"111-1334615826851170-1334615826852","name":"item","parent":"splunkjs.Service.PropertyFile","inherited":true},{"id":"109-1334615826850170-1334615826852","name":"updated","parent":"splunkjs.Service.PropertyFile","inherited":true},{"id":"103-1334615826850170-1334615826852","name":"refreshOnEntityInstantiation","parent":"splunkjs.Service.PropertyFile","inherited":true},{"id":"107-1334615826850170-1334615826852","name":"links","parent":"splunkjs.Service.PropertyFile","inherited":true},{"id":"84-1334615826850101-1334615826850170-1334615826852","name":"state","parent":"splunkjs.Service.PropertyFile","inherited":true},{"id":"83-1334615826850101-1334615826850170-1334615826852","name":"properties","parent":"splunkjs.Service.PropertyFile","inherited":true},{"id":"77-133461582685078-1334615826850101-1334615826850170-1334615826852","name":"del","parent":"splunkjs.Service.PropertyFile","inherited":true},{"id":"76-133461582685078-1334615826850101-1334615826850170-1334615826852","name":"post","parent":"splunkjs.Service.PropertyFile","inherited":true},{"id":"75-133461582685078-1334615826850101-1334615826850170-1334615826852","name":"get","parent":"splunkjs.Service.PropertyFile","inherited":true},{"id":"182-1334615826852","name":"init","parent":"splunkjs.Service.Properties"},{"id":"183-1334615826852","name":"create","parent":"splunkjs.Service.Properties"},{"id":"181-1334615826852","name":"instantiateEntity","parent":"splunkjs.Service.Properties"},{"id":"180-1334615826852","name":"path","parent":"splunkjs.Service.Properties"},{"id":"179-1334615826852","name":"refreshOnEntityInstantiation","parent":"splunkjs.Service.Properties"},{"id":"178-1334615826852","name":"refreshOnEntityCreation","parent":"splunkjs.Service.Properties"},{"id":"108-1334615826850177-1334615826852","name":"paging","parent":"splunkjs.Service.Properties","inherited":true},{"id":"114-1334615826851177-1334615826852","name":"contains","parent":"splunkjs.Service.Properties","inherited":true},{"id":"113-1334615826851177-1334615826852","name":"list","parent":"splunkjs.Service.Properties","inherited":true},{"id":"111-1334615826851177-1334615826852","name":"item","parent":"splunkjs.Service.Properties","inherited":true},{"id":"110-1334615826851177-1334615826852","name":"refresh","parent":"splunkjs.Service.Properties","inherited":true},{"id":"109-1334615826850177-1334615826852","name":"updated","parent":"splunkjs.Service.Properties","inherited":true},{"id":"107-1334615826850177-1334615826852","name":"links","parent":"splunkjs.Service.Properties","inherited":true},{"id":"84-1334615826850101-1334615826850177-1334615826852","name":"state","parent":"splunkjs.Service.Properties","inherited":true},{"id":"83-1334615826850101-1334615826850177-1334615826852","name":"properties","parent":"splunkjs.Service.Properties","inherited":true},{"id":"77-133461582685078-1334615826850101-1334615826850177-1334615826852","name":"del","parent":"splunkjs.Service.Properties","inherited":true},{"id":"76-133461582685078-1334615826850101-1334615826850177-1334615826852","name":"post","parent":"splunkjs.Service.Properties","inherited":true},{"id":"75-133461582685078-1334615826850101-1334615826850177-1334615826852","name":"get","parent":"splunkjs.Service.Properties","inherited":true},{"id":"186-1334615826852","name":"init","parent":"splunkjs.Service.ConfigurationStanza"},{"id":"185-1334615826852","name":"path","parent":"splunkjs.Service.ConfigurationStanza"},{"id":"93-1334615826850184-1334615826852","name":"updated","parent":"splunkjs.Service.ConfigurationStanza","inherited":true},{"id":"100-1334615826850184-1334615826852","name":"reload","parent":"splunkjs.Service.ConfigurationStanza","inherited":true},{"id":"95-1334615826850184-1334615826852","name":"refresh","parent":"splunkjs.Service.ConfigurationStanza","inherited":true},{"id":"86-1334615826850184-1334615826852","name":"refreshOnUpdate","parent":"splunkjs.Service.ConfigurationStanza","inherited":true},{"id":"89-1334615826850184-1334615826852","name":"fields","parent":"splunkjs.Service.ConfigurationStanza","inherited":true},{"id":"99-1334615826850184-1334615826852","name":"enable","parent":"splunkjs.Service.ConfigurationStanza","inherited":true},{"id":"98-1334615826850184-1334615826852","name":"disable","parent":"splunkjs.Service.ConfigurationStanza","inherited":true},{"id":"97-1334615826850184-1334615826852","name":"update","parent":"splunkjs.Service.ConfigurationStanza","inherited":true},{"id":"96-1334615826850184-1334615826852","name":"remove","parent":"splunkjs.Service.ConfigurationStanza","inherited":true},{"id":"90-1334615826850184-1334615826852","name":"acl","parent":"splunkjs.Service.ConfigurationStanza","inherited":true},{"id":"94-1334615826850184-1334615826852","name":"published","parent":"splunkjs.Service.ConfigurationStanza","inherited":true},{"id":"88-1334615826850184-1334615826852","name":"_load","parent":"splunkjs.Service.ConfigurationStanza","inherited":true},{"id":"92-1334615826850184-1334615826852","name":"author","parent":"splunkjs.Service.ConfigurationStanza","inherited":true},{"id":"91-1334615826850184-1334615826852","name":"links","parent":"splunkjs.Service.ConfigurationStanza","inherited":true},{"id":"84-133461582685085-1334615826850184-1334615826852","name":"state","parent":"splunkjs.Service.ConfigurationStanza","inherited":true},{"id":"83-133461582685085-1334615826850184-1334615826852","name":"properties","parent":"splunkjs.Service.ConfigurationStanza","inherited":true},{"id":"77-133461582685078-133461582685085-1334615826850184-1334615826852","name":"del","parent":"splunkjs.Service.ConfigurationStanza","inherited":true},{"id":"76-133461582685078-133461582685085-1334615826850184-1334615826852","name":"post","parent":"splunkjs.Service.ConfigurationStanza","inherited":true},{"id":"75-133461582685078-133461582685085-1334615826850184-1334615826852","name":"get","parent":"splunkjs.Service.ConfigurationStanza","inherited":true},{"id":"190-1334615826852","name":"init","parent":"splunkjs.Service.ConfigurationFile"},{"id":"191-1334615826852","name":"create","parent":"splunkjs.Service.ConfigurationFile"},{"id":"189-1334615826852","name":"instantiateEntity","parent":"splunkjs.Service.ConfigurationFile"},{"id":"188-1334615826852","name":"path","parent":"splunkjs.Service.ConfigurationFile"},{"id":"108-1334615826850187-1334615826852","name":"paging","parent":"splunkjs.Service.ConfigurationFile","inherited":true},{"id":"114-1334615826851187-1334615826852","name":"contains","parent":"splunkjs.Service.ConfigurationFile","inherited":true},{"id":"102-1334615826850187-1334615826852","name":"refreshOnEntityCreation","parent":"splunkjs.Service.ConfigurationFile","inherited":true},{"id":"113-1334615826851187-1334615826852","name":"list","parent":"splunkjs.Service.ConfigurationFile","inherited":true},{"id":"111-1334615826851187-1334615826852","name":"item","parent":"splunkjs.Service.ConfigurationFile","inherited":true},{"id":"110-1334615826851187-1334615826852","name":"refresh","parent":"splunkjs.Service.ConfigurationFile","inherited":true},{"id":"109-1334615826850187-1334615826852","name":"updated","parent":"splunkjs.Service.ConfigurationFile","inherited":true},{"id":"103-1334615826850187-1334615826852","name":"refreshOnEntityInstantiation","parent":"splunkjs.Service.ConfigurationFile","inherited":true},{"id":"107-1334615826850187-1334615826852","name":"links","parent":"splunkjs.Service.ConfigurationFile","inherited":true},{"id":"84-1334615826850101-1334615826850187-1334615826852","name":"state","parent":"splunkjs.Service.ConfigurationFile","inherited":true},{"id":"83-1334615826850101-1334615826850187-1334615826852","name":"properties","parent":"splunkjs.Service.ConfigurationFile","inherited":true},{"id":"77-133461582685078-1334615826850101-1334615826850187-1334615826852","name":"del","parent":"splunkjs.Service.ConfigurationFile","inherited":true},{"id":"76-133461582685078-1334615826850101-1334615826850187-1334615826852","name":"post","parent":"splunkjs.Service.ConfigurationFile","inherited":true},{"id":"75-133461582685078-1334615826850101-1334615826850187-1334615826852","name":"get","parent":"splunkjs.Service.ConfigurationFile","inherited":true},{"id":"197-1334615826853","name":"init","parent":"splunkjs.Service.Configurations"},{"id":"198-1334615826853","name":"create","parent":"splunkjs.Service.Configurations"},{"id":"196-1334615826852","name":"instantiateEntity","parent":"splunkjs.Service.Configurations"},{"id":"195-1334615826852","name":"path","parent":"splunkjs.Service.Configurations"},{"id":"194-1334615826852","name":"refreshOnEntityInstantiation","parent":"splunkjs.Service.Configurations"},{"id":"193-1334615826852","name":"refreshOnEntityCreation","parent":"splunkjs.Service.Configurations"},{"id":"108-1334615826850192-1334615826852","name":"paging","parent":"splunkjs.Service.Configurations","inherited":true},{"id":"114-1334615826851192-1334615826852","name":"contains","parent":"splunkjs.Service.Configurations","inherited":true},{"id":"113-1334615826851192-1334615826852","name":"list","parent":"splunkjs.Service.Configurations","inherited":true},{"id":"111-1334615826851192-1334615826852","name":"item","parent":"splunkjs.Service.Configurations","inherited":true},{"id":"110-1334615826851192-1334615826852","name":"refresh","parent":"splunkjs.Service.Configurations","inherited":true},{"id":"109-1334615826850192-1334615826852","name":"updated","parent":"splunkjs.Service.Configurations","inherited":true},{"id":"107-1334615826850192-1334615826852","name":"links","parent":"splunkjs.Service.Configurations","inherited":true},{"id":"84-1334615826850101-1334615826850192-1334615826852","name":"state","parent":"splunkjs.Service.Configurations","inherited":true},{"id":"83-1334615826850101-1334615826850192-1334615826852","name":"properties","parent":"splunkjs.Service.Configurations","inherited":true},{"id":"77-133461582685078-1334615826850101-1334615826850192-1334615826852","name":"del","parent":"splunkjs.Service.Configurations","inherited":true},{"id":"76-133461582685078-1334615826850101-1334615826850192-1334615826852","name":"post","parent":"splunkjs.Service.Configurations","inherited":true},{"id":"75-133461582685078-1334615826850101-1334615826850192-1334615826852","name":"get","parent":"splunkjs.Service.Configurations","inherited":true},{"id":"201-1334615826853","name":"init","parent":"splunkjs.Service.Job"},{"id":"208-1334615826853","name":"preview","parent":"splunkjs.Service.Job"},{"id":"216-1334615826853","name":"unpause","parent":"splunkjs.Service.Job"},{"id":"210-1334615826853","name":"searchlog","parent":"splunkjs.Service.Job"},{"id":"200-1334615826853","name":"path","parent":"splunkjs.Service.Job"},{"id":"211-1334615826853","name":"setPriority","parent":"splunkjs.Service.Job"},{"id":"203-1334615826853","name":"disablePreview","parent":"splunkjs.Service.Job"},{"id":"205-1334615826853","name":"events","parent":"splunkjs.Service.Job"},{"id":"215-1334615826853","name":"touch","parent":"splunkjs.Service.Job"},{"id":"214-1334615826853","name":"timeline","parent":"splunkjs.Service.Job"},{"id":"213-1334615826853","name":"summary","parent":"splunkjs.Service.Job"},{"id":"212-1334615826853","name":"setTTL","parent":"splunkjs.Service.Job"},{"id":"206-1334615826853","name":"finalize","parent":"splunkjs.Service.Job"},{"id":"204-1334615826853","name":"enablePreview","parent":"splunkjs.Service.Job"},{"id":"209-1334615826853","name":"results","parent":"splunkjs.Service.Job"},{"id":"202-1334615826853","name":"cancel","parent":"splunkjs.Service.Job"},{"id":"207-1334615826853","name":"pause","parent":"splunkjs.Service.Job"},{"id":"93-1334615826850199-1334615826853","name":"updated","parent":"splunkjs.Service.Job","inherited":true},{"id":"100-1334615826850199-1334615826853","name":"reload","parent":"splunkjs.Service.Job","inherited":true},{"id":"95-1334615826850199-1334615826853","name":"refresh","parent":"splunkjs.Service.Job","inherited":true},{"id":"86-1334615826850199-1334615826853","name":"refreshOnUpdate","parent":"splunkjs.Service.Job","inherited":true},{"id":"89-1334615826850199-1334615826853","name":"fields","parent":"splunkjs.Service.Job","inherited":true},{"id":"99-1334615826850199-1334615826853","name":"enable","parent":"splunkjs.Service.Job","inherited":true},{"id":"98-1334615826850199-1334615826853","name":"disable","parent":"splunkjs.Service.Job","inherited":true},{"id":"97-1334615826850199-1334615826853","name":"update","parent":"splunkjs.Service.Job","inherited":true},{"id":"96-1334615826850199-1334615826853","name":"remove","parent":"splunkjs.Service.Job","inherited":true},{"id":"90-1334615826850199-1334615826853","name":"acl","parent":"splunkjs.Service.Job","inherited":true},{"id":"94-1334615826850199-1334615826853","name":"published","parent":"splunkjs.Service.Job","inherited":true},{"id":"88-1334615826850199-1334615826853","name":"_load","parent":"splunkjs.Service.Job","inherited":true},{"id":"92-1334615826850199-1334615826853","name":"author","parent":"splunkjs.Service.Job","inherited":true},{"id":"91-1334615826850199-1334615826853","name":"links","parent":"splunkjs.Service.Job","inherited":true},{"id":"84-133461582685085-1334615826850199-1334615826853","name":"state","parent":"splunkjs.Service.Job","inherited":true},{"id":"83-133461582685085-1334615826850199-1334615826853","name":"properties","parent":"splunkjs.Service.Job","inherited":true},{"id":"77-133461582685078-133461582685085-1334615826850199-1334615826853","name":"del","parent":"splunkjs.Service.Job","inherited":true},{"id":"76-133461582685078-133461582685085-1334615826850199-1334615826853","name":"post","parent":"splunkjs.Service.Job","inherited":true},{"id":"75-133461582685078-133461582685085-1334615826850199-1334615826853","name":"get","parent":"splunkjs.Service.Job","inherited":true},{"id":"220-1334615826853","name":"init","parent":"splunkjs.Service.Jobs"},{"id":"223-1334615826854","name":"oneshotSearch","parent":"splunkjs.Service.Jobs"},{"id":"222-1334615826854","name":"search","parent":"splunkjs.Service.Jobs"},{"id":"221-1334615826854","name":"create","parent":"splunkjs.Service.Jobs"},{"id":"219-1334615826853","name":"instantiateEntity","parent":"splunkjs.Service.Jobs"},{"id":"218-1334615826853","name":"path","parent":"splunkjs.Service.Jobs"},{"id":"108-1334615826850217-1334615826853","name":"paging","parent":"splunkjs.Service.Jobs","inherited":true},{"id":"114-1334615826851217-1334615826853","name":"contains","parent":"splunkjs.Service.Jobs","inherited":true},{"id":"102-1334615826850217-1334615826853","name":"refreshOnEntityCreation","parent":"splunkjs.Service.Jobs","inherited":true},{"id":"113-1334615826851217-1334615826853","name":"list","parent":"splunkjs.Service.Jobs","inherited":true},{"id":"111-1334615826851217-1334615826853","name":"item","parent":"splunkjs.Service.Jobs","inherited":true},{"id":"110-1334615826851217-1334615826853","name":"refresh","parent":"splunkjs.Service.Jobs","inherited":true},{"id":"109-1334615826850217-1334615826853","name":"updated","parent":"splunkjs.Service.Jobs","inherited":true},{"id":"103-1334615826850217-1334615826853","name":"refreshOnEntityInstantiation","parent":"splunkjs.Service.Jobs","inherited":true},{"id":"107-1334615826850217-1334615826853","name":"links","parent":"splunkjs.Service.Jobs","inherited":true},{"id":"84-1334615826850101-1334615826850217-1334615826853","name":"state","parent":"splunkjs.Service.Jobs","inherited":true},{"id":"83-1334615826850101-1334615826850217-1334615826853","name":"properties","parent":"splunkjs.Service.Jobs","inherited":true},{"id":"77-133461582685078-1334615826850101-1334615826850217-1334615826853","name":"del","parent":"splunkjs.Service.Jobs","inherited":true},{"id":"76-133461582685078-1334615826850101-1334615826850217-1334615826853","name":"post","parent":"splunkjs.Service.Jobs","inherited":true},{"id":"75-133461582685078-1334615826850101-1334615826850217-1334615826853","name":"get","parent":"splunkjs.Service.Jobs","inherited":true}]
+  </script>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js" type="text/javascript" charset="utf-8"></script>
+  <script type="text/javascript" charset="utf-8">
+    // lunr.js version: 0.0.4
+    // (c) 2011 Oliver Nightingale
+    //
+    //  Released under MIT license.
+    //
+    var Lunr=function(c,f){var b=new Lunr.Index(c);f.call(b,b);return b};
+    Lunr.utils={uniq:function(c){if(!c)return[];return c.reduce(function(c,b){c.indexOf(b)===-1&&c.push(b);return c},[])},intersect:function(c){var f=[].slice.call(arguments,1);return this.uniq(c).filter(function(b){return f.every(function(a){return a.indexOf(b)>=0})})},detect:function(c,f,b){for(var a=c.length,g=null,d=0;d<a;d++)if(f.call(b,c[d],d,c)){g=c[d];break}return g},copy:function(c){return Object.keys(c).reduce(function(f,b){f[b]=c[b];return f},{})}};
+    Lunr.Trie=function(){var c=function(){this.children={};this.values=[]};c.prototype={childForKey:function(b){var a=this.children[b];a||(a=new c,this.children[b]=a);return a}};var f=function(){this.root=new c};f.prototype={get:function(b){var a=this;return this.keys(b).reduce(function(c,d){a.getNode(d).values.forEach(function(a){a=Lunr.utils.copy(a);if(b===d)a.exact=!0;c.push(a)});return c},[])},getNode:function(b){var a=function(b,d){if(!d.length)return b;return a(b.childForKey(d.charAt(0)),d.slice(1))};
+    return a(this.root,b)},keys:function(b){var a=[];b=b||"";var c=function(b,e){b.values.length&&a.push(e);Object.keys(b.children).forEach(function(a){c(b.children[a],e+a)})};c(this.getNode(b),b);return a},set:function(b,a){var c=function(b,e){if(!e.length)return b.values.push(a);c(b.childForKey(e.charAt(0)),e.slice(1))};return c(this.root,b)}};return f}();Lunr.Index=function(c){this.name=c;this.refName="id";this.fields={};this.trie=new Lunr.Trie};
+    Lunr.Index.prototype={add:function(c){(new Lunr.Document(c,this.refName,this.fields)).words().forEach(function(c){this.trie.set(c.id,c.docs[0])},this)},field:function(c,f){this.fields[c]=f||{multiplier:1}},ref:function(c){this.refName=c},search:function(c){if(!c)return[];c=c.split(" ").map(function(c){c=new Lunr.Word(c);if(!c.isStopWord())return c.toString()}).filter(function(c){return c}).map(function(c){return this.trie.get(c).sort(function(b,a){if(b.exact&&a.exact===void 0)return-1;if(a.exact&&
+    b.exact===void 0)return 1;if(b.score<a.score)return 1;if(b.score>a.score)return-1;return 0}).map(function(b){return b.documentId})},this);return Lunr.utils.intersect.apply(Lunr.utils,c)}};Lunr.Document=function(c,f,b){this.original=c;this.fields=b;this.ref=c[f]};
+    Lunr.Document.prototype={asJSON:function(){return{id:this.ref,words:this.words().map(function(c){return c.id}),original:this.original}},words:function(){var c=this,f={};Object.keys(this.fields).forEach(function(b){c.original[b].split(/\b/g).filter(function(a){return!!a.match(/\w/)}).map(function(a){a=new Lunr.Word(a);if(!a.isStopWord())return a.toString()}).filter(function(a){return a}).forEach(function(a){f[a]||(f[a]={score:0,ref:c.ref});f[a].score+=c.fields[b].multiplier})});return Object.keys(f).map(function(b){return{id:b,
+    docs:[{score:f[b].score,documentId:c.ref}]}})}};Lunr.Word=function(c){this.raw=c;this.out=this.raw.replace(/^\W+/,"").replace(/\W+$/,"").toLowerCase()};Lunr.Word.stopWords=["the","of","to","and","a","in","is","it","you","that","this"];
+    Lunr.Word.prototype={isStopWord:function(){return Lunr.Word.stopWords.indexOf(this.raw.toLowerCase())!==-1},toString:function(){if(!this.isStopWord())return this.stem(),this.out},stem:function(){var c={ational:"ate",tional:"tion",enci:"ence",anci:"ance",izer:"ize",bli:"ble",alli:"al",entli:"ent",eli:"e",ousli:"ous",ization:"ize",ation:"ate",ator:"ate",alism:"al",iveness:"ive",fulness:"ful",ousness:"ous",aliti:"al",iviti:"ive",biliti:"ble",logi:"log"},f={icate:"ic",ative:"",alize:"al",iciti:"ic",ical:"ic",
+    ful:"",ness:""};return function(){var b,a,g,d=g=this.out;if(g.length<3)return g;var e,h;g=g.substr(0,1);g=="y"&&(d=g.toUpperCase()+d.substr(1));e=/^(.+?)(ss|i)es$/;a=/^(.+?)([^s])s$/;e.test(d)?d=d.replace(e,"$1$2"):a.test(d)&&(d=d.replace(a,"$1$2"));e=/^(.+?)eed$/;a=/^(.+?)(ed|ing)$/;e.test(d)?(a=e.exec(d),e=/^([^aeiou][^aeiouy]*)?[aeiouy][aeiou]*[^aeiou][^aeiouy]*/,e.test(a[1])&&(e=/.$/,d=d.replace(e,""))):a.test(d)&&(a=a.exec(d),b=a[1],a=/^([^aeiou][^aeiouy]*)?[aeiouy]/,a.test(b)&&(d=b,a=/(at|bl|iz)$/,
+    h=/([^aeiouylsz])\1$/,b=/^[^aeiou][^aeiouy]*[aeiouy][^aeiouwxy]$/,a.test(d)?d+="e":h.test(d)?(e=/.$/,d=d.replace(e,"")):b.test(d)&&(d+="e")));e=/^(.+?)y$/;e.test(d)&&(a=e.exec(d),b=a[1],e=/^([^aeiou][^aeiouy]*)?[aeiouy]/,e.test(b)&&(d=b+"i"));e=/^(.+?)(ational|tional|enci|anci|izer|bli|alli|entli|eli|ousli|ization|ation|ator|alism|iveness|fulness|ousness|aliti|iviti|biliti|logi)$/;e.test(d)&&(a=e.exec(d),b=a[1],a=a[2],e=/^([^aeiou][^aeiouy]*)?[aeiouy][aeiou]*[^aeiou][^aeiouy]*/,e.test(b)&&(d=b+c[a]));
+    e=/^(.+?)(icate|ative|alize|iciti|ical|ful|ness)$/;e.test(d)&&(a=e.exec(d),b=a[1],a=a[2],e=/^([^aeiou][^aeiouy]*)?[aeiouy][aeiou]*[^aeiou][^aeiouy]*/,e.test(b)&&(d=b+f[a]));e=/^(.+?)(al|ance|ence|er|ic|able|ible|ant|ement|ment|ent|ou|ism|ate|iti|ous|ive|ize)$/;a=/^(.+?)(s|t)(ion)$/;e.test(d)?(a=e.exec(d),b=a[1],e=/^([^aeiou][^aeiouy]*)?[aeiouy][aeiou]*[^aeiou][^aeiouy]*[aeiouy][aeiou]*[^aeiou][^aeiouy]*/,e.test(b)&&(d=b)):a.test(d)&&(a=a.exec(d),b=a[1]+a[2],a=/^([^aeiou][^aeiouy]*)?[aeiouy][aeiou]*[^aeiou][^aeiouy]*[aeiouy][aeiou]*[^aeiou][^aeiouy]*/,
+    a.test(b)&&(d=b));e=/^(.+?)e$/;if(e.test(d)&&(a=e.exec(d),b=a[1],e=/^([^aeiou][^aeiouy]*)?[aeiouy][aeiou]*[^aeiou][^aeiouy]*[aeiouy][aeiou]*[^aeiou][^aeiouy]*/,a=/^([^aeiou][^aeiouy]*)?[aeiouy][aeiou]*[^aeiou][^aeiouy]*([aeiouy][aeiou]*)?$/,h=/^[^aeiou][^aeiouy]*[aeiouy][^aeiouwxy]$/,e.test(b)||a.test(b)&&!h.test(b)))d=b;e=/ll$/;a=/^([^aeiou][^aeiouy]*)?[aeiouy][aeiou]*[^aeiou][^aeiouy]*[aeiouy][aeiou]*[^aeiou][^aeiouy]*/;e.test(d)&&a.test(d)&&(e=/.$/,d=d.replace(e,""));g=="y"&&(d=g.toLowerCase()+
+    d.substr(1));this.out=d}}()};
+  </script>
+  <script type="text/javascript" charset="utf-8">
+    var idx = Lunr('methods', function () {
+      this.ref('id')
+      this.field('name', { multiplier: 10 })
+      this.field('parent', { multiplier: 5 })
+    })
+    //var methods = raw.reduce(function (memo, module) {
+    //  return memo.concat(module.methods || []).concat(module.helpers || []).concat(module.inherited || []);
+    //}, [])
+    var methods = raw;
+    methods.forEach(function (method) {
+      idx.add(method)
+    });
+    $(document).ready(function () {
+      var search = function (term) {
+        return idx.search(term).map(function (id) {
+          return methods.filter(function (method) {
+            return method.id === id
+          })[0]
+        })
+      }
+      var searchResults = $('#search-results')
+      $('#search-input').bind('keyup change focus', function () {
+        var query = $(this).val(),
+            results = search(query)
+        if (!results.length) {
+          searchResults.empty()
+          return
+        };
+        var resultsList = results.reduce(function (ul, result) {
+          var joiner = result.inherited ? "^" : (result.global ? "+" : "-");
+          var li = $('<li>').append($('<a>', {
+            href: result.parent + ".html#" + result.parent + joiner + result.name,
+            text: result.parent + "." + result.name
+          }))
+          ul.append(li)
+          return ul
+        }, $('<ul>'))
+        searchResults.html(resultsList);
+      });
+    })
+  </script>
+  <style type="text/css" media="screen">
+    body {
+      font-family: 'Helvetica Neue';
+      color: #333;
+    }
+    a {
+      color: #0f4bf0;
+    }
+    header h1 {
+      border-top: 4px solid #333;
+      font-size: 2.0em;
+    }
+    header .version {
+      font-size: 0.6em;
+    }
+    .main > header {
+      margin-bottom: 40px;
+    }
+    article {
+      margin-bottom: 10px;
+      padding-bottom: 30px;
+    }
+    article header h2 {
+      border-top: 3px solid #333;
+      font-size: 2em;
+      padding-top: 5px;
+      margin-bottom: 0px;
+    }
+    article > section {
+      margin-bottom: 30px;
+    }
+    article section h3 {
+      font-size: 1em;
+    }
+    article section header h3 {
+      padding-top: 2px;
+      font-size: 1.2em;
+      margin-bottom: 5px;
+      border-top: 2px solid #333;
+    }
+    article section header h4 {
+      font-size: 0.9em;
+      font-family: courier;
+      margin: 2px 0 5px 0;
+    }
+    @-webkit-keyframes highlight {
+      from {
+        background-color: #Ffff66;
+      }
+      to {
+        background-color: white;
+      }
+    }
+    .extends {
+      margin-top: 0px;
+      font-size: 0.8em;
+    }
+    section.method:target {
+      -webkit-animation-duration: 1s;
+      -webkit-animation-name: highlight;
+    }
+    section header .type, section header .related {
+      margin-top: 0px;
+      font-size: 0.8em;
+    }
+    section header .endpoint {
+      margin-top: -.8em;
+      font-size: 0.8em;
+    }
+    section.params h4, section.source h4 {
+      margin-top: 5px;
+      margin-bottom: 2px;
+      font-size: 0.9em;
+    }
+    section.params ul {
+      margin-top: 2px;
+    }
+    a.show-source {
+      font-size: 0.8em;
+    }
+    .wrap {
+      width: 1050px;
+      margin: 0 auto;
+    }
+    .main {
+      width: 760px;
+      float: left;
+    }
+    .search {
+    }
+    #search-input {
+      width: 250px;
+    }
+    #search-results {
+      position: relative;
+    }
+    #search-results ul {
+      width: 250px;
+      position: absolute;
+      top: 0px;
+      left: 0px;
+      background-color: white;
+      border: 1px solid #ccc;
+      list-style: none;
+      padding: 0;
+      margin-top: 0;
+      font-size: 0.9em;
+    }
+    #search-results li {
+      text-align: left;
+      padding: 5px;
+    }
+    #search-results li:hover {
+      background-color: #eee;
+      cursor: pointer;
+    }
+    #search-results li a {
+      text-decoration: none;
+      width: 250px;
+      display: block;
+    }
+    p {
+      line-height: 1.4em;
+    }
+    nav {
+      padding-top: 15px;
+      float: left;
+      width: 250px;
+      margin-right: 30px;
+      text-align: right;
+      font-size: 0.8em;
+    }
+    nav ul {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+    nav ul h3 {
+      margin-bottom: 5px;
+      border-top: 2px solid #CCC;
+      padding-top: 2px;
+    }
+    
+    nav ul h4 {
+      margin-bottom: 5px;
+      padding-top: 2px;
+    }
+    nav ul ul li {
+      padding: 2px 0;
+    }
+    pre {
+      background-color: rgba(0,0,0,0.1);
+      padding: 8px;
+      overflow-x: auto;
+      overflow-y: auto;
+    }
+    code .keyword, code .special {
+      font-weight: bold;
+      color: black;
+    }
+    code .string, code .regexp {
+      color: green
+    }
+    code .class { 
+      color: blue
+    }
+    code .number {
+      color: red
+    }
+    code .comment {
+      color: grey;
+      font-style: italic;
+    }
+    
+    .em {
+      font-style: italic;
+      color: gray;
+      font-size: 12px;
+    }
+    
+    .bold {
+      font-weight: bold;
+    }
+    
+    section.params li p {
+      display: inline;
+    }
+  </style>
+</head>
+<body>
+  <div class='wrap'>
+    <nav>
+      <div class='search'>
+        <input type="search" id="search-input" placeholder="Search"></input>
+        <div id="search-results"></div>
+      </div>
+      <ul>
+                  <li>
+            <a href='splunkjs.Service.Job.html'>
+              <h3>splunkjs.Service.Job</h3>
+            </a>
+            <ul>
+                              <li><a href='#splunkjs.Service.Job-init'>init</a></li>
+                              <li><a href='#splunkjs.Service.Job-preview'>preview</a></li>
+                              <li><a href='#splunkjs.Service.Job-unpause'>unpause</a></li>
+                              <li><a href='#splunkjs.Service.Job-searchlog'>searchlog</a></li>
+                              <li><a href='#splunkjs.Service.Job-path'>path</a></li>
+                              <li><a href='#splunkjs.Service.Job-setPriority'>setPriority</a></li>
+                              <li><a href='#splunkjs.Service.Job-disablePreview'>disablePreview</a></li>
+                              <li><a href='#splunkjs.Service.Job-events'>events</a></li>
+                              <li><a href='#splunkjs.Service.Job-touch'>touch</a></li>
+                              <li><a href='#splunkjs.Service.Job-timeline'>timeline</a></li>
+                              <li><a href='#splunkjs.Service.Job-summary'>summary</a></li>
+                              <li><a href='#splunkjs.Service.Job-setTTL'>setTTL</a></li>
+                              <li><a href='#splunkjs.Service.Job-finalize'>finalize</a></li>
+                              <li><a href='#splunkjs.Service.Job-enablePreview'>enablePreview</a></li>
+                              <li><a href='#splunkjs.Service.Job-results'>results</a></li>
+                              <li><a href='#splunkjs.Service.Job-cancel'>cancel</a></li>
+                              <li><a href='#splunkjs.Service.Job-pause'>pause</a></li>
+              </ul>
+            
+            <ul>
+              </ul>
+            
+                          <a href='#splunkjs.Service.Job-inherited'>
+                <h4>Inherited</h4>
+              </a>
+            <ul>
+                              <li><a href='#splunkjs.Service.Job^updated'>updated</a></li>
+                              <li><a href='#splunkjs.Service.Job^reload'>reload</a></li>
+                              <li><a href='#splunkjs.Service.Job^refresh'>refresh</a></li>
+                              <li><a href='#splunkjs.Service.Job^refreshOnUpdate'>refreshOnUpdate</a></li>
+                              <li><a href='#splunkjs.Service.Job^fields'>fields</a></li>
+                              <li><a href='#splunkjs.Service.Job^enable'>enable</a></li>
+                              <li><a href='#splunkjs.Service.Job^disable'>disable</a></li>
+                              <li><a href='#splunkjs.Service.Job^update'>update</a></li>
+                              <li><a href='#splunkjs.Service.Job^remove'>remove</a></li>
+                              <li><a href='#splunkjs.Service.Job^acl'>acl</a></li>
+                              <li><a href='#splunkjs.Service.Job^published'>published</a></li>
+                              <li><a href='#splunkjs.Service.Job^_load'>_load</a></li>
+                              <li><a href='#splunkjs.Service.Job^author'>author</a></li>
+                              <li><a href='#splunkjs.Service.Job^links'>links</a></li>
+                              <li><a href='#splunkjs.Service.Job^state'>state</a></li>
+                              <li><a href='#splunkjs.Service.Job^properties'>properties</a></li>
+                              <li><a href='#splunkjs.Service.Job^del'>del</a></li>
+                              <li><a href='#splunkjs.Service.Job^post'>post</a></li>
+                              <li><a href='#splunkjs.Service.Job^get'>get</a></li>
+              </ul>
+          </li>
+                  <li>
+            <a href='splunkjs.Logger.html'>
+              <h3>splunkjs.Logger</h3>
+            </a>
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+          </li>
+                  <li>
+            <a href='splunkjs.Http.html'>
+              <h3>splunkjs.Http</h3>
+            </a>
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+          </li>
+                  <li>
+            <a href='splunkjs.Utils.html'>
+              <h3>splunkjs.Utils</h3>
+            </a>
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+          </li>
+                  <li>
+            <a href='splunkjs.Async.html'>
+              <h3>splunkjs.Async</h3>
+            </a>
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+          </li>
+                  <li>
+            <a href='splunkjs.Context.html'>
+              <h3>splunkjs.Context</h3>
+            </a>
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+          </li>
+                  <li>
+            <a href='splunkjs.Service.html'>
+              <h3>splunkjs.Service</h3>
+            </a>
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+          </li>
+                  <li>
+            <a href='splunkjs.Service.Endpoint.html'>
+              <h3>splunkjs.Service.Endpoint</h3>
+            </a>
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+          </li>
+                  <li>
+            <a href='splunkjs.Service.Resource.html'>
+              <h3>splunkjs.Service.Resource</h3>
+            </a>
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+          </li>
+                  <li>
+            <a href='splunkjs.Service.Entity.html'>
+              <h3>splunkjs.Service.Entity</h3>
+            </a>
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+          </li>
+                  <li>
+            <a href='splunkjs.Service.Collection.html'>
+              <h3>splunkjs.Service.Collection</h3>
+            </a>
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+          </li>
+                  <li>
+            <a href='splunkjs.Service.SavedSearch.html'>
+              <h3>splunkjs.Service.SavedSearch</h3>
+            </a>
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+          </li>
+                  <li>
+            <a href='splunkjs.Service.SavedSearches.html'>
+              <h3>splunkjs.Service.SavedSearches</h3>
+            </a>
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+          </li>
+                  <li>
+            <a href='splunkjs.Service.Application.html'>
+              <h3>splunkjs.Service.Application</h3>
+            </a>
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+          </li>
+                  <li>
+            <a href='splunkjs.Service.Applications.html'>
+              <h3>splunkjs.Service.Applications</h3>
+            </a>
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+          </li>
+                  <li>
+            <a href='splunkjs.Service.ServerInfo.html'>
+              <h3>splunkjs.Service.ServerInfo</h3>
+            </a>
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+          </li>
+                  <li>
+            <a href='splunkjs.Service.User.html'>
+              <h3>splunkjs.Service.User</h3>
+            </a>
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+          </li>
+                  <li>
+            <a href='splunkjs.Service.Users.html'>
+              <h3>splunkjs.Service.Users</h3>
+            </a>
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+          </li>
+                  <li>
+            <a href='splunkjs.Service.View.html'>
+              <h3>splunkjs.Service.View</h3>
+            </a>
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+          </li>
+                  <li>
+            <a href='splunkjs.Service.Views.html'>
+              <h3>splunkjs.Service.Views</h3>
+            </a>
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+          </li>
+                  <li>
+            <a href='splunkjs.Service.Index.html'>
+              <h3>splunkjs.Service.Index</h3>
+            </a>
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+          </li>
+                  <li>
+            <a href='splunkjs.Service.Indexes.html'>
+              <h3>splunkjs.Service.Indexes</h3>
+            </a>
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+          </li>
+                  <li>
+            <a href='splunkjs.Service.PropertyStanza.html'>
+              <h3>splunkjs.Service.PropertyStanza</h3>
+            </a>
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+          </li>
+                  <li>
+            <a href='splunkjs.Service.PropertyFile.html'>
+              <h3>splunkjs.Service.PropertyFile</h3>
+            </a>
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+          </li>
+                  <li>
+            <a href='splunkjs.Service.Properties.html'>
+              <h3>splunkjs.Service.Properties</h3>
+            </a>
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+          </li>
+                  <li>
+            <a href='splunkjs.Service.ConfigurationStanza.html'>
+              <h3>splunkjs.Service.ConfigurationStanza</h3>
+            </a>
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+          </li>
+                  <li>
+            <a href='splunkjs.Service.ConfigurationFile.html'>
+              <h3>splunkjs.Service.ConfigurationFile</h3>
+            </a>
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+          </li>
+                  <li>
+            <a href='splunkjs.Service.Configurations.html'>
+              <h3>splunkjs.Service.Configurations</h3>
+            </a>
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+          </li>
+                  <li>
+            <a href='splunkjs.Service.Jobs.html'>
+              <h3>splunkjs.Service.Jobs</h3>
+            </a>
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+            
+            <ul>
+              </ul>
+          </li>
+        </ul>
+    </nav>
+    <div class='main'>
+              <article id='splunkjs.Service.Job'>
+          <header>
+            <h2>splunkjs.Service.Job</h2>
+                          <p class='extends'>extends <a href="splunkjs.Service.Entity.html#splunkjs.Service.Entity">splunkjs.Service.Entity</a></p>
+            </header>
+          <section>
+            <p>splunkjs.Service.Job</p>
+<p>Represents a specific Splunk search job.  You can perform various operations on this job, such as reading its status, cancelling it, getting results and so on.</p>
+          </section>
+                      <section class='method' id='splunkjs.Service.Job-init'>
+              <header>
+                <h3>init</h3>
+                <h4>splunkjs.Service.Job.init</h4>
+                <p class='type'>constructor</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">service</span> - <span class="em">splunkjs.Service</span> <p>A service instance</p></li>
+                                      <li><span class="bold">sid</span> - <span class="em">String</span> <p>The search ID for this search</p></li>
+                                      <li><span class="bold">namespace</span> - <span class="em">Object</span> <p>Namespace information (owner, app, sharing)</p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                                  <h4>Returns</h4>
+                                      <p><span class="em">splunkjs.Service.Job</span> A splunkjs.Service.Job instance</p>
+                  </section>
+              <section>
+                <p>Constructor for splunkjs.Service.Job</p>
+              </section>
+              <section class='source'>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2907">lib/service.js:2907</a>)</h4>
+                <pre><code>init: function(service, sid, namespace) {
+    this.name = sid;
+    this._super(service, this.path(), namespace);
+    this.sid = sid;
+    // We perform the bindings so that every function works 
+    // properly when it is passed as a callback.
+    this.cancel         = utils.bind(this, this.cancel);
+    this.disablePreview = utils.bind(this, this.disablePreview);
+    this.enablePreview  = utils.bind(this, this.enablePreview);
+    this.events         = utils.bind(this, this.events);
+    this.finalize       = utils.bind(this, this.finalize);
+    this.pause          = utils.bind(this, this.pause);
+    this.preview        = utils.bind(this, this.preview);
+    this.results        = utils.bind(this, this.results);
+    this.searchlog      = utils.bind(this, this.searchlog);
+    this.setPriority    = utils.bind(this, this.setPriority);
+    this.setTTL         = utils.bind(this, this.setTTL);
+    this.summary        = utils.bind(this, this.summary);
+    this.timeline       = utils.bind(this, this.timeline);
+    this.touch          = utils.bind(this, this.touch);
+    this.unpause        = utils.bind(this, this.unpause);
+},</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job-preview'>
+              <header>
+                <h3>preview</h3>
+                <h4>splunkjs.Service.Job.preview</h4>
+                <p class='type'>method</p>
+                                  <p class='endpoint'>search/jobs/{search_id}/results_preview</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">params</span> - <span class="em">Object</span> <p>Parameters for results preview fetching</p></li>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with when the preview results are fetched: <code>(err, results, job)</code></p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                </section>
+              <section>
+                <p>Get the preview results for a job</p>
+<p>Get the preview results for a job with given parameters.</p>
+<h2>Example</h2>
+<pre><code> var job = service.jobs().item("mysid");
+ job.preview({count: 10}, function(err, results, job) {
+     console.log("Fields: ", results.fields);
+ });
+</code></pre>
+              </section>
+              <section class='source'>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L3106">lib/service.js:3106</a>)</h4>
+                <pre><code>preview: function(params, callback) {
+    callback = callback || function() {};
+    
+    var that = this;
+    return this.get("results_preview", params, function(err, response) {
+        if (err) {
+            callback(err);
+        }
+        else {
+            callback(null, response.data, that);
+        }
+    });
+},</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job-unpause'>
+              <header>
+                <h3>unpause</h3>
+                <h4>splunkjs.Service.Job.unpause</h4>
+                <p class='type'>method</p>
+                                  <p class='endpoint'>search/jobs/{search_id}/control</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with this job: <code>(err, job)</code></p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                </section>
+              <section>
+                <p>Unpause a search job</p>
+<h2>Example</h2>
+<pre><code> var job = service.jobs().item("mysid");
+ job.unpause(function(err) {
+     console.log("JOB UNPAUSED");
+ });
+</code></pre>
+              </section>
+              <section class='source'>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L3338">lib/service.js:3338</a>)</h4>
+                <pre><code>unpause: function(callback) {
+        callback = callback || function() {};
+        
+        var that = this;
+        var req = this.post("control", {action: "unpause"}, function(err) {
+            callback(err, that);
+        });
+        
+        return req;
+    }
+});</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job-searchlog'>
+              <header>
+                <h3>searchlog</h3>
+                <h4>splunkjs.Service.Job.searchlog</h4>
+                <p class='type'>method</p>
+                                  <p class='endpoint'>search/jobs/{search_id}/search.log</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with the searchlog and job: <code>(err, searchlog, job)</code></p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                </section>
+              <section>
+                <p>Get the search log for this job.</p>
+<h2>Example</h2>
+<pre><code> var job = service.jobs().item("mysid");
+ job.searchlog(function(err, searchlog, job) {
+     console.log(searchlog);
+ });
+</code></pre>
+              </section>
+              <section class='source'>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L3167">lib/service.js:3167</a>)</h4>
+                <pre><code>searchlog: function(callback) {
+    callback = callback || function() {};
+    
+    var that = this;
+    return this.get("search.log", {}, function(err, response) {
+        if (err) {
+            callback(err);
+        }
+        else {
+            callback(null, response.data.entry.content, that);
+        }
+    });
+},</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job-path'>
+              <header>
+                <h3>path</h3>
+                <h4>splunkjs.Service.Job.path</h4>
+                <p class='type'>method</p>
+                </header>
+              <section class='params'>
+                <ul>
+                  </ul>
+              </section>
+              <section class='params'>
+                </section>
+              <section>
+                <p>REST path for this resource (with no namespace)</p>
+              </section>
+              <section class='source'>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2892">lib/service.js:2892</a>)</h4>
+                <pre><code>path: function() {
+    return Paths.jobs + "/" + encodeURIComponent(this.name);
+},</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job-setPriority'>
+              <header>
+                <h3>setPriority</h3>
+                <h4>splunkjs.Service.Job.setPriority</h4>
+                <p class='type'>method</p>
+                                  <p class='endpoint'>search/jobs/{search_id}/control</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">value</span> - <span class="em">Number</span> <p>Value for the new priority</p></li>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with the this job: <code>(err, job)</code></p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                </section>
+              <section>
+                <p>Set the job priority</p>
+<h2>Example</h2>
+<pre><code> var job = service.jobs().item("mysid");
+ job.setPriority(6, function(err, job) {
+     console.log("JOB PRIORITY SET");
+ });
+</code></pre>
+              </section>
+              <section class='source'>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L3197">lib/service.js:3197</a>)</h4>
+                <pre><code>setPriority: function(value, callback) {
+    callback = callback || function() {};
+    
+    var that = this;
+    var req = this.post("control", {action: "setpriority", priority: value}, function(err) {
+        callback(err, that);
+    });
+    
+    return req;
+},</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job-disablePreview'>
+              <header>
+                <h3>disablePreview</h3>
+                <h4>splunkjs.Service.Job.disablePreview</h4>
+                <p class='type'>method</p>
+                                  <p class='endpoint'>search/jobs/{search_id}/control</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with the this job: <code>(err, job)</code></p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                </section>
+              <section>
+                <p>Disable preview for a job</p>
+<h2>Example</h2>
+<pre><code> var job = service.jobs().item("mysid");
+ job.disablePreview(function(err, job) {
+     console.log("PREVIEW DISABLED");
+ });
+</code></pre>
+              </section>
+              <section class='source'>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2967">lib/service.js:2967</a>)</h4>
+                <pre><code>disablePreview: function(callback) {
+    callback = callback || function() {};
+    
+    var that = this;
+    var req = this.post("control", {action: "disablepreview"}, function(err) {
+        callback(err, that);
+    });
+    
+    return req;
+},</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job-events'>
+              <header>
+                <h3>events</h3>
+                <h4>splunkjs.Service.Job.events</h4>
+                <p class='type'>method</p>
+                                  <p class='endpoint'>search/jobs/{search_id}/events</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">params</span> - <span class="em">Object</span> <p>Parameters for event fetching</p></li>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with when the events are fetched: <code>(err, events, job)</code></p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                </section>
+              <section>
+                <p>Get job events</p>
+<p>Get the events for a job with given parameters.</p>
+<h2>Example</h2>
+<pre><code> var job = service.jobs().item("mysid");
+ job.events({count: 10}, function(err, events, job) {
+     console.log("Fields: ", events.fields);
+ });
+</code></pre>
+              </section>
+              <section class='source'>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L3022">lib/service.js:3022</a>)</h4>
+                <pre><code>events: function(params, callback) {
+    callback = callback || function() {};
+    
+    var that = this;
+    return this.get("events", params, function(err, response) { 
+        if (err) {
+            callback(err);
+        }
+        else {
+            callback(null, response.data, that); 
+        }
+    });
+},</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job-touch'>
+              <header>
+                <h3>touch</h3>
+                <h4>splunkjs.Service.Job.touch</h4>
+                <p class='type'>method</p>
+                                  <p class='endpoint'>search/jobs/{search_id}/control</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with this job: <code>(err, job)</code></p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                </section>
+              <section>
+                <p>Touch a job</p>
+<h2>Example</h2>
+<pre><code> var job = service.jobs().item("mysid");
+ job.touch(function(err) {
+     console.log("JOB TOUCHED");
+ });
+</code></pre>
+              </section>
+              <section class='source'>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L3312">lib/service.js:3312</a>)</h4>
+                <pre><code>touch: function(callback) {
+    callback = callback || function() {};
+    
+    var that = this;
+    var req = this.post("control", {action: "touch"}, function(err) {
+        callback(err, that);
+    });
+    
+    return req;
+},</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job-timeline'>
+              <header>
+                <h3>timeline</h3>
+                <h4>splunkjs.Service.Job.timeline</h4>
+                <p class='type'>method</p>
+                                  <p class='endpoint'>search/jobs/{search_id}/timeline</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">params</span> - <span class="em">Object</span> <p>Parameters for timeline fetching</p></li>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with with the timeline and this job: <code>(err, timeline, job)</code></p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                </section>
+              <section>
+                <p>Get the timeline for this job</p>
+<h2>Example</h2>
+<pre><code> var job = service.jobs().item("mysid");
+ job.timeline({time_format: "%c"}, function(err, job, timeline) {
+     console.log("Timeline: ", timeline);
+ });
+</code></pre>
+              </section>
+              <section class='source'>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L3283">lib/service.js:3283</a>)</h4>
+                <pre><code>timeline: function(params, callback) {
+    callback = callback || function() {};
+    
+    var that = this;
+    return this.get("timeline", params, function(err, response) {
+        if (err) {
+            callback(err);
+        }
+        else {
+            callback(null, response.data.entry.content, that);
+        }
+    });
+},</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job-summary'>
+              <header>
+                <h3>summary</h3>
+                <h4>splunkjs.Service.Job.summary</h4>
+                <p class='type'>method</p>
+                                  <p class='endpoint'>search/jobs/{search_id}/summmary</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">params</span> - <span class="em">Object</span> <p>Parameters for summary fetching</p></li>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with with the summary and this job: <code>(err, summary, job)</code></p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                </section>
+              <section>
+                <p>Get the summary for this job</p>
+<p>Get the job summary for this job with the given parameters</p>
+<h2>Example</h2>
+<pre><code> var job = service.jobs().item("mysid");
+ job.summary({top_count: 5}, function(err, summary, job) {
+     console.log("Summary: ", summary);
+ });
+</code></pre>
+              </section>
+              <section class='source'>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L3253">lib/service.js:3253</a>)</h4>
+                <pre><code>summary: function(params, callback) {
+    callback = callback || function() {};
+    
+    var that = this;
+    return this.get("summary", params, function(err, response) {
+        if (err) {
+            callback(err);
+        }
+        else {
+            callback(null, response.data.entry.content, that);
+        }
+    });
+},</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job-setTTL'>
+              <header>
+                <h3>setTTL</h3>
+                <h4>splunkjs.Service.Job.setTTL</h4>
+                <p class='type'>method</p>
+                                  <p class='endpoint'>search/jobs/{search_id}/control</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">value</span> - <span class="em">Number</span> <p>Value for the new priority</p></li>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with the this job: <code>(err, job)</code></p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                </section>
+              <section>
+                <p>Set the job TTL</p>
+<h2>Example</h2>
+<pre><code> var job = service.jobs().item("mysid");
+ job.setTTL(1000, function(err, job) {
+     console.log("JOB TTL SET");
+ });
+</code></pre>
+              </section>
+              <section class='source'>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L3224">lib/service.js:3224</a>)</h4>
+                <pre><code>setTTL: function(value, callback) {
+    callback = callback || function() {};
+    
+    var that = this;
+    var req = this.post("control", {action: "setttl", ttl: value}, function(err) {
+        callback(err, that);
+    });
+    
+    return req;
+},</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job-finalize'>
+              <header>
+                <h3>finalize</h3>
+                <h4>splunkjs.Service.Job.finalize</h4>
+                <p class='type'>method</p>
+                                  <p class='endpoint'>search/jobs/{search_id}/control</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with the this job: <code>(err, job)</code></p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                </section>
+              <section>
+                <p>Finalize a search job</p>
+<h2>Example</h2>
+<pre><code> var job = service.jobs().item("mysid");
+ job.finalize(function(err, job) {
+     console.log("JOB FINALIZED");
+ });
+</code></pre>
+              </section>
+              <section class='source'>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L3051">lib/service.js:3051</a>)</h4>
+                <pre><code>finalize: function(callback) {
+    callback = callback || function() {};
+    
+    var that = this;
+    var req = this.post("control", {action: "finalize"}, function(err) {
+        callback(err, that);
+    });
+    
+    return req;
+},</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job-enablePreview'>
+              <header>
+                <h3>enablePreview</h3>
+                <h4>splunkjs.Service.Job.enablePreview</h4>
+                <p class='type'>method</p>
+                                  <p class='endpoint'>search/jobs/{search_id}/control</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with the this job: <code>(err, job)</code></p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                </section>
+              <section>
+                <p>Enable preview for a job</p>
+<h2>Example</h2>
+<pre><code> var job = service.jobs().item("mysid");
+ job.disablePreview(function(err, job) {
+     console.log("PREVIEW ENABLED");
+ });
+</code></pre>
+              </section>
+              <section class='source'>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2993">lib/service.js:2993</a>)</h4>
+                <pre><code>enablePreview: function(callback) {
+    callback = callback || function() {};
+    
+    var that = this;
+    var req = this.post("control", {action: "enablepreview"}, function(err) {
+        callback(err, that);
+    });
+    
+    return req;
+},</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job-results'>
+              <header>
+                <h3>results</h3>
+                <h4>splunkjs.Service.Job.results</h4>
+                <p class='type'>method</p>
+                                  <p class='endpoint'>search/jobs/{search_id}/results</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">params</span> - <span class="em">Object</span> <p>Parameters for results fetching</p></li>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with when the results are fetched: <code>(err, results, job)</code></p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                </section>
+              <section>
+                <p>Get job results</p>
+<p>Get the results for a job with given parameters.</p>
+<h2>Example</h2>
+<pre><code> var job = service.jobs().item("mysid");
+ job.results({count: 10}, function(err, results, job) {
+     console.log("Fields: ", results.results);
+ });
+</code></pre>
+              </section>
+              <section class='source'>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L3138">lib/service.js:3138</a>)</h4>
+                <pre><code>results: function(params, callback) {
+    callback = callback || function() {};
+    
+    var that = this;
+    return this.get("results", params, function(err, response) {
+        if (err) {
+            callback(err);
+        }
+        else {
+            callback(null, response.data, that);
+        }
+    });
+},</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job-cancel'>
+              <header>
+                <h3>cancel</h3>
+                <h4>splunkjs.Service.Job.cancel</h4>
+                <p class='type'>method</p>
+                                  <p class='endpoint'>search/jobs/{search_id}/control</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback when the search is done: <code>(err)</code></p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                </section>
+              <section>
+                <p>Cancel a search job</p>
+<h2>Example</h2>
+<pre><code> var job = service.jobs().item("mysid");
+ job.cancel(function(err) {
+     console.log("CANCELLED");
+ });
+</code></pre>
+              </section>
+              <section class='source'>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2946">lib/service.js:2946</a>)</h4>
+                <pre><code>cancel: function(callback) {
+    var req = this.post("control", {action: "cancel"}, callback);
+    
+    return req;
+},</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job-pause'>
+              <header>
+                <h3>pause</h3>
+                <h4>splunkjs.Service.Job.pause</h4>
+                <p class='type'>method</p>
+                                  <p class='endpoint'>search/jobs/{search_id}/control</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback with the this job: <code>(err, job)</code></p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                </section>
+              <section>
+                <p>Pause a search job</p>
+<h2>Example</h2>
+<pre><code> var job = service.jobs().item("mysid");
+ job.pause(function(err, job) {
+     console.log("JOB PAUSED");
+ });
+</code></pre>
+              </section>
+              <section class='source'>
+                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L3077">lib/service.js:3077</a>)</h4>
+                <pre><code>pause: function(callback) {
+    callback = callback || function() {};
+    
+    var that = this;
+    var req = this.post("control", {action: "pause"}, function(err) {
+        callback(err, that);
+    });
+    
+    return req;
+},</code></pre>
+              </section>
+              
+            </section>
+                      <header id='splunkjs.Service.Job-inherited'>
+              <h3>Inherited Methods</h3>
+            </header>
+                      <section class='method' id='splunkjs.Service.Job^updated'>
+              <header>
+                <h3>updated</h3>
+                <h4>splunkjs.Service.Entity.updated</h4>
+                <p class='type'>method</p>
+                </header>
+              <section class='params'>
+                <ul>
+                  </ul>
+              </section>
+              <section class='params'>
+                                  <h4>Returns</h4>
+                                      <p><span class="em">String</span> The updated time for this entity</p>
+                  </section>
+              <section>
+                <p>Retrieve the updated time for this entity</p>
+              </section>
+              <section class='source'>
+                <h4>Source</h4>
+                <pre><code>updated: function() {
+    return this._updated;
+},</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job^reload'>
+              <header>
+                <h3>reload</h3>
+                <h4>splunkjs.Service.Entity.reload</h4>
+                <p class='type'>method</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback when the object is reloaded: <code>(err, entity)</code></p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                </section>
+              <section>
+                <p>Reload the entity</p>
+<p>This will reload the entity on the server.</p>
+              </section>
+              <section class='source'>
+                <h4>Source</h4>
+                <pre><code>reload: function(callback) {
+        callback = callback || function() {};
+        
+        var that = this;
+        this.post("_reload", {}, function(err, response) {
+            if (err) {
+                callback(err);
+            }
+            else {
+                callback(null, that);
+            }
+        });
+    }
+});</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job^refresh'>
+              <header>
+                <h3>refresh</h3>
+                <h4>splunkjs.Service.Entity.refresh</h4>
+                <p class='type'>method</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">options</span> - <span class="em">Object</span> <p>Optional dictionary of collection filtering and pagination options</p></li>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback when the object is retrieved: <code>(err, resource)</code></p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                </section>
+              <section>
+                <p>Refresh the resource</p>
+<p>This will unconditionally refresh the object from the server and load it up.</p>
+              </section>
+              <section class='source'>
+                <h4>Source</h4>
+                <pre><code>refresh: function(options, callback) {
+    if (!callback &amp;&amp; utils.isFunction(options)) {
+        callback = options;
+        options = {};
+    }
+    callback = callback || function() {};
+    
+    options = options || {};
+    
+    var that = this;
+    return this.get("", options, function(err, response) {
+        if (err) {
+            callback(err);
+        } 
+        else {
+            that._load(response.data.entry);
+            callback(null, that);
+        }
+    });
+},</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job^refreshOnUpdate'>
+              <header>
+                <h3>refreshOnUpdate</h3>
+                <h4>splunkjs.Service.Entity.refreshOnUpdate</h4>
+                <p class='type'>method</p>
+                </header>
+              <section class='params'>
+                <ul>
+                  </ul>
+              </section>
+              <section class='params'>
+                </section>
+              <section>
+                <p>Whether or not to call <code>refresh()</code> after an update to fetch the updated item. By default we don't refresh the entity, as the endpoint will return (echo) the updated entity</p>
+              </section>
+              <section class='source'>
+                <h4>Source</h4>
+                <pre><code>refreshOnUpdate: false,</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job^fields'>
+              <header>
+                <h3>fields</h3>
+                <h4>splunkjs.Service.Entity.fields</h4>
+                <p class='type'>method</p>
+                </header>
+              <section class='params'>
+                <ul>
+                  </ul>
+              </section>
+              <section class='params'>
+                                  <h4>Returns</h4>
+                                      <p><span class="em">Object</span> The fields for this entity</p>
+                  </section>
+              <section>
+                <p>Retrieve the fields information for this entity</p>
+              </section>
+              <section class='source'>
+                <h4>Source</h4>
+                <pre><code>fields: function() {
+    return this._fields;
+},</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job^enable'>
+              <header>
+                <h3>enable</h3>
+                <h4>splunkjs.Service.Entity.enable</h4>
+                <p class='type'>method</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback when the object is enabled: <code>(err, entity)</code></p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                </section>
+              <section>
+                <p>Enable the entity</p>
+<p>This will enable the entity on the server.</p>
+              </section>
+              <section class='source'>
+                <h4>Source</h4>
+                <pre><code>enable: function(callback) {
+    callback = callback || function() {};
+    
+    var that = this;
+    this.post("enable", {}, function(err, response) {
+        if (err) {
+            callback(err);
+        }
+        else {
+            callback(null, that);
+        }
+    });
+},</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job^disable'>
+              <header>
+                <h3>disable</h3>
+                <h4>splunkjs.Service.Entity.disable</h4>
+                <p class='type'>method</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback when the object is disabled: <code>(err, entity)</code></p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                </section>
+              <section>
+                <p>Disable the entity</p>
+<p>This will disable the entity on the server.</p>
+              </section>
+              <section class='source'>
+                <h4>Source</h4>
+                <pre><code>disable: function(callback) {
+    callback = callback || function() {};
+    
+    var that = this;
+    this.post("disable", {}, function(err, response) {
+        if (err) {
+            callback(err);
+        }
+        else {
+            callback(null, that);
+        }
+    });
+},</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job^update'>
+              <header>
+                <h3>update</h3>
+                <h4>splunkjs.Service.Entity.update</h4>
+                <p class='type'>method</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">props</span> - <span class="em">Object</span> <p>Properties to be updated the object with.</p></li>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback when the object is updated: <code>(err, entity)</code></p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                </section>
+              <section>
+                <p>Update the entity</p>
+<p>This will update the entity on the server.</p>
+              </section>
+              <section class='source'>
+                <h4>Source</h4>
+                <pre><code>update: function(props, callback) {
+    callback = callback || function() {};
+    
+    if (props.hasOwnProperty("name")) {
+        throw new Error("Cannot set 'name' field in 'update'");
+    }
+    
+    var that = this;
+    var req = this.post("", props, function(err, response) {
+        if (!err &amp;&amp; !that.refreshOnUpdate) {
+            that._load(response.data.entry);
+            callback(err, that);
+        }
+        else if (!err &amp;&amp; that.refreshOnUpdate) {
+            that.refresh(function() {
+                if (req.wasAborted) {
+                    return; // aborted, so ignore
+                }
+                else {
+                    callback.apply(null, arguments);
+                }
+            });
+        }
+        else {
+            callback(err, that);
+        }
+    });
+    
+    return req;
+},</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job^remove'>
+              <header>
+                <h3>remove</h3>
+                <h4>splunkjs.Service.Entity.remove</h4>
+                <p class='type'>method</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback when the object is deleted: <code>(err)</code></p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                </section>
+              <section>
+                <p>Delete the entity</p>
+<p>This will tell the server to delete this entity.</p>
+              </section>
+              <section class='source'>
+                <h4>Source</h4>
+                <pre><code>remove: function(callback) {
+    callback = callback || function() {};
+    
+    var that = this;
+    return this.del("", {}, function(err) {
+        callback(err);
+    });
+},</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job^acl'>
+              <header>
+                <h3>acl</h3>
+                <h4>splunkjs.Service.Entity.acl</h4>
+                <p class='type'>method</p>
+                </header>
+              <section class='params'>
+                <ul>
+                  </ul>
+              </section>
+              <section class='params'>
+                                  <h4>Returns</h4>
+                                      <p><span class="em">Object</span> The ACL for this entity</p>
+                  </section>
+              <section>
+                <p>Retrieve the ACL information for this entity</p>
+              </section>
+              <section class='source'>
+                <h4>Source</h4>
+                <pre><code>acl: function() {
+    return this._acl;
+},</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job^published'>
+              <header>
+                <h3>published</h3>
+                <h4>splunkjs.Service.Entity.published</h4>
+                <p class='type'>method</p>
+                </header>
+              <section class='params'>
+                <ul>
+                  </ul>
+              </section>
+              <section class='params'>
+                                  <h4>Returns</h4>
+                                      <p><span class="em">String</span> The published time for this entity</p>
+                  </section>
+              <section>
+                <p>Retrieve the published time for this entity</p>
+              </section>
+              <section class='source'>
+                <h4>Source</h4>
+                <pre><code>published: function() {
+    return this._published;
+},</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job^_load'>
+              <header>
+                <h3>_load</h3>
+                <h4>splunkjs.Service.Entity._load</h4>
+                <p class='type'>method</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">properties</span> - <span class="em">Object</span> <p>The properties for this resource</p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                </section>
+              <section>
+                <p>Load the resource, also storing the properties.</p>
+              </section>
+              <section class='source'>
+                <h4>Source</h4>
+                <pre><code>_load: function(properties) {
+    properties = utils.isArray(properties) ? properties[0] : properties;
+    
+    this._super(properties);
+    
+    // Take out the entity-specific content
+    this._properties = properties.content   || {};
+    this._fields     = properties.fields    || this._fields || {};
+    this._acl        = properties.acl       || {};
+    this._links      = properties.links     || {};
+    this._author     = properties.author    || null;
+    this._updated    = properties.updated   || null;
+    this._published  = properties.published || null;
+},</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job^author'>
+              <header>
+                <h3>author</h3>
+                <h4>splunkjs.Service.Entity.author</h4>
+                <p class='type'>method</p>
+                </header>
+              <section class='params'>
+                <ul>
+                  </ul>
+              </section>
+              <section class='params'>
+                                  <h4>Returns</h4>
+                                      <p><span class="em">String</span> The author for this entity</p>
+                  </section>
+              <section>
+                <p>Retrieve the author information for this entity</p>
+              </section>
+              <section class='source'>
+                <h4>Source</h4>
+                <pre><code>author: function() {
+    return this._author;
+},</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job^links'>
+              <header>
+                <h3>links</h3>
+                <h4>splunkjs.Service.Entity.links</h4>
+                <p class='type'>method</p>
+                </header>
+              <section class='params'>
+                <ul>
+                  </ul>
+              </section>
+              <section class='params'>
+                                  <h4>Returns</h4>
+                                      <p><span class="em">Object</span> The links for this entity</p>
+                  </section>
+              <section>
+                <p>Retrieve the links information for this entity</p>
+              </section>
+              <section class='source'>
+                <h4>Source</h4>
+                <pre><code>links: function() {
+    return this._links;
+},</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job^state'>
+              <header>
+                <h3>state</h3>
+                <h4>splunkjs.Service.Resource.state</h4>
+                <p class='type'>method</p>
+                </header>
+              <section class='params'>
+                <ul>
+                  </ul>
+              </section>
+              <section class='params'>
+                                  <h4>Returns</h4>
+                                      <p><span class="em">Object</span> The full state for this resource</p>
+                  </section>
+              <section>
+                <p>Retrieve the state for this resource</p>
+<p>This will retrieve the current full state for this resource.</p>
+              </section>
+              <section class='source'>
+                <h4>Source</h4>
+                <pre><code>state: function() {
+        return this._state;
+    }
+});</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job^properties'>
+              <header>
+                <h3>properties</h3>
+                <h4>splunkjs.Service.Resource.properties</h4>
+                <p class='type'>method</p>
+                </header>
+              <section class='params'>
+                <ul>
+                  </ul>
+              </section>
+              <section class='params'>
+                                  <h4>Returns</h4>
+                                      <p><span class="em">Object</span> The properties for this resource</p>
+                  </section>
+              <section>
+                <p>Retrieve the properties for this resource</p>
+<p>This will retrieve the current properties for this resource.</p>
+              </section>
+              <section class='source'>
+                <h4>Source</h4>
+                <pre><code>properties: function() {
+    return this._properties;
+},</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job^del'>
+              <header>
+                <h3>del</h3>
+                <h4>splunkjs.Service.Endpoint.del</h4>
+                <p class='type'>method</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">relpath</span> - <span class="em">String</span> <p>A relative path to append at the end of the path</p></li>
+                                      <li><span class="bold">params</span> - <span class="em">Object</span> <p>A dictionary of parameters to add to the query string</p></li>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback to be invoked when the request is complete: <code>(err, response)</code></p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                </section>
+              <section>
+                <p>Perform a relative DELETE request</p>
+<p>Perform a relative DELETE request on this endpoint's path, combined with the parameters and a relative path if specified.</p>
+<h2>Example</h2>
+<pre><code> // Will make a request to {service.prefix}/search/jobs/123456
+ var endpoint = new splunkjs.Service.Endpoint(service, "search/jobs/12345");
+ endpoint.delete("", {}, function() { console.log("DELETED"))});
+</code></pre>
+              </section>
+              <section class='source'>
+                <h4>Source</h4>
+                <pre><code>del: function(relpath, params, callback) {
+        var url = this.qualifiedPath;
+        // If we have a relative path, we will append it with a preceding
+        // slash.
+        if (relpath) {
+            url = url + "/" + relpath;    
+        }
+        return this.service.del(
+            url,
+            params,
+            callback
+        );
+    }
+});</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job^post'>
+              <header>
+                <h3>post</h3>
+                <h4>splunkjs.Service.Endpoint.post</h4>
+                <p class='type'>method</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">relpath</span> - <span class="em">String</span> <p>A relative path to append at the end of the path</p></li>
+                                      <li><span class="bold">params</span> - <span class="em">Object</span> <p>A dictionary of parameters to add to the body</p></li>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback to be invoked when the request is complete: <code>(err, response)</code></p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                </section>
+              <section>
+                <p>Perform a relative POST request</p>
+<p>Perform a relative POST request on this endpoint's path, combined with the parameters and a relative path if specified.</p>
+<h2>Example</h2>
+<pre><code> // Will make a request to {service.prefix}/search/jobs/123456/control
+ var endpoint = new splunkjs.Service.Endpoint(service, "search/jobs/12345");
+ endpoint.post("control", {action: "cancel"}, function() { console.log("CANCELLED"))});
+</code></pre>
+              </section>
+              <section class='source'>
+                <h4>Source</h4>
+                <pre><code>post: function(relpath, params, callback) {
+    var url = this.qualifiedPath;
+    // If we have a relative path, we will append it with a preceding
+    // slash.
+    if (relpath) {
+        url = url + "/" + relpath;    
+    }
+    return this.service.post(
+        url,
+        params,
+        callback
+    );
+},</code></pre>
+              </section>
+              
+            </section>
+                      <section class='method' id='splunkjs.Service.Job^get'>
+              <header>
+                <h3>get</h3>
+                <h4>splunkjs.Service.Endpoint.get</h4>
+                <p class='type'>method</p>
+                </header>
+              <section class='params'>
+                                  <h4>Params</h4>
+                <ul>
+                                      <li><span class="bold">relpath</span> - <span class="em">String</span> <p>A relative path to append at the end of the path</p></li>
+                                      <li><span class="bold">params</span> - <span class="em">Object</span> <p>A dictionary of parameters to add to the query string</p></li>
+                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A callback to be invoked when the request is complete: <code>(err, response)</code></p></li>
+                  </ul>
+              </section>
+              <section class='params'>
+                </section>
+              <section>
+                <p>Perform a relative GET request</p>
+<p>Perform a relative GET request on this endpoint's path, combined with the parameters and a relative path if specified.</p>
+<h2>Example</h2>
+<pre><code> // Will make a request to {service.prefix}/search/jobs/123456/results?offset=1
+ var endpoint = new splunkjs.Service.Endpoint(service, "search/jobs/12345");
+ endpoint.get("results", {offset: 1}, function() { console.log("DONE"))});
+</code></pre>
+              </section>
+              <section class='source'>
+                <h4>Source</h4>
+                <pre><code>get: function(relpath, params, callback) {
+    var url = this.qualifiedPath;
+    // If we have a relative path, we will append it with a preceding
+    // slash.
+    if (relpath) {
+        url = url + "/" + relpath;    
+    }
+    return this.service.get(
+        url,
+        params,
+        callback
+    );
+},</code></pre>
+              </section>
+              
+            </section>
+          </article>
+      </div>
+  </div>
+  <script>
+    (function (hijs) {
+    //
+    // hijs - JavaScript Syntax Highlighter
+    //
+    // Copyright (c) 2010 Alexis Sellier
+    //
+    // All elements which match this will be syntax highlighted.
+    var selector = hijs || 'code';
+    var keywords = ('var function if else for while break switch case do new null in with void '
+                   +'continue delete return this true false throw catch typeof with instanceof').split(' '),
+        special  = ('eval window document undefined NaN Infinity parseInt parseFloat '
+                   +'encodeURI decodeURI encodeURIComponent decodeURIComponent').split(' ');
+    // Syntax definition
+    // The key becomes the class name of the <span>
+    // around the matched block of code.
+    var syntax = [
+      ['comment', /(\/\*(?:[^*\n]|\*+[^\/*])*\*+\/)/g],
+      ['comment', /(\/\/[^\n]*)/g],
+      ['string' , /("(?:(?!")[^\\\n]|\\.)*"|'(?:(?!')[^\\\n]|\\.)*')/g],
+      ['regexp' , /(\/.+\/[mgi]*)(?!\s*\w)/g],
+      ['class'  , /\b([A-Z][a-zA-Z]+)\b/g],
+      ['number' , /\b([0-9]+(?:\.[0-9]+)?)\b/g],
+      ['keyword', new(RegExp)('\\b(' + keywords.join('|') + ')\\b', 'g')],
+      ['special', new(RegExp)('\\b(' + special.join('|') + ')\\b', 'g')]
+    ];
+    var nodes, table = {};
+    if (/^[a-z]+$/.test(selector)) {
+        nodes = document.getElementsByTagName(selector);
+    } else if (/^\.[\w-]+$/.test(selector)) {
+        nodes = document.getElementsByClassName(selector.slice(1));
+    } else if (document.querySelectorAll) {
+        nodes = document.querySelectorAll(selector);
+    } else {
+        nodes = [];
+    }
+    for (var i = 0, children; i < nodes.length; i++) {
+        children = nodes[i].childNodes;
+        for (var j = 0, str; j < children.length; j++) {
+            code = children[j];
+            if (code.length >= 0) { // It's a text node
+                // Don't highlight command-line snippets
+                if (! /^\$/.test(code.nodeValue.trim())) {
+                    syntax.forEach(function (s) {
+                        var k = s[0], v = s[1];
+                        code.nodeValue = code.nodeValue.replace(v, function (_, m) {
+                            return '\u00ab' + encode(k) + '\u00b7'
+                                            + encode(m) +
+                                   '\u00b7' + encode(k) + '\u00bb';
+                        });
+                    });
+                }
+            }
+        }
+    }
+    for (var i = 0; i < nodes.length; i++) {
+        nodes[i].innerHTML =
+            nodes[i].innerHTML.replace(/\u00ab(.+?)\u00b7(.+?)\u00b7\1\u00bb/g, function (_, name, value) {
+                value = value.replace(/\u00ab[^\u00b7]+\u00b7/g, '').replace(/\u00b7[^\u00bb]+\u00bb/g, '');
+                return '<span class="' + decode(name) + '">' + escape(decode(value)) + '</span>';
+        });
+    }
+    function escape(str) {
+        return str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    // Encode ASCII characters to, and from Braille
+    function encode (str, encoded) {
+        table[encoded = str.split('').map(function (s) {
+            if (s.charCodeAt(0) > 127) { return s }
+            return String.fromCharCode(s.charCodeAt(0) + 0x2800);
+        }).join('')] = str;
+        return encoded;
+    }
+    function decode (str) {
+        if (str in table) {
+            return table[str];
+        } else {
+            return str.trim().split('').map(function (s) {
+                if (s.charCodeAt(0) - 0x2800 > 127) { return s }
+                return String.fromCharCode(s.charCodeAt(0) - 0x2800);
+            }).join('');
+        }
+    }
+    })(window.hijs);
+  </script>
+</body>

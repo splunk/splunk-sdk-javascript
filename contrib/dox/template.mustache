@@ -1,5 +1,6 @@
 <head>
   <script>
+    var raw = {{{raw}}}
   </script>
 
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js" type="text/javascript" charset="utf-8"></script>
@@ -31,16 +32,16 @@
       this.ref('id')
       this.field('name', { multiplier: 10 })
       this.field('parent', { multiplier: 5 })
-      this.field('full_description')
     })
 
-    var methods = raw.reduce(function (memo, module) {
-      return memo.concat(module.methods)
-    }, [])
+    //var methods = raw.reduce(function (memo, module) {
+    //  return memo.concat(module.methods || []).concat(module.helpers || []).concat(module.inherited || []);
+    //}, [])
 
+    var methods = raw;
     methods.forEach(function (method) {
       idx.add(method)
-    })
+    });
 
     $(document).ready(function () {
 
@@ -53,8 +54,7 @@
       }
 
       var searchResults = $('#search-results')
-
-      $('#search-input').keyup(function () {
+      $('#search-input').bind('keyup change focus', function () {
         var query = $(this).val(),
             results = search(query)
 
@@ -64,9 +64,10 @@
         };
 
         var resultsList = results.reduce(function (ul, result) {
+          var joiner = result.inherited ? "^" : (result.global ? "+" : "-");
           var li = $('<li>').append($('<a>', {
-            href: '#' + result.name,
-            text: result.name
+            href: result.parent + ".html#" + result.parent + joiner + result.name,
+            text: result.parent + "." + result.name
           }))
 
           ul.append(li)
@@ -74,8 +75,8 @@
           return ul
         }, $('<ul>'))
 
-        searchResults.html(resultsList)
-      })
+        searchResults.html(resultsList);
+      });
     })
   </script>
 
@@ -91,7 +92,7 @@
 
     header h1 {
       border-top: 4px solid #333;
-      font-size: 2.6em;
+      font-size: 2.0em;
     }
 
     header .version {
@@ -188,12 +189,10 @@
     }
 
     .search {
-      margin-top: 10px;
-      float: right;
     }
 
     #search-input {
-      width: 200px;
+      width: 250px;
     }
 
     #search-results {
@@ -201,7 +200,7 @@
     }
 
     #search-results ul {
-      width: 200px;
+      width: 250px;
       position: absolute;
       top: 0px;
       left: 0px;
@@ -214,6 +213,7 @@
     }
 
     #search-results li {
+      text-align: left;
       padding: 5px;
     }
 
@@ -224,7 +224,7 @@
 
     #search-results li a {
       text-decoration: none;
-      width: 200px;
+      width: 250px;
       display: block;
     }
 
@@ -308,13 +308,15 @@
 </head>
 <body>
   <div class='wrap'>
-
-
     <nav>
+      <div class='search'>
+        <input type="search" id="search-input" placeholder="Search"></input>
+        <div id="search-results"></div>
+      </div>
       <ul>
         {{#modules}}
           <li>
-            <a href='#{{name}}'>
+            <a href='{{name}}.html'>
               <h3>{{name}}</h3>
             </a>
 
@@ -353,20 +355,12 @@
     </nav>
 
     <div class='main'>
-      <header>
-        <div class='search'>
-          <input type="search" id="search-input" placeholder="Search"></input>
-          <div id="search-results"></div>
-        </div>
-        <h1>Splunk JavaScript SDK <span class='version'>{{version}}</span></h1>
-      </header>
-
-      {{#modules}}
+      {{#module}}
         <article id='{{name}}'>
           <header>
             <h2>{{name}}</h2>
             {{#is_extends}}
-              <p class='extends'>extends <a href="#{{extends}}">{{extends}}</a></p>
+              <p class='extends'>extends <a href="{{extends}}.html#{{extends}}">{{extends}}</a></p>
             {{/is_extends}}
           </header>
 
@@ -384,7 +378,7 @@
                   <p class='endpoint'>{{endpoint}}</p>
                 {{/has_endpoint}}
                 {{#related}}
-                  <p class='related'>See: <a href='#{{href}}'>{{name}}</a></p>
+                  <p class='related'>See: <a href='{{href}}.html#{{href}}'>{{name}}</a></p>
                 {{/related}}
               </header>
 
@@ -518,7 +512,7 @@
             </section>
           {{/inherited}}
         </article>
-      {{/modules}}
+      {{/module}}
     </div>
   </div>
   <script>

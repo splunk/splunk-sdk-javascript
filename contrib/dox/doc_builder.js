@@ -197,20 +197,28 @@
     });
 
     modules.forEach(function (module) {
-      module.methods = transformedDocs.filter(function (doc) {
-        return doc.parent === module.name && !doc.is_global
-      });
+        module.methods = transformedDocs.filter(function (doc) {
+            return doc.parent === module.name && !doc.is_global
+        });
       
-      module.helpers = transformedDocs.filter(function(doc) {
-        return doc.is_global && doc.global === module.name;
-      });
+        module.methods = module.methods.sort(function(method1, method2) {
+            if (method1.type === "constructor") {
+                return -1;
+            }
+            
+            return 1;
+        });
       
-      module.has_globals = (module.helpers || []).length > 0;
+        module.helpers = transformedDocs.filter(function(doc) {
+            return doc.is_global && doc.global === module.name;
+        });
+      
+        module.has_globals = (module.helpers || []).length > 0;
     });
     
     var moduleStore = {};
     modules.forEach(function (module) {
-        moduleStore[module.name.trim()] = module;  
+        moduleStore[module.name.trim()] = module;
     });
     
     var getParentMethods = function(module) {
@@ -240,6 +248,8 @@
                         newMethod[k] = parentMethod[k]; 
                     }
                     newMethod.parent = module.name;
+                    newMethod.is_inherited = true;
+                    newMethod.id += module.id;
                     
                     // Push it
                     newMethods.push(newMethod);
@@ -269,7 +279,50 @@
         modules: modules,
         version: version
     }
-    var output = mustache.to_html(template, context, null);
-    callback(null, output);
+    var allMethods = [];
+    modules.forEach(function(module) {
+        (module.methods || []).forEach(function(fn) {
+            allMethods.push({id: fn.id, name: fn.name, parent: fn.parent});
+        });
+        (module.helpers || []).forEach(function(fn) {
+            allMethods.push({id: fn.id, name: fn.name, parent: fn.parent, global: true});
+        });
+        (module.inherited || []).forEach(function(fn) {
+            allMethods.push({id: fn.id, name: fn.name, parent: fn.parent, inherited: true});
+        });
+    });
+    var raw = JSON.stringify(allMethods);
+    
+    var outputs = {};
+    modules.forEach(function(module) {
+        var moduleList = [];
+        for(var i = 0; i < modules.length; i++) {
+            if (modules[i] === module) {
+                moduleList.unshift(module);
+            }
+            else {
+                moduleList.push({name: modules[i].name});
+            }
+        }
+        
+        var context = {
+            modules: moduleList,
+            module: module,
+            version: version,
+            raw: raw
+        }
+        
+        outputs[module.name] = mustache.to_html(template, context, null);
+    });
+    
+    var context = {
+        modules: modules.map(function(mod) { return {name: mod.name}; }),
+        version: version,
+        raw: raw
+    }
+    outputs["index"] = mustache.to_html(template, context, null);
+    
+    //var output = mustache.to_html(template, context, null);
+    callback(null, outputs);
   };
 })();
