@@ -157,6 +157,9 @@
     var firstLine = code.split("\n")[0].trim();
     var syntax = firstLine.substr(0, firstLine.lastIndexOf("{") - 1);
 
+    if (isModule) {
+    }
+
     return {
         id: [counter++, Date.now()].join('-'),
         name: name,
@@ -282,7 +285,7 @@
         }
     });
     
-    var template = fs.readFileSync(path.resolve(__dirname, 'ref_template.mustache')).toString("utf-8");
+    var ref_template = fs.readFileSync(path.resolve(__dirname, 'ref_template.mustache')).toString("utf-8");
     var context = {
         modules: modules,
         version: version
@@ -306,14 +309,16 @@
             version: version
         }
         
-        outputs[module.name] = mustache.to_html(template, context, null);
+        outputs[module.name] = mustache.to_html(ref_template, context, null);
     });
     
+    // Generate index
     var context = {
-        modules: modules.map(function(mod) { return {name: mod.name}; }),
+        modules: modules.map(function(mod) { return {name: mod.name, full_description: mod.full_description}; }),
         version: version
     }
-    outputs["index"] = mustache.to_html(template, context, null);
+    var ref_index_template = fs.readFileSync(path.resolve(__dirname, 'ref_index_template.mustache')).toString("utf-8");
+    outputs["index"] = mustache.to_html(ref_index_template, context, null);
     
     //var output = mustache.to_html(template, context, null);
     callback(null, outputs);
