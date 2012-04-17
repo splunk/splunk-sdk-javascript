@@ -307,7 +307,7 @@
                                   <tr>
                     <td class="param-name">params</td>
                     <td class="param-type">Object</td>
-                    <td class="param-description"><p>Dictionary of optional parameters: scheme, host, port, username, password, owner, app, sessionKey</p></td>
+                    <td class="param-description"><p>Dictionary of optional parameters:<br />- <code>scheme</code>: <code>http</code> or <code>https</code><br />- <code>host</code>: hostname for Splunk<br />- <code>port</code>: port for Splunk<br />- <code>username</code>: username to login with<br />- <code>password</code>: password to login with<br />- <code>owner</code>: owner component of namespace<br />- <code>app</code>: app component of namespace<br />- <code>sessionKey</code>: optional pre-loaded session key</p></td>
                   </tr>
                 </tbody>
               </table>
@@ -320,7 +320,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L49">lib/context.js:49</a>)</h4>  
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L57">lib/context.js:57</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>init: function(http, params) {
@@ -438,7 +438,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L271">lib/context.js:271</a>)</h4>  
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L279">lib/context.js:279</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>request: function(path, method, headers, body, callback) {
@@ -509,7 +509,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L250">lib/context.js:250</a>)</h4>  
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L258">lib/context.js:258</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>post: function(path, params, callback) {
@@ -576,7 +576,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L231">lib/context.js:231</a>)</h4>  
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L239">lib/context.js:239</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>del: function(path, params, callback) {
@@ -643,7 +643,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L212">lib/context.js:212</a>)</h4>  
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L220">lib/context.js:220</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>get: function(path, params, callback) {
@@ -701,7 +701,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L184">lib/context.js:184</a>)</h4>  
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L192">lib/context.js:192</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>login: function(callback) {
@@ -769,7 +769,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L169">lib/context.js:169</a>)</h4>  
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L177">lib/context.js:177</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>urlify: function(path) {
@@ -823,7 +823,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L127">lib/context.js:127</a>)</h4>  
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L135">lib/context.js:135</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>fullpath: function(path, namespace) {
@@ -900,7 +900,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L110">lib/context.js:110</a>)</h4>  
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L118">lib/context.js:118</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>_headers: function (headers) {

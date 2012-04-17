@@ -111,7 +111,21 @@ exports.parseComment = function(str) {
   // parse tags
   if (~str.indexOf('\n@')) {
     var tags = '@' + str.split('\n@').slice(1).join('\n@');
-    comment.tags = tags.split('\n').map(exports.parseTag);
+    
+    // Allow for multi-line tags
+    var rawLines = tags.split('\n');
+    var lines = [];
+    rawLines.forEach(function(line) {
+      line = line.trim();
+      if (line && line[0] === '@') {
+        lines.push(line);
+      }
+      else if (line) {
+        lines[lines.length - 1] += ("\n" + line);
+      }
+    });
+    
+    comment.tags = lines.map(exports.parseTag);
     comment.isPrivate = comment.tags.some(function(tag){
       return 'api' == tag.type && 'private' == tag.visibility;
     })
