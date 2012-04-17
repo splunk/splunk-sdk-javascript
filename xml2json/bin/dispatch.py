@@ -179,13 +179,6 @@ def forward_request(request):
 def status_ok(status):
     return status >= 200 and status <= 299
     
-def auth(request, *args, **kwargs):    
-    status, content = forward_request(request)
-    if status_ok(status):
-        return status, xml2json.from_auth(content)
-    else:
-        return status, xml2json.from_messages_only(content)    
-
 def create_job(request, *args, **kwargs):    
     status, content = forward_request(request)
     if status_ok(status):
@@ -196,22 +189,8 @@ def create_job(request, *args, **kwargs):
     else:
         return status, xml2json.from_messages_only(content)
 
-def delete_job(request, *args, **kwargs): 
-    status, content = forward_request(request)
-    if status_ok(status):
-        return status, xml2json.from_messages_only(content)
-    else:
-        return status, xml2json.from_messages_only(content)  
-        
-def job_control(request, *args, **kwargs): 
-    status, content = forward_request(request)
-    if status_ok(status):
-       return status, xml2json.from_messages_only(content)
-    else:
-       return status, xml2json.from_messages_only(content)
 
 def job_data(request, data_source, *args, **kwargs):    
-    
     # Modify the arguments
     mode = request["get"].get("output_mode", "")
     request["get"]["output_mode"] = "xml"
@@ -244,73 +223,15 @@ def job_data(request, data_source, *args, **kwargs):
             elif root.tag == 'summary':
                 return status, xml2json.from_search_summary(root)
 
-def parse_query(request, *args, **kwargs):    
-    
-    # Modify the arguments
-    request["get"]["output_mode"] = "xml"
-    
-    status, content = forward_request(request)
-    if status_ok(status):
-        return status, xml2json.from_search_parser(content)
-    else:
-        return status, xml2json.from_messages_only(content)
         
-def typeahead(request, *args, **kwargs):    
-    # Modify the arguments
-    request["get"]["output_mode"] = "json"
-    
-    status, content = forward_request(request)
-    if status_ok(status):
-        if content:
-            return status, xml2json.from_typeahead(content)
-        else:
-            return status, {"entry": {"content": None}}
-    else:
-        return status, xml2json.from_messages_only(content)
-
-        
-def modify_or_delete_tag(request, name, *args, **kwargs): 
-    status, content = forward_request(request)
-    if status_ok(status):
-       return status, xml2json.from_messages_only(content)
-    else:
-       return status, xml2json.from_messages_only(content)
-
-def http_simple_input(request, *args, **kwargs):
-    status, content = forward_request(request)
-    if status_ok(status):
-        return status, xml2json.from_http_simple_input(content)
-    else:
-        return status, xml2json.from_messages_only(content)
-
-def properties_stanza(request, file, stanza, *args, **kwargs):
-    status, content = forward_request(request)
-    if status_ok(status) and request["method"] == "GET":
-        return status, xml2json.from_propertizes_stanza(content)
-    else:
-        return status, xml2json.from_messages_only(content)
-
-def properties_stanza_key(request, file, stanza, key, *args, **kwargs):
-    status, content = forward_request(request)
-    if status_ok(status):
-        return status, xml2json.from_propertizes_stanza_key(content, key)
-    else:
-        return status, xml2json.from_messages_only(content)
-
-def saved_dispatch(request, name, *args, **kwargs):
-    status, content = forward_request(request)
-    if status_ok(status) and request["method"] == "GET":
-        return status, xml2json.from_propertizes_stanza(content)
-    else:
-        return status, xml2json.from_job_create(content)
-
-def unless_error(ok_handler, request_filter=lambda x: x):
+def unless_error(ok_handler, request_filter=lambda x: x, path_args=[]):
     def f(request, *args, **kwargs):
+        request = request_filter(request)
         status, content = forward_request(request)
         if status_ok(status):
-            return status, ok_handler(content, *args, **kwargs)
+            return status, ok_handler(content, *[args[k] for k in path_args])
         else:
-            return status, xml2json.from_message_only(content)
+            return status, xml2json.from_messages_only(content)
     return f
 
 only_messages = unless_error(xml2json.from_messages_only)
@@ -325,24 +246,17 @@ def output_mode(output_type):
 
 router = route.Router()
 
-router.add(route.Route('/search/jobs/<sid>/control', {"POST": job_control}, 'job_control'))
-router.add(route.Route('/search/jobs/<sid>/<data_source>', {"GET": job_data}, 'job_data'))
-router.add(route.Route('/search/jobs/<sid>', {"GET": eai, "DELETE": delete_job}, 'job_info'))
-router.add(route.Route('/search/jobs', {"GET": eai, "POST": create_job}, 'jobs'))
-router.add(route.Route('/search/parser', parse_query, 'parse_query'))
-router.add(route.Route('/search/typeahead', typeahead, 'typeahead'))
+router.add(route.Route('/search/jobs/<sid>/control', {"POST": only_messages}, 'job_control'))
+router.add(route.Route('/search/jobs/<sid>/<data_source>', {"GET": job_data}, 'job_data')) # Leave this. It's complicated.
+router.add(route.Route('/search/jobs/<sid>', {"GET": eai, "DELETE": only_messages}, 'job_info')) 
+router.add(route.Route('/search/jobs', {"GET": eai, "POST": create_job}, 'jobs')) # Leave it. Has a special case.
+router.add(route.Route('/search/parser', unless_error(xml2json.from_search_parser, output_mode('xml')), 'parse_query'))
+router.add(route.Route('/search/typeahead', unless_error(xml2json.from_typeahead, output_mode('json')), 'typeahead'))
 router.add(route.Route('/search/tags', {"GET": eai}, 'tags'))
-router.add(route.Route('/search/tags/<name>', 
-    {
-        "GET": eai, 
-        "DELETE": modify_or_delete_tag, 
-        "POST": modify_or_delete_tag
-    }, 
-    'tag_info'
-))
-router.add(route.Route('/saved/searches/<name>/dispatch', {"POST": saved_dispatch}, 'dispatch_saved_search'))
-router.add(route.Route('/properties/<file>/<stanza>', properties_stanza, 'properties_stanza_info'))
-router.add(route.Route('/properties/<file>/<stanza>/<key>', properties_stanza_key, 'properties_stanza_key'))
-router.add(route.Route('/receivers/simple', http_simple_input, 'http_simple_input'))
-router.add(route.Route('/auth/login', {"POST": auth}, 'auth'))
+router.add(route.Route('/search/tags/<name>', {"GET": eai, "DELETE": only_messages, "POST": only_messages}, 'tag_info'))
+router.add(route.Route('/saved/searches/<name>/dispatch', {"POST": unless_error(xml2json.from_job_create)}, 'dispatch_saved_search'))
+router.add(route.Route('/properties/<file>/<stanza>', unless_error(xml2json.from_propertizes_stanza), 'properties_stanza_info'))
+router.add(route.Route('/properties/<file>/<stanza>/<key>', unless_error(xml2json.from_propertizes_stanza_key, path_args=[2]), 'properties_stanza_key'))
+router.add(route.Route('/receivers/simple', unless_error(xml2json.from_http_simple_input), 'http_simple_input'))
+router.add(route.Route('/auth/login', {"POST": unless_error(xml2json.from_auth)}, 'auth'))
 router.add(route.Route('/<:.*>', eai, 'eai'))
