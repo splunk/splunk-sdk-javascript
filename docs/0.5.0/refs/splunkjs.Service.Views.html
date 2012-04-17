@@ -43,6 +43,10 @@
         position: relative;
       }
       
+      pre {
+        overflow-x: auto;
+      }
+      
       .pre-scrollable {
         overflow-y: auto;
       }
@@ -327,6 +331,9 @@
                                       <h4>Return</h4>
               <span class="return-type">splunkjs.Service.Views</span> A splunkjs.Service.Views instance
             </section>
+            
+            <section class="examples">
+            </section>
                         
             <section class="code">
               
@@ -381,6 +388,9 @@
                                       <h4>Return</h4>
               <span class="return-type">splunkjs.Service.View</span> A splunkjs.Service.View instance
             </section>
+            
+            <section class="examples">
+            </section>
                         
             <section class="code">
               
@@ -415,6 +425,9 @@
             
             <section class="returns">
             </section>
+            
+            <section class="examples">
+            </section>
                         
             <section class="code">
               
@@ -447,7 +460,11 @@
             </section>
             
             <section class="returns">
-                
+                                      <h4>Return</h4>
+              <span class="return-type">String</span> The author for this collection
+            </section>
+            
+            <section class="examples">
             </section>
                         
             <section class="code">
@@ -468,14 +485,6 @@
             <section class="content">
               <p>Check whether a specific entity exists</p>
 <p>Check to see if the collection contains a specific entity, and if so, return that entity.</p>
-<h2>Example</h2>
-<pre><code> var apps = service.apps();
- apps.refresh(function(err, apps) {
-     var app = apps.contains("search");
-     console.log("Search App Found: " + !!app);
-     // `app` contains the Application object.
- });
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -510,7 +519,17 @@
             </section>
             
             <section class="returns">
-                
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> var apps = service.apps();
+ apps.refresh(function(err, apps) {
+     var app = apps.contains("search");
+     console.log("Search App Found: " + !!app);
+     // `app` contains the Application object.
+ });
+</code></pre>
             </section>
                         
             <section class="code">
@@ -591,7 +610,9 @@
             </section>
             
             <section class="returns">
-                
+            </section>
+            
+            <section class="examples">
             </section>
                         
             <section class="code">
@@ -610,13 +631,6 @@
             <section class="content">
               <p>Retrieve a list of all entities in the collection</p>
 <p>Return the list of all the entities in this collection.</p>
-<h2>Example</h2>
-<pre><code> var apps = service.apps();
- apps.refresh(function(err, apps) {
-     var appList = apps.list();
-     console.log(appList.length);
- });
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -646,7 +660,16 @@
             </section>
             
             <section class="returns">
-                
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> var apps = service.apps();
+ apps.refresh(function(err, apps) {
+     var appList = apps.list();
+     console.log(appList.length);
+ });
+</code></pre>
             </section>
                         
             <section class="code">
@@ -669,12 +692,6 @@
             <section class="content">
               <p>Create an entity for this collection.</p>
 <p>Create an entity on the server for this collection with the specified parameters.</p>
-<h2>Example</h2>
-<pre><code> var apps = service.apps();
- apps.create({name: "NewSearchApp"}, function(err, newApp) {
-     console.log("CREATED");
- });
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -704,7 +721,15 @@
             </section>
             
             <section class="returns">
-                
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> var apps = service.apps();
+ apps.create({name: "NewSearchApp"}, function(err, newApp) {
+     console.log("CREATED");
+ });
+</code></pre>
             </section>
                         
             <section class="code">
@@ -757,12 +782,6 @@
             <section class="content">
               <p>Fetch a specific entity.</p>
 <p>Return a specific entity given its name.</p>
-<h2>Example</h2>
-<pre><code> var apps = service.apps();
- apps.item("search", function(err, app) {
-     console.log(app.properties());
- })
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -797,7 +816,15 @@
             </section>
             
             <section class="returns">
-                
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> var apps = service.apps();
+ apps.item("search", function(err, app) {
+     console.log(app.properties());
+ })
+</code></pre>
             </section>
                         
             <section class="code">
@@ -852,7 +879,9 @@
             </section>
             
             <section class="returns">
-                
+            </section>
+            
+            <section class="examples">
             </section>
                         
             <section class="code">
@@ -936,7 +965,11 @@
             </section>
             
             <section class="returns">
-                
+                                      <h4>Return</h4>
+              <span class="return-type">String</span> The updated time for this collection
+            </section>
+            
+            <section class="examples">
             </section>
                         
             <section class="code">
@@ -965,7 +998,9 @@
             </section>
             
             <section class="returns">
-                
+            </section>
+            
+            <section class="examples">
             </section>
                         
             <section class="code">
@@ -994,7 +1029,11 @@
             </section>
             
             <section class="returns">
-                
+                                      <h4>Return</h4>
+              <span class="return-type">Object</span> The links for this collection
+            </section>
+            
+            <section class="examples">
             </section>
                         
             <section class="code">
@@ -1026,7 +1065,11 @@
             </section>
             
             <section class="returns">
-                
+                                      <h4>Return</h4>
+              <span class="return-type">Object</span> The full state for this resource
+            </section>
+            
+            <section class="examples">
             </section>
                         
             <section class="code">
@@ -1059,7 +1102,11 @@
             </section>
             
             <section class="returns">
-                
+                                      <h4>Return</h4>
+              <span class="return-type">Object</span> The properties for this resource
+            </section>
+            
+            <section class="examples">
             </section>
                         
             <section class="code">
@@ -1080,11 +1127,6 @@
             <section class="content">
               <p>Perform a relative DELETE request</p>
 <p>Perform a relative DELETE request on this endpoint's path, combined with the parameters and a relative path if specified.</p>
-<h2>Example</h2>
-<pre><code> // Will make a request to {service.prefix}/search/jobs/123456
- var endpoint = new splunkjs.Service.Endpoint(service, "search/jobs/12345");
- endpoint.delete("", {}, function() { console.log("DELETED"))});
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -1124,7 +1166,14 @@
             </section>
             
             <section class="returns">
-                
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> // Will make a request to {service.prefix}/search/jobs/123456
+ var endpoint = new splunkjs.Service.Endpoint(service, "search/jobs/12345");
+ endpoint.delete("", {}, function() { console.log("DELETED"))});
+</code></pre>
             </section>
                         
             <section class="code">
@@ -1156,11 +1205,6 @@
             <section class="content">
               <p>Perform a relative POST request</p>
 <p>Perform a relative POST request on this endpoint's path, combined with the parameters and a relative path if specified.</p>
-<h2>Example</h2>
-<pre><code> // Will make a request to {service.prefix}/search/jobs/123456/control
- var endpoint = new splunkjs.Service.Endpoint(service, "search/jobs/12345");
- endpoint.post("control", {action: "cancel"}, function() { console.log("CANCELLED"))});
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -1200,7 +1244,14 @@
             </section>
             
             <section class="returns">
-                
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> // Will make a request to {service.prefix}/search/jobs/123456/control
+ var endpoint = new splunkjs.Service.Endpoint(service, "search/jobs/12345");
+ endpoint.post("control", {action: "cancel"}, function() { console.log("CANCELLED"))});
+</code></pre>
             </section>
                         
             <section class="code">
@@ -1231,11 +1282,6 @@
             <section class="content">
               <p>Perform a relative GET request</p>
 <p>Perform a relative GET request on this endpoint's path, combined with the parameters and a relative path if specified.</p>
-<h2>Example</h2>
-<pre><code> // Will make a request to {service.prefix}/search/jobs/123456/results?offset=1
- var endpoint = new splunkjs.Service.Endpoint(service, "search/jobs/12345");
- endpoint.get("results", {offset: 1}, function() { console.log("DONE"))});
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -1275,7 +1321,14 @@
             </section>
             
             <section class="returns">
-                
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> // Will make a request to {service.prefix}/search/jobs/123456/results?offset=1
+ var endpoint = new splunkjs.Service.Endpoint(service, "search/jobs/12345");
+ endpoint.get("results", {offset: 1}, function() { console.log("DONE"))});
+</code></pre>
             </section>
                         
             <section class="code">
@@ -1357,13 +1410,11 @@
           var isHidden = code.hasClass("hidden");
           
           if (isHidden) {
-            console.log("BOO");
             $(code).removeClass("hidden");  
             $(this).children("i").addClass("icon-minus");
             $(this).children("i").removeClass("icon-plus");
           }
           else {
-            console.log("BOO2");
             $(code).addClass("hidden");  
             $(this).children("i").addClass("icon-plus");
             $(this).children("i").removeClass("icon-minus");
@@ -1383,22 +1434,22 @@
       //
       // All elements which match this will be syntax highlighted.
       var selector = hijs || "code";
-      var keywords = ("var function if else for while break switch case do new null in with void "
-                     +continue delete return this true false throw catch typeof with instanceof).split( ),
-          special  = (eval window document undefined NaN Infinity parseInt parseFloat 
-                     +encodeURI decodeURI encodeURIComponent decodeURIComponent).split( );
+      var keywords = ('var function if else for while break switch case do new null in with void '
+                     +'continue delete return this true false throw catch typeof with instanceof').split(' '),
+          special  = ('eval window document undefined NaN Infinity parseInt parseFloat '
+                     +'encodeURI decodeURI encodeURIComponent decodeURIComponent').split(' ');
       // Syntax definition
       // The key becomes the class name of the <span>
       // around the matched block of code.
       var syntax = [
-        [comment, /(\/\*(?:[^*\n]|\*+[^\/*])*\*+\/)/g],
-        [comment, /(\/\/[^\n]*)/g],
-        [string , /("(?:(?!")[^\\\n]|\\.)*"|(?:(?!)[^\\\n]|\\.)*)/g],
-        [regexp , /(\/.+\/[mgi]*)(?!\s*\w)/g],
-        [class  , /\b([A-Z][a-zA-Z]+)\b/g],
-        [number , /\b([0-9]+(?:\.[0-9]+)?)\b/g],
-        [keyword, new(RegExp)(\\b( + keywords.join(|) + )\\b, g)],
-        [special, new(RegExp)(\\b( + special.join(|) + )\\b, g)]
+        ['comment', /(\/\*(?:[^*\n]|\*+[^\/*])*\*+\/)/g],
+        ['comment', /(\/\/[^\n]*)/g],
+        ['string' , /("(?:(?!")[^\\\n]|\\.)*"|'(?:(?!')[^\\\n]|\\.)*')/g],
+        ['regexp' , /(\/.+\/[mgi]*)(?!\s*\w)/g],
+        ['class'  , /\b([A-Z][a-zA-Z]+)\b/g],
+        ['number' , /\b([0-9]+(?:\.[0-9]+)?)\b/g],
+        ['keyword', new(RegExp)('\\b(' + keywords.join('|') + ')\\b', 'g')],
+        ['special', new(RegExp)('\\b(' + special.join('|') + ')\\b', 'g')]
       ];
       var nodes, table = {};
       if (/^[a-z]+$/.test(selector)) {
@@ -1414,15 +1465,15 @@
           children = nodes[i].childNodes;
           for (var j = 0, str; j < children.length; j++) {
               code = children[j];
-              if (code.length >= 0) { // Its a text node
-                  // Dont highlight command-line snippets
+              if (code.length >= 0) { // It's a text node
+                  // Don't highlight command-line snippets
                   if (! /^\$/.test(code.nodeValue.trim())) {
                       syntax.forEach(function (s) {
                           var k = s[0], v = s[1];
                           code.nodeValue = code.nodeValue.replace(v, function (_, m) {
-                              return \u00ab + encode(k) + \u00b7
+                              return '\u00ab' + encode(k) + '\u00b7'
                                               + encode(m) +
-                                     \u00b7 + encode(k) + \u00bb;
+                                     '\u00b7' + encode(k) + '\u00bb';
                           });
                       });
                   }
@@ -1432,29 +1483,29 @@
       for (var i = 0; i < nodes.length; i++) {
           nodes[i].innerHTML =
               nodes[i].innerHTML.replace(/\u00ab(.+?)\u00b7(.+?)\u00b7\1\u00bb/g, function (_, name, value) {
-                  value = value.replace(/\u00ab[^\u00b7]+\u00b7/g, ).replace(/\u00b7[^\u00bb]+\u00bb/g, );
-                  return <span class=" + decode(name) + "> + escape(decode(value)) + </span>;
+                  value = value.replace(/\u00ab[^\u00b7]+\u00b7/g, '').replace(/\u00b7[^\u00bb]+\u00bb/g, '');
+                  return '<span class="' + decode(name) + '">' + escape(decode(value)) + '</span>';
           });
       }
       function escape(str) {
-          return str.replace(/</g, &lt;).replace(/>/g, &gt;);
+          return str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
       }
       // Encode ASCII characters to, and from Braille
       function encode (str, encoded) {
-          table[encoded = str.split().map(function (s) {
+          table[encoded = str.split('').map(function (s) {
               if (s.charCodeAt(0) > 127) { return s }
               return String.fromCharCode(s.charCodeAt(0) + 0x2800);
-          }).join()] = str;
+          }).join('')] = str;
           return encoded;
       }
       function decode (str) {
           if (str in table) {
               return table[str];
           } else {
-              return str.trim().split().map(function (s) {
+              return str.trim().split('').map(function (s) {
                   if (s.charCodeAt(0) - 0x2800 > 127) { return s }
                   return String.fromCharCode(s.charCodeAt(0) - 0x2800);
-              }).join();
+              }).join('');
           }
       }
       })(window.hijs);

@@ -171,6 +171,8 @@
         code: code,
         params: doc.tags.filter(function (tag) { return tag.type === 'param' }),
         has_params: !!doc.tags.filter(function (tag) { return tag.type === 'param' }).length,
+        examples: doc.tags.filter(function (tag) { return tag.type === 'example' }),
+        has_examples: !!doc.tags.filter(function (tag) { return tag.type === 'example' }).length,
         returns: doc.tags.filter(function (tag) { return tag.type === 'return' })[0],
         has_returns: !!doc.tags.filter(function (tag) { return tag.type === 'return' }).length,
         tags: doc.tags,

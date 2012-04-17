@@ -43,6 +43,10 @@
         position: relative;
       }
       
+      pre {
+        overflow-x: auto;
+      }
+      
       .pre-scrollable {
         overflow-y: auto;
       }
@@ -288,11 +292,6 @@
           
             <section class="content">
               <p>Bind a function to a specific object</p>
-<h2>Example</h2>
-<pre><code> var obj = {a: 1, b: function() { console.log(a); }};
- var bound = splunkjs.Utils.bind(obj, obj.b);
- bound(); // should print 1
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -327,7 +326,16 @@
             </section>
             
             <section class="returns">
-                
+                                      <h4>Return</h4>
+              <span class="return-type">Function</span> The bound function
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> var obj = {a: 1, b: function() { console.log(a); }};
+ var bound = splunkjs.Utils.bind(obj, obj.b);
+ bound(); // should print 1
+</code></pre>
             </section>
                         
             <section class="code">
@@ -351,10 +359,6 @@
           
             <section class="content">
               <p>Strip a string of all leading and trailing whitespace.</p>
-<h2>Example</h2>
-<pre><code> var a = " aaa ";
- var b = splunkjs.Utils.trim(a); //== "aaa"
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -384,7 +388,15 @@
             </section>
             
             <section class="returns">
-                
+                                      <h4>Return</h4>
+              <span class="return-type">String</span> The trimmed string
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> var a = " aaa ";
+ var b = splunkjs.Utils.trim(a); //== "aaa"
+</code></pre>
             </section>
                         
             <section class="code">
@@ -413,11 +425,6 @@
           
             <section class="content">
               <p>Whether an array contains a specific object</p>
-<h2>Example</h2>
-<pre><code> var a = ["a", "b', "c"];
- console.log(splunkjs.Utils.indexOf(a, "b")) //== 1
- console.log(splunkjs.Utils.indexOf(a, "d")) //== -1
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -452,7 +459,16 @@
             </section>
             
             <section class="returns">
-                
+                                      <h4>Return</h4>
+              <span class="return-type">Number</span> The index of `search` or `-1` if it wasn't found
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> var a = ["a", "b', "c"];
+ console.log(splunkjs.Utils.indexOf(a, "b")) //== 1
+ console.log(splunkjs.Utils.indexOf(a, "d")) //== -1
+</code></pre>
             </section>
                         
             <section class="code">
@@ -479,11 +495,6 @@
           
             <section class="content">
               <p>Whether an array contains a specific object</p>
-<h2>Example</h2>
-<pre><code> var a = {a: 3};
- var b = [{}, {c: 1}, {b: 1}, a];
- var contained = splunkjs.Utils.contains(b, a); // should be tree
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -518,7 +529,16 @@
             </section>
             
             <section class="returns">
-                
+                                      <h4>Return</h4>
+              <span class="return-type">Boolean</span> Whether the array contains the element
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> var a = {a: 3};
+ var b = [{}, {c: 1}, {b: 1}, a];
+ var contained = splunkjs.Utils.contains(b, a); // should be tree
+</code></pre>
             </section>
                         
             <section class="code">
@@ -541,9 +561,6 @@
           
             <section class="content">
               <p>Whether a string starts with a specific prefix.</p>
-<h2>Example</h2>
-<pre><code> var starts = splunkjs.Utils.startsWith("splunk-foo", "splunk-");
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -578,7 +595,14 @@
             </section>
             
             <section class="returns">
-                
+                                      <h4>Return</h4>
+              <span class="return-type">Boolean</span> Whether the string starts with the prefix
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> var starts = splunkjs.Utils.startsWith("splunk-foo", "splunk-");
+</code></pre>
             </section>
                         
             <section class="code">
@@ -601,9 +625,6 @@
           
             <section class="content">
               <p>Whether a string ends with a specific suffix.</p>
-<h2>Example</h2>
-<pre><code> var ends = splunkjs.Utils.endsWith("foo-splunk", "-splunk");
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -638,7 +659,14 @@
             </section>
             
             <section class="returns">
-                
+                                      <h4>Return</h4>
+              <span class="return-type">Boolean</span> Whether the string ends with the suffix
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> var ends = splunkjs.Utils.endsWith("foo-splunk", "-splunk");
+</code></pre>
             </section>
                         
             <section class="code">
@@ -662,12 +690,6 @@ var toString = Object.prototype.toString;</code></pre>
           
             <section class="content">
               <p>Convert an iterable to an array.</p>
-<h2>Example</h2>
-<pre><code> function() { 
-     console.log(arguments instanceof Array); // false
-     var arr = console.log(splunkjs.Utils.toArray(arguments) instanceof Array); // true
- }
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -697,7 +719,17 @@ var toString = Object.prototype.toString;</code></pre>
             </section>
             
             <section class="returns">
-                
+                                      <h4>Return</h4>
+              <span class="return-type">Array</span> The converted array
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> function() { 
+     console.log(arguments instanceof Array); // false
+     var arr = console.log(splunkjs.Utils.toArray(arguments) instanceof Array); // true
+ }
+</code></pre>
             </section>
                         
             <section class="code">
@@ -719,12 +751,6 @@ var toString = Object.prototype.toString;</code></pre>
           
             <section class="content">
               <p>Whether or not the argument is an array</p>
-<h2>Example</h2>
-<pre><code> function() { 
-     console.log(splunkjs.Utils.isArray(arguments)); // false
-     console.log(splunkjs.Utils.isArray([1,2,3])); // true
- }
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -754,7 +780,17 @@ var toString = Object.prototype.toString;</code></pre>
             </section>
             
             <section class="returns">
-                
+                                      <h4>Return</h4>
+              <span class="return-type">Boolean</span> Whether or not the passed in parameter was an array
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> function() { 
+     console.log(splunkjs.Utils.isArray(arguments)); // false
+     console.log(splunkjs.Utils.isArray([1,2,3])); // true
+ }
+</code></pre>
             </section>
                         
             <section class="code">
@@ -776,12 +812,6 @@ var toString = Object.prototype.toString;</code></pre>
           
             <section class="content">
               <p>Whether or not the argument is a function</p>
-<h2>Example</h2>
-<pre><code> function() { 
-     console.log(splunkjs.Utils.isFunction([1,2,3]); // false
-     console.log(splunkjs.Utils.isFunction(function() {})); // true
- }
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -811,7 +841,17 @@ var toString = Object.prototype.toString;</code></pre>
             </section>
             
             <section class="returns">
-                
+                                      <h4>Return</h4>
+              <span class="return-type">Boolean</span> Whether or not the passed in parameter was a function
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> function() { 
+     console.log(splunkjs.Utils.isFunction([1,2,3]); // false
+     console.log(splunkjs.Utils.isFunction(function() {})); // true
+ }
+</code></pre>
             </section>
                         
             <section class="code">
@@ -833,12 +873,6 @@ var toString = Object.prototype.toString;</code></pre>
           
             <section class="content">
               <p>Whether or not the argument is a number</p>
-<h2>Example</h2>
-<pre><code> function() { 
-     console.log(splunkjs.Utils.isNumber(1); // true
-     console.log(splunkjs.Utils.isNumber(function() {})); // false
- }
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -868,7 +902,17 @@ var toString = Object.prototype.toString;</code></pre>
             </section>
             
             <section class="returns">
-                
+                                      <h4>Return</h4>
+              <span class="return-type">Boolean</span> Whether or not the passed in parameter was a number
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> function() { 
+     console.log(splunkjs.Utils.isNumber(1); // true
+     console.log(splunkjs.Utils.isNumber(function() {})); // false
+ }
+</code></pre>
             </section>
                         
             <section class="code">
@@ -890,12 +934,6 @@ var toString = Object.prototype.toString;</code></pre>
           
             <section class="content">
               <p>Whether or not the argument is a string</p>
-<h2>Example</h2>
-<pre><code> function() { 
-     console.log(splunkjs.Utils.isString("abc"); // true
-     console.log(splunkjs.Utils.isString(function() {})); // false
- }
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -925,7 +963,17 @@ var toString = Object.prototype.toString;</code></pre>
             </section>
             
             <section class="returns">
-                
+                                      <h4>Return</h4>
+              <span class="return-type">Boolean</span> Whether or not the passed in parameter was a string
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> function() { 
+     console.log(splunkjs.Utils.isString("abc"); // true
+     console.log(splunkjs.Utils.isString(function() {})); // false
+ }
+</code></pre>
             </section>
                         
             <section class="code">
@@ -947,12 +995,6 @@ var toString = Object.prototype.toString;</code></pre>
           
             <section class="content">
               <p>Whether or not the argument is an object</p>
-<h2>Example</h2>
-<pre><code> function() { 
-     console.log(splunkjs.Utils.isObject({abc: "abc"}); // true
-     console.log(splunkjs.Utils.isObject("abc"); // false
- }
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -982,7 +1024,17 @@ var toString = Object.prototype.toString;</code></pre>
             </section>
             
             <section class="returns">
-                
+                                      <h4>Return</h4>
+              <span class="return-type">Boolean</span> Whether or not the passed in parameter was a object
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> function() { 
+     console.log(splunkjs.Utils.isObject({abc: "abc"}); // true
+     console.log(splunkjs.Utils.isObject("abc"); // false
+ }
+</code></pre>
             </section>
                         
             <section class="code">
@@ -1004,12 +1056,6 @@ var toString = Object.prototype.toString;</code></pre>
           
             <section class="content">
               <p>Whether or not the argument is empty</p>
-<h2>Example</h2>
-<pre><code> function() { 
-     console.log(splunkjs.Utils.isEmpty({})); // true
-     console.log(splunkjs.Utils.isEmpty({a: 1})); // false
- }
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -1039,7 +1085,17 @@ var toString = Object.prototype.toString;</code></pre>
             </section>
             
             <section class="returns">
-                
+                                      <h4>Return</h4>
+              <span class="return-type">Boolean</span> Whether or not the passed in parameter was empty
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> function() { 
+     console.log(splunkjs.Utils.isEmpty({})); // true
+     console.log(splunkjs.Utils.isEmpty({a: 1})); // false
+ }
+</code></pre>
             </section>
                         
             <section class="code">
@@ -1071,9 +1127,6 @@ var toString = Object.prototype.toString;</code></pre>
           
             <section class="content">
               <p>Apply the iterator function to each element in the object</p>
-<h2>Example</h2>
-<pre><code> splunkjs.Utils.forEach([1,2,3], function(el) { console.log(el); }); // 1,2,3
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -1113,7 +1166,12 @@ var toString = Object.prototype.toString;</code></pre>
             </section>
             
             <section class="returns">
-                
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> splunkjs.Utils.forEach([1,2,3], function(el) { console.log(el); }); // 1,2,3
+</code></pre>
             </section>
                         
             <section class="code">
@@ -1154,11 +1212,6 @@ var toString = Object.prototype.toString;</code></pre>
           
             <section class="content">
               <p>Extend a given object with all the properties in passed-in objects</p>
-<h2>Example</h2>
-<pre><code> function() { 
-     console.log(splunkjs.Utils.extend({foo: "bar"}, {a: 2})); // {foo: "bar", a: 2}
- }
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -1193,7 +1246,16 @@ var toString = Object.prototype.toString;</code></pre>
             </section>
             
             <section class="returns">
-                
+                                      <h4>Return</h4>
+              <span class="return-type">Object</span> The extended object
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> function() { 
+     console.log(splunkjs.Utils.extend({foo: "bar"}, {a: 2})); // {foo: "bar", a: 2}
+ }
+</code></pre>
             </section>
                         
             <section class="code">
@@ -1220,12 +1282,6 @@ var toString = Object.prototype.toString;</code></pre>
           
             <section class="content">
               <p>Create a shallow-cloned copy of the object/array</p>
-<h2>Example</h2>
-<pre><code> function() { 
-     console.log(splunkjs.Utils.clone({foo: "bar"})); // {foo: "bar"}
-     console.log(splunkjs.Utils.clone([1,2,3])); // [1,2,3]
- }
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -1255,7 +1311,17 @@ var toString = Object.prototype.toString;</code></pre>
             </section>
             
             <section class="returns">
-                
+                                      <h4>Return</h4>
+              <span class="return-type">Object,Array</span> The cloned object/array
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> function() { 
+     console.log(splunkjs.Utils.clone({foo: "bar"})); // {foo: "bar"}
+     console.log(splunkjs.Utils.clone([1,2,3])); // [1,2,3]
+ }
+</code></pre>
             </section>
                         
             <section class="code">
@@ -1309,7 +1375,11 @@ var toString = Object.prototype.toString;</code></pre>
             </section>
             
             <section class="returns">
-                
+                                      <h4>Return</h4>
+              <span class="return-type">Object</span> Namespace information (owner, app, sharing) for the given properties
+            </section>
+            
+            <section class="examples">
             </section>
                         
             <section class="code">
@@ -1386,13 +1456,11 @@ var toString = Object.prototype.toString;</code></pre>
           var isHidden = code.hasClass("hidden");
           
           if (isHidden) {
-            console.log("BOO");
             $(code).removeClass("hidden");  
             $(this).children("i").addClass("icon-minus");
             $(this).children("i").removeClass("icon-plus");
           }
           else {
-            console.log("BOO2");
             $(code).addClass("hidden");  
             $(this).children("i").addClass("icon-plus");
             $(this).children("i").removeClass("icon-minus");
@@ -1412,22 +1480,22 @@ var toString = Object.prototype.toString;</code></pre>
       //
       // All elements which match this will be syntax highlighted.
       var selector = hijs || "code";
-      var keywords = ("var function if else for while break switch case do new null in with void "
-                     +continue delete return this true false throw catch typeof with instanceof).split( ),
-          special  = (eval window document undefined NaN Infinity parseInt parseFloat 
-                     +encodeURI decodeURI encodeURIComponent decodeURIComponent).split( );
+      var keywords = ('var function if else for while break switch case do new null in with void '
+                     +'continue delete return this true false throw catch typeof with instanceof').split(' '),
+          special  = ('eval window document undefined NaN Infinity parseInt parseFloat '
+                     +'encodeURI decodeURI encodeURIComponent decodeURIComponent').split(' ');
       // Syntax definition
       // The key becomes the class name of the <span>
       // around the matched block of code.
       var syntax = [
-        [comment, /(\/\*(?:[^*\n]|\*+[^\/*])*\*+\/)/g],
-        [comment, /(\/\/[^\n]*)/g],
-        [string , /("(?:(?!")[^\\\n]|\\.)*"|(?:(?!)[^\\\n]|\\.)*)/g],
-        [regexp , /(\/.+\/[mgi]*)(?!\s*\w)/g],
-        [class  , /\b([A-Z][a-zA-Z]+)\b/g],
-        [number , /\b([0-9]+(?:\.[0-9]+)?)\b/g],
-        [keyword, new(RegExp)(\\b( + keywords.join(|) + )\\b, g)],
-        [special, new(RegExp)(\\b( + special.join(|) + )\\b, g)]
+        ['comment', /(\/\*(?:[^*\n]|\*+[^\/*])*\*+\/)/g],
+        ['comment', /(\/\/[^\n]*)/g],
+        ['string' , /("(?:(?!")[^\\\n]|\\.)*"|'(?:(?!')[^\\\n]|\\.)*')/g],
+        ['regexp' , /(\/.+\/[mgi]*)(?!\s*\w)/g],
+        ['class'  , /\b([A-Z][a-zA-Z]+)\b/g],
+        ['number' , /\b([0-9]+(?:\.[0-9]+)?)\b/g],
+        ['keyword', new(RegExp)('\\b(' + keywords.join('|') + ')\\b', 'g')],
+        ['special', new(RegExp)('\\b(' + special.join('|') + ')\\b', 'g')]
       ];
       var nodes, table = {};
       if (/^[a-z]+$/.test(selector)) {
@@ -1443,15 +1511,15 @@ var toString = Object.prototype.toString;</code></pre>
           children = nodes[i].childNodes;
           for (var j = 0, str; j < children.length; j++) {
               code = children[j];
-              if (code.length >= 0) { // Its a text node
-                  // Dont highlight command-line snippets
+              if (code.length >= 0) { // It's a text node
+                  // Don't highlight command-line snippets
                   if (! /^\$/.test(code.nodeValue.trim())) {
                       syntax.forEach(function (s) {
                           var k = s[0], v = s[1];
                           code.nodeValue = code.nodeValue.replace(v, function (_, m) {
-                              return \u00ab + encode(k) + \u00b7
+                              return '\u00ab' + encode(k) + '\u00b7'
                                               + encode(m) +
-                                     \u00b7 + encode(k) + \u00bb;
+                                     '\u00b7' + encode(k) + '\u00bb';
                           });
                       });
                   }
@@ -1461,29 +1529,29 @@ var toString = Object.prototype.toString;</code></pre>
       for (var i = 0; i < nodes.length; i++) {
           nodes[i].innerHTML =
               nodes[i].innerHTML.replace(/\u00ab(.+?)\u00b7(.+?)\u00b7\1\u00bb/g, function (_, name, value) {
-                  value = value.replace(/\u00ab[^\u00b7]+\u00b7/g, ).replace(/\u00b7[^\u00bb]+\u00bb/g, );
-                  return <span class=" + decode(name) + "> + escape(decode(value)) + </span>;
+                  value = value.replace(/\u00ab[^\u00b7]+\u00b7/g, '').replace(/\u00b7[^\u00bb]+\u00bb/g, '');
+                  return '<span class="' + decode(name) + '">' + escape(decode(value)) + '</span>';
           });
       }
       function escape(str) {
-          return str.replace(/</g, &lt;).replace(/>/g, &gt;);
+          return str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
       }
       // Encode ASCII characters to, and from Braille
       function encode (str, encoded) {
-          table[encoded = str.split().map(function (s) {
+          table[encoded = str.split('').map(function (s) {
               if (s.charCodeAt(0) > 127) { return s }
               return String.fromCharCode(s.charCodeAt(0) + 0x2800);
-          }).join()] = str;
+          }).join('')] = str;
           return encoded;
       }
       function decode (str) {
           if (str in table) {
               return table[str];
           } else {
-              return str.trim().split().map(function (s) {
+              return str.trim().split('').map(function (s) {
                   if (s.charCodeAt(0) - 0x2800 > 127) { return s }
                   return String.fromCharCode(s.charCodeAt(0) - 0x2800);
-              }).join();
+              }).join('');
           }
       }
       })(window.hijs);

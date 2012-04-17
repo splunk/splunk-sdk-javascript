@@ -43,6 +43,10 @@
         position: relative;
       }
       
+      pre {
+        overflow-x: auto;
+      }
+      
       .pre-scrollable {
         overflow-y: auto;
       }
@@ -281,18 +285,6 @@
           
             <section class="content">
               <p>An asynchronous while loop</p>
-<h2>Example</h2>
-<pre><code> var i = 0;
- Async.whilst(
-     function() { return i++ &lt; 3; },
-     function(done) {
-         Async.sleep(0, function() { done(); });
-     },
-     function(err) {
-         console.log(i) // == 3;
-     }
- );
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -332,7 +324,21 @@
             </section>
             
             <section class="returns">
-                
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> var i = 0;
+ Async.whilst(
+     function() { return i++ &lt; 3; },
+     function(done) {
+         Async.sleep(0, function() { done(); });
+     },
+     function(err) {
+         console.log(i) // == 3;
+     }
+ );
+</code></pre>
             </section>
                         
             <section class="code">
@@ -376,21 +382,6 @@
 <p>Each task takes a single parameter, which is a callback to be invoked when the  task is complete.</p>
 <p>The callback will be invoked with the combined results (in order) of all the  tasks.</p>
 <p>Note that order of execution is not guaranteed, even though order of results is. </p>
-<h2>Example</h2>
-<pre><code> Async.parallel([
-     function(done) {
-         done(null, 1);
-     },
-     function(done) {
-         done(null, 2, 3);
-     }],
-     function(err, one, two) {
-         console.log(err); // == null
-         console.log(one); // == 1
-         console.log(two); // == [1,2]
-     }
- );
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -425,7 +416,24 @@
             </section>
             
             <section class="returns">
-                
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> Async.parallel([
+     function(done) {
+         done(null, 1);
+     },
+     function(done) {
+         done(null, 2, 3);
+     }],
+     function(err, one, two) {
+         console.log(err); // == null
+         console.log(one); // == 1
+         console.log(two); // == [1,2]
+     }
+ );
+</code></pre>
             </section>
                         
             <section class="code">
@@ -497,26 +505,6 @@
 <p>Async.series will execute multiple tasks (functions) in series, and only call the callback if one of them fails, or when all are complete.</p>
 <p>Each task takes a single parameter, which is a callback to be invoked when the  task is complete.</p>
 <p>The callback will be invoked with the combined results (in order) of all the  tasks.</p>
-<h2>Example</h2>
-<pre><code> var keeper = 0;
- Async.series([
-     function(done) {
-         Async.sleep(10, function() {
-             console.log(keeper++); // == 0
-             done(null, 1);
-         });
-     },
-     function(done) {
-         console.log(keeper++); // == 1
-         done(null, 2, 3);
-     }],
-     function(err, one, two) {
-         console.log(err); // == null
-         console.log(one); // == 1
-         console.log(two); // == [1,2]
-     }
- );
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -551,7 +539,29 @@
             </section>
             
             <section class="returns">
-                
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> var keeper = 0;
+ Async.series([
+     function(done) {
+         Async.sleep(10, function() {
+             console.log(keeper++); // == 0
+             done(null, 1);
+         });
+     },
+     function(done) {
+         console.log(keeper++); // == 1
+         done(null, 2, 3);
+     }],
+     function(err, one, two) {
+         console.log(err); // == null
+         console.log(one); // == 1
+         console.log(two); // == [1,2]
+     }
+ );
+</code></pre>
             </section>
                         
             <section class="code">
@@ -612,22 +622,6 @@
               <p>Map an asynchronous function over an array of values, in parallel.</p>
 <p>Async.parallelMap will execute a function over each element in an array in parallel, and only call the callback when all operations are done, or when there is an error.</p>
 <p>The callback will be invoked with the resulting array.</p>
-<h2>Example</h2>
-<pre><code> Async.parallelMap(
-     [1, 2, 3],
-     function(val, idx, done) { 
-         if (val === 2) {
-             Async.sleep(100, function() { done(null, val+1); });   
-         }
-         else {
-             done(null, val + 1);
-         }
-     },
-     function(err, vals) {
-         console.log(vals); // == [2,3,4]
-     }
- );
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -667,7 +661,25 @@
             </section>
             
             <section class="returns">
-                
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> Async.parallelMap(
+     [1, 2, 3],
+     function(val, idx, done) { 
+         if (val === 2) {
+             Async.sleep(100, function() { done(null, val+1); });   
+         }
+         else {
+             done(null, val + 1);
+         }
+     },
+     function(err, vals) {
+         console.log(vals); // == [2,3,4]
+     }
+ );
+</code></pre>
             </section>
                         
             <section class="code">
@@ -715,19 +727,6 @@
               <p>Map an asynchronous function over an array of values, in series.</p>
 <p>Async.seriesMap will execute a function over each element in an array in series, and only call the callback when all operations are done, or when there is an error.</p>
 <p>The callback will be invoked with the resulting array.</p>
-<h2>Example</h2>
-<pre><code> var keeper = 1;
- Async.seriesMap(
-     [1, 2, 3],
-     function(val, idx, done) { 
-         console.log(keeper++); // == 1, then 2, then 3
-         done(null, val + 1);
-     },
-     function(err, vals) {
-         console.log(vals); // == [2,3,4];
-     }
- );
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -767,7 +766,22 @@
             </section>
             
             <section class="returns">
-                
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> var keeper = 1;
+ Async.seriesMap(
+     [1, 2, 3],
+     function(val, idx, done) { 
+         console.log(keeper++); // == 1, then 2, then 3
+         done(null, val + 1);
+     },
+     function(err, vals) {
+         console.log(vals); // == [2,3,4];
+     }
+ );
+</code></pre>
             </section>
                         
             <section class="code">
@@ -814,27 +828,6 @@
               <p>Apply an asynchronous function over an array of values, in parallel.</p>
 <p>Async.parallelEach will execute a function over each element in an array in parallel, and only call the callback when all operations are done, or when there is an error.</p>
 <p>The callback will be invoked with nothing except a possible error parameter</p>
-<h2>Example</h2>
-<pre><code> var total = 0;
- Async.parallelEach(
-     [1, 2, 3],
-     function(val, idx, done) { 
-         var go = function() {
-             total += val;
-             done();
-         };
-         if (idx === 1) {
-             Async.sleep(100, go);    
-         }
-         else {
-             go();
-         }
-     },
-     function(err) {
-         console.log(total); // == 6
-     }
- );
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -874,7 +867,30 @@
             </section>
             
             <section class="returns">
-                
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> var total = 0;
+ Async.parallelEach(
+     [1, 2, 3],
+     function(val, idx, done) { 
+         var go = function() {
+             total += val;
+             done();
+         };
+         if (idx === 1) {
+             Async.sleep(100, go);    
+         }
+         else {
+             go();
+         }
+     },
+     function(err) {
+         console.log(total); // == 6
+     }
+ );
+</code></pre>
             </section>
                         
             <section class="code">
@@ -903,21 +919,6 @@
               <p>Apply an asynchronous function over an array of values, in series.</p>
 <p>Async.seriesEach will execute a function over each element in an array in series, and only call the callback when all operations are done, or when there is an error.</p>
 <p>The callback will be invoked with nothing except a possible error parameter</p>
-<h2>Example</h2>
-<pre><code> var results = [1, 3, 6];
- var total = 0;
- Async.seriesEach(
-     [1, 2, 3],
-     function(val, idx, done) { 
-         total += val;
-         console.log(total === results[idx]); //== true
-         done();
-     },
-     function(err) {
-         console.log(total); //== 6
-     }
- );
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -957,7 +958,24 @@
             </section>
             
             <section class="returns">
-                
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> var results = [1, 3, 6];
+ var total = 0;
+ Async.seriesEach(
+     [1, 2, 3],
+     function(val, idx, done) { 
+         total += val;
+         console.log(total === results[idx]); //== true
+         done();
+     },
+     function(err) {
+         console.log(total); //== 6
+     }
+ );
+</code></pre>
             </section>
                         
             <section class="code">
@@ -988,23 +1006,6 @@
 <p>Each task takes 1-N parameters, where the amount is dependent on the previous task in the chain. The last parameter will always be a function to invoke when the task is complete.</p>
 <p>The callback will be invoked with the result of the final task.</p>
 <p>Note that <code>err</code> arguments are not passed to individual tasks - they are propagated to the final callback.</p>
-<h2>Example</h2>
-<pre><code>Async.chain([
-    function(callback) { 
-        callback(null, 1, 2);
-    },
-    function(val1, val2, callback) {
-        callback(null, val1 + 1);
-    },
-    function(val1, callback) {
-        callback(null, val1 + 1, 5);
-    }],
-    function(err, val1, val2) {
-        console.log(val1); //== 3
-        console.log(val2); //== 5
-    }
-);
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -1039,7 +1040,26 @@
             </section>
             
             <section class="returns">
-                
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code>Async.chain([
+    function(callback) { 
+        callback(null, 1, 2);
+    },
+    function(val1, val2, callback) {
+        callback(null, val1 + 1);
+    },
+    function(val1, callback) {
+        callback(null, val1 + 1, 5);
+    }],
+    function(err, val1, val2) {
+        console.log(val1); //== 3
+        console.log(val2); //== 5
+    }
+);
+</code></pre>
             </section>
                         
             <section class="code">
@@ -1101,9 +1121,6 @@
             <section class="content">
               <p>Execute a function after a certain delay.</p>
 <p>Async.sleep will execute the given function after the specified timeout period. This function mostly exists to make <code>setTimeout</code> adhere to Node.js style function signatures.</p>
-<h2>Example</h2>
-<pre><code>Async.sleep(1000, function() { console.log("TIMEOUT");});
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -1138,7 +1155,12 @@
             </section>
             
             <section class="returns">
-                
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code>Async.sleep(1000, function() { console.log("TIMEOUT");});
+</code></pre>
             </section>
                         
             <section class="code">
@@ -1164,14 +1186,6 @@
               <p>Augment a callback with extra parameters</p>
 <p>Async.augment will cause a callback to be invoked with the extra specified parameters.</p>
 <p>Note that the augmented parameters are appended to the end of the parameter list.</p>
-<h2>Example</h2>
-<pre><code> var callback = function(a, b) {
-     console.log(a); //== 1
-     console.log(b); //== 2
- };
- var augmented = Async.augment(callback, 2);
- augmented(1);
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -1206,7 +1220,17 @@
             </section>
             
             <section class="returns">
-                
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> var callback = function(a, b) {
+     console.log(a); //== 1
+     console.log(b); //== 2
+ };
+ var augmented = Async.augment(callback, 2);
+ augmented(1);
+</code></pre>
             </section>
                         
             <section class="code">
@@ -1287,13 +1311,11 @@
           var isHidden = code.hasClass("hidden");
           
           if (isHidden) {
-            console.log("BOO");
             $(code).removeClass("hidden");  
             $(this).children("i").addClass("icon-minus");
             $(this).children("i").removeClass("icon-plus");
           }
           else {
-            console.log("BOO2");
             $(code).addClass("hidden");  
             $(this).children("i").addClass("icon-plus");
             $(this).children("i").removeClass("icon-minus");
@@ -1313,22 +1335,22 @@
       //
       // All elements which match this will be syntax highlighted.
       var selector = hijs || "code";
-      var keywords = ("var function if else for while break switch case do new null in with void "
-                     +continue delete return this true false throw catch typeof with instanceof).split( ),
-          special  = (eval window document undefined NaN Infinity parseInt parseFloat 
-                     +encodeURI decodeURI encodeURIComponent decodeURIComponent).split( );
+      var keywords = ('var function if else for while break switch case do new null in with void '
+                     +'continue delete return this true false throw catch typeof with instanceof').split(' '),
+          special  = ('eval window document undefined NaN Infinity parseInt parseFloat '
+                     +'encodeURI decodeURI encodeURIComponent decodeURIComponent').split(' ');
       // Syntax definition
       // The key becomes the class name of the <span>
       // around the matched block of code.
       var syntax = [
-        [comment, /(\/\*(?:[^*\n]|\*+[^\/*])*\*+\/)/g],
-        [comment, /(\/\/[^\n]*)/g],
-        [string , /("(?:(?!")[^\\\n]|\\.)*"|(?:(?!)[^\\\n]|\\.)*)/g],
-        [regexp , /(\/.+\/[mgi]*)(?!\s*\w)/g],
-        [class  , /\b([A-Z][a-zA-Z]+)\b/g],
-        [number , /\b([0-9]+(?:\.[0-9]+)?)\b/g],
-        [keyword, new(RegExp)(\\b( + keywords.join(|) + )\\b, g)],
-        [special, new(RegExp)(\\b( + special.join(|) + )\\b, g)]
+        ['comment', /(\/\*(?:[^*\n]|\*+[^\/*])*\*+\/)/g],
+        ['comment', /(\/\/[^\n]*)/g],
+        ['string' , /("(?:(?!")[^\\\n]|\\.)*"|'(?:(?!')[^\\\n]|\\.)*')/g],
+        ['regexp' , /(\/.+\/[mgi]*)(?!\s*\w)/g],
+        ['class'  , /\b([A-Z][a-zA-Z]+)\b/g],
+        ['number' , /\b([0-9]+(?:\.[0-9]+)?)\b/g],
+        ['keyword', new(RegExp)('\\b(' + keywords.join('|') + ')\\b', 'g')],
+        ['special', new(RegExp)('\\b(' + special.join('|') + ')\\b', 'g')]
       ];
       var nodes, table = {};
       if (/^[a-z]+$/.test(selector)) {
@@ -1344,15 +1366,15 @@
           children = nodes[i].childNodes;
           for (var j = 0, str; j < children.length; j++) {
               code = children[j];
-              if (code.length >= 0) { // Its a text node
-                  // Dont highlight command-line snippets
+              if (code.length >= 0) { // It's a text node
+                  // Don't highlight command-line snippets
                   if (! /^\$/.test(code.nodeValue.trim())) {
                       syntax.forEach(function (s) {
                           var k = s[0], v = s[1];
                           code.nodeValue = code.nodeValue.replace(v, function (_, m) {
-                              return \u00ab + encode(k) + \u00b7
+                              return '\u00ab' + encode(k) + '\u00b7'
                                               + encode(m) +
-                                     \u00b7 + encode(k) + \u00bb;
+                                     '\u00b7' + encode(k) + '\u00bb';
                           });
                       });
                   }
@@ -1362,29 +1384,29 @@
       for (var i = 0; i < nodes.length; i++) {
           nodes[i].innerHTML =
               nodes[i].innerHTML.replace(/\u00ab(.+?)\u00b7(.+?)\u00b7\1\u00bb/g, function (_, name, value) {
-                  value = value.replace(/\u00ab[^\u00b7]+\u00b7/g, ).replace(/\u00b7[^\u00bb]+\u00bb/g, );
-                  return <span class=" + decode(name) + "> + escape(decode(value)) + </span>;
+                  value = value.replace(/\u00ab[^\u00b7]+\u00b7/g, '').replace(/\u00b7[^\u00bb]+\u00bb/g, '');
+                  return '<span class="' + decode(name) + '">' + escape(decode(value)) + '</span>';
           });
       }
       function escape(str) {
-          return str.replace(/</g, &lt;).replace(/>/g, &gt;);
+          return str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
       }
       // Encode ASCII characters to, and from Braille
       function encode (str, encoded) {
-          table[encoded = str.split().map(function (s) {
+          table[encoded = str.split('').map(function (s) {
               if (s.charCodeAt(0) > 127) { return s }
               return String.fromCharCode(s.charCodeAt(0) + 0x2800);
-          }).join()] = str;
+          }).join('')] = str;
           return encoded;
       }
       function decode (str) {
           if (str in table) {
               return table[str];
           } else {
-              return str.trim().split().map(function (s) {
+              return str.trim().split('').map(function (s) {
                   if (s.charCodeAt(0) - 0x2800 > 127) { return s }
                   return String.fromCharCode(s.charCodeAt(0) - 0x2800);
-              }).join();
+              }).join('');
           }
       }
       })(window.hijs);

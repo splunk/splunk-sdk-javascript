@@ -43,6 +43,10 @@
         position: relative;
       }
       
+      pre {
+        overflow-x: auto;
+      }
+      
       .pre-scrollable {
         overflow-y: auto;
       }
@@ -330,6 +334,9 @@
                                       <h4>Return</h4>
               <span class="return-type">splunkjs.Service</span> A splunkjs.Service instance
             </section>
+            
+            <section class="examples">
+            </section>
                         
             <section class="code">
               
@@ -366,16 +373,6 @@
             <section class="content">
               <p>Get an instance of the Users collection </p>
 <p>The Users collection allows you to list users, create new ones, get a specific user, etc.</p>
-<h2>Example</h2>
-<pre><code> // List all usernames
- var users = svc.users();
- users.refresh(function(err, users) {
-     var list = users.list();
-     for(var i = 0; i &lt; list.length; i++) {
-         console.log("User " + (i+1) + ": " + list[i].properties().name);
-     }
- });
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -389,6 +386,19 @@
             <section class="returns">
                                       <h4>Return</h4>
               <span class="return-type">splunkjs.Service.Users</span> The Users collection
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> // List all usernames
+ var users = svc.users();
+ users.refresh(function(err, users) {
+     var list = users.list();
+     for(var i = 0; i &lt; list.length; i++) {
+         console.log("User " + (i+1) + ": " + list[i].properties().name);
+     }
+ });
+</code></pre>
             </section>
                         
             <section class="code">
@@ -414,16 +424,6 @@
             <section class="content">
               <p>Get an instance of the Views collection </p>
 <p>The Views collection allows you to list views, create new ones, get a specific user, etc.</p>
-<h2>Example</h2>
-<pre><code> // List all views
- var views = svc.views();
- views.refresh(function(err, views) {
-     var list = views.list();
-     for(var i = 0; i &lt; list.length; i++) {
-         console.log("View " + (i+1) + ": " + list[i].properties().name);
-     }
- });
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -456,6 +456,19 @@
                                       <h4>Return</h4>
               <span class="return-type">splunkjs.Service.Views</span> The views collection
             </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> // List all views
+ var views = svc.views();
+ views.refresh(function(err, views) {
+     var list = views.list();
+     for(var i = 0; i &lt; list.length; i++) {
+         console.log("View " + (i+1) + ": " + list[i].properties().name);
+     }
+ });
+</code></pre>
+            </section>
                         
             <section class="code">
               
@@ -478,11 +491,6 @@
           
             <section class="content">
               <p>Log an event to splunk</p>
-<h2>Example</h2>
-<pre><code> service.log("A new event", {index: "_internal", sourcetype: "mysourcetype"}, function(err, result) {
-     console.log("Submitted event: ", result);
- });
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -522,6 +530,14 @@
             </section>
             
             <section class="returns">
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> service.log("A new event", {index: "_internal", sourcetype: "mysourcetype"}, function(err, result) {
+     console.log("Submitted event: ", result);
+ });
+</code></pre>
             </section>
                         
             <section class="code">
@@ -572,11 +588,6 @@
             <section class="content">
               <p>Create an asyncronous search job</p>
 <p>Create a search job using the specified query and parameters.</p>
-<h2>Example</h2>
-<pre><code> service.search("search ERROR", {id: "myjob_123"}, function(err, newJob) {
-     console.log("CREATED": newJob.sid);
- });
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -622,6 +633,14 @@
             
             <section class="returns">
             </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> service.search("search ERROR", {id: "myjob_123"}, function(err, newJob) {
+     console.log("CREATED": newJob.sid);
+ });
+</code></pre>
+            </section>
                         
             <section class="code">
               
@@ -652,11 +671,6 @@
             <section class="content">
               <p>Get an instance of the Applications collection </p>
 <p>The Applications collection allows you to list installed applications, create new ones, etc.</p>
-<h2>Example</h2>
-<pre><code> // List installed apps
- var apps = svc.apps();
- apps.refresh(function(err) { console.log(apps.list()); });
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -670,6 +684,14 @@
             <section class="returns">
                                       <h4>Return</h4>
               <span class="return-type">splunkjs.Service.Collection</span> The Applications collection
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> // List installed apps
+ var apps = svc.apps();
+ apps.refresh(function(err) { console.log(apps.list()); });
+</code></pre>
             </section>
                         
             <section class="code">
@@ -695,15 +717,6 @@
             <section class="content">
               <p>Get an instance of the Indexes collection </p>
 <p>The Indexes collection allows you to list indexes, create new indexes, update indexes, etc.</p>
-<h2>Example</h2>
-<pre><code> // Check if we have an _internal index
- var indexes = svc.configurations();
- indexes.refresh(function(err, indexes) {
-     var index = indexes.contains("_internal");
-     console.log("Was index found: " + !!index);
-     // `index` contains the Index object.
- });
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -736,6 +749,18 @@
                                       <h4>Return</h4>
               <span class="return-type">splunkjs.Service.Indexes</span> The Indexes collection
             </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> // Check if we have an _internal index
+ var indexes = svc.configurations();
+ indexes.refresh(function(err, indexes) {
+     var index = indexes.contains("_internal");
+     console.log("Was index found: " + !!index);
+     // `index` contains the Index object.
+ });
+</code></pre>
+            </section>
                         
             <section class="code">
               
@@ -758,11 +783,6 @@
           
             <section class="content">
               <p>Parse a search string</p>
-<h2>Example</h2>
-<pre><code> service.parse("search index=_internal | head 1", function(err, parse) {
-     console.log("Commands: ", parse.commands);
- });
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -802,6 +822,14 @@
             </section>
             
             <section class="returns">
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> service.parse("search index=_internal | head 1", function(err, parse) {
+     console.log("Commands: ", parse.commands);
+ });
+</code></pre>
             </section>
                         
             <section class="code">
@@ -873,11 +901,6 @@ typeahead: function(prefix, count, callback) {
           
             <section class="content">
               <p>Get the server info</p>
-<h2>Example</h2>
-<pre><code> service.serverInfo(function(err, info) {
-     console.log("Splunk Version: ", info.properties().version);
- });
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -908,6 +931,14 @@ typeahead: function(prefix, count, callback) {
             
             <section class="returns">
             </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> service.serverInfo(function(err, info) {
+     console.log("Splunk Version: ", info.properties().version);
+ });
+</code></pre>
+            </section>
                         
             <section class="code">
               
@@ -934,11 +965,6 @@ typeahead: function(prefix, count, callback) {
             <section class="content">
               <p>Get the current user</p>
 <p>Get the current logged in user</p>
-<h2>Example</h2>
-<pre><code> service.currentUser(function(err, user) {
-     console.log("Real name: ", user.properties().realname);
- });
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -968,6 +994,14 @@ typeahead: function(prefix, count, callback) {
             </section>
             
             <section class="returns">
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> service.currentUser(function(err, user) {
+     console.log("Real name: ", user.properties().realname);
+ });
+</code></pre>
             </section>
                         
             <section class="code">
@@ -1013,11 +1047,6 @@ typeahead: function(prefix, count, callback) {
             <section class="content">
               <p>Create a oneshot search job</p>
 <p>Create a oneshot search job using the specified query and parameters.</p>
-<h2>Example</h2>
-<pre><code> service.oneshotSearch("search ERROR", {id: "myjob_123"}, function(err, results) {
-     console.log("RESULT FIELDS": results.fields);
- });
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -1063,6 +1092,14 @@ typeahead: function(prefix, count, callback) {
             
             <section class="returns">
             </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> service.oneshotSearch("search ERROR", {id: "myjob_123"}, function(err, results) {
+     console.log("RESULT FIELDS": results.fields);
+ });
+</code></pre>
+            </section>
                         
             <section class="code">
               
@@ -1093,15 +1130,6 @@ typeahead: function(prefix, count, callback) {
             <section class="content">
               <p>Get an instance of the Properties collection </p>
 <p>The Properties collection allows you to list configuration files, create new files, get specific files, etc.</p>
-<h2>Example</h2>
-<pre><code> // List all properties in the 'props.conf' file
- var files = svc.properties();
- files.item("props", function(err, propsFile) {
-     propsFile.refresh(function(err, props) {
-         console.log(props.properties()); 
-     });
- });
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -1115,6 +1143,18 @@ typeahead: function(prefix, count, callback) {
             <section class="returns">
                                       <h4>Return</h4>
               <span class="return-type">splunkjs.Service.Properties</span> The Properties collection
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> // List all properties in the 'props.conf' file
+ var files = svc.properties();
+ files.item("props", function(err, propsFile) {
+     propsFile.refresh(function(err, props) {
+         console.log(props.properties()); 
+     });
+ });
+</code></pre>
             </section>
                         
             <section class="code">
@@ -1140,15 +1180,6 @@ typeahead: function(prefix, count, callback) {
             <section class="content">
               <p>Get an instance of the Configurations collection </p>
 <p>The Configurations collection allows you to list configuration files, create new files, get specific files, etc.</p>
-<h2>Example</h2>
-<pre><code> // List all properties in the 'props.conf' file
- var files = svc.configurations();
- files.item("props", function(err, propsFile) {
-     propsFile.refresh(function(err, props) {
-         console.log(props.properties()); 
-     });
- });
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -1181,6 +1212,18 @@ typeahead: function(prefix, count, callback) {
                                       <h4>Return</h4>
               <span class="return-type">splunkjs.Service.Configurations</span> The Configurations collection
             </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> // List all properties in the 'props.conf' file
+ var files = svc.configurations();
+ files.item("props", function(err, propsFile) {
+     propsFile.refresh(function(err, props) {
+         console.log(props.properties()); 
+     });
+ });
+</code></pre>
+            </section>
                         
             <section class="code">
               
@@ -1203,10 +1246,6 @@ typeahead: function(prefix, count, callback) {
             <section class="content">
               <p>Create a more specialized clone of this service</p>
 <p>This will create a more specialized version of the current <code>Service</code> instance, which is useful in cases where a specific owner or app need to be specified.</p>
-<h2>Example</h2>
-<pre><code> var svc = ...;
- var newService = svc.specialize("myuser", "unix");
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -1244,6 +1283,13 @@ typeahead: function(prefix, count, callback) {
                                       <h4>Return</h4>
               <span class="return-type">splunkjs.Service</span> The specialized service.
             </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> var svc = ...;
+ var newService = svc.specialize("myuser", "unix");
+</code></pre>
+            </section>
                         
             <section class="code">
               
@@ -1277,16 +1323,6 @@ typeahead: function(prefix, count, callback) {
             <section class="content">
               <p>Get an instance of the Jobs collection </p>
 <p>The Jobs collection allows you to list jobs, create new ones, get a specific job, etc.</p>
-<h2>Example</h2>
-<pre><code> // List all job IDs
- var jobs = svc.jobs();
- jobs.refresh(function(err, jobs) {
-     var list = jobs.list();
-     for(var i = 0; i &lt; list.length; i++) {
-         console.log("Job " + (i+1) + ": " + list[i].sid);
-     }
- });
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -1319,6 +1355,19 @@ typeahead: function(prefix, count, callback) {
                                       <h4>Return</h4>
               <span class="return-type">splunkjs.Service.Jobs</span> The Jobs collection
             </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> // List all job IDs
+ var jobs = svc.jobs();
+ jobs.refresh(function(err, jobs) {
+     var list = jobs.list();
+     for(var i = 0; i &lt; list.length; i++) {
+         console.log("Job " + (i+1) + ": " + list[i].sid);
+     }
+ });
+</code></pre>
+            </section>
                         
             <section class="code">
               
@@ -1343,13 +1392,6 @@ typeahead: function(prefix, count, callback) {
             <section class="content">
               <p>Get an instance of the SavedSearches collection </p>
 <p>The SavedSearches collection allows you to list saved searches, create new ones, update a saved search, etc.</p>
-<h2>Example</h2>
-<pre><code> // List all # of saved searches
- var savedSearches = svc.savedSearches();
- savedSearches.refresh(function(err, savedSearches) {
-     console.log("# Of Saved Searches: " + savedSearches.list().length);
- });
-</code></pre>
             </section>
             
             <section class="syntax">
@@ -1381,6 +1423,16 @@ typeahead: function(prefix, count, callback) {
             <section class="returns">
                                       <h4>Return</h4>
               <span class="return-type">splunkjs.Service.SavedSearches</span> The SavedSearches collection
+            </section>
+            
+            <section class="examples">
+                          <h4>Examples</h4>
+                          <pre><code> // List all # of saved searches
+ var savedSearches = svc.savedSearches();
+ savedSearches.refresh(function(err, savedSearches) {
+     console.log("# Of Saved Searches: " + savedSearches.list().length);
+ });
+</code></pre>
             </section>
                         
             <section class="code">
@@ -1452,7 +1504,9 @@ typeahead: function(prefix, count, callback) {
             </section>
             
             <section class="returns">
-                
+            </section>
+            
+            <section class="examples">
             </section>
                         
             <section class="code">
@@ -1521,7 +1575,9 @@ typeahead: function(prefix, count, callback) {
             </section>
             
             <section class="returns">
-                
+            </section>
+            
+            <section class="examples">
             </section>
                         
             <section class="code">
@@ -1586,7 +1642,9 @@ typeahead: function(prefix, count, callback) {
             </section>
             
             <section class="returns">
-                
+            </section>
+            
+            <section class="examples">
             </section>
                         
             <section class="code">
@@ -1651,7 +1709,9 @@ typeahead: function(prefix, count, callback) {
             </section>
             
             <section class="returns">
-                
+            </section>
+            
+            <section class="examples">
             </section>
                         
             <section class="code">
@@ -1707,7 +1767,11 @@ typeahead: function(prefix, count, callback) {
             </section>
             
             <section class="returns">
-                
+                                      <h4>Return</h4>
+              <span class="return-type">String</span> Fully qualified path
+            </section>
+            
+            <section class="examples">
             </section>
                         
             <section class="code">
@@ -1803,13 +1867,11 @@ typeahead: function(prefix, count, callback) {
           var isHidden = code.hasClass("hidden");
           
           if (isHidden) {
-            console.log("BOO");
             $(code).removeClass("hidden");  
             $(this).children("i").addClass("icon-minus");
             $(this).children("i").removeClass("icon-plus");
           }
           else {
-            console.log("BOO2");
             $(code).addClass("hidden");  
             $(this).children("i").addClass("icon-plus");
             $(this).children("i").removeClass("icon-minus");
@@ -1829,22 +1891,22 @@ typeahead: function(prefix, count, callback) {
       //
       // All elements which match this will be syntax highlighted.
       var selector = hijs || "code";
-      var keywords = ("var function if else for while break switch case do new null in with void "
-                     +continue delete return this true false throw catch typeof with instanceof).split( ),
-          special  = (eval window document undefined NaN Infinity parseInt parseFloat 
-                     +encodeURI decodeURI encodeURIComponent decodeURIComponent).split( );
+      var keywords = ('var function if else for while break switch case do new null in with void '
+                     +'continue delete return this true false throw catch typeof with instanceof').split(' '),
+          special  = ('eval window document undefined NaN Infinity parseInt parseFloat '
+                     +'encodeURI decodeURI encodeURIComponent decodeURIComponent').split(' ');
       // Syntax definition
       // The key becomes the class name of the <span>
       // around the matched block of code.
       var syntax = [
-        [comment, /(\/\*(?:[^*\n]|\*+[^\/*])*\*+\/)/g],
-        [comment, /(\/\/[^\n]*)/g],
-        [string , /("(?:(?!")[^\\\n]|\\.)*"|(?:(?!)[^\\\n]|\\.)*)/g],
-        [regexp , /(\/.+\/[mgi]*)(?!\s*\w)/g],
-        [class  , /\b([A-Z][a-zA-Z]+)\b/g],
-        [number , /\b([0-9]+(?:\.[0-9]+)?)\b/g],
-        [keyword, new(RegExp)(\\b( + keywords.join(|) + )\\b, g)],
-        [special, new(RegExp)(\\b( + special.join(|) + )\\b, g)]
+        ['comment', /(\/\*(?:[^*\n]|\*+[^\/*])*\*+\/)/g],
+        ['comment', /(\/\/[^\n]*)/g],
+        ['string' , /("(?:(?!")[^\\\n]|\\.)*"|'(?:(?!')[^\\\n]|\\.)*')/g],
+        ['regexp' , /(\/.+\/[mgi]*)(?!\s*\w)/g],
+        ['class'  , /\b([A-Z][a-zA-Z]+)\b/g],
+        ['number' , /\b([0-9]+(?:\.[0-9]+)?)\b/g],
+        ['keyword', new(RegExp)('\\b(' + keywords.join('|') + ')\\b', 'g')],
+        ['special', new(RegExp)('\\b(' + special.join('|') + ')\\b', 'g')]
       ];
       var nodes, table = {};
       if (/^[a-z]+$/.test(selector)) {
@@ -1860,15 +1922,15 @@ typeahead: function(prefix, count, callback) {
           children = nodes[i].childNodes;
           for (var j = 0, str; j < children.length; j++) {
               code = children[j];
-              if (code.length >= 0) { // Its a text node
-                  // Dont highlight command-line snippets
+              if (code.length >= 0) { // It's a text node
+                  // Don't highlight command-line snippets
                   if (! /^\$/.test(code.nodeValue.trim())) {
                       syntax.forEach(function (s) {
                           var k = s[0], v = s[1];
                           code.nodeValue = code.nodeValue.replace(v, function (_, m) {
-                              return \u00ab + encode(k) + \u00b7
+                              return '\u00ab' + encode(k) + '\u00b7'
                                               + encode(m) +
-                                     \u00b7 + encode(k) + \u00bb;
+                                     '\u00b7' + encode(k) + '\u00bb';
                           });
                       });
                   }
@@ -1878,29 +1940,29 @@ typeahead: function(prefix, count, callback) {
       for (var i = 0; i < nodes.length; i++) {
           nodes[i].innerHTML =
               nodes[i].innerHTML.replace(/\u00ab(.+?)\u00b7(.+?)\u00b7\1\u00bb/g, function (_, name, value) {
-                  value = value.replace(/\u00ab[^\u00b7]+\u00b7/g, ).replace(/\u00b7[^\u00bb]+\u00bb/g, );
-                  return <span class=" + decode(name) + "> + escape(decode(value)) + </span>;
+                  value = value.replace(/\u00ab[^\u00b7]+\u00b7/g, '').replace(/\u00b7[^\u00bb]+\u00bb/g, '');
+                  return '<span class="' + decode(name) + '">' + escape(decode(value)) + '</span>';
           });
       }
       function escape(str) {
-          return str.replace(/</g, &lt;).replace(/>/g, &gt;);
+          return str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
       }
       // Encode ASCII characters to, and from Braille
       function encode (str, encoded) {
-          table[encoded = str.split().map(function (s) {
+          table[encoded = str.split('').map(function (s) {
               if (s.charCodeAt(0) > 127) { return s }
               return String.fromCharCode(s.charCodeAt(0) + 0x2800);
-          }).join()] = str;
+          }).join('')] = str;
           return encoded;
       }
       function decode (str) {
           if (str in table) {
               return table[str];
           } else {
-              return str.trim().split().map(function (s) {
+              return str.trim().split('').map(function (s) {
                   if (s.charCodeAt(0) - 0x2800 > 127) { return s }
                   return String.fromCharCode(s.charCodeAt(0) - 0x2800);
-              }).join();
+              }).join('');
           }
       }
       })(window.hijs);

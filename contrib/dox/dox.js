@@ -116,11 +116,11 @@ exports.parseComment = function(str) {
     var rawLines = tags.split('\n');
     var lines = [];
     rawLines.forEach(function(line) {
-      line = line.trim();
-      if (line && line[0] === '@') {
+      var trimmedLine = line.trim();
+      if (trimmedLine && trimmedLine[0] === '@') {
         lines.push(line);
       }
-      else if (line) {
+      else if (trimmedLine) {
         lines[lines.length - 1] += ("\n" + line);
       }
     });
@@ -150,13 +150,16 @@ exports.parseComment = function(str) {
 exports.parseTag = function(str) {
   var tag = {} 
     , parts = str.split(/ +/)
-    , type = tag.type = parts.shift().replace('@', '');
+    , type = tag.type = parts.shift().replace('@', '').split("\n")[0].trim();
 
   switch (type) {
     case 'param':
       tag.types = exports.parseTagTypes(parts.shift());
       tag.name = parts.shift() || '';
       tag.description = markdown(parts.join(' '));
+      break;
+    case 'example':
+      tag.content = markdown(str.replace("@example", ""));
       break;
     case 'return':
       tag.types = exports.parseTagTypes(parts.shift());
