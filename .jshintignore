@@ -22,3 +22,4 @@ ui/timeline
 ui\\charting
 ui\\timeline
 .coverage_debug
+docs
