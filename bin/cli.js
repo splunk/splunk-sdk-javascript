@@ -46,6 +46,7 @@
     var IGNORED_MODULES     = [
         "../contrib/nodeunit/test_reporter", 
         "../contrib/commander", 
+        "../../contrib/commander",
         "./platform/node/node_http",
         "./lib/platform/node/node_http",
         "../lib/platform/node/node_http"

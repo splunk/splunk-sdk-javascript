@@ -18,7 +18,7 @@
     var Class           = splunkjs.Class;
     var utils           = splunkjs.Utils;
     var Async           = splunkjs.Async;
-    var options         = require('../../internal/cmdline');
+    var options         = require('./cmdline');
     
     var createService = function(options) {
         return new splunkjs.Service({

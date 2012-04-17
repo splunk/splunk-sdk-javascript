@@ -16,7 +16,7 @@
     var path        = require('path');
     var fs          = require('fs');
     var test        = require('../contrib/nodeunit/test_reporter');
-    var options     = require('../internal/cmdline');
+    var options     = require('../examples/node/cmdline');
     var splunkjs    = require('../splunk');
     var NodeHttp    = splunkjs.NodeHttp;
     

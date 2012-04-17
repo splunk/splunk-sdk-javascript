@@ -513,7 +513,7 @@ if (module === require.main) {
     var splunkjs    = require('../splunk');
     var test        = require('../contrib/nodeunit/test_reporter');
     
-    var options = require('../internal/cmdline');    
+    var options = require('../examples/node/cmdline');    
     var parser  = options.create();
     var cmdline = parser.parse(process.argv);
         

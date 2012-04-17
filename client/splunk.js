@@ -464,17 +464,15 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
     }
 
     /**
-     * splunkjs.Logger
-     * 
      * A controllable logging module.
      *
-     * @moduleRoot splunkjs.Logger
+     * @module splunkjs.Logger
      */
     exports.Logger = {
         /**
          * Log to the console (equivalent to `console.log`)
          *
-         * @module splunkjs.Logger
+         * @function splunkjs.Logger
          */
         log: function() {
             if (process.env.LOG_LEVEL >= levels.ALL) {
@@ -485,7 +483,7 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
         /**
          * Log error to the console (equivalent to `console.error`)
          *
-         * @module splunkjs.Logger
+         * @function splunkjs.Logger
          */
         error: function() {
             if (process.env.LOG_LEVEL >= levels.ERROR) {
@@ -496,7 +494,7 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
         /**
          * Log warning to the console (equivalent to `console.warn`)
          *
-         * @module splunkjs.Logger
+         * @function splunkjs.Logger
          */
         warn: function() {
             if (process.env.LOG_LEVEL >= levels.WARN) {
@@ -507,7 +505,7 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
         /**
          * Log info to the console (equivalent to `console.info`)
          *
-         * @module splunkjs.Logger
+         * @function splunkjs.Logger
          */
         info: function() {
             if (process.env.LOG_LEVEL >= levels.INFO) {
@@ -518,7 +516,7 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
         /**
          * Print out all messages retrieved from splunkd
          *
-         * @module splunkjs.Logger
+         * @function splunkjs.Logger
          */
         printMessages: function(allMessages) {
             allMessages = allMessages || {};
@@ -556,14 +554,14 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
         /**
          * Set the global logging level
          *
-         * Example:
+         * @example
          *
          *      splunkjs.Logger.setLevel("WARN");
          *      splunkjs.Logger.setLevel(0); // equivalent to NONE
          *
          * @param {String|Number} level A string (`ALL` | `INFO` | `WARN` | `ERROR` | `NONE`) or number representing the log level
          *
-         * @module splunkjs.Logger
+         * @function splunkjs.Logger
          */
         setLevel: function(level) {    
             if (utils.isString(level)) {
@@ -610,17 +608,15 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     var root = exports || this;
 
     /**
-     * splunkjs.Utils
-     * 
      * Various utility functions for the Splunk SDK
      *
-     * @moduleRoot splunkjs.Utils
+     * @module splunkjs.Utils
      */
 
     /**
      * Bind a function to a specific object
      *
-     * Example:
+     * @example
      *      
      *      var obj = {a: 1, b: function() { console.log(a); }};
      *      var bound = splunkjs.Utils.bind(obj, obj.b);
@@ -630,7 +626,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {Function} fn Function to bind
      * @return {Function} The bound function
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.bind = function(me, fn) { 
         return function() { 
@@ -641,7 +637,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     /**
      * Strip a string of all leading and trailing whitespace.
      *
-     * Example:
+     * @example
      *      
      *      var a = " aaa ";
      *      var b = splunkjs.Utils.trim(a); //== "aaa"
@@ -649,7 +645,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {String} str The string to trim
      * @return {String} The trimmed string
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.trim = function(str) {
         str = str || "";
@@ -665,7 +661,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     /**
      * Whether an array contains a specific object
      *
-     * Example:
+     * @example
      *      
      *      var a = ["a", "b', "c"];
      *      console.log(splunkjs.Utils.indexOf(a, "b")) //== 1
@@ -675,7 +671,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {Anything} search The thing to search for
      * @return {Number} The index of `search` or `-1` if it wasn't found
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.indexOf = function(arr, search) {
         for(var i=0; i<arr.length; i++) {
@@ -689,7 +685,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     /**
      * Whether an array contains a specific object
      *
-     * Example:
+     * @example
      *      
      *      var a = {a: 3};
      *      var b = [{}, {c: 1}, {b: 1}, a];
@@ -699,7 +695,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {Anything} obj Whether the array contains the element
      * @return {Boolean} Whether the array contains the element
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.contains = function(arr, obj) {
         arr = arr || [];
@@ -709,7 +705,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     /**
      * Whether a string starts with a specific prefix.
      *
-     * Example:
+     * @example
      *      
      *      var starts = splunkjs.Utils.startsWith("splunk-foo", "splunk-");
      *
@@ -717,7 +713,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {String} prefix Prefix to search with
      * @return {Boolean} Whether the string starts with the prefix
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.startsWith = function(original, prefix) {
         var matches = original.match("^" + prefix);
@@ -727,7 +723,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     /**
      * Whether a string ends with a specific suffix.
      *
-     * Example:
+     * @example
      *      
      *      var ends = splunkjs.Utils.endsWith("foo-splunk", "-splunk");
      *
@@ -735,7 +731,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {String} suffix Suffix to search with
      * @return {Boolean} Whether the string ends with the suffix
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.endsWith = function(original, suffix) {
         var matches = original.match(suffix + "$");
@@ -747,7 +743,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     /**
      * Convert an iterable to an array.
      *
-     * Example:
+     * @example
      *      
      *      function() { 
      *          console.log(arguments instanceof Array); // false
@@ -757,7 +753,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {Arguments} iterable Iterable to conver to an array
      * @return {Array} The converted array
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.toArray = function(iterable) {
         return Array.prototype.slice.call(iterable);
@@ -766,7 +762,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     /**
      * Whether or not the argument is an array
      *
-     * Example:
+     * @example
      *      
      *      function() { 
      *          console.log(splunkjs.Utils.isArray(arguments)); // false
@@ -776,7 +772,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {Anything} obj Parameter to check whether it is an array
      * @return {Boolean} Whether or not the passed in parameter was an array
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.isArray = Array.isArray || function(obj) {
         return toString.call(obj) === '[object Array]';
@@ -785,7 +781,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     /**
      * Whether or not the argument is a function
      *
-     * Example:
+     * @example
      *      
      *      function() { 
      *          console.log(splunkjs.Utils.isFunction([1,2,3]); // false
@@ -795,7 +791,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {Anything} obj Parameter to check whether it is a function
      * @return {Boolean} Whether or not the passed in parameter was a function
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.isFunction = function(obj) {
         return !!(obj && obj.constructor && obj.call && obj.apply);
@@ -804,7 +800,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     /**
      * Whether or not the argument is a number
      *
-     * Example:
+     * @example
      *      
      *      function() { 
      *          console.log(splunkjs.Utils.isNumber(1); // true
@@ -814,7 +810,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {Anything} obj Parameter to check whether it is a number
      * @return {Boolean} Whether or not the passed in parameter was a number
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.isNumber = function(obj) {
         return !!(obj === 0 || (obj && obj.toExponential && obj.toFixed));
@@ -823,7 +819,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     /**
      * Whether or not the argument is a string
      *
-     * Example:
+     * @example
      *      
      *      function() { 
      *          console.log(splunkjs.Utils.isString("abc"); // true
@@ -833,7 +829,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {Anything} obj Parameter to check whether it is a string
      * @return {Boolean} Whether or not the passed in parameter was a string
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.isString = function(obj) {
         return !!(obj === '' || (obj && obj.charCodeAt && obj.substr));
@@ -842,7 +838,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     /**
      * Whether or not the argument is an object
      *
-     * Example:
+     * @example
      *      
      *      function() { 
      *          console.log(splunkjs.Utils.isObject({abc: "abc"}); // true
@@ -852,7 +848,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {Anything} obj Parameter to check whether it is an object
      * @return {Boolean} Whether or not the passed in parameter was a object
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.isObject = function(obj) {
         return obj === Object(obj);
@@ -861,7 +857,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     /**
      * Whether or not the argument is empty
      *
-     * Example:
+     * @example
      *      
      *      function() { 
      *          console.log(splunkjs.Utils.isEmpty({})); // true
@@ -871,7 +867,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {Anything} obj Parameter to check whether it is empty
      * @return {Boolean} Whether or not the passed in parameter was empty
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.isEmpty = function(obj) {
         if (root.isArray(obj) || root.isString(obj)) {
@@ -890,7 +886,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     /**
      * Apply the iterator function to each element in the object
      *
-     * Example:
+     * @example
      *      
      *      splunkjs.Utils.forEach([1,2,3], function(el) { console.log(el); }); // 1,2,3
      *
@@ -898,7 +894,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {Function} iterator Function to apply with each element: `(element, list, index)`
      * @param {Object} context An optional context to apply the function on
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.forEach = function(obj, iterator, context) {
         if (obj === null) {
@@ -926,7 +922,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     /**
      * Extend a given object with all the properties in passed-in objects
      *
-     * Example:
+     * @example
      *      
      *      function() { 
      *          console.log(splunkjs.Utils.extend({foo: "bar"}, {a: 2})); // {foo: "bar", a: 2}
@@ -936,7 +932,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {Object...} sources Sources to extend from
      * @return {Object} The extended object
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.extend = function(obj) {
         root.forEach(Array.prototype.slice.call(arguments, 1), function(source) {
@@ -950,7 +946,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     /**
      * Create a shallow-cloned copy of the object/array
      *
-     * Example:
+     * @example
      *      
      *      function() { 
      *          console.log(splunkjs.Utils.clone({foo: "bar"})); // {foo: "bar"}
@@ -960,7 +956,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {Object|Array} obj Object/array to clone
      * @return {Object|Array} The cloned object/array
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.clone = function(obj) {
         if (!root.isObject(obj)) {
@@ -975,7 +971,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {Object} props Properties dictionary
      * @return {Object} Namespace information (owner, app, sharing) for the given properties
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.namespaceFromProperties = function(props) {
         return {
@@ -1014,15 +1010,13 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
     var root = exports || this;
 
     /**
-     * splunkjs.Context
-     * 
      * Abstraction over the Splunk HTTP-wire protocol
      *
      * This class provides the basic functionality for communicating with a Splunk
      * instance over HTTP. It will handle authentication and authorization, and
      * formatting HTTP requests (GET/POST/DELETE) in the format Splunk expects.
      *
-     * @moduleRoot splunkjs.Context
+     * @class splunkjs.Context
      */
     module.exports = root = Class.extend({
         
@@ -1031,10 +1025,18 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
          *
          * @constructor
          * @param {splunkjs.Http} http An instance of a `splunkjs.Http` class
-         * @param {Object} params Dictionary of optional parameters: scheme, host, port, username, password, owner, app, sessionKey
+         * @param {Object} params Dictionary of optional parameters: 
+         *      - `scheme`: `http` or `https`
+         *      - `host`: hostname for Splunk
+         *      - `port`: port for Splunk
+         *      - `username`: username to login with
+         *      - `password`: password to login with
+         *      - `owner`: owner component of namespace
+         *      - `app`: app component of namespace
+         *      - `sessionKey`: optional pre-loaded session key
          * @return {splunkjs.Context} A splunkjs.Context instance
          *
-         * @module splunkjs.Context 
+         * @method splunkjs.Context 
          */
         init: function(http, params) {
             if (!(http instanceof Http) && !params) {
@@ -1094,7 +1096,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
          * @param {Object} headers Dictionary of headers (optional)
          * @return {Object} Augmented dictionary of headers
          *
-         * @module splunkjs.Context 
+         * @method splunkjs.Context 
          * @private
          */
         _headers: function (headers) {
@@ -1112,7 +1114,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
          * @param {String} path Partial path
          * @return {String} Fully qualified path
          *
-         * @module splunkjs.Context 
+         * @method splunkjs.Context 
          */
         fullpath: function(path, namespace) {
             namespace = namespace || {};
@@ -1153,7 +1155,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
          * @param {String} path Partial path
          * @return {String} Fully qualified URL
          *
-         * @module splunkjs.Context 
+         * @method splunkjs.Context 
          * @private
          */
         urlify: function(path) {
@@ -1168,7 +1170,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
          *
          * @param {Function} callback Callback to be executed when login is complete: `(err, wasSuccessful)`
          *
-         * @module splunkjs.Context 
+         * @method splunkjs.Context 
          * @private
          */
         login: function(callback) {
@@ -1197,7 +1199,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
          * @param {Object} params Query parameters for this request
          * @param {Function} callback Callback for when the request is complete: `(err, response)`
          *
-         * @module splunkjs.Context 
+         * @method splunkjs.Context 
          */
         get: function(path, params, callback) {
             return this.http.get(
@@ -1216,7 +1218,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
          * @param {Object} params Query parameters for this request
          * @param {Function} callback Callback for when the request is complete: `(err, response)`
          *
-         * @module splunkjs.Context 
+         * @method splunkjs.Context 
          */
         del: function(path, params, callback) {
             return this.http.del(
@@ -1235,7 +1237,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
          * @param {Object} params Body parameters for this request
          * @param {Function} callback Callback for when the request is complete: `(err, response)`
          *
-         * @module splunkjs.Context 
+         * @method splunkjs.Context 
          */
         post: function(path, params, callback) {
             return this.http.post(
@@ -1256,7 +1258,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
          * @param {Object} body Body of parameters for this request
          * @param {Function} callback Callback for when the request is complete: `(err, response)`
          *
-         * @module splunkjs.Context 
+         * @method splunkjs.Context 
          */
         request: function(path, method, headers, body, callback) {
             return this.http.request(
@@ -1444,7 +1446,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
      * Helper function to encode a dictionary of values into a URL-encoded
      * format.
      *
-     * Example:
+     * @example
      *      
      *      // should be a=1&b=2&b=3&b=4
      *      encode({a: 1, b: [2,3,4]})
@@ -1452,7 +1454,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
      * @param {Object} params Parameters to URL-encode
      * @return {String} URL-encoded query string
      *
-     * @globals splunkjs.Http
+     * @function splunkjs.Http
      */
     root.encode = function(params) {
         var encodedStr = "";
@@ -1500,8 +1502,6 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
     };
      
     /**
-     * splunkjs.Http
-     * 
      * Base class for HTTP abstraction. 
      *
      * This class provides the basic functionality (get/post/delete/request),
@@ -1509,7 +1509,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
      *
      * Base classes should only override `makeRequest` and `parseJSON`
      *
-     * @moduleRoot splunkjs.Http
+     * @class splunkjs.Http
      */
     root.Http = Class.extend({
         /**
@@ -1519,7 +1519,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
          * @param {Boolean} isSplunk Whether or not this is HTTP instance is for talking with splunkjs.
          * @return {splunkjs.Http} A splunkjs.Http instance
          *
-         * @module splunkjs.Http 
+         * @method splunkjs.Http 
          */
         init: function(isSplunk) {
             // Whether or not this HTTP provider is talking to Splunk or not
@@ -1543,7 +1543,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
          * @param {Number} timeout Timeout (currently ignored)
          * @param {Function} callback Callback for when the request is complete: `(err, response)`
          *
-         * @module splunkjs.Http 
+         * @method splunkjs.Http 
          */
         get: function(url, headers, params, timeout, callback) {
             var encoded_url = url + "?" + root.encode(params);
@@ -1565,7 +1565,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
          * @param {Number} timeout Timeout (currently ignored)
          * @param {Function} callback Callback for when the request is complete: `(err, response)`
          *
-         * @module splunkjs.Http 
+         * @method splunkjs.Http 
          */
         post: function(url, headers, params, timeout, callback) {
             headers["Content-Type"] = "application/x-www-form-urlencoded";
@@ -1588,7 +1588,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
          * @param {Number} timeout Timeout (currently ignored)
          * @param {Function} callback Callback for when the request is complete: `(err, response)`
          *
-         * @module splunkjs.Http 
+         * @method splunkjs.Http 
          */
         del: function(url, headers, params, timeout, callback) {
             var encoded_url = url + "?" + root.encode(params);
@@ -1611,7 +1611,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
          * @param {Object} message Object with values for method, headers, timeout and encoded body
          * @param {Function} Callback for when the request is complete: `(err, response)`
          *
-         * @module splunkjs.Http 
+         * @method splunkjs.Http 
          * @see makeRequest
          */
         request: function(url, message, callback) {
@@ -1641,7 +1641,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
          * @param {Object} message Object with values for method, headers, timeout and encoded body
          * @param {Function} Callback for when the request is complete: `(err, response)`
          *
-         * @module splunkjs.Http 
+         * @method splunkjs.Http 
          */
         makeRequest: function(url, message, callback) {
             throw new Error("UNDEFINED FUNCTION - OVERRIDE REQUIRED"); 
@@ -1656,7 +1656,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
          * @param {String} json JSON to parse
          * @returns {Object} Parsed JSON
          *
-         * @module splunkjs.Http 
+         * @method splunkjs.Http 
          */
         parseJson: function(json) {
             throw new Error("UNDEFINED FUNCTION - OVERRIDE REQUIRED");
@@ -1673,7 +1673,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
          * @param {Object} data The response data
          * @return {Object} A unified response object
          *
-         * @module splunkjs.Http 
+         * @method splunkjs.Http 
          */
         _buildResponse: function(error, response, data) {            
             var complete_response, json = {};
@@ -1909,8 +1909,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     var Service = null;
 
     /**
-     * splunkjs.Service
-     * 
      * Root access point to the Splunk REST API
      *
      * This `Service` class provides "typed" access to Splunk concepts
@@ -1918,7 +1916,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      * convenience methods to authenticate and get more specialized
      * instances of the service.
      *
-     * @moduleRoot splunkjs.Service
+     * @class splunkjs.Service
      * @extends splunkjs.Context
      */
     module.exports = root = Service = Context.extend({
@@ -1930,7 +1928,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} params Dictionary of optional parameters: scheme, host, port, username, password, owner, app, sessionKey
          * @return {splunkjs.Service} A splunkjs.Service instance
          *
-         * @module splunkjs.Service
+         * @method splunkjs.Service
          */
         init: function() {
             this._super.apply(this, arguments);
@@ -1955,7 +1953,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * This will create a more specialized version of the current `Service` instance,
          * which is useful in cases where a specific owner or app need to be specified.
          *
-         * Example:
+         * @example
          *
          *      var svc = ...;
          *      var newService = svc.specialize("myuser", "unix");
@@ -1964,7 +1962,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {String} app The specialized app of the new sevice
          * @return {splunkjs.Service} The specialized service.
          *
-         * @module splunkjs.Service
+         * @method splunkjs.Service
          */
         specialize: function(owner, app) {
             return new Service(this.http, {
@@ -1985,7 +1983,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * The Applications collection allows you to list installed applications,
          * create new ones, etc.
          *
-         * Example:
+         * @example
          *
          *      // List installed apps
          *      var apps = svc.apps();
@@ -1994,8 +1992,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @return {splunkjs.Service.Collection} The Applications collection
          *
          * @endpoint apps/local
-         * @module splunkjs.Service
-         * @see splunkjs.Service.Collection
+         * @method splunkjs.Service
+         * @see splunkjs.Service.Applications
          */
         apps: function() {
             return new root.Applications(this);
@@ -2007,7 +2005,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * The Configurations collection allows you to list configuration files,
          * create new files, get specific files, etc.
          *
-         * Example:
+         * @example
          *
          *      // List all properties in the 'props.conf' file
          *      var files = svc.configurations();
@@ -2021,7 +2019,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @return {splunkjs.Service.Configurations} The Configurations collection
          *
          * @endpoint configs
-         * @module splunkjs.Service
+         * @method splunkjs.Service
          * @see splunkjs.Service.Configurations
          */
         configurations: function(namespace) {
@@ -2034,7 +2032,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * The Indexes collection allows you to list indexes,
          * create new indexes, update indexes, etc.
          *
-         * Example:
+         * @example
          *
          *      // Check if we have an _internal index
          *      var indexes = svc.configurations();
@@ -2048,7 +2046,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @return {splunkjs.Service.Indexes} The Indexes collection
          *
          * @endpoint data/indexes
-         * @module splunkjs.Service
+         * @method splunkjs.Service
          * @see splunkjs.Service.Indexes
          */        
         indexes: function(namespace) { 
@@ -2061,7 +2059,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * The Properties collection allows you to list configuration files,
          * create new files, get specific files, etc.
          *
-         * Example:
+         * @example
          *
          *      // List all properties in the 'props.conf' file
          *      var files = svc.properties();
@@ -2074,7 +2072,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @return {splunkjs.Service.Properties} The Properties collection
          *
          * @endpoint properties
-         * @module splunkjs.Service
+         * @method splunkjs.Service
          * @see splunkjs.Service.Properties
          */
         properties: function() {
@@ -2087,7 +2085,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * The SavedSearches collection allows you to list saved searches,
          * create new ones, update a saved search, etc.
          *
-         * Example:
+         * @example
          *
          *      // List all # of saved searches
          *      var savedSearches = svc.savedSearches();
@@ -2099,7 +2097,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @return {splunkjs.Service.SavedSearches} The SavedSearches collection
          *
          * @endpoint saved/searches
-         * @module splunkjs.Service
+         * @method splunkjs.Service
          * @see splunkjs.Service.SavedSearches
          */
         savedSearches: function(namespace) {
@@ -2112,7 +2110,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * The Jobs collection allows you to list jobs,
          * create new ones, get a specific job, etc.
          *
-         * Example:
+         * @example
          *
          *      // List all job IDs
          *      var jobs = svc.jobs();
@@ -2127,7 +2125,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @return {splunkjs.Service.Jobs} The Jobs collection
          *
          * @endpoint search/jobs
-         * @module splunkjs.Service
+         * @method splunkjs.Service
          * @see splunkjs.Service.Jobs
          */
         jobs: function(namespace) {
@@ -2140,7 +2138,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * The Users collection allows you to list users,
          * create new ones, get a specific user, etc.
          *
-         * Example:
+         * @example
          *
          *      // List all usernames
          *      var users = svc.users();
@@ -2154,7 +2152,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @return {splunkjs.Service.Users} The Users collection
          *
          * @endpoint authorization/users
-         * @module splunkjs.Service
+         * @method splunkjs.Service
          * @see splunkjs.Service.Users
          */
         users: function() {
@@ -2167,7 +2165,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * The Views collection allows you to list views,
          * create new ones, get a specific user, etc.
          *
-         * Example:
+         * @example
          *
          *      // List all views
          *      var views = svc.views();
@@ -2182,7 +2180,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @return {splunkjs.Service.Views} The views collection
          *
          * @endpoint data/ui/views
-         * @module splunkjs.Service
+         * @method splunkjs.Service
          * @see splunkjs.Service.Views
          */
         views: function(namespace) {
@@ -2194,7 +2192,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * Create a search job using the specified query and parameters.
          *
-         * Example:
+         * @example
          *
          *      service.search("search ERROR", {id: "myjob_123"}, function(err, newJob) {
          *          console.log("CREATED": newJob.sid);
@@ -2206,7 +2204,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback with the created job: `(err, createdJob)`
          *
          * @endpoint search/jobs
-         * @module splunkjs.Service
+         * @method splunkjs.Service
          */
         search: function(query, params, namespace, callback) {
             if (!callback && utils.isFunction(namespace)) {
@@ -2223,7 +2221,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * Create a oneshot search job using the specified query and parameters.
          *
-         * Example:
+         * @example
          *
          *      service.oneshotSearch("search ERROR", {id: "myjob_123"}, function(err, results) {
          *          console.log("RESULT FIELDS": results.fields);
@@ -2235,7 +2233,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback with the results of the job: `(err, results)`
          *
          * @endpoint search/jobs
-         * @module splunkjs.Service
+         * @method splunkjs.Service
          */
         oneshotSearch: function(query, params, namespace, callback) {
             if (!callback && utils.isFunction(namespace)) {
@@ -2252,7 +2250,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * Get the current logged in user
          *
-         * Example:
+         * @example
          *
          *      service.currentUser(function(err, user) {
          *          console.log("Real name: ", user.properties().realname);
@@ -2261,7 +2259,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback with the user instance: `(err, user)`
          *
          * @endpoint authorization/current-context
-         * @module splunkjs.Service
+         * @method splunkjs.Service
          */
         currentUser: function(callback) {
             callback = callback || function() {};
@@ -2291,7 +2289,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Get the server info
          *
-         * Example:
+         * @example
          *
          *      service.serverInfo(function(err, info) {
          *          console.log("Splunk Version: ", info.properties().version);
@@ -2300,7 +2298,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback with the server info: `(err, info)`
          *
          * @endpoint server/info
-         * @module splunkjs.Service
+         * @method splunkjs.Service
          */
         serverInfo: function(callback) {
             callback = callback || function() {};
@@ -2312,7 +2310,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Parse a search string
          *
-         * Example:
+         * @example
          *
          *      service.parse("search index=_internal | head 1", function(err, parse) {
          *          console.log("Commands: ", parse.commands);
@@ -2323,7 +2321,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback with the parse info: `(err, parse)`
          *
          * @endpoint search/parser
-         * @module splunkjs.Service
+         * @method splunkjs.Service
          */
         parse: function(query, params, callback) {
             if (!callback && utils.isFunction(params)) {
@@ -2381,7 +2379,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Log an event to splunk
          *
-         * Example:
+         * @example
          *
          *      service.log("A new event", {index: "_internal", sourcetype: "mysourcetype"}, function(err, result) {
          *          console.log("Submitted event: ", result);
@@ -2392,7 +2390,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback when the event was submitted: `(err, result)`
          *
          * @endpoint receivers/simple
-         * @module splunkjs.Service
+         * @method splunkjs.Service
          */
         log: function(event, params, callback) {
             if (!callback && utils.isFunction(params)) {
@@ -2425,16 +2423,13 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
 
     /**
-     * splunkjs.Service.Endpoint
-     * 
      * Base definition for a Splunk endpoint (specific service + path combination).
      *
      * This `Endpoint` class provides convenience methods for the three HTTP verbs
      * used in splunkjs. It will automatically prepare the path correctly, and allows
      * for relative calls.
      *
-     * @moduleRoot splunkjs.Service.Endpoint
-     * @see splunkjs.Service
+     * @class splunkjs.Service.Endpoint
      */
     root.Endpoint = Class.extend({
         /**
@@ -2445,7 +2440,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {String} qualifiedPath A fully-qualified relative endpoint path (e.g. '/services/search/jobs')
          * @return {splunkjs.Service.Endpoint} A splunkjs.Service.Endpoint instance
          *
-         * @module splunkjs.Service.Endpoint
+         * @method splunkjs.Service.Endpoint
          */
         init: function(service, qualifiedPath) {
             if (!service) {
@@ -2472,7 +2467,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * Perform a relative GET request on this endpoint's path,
          * combined with the parameters and a relative path if specified.
          *
-         * Example:
+         * @example
          *
          *      // Will make a request to {service.prefix}/search/jobs/123456/results?offset=1
          *      var endpoint = new splunkjs.Service.Endpoint(service, "search/jobs/12345");
@@ -2482,7 +2477,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} params A dictionary of parameters to add to the query string
          * @param {Function} callback A callback to be invoked when the request is complete: `(err, response)`
          *
-         * @module splunkjs.Service.Endpoint
+         * @method splunkjs.Service.Endpoint
          */
         get: function(relpath, params, callback) {
             var url = this.qualifiedPath;
@@ -2506,7 +2501,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * Perform a relative POST request on this endpoint's path,
          * combined with the parameters and a relative path if specified.
          *
-         * Example:
+         * @example
          *
          *      // Will make a request to {service.prefix}/search/jobs/123456/control
          *      var endpoint = new splunkjs.Service.Endpoint(service, "search/jobs/12345");
@@ -2516,7 +2511,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} params A dictionary of parameters to add to the body
          * @param {Function} callback A callback to be invoked when the request is complete: `(err, response)`
          *
-         * @module splunkjs.Service.Endpoint
+         * @method splunkjs.Service.Endpoint
          */
         post: function(relpath, params, callback) {
             var url = this.qualifiedPath;
@@ -2540,7 +2535,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * Perform a relative DELETE request on this endpoint's path,
          * combined with the parameters and a relative path if specified.
          *
-         * Example:
+         * @example
          *
          *      // Will make a request to {service.prefix}/search/jobs/123456
          *      var endpoint = new splunkjs.Service.Endpoint(service, "search/jobs/12345");
@@ -2550,7 +2545,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} params A dictionary of parameters to add to the query string
          * @param {Function} callback A callback to be invoked when the request is complete: `(err, response)`
          *
-         * @module splunkjs.Service.Endpoint
+         * @method splunkjs.Service.Endpoint
          */
         del: function(relpath, params, callback) {
             var url = this.qualifiedPath;
@@ -2570,15 +2565,13 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
     
     /**
-     * splunkjs.Service.Resource
-     * 
      * Base definition for a Splunk "resource" (e.g. index, jobs, etc)
      *
      * This `Resource` class provides basic methods for handling Splunk resources, such
      * as validation, property accessor, etc. This class should not be used directly,
      * as most methods are meant to be overridden.
      *
-     * @moduleRoot splunkjs.Service.Resource
+     * @class splunkjs.Service.Resource
      * @extends splunkjs.Service.Endpoint
      */
     root.Resource = root.Endpoint.extend({
@@ -2591,7 +2584,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} namespace Namespace information for this resource (owner, app, sharing)
          * @return {splunkjs.Service.Resource} A splunkjs.Service.Resource instance
          *
-         * @module splunkjs.Service.Resource
+         * @method splunkjs.Service.Resource
          */
         init: function(service, path, namespace) {
             var fullpath = service.fullpath(path, namespace);
@@ -2613,7 +2606,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * REST path for this resource (with no namespace)
          *
-         * @module splunkjs.Service.Resource
+         * @method splunkjs.Service.Resource
          */
         path: function() {
             throw new Error("MUST BE OVERRIDDEN");
@@ -2624,7 +2617,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @param {Object} properties The properties for this resource
          *
-         * @module splunkjs.Service.Resource
+         * @method splunkjs.Service.Resource
          * @protected
          */
         _load: function(properties) {
@@ -2640,7 +2633,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @param {Function} callback A callback when the object is retrieved: `(err, resource)`
          *
-         * @module splunkjs.Service.Resource
+         * @method splunkjs.Service.Resource
          * @protected
          */
         refresh: function(callback) {
@@ -2655,7 +2648,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @return {Object} The properties for this resource
          *
-         * @module splunkjs.Service.Resource
+         * @method splunkjs.Service.Resource
          */
         properties: function() {
             return this._properties;
@@ -2669,7 +2662,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @return {Object} The full state for this resource
          *
-         * @module splunkjs.Service.Resource
+         * @method splunkjs.Service.Resource
          */
         state: function() {
             return this._state;
@@ -2677,15 +2670,13 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
     
     /**
-     * splunkjs.Service.Entity
-     * 
      * Base class for a Splunk "entity", which is a well defined construct
      * with certain operations (like "properties", "update", "delete").
      *
      * This `Entity` class provides basic methods for handling Splunk entities, 
      * such as refreshing them, updating, etc.
      *
-     * @moduleRoot splunkjs.Service.Entity
+     * @class splunkjs.Service.Entity
      * @extends splunkjs.Service.Resource
      */
     root.Entity = root.Resource.extend({
@@ -2695,7 +2686,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * the entity, as the endpoint will return (echo) the updated
          * entity
          *
-         * @module splunkjs.Service.Entity
+         * @method splunkjs.Service.Entity
          */
         refreshOnUpdate: false,
         
@@ -2708,7 +2699,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} namespace Namespace information for this entity (owner, app, sharing)
          * @return {splunkjs.Service.Entity} A splunkjs.Service.Entity instance
          *
-         * @module splunkjs.Service.Entity
+         * @method splunkjs.Service.Entity
          */
         init: function(service, path, namespace) {
             this._super(service, path, namespace);
@@ -2741,7 +2732,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @param {Object} properties The properties for this resource
          *
-         * @module splunkjs.Service.Entity
+         * @method splunkjs.Service.Entity
          * @protected
          */
         _load: function(properties) {
@@ -2764,7 +2755,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @return {Object} The fields for this entity
          *
-         * @module splunkjs.Service.Entity
+         * @method splunkjs.Service.Entity
          */
         fields: function() {
             return this._fields;
@@ -2775,7 +2766,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @return {Object} The ACL for this entity
          *
-         * @module splunkjs.Service.Entity
+         * @method splunkjs.Service.Entity
          */
         acl: function() {
             return this._acl;
@@ -2786,7 +2777,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @return {Object} The links for this entity
          *
-         * @module splunkjs.Service.Entity
+         * @method splunkjs.Service.Entity
          */
         links: function() {
             return this._links;
@@ -2797,7 +2788,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @return {String} The author for this entity
          *
-         * @module splunkjs.Service.Entity
+         * @method splunkjs.Service.Entity
          */
         author: function() {
             return this._author;
@@ -2808,7 +2799,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @return {String} The updated time for this entity
          *
-         * @module splunkjs.Service.Entity
+         * @method splunkjs.Service.Entity
          */
         updated: function() {
             return this._updated;
@@ -2819,7 +2810,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @return {String} The published time for this entity
          *
-         * @module splunkjs.Service.Entity
+         * @method splunkjs.Service.Entity
          */
         published: function() {
             return this._published;
@@ -2834,7 +2825,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} options Optional dictionary of collection filtering and pagination options
          * @param {Function} callback A callback when the object is retrieved: `(err, resource)`
          *
-         * @module splunkjs.Service.Entity
+         * @method splunkjs.Service.Entity
          */
         refresh: function(options, callback) {
             if (!callback && utils.isFunction(options)) {
@@ -2864,7 +2855,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @param {Function} callback A callback when the object is deleted: `(err)`
          *
-         * @module splunkjs.Service.Entity
+         * @method splunkjs.Service.Entity
          * @protected
          */
         remove: function(callback) {
@@ -2884,7 +2875,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} props Properties to be updated the object with.
          * @param {Function} callback A callback when the object is updated: `(err, entity)`
          *
-         * @module splunkjs.Service.Entity
+         * @method splunkjs.Service.Entity
          * @protected
          */
         update: function(props, callback) {
@@ -2925,7 +2916,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @param {Function} callback A callback when the object is disabled: `(err, entity)`
          *
-         * @module splunkjs.Service.Entity
+         * @method splunkjs.Service.Entity
          * @protected
          */
         disable: function(callback) {
@@ -2949,7 +2940,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @param {Function} callback A callback when the object is enabled: `(err, entity)`
          *
-         * @module splunkjs.Service.Entity
+         * @method splunkjs.Service.Entity
          * @protected
          */
         enable: function(callback) {
@@ -2973,7 +2964,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @param {Function} callback A callback when the object is reloaded: `(err, entity)`
          *
-         * @module splunkjs.Service.Entity
+         * @method splunkjs.Service.Entity
          * @protected
          */
         reload: function(callback) {
@@ -2992,15 +2983,13 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
 
     /**
-     * splunkjs.Service.Collection
-     * 
      * Base class for a Splunk "collection", which is a well defined construct
      * with certain operations (like "list", "create", etc).
      *
      * This `Collection` class provides basic methods for handling Splunk entity 
      * collection, such as creating an entity, listing entities, etc.
      *
-     * @moduleRoot splunkjs.Service.Collection
+     * @class splunkjs.Service.Collection
      * @extends splunkjs.Service.Resource
      */
     root.Collection = root.Resource.extend({
@@ -3010,7 +2999,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * the entity, as the endpoint will return (echo) the created
          * entity
          *
-         * @module splunkjs.Service.Collection
+         * @method splunkjs.Service.Collection
          */
         refreshOnEntityCreation: false,
         
@@ -3020,7 +3009,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * the entity, as the endpoint will return (echo) the created
          * entities when we list it.
          *
-         * @module splunkjs.Service.Collection
+         * @method splunkjs.Service.Collection
          */
         refreshOnEntityInstantiation: false,
         
@@ -3033,7 +3022,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} namespace Namespace information for this collection (owner, app, sharing)
          * @return {splunkjs.Service.Collection} A splunkjs.Service.Collection instance
          *
-         * @module splunkjs.Service.Collection
+         * @method splunkjs.Service.Collection
          */     
         init: function(service, path, namespace) {
             this._super(service, path, namespace);
@@ -3062,7 +3051,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} props The properties for this entity
          * @return {splunkjs.Service.Entity} A splunkjs.Service.Entity instance
          
-         * @module splunkjs.Service.Collection
+         * @method splunkjs.Service.Collection
          */
         instantiateEntity: function(props) {
             throw new Error("MUST BE OVERRIDDEN");
@@ -3076,7 +3065,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @param {Object} properties The properties for this resource
          *
-         * @module splunkjs.Service.Collection
+         * @method splunkjs.Service.Collection
          * @private
          */
         _load: function(properties) {
@@ -3110,7 +3099,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @return {Object} The links for this collection
          *
-         * @module splunkjs.Service.Collection
+         * @method splunkjs.Service.Collection
          */
         links: function() {
             return this._links;
@@ -3121,7 +3110,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @return {String} The author for this collection
          *
-         * @module splunkjs.Service.Collection
+         * @method splunkjs.Service.Collection
          */
         paging: function() {
             return this._paging;
@@ -3132,7 +3121,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @return {String} The updated time for this collection
          *
-         * @module splunkjs.Service.Collection
+         * @method splunkjs.Service.Collection
          */
         updated: function() {
             return this._updated;
@@ -3147,7 +3136,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} options Dictionary of collection filtering and pagination options
          * @param {Function} callback A callback when the object is retrieved: `(err, resource)`
          *
-         * @module splunkjs.Service.Collection
+         * @method splunkjs.Service.Collection
          */
         refresh: function(options, callback) {
             if (!callback && utils.isFunction(options)) {
@@ -3211,7 +3200,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * Return a specific entity given its name.
          *
-         * Example:
+         * @example
          *
          *      var apps = service.apps();
          *      apps.item("search", function(err, app) {
@@ -3222,7 +3211,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} namespace Namespace information (owner, app, sharing)
          * @returns {splunkjs.Service.Entity} The entity with that name/namespace or null if none is found
          *
-         * @module splunkjs.Service.Collection
+         * @method splunkjs.Service.Collection
          */
         item: function(name, namespace) {    
             return this.contains(name, namespace);     
@@ -3234,7 +3223,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * Create an entity on the server for this collection with the specified
          * parameters.
          *
-         * Example:
+         * @example
          *
          *      var apps = service.apps();
          *      apps.create({name: "NewSearchApp"}, function(err, newApp) {
@@ -3244,7 +3233,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} params A dictionary of properties to create the entity with.
          * @returns {Array} Array of splunkjs.Service.Entity objects
          *
-         * @module splunkjs.Service.Collection
+         * @method splunkjs.Service.Collection
          */
         create: function(params, callback) {
             callback = callback || function() {};
@@ -3287,7 +3276,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * Return the list of all the entities in this collection.
          *
-         * Example:
+         * @example
          *
          *      var apps = service.apps();
          *      apps.refresh(function(err, apps) {
@@ -3297,7 +3286,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @param {Function} callback A callback with the list of entities: `(err, list)`
          *
-         * @module splunkjs.Service.Collection
+         * @method splunkjs.Service.Collection
          */
         list: function(callback) {
             callback = callback || function() {};
@@ -3311,7 +3300,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * Check to see if the collection contains a specific entity, and if so,
          * return that entity.
          *
-         * Example:
+         * @example
          *
          *      var apps = service.apps();
          *      apps.refresh(function(err, apps) {
@@ -3324,7 +3313,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} namespace Namespace information (owner, app, sharing)
          * @returns {splunkjs.Service.Entity} The entity with that name/namespace or null if none is found
          *
-         * @module splunkjs.Service.Collection
+         * @method splunkjs.Service.Collection
          */
         contains: function(id, namespace) {                
             if (utils.isEmpty(namespace)) {
@@ -3383,20 +3372,18 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
     
     /**
-     * splunkjs.Service.SavedSearch
-     * 
      * Represents a specific Splunk saved search.  You can update, remove and
      * perform various operations on this saved search.
      *
      * @endpoint saved/searches/{name}
-     * @moduleRoot splunkjs.Service.SavedSearch
+     * @class splunkjs.Service.SavedSearch
      * @extends splunkjs.Service.Entity
      */
     root.SavedSearch = root.Entity.extend({
         /**
          * REST path for this resource (with no namespace)
          *
-         * @module splunkjs.Service.SavedSearch
+         * @method splunkjs.Service.SavedSearch
          */
         path: function() {
             return Paths.savedSearches + "/" + encodeURIComponent(this.name);
@@ -3411,7 +3398,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {splunkjs.Service.SavedSearch} A splunkjs.Service.SavedSearch instance
          *
-         * @module splunkjs.Service.SavedSearch
+         * @method splunkjs.Service.SavedSearch
          */     
         init: function(service, name, namespace) {
             this.name = name;
@@ -3426,7 +3413,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Acknowledge a saved search
          *
-         * Example:
+         * @example
          *
          *      var savedSearch = service.savedSearches().item("MySavedSearch");
          *      savedSearch.acknowledge(function(err, search) {
@@ -3436,7 +3423,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback when the saved search was acknowledged: `(err, savedSearch)`
          *
          * @endpoint saved/searches/{name}/acknowledge
-         * @module splunkjs.Service.SavedSearch
+         * @method splunkjs.Service.SavedSearch
          */
         acknowledge: function(callback) {
             callback = callback || function() {};
@@ -3456,7 +3443,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * created and a splunkjs.Service.Job instance returned in the
          * callback.
          *
-         * Example:
+         * @example
          *
          *      var savedSearch = service.savedSearches().item("MySavedSearch");
          *      savedSearch.dispatch({force:dispatch: false}, function(err, job) {
@@ -3467,7 +3454,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback when the saved search was dispatched: `(err, job)`
          *
          * @endpoint saved/searches/{name}/dispatch
-         * @module splunkjs.Service.SavedSearch
+         * @method splunkjs.Service.SavedSearch
          */
         dispatch: function(options, callback) {
             if (!callback && utils.isFunction(options)) {
@@ -3499,7 +3486,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * The history is a list of splunkjs.Service.Job instances
          *
-         * Example:
+         * @example
          *
          *      var savedSearch = service.savedSearches().item("MySavedSearch");
          *      savedSearch.history(function(err, jobs, search) {
@@ -3511,7 +3498,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback when the history is retrieved: `(err, job, savedSearch)`
          *
          * @endpoint saved/searches/{name}/history
-         * @module splunkjs.Service.SavedSearch
+         * @method splunkjs.Service.SavedSearch
          */
         history: function(callback) {
             callback = callback || function() {};
@@ -3541,7 +3528,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Check the suppression state of a saved search.
          *
-         * Example:
+         * @example
          *
          *      var savedSearch = service.savedSearches().item("MySavedSearch");
          *      savedSearch.history(function(err, suppressionState, search) {
@@ -3551,7 +3538,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback when the suppression state is retrieved: `(err, suppressionState, savedSearch)`
          *
          * @endpoint saved/searches/{name}/suppress
-         * @module splunkjs.Service.SavedSearch
+         * @method splunkjs.Service.SavedSearch
          */
         suppressInfo: function(callback) {
             callback = callback || function() {};
@@ -3573,7 +3560,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} props Properties to be updated the object with.
          * @param {Function} callback A callback when the object is updated: `(err, entity)`
          *
-         * @module splunkjs.Service.SavedSearch
+         * @method splunkjs.Service.SavedSearch
          */
         update: function(params, callback) {
             params = params || {};
@@ -3606,21 +3593,19 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
     
     /**
-     * splunkjs.Service.SavedSearches
-     * 
      * Represents the Splunk collection of saved searches.  You can create and
      * list saved searches using this container, or get a specific one.
      *
      *
      * @endpoint saved/searches
-     * @moduleRoot splunkjs.Service.SavedSearches
+     * @class splunkjs.Service.SavedSearches
      * @extends splunkjs.Service.Collection
      */
     root.SavedSearches = root.Collection.extend({
         /**
          * REST path for this resource (with no namespace)
          *
-         * @module splunkjs.Service.SavedSearches
+         * @method splunkjs.Service.SavedSearches
          */
         path: function() {
             return Paths.savedSearches;
@@ -3632,7 +3617,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} props The properties for this entity
          * @return {splunkjs.Service.SavedSearch} A splunkjs.Service.SavedSearch instance
          
-         * @module splunkjs.Service.SavedSearches
+         * @method splunkjs.Service.SavedSearches
          */
         instantiateEntity: function(props) {
             var entityNamespace = utils.namespaceFromProperties(props);
@@ -3647,7 +3632,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {splunkjs.Service.SavedSearches} A splunkjs.Service.SavedSearches instance
          *
-         * @module splunkjs.Service.SavedSearches
+         * @method splunkjs.Service.SavedSearches
          */     
         init: function(service, namespace) {
             this._super(service, this.path(), namespace);
@@ -3655,13 +3640,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
     
     /**
-     * splunkjs.Service.Application
-     * 
      * Represents a specific Splunk application.  You can update, remove and
      * perform various operations on this application.
      *
      * @endpoint apps/local/{name}
-     * @moduleRoot splunkjs.Service.Application
+     * @class splunkjs.Service.Application
      * @extends splunkjs.Service.Entity
      */
     root.Application = root.Entity.extend({
@@ -3669,14 +3652,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * Whether or not to call `refresh()` after an update
          * to fetch the updated item.
          *
-         * @module splunkjs.Service.Application
+         * @method splunkjs.Service.Application
          */
         refreshOnUpdate: true,
         
         /**
          * REST path for this resource (with no namespace)
          *
-         * @module splunkjs.Service.Application
+         * @method splunkjs.Service.Application
          */
         path: function() {
             return Paths.apps + "/" + encodeURIComponent(this.name);
@@ -3690,7 +3673,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {String} name The name of the application
          * @return {splunkjs.Service.Application} A splunkjs.Service.Application instance
          *
-         * @module splunkjs.Service.Application
+         * @method splunkjs.Service.Application
          */ 
         init: function(service, name) {
             this.name = name;
@@ -3703,7 +3686,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Retrieve information about the setup for this app
          *
-         * Example:
+         * @example
          *
          *      var app = service.apps().item("app");
          *      app.setup(function(err, info, search) {
@@ -3713,7 +3696,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback when the setup information is retrieved: `(err, info, app)`
          *
          * @endpoint apps/local/{name}/setup
-         * @module splunkjs.Service.Application
+         * @method splunkjs.Service.Application
          */
         setupInfo: function(callback) {
             callback = callback || function() {};
@@ -3732,7 +3715,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Retrieve any available update information for this app
          *
-         * Example:
+         * @example
          *
          *      var app = service.apps().item("MyApp");
          *      app.updateInfo(function(err, info, app) {
@@ -3742,7 +3725,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback when the update information is retrieved: `(err, info, app)`
          *
          * @endpoint apps/local/{name}/update
-         * @module splunkjs.Service.Application
+         * @method splunkjs.Service.Application
          */
         updateInfo: function(callback) {
             callback = callback || function() {};
@@ -3760,13 +3743,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
     
     /**
-     * splunkjs.Service.Applications
-     * 
      * Represents the Splunk collection of applications.  You can create and
      * list applications using this container, or get a specific one.
      *
      * @endpoint apps/local
-     * @moduleRoot splunkjs.Service.Applications
+     * @class splunkjs.Service.Applications
      * @extends splunkjs.Service.Collection
      */  
     root.Applications = root.Collection.extend({
@@ -3776,14 +3757,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * the entity, as the endpoint will return (echo) the created
          * entity
          *
-         * @module splunkjs.Service.Applications
+         * @method splunkjs.Service.Applications
          */
         refreshOnEntityCreation: true,
         
         /**
          * REST path for this resource (with no namespace)
          *
-         * @module splunkjs.Service.Applications
+         * @method splunkjs.Service.Applications
          */
         path: function() {
             return Paths.apps;
@@ -3795,7 +3776,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} props The properties for this entity
          * @return {splunkjs.Service.Application} A splunkjs.Service.Application instance
          
-         * @module splunkjs.Service.Applications
+         * @method splunkjs.Service.Applications
          */
         instantiateEntity: function(props) {
             return new root.Application(this.service, props.name, {});
@@ -3808,7 +3789,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {splunkjs.Service} service A service instance
          * @return {splunkjs.Service.Applications} A splunkjs.Service.Applications instance
          *
-         * @module splunkjs.Service.Applications
+         * @method splunkjs.Service.Applications
          */  
         init: function(service) {
             this._super(service, this.path(), {});
@@ -3816,19 +3797,17 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
     
     /**
-     * splunkjs.Service.ServerInfo
-     * 
      * Represents the server info
      *
      * @endpoint server/info
-     * @moduleRoot splunkjs.Service.ServerInfo
+     * @class splunkjs.Service.ServerInfo
      * @extends splunkjs.Service.Entity
      */
     root.ServerInfo = root.Entity.extend({
         /**
          * REST path for this resource (with no namespace)
          *
-         * @module splunkjs.Service.ServerInfo
+         * @method splunkjs.Service.ServerInfo
          */
         path: function() {
             return Paths.info;
@@ -3841,7 +3820,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {splunkjs.Service} service A service instance
          * @return {splunkjs.Service.ServerInfo} A splunkjs.Service.ServerInfo instance
          *
-         * @module splunkjs.Service.ServerInfo
+         * @method splunkjs.Service.ServerInfo
          */ 
         init: function(service) {
             this.name = "server-info";
@@ -3850,20 +3829,18 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
     
     /**
-     * splunkjs.Service.User
-     * 
      * Represents a specific Splunk user.  You can update, remove and
      * perform various operations on this user.
      *
      * @endpoint authentication/users/{name}
-     * @moduleRoot splunkjs.Service.User
+     * @class splunkjs.Service.User
      * @extends splunkjs.Service.Entity
      */
     root.User = root.Entity.extend({
         /**
          * REST path for this resource (with no namespace)
          *
-         * @module splunkjs.Service.User
+         * @method splunkjs.Service.User
          */
         path: function() {
             return Paths.users + "/" + encodeURIComponent(this.name);
@@ -3877,7 +3854,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {String} name The username of the user
          * @return {splunkjs.Service.User} A splunkjs.Service.User instance
          *
-         * @module splunkjs.Service.User
+         * @method splunkjs.Service.User
          */ 
         init: function(service, name) {
             this.name = name;
@@ -3886,13 +3863,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
     
     /**
-     * splunkjs.Service.Users
-     * 
      * Represents the Splunk collection of users.  You can create and
      * list users using this container, or get a specific one.
      *
      * @endpoint authentication/users
-     * @moduleRoot splunkjs.Service.Users
+     * @class splunkjs.Service.Users
      * @extends splunkjs.Service.Collection
      */  
     root.Users = root.Collection.extend({
@@ -3902,14 +3877,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * the entity, as the endpoint will return (echo) the created
          * entity
          *
-         * @module splunkjs.Service.Users
+         * @method splunkjs.Service.Users
          */
         refreshOnEntityCreation: true,
         
         /**
          * REST path for this resource (with no namespace)
          *
-         * @module splunkjs.Service.Users
+         * @method splunkjs.Service.Users
          */
         path: function() {
             return Paths.users;
@@ -3921,7 +3896,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} props The properties for this entity
          * @return {splunkjs.Service.User} A splunkjs.Service.User instance
          
-         * @module splunkjs.Service.Users
+         * @method splunkjs.Service.Users
          */
         instantiateEntity: function(props) {
             return new root.User(this.service, props.name, {});
@@ -3934,7 +3909,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {splunkjs.Service} service A service instance
          * @return {splunkjs.Service.Users} A splunkjs.Service.Users instance
          *
-         * @module splunkjs.Service.Users
+         * @method splunkjs.Service.Users
          */  
         init: function(service) {
             this._super(service, this.path(), {});
@@ -3949,7 +3924,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} params A dictionary of properties to create the entity with.
          * @param {Function} callback A callback with the created entity: `(err, createdEntity)`
          *
-         * @module splunkjs.Service.Users
+         * @method splunkjs.Service.Users
          */
         create: function(params, callback) {
             callback = callback || function() {};
@@ -3981,20 +3956,18 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
     
     /**
-     * splunkjs.Service.View
-     * 
      * Represents a specific Splunk view.  You can update, remove and
      * perform various operations on this view.
      *
      * @endpoint data/ui/views/{name}
-     * @moduleRoot splunkjs.Service.View
+     * @class splunkjs.Service.View
      * @extends splunkjs.Service.Entity
      */
     root.View = root.Entity.extend({
         /**
          * REST path for this resource (with no namespace)
          *
-         * @module splunkjs.Service.View
+         * @method splunkjs.Service.View
          */
         path: function() {
             return Paths.views + "/" + encodeURIComponent(this.name);
@@ -4009,7 +3982,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {splunkjs.Service.View} A splunkjs.Service.View instance
          *
-         * @module splunkjs.Service.View
+         * @method splunkjs.Service.View
          */ 
         init: function(service, name, namespace) {
             this.name = name;
@@ -4018,20 +3991,18 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
     
     /**
-     * splunkjs.Service.Views
-     * 
      * Represents the Splunk collection of views.  You can create and
      * list views using this container, or get a specific one.
      *
      * @endpoint data/ui/views
-     * @moduleRoot splunkjs.Service.Views
+     * @class splunkjs.Service.Views
      * @extends splunkjs.Service.Collection
      */  
     root.Views = root.Collection.extend({
         /**
          * REST path for this resource (with no namespace)
          *
-         * @module splunkjs.Service.Views
+         * @method splunkjs.Service.Views
          */
         path: function() {
             return Paths.views;
@@ -4043,7 +4014,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} props The properties for this entity
          * @return {splunkjs.Service.View} A splunkjs.Service.View instance
          
-         * @module splunkjs.Service.Views
+         * @method splunkjs.Service.Views
          */
         instantiateEntity: function(props) {
             var entityNamespace = utils.namespaceFromProperties(props);
@@ -4058,7 +4029,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {splunkjs.Service.Views} A splunkjs.Service.Views instance
          *
-         * @module splunkjs.Service.Views
+         * @method splunkjs.Service.Views
          */  
         init: function(service, namespace) {
             this._super(service, this.path(), namespace);
@@ -4066,20 +4037,18 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
     
     /**
-     * splunkjs.Service.Index
-     * 
      * Represents a specific Splunk index.  You can update and submit
      * events to this index.
      *
      * @endpoint data/indexes/name
-     * @moduleRoot splunkjs.Service.Index
+     * @class splunkjs.Service.Index
      * @extends splunkjs.Service.Entity
      */
     root.Index = root.Entity.extend({
         /**
          * REST path for this resource (with no namespace)
          *
-         * @module splunkjs.Service.Index
+         * @method splunkjs.Service.Index
          */
         path: function() {
             return Paths.indexes + "/" + encodeURIComponent(this.name);
@@ -4094,7 +4063,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {splunkjs.Service.Index} A splunkjs.Service.Index instance
          *
-         * @module splunkjs.Service.Index
+         * @method splunkjs.Service.Index
          */ 
         init: function(service, name, namespace) {
             this.name = name;
@@ -4106,7 +4075,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Submit an event to this index
          *
-         * Example:
+         * @example
          *
          *      var index = service.indexes().item("_internal");
          *      index.submitEvent("A new event", {sourcetype: "mysourcetype"}, function(err, result, index) {
@@ -4118,7 +4087,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback when the event was submitted: `(err, result, index)`
          *
          * @endpoint receivers/simple?index={name}
-         * @module splunkjs.Service.Index
+         * @method splunkjs.Service.Index
          */
         submitEvent: function(event, params, callback) {
             if (!callback && utils.isFunction(params)) {
@@ -4144,20 +4113,18 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
         
     /**
-     * splunkjs.Service.Indexes
-     * 
      * Represents the Splunk collection of indexes.  You can create and
      * list indexes using this container, or get a specific one.
      *
      * @endpoint data/indexes
-     * @moduleRoot splunkjs.Service.Indexes
+     * @class splunkjs.Service.Indexes
      * @extends splunkjs.Service.Collection
      */  
     root.Indexes = root.Collection.extend({
         /**
          * REST path for this resource (with no namespace)
          *
-         * @module splunkjs.Service.Indexes
+         * @method splunkjs.Service.Indexes
          */
         path: function() {
             return Paths.indexes;
@@ -4169,7 +4136,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} props The properties for this entity
          * @return {splunkjs.Service.Index} A splunkjs.Service.Index instance
          
-         * @module splunkjs.Service.Indexes
+         * @method splunkjs.Service.Indexes
          */
         instantiateEntity: function(props) {
             var entityNamespace = utils.namespaceFromProperties(props);
@@ -4184,7 +4151,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {splunkjs.Service.Indexes} A splunkjs.Service.Indexes instance
          *
-         * @module splunkjs.Service.Indexes
+         * @method splunkjs.Service.Indexes
          */  
         init: function(service, namespace) {
             this._super(service, this.path(), namespace);
@@ -4195,7 +4162,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * Create an index with the given name and parameters
          *
-         * Example:
+         * @example
          *
          *      var indexes = service.indexes();
          *      indexes.create("NewIndex", {assureUTF8: true}, function(err, newIndex) {
@@ -4207,7 +4174,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback with the created entity: `(err, createdIndex)`
          *
          * @endpoint data/indexes
-         * @module splunkjs.Service.Indexes
+         * @method splunkjs.Service.Indexes
          */
         create: function(name, params, callback) {
             // If someone called us with the default style of (params, callback),
@@ -4226,13 +4193,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
     
     /**
-     * splunkjs.Service.PropertyStanza
-     * 
      * Represents a specific Splunk stanza.  You can update and remove this
      * stanza.
      *
      * @endpoint properties/{file_name}/{stanza_name}
-     * @moduleRoot splunkjs.Service.PropertyStanza
+     * @class splunkjs.Service.PropertyStanza
      * @extends splunkjs.Service.Entity
      */
     root.PropertyStanza = root.Entity.extend({
@@ -4240,14 +4205,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * Whether or not to call `refresh()` after an update
          * to fetch the updated item.
          *
-         * @module splunkjs.Service.PropertyStanza
+         * @method splunkjs.Service.PropertyStanza
          */
         refreshOnUpdate: true,
         
         /**
          * REST path for this resource (with no namespace)
          *
-         * @module splunkjs.Service.PropertyStanza
+         * @method splunkjs.Service.PropertyStanza
          */
         path: function() {
             return Paths.properties + "/" + encodeURIComponent(this.file) + "/" + encodeURIComponent(this.name);
@@ -4261,7 +4226,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {String} name The name of the index
          * @return {splunkjs.Service.PropertyStanza} A splunkjs.Service.PropertyStanza instance
          *
-         * @module splunkjs.Service.PropertyStanza
+         * @method splunkjs.Service.PropertyStanza
          */ 
         init: function(service, file, name) {
             this.name = name;
@@ -4273,13 +4238,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
     
     /**
-     * splunkjs.Service.PropertyFile
-     * 
      * Represents the Splunk collection of stanzas for a specific property file.  
      * You can create and list stanzas using this container, or get a specific one.
      *
      * @endpoint properties/{file_name}
-     * @moduleRoot splunkjs.Service.PropertyFile
+     * @class splunkjs.Service.PropertyFile
      * @extends splunkjs.Service.Collection
      */  
     root.PropertyFile = root.Collection.extend({
@@ -4289,14 +4252,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * the entity, as the endpoint will return (echo) the created
          * entity
          *
-         * @module splunkjs.Service.PropertyFile
+         * @method splunkjs.Service.PropertyFile
          */
         refreshOnEntityCreation: true,
         
         /**
          * REST path for this resource (with no namespace)
          *
-         * @module splunkjs.Service.PropertyFile
+         * @method splunkjs.Service.PropertyFile
          */
         path: function() {
             return Paths.properties + "/" + encodeURIComponent(this.name);
@@ -4308,7 +4271,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} props The properties for this entity
          * @return {splunkjs.Service.PropertyStanza} A splunkjs.Service.PropertyStanza instance
          
-         * @module splunkjs.Service.PropertyFile
+         * @method splunkjs.Service.PropertyFile
          */
         instantiateEntity: function(props) {
             return new root.PropertyStanza(this.service, this.name, props.name);
@@ -4321,7 +4284,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {splunkjs.Service} service A service instance
          * @return {splunkjs.Service.PropertyFile} A splunkjs.Service.PropertyFile instance
          *
-         * @module splunkjs.Service.PropertyFile
+         * @method splunkjs.Service.PropertyFile
          */  
         init: function(service, name) {
             this.name = name;
@@ -4341,7 +4304,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} options Dictionary of collection filtering and pagination options
          * @param {Function} callback A callback when the object is retrieved: `(err, resource)`
          *
-         * @module splunkjs.Service.PropertyFile
+         * @method splunkjs.Service.PropertyFile
          */
         refresh: function(options, callback) {
             if (!callback && utils.isFunction(options)) {
@@ -4357,7 +4320,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Create a stanza in this property file
          *
-         * Example:
+         * @example
          *
          *      var file = service.properties().item("props");
          *      file.create("my_stanza", function(err, newStanza) {
@@ -4368,7 +4331,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback with the created stanza: `(err, createdStanza)`
          *
          * @endpoint property/{file_name}
-         * @module splunkjs.Service.PropertyFile
+         * @method splunkjs.Service.PropertyFile
          */
         create: function(stanzaName, callback) {
             // If someone called us with the default style of (params, callback),
@@ -4402,13 +4365,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
     
     /**
-     * splunkjs.Service.Properties
-     * 
      * Represents the Splunk collection of property files.  You can create and
      * list files using this container, or get a specific one.
      *
      * @endpoint properties
-     * @moduleRoot splunkjs.Service.Properties
+     * @class splunkjs.Service.Properties
      * @extends splunkjs.Service.Collection
      */  
     root.Properties = root.Collection.extend({
@@ -4418,7 +4379,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * the entity, as the endpoint will return (echo) the created
          * entity
          *
-         * @module splunkjs.Service.Properties
+         * @method splunkjs.Service.Properties
          */
         refreshOnEntityCreation: true,
         
@@ -4428,14 +4389,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * the entity, as the endpoint will return (echo) the created
          * entities when we list it.
          *
-         * @module splunkjs.Service.Properties
+         * @method splunkjs.Service.Properties
          */
         refreshOnEntityInstantiation: true,
         
         /**
          * REST path for this resource (with no namespace)
          *
-         * @module splunkjs.Service.Properties
+         * @method splunkjs.Service.Properties
          */
         path: function() {
             return Paths.properties;
@@ -4447,7 +4408,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} props The properties for this entity
          * @return {splunkjs.Service.PropertyFile} A splunkjs.Service.PropertyFile instance
          
-         * @module splunkjs.Service.Properties
+         * @method splunkjs.Service.Properties
          */
         instantiateEntity: function(props) {
             return new root.PropertyFile(this.service, props.name, this.namespace);
@@ -4460,7 +4421,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {splunkjs.Service} service A service instance
          * @return {splunkjs.Service.Properties} A splunkjs.Service.Properties instance
          *
-         * @module splunkjs.Service.Properties
+         * @method splunkjs.Service.Properties
          */  
         init: function(service) {
             var namespace = {owner: "-", app: "-"};
@@ -4470,7 +4431,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Create a property file
          *
-         * Example:
+         * @example
          *
          *      var properties = service.properties();
          *      properties.create("myprops", function(err, newFile) {
@@ -4481,7 +4442,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback with the created property file: `(err, createdFile)`
          *
          * @endpoint properties
-         * @module splunkjs.Service.Properties
+         * @method splunkjs.Service.Properties
          */
         create: function(filename, callback) {
             // If someone called us with the default style of (params, callback),
@@ -4515,20 +4476,18 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
     
     /**
-     * splunkjs.Service.ConfigurationStanza
-     * 
      * Represents a specific Splunk stanza.  You can update and remove this
      * stanza.
      *
      * @endpoint configs/conf-{file}/{name}`
-     * @moduleRoot splunkjs.Service.ConfigurationStanza
+     * @class splunkjs.Service.ConfigurationStanza
      * @extends splunkjs.Service.Entity
      */
     root.ConfigurationStanza = root.Entity.extend({
         /**
          * REST path for this resource (with no namespace)
          *
-         * @module splunkjs.Service.ConfigurationStanza
+         * @method splunkjs.Service.ConfigurationStanza
          */
         path: function() {
             return Paths.configurations + "/conf-" + encodeURIComponent(this.file) + "/" + encodeURIComponent(this.name);
@@ -4543,7 +4502,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {splunkjs.Service.ConfigurationStanza} A splunkjs.Service.ConfigurationStanza instance
          *
-         * @module splunkjs.Service.ConfigurationStanza
+         * @method splunkjs.Service.ConfigurationStanza
          */ 
         init: function(service, file, name, namespace) {
             this.name = name;
@@ -4553,20 +4512,18 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
     
     /**
-     * splunkjs.Service.ConfigurationFile
-     * 
      * Represents the Splunk collection of stanzas for a specific property file.  
      * You can create and list stanzas using this container, or get a specific one.
      *
      * @endpoint configs/conf-{file}
-     * @moduleRoot splunkjs.Service.ConfigurationFile
+     * @class splunkjs.Service.ConfigurationFile
      * @extends splunkjs.Service.Collection
      */  
     root.ConfigurationFile = root.Collection.extend({ 
         /**
          * REST path for this resource (with no namespace)
          *
-         * @module splunkjs.Service.ConfigurationFile
+         * @method splunkjs.Service.ConfigurationFile
          */
         path: function() {
             return Paths.configurations + "/conf-" + encodeURIComponent(this.name);
@@ -4578,7 +4535,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} props The properties for this entity
          * @return {splunkjs.Service.ConfigurationStanza} A splunkjs.Service.ConfigurationStanza instance
          
-         * @module splunkjs.Service.ConfigurationFile
+         * @method splunkjs.Service.ConfigurationFile
          */
         instantiateEntity: function(props) {
             var entityNamespace = utils.namespaceFromProperties(props);
@@ -4593,7 +4550,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {splunkjs.Service.ConfigurationFile} A splunkjs.Service.ConfigurationFile instance
          *
-         * @module splunkjs.Service.ConfigurationFile
+         * @method splunkjs.Service.ConfigurationFile
          */  
         init: function(service, name, namespace) {
             this.name = name;
@@ -4603,7 +4560,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Create a stanza in this configuration file
          *
-         * Example:
+         * @example
          *
          *      var file = service.configurations().item("props");
          *      file.create("my_stanza", function(err, newStanza) {
@@ -4615,7 +4572,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback with the created stanza: `(err, createdStanza)`
          *
          * @endpoint configs/conf-{file}
-         * @module splunkjs.Service.ConfigurationFile
+         * @method splunkjs.Service.ConfigurationFile
          */
         create: function(stanzaName, values, callback) {
             // If someone called us with the default style of (params, callback),
@@ -4639,13 +4596,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
     
     /**
-     * splunkjs.Service.Configurations
-     * 
      * Represents the Splunk collection of configuration files.  You can create and
      * list files using this container, or get a specific one.
      *
      * @endpoint properties
-     * @moduleRoot splunkjs.Service.Configurations
+     * @class splunkjs.Service.Configurations
      * @extends splunkjs.Service.Collection
      */  
     root.Configurations = root.Collection.extend({
@@ -4655,7 +4610,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * the entity, as the endpoint will return (echo) the created
          * entity
          *
-         * @module splunkjs.Service.Configurations
+         * @method splunkjs.Service.Configurations
          */
         refreshOnEntityCreation: true,
         
@@ -4665,14 +4620,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * the entity, as the endpoint will return (echo) the created
          * entities when we list it.
          *
-         * @module splunkjs.Service.Configurations
+         * @method splunkjs.Service.Configurations
          */
         refreshOnEntityInstantiation: true,
         
         /**
          * REST path for this resource (with no namespace)
          *
-         * @module splunkjs.Service.Configurations
+         * @method splunkjs.Service.Configurations
          */
         path: function() {
             return Paths.properties;
@@ -4684,7 +4639,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} props The properties for this entity
          * @return {splunkjs.Service.ConfigurationFile} A splunkjs.Service.ConfigurationFile instance
          
-         * @module splunkjs.Service.Configurations
+         * @method splunkjs.Service.Configurations
          */
         instantiateEntity: function(props) {
             return new root.ConfigurationFile(this.service, props.name, this.namespace);
@@ -4698,7 +4653,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {splunkjs.Service.Configurations} A splunkjs.Service.Configurations instance
          *
-         * @module splunkjs.Service.Configurations
+         * @method splunkjs.Service.Configurations
          */  
         init: function(service, namespace) {
             if (!namespace || namespace.owner === "-" || namespace.app === "-") {
@@ -4711,7 +4666,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Create a property file
          *
-         * Example:
+         * @example
          *
          *      var properties = service.configurations();
          *      configurations.create("myprops", function(err, newFile) {
@@ -4722,7 +4677,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback with the created configuration file: `(err, createdFile)`
          *
          * @endpoint properties
-         * @module splunkjs.Service.Configurations
+         * @method splunkjs.Service.Configurations
          */
         create: function(filename, callback) {
             // If someone called us with the default style of (params, callback),
@@ -4756,21 +4711,19 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
 
     /**
-     * splunkjs.Service.Job
-     * 
      * Represents a specific Splunk search job.  You can perform various operations
      * on this job, such as reading its status, cancelling it, getting results
      * and so on.
      *
      * @endpoint search/jobs/{search_id}
-     * @moduleRoot splunkjs.Service.Job
+     * @class splunkjs.Service.Job
      * @extends splunkjs.Service.Entity
      */
     root.Job = root.Entity.extend({
         /**
          * REST path for this resource (with no namespace)
          *
-         * @module splunkjs.Service.Job
+         * @method splunkjs.Service.Job
          */
         path: function() {
             return Paths.jobs + "/" + encodeURIComponent(this.name);
@@ -4785,7 +4738,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {splunkjs.Service.Job} A splunkjs.Service.Job instance
          *
-         * @module splunkjs.Service.Job
+         * @method splunkjs.Service.Job
          */ 
         init: function(service, sid, namespace) {
             this.name = sid;
@@ -4814,7 +4767,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Cancel a search job
          *
-         * Example:
+         * @example
          *
          *      var job = service.jobs().item("mysid");
          *      job.cancel(function(err) {
@@ -4824,7 +4777,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback when the search is done: `(err)`
          *
          * @endpoint search/jobs/{search_id}/control
-         * @module splunkjs.Service.Job
+         * @method splunkjs.Service.Job
          */
         cancel: function(callback) {
             var req = this.post("control", {action: "cancel"}, callback);
@@ -4835,7 +4788,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Disable preview for a job
          *
-         * Example:
+         * @example
          *
          *      var job = service.jobs().item("mysid");
          *      job.disablePreview(function(err, job) {
@@ -4845,7 +4798,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback with the this job: `(err, job)`
          *
          * @endpoint search/jobs/{search_id}/control
-         * @module splunkjs.Service.Job
+         * @method splunkjs.Service.Job
          */
         disablePreview: function(callback) {
             callback = callback || function() {};
@@ -4861,7 +4814,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Enable preview for a job
          *
-         * Example:
+         * @example
          *
          *      var job = service.jobs().item("mysid");
          *      job.disablePreview(function(err, job) {
@@ -4871,7 +4824,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback with the this job: `(err, job)`
          *
          * @endpoint search/jobs/{search_id}/control
-         * @module splunkjs.Service.Job
+         * @method splunkjs.Service.Job
          */
         enablePreview: function(callback) {
             callback = callback || function() {};
@@ -4889,7 +4842,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * Get the events for a job with given parameters.
          *
-         * Example:
+         * @example
          *
          *      var job = service.jobs().item("mysid");
          *      job.events({count: 10}, function(err, events, job) {
@@ -4900,7 +4853,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback with when the events are fetched: `(err, events, job)`
          *
          * @endpoint search/jobs/{search_id}/events
-         * @module splunkjs.Service.Job
+         * @method splunkjs.Service.Job
          */
         events: function(params, callback) {
             callback = callback || function() {};
@@ -4919,7 +4872,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Finalize a search job
          *
-         * Example:
+         * @example
          *
          *      var job = service.jobs().item("mysid");
          *      job.finalize(function(err, job) {
@@ -4929,7 +4882,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback with the this job: `(err, job)`
          *
          * @endpoint search/jobs/{search_id}/control
-         * @module splunkjs.Service.Job
+         * @method splunkjs.Service.Job
          */
         finalize: function(callback) {
             callback = callback || function() {};
@@ -4945,7 +4898,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Pause a search job
          *
-         * Example:
+         * @example
          *
          *      var job = service.jobs().item("mysid");
          *      job.pause(function(err, job) {
@@ -4955,7 +4908,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback with the this job: `(err, job)`
          *
          * @endpoint search/jobs/{search_id}/control
-         * @module splunkjs.Service.Job
+         * @method splunkjs.Service.Job
          */
         pause: function(callback) {
             callback = callback || function() {};
@@ -4973,7 +4926,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * Get the preview results for a job with given parameters.
          *
-         * Example:
+         * @example
          *
          *      var job = service.jobs().item("mysid");
          *      job.preview({count: 10}, function(err, results, job) {
@@ -4984,7 +4937,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback with when the preview results are fetched: `(err, results, job)`
          *
          * @endpoint search/jobs/{search_id}/results_preview
-         * @module splunkjs.Service.Job
+         * @method splunkjs.Service.Job
          */
         preview: function(params, callback) {
             callback = callback || function() {};
@@ -5005,7 +4958,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * Get the results for a job with given parameters.
          *
-         * Example:
+         * @example
          *
          *      var job = service.jobs().item("mysid");
          *      job.results({count: 10}, function(err, results, job) {
@@ -5016,7 +4969,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback with when the results are fetched: `(err, results, job)`
          *
          * @endpoint search/jobs/{search_id}/results
-         * @module splunkjs.Service.Job
+         * @method splunkjs.Service.Job
          */
         results: function(params, callback) {
             callback = callback || function() {};
@@ -5035,7 +4988,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Get the search log for this job.
          *
-         * Example:
+         * @example
          *
          *      var job = service.jobs().item("mysid");
          *      job.searchlog(function(err, searchlog, job) {
@@ -5045,7 +4998,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback with the searchlog and job: `(err, searchlog, job)`
          *
          * @endpoint search/jobs/{search_id}/search.log
-         * @module splunkjs.Service.Job
+         * @method splunkjs.Service.Job
          */
         searchlog: function(callback) {
             callback = callback || function() {};
@@ -5064,7 +5017,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Set the job priority
          *
-         * Example:
+         * @example
          *
          *      var job = service.jobs().item("mysid");
          *      job.setPriority(6, function(err, job) {
@@ -5075,7 +5028,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback with the this job: `(err, job)`
          *
          * @endpoint search/jobs/{search_id}/control
-         * @module splunkjs.Service.Job
+         * @method splunkjs.Service.Job
          */
         setPriority: function(value, callback) {
             callback = callback || function() {};
@@ -5091,7 +5044,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Set the job TTL
          *
-         * Example:
+         * @example
          *
          *      var job = service.jobs().item("mysid");
          *      job.setTTL(1000, function(err, job) {
@@ -5102,7 +5055,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback with the this job: `(err, job)`
          *
          * @endpoint search/jobs/{search_id}/control
-         * @module splunkjs.Service.Job
+         * @method splunkjs.Service.Job
          */
         setTTL: function(value, callback) {
             callback = callback || function() {};
@@ -5120,7 +5073,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * Get the job summary for this job with the given parameters
          *
-         * Example:
+         * @example
          *
          *      var job = service.jobs().item("mysid");
          *      job.summary({top_count: 5}, function(err, summary, job) {
@@ -5131,7 +5084,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback with with the summary and this job: `(err, summary, job)`
          *
          * @endpoint search/jobs/{search_id}/summmary
-         * @module splunkjs.Service.Job
+         * @method splunkjs.Service.Job
          */
         summary: function(params, callback) {
             callback = callback || function() {};
@@ -5150,7 +5103,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Get the timeline for this job
          *
-         * Example:
+         * @example
          *
          *      var job = service.jobs().item("mysid");
          *      job.timeline({time_format: "%c"}, function(err, job, timeline) {
@@ -5161,7 +5114,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback with with the timeline and this job: `(err, timeline, job)`
          *
          * @endpoint search/jobs/{search_id}/timeline
-         * @module splunkjs.Service.Job
+         * @method splunkjs.Service.Job
          */
         timeline: function(params, callback) {
             callback = callback || function() {};
@@ -5180,7 +5133,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Touch a job
          *
-         * Example:
+         * @example
          *
          *      var job = service.jobs().item("mysid");
          *      job.touch(function(err) {
@@ -5190,7 +5143,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback with this job: `(err, job)`
          *
          * @endpoint search/jobs/{search_id}/control
-         * @module splunkjs.Service.Job
+         * @method splunkjs.Service.Job
          */
         touch: function(callback) {
             callback = callback || function() {};
@@ -5206,7 +5159,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Unpause a search job
          *
-         * Example:
+         * @example
          *
          *      var job = service.jobs().item("mysid");
          *      job.unpause(function(err) {
@@ -5216,7 +5169,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback with this job: `(err, job)`
          *
          * @endpoint search/jobs/{search_id}/control
-         * @module splunkjs.Service.Job
+         * @method splunkjs.Service.Job
          */
         unpause: function(callback) {
             callback = callback || function() {};
@@ -5231,20 +5184,18 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
 
     /**
-     * splunkjs.Service.Jobs
-     * 
      * Represents the Splunk collection of jobs.  You can create and
      * list search jobs using this container, or get a specific one.
      *
      * @endpoint search/jobs
-     * @moduleRoot splunkjs.Service.Jobs
+     * @class splunkjs.Service.Jobs
      * @extends splunkjs.Service.Collection
      */  
     root.Jobs = root.Collection.extend({
         /**
          * REST path for this resource (with no namespace)
          *
-         * @module splunkjs.Service.Jobs
+         * @method splunkjs.Service.Jobs
          */
         path: function() {
             return Paths.jobs;
@@ -5256,7 +5207,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} props The properties for this entity
          * @return {splunkjs.Service.Job} A splunkjs.Service.Job instance
          
-         * @module splunkjs.Service.Jobs
+         * @method splunkjs.Service.Jobs
          */
         instantiateEntity: function(props) {
             var sid = props.content.sid;
@@ -5272,7 +5223,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} namespace Namespace information (owner, app, sharing)
          * @return {splunkjs.Service.Jobs} A splunkjs.Service.Jobs instance
          *
-         * @module splunkjs.Service.Jobs
+         * @method splunkjs.Service.Jobs
          */  
         init: function(service, namespace) {
             this._super(service, this.path(), namespace);
@@ -5290,8 +5241,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback with the created job: `(err, createdJob)`
          *
          * @endpoint search/jobs
-         * @module splunkjs.Service.Jobs
-         * @see splunkjs.Service.Jobs.search
+         * @method splunkjs.Service.Jobs
          */
         create: function(query, params, callback) {
             // If someone called us with the default style of (params, callback),
@@ -5335,7 +5285,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * This method will throw an error if exec_mode=oneshot is passed in the params
          * variable.
          *
-         * Example:
+         * @example
          *
          *      var jobs = service.jobs();
          *      jobs.search("search ERROR", {id: "myjob_123"}, function(err, newJob) {
@@ -5347,7 +5297,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback with the created job: `(err, createdJob)`
          *
          * @endpoint search/jobs
-         * @module splunkjs.Service.Jobs
+         * @method splunkjs.Service.Jobs
          */
         search: function(query, params, callback) {
             return this.create(query, params, callback);
@@ -5358,7 +5308,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * Create a oneshot search job using the specified query and parameters.
          *
-         * Example:
+         * @example
          *
          *      var jobs = service.jobs();
          *      jobs.oneshotSearch("search ERROR", {id: "myjob_123"}, function(err, results) {
@@ -5370,7 +5320,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Function} callback A callback with the results of the job: `(err, results)`
          *
          * @endpoint search/jobs
-         * @module splunkjs.Service.Jobs
+         * @method splunkjs.Service.Jobs
          */
         oneshotSearch: function(query, params, callback) {
             // If someone called us with the default style of (params, callback),
@@ -5427,17 +5377,15 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
     var root = exports || this;
 
     /**
-     * splunkjs.Async
-     * 
      * Utilities for Async control flow and collection handling
      *
-     * @moduleRoot splunkjs.Async
+     * @module splunkjs.Async
      */
 
     /**
      * An asynchronous while loop
      *
-     * Example:
+     * @example
      *      
      *      var i = 0;
      *      Async.whilst(
@@ -5454,7 +5402,7 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      * @param {Function} body A function which executes the body of the loop: `(done)`
      * @param {Function} callback A function to be executed when the loop is complete: `(err)`
      *
-     * @globals splunkjs.Async
+     * @function splunkjs.Async
      */
     root.whilst = function(condition, body, callback) {  
         condition = condition || function() { return false; };
@@ -5492,7 +5440,7 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      *
      * Note that order of execution is not guaranteed, even though order of results is. 
      *
-     * Example:
+     * @example
      *      
      *      Async.parallel([
      *          function(done) {
@@ -5511,7 +5459,7 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      * @param {Function} tasks An array of functions: `(done)`
      * @param {Function} callback A function to be executed when all tasks are done or an error occurred: `(err, ...)`
      *
-     * @globals splunkjs.Async
+     * @function splunkjs.Async
      */
     root.parallel = function(tasks, callback) {
         // Allow for just a list of functions
@@ -5576,7 +5524,7 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      * The callback will be invoked with the combined results (in order) of all the 
      * tasks.
      *
-     * Example:
+     * @example
      *      
      *      var keeper = 0;
      *      Async.series([
@@ -5600,7 +5548,7 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      * @param {Function} tasks An array of functions: `(done)`
      * @param {Function} callback A function to be executed when all tasks are done or an error occurred: `(err, ...)`
      *
-     * @globals splunkjs.Async
+     * @function splunkjs.Async
      */
     root.series = function(tasks, callback) {
         // Allow for just a list of functions
@@ -5651,7 +5599,7 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      *
      * The callback will be invoked with the resulting array.
      *
-     * Example:
+     * @example
      *      
      *      Async.parallelMap(
      *          [1, 2, 3],
@@ -5672,7 +5620,7 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      * @param {Function} fn A (possibly asycnhronous) function to apply to each element: `(done)`
      * @param {Function} callback A function to be executed when all tasks are done or an error occurred: `(err, mappedVals)`
      *
-     * @globals splunkjs.Async
+     * @function splunkjs.Async
      */
     root.parallelMap = function(vals, fn, callback) {     
         vals = vals || [];
@@ -5710,7 +5658,7 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      *
      * The callback will be invoked with the resulting array.
      *
-     * Example:
+     * @example
      *      
      *      var keeper = 1;
      *      Async.seriesMap(
@@ -5728,7 +5676,7 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      * @param {Function} fn A (possibly asycnhronous) function to apply to each element: `(done)`
      * @param {Function} callback A function to be executed when all tasks are done or an error occurred: `(err, mappedVals)`
      *
-     * @globals splunkjs.Async
+     * @function splunkjs.Async
      */
     root.seriesMap = function(vals, fn, callback) {     
         vals = vals || [];
@@ -5765,7 +5713,7 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      *
      * The callback will be invoked with nothing except a possible error parameter
      *
-     * Example:
+     * @example
      *      
      *      var total = 0;
      *      Async.parallelEach(
@@ -5792,7 +5740,7 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      * @param {Function} fn A (possibly asycnhronous) function to apply to each element: `(done)`
      * @param {Function} callback A function to be executed when all tasks are done or an error occurred: `(err)`
      *
-     * @globals splunkjs.Async
+     * @function splunkjs.Async
      */
     root.parallelEach = function(vals, fn, callback) {  
         vals = vals || [];   
@@ -5811,7 +5759,7 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      *
      * The callback will be invoked with nothing except a possible error parameter
      *
-     * Example:
+     * @example
      *      
      *      var results = [1, 3, 6];
      *      var total = 0;
@@ -5831,7 +5779,7 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      * @param {Function} fn A (possibly asycnhronous) function to apply to each element: `(done)`
      * @param {Function} callback A function to be executed when all tasks are done or an error occurred: `(err)`
      *
-     * @globals splunkjs.Async
+     * @function splunkjs.Async
      */
     root.seriesEach = function(vals, fn, callback) {    
         vals = vals || []; 
@@ -5857,7 +5805,7 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      * Note that `err` arguments are not passed to individual tasks - they are propagated to the final
      * callback.
      *
-     * Example:
+     * @example
      *      
      *     Async.chain([
      *         function(callback) { 
@@ -5878,7 +5826,7 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      * @param {Function} tasks An array of functions: `(done)`
      * @param {Function} callback A function to be executed when the chain is done or an error occurred: `(err, ...)`
      *
-     * @globals splunkjs.Async
+     * @function splunkjs.Async
      */
     root.chain = function(tasks, callback) {
         // Allow for just a list of functions
@@ -5929,14 +5877,14 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      * Async.sleep will execute the given function after the specified timeout period. This function
      * mostly exists to make `setTimeout` adhere to Node.js style function signatures.
      *
-     * Example:
+     * @example
      *      
      *     Async.sleep(1000, function() { console.log("TIMEOUT");});
      *     
      * @param {Number} timeout The specified timeout in milliseconds.
      * @param {Function} callback A function to be executed when the timeout occurs.
      *
-     * @globals splunkjs.Async
+     * @function splunkjs.Async
      */
     root.sleep = function(timeout, callback) {
         setTimeout(function() {
@@ -5951,7 +5899,7 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      *
      * Note that the augmented parameters are appended to the end of the parameter list.
      *
-     * Example:
+     * @example
      *
      *      var callback = function(a, b) {
      *          console.log(a); //== 1
@@ -5964,7 +5912,7 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      * @param {Function} callback The callback to augment.
      * @param {Anything...} rest Variable number of arguments to augment the callback with.
      *
-     * @globals splunkjs.Async
+     * @function splunkjs.Async
      */
     root.augment = function(callback) {
         var args = Array.prototype.slice.call(arguments, 1);
@@ -6169,11 +6117,9 @@ require.define("/lib/storm.js", function (require, module, exports, __dirname, _
     var StormService = null;
     
     /**
-     * splunkjs.StormService
-     * 
      * Root access point to the Splunk Storm REST API
      *
-     * @moduleRoot splunkjs.StormService
+     * @class splunkjs.StormService
      * @extends splunkjs.Service
      */
     module.exports = root = StormService = Service.extend({

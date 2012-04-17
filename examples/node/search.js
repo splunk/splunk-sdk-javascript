@@ -18,7 +18,7 @@
     var Class           = splunkjs.Class;
     var utils           = splunkjs.Utils;
     var Async           = splunkjs.Async;
-    var options         = require('../../internal/cmdline');
+    var options         = require('./cmdline');
     var print           = require('util').print;
     
     var FLAGS_CREATE = [
