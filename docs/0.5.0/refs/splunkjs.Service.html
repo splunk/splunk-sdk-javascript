@@ -45,6 +45,8 @@
       
       pre {
         overflow-x: auto;
+        white-space: pre;
+        word-wrap: normal;
       }
       
       .pre-scrollable {
@@ -96,6 +98,7 @@
         font-family: monospace;
       }
       
+      .signature,
       .method-name {
         font-family: monospace;
       }
@@ -293,6 +296,7 @@
               <div class="method-header">
                 <h2 class="method-name">init</h2>
               </div>
+              <h5 class="signature">splunkjs.Service.init</h5>
             </header>
           
             <section class="content">
@@ -366,7 +370,8 @@
               <div class="method-header">
                 <h2 class="method-name">users</h2>
               </div>
-                          <h5 class="endpoint">authorization/users</h5>
+              <h5 class="signature">splunkjs.Service.users</h5>
+                          <h5 class="endpoint">Endpoint: authorization/users</h5>
                           <h5 class="related">See: <a href="splunkjs.Service.Users.html#splunkjs.Service.Users">splunkjs.Service.Users</a></h5>
             </header>
           
@@ -417,7 +422,8 @@
               <div class="method-header">
                 <h2 class="method-name">views</h2>
               </div>
-                          <h5 class="endpoint">data/ui/views</h5>
+              <h5 class="signature">splunkjs.Service.views</h5>
+                          <h5 class="endpoint">Endpoint: data/ui/views</h5>
                           <h5 class="related">See: <a href="splunkjs.Service.Views.html#splunkjs.Service.Views">splunkjs.Service.Views</a></h5>
             </header>
           
@@ -486,7 +492,8 @@
               <div class="method-header">
                 <h2 class="method-name">log</h2>
               </div>
-                          <h5 class="endpoint">receivers/simple</h5>
+              <h5 class="signature">splunkjs.Service.log</h5>
+                          <h5 class="endpoint">Endpoint: receivers/simple</h5>
             </header>
           
             <section class="content">
@@ -582,7 +589,8 @@
               <div class="method-header">
                 <h2 class="method-name">search</h2>
               </div>
-                          <h5 class="endpoint">search/jobs</h5>
+              <h5 class="signature">splunkjs.Service.search</h5>
+                          <h5 class="endpoint">Endpoint: search/jobs</h5>
             </header>
           
             <section class="content">
@@ -664,7 +672,8 @@
               <div class="method-header">
                 <h2 class="method-name">apps</h2>
               </div>
-                          <h5 class="endpoint">apps/local</h5>
+              <h5 class="signature">splunkjs.Service.apps</h5>
+                          <h5 class="endpoint">Endpoint: apps/local</h5>
                           <h5 class="related">See: <a href="splunkjs.Service.Applications.html#splunkjs.Service.Applications">splunkjs.Service.Applications</a></h5>
             </header>
           
@@ -710,7 +719,8 @@
               <div class="method-header">
                 <h2 class="method-name">indexes</h2>
               </div>
-                          <h5 class="endpoint">data/indexes</h5>
+              <h5 class="signature">splunkjs.Service.indexes</h5>
+                          <h5 class="endpoint">Endpoint: data/indexes</h5>
                           <h5 class="related">See: <a href="splunkjs.Service.Indexes.html#splunkjs.Service.Indexes">splunkjs.Service.Indexes</a></h5>
             </header>
           
@@ -778,7 +788,8 @@
               <div class="method-header">
                 <h2 class="method-name">parse</h2>
               </div>
-                          <h5 class="endpoint">search/parser</h5>
+              <h5 class="signature">splunkjs.Service.parse</h5>
+                          <h5 class="endpoint">Endpoint: search/parser</h5>
             </header>
           
             <section class="content">
@@ -896,7 +907,8 @@ typeahead: function(prefix, count, callback) {
               <div class="method-header">
                 <h2 class="method-name">serverInfo</h2>
               </div>
-                          <h5 class="endpoint">server/info</h5>
+              <h5 class="signature">splunkjs.Service.serverInfo</h5>
+                          <h5 class="endpoint">Endpoint: server/info</h5>
             </header>
           
             <section class="content">
@@ -959,7 +971,8 @@ typeahead: function(prefix, count, callback) {
               <div class="method-header">
                 <h2 class="method-name">currentUser</h2>
               </div>
-                          <h5 class="endpoint">authorization/current-context</h5>
+              <h5 class="signature">splunkjs.Service.currentUser</h5>
+                          <h5 class="endpoint">Endpoint: authorization/current-context</h5>
             </header>
           
             <section class="content">
@@ -1041,7 +1054,8 @@ typeahead: function(prefix, count, callback) {
               <div class="method-header">
                 <h2 class="method-name">oneshotSearch</h2>
               </div>
-                          <h5 class="endpoint">search/jobs</h5>
+              <h5 class="signature">splunkjs.Service.oneshotSearch</h5>
+                          <h5 class="endpoint">Endpoint: search/jobs</h5>
             </header>
           
             <section class="content">
@@ -1123,7 +1137,8 @@ typeahead: function(prefix, count, callback) {
               <div class="method-header">
                 <h2 class="method-name">properties</h2>
               </div>
-                          <h5 class="endpoint">properties</h5>
+              <h5 class="signature">splunkjs.Service.properties</h5>
+                          <h5 class="endpoint">Endpoint: properties</h5>
                           <h5 class="related">See: <a href="splunkjs.Service.Properties.html#splunkjs.Service.Properties">splunkjs.Service.Properties</a></h5>
             </header>
           
@@ -1173,7 +1188,8 @@ typeahead: function(prefix, count, callback) {
               <div class="method-header">
                 <h2 class="method-name">configurations</h2>
               </div>
-                          <h5 class="endpoint">configs</h5>
+              <h5 class="signature">splunkjs.Service.configurations</h5>
+                          <h5 class="endpoint">Endpoint: configs</h5>
                           <h5 class="related">See: <a href="splunkjs.Service.Configurations.html#splunkjs.Service.Configurations">splunkjs.Service.Configurations</a></h5>
             </header>
           
@@ -1241,6 +1257,7 @@ typeahead: function(prefix, count, callback) {
               <div class="method-header">
                 <h2 class="method-name">specialize</h2>
               </div>
+              <h5 class="signature">splunkjs.Service.specialize</h5>
             </header>
           
             <section class="content">
@@ -1316,7 +1333,8 @@ typeahead: function(prefix, count, callback) {
               <div class="method-header">
                 <h2 class="method-name">jobs</h2>
               </div>
-                          <h5 class="endpoint">search/jobs</h5>
+              <h5 class="signature">splunkjs.Service.jobs</h5>
+                          <h5 class="endpoint">Endpoint: search/jobs</h5>
                           <h5 class="related">See: <a href="splunkjs.Service.Jobs.html#splunkjs.Service.Jobs">splunkjs.Service.Jobs</a></h5>
             </header>
           
@@ -1385,7 +1403,8 @@ typeahead: function(prefix, count, callback) {
               <div class="method-header">
                 <h2 class="method-name">savedSearches</h2>
               </div>
-                          <h5 class="endpoint">saved/searches</h5>
+              <h5 class="signature">splunkjs.Service.savedSearches</h5>
+                          <h5 class="endpoint">Endpoint: saved/searches</h5>
                           <h5 class="related">See: <a href="splunkjs.Service.SavedSearches.html#splunkjs.Service.SavedSearches">splunkjs.Service.SavedSearches</a></h5>
             </header>
           
@@ -1450,7 +1469,10 @@ typeahead: function(prefix, count, callback) {
           </div>
                   <section class="method well" id="splunkjs.Service^request">
             <header>
-              <h2 class="method-name">splunkjs.Context.request</h2>
+              <div class="method-header">
+                <h2 class="method-name">request</h2>
+              </div>
+              <h5 class="signature">splunkjs.Context.request</h5>
             </header>
           
             <section class="content">
@@ -1531,7 +1553,10 @@ typeahead: function(prefix, count, callback) {
           </section>
                   <section class="method well" id="splunkjs.Service^post">
             <header>
-              <h2 class="method-name">splunkjs.Context.post</h2>
+              <div class="method-header">
+                <h2 class="method-name">post</h2>
+              </div>
+              <h5 class="signature">splunkjs.Context.post</h5>
             </header>
           
             <section class="content">
@@ -1598,7 +1623,10 @@ typeahead: function(prefix, count, callback) {
           </section>
                   <section class="method well" id="splunkjs.Service^del">
             <header>
-              <h2 class="method-name">splunkjs.Context.del</h2>
+              <div class="method-header">
+                <h2 class="method-name">del</h2>
+              </div>
+              <h5 class="signature">splunkjs.Context.del</h5>
             </header>
           
             <section class="content">
@@ -1665,7 +1693,10 @@ typeahead: function(prefix, count, callback) {
           </section>
                   <section class="method well" id="splunkjs.Service^get">
             <header>
-              <h2 class="method-name">splunkjs.Context.get</h2>
+              <div class="method-header">
+                <h2 class="method-name">get</h2>
+              </div>
+              <h5 class="signature">splunkjs.Context.get</h5>
             </header>
           
             <section class="content">
@@ -1732,7 +1763,10 @@ typeahead: function(prefix, count, callback) {
           </section>
                   <section class="method well" id="splunkjs.Service^fullpath">
             <header>
-              <h2 class="method-name">splunkjs.Context.fullpath</h2>
+              <div class="method-header">
+                <h2 class="method-name">fullpath</h2>
+              </div>
+              <h5 class="signature">splunkjs.Context.fullpath</h5>
             </header>
           
             <section class="content">

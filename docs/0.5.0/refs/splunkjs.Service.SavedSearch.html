@@ -45,6 +45,8 @@
       
       pre {
         overflow-x: auto;
+        white-space: pre;
+        word-wrap: normal;
       }
       
       .pre-scrollable {
@@ -96,6 +98,7 @@
         font-family: monospace;
       }
       
+      .signature,
       .method-name {
         font-family: monospace;
       }
@@ -297,6 +300,7 @@
               <div class="method-header">
                 <h2 class="method-name">init</h2>
               </div>
+              <h5 class="signature">splunkjs.Service.SavedSearch.init</h5>
             </header>
           
             <section class="content">
@@ -369,6 +373,7 @@
               <div class="method-header">
                 <h2 class="method-name">update</h2>
               </div>
+              <h5 class="signature">splunkjs.Service.SavedSearch.update</h5>
             </header>
           
             <section class="content">
@@ -455,7 +460,8 @@
               <div class="method-header">
                 <h2 class="method-name">suppressInfo</h2>
               </div>
-                          <h5 class="endpoint">saved/searches/{name}/suppress</h5>
+              <h5 class="signature">splunkjs.Service.SavedSearch.suppressInfo</h5>
+                          <h5 class="endpoint">Endpoint: saved/searches/{name}/suppress</h5>
             </header>
           
             <section class="content">
@@ -521,7 +527,8 @@
               <div class="method-header">
                 <h2 class="method-name">history</h2>
               </div>
-                          <h5 class="endpoint">saved/searches/{name}/history</h5>
+              <h5 class="signature">splunkjs.Service.SavedSearch.history</h5>
+                          <h5 class="endpoint">Endpoint: saved/searches/{name}/history</h5>
             </header>
           
             <section class="content">
@@ -606,7 +613,8 @@
               <div class="method-header">
                 <h2 class="method-name">dispatch</h2>
               </div>
-                          <h5 class="endpoint">saved/searches/{name}/dispatch</h5>
+              <h5 class="signature">splunkjs.Service.SavedSearch.dispatch</h5>
+                          <h5 class="endpoint">Endpoint: saved/searches/{name}/dispatch</h5>
             </header>
           
             <section class="content">
@@ -694,7 +702,8 @@
               <div class="method-header">
                 <h2 class="method-name">acknowledge</h2>
               </div>
-                          <h5 class="endpoint">saved/searches/{name}/acknowledge</h5>
+              <h5 class="signature">splunkjs.Service.SavedSearch.acknowledge</h5>
+                          <h5 class="endpoint">Endpoint: saved/searches/{name}/acknowledge</h5>
             </header>
           
             <section class="content">
@@ -762,6 +771,7 @@
               <div class="method-header">
                 <h2 class="method-name">path</h2>
               </div>
+              <h5 class="signature">splunkjs.Service.SavedSearch.path</h5>
             </header>
           
             <section class="content">
@@ -797,7 +807,10 @@
           </div>
                   <section class="method well" id="splunkjs.Service.SavedSearch^updated">
             <header>
-              <h2 class="method-name">splunkjs.Service.Entity.updated</h2>
+              <div class="method-header">
+                <h2 class="method-name">updated</h2>
+              </div>
+              <h5 class="signature">splunkjs.Service.Entity.updated</h5>
             </header>
           
             <section class="content">
@@ -832,7 +845,10 @@
           </section>
                   <section class="method well" id="splunkjs.Service.SavedSearch^reload">
             <header>
-              <h2 class="method-name">splunkjs.Service.Entity.reload</h2>
+              <div class="method-header">
+                <h2 class="method-name">reload</h2>
+              </div>
+              <h5 class="signature">splunkjs.Service.Entity.reload</h5>
             </header>
           
             <section class="content">
@@ -895,7 +911,10 @@
           </section>
                   <section class="method well" id="splunkjs.Service.SavedSearch^refresh">
             <header>
-              <h2 class="method-name">splunkjs.Service.Entity.refresh</h2>
+              <div class="method-header">
+                <h2 class="method-name">refresh</h2>
+              </div>
+              <h5 class="signature">splunkjs.Service.Entity.refresh</h5>
             </header>
           
             <section class="content">
@@ -969,7 +988,10 @@
           </section>
                   <section class="method well" id="splunkjs.Service.SavedSearch^refreshOnUpdate">
             <header>
-              <h2 class="method-name">splunkjs.Service.Entity.refreshOnUpdate</h2>
+              <div class="method-header">
+                <h2 class="method-name">refreshOnUpdate</h2>
+              </div>
+              <h5 class="signature">splunkjs.Service.Entity.refreshOnUpdate</h5>
             </header>
           
             <section class="content">
@@ -998,7 +1020,10 @@
           </section>
                   <section class="method well" id="splunkjs.Service.SavedSearch^fields">
             <header>
-              <h2 class="method-name">splunkjs.Service.Entity.fields</h2>
+              <div class="method-header">
+                <h2 class="method-name">fields</h2>
+              </div>
+              <h5 class="signature">splunkjs.Service.Entity.fields</h5>
             </header>
           
             <section class="content">
@@ -1033,7 +1058,10 @@
           </section>
                   <section class="method well" id="splunkjs.Service.SavedSearch^enable">
             <header>
-              <h2 class="method-name">splunkjs.Service.Entity.enable</h2>
+              <div class="method-header">
+                <h2 class="method-name">enable</h2>
+              </div>
+              <h5 class="signature">splunkjs.Service.Entity.enable</h5>
             </header>
           
             <section class="content">
@@ -1095,7 +1123,10 @@
           </section>
                   <section class="method well" id="splunkjs.Service.SavedSearch^disable">
             <header>
-              <h2 class="method-name">splunkjs.Service.Entity.disable</h2>
+              <div class="method-header">
+                <h2 class="method-name">disable</h2>
+              </div>
+              <h5 class="signature">splunkjs.Service.Entity.disable</h5>
             </header>
           
             <section class="content">
@@ -1157,7 +1188,10 @@
           </section>
                   <section class="method well" id="splunkjs.Service.SavedSearch^remove">
             <header>
-              <h2 class="method-name">splunkjs.Service.Entity.remove</h2>
+              <div class="method-header">
+                <h2 class="method-name">remove</h2>
+              </div>
+              <h5 class="signature">splunkjs.Service.Entity.remove</h5>
             </header>
           
             <section class="content">
@@ -1214,7 +1248,10 @@
           </section>
                   <section class="method well" id="splunkjs.Service.SavedSearch^acl">
             <header>
-              <h2 class="method-name">splunkjs.Service.Entity.acl</h2>
+              <div class="method-header">
+                <h2 class="method-name">acl</h2>
+              </div>
+              <h5 class="signature">splunkjs.Service.Entity.acl</h5>
             </header>
           
             <section class="content">
@@ -1249,7 +1286,10 @@
           </section>
                   <section class="method well" id="splunkjs.Service.SavedSearch^published">
             <header>
-              <h2 class="method-name">splunkjs.Service.Entity.published</h2>
+              <div class="method-header">
+                <h2 class="method-name">published</h2>
+              </div>
+              <h5 class="signature">splunkjs.Service.Entity.published</h5>
             </header>
           
             <section class="content">
@@ -1284,7 +1324,10 @@
           </section>
                   <section class="method well" id="splunkjs.Service.SavedSearch^_load">
             <header>
-              <h2 class="method-name">splunkjs.Service.Entity._load</h2>
+              <div class="method-header">
+                <h2 class="method-name">_load</h2>
+              </div>
+              <h5 class="signature">splunkjs.Service.Entity._load</h5>
             </header>
           
             <section class="content">
@@ -1346,7 +1389,10 @@
           </section>
                   <section class="method well" id="splunkjs.Service.SavedSearch^author">
             <header>
-              <h2 class="method-name">splunkjs.Service.Entity.author</h2>
+              <div class="method-header">
+                <h2 class="method-name">author</h2>
+              </div>
+              <h5 class="signature">splunkjs.Service.Entity.author</h5>
             </header>
           
             <section class="content">
@@ -1381,7 +1427,10 @@
           </section>
                   <section class="method well" id="splunkjs.Service.SavedSearch^links">
             <header>
-              <h2 class="method-name">splunkjs.Service.Entity.links</h2>
+              <div class="method-header">
+                <h2 class="method-name">links</h2>
+              </div>
+              <h5 class="signature">splunkjs.Service.Entity.links</h5>
             </header>
           
             <section class="content">
@@ -1416,7 +1465,10 @@
           </section>
                   <section class="method well" id="splunkjs.Service.SavedSearch^state">
             <header>
-              <h2 class="method-name">splunkjs.Service.Resource.state</h2>
+              <div class="method-header">
+                <h2 class="method-name">state</h2>
+              </div>
+              <h5 class="signature">splunkjs.Service.Resource.state</h5>
             </header>
           
             <section class="content">
@@ -1453,7 +1505,10 @@
           </section>
                   <section class="method well" id="splunkjs.Service.SavedSearch^properties">
             <header>
-              <h2 class="method-name">splunkjs.Service.Resource.properties</h2>
+              <div class="method-header">
+                <h2 class="method-name">properties</h2>
+              </div>
+              <h5 class="signature">splunkjs.Service.Resource.properties</h5>
             </header>
           
             <section class="content">
@@ -1489,7 +1544,10 @@
           </section>
                   <section class="method well" id="splunkjs.Service.SavedSearch^del">
             <header>
-              <h2 class="method-name">splunkjs.Service.Endpoint.del</h2>
+              <div class="method-header">
+                <h2 class="method-name">del</h2>
+              </div>
+              <h5 class="signature">splunkjs.Service.Endpoint.del</h5>
             </header>
           
             <section class="content">
@@ -1567,7 +1625,10 @@
           </section>
                   <section class="method well" id="splunkjs.Service.SavedSearch^post">
             <header>
-              <h2 class="method-name">splunkjs.Service.Endpoint.post</h2>
+              <div class="method-header">
+                <h2 class="method-name">post</h2>
+              </div>
+              <h5 class="signature">splunkjs.Service.Endpoint.post</h5>
             </header>
           
             <section class="content">
@@ -1644,7 +1705,10 @@
           </section>
                   <section class="method well" id="splunkjs.Service.SavedSearch^get">
             <header>
-              <h2 class="method-name">splunkjs.Service.Endpoint.get</h2>
+              <div class="method-header">
+                <h2 class="method-name">get</h2>
+              </div>
+              <h5 class="signature">splunkjs.Service.Endpoint.get</h5>
             </header>
           
             <section class="content">

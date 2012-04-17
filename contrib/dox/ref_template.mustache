@@ -46,6 +46,8 @@
       
       pre {
         overflow-x: auto;
+        white-space: pre;
+        word-wrap: normal;
       }
       
       .pre-scrollable {
@@ -101,6 +103,7 @@
         font-family: monospace;
       }
       
+      .signature,
       .method-name {
         font-family: monospace;
       }
@@ -163,8 +166,9 @@
               <div class="method-header">
                 <h2 class="method-name">{{name}}</h2>
               </div>
+              <h5 class="signature">{{signature}}</h5>
             {{#has_endpoint}}
-              <h5 class="endpoint">{{endpoint}}</h5>
+              <h5 class="endpoint">Endpoint: {{endpoint}}</h5>
             {{/has_endpoint}}
             {{#related}}
               <h5 class="related">See: <a href="{{href}}.html#{{href}}">{{name}}</a></h5>
@@ -244,7 +248,16 @@
         {{#inherited}}
           <section class="method well" id="{{parent}}^{{name}}">
             <header>
-              <h2 class="method-name">{{signature}}</h2>
+              <div class="method-header">
+                <h2 class="method-name">{{name}}</h2>
+              </div>
+              <h5 class="signature">{{signature}}</h5>
+            {{#has_endpoint}}
+              <h5 class="endpoint">Endpoint: {{endpoint}}</h5>
+            {{/has_endpoint}}
+            {{#related}}
+              <h5 class="related">See: <a href="{{href}}.html#{{href}}">{{name}}</a></h5>
+            {{/related}}
             </header>
           
             <section class="content">
@@ -321,8 +334,15 @@
           <section class="method well" id="{{parent}}+{{name}}">
             <header>
               <div class="method-header">
-                <h2 class="method-name">{{signature}}</h2>
+                <h2 class="method-name">{{name}}</h2>
               </div>
+              <h5 class="signature">{{signature}}</h5>
+            {{#has_endpoint}}
+              <h5 class="endpoint">Endpoint: {{endpoint}}</h5>
+            {{/has_endpoint}}
+            {{#related}}
+              <h5 class="related">See: <a href="{{href}}.html#{{href}}">{{name}}</a></h5>
+            {{/related}}
             </header>
           
             <section class="content">
