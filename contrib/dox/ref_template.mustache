@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="">
     <meta name="author" content="">
+
     <!-- Le styles -->
     <link href="../../assets/css/bootstrap.css" rel="stylesheet">
     <style type="text/css">
@@ -62,15 +63,19 @@
         font-weight: bold;
         color: black;
       }
+
       code .string, code .regexp {
         color: green
       }
+
       code .class { 
         color: blue
       }
+
       code .number {
         color: red
       }
+
       code .comment {
         color: grey;
         font-style: italic;
@@ -97,202 +102,263 @@
       }
     </style>
     <link href="../../assets/css/bootstrap-responsive.css" rel="stylesheet">
+
     <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
     <!--[if lt IE 9]>
       <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
   </head>
+
   <body>
     <div class="container-fluid">
       <div class="row-fluid">
         <div class="span3">
           <div class="well sidebar-nav">
             <ul class="nav nav-list">
-                          <li class="nav-header"><a href="splunkjs.Logger.html">splunkjs.Logger</a></li>
+            {{#modules}}
+              <li class="nav-header"><a href="{{name}}.html">{{name}}</a></li>
               <li>
                 <ul class="nav nav-list">
+                {{#methods}}
+                  <li><a href="#{{parent}}-{{name}}">{{name}}</a></li>
+                {{/methods}}
+                
+                {{#has_globals}}
+                  <li class="nav-header"><a href="#{{name}}-globals">Globals</a></li>
+                {{/has_globals}}
+                
+                {{#helpers}}
+                  <li><a href="#{{parent}}+{{name}}">{{name}}</a></li>
+                {{/helpers}}
+                
+                {{#has_inherited}}
+                  <li class="nav-header"><a href="#{{name}}-inherited">Inherited</a></li>
+                {{/has_inherited}}
+                
+                {{#inherited}}
+                  <li><a href="#{{parent}}^{{name}}">{{name}}</a></li>
+                {{/inherited}}
                 </ul>
               </li>
-                          <li class="nav-header"><a href="splunkjs.Http.html">splunkjs.Http</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Utils.html">splunkjs.Utils</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Async.html">splunkjs.Async</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Context.html">splunkjs.Context</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.html">splunkjs.Service</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.Endpoint.html">splunkjs.Service.Endpoint</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.Resource.html">splunkjs.Service.Resource</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.Entity.html">splunkjs.Service.Entity</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.Collection.html">splunkjs.Service.Collection</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.SavedSearch.html">splunkjs.Service.SavedSearch</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.SavedSearches.html">splunkjs.Service.SavedSearches</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.Application.html">splunkjs.Service.Application</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.Applications.html">splunkjs.Service.Applications</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.ServerInfo.html">splunkjs.Service.ServerInfo</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.User.html">splunkjs.Service.User</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.Users.html">splunkjs.Service.Users</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.View.html">splunkjs.Service.View</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.Views.html">splunkjs.Service.Views</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.Index.html">splunkjs.Service.Index</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.Indexes.html">splunkjs.Service.Indexes</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.PropertyStanza.html">splunkjs.Service.PropertyStanza</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.PropertyFile.html">splunkjs.Service.PropertyFile</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.Properties.html">splunkjs.Service.Properties</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.ConfigurationStanza.html">splunkjs.Service.ConfigurationStanza</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.ConfigurationFile.html">splunkjs.Service.ConfigurationFile</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.Configurations.html">splunkjs.Service.Configurations</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.Job.html">splunkjs.Service.Job</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.Jobs.html">splunkjs.Service.Jobs</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
+            {{/modules}}
             </ul>
           </div><!--/well -->
         </div><!--/span-->
         <div class="span8">
+        {{#modules}}
+        
+        {{#has_methods}}
+          <div class="page-header" id="{{name}}">
+            <h1>Methods</h1>
+          </div>
+        {{/has_methods}}
+        
+        {{#methods}}        
+          <section class="method well" id="{{parent}}-{{name}}">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">{{name}}</h2>
+              </div>
+            {{#has_endpoint}}
+              <h5 class="endpoint">{{endpoint}}</h5>
+            {{/has_endpoint}}
+            {{#related}}
+              <h5 class="related">See: <a href="{{href}}.html#{{href}}">{{name}}</a></h5>
+            {{/related}}
+            </header>
+          
+            <section class="content">
+              {{{full_description}}}
+            </section>
+            
+            <section class="syntax">
+            {{#has_syntax}}
+              <h4>Syntax</h4>
+              <span>{{syntax}}</span>
+            {{/has_syntax}}
+            </section>
+            
+            <section class="params">
+            {{#has_params}}
+              <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                {{#params}}
+                  <tr>
+                    <td class="param-name">{{name}}</td>
+                    <td class="param-type">{{types}}</td>
+                    <td class="param-description">{{{description}}}</td>
+                  </tr>
+                {{/params}}
+                </tbody>
+              </table>
+            {{/has_params}}
+            </section>
+            
+            <section class="returns">
+            {{#has_returns}}
+            {{#returns}}
+              <h4>Return</h4>
+              <span class="return-type">{{types}}</span> {{description}}
+            {{/returns}}
+            {{/has_returns}}
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="{{url}}#L{{line}}">{{filename}}:{{line}}</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>{{code}}</code></pre>
+            </section>
+          </section>
+        {{/methods}}
+          
+        {{#has_inherited}}
+          <div class="page-header" id="{{name}}-inherited">
+            <h1>Inherited Methods</h1>
+          </div>
+        {{/has_inherited}}
+          
+        {{#inherited}}
+          <section class="method well" id="{{parent}}^{{name}}">
+            <header>
+              <h2 class="method-name">{{signature}}</h2>
+            </header>
+          
+            <section class="content">
+              {{{full_description}}}
+            </section>
+            
+            <section class="syntax">
+            {{#has_syntax}}
+              <h4>Syntax</h4>
+              <span>{{syntax}}</span>
+            {{/has_syntax}}
+            </section>
+            
+            <section class="params">
+            {{#has_params}}
+              <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                {{#params}}
+                  <tr>
+                    <td class="param-name">{{name}}</td>
+                    <td class="param-type">{{types}}</td>
+                    <td class="param-description">{{{description}}}</td>
+                  </tr>
+                {{/params}}
+                </tbody>
+              </table>
+            {{/has_params}}
+            </section>
+            
+            <section class="returns">
                 
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="{{url}}#L{{line}}">{{filename}}:{{line}}</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>{{code}}</code></pre>
+            </section>
+          </section>
+        {{/inherited}}
+        
+        {{#has_globals}}
+          <div class="page-header" id="{{name}}-globals">
+            <h1>{{name}} Module Globals</h1>
+          </div>
+        {{/has_globals}}
+        
+        {{#helpers}}
+          <section class="method well" id="{{parent}}+{{name}}">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">{{signature}}</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              {{{full_description}}}
+            </section>
+            
+            <section class="syntax">
+            {{#has_syntax}}
+              <h4>Syntax</h4>
+              <span>{{syntax}}</span>
+            {{/has_syntax}}
+            </section>
+            
+            <section class="params">
+            {{#has_params}}
+              <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                {{#params}}
+                  <tr>
+                    <td class="param-name">{{name}}</td>
+                    <td class="param-type">{{types}}</td>
+                    <td class="param-description">{{{description}}}</td>
+                  </tr>
+                {{/params}}
+                </tbody>
+              </table>
+            {{/has_params}}
+            </section>
+            
+            <section class="returns">
                 
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
-                
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="{{url}}#L{{line}}">{{filename}}:{{line}}</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>{{code}}</code></pre>
+            </section>
+          </section>
+        {{/helpers}}
+        {{/modules}}
         </div><!--/span-->
       </div><!--/row-->
+
       <hr>
+
       <footer>
         <p>&copy; Splunk 2012</p>
       </footer>
+
     </div><!--/.fluid-container-->
+
     <!-- Le javascript
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->

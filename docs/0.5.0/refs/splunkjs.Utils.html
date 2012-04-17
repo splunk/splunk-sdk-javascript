@@ -1,636 +1,398 @@
-<head>
-  <style type="text/css" media="screen">
-    body {
-      font-family: 'Helvetica Neue';
-      color: #333;
-    }
-    a {
-      color: #0f4bf0;
-    }
-    header h1 {
-      border-top: 4px solid #333;
-      font-size: 2.0em;
-    }
-    header .version {
-      font-size: 0.6em;
-    }
-    .main > header {
-      margin-bottom: 40px;
-    }
-    article {
-      margin-bottom: 10px;
-      padding-bottom: 30px;
-    }
-    article header h2 {
-      border-top: 3px solid #333;
-      font-size: 2em;
-      padding-top: 5px;
-      margin-bottom: 0px;
-    }
-    article > section {
-      margin-bottom: 30px;
-    }
-    article section h3 {
-      font-size: 1em;
-    }
-    article section header h3 {
-      padding-top: 2px;
-      font-size: 1.2em;
-      margin-bottom: 5px;
-      border-top: 2px solid #333;
-    }
-    article section header h4 {
-      font-size: 0.9em;
-      font-family: courier;
-      margin: 2px 0 5px 0;
-    }
-    @-webkit-keyframes highlight {
-      from {
-        background-color: #Ffff66;
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Splunk JavaScript SDK</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <!-- Le styles -->
+    <link href="../../assets/css/bootstrap.css" rel="stylesheet">
+    <style type="text/css">
+      body {
+        margin-top: 10px;
+        margin-bottom: 10px;
       }
-      to {
-        background-color: white;
+      .sidebar-nav {
+        padding: 9px 0;
       }
-    }
-    .extends {
-      margin-top: 0px;
-      font-size: 0.8em;
-    }
-    section.method:target {
-      -webkit-animation-duration: 1s;
-      -webkit-animation-name: highlight;
-    }
-    section header .type, section header .related {
-      margin-top: 0px;
-      font-size: 0.8em;
-    }
-    section header .endpoint {
-      margin-top: -.8em;
-      font-size: 0.8em;
-    }
-    section.params h4, section.source h4 {
-      margin-top: 5px;
-      margin-bottom: 2px;
-      font-size: 0.9em;
-    }
-    section.params ul {
-      margin-top: 2px;
-    }
-    a.show-source {
-      font-size: 0.8em;
-    }
-    .wrap {
-      width: 1050px;
-      margin: 0 auto;
-    }
-    .main {
-      width: 760px;
-      float: left;
-    }
-    p {
-      line-height: 1.4em;
-    }
-    nav {
-      padding-top: 15px;
-      float: left;
-      width: 250px;
-      margin-right: 30px;
-      text-align: right;
-      font-size: 0.8em;
-    }
-    nav ul {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-    }
-    nav ul h3 {
-      margin-bottom: 5px;
-      border-top: 2px solid #CCC;
-      padding-top: 2px;
-    }
-    
-    nav ul h4 {
-      margin-bottom: 5px;
-      padding-top: 2px;
-    }
-    nav ul ul li {
-      padding: 2px 0;
-    }
-    pre {
-      background-color: rgba(0,0,0,0.1);
-      padding: 8px;
-      overflow-x: auto;
-      overflow-y: auto;
-    }
-    code .keyword, code .special {
-      font-weight: bold;
-      color: black;
-    }
-    code .string, code .regexp {
-      color: green
-    }
-    code .class { 
-      color: blue
-    }
-    code .number {
-      color: red
-    }
-    code .comment {
-      color: grey;
-      font-style: italic;
-    }
-    
-    .em {
-      font-style: italic;
-      color: gray;
-      font-size: 12px;
-    }
-    
-    .bold {
-      font-weight: bold;
-    }
-    
-    section.params li p {
-      display: inline;
-    }
-  </style>
-</head>
-<body>
-  <div class='wrap'>
-    <nav>
-      <ul>
-                  <li>
-            <a href='splunkjs.Utils.html'>
-              <h3>splunkjs.Utils</h3>
-            </a>
-            <ul>
-              </ul>
-            
-                          <a href='#splunkjs.Utils-globals'>
-                <h4>Module Globals</h4>
-              </a>
-            <ul>
-                              <li><a href='#splunkjs.Utils+bind'>bind</a></li>
-                              <li><a href='#splunkjs.Utils+trim'>trim</a></li>
-                              <li><a href='#splunkjs.Utils+indexOf'>indexOf</a></li>
-                              <li><a href='#splunkjs.Utils+contains'>contains</a></li>
-                              <li><a href='#splunkjs.Utils+startsWith'>startsWith</a></li>
-                              <li><a href='#splunkjs.Utils+endsWith'>endsWith</a></li>
-                              <li><a href='#splunkjs.Utils+toArray'>toArray</a></li>
-                              <li><a href='#splunkjs.Utils+isArray'>isArray</a></li>
-                              <li><a href='#splunkjs.Utils+isFunction'>isFunction</a></li>
-                              <li><a href='#splunkjs.Utils+isNumber'>isNumber</a></li>
-                              <li><a href='#splunkjs.Utils+isString'>isString</a></li>
-                              <li><a href='#splunkjs.Utils+isObject'>isObject</a></li>
-                              <li><a href='#splunkjs.Utils+isEmpty'>isEmpty</a></li>
-                              <li><a href='#splunkjs.Utils+forEach'>forEach</a></li>
-                              <li><a href='#splunkjs.Utils+extend'>extend</a></li>
-                              <li><a href='#splunkjs.Utils+clone'>clone</a></li>
-                              <li><a href='#splunkjs.Utils+namespaceFromProperties'>namespaceFromProperties</a></li>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Logger.html'>
-              <h3>splunkjs.Logger</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Http.html'>
-              <h3>splunkjs.Http</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Async.html'>
-              <h3>splunkjs.Async</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Context.html'>
-              <h3>splunkjs.Context</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.html'>
-              <h3>splunkjs.Service</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Endpoint.html'>
-              <h3>splunkjs.Service.Endpoint</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Resource.html'>
-              <h3>splunkjs.Service.Resource</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Entity.html'>
-              <h3>splunkjs.Service.Entity</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Collection.html'>
-              <h3>splunkjs.Service.Collection</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.SavedSearch.html'>
-              <h3>splunkjs.Service.SavedSearch</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.SavedSearches.html'>
-              <h3>splunkjs.Service.SavedSearches</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Application.html'>
-              <h3>splunkjs.Service.Application</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Applications.html'>
-              <h3>splunkjs.Service.Applications</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.ServerInfo.html'>
-              <h3>splunkjs.Service.ServerInfo</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.User.html'>
-              <h3>splunkjs.Service.User</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Users.html'>
-              <h3>splunkjs.Service.Users</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.View.html'>
-              <h3>splunkjs.Service.View</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Views.html'>
-              <h3>splunkjs.Service.Views</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Index.html'>
-              <h3>splunkjs.Service.Index</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Indexes.html'>
-              <h3>splunkjs.Service.Indexes</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.PropertyStanza.html'>
-              <h3>splunkjs.Service.PropertyStanza</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.PropertyFile.html'>
-              <h3>splunkjs.Service.PropertyFile</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Properties.html'>
-              <h3>splunkjs.Service.Properties</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.ConfigurationStanza.html'>
-              <h3>splunkjs.Service.ConfigurationStanza</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.ConfigurationFile.html'>
-              <h3>splunkjs.Service.ConfigurationFile</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Configurations.html'>
-              <h3>splunkjs.Service.Configurations</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Job.html'>
-              <h3>splunkjs.Service.Job</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Jobs.html'>
-              <h3>splunkjs.Service.Jobs</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-        </ul>
-    </nav>
-    <div class='main'>
-              <article id='splunkjs.Utils'>
-          <header>
-            <h2>splunkjs.Utils</h2>
+      
+      .nav .nav-header {
+        text-transform: none;
+        font-size: 13px;
+      }
+      
+      .method {
+        margin-bottom: 18px;
+        clear: both;
+      }
+      
+      .method section {
+        margin-top: 10px;
+      }
+      
+      .method section h4 {
+        margin-bottom: 5px;
+      }
+      
+      .code-link {
+        margin-bottom: 5px;
+      }
+      
+      section.code {
+        position: relative;
+      }
+      
+      .pre-scrollable {
+        overflow-y: auto;
+      }
+      
+      .code-toggle {
+        position: absolute;
+        right: 0px;
+        top: 0px;
+        padding-bottom: 5px;
+      }
+      
+      section.code pre {
+        margin-top: 10px;
+      }
+      
+      code .keyword, code .special {
+        font-weight: bold;
+        color: black;
+      }
+      code .string, code .regexp {
+        color: green
+      }
+      code .class { 
+        color: blue
+      }
+      code .number {
+        color: red
+      }
+      code .comment {
+        color: grey;
+        font-style: italic;
+      }
+      
+      .param-name {
+        font-family: monospace;
+      }
+      
+      .param-type {
+        font-style: italic;
+      }
+      
+      .return-type {
+        font-style: italic;
+      }
+      
+      section.syntax span {
+        font-family: monospace;
+      }
+      
+      .method-name {
+        font-family: monospace;
+      }
+    </style>
+    <link href="../../assets/css/bootstrap-responsive.css" rel="stylesheet">
+    <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="row-fluid">
+        <div class="span3">
+          <div class="well sidebar-nav">
+            <ul class="nav nav-list">
+                          <li class="nav-header"><a href="splunkjs.Utils.html">splunkjs.Utils</a></li>
+              <li>
+                <ul class="nav nav-list">
+                                  <li class="nav-header"><a href="#splunkjs.Utils-globals">Globals</a></li>
+                                  <li><a href="#splunkjs.Utils+bind">bind</a></li>
+                                  <li><a href="#splunkjs.Utils+trim">trim</a></li>
+                                  <li><a href="#splunkjs.Utils+indexOf">indexOf</a></li>
+                                  <li><a href="#splunkjs.Utils+contains">contains</a></li>
+                                  <li><a href="#splunkjs.Utils+startsWith">startsWith</a></li>
+                                  <li><a href="#splunkjs.Utils+endsWith">endsWith</a></li>
+                                  <li><a href="#splunkjs.Utils+toArray">toArray</a></li>
+                                  <li><a href="#splunkjs.Utils+isArray">isArray</a></li>
+                                  <li><a href="#splunkjs.Utils+isFunction">isFunction</a></li>
+                                  <li><a href="#splunkjs.Utils+isNumber">isNumber</a></li>
+                                  <li><a href="#splunkjs.Utils+isString">isString</a></li>
+                                  <li><a href="#splunkjs.Utils+isObject">isObject</a></li>
+                                  <li><a href="#splunkjs.Utils+isEmpty">isEmpty</a></li>
+                                  <li><a href="#splunkjs.Utils+forEach">forEach</a></li>
+                                  <li><a href="#splunkjs.Utils+extend">extend</a></li>
+                                  <li><a href="#splunkjs.Utils+clone">clone</a></li>
+                                  <li><a href="#splunkjs.Utils+namespaceFromProperties">namespaceFromProperties</a></li>
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Logger.html">splunkjs.Logger</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Http.html">splunkjs.Http</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Async.html">splunkjs.Async</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Context.html">splunkjs.Context</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.html">splunkjs.Service</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Endpoint.html">splunkjs.Service.Endpoint</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Resource.html">splunkjs.Service.Resource</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Entity.html">splunkjs.Service.Entity</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Collection.html">splunkjs.Service.Collection</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.SavedSearch.html">splunkjs.Service.SavedSearch</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.SavedSearches.html">splunkjs.Service.SavedSearches</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Application.html">splunkjs.Service.Application</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Applications.html">splunkjs.Service.Applications</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.ServerInfo.html">splunkjs.Service.ServerInfo</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.User.html">splunkjs.Service.User</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Users.html">splunkjs.Service.Users</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.View.html">splunkjs.Service.View</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Views.html">splunkjs.Service.Views</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Index.html">splunkjs.Service.Index</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Indexes.html">splunkjs.Service.Indexes</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.PropertyStanza.html">splunkjs.Service.PropertyStanza</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.PropertyFile.html">splunkjs.Service.PropertyFile</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Properties.html">splunkjs.Service.Properties</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.ConfigurationStanza.html">splunkjs.Service.ConfigurationStanza</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.ConfigurationFile.html">splunkjs.Service.ConfigurationFile</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Configurations.html">splunkjs.Service.Configurations</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Job.html">splunkjs.Service.Job</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Jobs.html">splunkjs.Service.Jobs</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+            </ul>
+          </div><!--/well -->
+        </div><!--/span-->
+        <div class="span8">
+                
+                  <div class="page-header" id="splunkjs.Utils-globals">
+            <h1>splunkjs.Utils Module Globals</h1>
+          </div>
+                  <section class="method well" id="splunkjs.Utils+bind">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">splunkjs.Utils.bind</h2>
+              </div>
             </header>
-          <section>
-            <p>splunkjs.Utils</p>
-<p>Various utility functions for the Splunk SDK</p>
-          </section>
-                      <header id='splunkjs.Utils-globals'>
-              <h3>splunkjs.Utils Module Globals</h3>
-            </header>
-                      <section class='method' id='splunkjs.Utils+bind'>
-              <header>
-                <h3>bind</h3>
-                <h4>splunkjs.Utils.bind</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">me</span> - <span class="em">Object</span> <p>Object to bind to</p></li>
-                                      <li><span class="bold">fn</span> - <span class="em">Function</span> <p>Function to bind</p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                                  <h4>Returns</h4>
-                                      <p><span class="em">Function</span> The bound function</p>
-                  </section>
-              <section>
-                <p>Bind a function to a specific object</p>
+          
+            <section class="content">
+              <p>Bind a function to a specific object</p>
 <h2>Example</h2>
 <pre><code> var obj = {a: 1, b: function() { console.log(a); }};
  var bound = splunkjs.Utils.bind(obj, obj.b);
  bound(); // should print 1
 </code></pre>
-              </section>
-              <section class='source'>
-                <h4>Source</h4>
-                <pre><code>root.bind = function(me, fn) { 
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>root.bind = function(me, fn)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">me</td>
+                    <td class="param-type">Object</td>
+                    <td class="param-description"><p>Object to bind to</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">fn</td>
+                    <td class="param-type">Function</td>
+                    <td class="param-description"><p>Function to bind</p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/utils.js#L44">lib/utils.js:44</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>root.bind = function(me, fn) { 
     return function() { 
         return fn.apply(me, arguments); 
     }; 
 };</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Utils+trim'>
-              <header>
-                <h3>trim</h3>
-                <h4>splunkjs.Utils.trim</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">str</span> - <span class="em">String</span> <p>The string to trim</p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                                  <h4>Returns</h4>
-                                      <p><span class="em">String</span> The trimmed string</p>
-                  </section>
-              <section>
-                <p>Strip a string of all leading and trailing whitespace.</p>
+          </section>
+                  <section class="method well" id="splunkjs.Utils+trim">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">splunkjs.Utils.trim</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Strip a string of all leading and trailing whitespace.</p>
 <h2>Example</h2>
 <pre><code> var a = " aaa ";
  var b = splunkjs.Utils.trim(a); //== "aaa"
 </code></pre>
-              </section>
-              <section class='source'>
-                <h4>Source</h4>
-                <pre><code>root.trim = function(str) {
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>root.trim = function(str)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">str</td>
+                    <td class="param-type">String</td>
+                    <td class="param-description"><p>The string to trim</p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/utils.js#L63">lib/utils.js:63</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>root.trim = function(str) {
     str = str || "";
     
     if (String.prototype.trim) {
@@ -640,37 +402,65 @@
         return str.replace(/^\\s\\s*/, '').replace(/\\s\\s*$/, '');   
     }
 };</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Utils+indexOf'>
-              <header>
-                <h3>indexOf</h3>
-                <h4>splunkjs.Utils.indexOf</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">arr</span> - <span class="em">Array</span> <p>The array to search in</p></li>
-                                      <li><span class="bold">search</span> - <span class="em">Anything</span> <p>The thing to search for</p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                                  <h4>Returns</h4>
-                                      <p><span class="em">Number</span> The index of `search` or `-1` if it wasn't found</p>
-                  </section>
-              <section>
-                <p>Whether an array contains a specific object</p>
+          </section>
+                  <section class="method well" id="splunkjs.Utils+indexOf">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">splunkjs.Utils.indexOf</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Whether an array contains a specific object</p>
 <h2>Example</h2>
 <pre><code> var a = ["a", "b', "c"];
  console.log(splunkjs.Utils.indexOf(a, "b")) //== 1
  console.log(splunkjs.Utils.indexOf(a, "d")) //== -1
 </code></pre>
-              </section>
-              <section class='source'>
-                <h4>Source</h4>
-                <pre><code>root.indexOf = function(arr, search) {
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>root.indexOf = function(arr, search)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">arr</td>
+                    <td class="param-type">Array</td>
+                    <td class="param-description"><p>The array to search in</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">search</td>
+                    <td class="param-type">Anything</td>
+                    <td class="param-description"><p>The thing to search for</p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/utils.js#L89">lib/utils.js:89</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>root.indexOf = function(arr, search) {
     for(var i=0; i&lt;arr.length; i++) {
         if (arr[i] === search) {
             return i;
@@ -678,334 +468,586 @@
     }
     return -1;
 };</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Utils+contains'>
-              <header>
-                <h3>contains</h3>
-                <h4>splunkjs.Utils.contains</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">arr</span> - <span class="em">Array</span> <p>Array to search</p></li>
-                                      <li><span class="bold">obj</span> - <span class="em">Anything</span> <p>Whether the array contains the element</p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                                  <h4>Returns</h4>
-                                      <p><span class="em">Boolean</span> Whether the array contains the element</p>
-                  </section>
-              <section>
-                <p>Whether an array contains a specific object</p>
+          </section>
+                  <section class="method well" id="splunkjs.Utils+contains">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">splunkjs.Utils.contains</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Whether an array contains a specific object</p>
 <h2>Example</h2>
 <pre><code> var a = {a: 3};
  var b = [{}, {c: 1}, {b: 1}, a];
  var contained = splunkjs.Utils.contains(b, a); // should be tree
 </code></pre>
-              </section>
-              <section class='source'>
-                <h4>Source</h4>
-                <pre><code>root.contains = function(arr, obj) {
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>root.contains = function(arr, obj)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">arr</td>
+                    <td class="param-type">Array</td>
+                    <td class="param-description"><p>Array to search</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">obj</td>
+                    <td class="param-type">Anything</td>
+                    <td class="param-description"><p>Whether the array contains the element</p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/utils.js#L113">lib/utils.js:113</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>root.contains = function(arr, obj) {
     arr = arr || [];
     return (root.indexOf(arr, obj) &gt;= 0);
 };</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Utils+startsWith'>
-              <header>
-                <h3>startsWith</h3>
-                <h4>splunkjs.Utils.startsWith</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">original</span> - <span class="em">String</span> <p>String to search</p></li>
-                                      <li><span class="bold">prefix</span> - <span class="em">String</span> <p>Prefix to search with</p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                                  <h4>Returns</h4>
-                                      <p><span class="em">Boolean</span> Whether the string starts with the prefix</p>
-                  </section>
-              <section>
-                <p>Whether a string starts with a specific prefix.</p>
+          </section>
+                  <section class="method well" id="splunkjs.Utils+startsWith">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">splunkjs.Utils.startsWith</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Whether a string starts with a specific prefix.</p>
 <h2>Example</h2>
 <pre><code> var starts = splunkjs.Utils.startsWith("splunk-foo", "splunk-");
 </code></pre>
-              </section>
-              <section class='source'>
-                <h4>Source</h4>
-                <pre><code>root.startsWith = function(original, prefix) {
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>root.startsWith = function(original, prefix)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">original</td>
+                    <td class="param-type">String</td>
+                    <td class="param-description"><p>String to search</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">prefix</td>
+                    <td class="param-type">String</td>
+                    <td class="param-description"><p>Prefix to search with</p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/utils.js#L131">lib/utils.js:131</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>root.startsWith = function(original, prefix) {
     var matches = original.match("^" + prefix);
     return matches &amp;&amp; matches.length &gt; 0 &amp;&amp; matches[0] === prefix;  
 };</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Utils+endsWith'>
-              <header>
-                <h3>endsWith</h3>
-                <h4>splunkjs.Utils.endsWith</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">original</span> - <span class="em">String</span> <p>String to search</p></li>
-                                      <li><span class="bold">suffix</span> - <span class="em">String</span> <p>Suffix to search with</p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                                  <h4>Returns</h4>
-                                      <p><span class="em">Boolean</span> Whether the string ends with the suffix</p>
-                  </section>
-              <section>
-                <p>Whether a string ends with a specific suffix.</p>
+          </section>
+                  <section class="method well" id="splunkjs.Utils+endsWith">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">splunkjs.Utils.endsWith</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Whether a string ends with a specific suffix.</p>
 <h2>Example</h2>
 <pre><code> var ends = splunkjs.Utils.endsWith("foo-splunk", "-splunk");
 </code></pre>
-              </section>
-              <section class='source'>
-                <h4>Source</h4>
-                <pre><code>root.endsWith = function(original, suffix) {
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>root.endsWith = function(original, suffix)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">original</td>
+                    <td class="param-type">String</td>
+                    <td class="param-description"><p>String to search</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">suffix</td>
+                    <td class="param-type">String</td>
+                    <td class="param-description"><p>Suffix to search with</p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/utils.js#L149">lib/utils.js:149</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>root.endsWith = function(original, suffix) {
     var matches = original.match(suffix + "$");
     return matches &amp;&amp; matches.length &gt; 0 &amp;&amp; matches[0] === suffix;  
 };
 var toString = Object.prototype.toString;</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Utils+toArray'>
-              <header>
-                <h3>toArray</h3>
-                <h4>splunkjs.Utils.toArray</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">iterable</span> - <span class="em">Arguments</span> <p>Iterable to conver to an array</p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                                  <h4>Returns</h4>
-                                      <p><span class="em">Array</span> The converted array</p>
-                  </section>
-              <section>
-                <p>Convert an iterable to an array.</p>
+          </section>
+                  <section class="method well" id="splunkjs.Utils+toArray">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">splunkjs.Utils.toArray</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Convert an iterable to an array.</p>
 <h2>Example</h2>
 <pre><code> function() { 
      console.log(arguments instanceof Array); // false
      var arr = console.log(splunkjs.Utils.toArray(arguments) instanceof Array); // true
  }
 </code></pre>
-              </section>
-              <section class='source'>
-                <h4>Source</h4>
-                <pre><code>root.toArray = function(iterable) {
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>root.toArray = function(iterable)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">iterable</td>
+                    <td class="param-type">Arguments</td>
+                    <td class="param-description"><p>Iterable to conver to an array</p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/utils.js#L171">lib/utils.js:171</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>root.toArray = function(iterable) {
     return Array.prototype.slice.call(iterable);
 };</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Utils+isArray'>
-              <header>
-                <h3>isArray</h3>
-                <h4>splunkjs.Utils.isArray</h4>
-                <p class='type'>property</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">obj</span> - <span class="em">Anything</span> <p>Parameter to check whether it is an array</p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                                  <h4>Returns</h4>
-                                      <p><span class="em">Boolean</span> Whether or not the passed in parameter was an array</p>
-                  </section>
-              <section>
-                <p>Whether or not the argument is an array</p>
+          </section>
+                  <section class="method well" id="splunkjs.Utils+isArray">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">splunkjs.Utils.isArray</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Whether or not the argument is an array</p>
 <h2>Example</h2>
 <pre><code> function() { 
      console.log(splunkjs.Utils.isArray(arguments)); // false
      console.log(splunkjs.Utils.isArray([1,2,3])); // true
  }
 </code></pre>
-              </section>
-              <section class='source'>
-                <h4>Source</h4>
-                <pre><code>root.isArray = Array.isArray || function(obj) {
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>root.isArray = Array.isArray || function(obj)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">obj</td>
+                    <td class="param-type">Anything</td>
+                    <td class="param-description"><p>Parameter to check whether it is an array</p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/utils.js#L190">lib/utils.js:190</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>root.isArray = Array.isArray || function(obj) {
     return toString.call(obj) === '[object Array]';
 };</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Utils+isFunction'>
-              <header>
-                <h3>isFunction</h3>
-                <h4>splunkjs.Utils.isFunction</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">obj</span> - <span class="em">Anything</span> <p>Parameter to check whether it is a function</p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                                  <h4>Returns</h4>
-                                      <p><span class="em">Boolean</span> Whether or not the passed in parameter was a function</p>
-                  </section>
-              <section>
-                <p>Whether or not the argument is a function</p>
+          </section>
+                  <section class="method well" id="splunkjs.Utils+isFunction">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">splunkjs.Utils.isFunction</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Whether or not the argument is a function</p>
 <h2>Example</h2>
 <pre><code> function() { 
      console.log(splunkjs.Utils.isFunction([1,2,3]); // false
      console.log(splunkjs.Utils.isFunction(function() {})); // true
  }
 </code></pre>
-              </section>
-              <section class='source'>
-                <h4>Source</h4>
-                <pre><code>root.isFunction = function(obj) {
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>root.isFunction = function(obj)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">obj</td>
+                    <td class="param-type">Anything</td>
+                    <td class="param-description"><p>Parameter to check whether it is a function</p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/utils.js#L209">lib/utils.js:209</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>root.isFunction = function(obj) {
     return !!(obj &amp;&amp; obj.constructor &amp;&amp; obj.call &amp;&amp; obj.apply);
 };</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Utils+isNumber'>
-              <header>
-                <h3>isNumber</h3>
-                <h4>splunkjs.Utils.isNumber</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">obj</span> - <span class="em">Anything</span> <p>Parameter to check whether it is a number</p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                                  <h4>Returns</h4>
-                                      <p><span class="em">Boolean</span> Whether or not the passed in parameter was a number</p>
-                  </section>
-              <section>
-                <p>Whether or not the argument is a number</p>
+          </section>
+                  <section class="method well" id="splunkjs.Utils+isNumber">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">splunkjs.Utils.isNumber</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Whether or not the argument is a number</p>
 <h2>Example</h2>
 <pre><code> function() { 
      console.log(splunkjs.Utils.isNumber(1); // true
      console.log(splunkjs.Utils.isNumber(function() {})); // false
  }
 </code></pre>
-              </section>
-              <section class='source'>
-                <h4>Source</h4>
-                <pre><code>root.isNumber = function(obj) {
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>root.isNumber = function(obj)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">obj</td>
+                    <td class="param-type">Anything</td>
+                    <td class="param-description"><p>Parameter to check whether it is a number</p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/utils.js#L228">lib/utils.js:228</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>root.isNumber = function(obj) {
     return !!(obj === 0 || (obj &amp;&amp; obj.toExponential &amp;&amp; obj.toFixed));
 };</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Utils+isString'>
-              <header>
-                <h3>isString</h3>
-                <h4>splunkjs.Utils.isString</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">obj</span> - <span class="em">Anything</span> <p>Parameter to check whether it is a string</p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                                  <h4>Returns</h4>
-                                      <p><span class="em">Boolean</span> Whether or not the passed in parameter was a string</p>
-                  </section>
-              <section>
-                <p>Whether or not the argument is a string</p>
+          </section>
+                  <section class="method well" id="splunkjs.Utils+isString">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">splunkjs.Utils.isString</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Whether or not the argument is a string</p>
 <h2>Example</h2>
 <pre><code> function() { 
      console.log(splunkjs.Utils.isString("abc"); // true
      console.log(splunkjs.Utils.isString(function() {})); // false
  }
 </code></pre>
-              </section>
-              <section class='source'>
-                <h4>Source</h4>
-                <pre><code>root.isString = function(obj) {
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>root.isString = function(obj)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">obj</td>
+                    <td class="param-type">Anything</td>
+                    <td class="param-description"><p>Parameter to check whether it is a string</p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/utils.js#L247">lib/utils.js:247</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>root.isString = function(obj) {
     return !!(obj === '' || (obj &amp;&amp; obj.charCodeAt &amp;&amp; obj.substr));
 };</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Utils+isObject'>
-              <header>
-                <h3>isObject</h3>
-                <h4>splunkjs.Utils.isObject</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">obj</span> - <span class="em">Anything</span> <p>Parameter to check whether it is an object</p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                                  <h4>Returns</h4>
-                                      <p><span class="em">Boolean</span> Whether or not the passed in parameter was a object</p>
-                  </section>
-              <section>
-                <p>Whether or not the argument is an object</p>
+          </section>
+                  <section class="method well" id="splunkjs.Utils+isObject">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">splunkjs.Utils.isObject</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Whether or not the argument is an object</p>
 <h2>Example</h2>
 <pre><code> function() { 
      console.log(splunkjs.Utils.isObject({abc: "abc"}); // true
      console.log(splunkjs.Utils.isObject("abc"); // false
  }
 </code></pre>
-              </section>
-              <section class='source'>
-                <h4>Source</h4>
-                <pre><code>root.isObject = function(obj) {
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>root.isObject = function(obj)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">obj</td>
+                    <td class="param-type">Anything</td>
+                    <td class="param-description"><p>Parameter to check whether it is an object</p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/utils.js#L266">lib/utils.js:266</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>root.isObject = function(obj) {
     return obj === Object(obj);
 };</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Utils+isEmpty'>
-              <header>
-                <h3>isEmpty</h3>
-                <h4>splunkjs.Utils.isEmpty</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">obj</span> - <span class="em">Anything</span> <p>Parameter to check whether it is empty</p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                                  <h4>Returns</h4>
-                                      <p><span class="em">Boolean</span> Whether or not the passed in parameter was empty</p>
-                  </section>
-              <section>
-                <p>Whether or not the argument is empty</p>
+          </section>
+                  <section class="method well" id="splunkjs.Utils+isEmpty">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">splunkjs.Utils.isEmpty</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Whether or not the argument is empty</p>
 <h2>Example</h2>
 <pre><code> function() { 
      console.log(splunkjs.Utils.isEmpty({})); // true
      console.log(splunkjs.Utils.isEmpty({a: 1})); // false
  }
 </code></pre>
-              </section>
-              <section class='source'>
-                <h4>Source</h4>
-                <pre><code>root.isEmpty = function(obj) {
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>root.isEmpty = function(obj)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">obj</td>
+                    <td class="param-type">Anything</td>
+                    <td class="param-description"><p>Parameter to check whether it is empty</p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/utils.js#L285">lib/utils.js:285</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>root.isEmpty = function(obj) {
     if (root.isArray(obj) || root.isString(obj)) {
         return obj.length === 0;
     }
@@ -1018,34 +1060,68 @@ var toString = Object.prototype.toString;</code></pre>
     
     return true;
 };</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Utils+forEach'>
-              <header>
-                <h3>forEach</h3>
-                <h4>splunkjs.Utils.forEach</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">obj</span> - <span class="em">Object,Array</span> <p>Object/array to iterate over</p></li>
-                                      <li><span class="bold">iterator</span> - <span class="em">Function</span> <p>Function to apply with each element: <code>(element, list, index)</code></p></li>
-                                      <li><span class="bold">context</span> - <span class="em">Object</span> <p>An optional context to apply the function on</p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                </section>
-              <section>
-                <p>Apply the iterator function to each element in the object</p>
+          </section>
+                  <section class="method well" id="splunkjs.Utils+forEach">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">splunkjs.Utils.forEach</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Apply the iterator function to each element in the object</p>
 <h2>Example</h2>
 <pre><code> splunkjs.Utils.forEach([1,2,3], function(el) { console.log(el); }); // 1,2,3
 </code></pre>
-              </section>
-              <section class='source'>
-                <h4>Source</h4>
-                <pre><code>root.forEach = function(obj, iterator, context) {
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>root.forEach = function(obj, iterator, context)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">obj</td>
+                    <td class="param-type">Object,Array</td>
+                    <td class="param-description"><p>Object/array to iterate over</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">iterator</td>
+                    <td class="param-type">Function</td>
+                    <td class="param-description"><p>Function to apply with each element: <code>(element, list, index)</code></p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">context</td>
+                    <td class="param-type">Object</td>
+                    <td class="param-description"><p>An optional context to apply the function on</p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/utils.js#L312">lib/utils.js:312</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>root.forEach = function(obj, iterator, context) {
     if (obj === null) {
         return;
     }
@@ -1067,37 +1143,65 @@ var toString = Object.prototype.toString;</code></pre>
         }
     }
 };</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Utils+extend'>
-              <header>
-                <h3>extend</h3>
-                <h4>splunkjs.Utils.extend</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">obj</span> - <span class="em">Object</span> <p>Object to extend</p></li>
-                                      <li><span class="bold">sources</span> - <span class="em">Object...</span> <p>Sources to extend from</p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                                  <h4>Returns</h4>
-                                      <p><span class="em">Object</span> The extended object</p>
-                  </section>
-              <section>
-                <p>Extend a given object with all the properties in passed-in objects</p>
+          </section>
+                  <section class="method well" id="splunkjs.Utils+extend">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">splunkjs.Utils.extend</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Extend a given object with all the properties in passed-in objects</p>
 <h2>Example</h2>
 <pre><code> function() { 
      console.log(splunkjs.Utils.extend({foo: "bar"}, {a: 2})); // {foo: "bar", a: 2}
  }
 </code></pre>
-              </section>
-              <section class='source'>
-                <h4>Source</h4>
-                <pre><code>root.extend = function(obj) {
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>root.extend = function(obj)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">obj</td>
+                    <td class="param-type">Object</td>
+                    <td class="param-description"><p>Object to extend</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">sources</td>
+                    <td class="param-type">Object...</td>
+                    <td class="param-description"><p>Sources to extend from</p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/utils.js#L350">lib/utils.js:350</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>root.extend = function(obj) {
     root.forEach(Array.prototype.slice.call(arguments, 1), function(source) {
         for (var prop in source) {
             obj[prop] = source[prop];
@@ -1105,67 +1209,115 @@ var toString = Object.prototype.toString;</code></pre>
     });
     return obj;
 };</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Utils+clone'>
-              <header>
-                <h3>clone</h3>
-                <h4>splunkjs.Utils.clone</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">obj</span> - <span class="em">Object,Array</span> <p>Object/array to clone</p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                                  <h4>Returns</h4>
-                                      <p><span class="em">Object,Array</span> The cloned object/array</p>
-                  </section>
-              <section>
-                <p>Create a shallow-cloned copy of the object/array</p>
+          </section>
+                  <section class="method well" id="splunkjs.Utils+clone">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">splunkjs.Utils.clone</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Create a shallow-cloned copy of the object/array</p>
 <h2>Example</h2>
 <pre><code> function() { 
      console.log(splunkjs.Utils.clone({foo: "bar"})); // {foo: "bar"}
      console.log(splunkjs.Utils.clone([1,2,3])); // [1,2,3]
  }
 </code></pre>
-              </section>
-              <section class='source'>
-                <h4>Source</h4>
-                <pre><code>root.clone = function(obj) {
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>root.clone = function(obj)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">obj</td>
+                    <td class="param-type">Object,Array</td>
+                    <td class="param-description"><p>Object/array to clone</p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/utils.js#L374">lib/utils.js:374</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>root.clone = function(obj) {
     if (!root.isObject(obj)) {
         return obj;
     }
     return root.isArray(obj) ? obj.slice() : root.extend({}, obj);
 };</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Utils+namespaceFromProperties'>
-              <header>
-                <h3>namespaceFromProperties</h3>
-                <h4>splunkjs.Utils.namespaceFromProperties</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">props</span> - <span class="em">Object</span> <p>Properties dictionary</p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                                  <h4>Returns</h4>
-                                      <p><span class="em">Object</span> Namespace information (owner, app, sharing) for the given properties</p>
-                  </section>
-              <section>
-                <p>Extract namespace information from a properties dictionary</p>
-              </section>
-              <section class='source'>
-                <h4>Source</h4>
-                <pre><code>root.namespaceFromProperties = function(props) {
+          </section>
+                  <section class="method well" id="splunkjs.Utils+namespaceFromProperties">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">splunkjs.Utils.namespaceFromProperties</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Extract namespace information from a properties dictionary</p>
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>root.namespaceFromProperties = function(props)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">props</td>
+                    <td class="param-type">Object</td>
+                    <td class="param-description"><p>Properties dictionary</p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/utils.js#L389">lib/utils.js:389</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>root.namespaceFromProperties = function(props) {
         return {
             owner: props.acl.owner,
             app: props.acl.app,
@@ -1173,95 +1325,168 @@ var toString = Object.prototype.toString;</code></pre>
         };
     };  
 })();</code></pre>
-              </section>
-              
             </section>
-          </article>
-      </div>
-  </div>
-  <script>
-    (function (hijs) {
-    //
-    // hijs - JavaScript Syntax Highlighter
-    //
-    // Copyright (c) 2010 Alexis Sellier
-    //
-    // All elements which match this will be syntax highlighted.
-    var selector = hijs || 'code';
-    var keywords = ('var function if else for while break switch case do new null in with void '
-                   +'continue delete return this true false throw catch typeof with instanceof').split(' '),
-        special  = ('eval window document undefined NaN Infinity parseInt parseFloat '
-                   +'encodeURI decodeURI encodeURIComponent decodeURIComponent').split(' ');
-    // Syntax definition
-    // The key becomes the class name of the <span>
-    // around the matched block of code.
-    var syntax = [
-      ['comment', /(\/\*(?:[^*\n]|\*+[^\/*])*\*+\/)/g],
-      ['comment', /(\/\/[^\n]*)/g],
-      ['string' , /("(?:(?!")[^\\\n]|\\.)*"|'(?:(?!')[^\\\n]|\\.)*')/g],
-      ['regexp' , /(\/.+\/[mgi]*)(?!\s*\w)/g],
-      ['class'  , /\b([A-Z][a-zA-Z]+)\b/g],
-      ['number' , /\b([0-9]+(?:\.[0-9]+)?)\b/g],
-      ['keyword', new(RegExp)('\\b(' + keywords.join('|') + ')\\b', 'g')],
-      ['special', new(RegExp)('\\b(' + special.join('|') + ')\\b', 'g')]
-    ];
-    var nodes, table = {};
-    if (/^[a-z]+$/.test(selector)) {
-        nodes = document.getElementsByTagName(selector);
-    } else if (/^\.[\w-]+$/.test(selector)) {
-        nodes = document.getElementsByClassName(selector.slice(1));
-    } else if (document.querySelectorAll) {
-        nodes = document.querySelectorAll(selector);
-    } else {
-        nodes = [];
-    }
-    for (var i = 0, children; i < nodes.length; i++) {
-        children = nodes[i].childNodes;
-        for (var j = 0, str; j < children.length; j++) {
-            code = children[j];
-            if (code.length >= 0) { // It's a text node
-                // Don't highlight command-line snippets
-                if (! /^\$/.test(code.nodeValue.trim())) {
-                    syntax.forEach(function (s) {
-                        var k = s[0], v = s[1];
-                        code.nodeValue = code.nodeValue.replace(v, function (_, m) {
-                            return '\u00ab' + encode(k) + '\u00b7'
-                                            + encode(m) +
-                                   '\u00b7' + encode(k) + '\u00bb';
-                        });
-                    });
-                }
-            }
-        }
-    }
-    for (var i = 0; i < nodes.length; i++) {
-        nodes[i].innerHTML =
-            nodes[i].innerHTML.replace(/\u00ab(.+?)\u00b7(.+?)\u00b7\1\u00bb/g, function (_, name, value) {
-                value = value.replace(/\u00ab[^\u00b7]+\u00b7/g, '').replace(/\u00b7[^\u00bb]+\u00bb/g, '');
-                return '<span class="' + decode(name) + '">' + escape(decode(value)) + '</span>';
+          </section>
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+        </div><!--/span-->
+      </div><!--/row-->
+      <hr>
+      <footer>
+        <p>&copy; Splunk 2012</p>
+      </footer>
+    </div><!--/.fluid-container-->
+    <!-- Le javascript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="../../assets/js/jquery.js"></script>
+    <script src="../../assets/js/bootstrap-transition.js"></script>
+    <script src="../../assets/js/bootstrap-alert.js"></script>
+    <script src="../../assets/js/bootstrap-modal.js"></script>
+    <script src="../../assets/js/bootstrap-dropdown.js"></script>
+    <script src="../../assets/js/bootstrap-scrollspy.js"></script>
+    <script src="../../assets/js/bootstrap-tab.js"></script>
+    <script src="../../assets/js/bootstrap-tooltip.js"></script>
+    <script src="../../assets/js/bootstrap-popover.js"></script>
+    <script src="../../assets/js/bootstrap-button.js"></script>
+    <script src="../../assets/js/bootstrap-collapse.js"></script>
+    <script src="../../assets/js/bootstrap-carousel.js"></script>
+    <script src="../../assets/js/bootstrap-typeahead.js"></script>
+    
+    <script>
+      $(function() {
+        $("a.code-toggle").click(function(e) {
+          var code = $(this).parent().children("pre");
+          var isHidden = code.hasClass("hidden");
+          
+          if (isHidden) {
+            console.log("BOO");
+            $(code).removeClass("hidden");  
+            $(this).children("i").addClass("icon-minus");
+            $(this).children("i").removeClass("icon-plus");
+          }
+          else {
+            console.log("BOO2");
+            $(code).addClass("hidden");  
+            $(this).children("i").addClass("icon-plus");
+            $(this).children("i").removeClass("icon-minus");
+          }
+          
+          e.preventDefault();
+          e.stopPropagation();
         });
-    }
-    function escape(str) {
-        return str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    }
-    // Encode ASCII characters to, and from Braille
-    function encode (str, encoded) {
-        table[encoded = str.split('').map(function (s) {
-            if (s.charCodeAt(0) > 127) { return s }
-            return String.fromCharCode(s.charCodeAt(0) + 0x2800);
-        }).join('')] = str;
-        return encoded;
-    }
-    function decode (str) {
-        if (str in table) {
-            return table[str];
-        } else {
-            return str.trim().split('').map(function (s) {
-                if (s.charCodeAt(0) - 0x2800 > 127) { return s }
-                return String.fromCharCode(s.charCodeAt(0) - 0x2800);
-            }).join('');
-        }
-    }
-    })(window.hijs);
-  </script>
-</body>
+      });
+    </script>
+    <script>
+      (function (hijs) {
+      //
+      // hijs - JavaScript Syntax Highlighter
+      //
+      // Copyright (c) 2010 Alexis Sellier
+      //
+      // All elements which match this will be syntax highlighted.
+      var selector = hijs || "code";
+      var keywords = ("var function if else for while break switch case do new null in with void "
+                     +continue delete return this true false throw catch typeof with instanceof).split( ),
+          special  = (eval window document undefined NaN Infinity parseInt parseFloat 
+                     +encodeURI decodeURI encodeURIComponent decodeURIComponent).split( );
+      // Syntax definition
+      // The key becomes the class name of the <span>
+      // around the matched block of code.
+      var syntax = [
+        [comment, /(\/\*(?:[^*\n]|\*+[^\/*])*\*+\/)/g],
+        [comment, /(\/\/[^\n]*)/g],
+        [string , /("(?:(?!")[^\\\n]|\\.)*"|(?:(?!)[^\\\n]|\\.)*)/g],
+        [regexp , /(\/.+\/[mgi]*)(?!\s*\w)/g],
+        [class  , /\b([A-Z][a-zA-Z]+)\b/g],
+        [number , /\b([0-9]+(?:\.[0-9]+)?)\b/g],
+        [keyword, new(RegExp)(\\b( + keywords.join(|) + )\\b, g)],
+        [special, new(RegExp)(\\b( + special.join(|) + )\\b, g)]
+      ];
+      var nodes, table = {};
+      if (/^[a-z]+$/.test(selector)) {
+          nodes = document.getElementsByTagName(selector);
+      } else if (/^\.[\w-]+$/.test(selector)) {
+          nodes = document.getElementsByClassName(selector.slice(1));
+      } else if (document.querySelectorAll) {
+          nodes = document.querySelectorAll(selector);
+      } else {
+          nodes = [];
+      }
+      for (var i = 0, children; i < nodes.length; i++) {
+          children = nodes[i].childNodes;
+          for (var j = 0, str; j < children.length; j++) {
+              code = children[j];
+              if (code.length >= 0) { // Its a text node
+                  // Dont highlight command-line snippets
+                  if (! /^\$/.test(code.nodeValue.trim())) {
+                      syntax.forEach(function (s) {
+                          var k = s[0], v = s[1];
+                          code.nodeValue = code.nodeValue.replace(v, function (_, m) {
+                              return \u00ab + encode(k) + \u00b7
+                                              + encode(m) +
+                                     \u00b7 + encode(k) + \u00bb;
+                          });
+                      });
+                  }
+              }
+          }
+      }
+      for (var i = 0; i < nodes.length; i++) {
+          nodes[i].innerHTML =
+              nodes[i].innerHTML.replace(/\u00ab(.+?)\u00b7(.+?)\u00b7\1\u00bb/g, function (_, name, value) {
+                  value = value.replace(/\u00ab[^\u00b7]+\u00b7/g, ).replace(/\u00b7[^\u00bb]+\u00bb/g, );
+                  return <span class=" + decode(name) + "> + escape(decode(value)) + </span>;
+          });
+      }
+      function escape(str) {
+          return str.replace(/</g, &lt;).replace(/>/g, &gt;);
+      }
+      // Encode ASCII characters to, and from Braille
+      function encode (str, encoded) {
+          table[encoded = str.split().map(function (s) {
+              if (s.charCodeAt(0) > 127) { return s }
+              return String.fromCharCode(s.charCodeAt(0) + 0x2800);
+          }).join()] = str;
+          return encoded;
+      }
+      function decode (str) {
+          if (str in table) {
+              return table[str];
+          } else {
+              return str.trim().split().map(function (s) {
+                  if (s.charCodeAt(0) - 0x2800 > 127) { return s }
+                  return String.fromCharCode(s.charCodeAt(0) - 0x2800);
+              }).join();
+          }
+      }
+      })(window.hijs);
+    </script>
+  </body>
+</html>

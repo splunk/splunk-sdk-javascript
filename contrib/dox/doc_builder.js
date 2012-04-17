@@ -153,6 +153,9 @@
     
     var name = moduleName || doc.ctx && doc.ctx.name;
     var signature = (isGlobal || !isModule) ? parent() + "." + name : doc.ctx && doc.ctx.string;
+    
+    var firstLine = code.split("\n")[0].trim();
+    var syntax = firstLine.substr(0, firstLine.lastIndexOf("{") - 1);
 
     return {
         id: [counter++, Date.now()].join('-'),
@@ -181,7 +184,9 @@
         "extends": extendsName,
         is_private: isPrivate,
         has_endpoint: hasEndpoint,
-        endpoint: endpointName
+        endpoint: endpointName,
+        syntax: syntax,
+        has_syntax: !!syntax
     };
   }
 
@@ -208,6 +213,8 @@
             
             return 1;
         });
+        
+        module.has_methods = module.methods.length > 0;
       
         module.helpers = transformedDocs.filter(function(doc) {
             return doc.is_global && doc.global === module.name;
@@ -273,7 +280,7 @@
         }
     });
     
-    var template = fs.readFileSync(path.resolve(__dirname, 'template.mustache')).toString("utf-8");
+    var template = fs.readFileSync(path.resolve(__dirname, 'ref_template.mustache')).toString("utf-8");
     var context = {
         modules: modules,
         version: version

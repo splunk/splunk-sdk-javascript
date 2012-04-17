@@ -1,8 +1,17 @@
 <head>
+  <script>
+    $(function() {
+      $("section.source")
+    });
+  </script>
   <style type="text/css" media="screen">
     body {
       font-family: 'Helvetica Neue';
       color: #333;
+    }
+
+    .hidden {
+      display: none;
     }
 
     a {
@@ -183,6 +192,25 @@
     section.params li p {
       display: inline;
     }
+    
+    .source-button {
+      padding: 0.5em 1em;
+      background: -webkit-gradient(linear, left top, left bottom, color-stop(0, #555438), color-stop(1, #4e4d33));
+      background: -webkit-linear-gradient(top, #555438 0%, #4e4d33 100%);
+      background: -moz-linear-gradient(top, #555438 0%, #4e4d33 100%);
+      background: linear-gradient(top, #555438 0%, #4e4d33 100%);
+      border: 1px solid #41412b;
+      font: 11px/normal helvetica, arial, freesans, clean, sans-serif;
+      color: #fff;
+      text-decoration: none;
+      text-shadow: 1px 1px 0px #6d6c47;
+      font-weight: bold;
+      -webkit-border-radius: 3px;
+      -moz-border-radius: 3px;
+      border-radius: 3px;
+      cursor: pointer;
+      float: right;
+    }
   </style>
 </head>
 <body>
@@ -282,8 +310,9 @@
               </section>
 
               <section class='source'>
+                <div class="source-button">View Source</div>
                 <h4>Source (<a href="{{url}}#L{{line}}">{{filename}}:{{line}}</a>)</h4>
-                <pre><code>{{code}}</code></pre>
+                <pre class='hidden' data-id='{{parent}}-{{name}}'><code>{{code}}</code></pre>
               </section>
               
             </section>
@@ -332,7 +361,7 @@
 
               <section class='source'>
                 <h4>Source</h4>
-                <pre><code>{{code}}</code></pre>
+                <pre class='hidden' data-id='{{parent}}+{{name}}'><code>{{code}}</code></pre>
               </section>
               
             </section>
@@ -381,7 +410,7 @@
 
               <section class='source'>
                 <h4>Source</h4>
-                <pre><code>{{code}}</code></pre>
+                <pre class='hidden' data-id='{{parent}}^{{name}}'><code>{{code}}</code></pre>
               </section>
               
             </section>

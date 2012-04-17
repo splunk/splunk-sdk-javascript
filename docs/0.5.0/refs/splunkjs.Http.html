@@ -1,588 +1,325 @@
-<head>
-  <style type="text/css" media="screen">
-    body {
-      font-family: 'Helvetica Neue';
-      color: #333;
-    }
-    a {
-      color: #0f4bf0;
-    }
-    header h1 {
-      border-top: 4px solid #333;
-      font-size: 2.0em;
-    }
-    header .version {
-      font-size: 0.6em;
-    }
-    .main > header {
-      margin-bottom: 40px;
-    }
-    article {
-      margin-bottom: 10px;
-      padding-bottom: 30px;
-    }
-    article header h2 {
-      border-top: 3px solid #333;
-      font-size: 2em;
-      padding-top: 5px;
-      margin-bottom: 0px;
-    }
-    article > section {
-      margin-bottom: 30px;
-    }
-    article section h3 {
-      font-size: 1em;
-    }
-    article section header h3 {
-      padding-top: 2px;
-      font-size: 1.2em;
-      margin-bottom: 5px;
-      border-top: 2px solid #333;
-    }
-    article section header h4 {
-      font-size: 0.9em;
-      font-family: courier;
-      margin: 2px 0 5px 0;
-    }
-    @-webkit-keyframes highlight {
-      from {
-        background-color: #Ffff66;
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Splunk JavaScript SDK</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <!-- Le styles -->
+    <link href="../../assets/css/bootstrap.css" rel="stylesheet">
+    <style type="text/css">
+      body {
+        margin-top: 10px;
+        margin-bottom: 10px;
       }
-      to {
-        background-color: white;
+      .sidebar-nav {
+        padding: 9px 0;
       }
-    }
-    .extends {
-      margin-top: 0px;
-      font-size: 0.8em;
-    }
-    section.method:target {
-      -webkit-animation-duration: 1s;
-      -webkit-animation-name: highlight;
-    }
-    section header .type, section header .related {
-      margin-top: 0px;
-      font-size: 0.8em;
-    }
-    section header .endpoint {
-      margin-top: -.8em;
-      font-size: 0.8em;
-    }
-    section.params h4, section.source h4 {
-      margin-top: 5px;
-      margin-bottom: 2px;
-      font-size: 0.9em;
-    }
-    section.params ul {
-      margin-top: 2px;
-    }
-    a.show-source {
-      font-size: 0.8em;
-    }
-    .wrap {
-      width: 1050px;
-      margin: 0 auto;
-    }
-    .main {
-      width: 760px;
-      float: left;
-    }
-    p {
-      line-height: 1.4em;
-    }
-    nav {
-      padding-top: 15px;
-      float: left;
-      width: 250px;
-      margin-right: 30px;
-      text-align: right;
-      font-size: 0.8em;
-    }
-    nav ul {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-    }
-    nav ul h3 {
-      margin-bottom: 5px;
-      border-top: 2px solid #CCC;
-      padding-top: 2px;
-    }
-    
-    nav ul h4 {
-      margin-bottom: 5px;
-      padding-top: 2px;
-    }
-    nav ul ul li {
-      padding: 2px 0;
-    }
-    pre {
-      background-color: rgba(0,0,0,0.1);
-      padding: 8px;
-      overflow-x: auto;
-      overflow-y: auto;
-    }
-    code .keyword, code .special {
-      font-weight: bold;
-      color: black;
-    }
-    code .string, code .regexp {
-      color: green
-    }
-    code .class { 
-      color: blue
-    }
-    code .number {
-      color: red
-    }
-    code .comment {
-      color: grey;
-      font-style: italic;
-    }
-    
-    .em {
-      font-style: italic;
-      color: gray;
-      font-size: 12px;
-    }
-    
-    .bold {
-      font-weight: bold;
-    }
-    
-    section.params li p {
-      display: inline;
-    }
-  </style>
-</head>
-<body>
-  <div class='wrap'>
-    <nav>
-      <ul>
-                  <li>
-            <a href='splunkjs.Http.html'>
-              <h3>splunkjs.Http</h3>
-            </a>
-            <ul>
-                              <li><a href='#splunkjs.Http-init'>init</a></li>
-                              <li><a href='#splunkjs.Http-_buildResponse'>_buildResponse</a></li>
-                              <li><a href='#splunkjs.Http-parseJson'>parseJson</a></li>
-                              <li><a href='#splunkjs.Http-makeRequest'>makeRequest</a></li>
-                              <li><a href='#splunkjs.Http-request'>request</a></li>
-                              <li><a href='#splunkjs.Http-del'>del</a></li>
-                              <li><a href='#splunkjs.Http-post'>post</a></li>
-                              <li><a href='#splunkjs.Http-get'>get</a></li>
-              </ul>
-            
-                          <a href='#splunkjs.Http-globals'>
-                <h4>Module Globals</h4>
-              </a>
-            <ul>
-                              <li><a href='#splunkjs.Http+encode'>encode</a></li>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Logger.html'>
-              <h3>splunkjs.Logger</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Utils.html'>
-              <h3>splunkjs.Utils</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Async.html'>
-              <h3>splunkjs.Async</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Context.html'>
-              <h3>splunkjs.Context</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.html'>
-              <h3>splunkjs.Service</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Endpoint.html'>
-              <h3>splunkjs.Service.Endpoint</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Resource.html'>
-              <h3>splunkjs.Service.Resource</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Entity.html'>
-              <h3>splunkjs.Service.Entity</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Collection.html'>
-              <h3>splunkjs.Service.Collection</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.SavedSearch.html'>
-              <h3>splunkjs.Service.SavedSearch</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.SavedSearches.html'>
-              <h3>splunkjs.Service.SavedSearches</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Application.html'>
-              <h3>splunkjs.Service.Application</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Applications.html'>
-              <h3>splunkjs.Service.Applications</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.ServerInfo.html'>
-              <h3>splunkjs.Service.ServerInfo</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.User.html'>
-              <h3>splunkjs.Service.User</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Users.html'>
-              <h3>splunkjs.Service.Users</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.View.html'>
-              <h3>splunkjs.Service.View</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Views.html'>
-              <h3>splunkjs.Service.Views</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Index.html'>
-              <h3>splunkjs.Service.Index</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Indexes.html'>
-              <h3>splunkjs.Service.Indexes</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.PropertyStanza.html'>
-              <h3>splunkjs.Service.PropertyStanza</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.PropertyFile.html'>
-              <h3>splunkjs.Service.PropertyFile</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Properties.html'>
-              <h3>splunkjs.Service.Properties</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.ConfigurationStanza.html'>
-              <h3>splunkjs.Service.ConfigurationStanza</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.ConfigurationFile.html'>
-              <h3>splunkjs.Service.ConfigurationFile</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Configurations.html'>
-              <h3>splunkjs.Service.Configurations</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Job.html'>
-              <h3>splunkjs.Service.Job</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Jobs.html'>
-              <h3>splunkjs.Service.Jobs</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-        </ul>
-    </nav>
-    <div class='main'>
-              <article id='splunkjs.Http'>
-          <header>
-            <h2>splunkjs.Http</h2>
+      
+      .nav .nav-header {
+        text-transform: none;
+        font-size: 13px;
+      }
+      
+      .method {
+        margin-bottom: 18px;
+        clear: both;
+      }
+      
+      .method section {
+        margin-top: 10px;
+      }
+      
+      .method section h4 {
+        margin-bottom: 5px;
+      }
+      
+      .code-link {
+        margin-bottom: 5px;
+      }
+      
+      section.code {
+        position: relative;
+      }
+      
+      .pre-scrollable {
+        overflow-y: auto;
+      }
+      
+      .code-toggle {
+        position: absolute;
+        right: 0px;
+        top: 0px;
+        padding-bottom: 5px;
+      }
+      
+      section.code pre {
+        margin-top: 10px;
+      }
+      
+      code .keyword, code .special {
+        font-weight: bold;
+        color: black;
+      }
+      code .string, code .regexp {
+        color: green
+      }
+      code .class { 
+        color: blue
+      }
+      code .number {
+        color: red
+      }
+      code .comment {
+        color: grey;
+        font-style: italic;
+      }
+      
+      .param-name {
+        font-family: monospace;
+      }
+      
+      .param-type {
+        font-style: italic;
+      }
+      
+      .return-type {
+        font-style: italic;
+      }
+      
+      section.syntax span {
+        font-family: monospace;
+      }
+      
+      .method-name {
+        font-family: monospace;
+      }
+    </style>
+    <link href="../../assets/css/bootstrap-responsive.css" rel="stylesheet">
+    <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="row-fluid">
+        <div class="span3">
+          <div class="well sidebar-nav">
+            <ul class="nav nav-list">
+                          <li class="nav-header"><a href="splunkjs.Http.html">splunkjs.Http</a></li>
+              <li>
+                <ul class="nav nav-list">
+                                  <li><a href="#splunkjs.Http-init">init</a></li>
+                                  <li><a href="#splunkjs.Http-_buildResponse">_buildResponse</a></li>
+                                  <li><a href="#splunkjs.Http-parseJson">parseJson</a></li>
+                                  <li><a href="#splunkjs.Http-makeRequest">makeRequest</a></li>
+                                  <li><a href="#splunkjs.Http-request">request</a></li>
+                                  <li><a href="#splunkjs.Http-del">del</a></li>
+                                  <li><a href="#splunkjs.Http-post">post</a></li>
+                                  <li><a href="#splunkjs.Http-get">get</a></li>
+                                  <li class="nav-header"><a href="#splunkjs.Http-globals">Globals</a></li>
+                                  <li><a href="#splunkjs.Http+encode">encode</a></li>
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Logger.html">splunkjs.Logger</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Utils.html">splunkjs.Utils</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Async.html">splunkjs.Async</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Context.html">splunkjs.Context</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.html">splunkjs.Service</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Endpoint.html">splunkjs.Service.Endpoint</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Resource.html">splunkjs.Service.Resource</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Entity.html">splunkjs.Service.Entity</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Collection.html">splunkjs.Service.Collection</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.SavedSearch.html">splunkjs.Service.SavedSearch</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.SavedSearches.html">splunkjs.Service.SavedSearches</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Application.html">splunkjs.Service.Application</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Applications.html">splunkjs.Service.Applications</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.ServerInfo.html">splunkjs.Service.ServerInfo</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.User.html">splunkjs.Service.User</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Users.html">splunkjs.Service.Users</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.View.html">splunkjs.Service.View</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Views.html">splunkjs.Service.Views</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Index.html">splunkjs.Service.Index</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Indexes.html">splunkjs.Service.Indexes</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.PropertyStanza.html">splunkjs.Service.PropertyStanza</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.PropertyFile.html">splunkjs.Service.PropertyFile</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Properties.html">splunkjs.Service.Properties</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.ConfigurationStanza.html">splunkjs.Service.ConfigurationStanza</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.ConfigurationFile.html">splunkjs.Service.ConfigurationFile</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Configurations.html">splunkjs.Service.Configurations</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Job.html">splunkjs.Service.Job</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Jobs.html">splunkjs.Service.Jobs</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+            </ul>
+          </div><!--/well -->
+        </div><!--/span-->
+        <div class="span8">
+                
+                  <div class="page-header" id="splunkjs.Http">
+            <h1>Methods</h1>
+          </div>
+                
+          <section class="method well" id="splunkjs.Http-init">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">init</h2>
+              </div>
             </header>
-          <section>
-            <p>splunkjs.Http</p>
-<p>Base class for HTTP abstraction. </p>
-<p>This class provides the basic functionality (get/post/delete/request), as well as utilities to construct uniform responses.</p>
-<p>Base classes should only override <code>makeRequest</code> and <code>parseJSON</code></p>
-          </section>
-                      <section class='method' id='splunkjs.Http-init'>
-              <header>
-                <h3>init</h3>
-                <h4>splunkjs.Http.init</h4>
-                <p class='type'>constructor</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">isSplunk</span> - <span class="em">Boolean</span> <p>Whether or not this is HTTP instance is for talking with splunkjs.</p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                                  <h4>Returns</h4>
-                                      <p><span class="em">splunkjs.Http</span> A splunkjs.Http instance</p>
-                  </section>
-              <section>
-                <p>Constructor for splunkjs.Http</p>
-              </section>
-              <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L106">lib/http.js:106</a>)</h4>
-                <pre><code>init: function(isSplunk) {
+          
+            <section class="content">
+              <p>Constructor for splunkjs.Http</p>
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>init: function(isSplunk)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">isSplunk</td>
+                    <td class="param-type">Boolean</td>
+                    <td class="param-description"><p>Whether or not this is HTTP instance is for talking with splunkjs.</p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                                      <h4>Return</h4>
+              <span class="return-type">splunkjs.Http</span> A splunkjs.Http instance
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L106">lib/http.js:106</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>init: function(isSplunk) {
     // Whether or not this HTTP provider is talking to Splunk or not
     this.isSplunk = (isSplunk === undefined ? true : isSplunk);
     // We perform the bindings so that every function works 
@@ -593,34 +330,68 @@
     this.request            = utils.bind(this, this.request);
     this._buildResponse     = utils.bind(this, this._buildResponse);
 },</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Http-_buildResponse'>
-              <header>
-                <h3>_buildResponse</h3>
-                <h4>splunkjs.Http._buildResponse</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">error</span> - <span class="em">Object</span> <p>Error object if there was one for the request</p></li>
-                                      <li><span class="bold">response</span> - <span class="em">Object</span> <p>The actual response object</p></li>
-                                      <li><span class="bold">data</span> - <span class="em">Object</span> <p>The response data</p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                                  <h4>Returns</h4>
-                                      <p><span class="em">Object</span> A unified response object</p>
-                  </section>
-              <section>
-                <p>Construct a unified response</p>
+          </section>
+                
+          <section class="method well" id="splunkjs.Http-_buildResponse">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">_buildResponse</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Construct a unified response</p>
 <p>This function will generate a unified response given the parameters</p>
-              </section>
-              <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L260">lib/http.js:260</a>)</h4>
-                <pre><code>_buildResponse: function(error, response, data) {            
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>_buildResponse: function(error, response, data)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">error</td>
+                    <td class="param-type">Object</td>
+                    <td class="param-description"><p>Error object if there was one for the request</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">response</td>
+                    <td class="param-type">Object</td>
+                    <td class="param-description"><p>The actual response object</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">data</td>
+                    <td class="param-type">Object</td>
+                    <td class="param-description"><p>The response data</p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                                      <h4>Return</h4>
+              <span class="return-type">Object</span> A unified response object
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L260">lib/http.js:260</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>_buildResponse: function(error, response, data) {            
             var complete_response, json = {};
             var contentType = null;
             if (response &amp;&amp; response.headers) {
@@ -641,87 +412,181 @@
         }
     });
 })();</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Http-parseJson'>
-              <header>
-                <h3>parseJson</h3>
-                <h4>splunkjs.Http.parseJson</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">json</span> - <span class="em">String</span> <p>JSON to parse</p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                </section>
-              <section>
-                <p>Client-specific JSON parsing logic</p>
+          </section>
+                
+          <section class="method well" id="splunkjs.Http-parseJson">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">parseJson</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Client-specific JSON parsing logic</p>
 <p>This function encapsulates the actual logic for parsing the JSON response.</p>
-              </section>
-              <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L243">lib/http.js:243</a>)</h4>
-                <pre><code>parseJson: function(json) {
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>parseJson: function(json)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">json</td>
+                    <td class="param-type">String</td>
+                    <td class="param-description"><p>JSON to parse</p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L243">lib/http.js:243</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>parseJson: function(json) {
     throw new Error("UNDEFINED FUNCTION - OVERRIDE REQUIRED");
 },</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Http-makeRequest'>
-              <header>
-                <h3>makeRequest</h3>
-                <h4>splunkjs.Http.makeRequest</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">url</span> - <span class="em">String</span> <p>URL to request (already encoded)</p></li>
-                                      <li><span class="bold">message</span> - <span class="em">Object</span> <p>Object with values for method, headers, timeout and encoded body</p></li>
-                                      <li><span class="bold">Callback</span> - <span class="em">Function</span> <p>for when the request is complete: <code>(err, response)</code></p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                </section>
-              <section>
-                <p>Client-specific request logic</p>
+          </section>
+                
+          <section class="method well" id="splunkjs.Http-makeRequest">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">makeRequest</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Client-specific request logic</p>
 <p>This function encapsulates the actual logic for performing a request, and is meant to be overriden by subclasses.</p>
-              </section>
-              <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L228">lib/http.js:228</a>)</h4>
-                <pre><code>makeRequest: function(url, message, callback) {
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>makeRequest: function(url, message, callback)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">url</td>
+                    <td class="param-type">String</td>
+                    <td class="param-description"><p>URL to request (already encoded)</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">message</td>
+                    <td class="param-type">Object</td>
+                    <td class="param-description"><p>Object with values for method, headers, timeout and encoded body</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">Callback</td>
+                    <td class="param-type">Function</td>
+                    <td class="param-description"><p>for when the request is complete: <code>(err, response)</code></p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L228">lib/http.js:228</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>makeRequest: function(url, message, callback) {
     throw new Error("UNDEFINED FUNCTION - OVERRIDE REQUIRED"); 
 },</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Http-request'>
-              <header>
-                <h3>request</h3>
-                <h4>splunkjs.Http.request</h4>
-                <p class='type'>method</p>
-                                  <p class='related'>See: <a href='makeRequest.html#makeRequest'>makeRequest</a></p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">url</span> - <span class="em">String</span> <p>URL to request (already encoded)</p></li>
-                                      <li><span class="bold">message</span> - <span class="em">Object</span> <p>Object with values for method, headers, timeout and encoded body</p></li>
-                                      <li><span class="bold">Callback</span> - <span class="em">Function</span> <p>for when the request is complete: <code>(err, response)</code></p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                </section>
-              <section>
-                <p>Perform a request</p>
+          </section>
+                
+          <section class="method well" id="splunkjs.Http-request">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">request</h2>
+              </div>
+                          <h5 class="related">See: <a href="makeRequest.html#makeRequest">makeRequest</a></h5>
+            </header>
+          
+            <section class="content">
+              <p>Perform a request</p>
 <p>This function sets up everything to handle the response from a request, but delegates the actual calling to the subclass using <code>makeRequest</code>.</p>
-              </section>
-              <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L199">lib/http.js:199</a>)</h4>
-                <pre><code>request: function(url, message, callback) {
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>request: function(url, message, callback)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">url</td>
+                    <td class="param-type">String</td>
+                    <td class="param-description"><p>URL to request (already encoded)</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">message</td>
+                    <td class="param-type">Object</td>
+                    <td class="param-description"><p>Object with values for method, headers, timeout and encoded body</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">Callback</td>
+                    <td class="param-type">Function</td>
+                    <td class="param-description"><p>for when the request is complete: <code>(err, response)</code></p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L199">lib/http.js:199</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>request: function(url, message, callback) {
     var wrappedCallback = function(response) {
         callback = callback || function() {};
         if (response.status &lt; 400 &amp;&amp; response.status !== "abort") {
@@ -735,33 +600,75 @@
     // passing in our "wrapped" callback
     return this.makeRequest(url, message, wrappedCallback);
 },</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Http-del'>
-              <header>
-                <h3>del</h3>
-                <h4>splunkjs.Http.del</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">url</span> - <span class="em">String</span> <p>URL to request</p></li>
-                                      <li><span class="bold">headers</span> - <span class="em">Object</span> <p>Object of headers for this request</p></li>
-                                      <li><span class="bold">params</span> - <span class="em">Object</span> <p>Query parameters for this request</p></li>
-                                      <li><span class="bold">timeout</span> - <span class="em">Number</span> <p>Timeout (currently ignored)</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>Callback for when the request is complete: <code>(err, response)</code></p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                </section>
-              <section>
-                <p>Perform a DELETE request</p>
-              </section>
-              <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L175">lib/http.js:175</a>)</h4>
-                <pre><code>del: function(url, headers, params, timeout, callback) {
+          </section>
+                
+          <section class="method well" id="splunkjs.Http-del">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">del</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Perform a DELETE request</p>
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>del: function(url, headers, params, timeout, callback)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">url</td>
+                    <td class="param-type">String</td>
+                    <td class="param-description"><p>URL to request</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">headers</td>
+                    <td class="param-type">Object</td>
+                    <td class="param-description"><p>Object of headers for this request</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">params</td>
+                    <td class="param-type">Object</td>
+                    <td class="param-description"><p>Query parameters for this request</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">timeout</td>
+                    <td class="param-type">Number</td>
+                    <td class="param-description"><p>Timeout (currently ignored)</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">callback</td>
+                    <td class="param-type">Function</td>
+                    <td class="param-description"><p>Callback for when the request is complete: <code>(err, response)</code></p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L175">lib/http.js:175</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>del: function(url, headers, params, timeout, callback) {
     var encoded_url = url + "?" + root.encode(params);
     var message = {
         method: "DELETE",
@@ -770,33 +677,75 @@
     };
     return this.request(encoded_url, message, callback);
 },</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Http-post'>
-              <header>
-                <h3>post</h3>
-                <h4>splunkjs.Http.post</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">url</span> - <span class="em">String</span> <p>URL to request</p></li>
-                                      <li><span class="bold">headers</span> - <span class="em">Object</span> <p>Object of headers for this request</p></li>
-                                      <li><span class="bold">params</span> - <span class="em">Object</span> <p>Body parameters for this request</p></li>
-                                      <li><span class="bold">timeout</span> - <span class="em">Number</span> <p>Timeout (currently ignored)</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>Callback for when the request is complete: <code>(err, response)</code></p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                </section>
-              <section>
-                <p>Perform a POST request</p>
-              </section>
-              <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L152">lib/http.js:152</a>)</h4>
-                <pre><code>post: function(url, headers, params, timeout, callback) {
+          </section>
+                
+          <section class="method well" id="splunkjs.Http-post">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">post</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Perform a POST request</p>
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>post: function(url, headers, params, timeout, callback)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">url</td>
+                    <td class="param-type">String</td>
+                    <td class="param-description"><p>URL to request</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">headers</td>
+                    <td class="param-type">Object</td>
+                    <td class="param-description"><p>Object of headers for this request</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">params</td>
+                    <td class="param-type">Object</td>
+                    <td class="param-description"><p>Body parameters for this request</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">timeout</td>
+                    <td class="param-type">Number</td>
+                    <td class="param-description"><p>Timeout (currently ignored)</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">callback</td>
+                    <td class="param-type">Function</td>
+                    <td class="param-description"><p>Callback for when the request is complete: <code>(err, response)</code></p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L152">lib/http.js:152</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>post: function(url, headers, params, timeout, callback) {
     headers["Content-Type"] = "application/x-www-form-urlencoded";
     var message = {
         method: "POST",
@@ -806,33 +755,75 @@
     };
     return this.request(url, message, callback);
 },</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Http-get'>
-              <header>
-                <h3>get</h3>
-                <h4>splunkjs.Http.get</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">url</span> - <span class="em">String</span> <p>URL to request</p></li>
-                                      <li><span class="bold">headers</span> - <span class="em">Object</span> <p>Object of headers for this request</p></li>
-                                      <li><span class="bold">params</span> - <span class="em">Object</span> <p>Body parameters for this request</p></li>
-                                      <li><span class="bold">timeout</span> - <span class="em">Number</span> <p>Timeout (currently ignored)</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>Callback for when the request is complete: <code>(err, response)</code></p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                </section>
-              <section>
-                <p>Perform a POST request</p>
-              </section>
-              <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L130">lib/http.js:130</a>)</h4>
-                <pre><code>get: function(url, headers, params, timeout, callback) {
+          </section>
+                
+          <section class="method well" id="splunkjs.Http-get">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">get</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Perform a POST request</p>
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>get: function(url, headers, params, timeout, callback)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">url</td>
+                    <td class="param-type">String</td>
+                    <td class="param-description"><p>URL to request</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">headers</td>
+                    <td class="param-type">Object</td>
+                    <td class="param-description"><p>Object of headers for this request</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">params</td>
+                    <td class="param-type">Object</td>
+                    <td class="param-description"><p>Body parameters for this request</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">timeout</td>
+                    <td class="param-type">Number</td>
+                    <td class="param-description"><p>Timeout (currently ignored)</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">callback</td>
+                    <td class="param-type">Function</td>
+                    <td class="param-description"><p>Callback for when the request is complete: <code>(err, response)</code></p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L130">lib/http.js:130</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>get: function(url, headers, params, timeout, callback) {
     var encoded_url = url + "?" + root.encode(params);
     var message = {
         method: "GET",
@@ -841,38 +832,62 @@
     };
     return this.request(encoded_url, message, callback);
 },</code></pre>
-              </section>
-              
             </section>
-                      <header id='splunkjs.Http-globals'>
-              <h3>splunkjs.Http Module Globals</h3>
+          </section>
+                  <div class="page-header" id="splunkjs.Http-globals">
+            <h1>splunkjs.Http Module Globals</h1>
+          </div>
+                  <section class="method well" id="splunkjs.Http+encode">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">splunkjs.Http.encode</h2>
+              </div>
             </header>
-                      <section class='method' id='splunkjs.Http+encode'>
-              <header>
-                <h3>encode</h3>
-                <h4>splunkjs.Http.encode</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">params</span> - <span class="em">Object</span> <p>Parameters to URL-encode</p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                                  <h4>Returns</h4>
-                                      <p><span class="em">String</span> URL-encoded query string</p>
-                  </section>
-              <section>
-                <p>Helper function to encode a dictionary of values into a URL-encoded format.</p>
+          
+            <section class="content">
+              <p>Helper function to encode a dictionary of values into a URL-encoded format.</p>
 <h2>Example</h2>
 <pre><code> // should be a=1&amp;b=2&amp;b=3&amp;b=4
  encode({a: 1, b: [2,3,4]})
 </code></pre>
-              </section>
-              <section class='source'>
-                <h4>Source</h4>
-                <pre><code>root.encode = function(params) {
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>root.encode = function(params)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">params</td>
+                    <td class="param-type">Object</td>
+                    <td class="param-description"><p>Parameters to URL-encode</p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L39">lib/http.js:39</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>root.encode = function(params) {
     var encodedStr = "";
     // We loop over all the keys so we encode them.
     for (var key in params) {
@@ -912,95 +927,168 @@
     }
     return encodedStr;
 };</code></pre>
-              </section>
-              
             </section>
-          </article>
-      </div>
-  </div>
-  <script>
-    (function (hijs) {
-    //
-    // hijs - JavaScript Syntax Highlighter
-    //
-    // Copyright (c) 2010 Alexis Sellier
-    //
-    // All elements which match this will be syntax highlighted.
-    var selector = hijs || 'code';
-    var keywords = ('var function if else for while break switch case do new null in with void '
-                   +'continue delete return this true false throw catch typeof with instanceof').split(' '),
-        special  = ('eval window document undefined NaN Infinity parseInt parseFloat '
-                   +'encodeURI decodeURI encodeURIComponent decodeURIComponent').split(' ');
-    // Syntax definition
-    // The key becomes the class name of the <span>
-    // around the matched block of code.
-    var syntax = [
-      ['comment', /(\/\*(?:[^*\n]|\*+[^\/*])*\*+\/)/g],
-      ['comment', /(\/\/[^\n]*)/g],
-      ['string' , /("(?:(?!")[^\\\n]|\\.)*"|'(?:(?!')[^\\\n]|\\.)*')/g],
-      ['regexp' , /(\/.+\/[mgi]*)(?!\s*\w)/g],
-      ['class'  , /\b([A-Z][a-zA-Z]+)\b/g],
-      ['number' , /\b([0-9]+(?:\.[0-9]+)?)\b/g],
-      ['keyword', new(RegExp)('\\b(' + keywords.join('|') + ')\\b', 'g')],
-      ['special', new(RegExp)('\\b(' + special.join('|') + ')\\b', 'g')]
-    ];
-    var nodes, table = {};
-    if (/^[a-z]+$/.test(selector)) {
-        nodes = document.getElementsByTagName(selector);
-    } else if (/^\.[\w-]+$/.test(selector)) {
-        nodes = document.getElementsByClassName(selector.slice(1));
-    } else if (document.querySelectorAll) {
-        nodes = document.querySelectorAll(selector);
-    } else {
-        nodes = [];
-    }
-    for (var i = 0, children; i < nodes.length; i++) {
-        children = nodes[i].childNodes;
-        for (var j = 0, str; j < children.length; j++) {
-            code = children[j];
-            if (code.length >= 0) { // It's a text node
-                // Don't highlight command-line snippets
-                if (! /^\$/.test(code.nodeValue.trim())) {
-                    syntax.forEach(function (s) {
-                        var k = s[0], v = s[1];
-                        code.nodeValue = code.nodeValue.replace(v, function (_, m) {
-                            return '\u00ab' + encode(k) + '\u00b7'
-                                            + encode(m) +
-                                   '\u00b7' + encode(k) + '\u00bb';
-                        });
-                    });
-                }
-            }
-        }
-    }
-    for (var i = 0; i < nodes.length; i++) {
-        nodes[i].innerHTML =
-            nodes[i].innerHTML.replace(/\u00ab(.+?)\u00b7(.+?)\u00b7\1\u00bb/g, function (_, name, value) {
-                value = value.replace(/\u00ab[^\u00b7]+\u00b7/g, '').replace(/\u00b7[^\u00bb]+\u00bb/g, '');
-                return '<span class="' + decode(name) + '">' + escape(decode(value)) + '</span>';
+          </section>
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+        </div><!--/span-->
+      </div><!--/row-->
+      <hr>
+      <footer>
+        <p>&copy; Splunk 2012</p>
+      </footer>
+    </div><!--/.fluid-container-->
+    <!-- Le javascript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="../../assets/js/jquery.js"></script>
+    <script src="../../assets/js/bootstrap-transition.js"></script>
+    <script src="../../assets/js/bootstrap-alert.js"></script>
+    <script src="../../assets/js/bootstrap-modal.js"></script>
+    <script src="../../assets/js/bootstrap-dropdown.js"></script>
+    <script src="../../assets/js/bootstrap-scrollspy.js"></script>
+    <script src="../../assets/js/bootstrap-tab.js"></script>
+    <script src="../../assets/js/bootstrap-tooltip.js"></script>
+    <script src="../../assets/js/bootstrap-popover.js"></script>
+    <script src="../../assets/js/bootstrap-button.js"></script>
+    <script src="../../assets/js/bootstrap-collapse.js"></script>
+    <script src="../../assets/js/bootstrap-carousel.js"></script>
+    <script src="../../assets/js/bootstrap-typeahead.js"></script>
+    
+    <script>
+      $(function() {
+        $("a.code-toggle").click(function(e) {
+          var code = $(this).parent().children("pre");
+          var isHidden = code.hasClass("hidden");
+          
+          if (isHidden) {
+            console.log("BOO");
+            $(code).removeClass("hidden");  
+            $(this).children("i").addClass("icon-minus");
+            $(this).children("i").removeClass("icon-plus");
+          }
+          else {
+            console.log("BOO2");
+            $(code).addClass("hidden");  
+            $(this).children("i").addClass("icon-plus");
+            $(this).children("i").removeClass("icon-minus");
+          }
+          
+          e.preventDefault();
+          e.stopPropagation();
         });
-    }
-    function escape(str) {
-        return str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    }
-    // Encode ASCII characters to, and from Braille
-    function encode (str, encoded) {
-        table[encoded = str.split('').map(function (s) {
-            if (s.charCodeAt(0) > 127) { return s }
-            return String.fromCharCode(s.charCodeAt(0) + 0x2800);
-        }).join('')] = str;
-        return encoded;
-    }
-    function decode (str) {
-        if (str in table) {
-            return table[str];
-        } else {
-            return str.trim().split('').map(function (s) {
-                if (s.charCodeAt(0) - 0x2800 > 127) { return s }
-                return String.fromCharCode(s.charCodeAt(0) - 0x2800);
-            }).join('');
-        }
-    }
-    })(window.hijs);
-  </script>
-</body>
+      });
+    </script>
+    <script>
+      (function (hijs) {
+      //
+      // hijs - JavaScript Syntax Highlighter
+      //
+      // Copyright (c) 2010 Alexis Sellier
+      //
+      // All elements which match this will be syntax highlighted.
+      var selector = hijs || "code";
+      var keywords = ("var function if else for while break switch case do new null in with void "
+                     +continue delete return this true false throw catch typeof with instanceof).split( ),
+          special  = (eval window document undefined NaN Infinity parseInt parseFloat 
+                     +encodeURI decodeURI encodeURIComponent decodeURIComponent).split( );
+      // Syntax definition
+      // The key becomes the class name of the <span>
+      // around the matched block of code.
+      var syntax = [
+        [comment, /(\/\*(?:[^*\n]|\*+[^\/*])*\*+\/)/g],
+        [comment, /(\/\/[^\n]*)/g],
+        [string , /("(?:(?!")[^\\\n]|\\.)*"|(?:(?!)[^\\\n]|\\.)*)/g],
+        [regexp , /(\/.+\/[mgi]*)(?!\s*\w)/g],
+        [class  , /\b([A-Z][a-zA-Z]+)\b/g],
+        [number , /\b([0-9]+(?:\.[0-9]+)?)\b/g],
+        [keyword, new(RegExp)(\\b( + keywords.join(|) + )\\b, g)],
+        [special, new(RegExp)(\\b( + special.join(|) + )\\b, g)]
+      ];
+      var nodes, table = {};
+      if (/^[a-z]+$/.test(selector)) {
+          nodes = document.getElementsByTagName(selector);
+      } else if (/^\.[\w-]+$/.test(selector)) {
+          nodes = document.getElementsByClassName(selector.slice(1));
+      } else if (document.querySelectorAll) {
+          nodes = document.querySelectorAll(selector);
+      } else {
+          nodes = [];
+      }
+      for (var i = 0, children; i < nodes.length; i++) {
+          children = nodes[i].childNodes;
+          for (var j = 0, str; j < children.length; j++) {
+              code = children[j];
+              if (code.length >= 0) { // Its a text node
+                  // Dont highlight command-line snippets
+                  if (! /^\$/.test(code.nodeValue.trim())) {
+                      syntax.forEach(function (s) {
+                          var k = s[0], v = s[1];
+                          code.nodeValue = code.nodeValue.replace(v, function (_, m) {
+                              return \u00ab + encode(k) + \u00b7
+                                              + encode(m) +
+                                     \u00b7 + encode(k) + \u00bb;
+                          });
+                      });
+                  }
+              }
+          }
+      }
+      for (var i = 0; i < nodes.length; i++) {
+          nodes[i].innerHTML =
+              nodes[i].innerHTML.replace(/\u00ab(.+?)\u00b7(.+?)\u00b7\1\u00bb/g, function (_, name, value) {
+                  value = value.replace(/\u00ab[^\u00b7]+\u00b7/g, ).replace(/\u00b7[^\u00bb]+\u00bb/g, );
+                  return <span class=" + decode(name) + "> + escape(decode(value)) + </span>;
+          });
+      }
+      function escape(str) {
+          return str.replace(/</g, &lt;).replace(/>/g, &gt;);
+      }
+      // Encode ASCII characters to, and from Braille
+      function encode (str, encoded) {
+          table[encoded = str.split().map(function (s) {
+              if (s.charCodeAt(0) > 127) { return s }
+              return String.fromCharCode(s.charCodeAt(0) + 0x2800);
+          }).join()] = str;
+          return encoded;
+      }
+      function decode (str) {
+          if (str in table) {
+              return table[str];
+          } else {
+              return str.trim().split().map(function (s) {
+                  if (s.charCodeAt(0) - 0x2800 > 127) { return s }
+                  return String.fromCharCode(s.charCodeAt(0) - 0x2800);
+              }).join();
+          }
+      }
+      })(window.hijs);
+    </script>
+  </body>
+</html>

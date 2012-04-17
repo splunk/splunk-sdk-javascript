@@ -1,586 +1,286 @@
-<head>
-  <style type="text/css" media="screen">
-    body {
-      font-family: 'Helvetica Neue';
-      color: #333;
-    }
-    a {
-      color: #0f4bf0;
-    }
-    header h1 {
-      border-top: 4px solid #333;
-      font-size: 2.0em;
-    }
-    header .version {
-      font-size: 0.6em;
-    }
-    .main > header {
-      margin-bottom: 40px;
-    }
-    article {
-      margin-bottom: 10px;
-      padding-bottom: 30px;
-    }
-    article header h2 {
-      border-top: 3px solid #333;
-      font-size: 2em;
-      padding-top: 5px;
-      margin-bottom: 0px;
-    }
-    article > section {
-      margin-bottom: 30px;
-    }
-    article section h3 {
-      font-size: 1em;
-    }
-    article section header h3 {
-      padding-top: 2px;
-      font-size: 1.2em;
-      margin-bottom: 5px;
-      border-top: 2px solid #333;
-    }
-    article section header h4 {
-      font-size: 0.9em;
-      font-family: courier;
-      margin: 2px 0 5px 0;
-    }
-    @-webkit-keyframes highlight {
-      from {
-        background-color: #Ffff66;
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Splunk JavaScript SDK</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <!-- Le styles -->
+    <link href="../../assets/css/bootstrap.css" rel="stylesheet">
+    <style type="text/css">
+      body {
+        margin-top: 10px;
+        margin-bottom: 10px;
       }
-      to {
-        background-color: white;
+      .sidebar-nav {
+        padding: 9px 0;
       }
-    }
-    .extends {
-      margin-top: 0px;
-      font-size: 0.8em;
-    }
-    section.method:target {
-      -webkit-animation-duration: 1s;
-      -webkit-animation-name: highlight;
-    }
-    section header .type, section header .related {
-      margin-top: 0px;
-      font-size: 0.8em;
-    }
-    section header .endpoint {
-      margin-top: -.8em;
-      font-size: 0.8em;
-    }
-    section.params h4, section.source h4 {
-      margin-top: 5px;
-      margin-bottom: 2px;
-      font-size: 0.9em;
-    }
-    section.params ul {
-      margin-top: 2px;
-    }
-    a.show-source {
-      font-size: 0.8em;
-    }
-    .wrap {
-      width: 1050px;
-      margin: 0 auto;
-    }
-    .main {
-      width: 760px;
-      float: left;
-    }
-    p {
-      line-height: 1.4em;
-    }
-    nav {
-      padding-top: 15px;
-      float: left;
-      width: 250px;
-      margin-right: 30px;
-      text-align: right;
-      font-size: 0.8em;
-    }
-    nav ul {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-    }
-    nav ul h3 {
-      margin-bottom: 5px;
-      border-top: 2px solid #CCC;
-      padding-top: 2px;
-    }
-    
-    nav ul h4 {
-      margin-bottom: 5px;
-      padding-top: 2px;
-    }
-    nav ul ul li {
-      padding: 2px 0;
-    }
-    pre {
-      background-color: rgba(0,0,0,0.1);
-      padding: 8px;
-      overflow-x: auto;
-      overflow-y: auto;
-    }
-    code .keyword, code .special {
-      font-weight: bold;
-      color: black;
-    }
-    code .string, code .regexp {
-      color: green
-    }
-    code .class { 
-      color: blue
-    }
-    code .number {
-      color: red
-    }
-    code .comment {
-      color: grey;
-      font-style: italic;
-    }
-    
-    .em {
-      font-style: italic;
-      color: gray;
-      font-size: 12px;
-    }
-    
-    .bold {
-      font-weight: bold;
-    }
-    
-    section.params li p {
-      display: inline;
-    }
-  </style>
-</head>
-<body>
-  <div class='wrap'>
-    <nav>
-      <ul>
-                  <li>
-            <a href='splunkjs.Async.html'>
-              <h3>splunkjs.Async</h3>
-            </a>
-            <ul>
-              </ul>
-            
-                          <a href='#splunkjs.Async-globals'>
-                <h4>Module Globals</h4>
-              </a>
-            <ul>
-                              <li><a href='#splunkjs.Async+whilst'>whilst</a></li>
-                              <li><a href='#splunkjs.Async+parallel'>parallel</a></li>
-                              <li><a href='#splunkjs.Async+series'>series</a></li>
-                              <li><a href='#splunkjs.Async+parallelMap'>parallelMap</a></li>
-                              <li><a href='#splunkjs.Async+seriesMap'>seriesMap</a></li>
-                              <li><a href='#splunkjs.Async+parallelEach'>parallelEach</a></li>
-                              <li><a href='#splunkjs.Async+seriesEach'>seriesEach</a></li>
-                              <li><a href='#splunkjs.Async+chain'>chain</a></li>
-                              <li><a href='#splunkjs.Async+sleep'>sleep</a></li>
-                              <li><a href='#splunkjs.Async+augment'>augment</a></li>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Logger.html'>
-              <h3>splunkjs.Logger</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Http.html'>
-              <h3>splunkjs.Http</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Utils.html'>
-              <h3>splunkjs.Utils</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Context.html'>
-              <h3>splunkjs.Context</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.html'>
-              <h3>splunkjs.Service</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Endpoint.html'>
-              <h3>splunkjs.Service.Endpoint</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Resource.html'>
-              <h3>splunkjs.Service.Resource</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Entity.html'>
-              <h3>splunkjs.Service.Entity</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Collection.html'>
-              <h3>splunkjs.Service.Collection</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.SavedSearch.html'>
-              <h3>splunkjs.Service.SavedSearch</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.SavedSearches.html'>
-              <h3>splunkjs.Service.SavedSearches</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Application.html'>
-              <h3>splunkjs.Service.Application</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Applications.html'>
-              <h3>splunkjs.Service.Applications</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.ServerInfo.html'>
-              <h3>splunkjs.Service.ServerInfo</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.User.html'>
-              <h3>splunkjs.Service.User</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Users.html'>
-              <h3>splunkjs.Service.Users</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.View.html'>
-              <h3>splunkjs.Service.View</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Views.html'>
-              <h3>splunkjs.Service.Views</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Index.html'>
-              <h3>splunkjs.Service.Index</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Indexes.html'>
-              <h3>splunkjs.Service.Indexes</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.PropertyStanza.html'>
-              <h3>splunkjs.Service.PropertyStanza</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.PropertyFile.html'>
-              <h3>splunkjs.Service.PropertyFile</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Properties.html'>
-              <h3>splunkjs.Service.Properties</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.ConfigurationStanza.html'>
-              <h3>splunkjs.Service.ConfigurationStanza</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.ConfigurationFile.html'>
-              <h3>splunkjs.Service.ConfigurationFile</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Configurations.html'>
-              <h3>splunkjs.Service.Configurations</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Job.html'>
-              <h3>splunkjs.Service.Job</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Jobs.html'>
-              <h3>splunkjs.Service.Jobs</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-        </ul>
-    </nav>
-    <div class='main'>
-              <article id='splunkjs.Async'>
-          <header>
-            <h2>splunkjs.Async</h2>
+      
+      .nav .nav-header {
+        text-transform: none;
+        font-size: 13px;
+      }
+      
+      .method {
+        margin-bottom: 18px;
+        clear: both;
+      }
+      
+      .method section {
+        margin-top: 10px;
+      }
+      
+      .method section h4 {
+        margin-bottom: 5px;
+      }
+      
+      .code-link {
+        margin-bottom: 5px;
+      }
+      
+      section.code {
+        position: relative;
+      }
+      
+      .pre-scrollable {
+        overflow-y: auto;
+      }
+      
+      .code-toggle {
+        position: absolute;
+        right: 0px;
+        top: 0px;
+        padding-bottom: 5px;
+      }
+      
+      section.code pre {
+        margin-top: 10px;
+      }
+      
+      code .keyword, code .special {
+        font-weight: bold;
+        color: black;
+      }
+      code .string, code .regexp {
+        color: green
+      }
+      code .class { 
+        color: blue
+      }
+      code .number {
+        color: red
+      }
+      code .comment {
+        color: grey;
+        font-style: italic;
+      }
+      
+      .param-name {
+        font-family: monospace;
+      }
+      
+      .param-type {
+        font-style: italic;
+      }
+      
+      .return-type {
+        font-style: italic;
+      }
+      
+      section.syntax span {
+        font-family: monospace;
+      }
+      
+      .method-name {
+        font-family: monospace;
+      }
+    </style>
+    <link href="../../assets/css/bootstrap-responsive.css" rel="stylesheet">
+    <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="row-fluid">
+        <div class="span3">
+          <div class="well sidebar-nav">
+            <ul class="nav nav-list">
+                          <li class="nav-header"><a href="splunkjs.Async.html">splunkjs.Async</a></li>
+              <li>
+                <ul class="nav nav-list">
+                                  <li class="nav-header"><a href="#splunkjs.Async-globals">Globals</a></li>
+                                  <li><a href="#splunkjs.Async+whilst">whilst</a></li>
+                                  <li><a href="#splunkjs.Async+parallel">parallel</a></li>
+                                  <li><a href="#splunkjs.Async+series">series</a></li>
+                                  <li><a href="#splunkjs.Async+parallelMap">parallelMap</a></li>
+                                  <li><a href="#splunkjs.Async+seriesMap">seriesMap</a></li>
+                                  <li><a href="#splunkjs.Async+parallelEach">parallelEach</a></li>
+                                  <li><a href="#splunkjs.Async+seriesEach">seriesEach</a></li>
+                                  <li><a href="#splunkjs.Async+chain">chain</a></li>
+                                  <li><a href="#splunkjs.Async+sleep">sleep</a></li>
+                                  <li><a href="#splunkjs.Async+augment">augment</a></li>
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Logger.html">splunkjs.Logger</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Http.html">splunkjs.Http</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Utils.html">splunkjs.Utils</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Context.html">splunkjs.Context</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.html">splunkjs.Service</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Endpoint.html">splunkjs.Service.Endpoint</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Resource.html">splunkjs.Service.Resource</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Entity.html">splunkjs.Service.Entity</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Collection.html">splunkjs.Service.Collection</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.SavedSearch.html">splunkjs.Service.SavedSearch</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.SavedSearches.html">splunkjs.Service.SavedSearches</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Application.html">splunkjs.Service.Application</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Applications.html">splunkjs.Service.Applications</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.ServerInfo.html">splunkjs.Service.ServerInfo</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.User.html">splunkjs.Service.User</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Users.html">splunkjs.Service.Users</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.View.html">splunkjs.Service.View</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Views.html">splunkjs.Service.Views</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Index.html">splunkjs.Service.Index</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Indexes.html">splunkjs.Service.Indexes</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.PropertyStanza.html">splunkjs.Service.PropertyStanza</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.PropertyFile.html">splunkjs.Service.PropertyFile</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Properties.html">splunkjs.Service.Properties</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.ConfigurationStanza.html">splunkjs.Service.ConfigurationStanza</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.ConfigurationFile.html">splunkjs.Service.ConfigurationFile</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Configurations.html">splunkjs.Service.Configurations</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Job.html">splunkjs.Service.Job</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Jobs.html">splunkjs.Service.Jobs</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+            </ul>
+          </div><!--/well -->
+        </div><!--/span-->
+        <div class="span8">
+                
+                  <div class="page-header" id="splunkjs.Async-globals">
+            <h1>splunkjs.Async Module Globals</h1>
+          </div>
+                  <section class="method well" id="splunkjs.Async+whilst">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">splunkjs.Async.whilst</h2>
+              </div>
             </header>
-          <section>
-            <p>splunkjs.Async</p>
-<p>Utilities for Async control flow and collection handling</p>
-          </section>
-                      <header id='splunkjs.Async-globals'>
-              <h3>splunkjs.Async Module Globals</h3>
-            </header>
-                      <section class='method' id='splunkjs.Async+whilst'>
-              <header>
-                <h3>whilst</h3>
-                <h4>splunkjs.Async.whilst</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">condition</span> - <span class="em">Function</span> <p>A function which returns a boolean depending on whether the condition has been met.</p></li>
-                                      <li><span class="bold">body</span> - <span class="em">Function</span> <p>A function which executes the body of the loop: <code>(done)</code></p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A function to be executed when the loop is complete: <code>(err)</code></p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                </section>
-              <section>
-                <p>An asynchronous while loop</p>
+          
+            <section class="content">
+              <p>An asynchronous while loop</p>
 <h2>Example</h2>
 <pre><code> var i = 0;
  Async.whilst(
@@ -593,10 +293,54 @@
      }
  );
 </code></pre>
-              </section>
-              <section class='source'>
-                <h4>Source</h4>
-                <pre><code>root.whilst = function(condition, body, callback) {  
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>root.whilst = function(condition, body, callback)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">condition</td>
+                    <td class="param-type">Function</td>
+                    <td class="param-description"><p>A function which returns a boolean depending on whether the condition has been met.</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">body</td>
+                    <td class="param-type">Function</td>
+                    <td class="param-description"><p>A function which executes the body of the loop: <code>(done)</code></p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">callback</td>
+                    <td class="param-type">Function</td>
+                    <td class="param-description"><p>A function to be executed when the loop is complete: <code>(err)</code></p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/async.js#L52">lib/async.js:52</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>root.whilst = function(condition, body, callback) {  
     condition = condition || function() { return false; };
     body = body || function(done) { done(); };
     callback = callback || function() {};
@@ -617,26 +361,17 @@
         callback(null);
     }
 };</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Async+parallel'>
-              <header>
-                <h3>parallel</h3>
-                <h4>splunkjs.Async.parallel</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">tasks</span> - <span class="em">Function</span> <p>An array of functions: <code>(done)</code></p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A function to be executed when all tasks are done or an error occurred: <code>(err, ...)</code></p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                </section>
-              <section>
-                <p>Execute multiple functions in parallel.</p>
+          </section>
+                  <section class="method well" id="splunkjs.Async+parallel">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">splunkjs.Async.parallel</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Execute multiple functions in parallel.</p>
 <p>Async.parallel will execute multiple tasks (functions) in parallel, and only call the callback if one of them fails, or when all are complete.</p>
 <p>Each task takes a single parameter, which is a callback to be invoked when the  task is complete.</p>
 <p>The callback will be invoked with the combined results (in order) of all the  tasks.</p>
@@ -656,10 +391,49 @@
      }
  );
 </code></pre>
-              </section>
-              <section class='source'>
-                <h4>Source</h4>
-                <pre><code>root.parallel = function(tasks, callback) {
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>root.parallel = function(tasks, callback)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">tasks</td>
+                    <td class="param-type">Function</td>
+                    <td class="param-description"><p>An array of functions: <code>(done)</code></p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">callback</td>
+                    <td class="param-type">Function</td>
+                    <td class="param-description"><p>A function to be executed when all tasks are done or an error occurred: <code>(err, ...)</code></p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/async.js#L109">lib/async.js:109</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>root.parallel = function(tasks, callback) {
     // Allow for just a list of functions
     if (arguments.length &gt; 1 &amp;&amp; utils.isFunction(arguments[0])) {
         var args = utils.toArray(arguments);
@@ -709,26 +483,17 @@
         task(doneCallback(i));
     }
 };</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Async+series'>
-              <header>
-                <h3>series</h3>
-                <h4>splunkjs.Async.series</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">tasks</span> - <span class="em">Function</span> <p>An array of functions: <code>(done)</code></p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A function to be executed when all tasks are done or an error occurred: <code>(err, ...)</code></p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                </section>
-              <section>
-                <p>Execute multiple functions in series.</p>
+          </section>
+                  <section class="method well" id="splunkjs.Async+series">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">splunkjs.Async.series</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Execute multiple functions in series.</p>
 <p>Async.series will execute multiple tasks (functions) in series, and only call the callback if one of them fails, or when all are complete.</p>
 <p>Each task takes a single parameter, which is a callback to be invoked when the  task is complete.</p>
 <p>The callback will be invoked with the combined results (in order) of all the  tasks.</p>
@@ -752,10 +517,49 @@
      }
  );
 </code></pre>
-              </section>
-              <section class='source'>
-                <h4>Source</h4>
-                <pre><code>root.series = function(tasks, callback) {
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>root.series = function(tasks, callback)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">tasks</td>
+                    <td class="param-type">Function</td>
+                    <td class="param-description"><p>An array of functions: <code>(done)</code></p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">callback</td>
+                    <td class="param-type">Function</td>
+                    <td class="param-description"><p>A function to be executed when all tasks are done or an error occurred: <code>(err, ...)</code></p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/async.js#L198">lib/async.js:198</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>root.series = function(tasks, callback) {
     // Allow for just a list of functions
     if (arguments.length &gt; 1 &amp;&amp; utils.isFunction(arguments[0])) {
         var args = utils.toArray(arguments);
@@ -795,27 +599,17 @@
     
     innerSeries(tasks[0], tasks.slice(1), [], callback);
 };</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Async+parallelMap'>
-              <header>
-                <h3>parallelMap</h3>
-                <h4>splunkjs.Async.parallelMap</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">vals</span> - <span class="em">Array</span> <p>An array of the values to map over.</p></li>
-                                      <li><span class="bold">fn</span> - <span class="em">Function</span> <p>A (possibly asycnhronous) function to apply to each element: <code>(done)</code></p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A function to be executed when all tasks are done or an error occurred: <code>(err, mappedVals)</code></p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                </section>
-              <section>
-                <p>Map an asynchronous function over an array of values, in parallel.</p>
+          </section>
+                  <section class="method well" id="splunkjs.Async+parallelMap">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">splunkjs.Async.parallelMap</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Map an asynchronous function over an array of values, in parallel.</p>
 <p>Async.parallelMap will execute a function over each element in an array in parallel, and only call the callback when all operations are done, or when there is an error.</p>
 <p>The callback will be invoked with the resulting array.</p>
 <h2>Example</h2>
@@ -834,10 +628,54 @@
      }
  );
 </code></pre>
-              </section>
-              <section class='source'>
-                <h4>Source</h4>
-                <pre><code>root.parallelMap = function(vals, fn, callback) {     
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>root.parallelMap = function(vals, fn, callback)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">vals</td>
+                    <td class="param-type">Array</td>
+                    <td class="param-description"><p>An array of the values to map over.</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">fn</td>
+                    <td class="param-type">Function</td>
+                    <td class="param-description"><p>A (possibly asycnhronous) function to apply to each element: <code>(done)</code></p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">callback</td>
+                    <td class="param-type">Function</td>
+                    <td class="param-description"><p>A function to be executed when all tasks are done or an error occurred: <code>(err, mappedVals)</code></p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/async.js#L270">lib/async.js:270</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>root.parallelMap = function(vals, fn, callback) {     
     vals = vals || [];
     callback = callback || function() {};
     
@@ -864,27 +702,17 @@
         }
     });
 };</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Async+seriesMap'>
-              <header>
-                <h3>seriesMap</h3>
-                <h4>splunkjs.Async.seriesMap</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">vals</span> - <span class="em">Array</span> <p>An array of the values to map over.</p></li>
-                                      <li><span class="bold">fn</span> - <span class="em">Function</span> <p>A (possibly asycnhronous) function to apply to each element: <code>(done)</code></p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A function to be executed when all tasks are done or an error occurred: <code>(err, mappedVals)</code></p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                </section>
-              <section>
-                <p>Map an asynchronous function over an array of values, in series.</p>
+          </section>
+                  <section class="method well" id="splunkjs.Async+seriesMap">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">splunkjs.Async.seriesMap</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Map an asynchronous function over an array of values, in series.</p>
 <p>Async.seriesMap will execute a function over each element in an array in series, and only call the callback when all operations are done, or when there is an error.</p>
 <p>The callback will be invoked with the resulting array.</p>
 <h2>Example</h2>
@@ -900,10 +728,54 @@
      }
  );
 </code></pre>
-              </section>
-              <section class='source'>
-                <h4>Source</h4>
-                <pre><code>root.seriesMap = function(vals, fn, callback) {     
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>root.seriesMap = function(vals, fn, callback)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">vals</td>
+                    <td class="param-type">Array</td>
+                    <td class="param-description"><p>An array of the values to map over.</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">fn</td>
+                    <td class="param-type">Function</td>
+                    <td class="param-description"><p>A (possibly asycnhronous) function to apply to each element: <code>(done)</code></p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">callback</td>
+                    <td class="param-type">Function</td>
+                    <td class="param-description"><p>A function to be executed when all tasks are done or an error occurred: <code>(err, mappedVals)</code></p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/async.js#L326">lib/async.js:326</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>root.seriesMap = function(vals, fn, callback) {     
     vals = vals || [];
     callback = callback || function() {};
     
@@ -929,27 +801,17 @@
         }
     });
 };</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Async+parallelEach'>
-              <header>
-                <h3>parallelEach</h3>
-                <h4>splunkjs.Async.parallelEach</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">vals</span> - <span class="em">Array</span> <p>An array of the values to apply over.</p></li>
-                                      <li><span class="bold">fn</span> - <span class="em">Function</span> <p>A (possibly asycnhronous) function to apply to each element: <code>(done)</code></p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A function to be executed when all tasks are done or an error occurred: <code>(err)</code></p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                </section>
-              <section>
-                <p>Apply an asynchronous function over an array of values, in parallel.</p>
+          </section>
+                  <section class="method well" id="splunkjs.Async+parallelEach">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">splunkjs.Async.parallelEach</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Apply an asynchronous function over an array of values, in parallel.</p>
 <p>Async.parallelEach will execute a function over each element in an array in parallel, and only call the callback when all operations are done, or when there is an error.</p>
 <p>The callback will be invoked with nothing except a possible error parameter</p>
 <h2>Example</h2>
@@ -973,10 +835,54 @@
      }
  );
 </code></pre>
-              </section>
-              <section class='source'>
-                <h4>Source</h4>
-                <pre><code>root.parallelEach = function(vals, fn, callback) {  
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>root.parallelEach = function(vals, fn, callback)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">vals</td>
+                    <td class="param-type">Array</td>
+                    <td class="param-description"><p>An array of the values to apply over.</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">fn</td>
+                    <td class="param-type">Function</td>
+                    <td class="param-description"><p>A (possibly asycnhronous) function to apply to each element: <code>(done)</code></p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">callback</td>
+                    <td class="param-type">Function</td>
+                    <td class="param-description"><p>A function to be executed when all tasks are done or an error occurred: <code>(err)</code></p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/async.js#L390">lib/async.js:390</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>root.parallelEach = function(vals, fn, callback) {  
     vals = vals || [];   
     callback = callback || function() {};
     
@@ -984,27 +890,17 @@
         callback(err); 
     });
 };</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Async+seriesEach'>
-              <header>
-                <h3>seriesEach</h3>
-                <h4>splunkjs.Async.seriesEach</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">vals</span> - <span class="em">Array</span> <p>An array of the values to apply over.</p></li>
-                                      <li><span class="bold">fn</span> - <span class="em">Function</span> <p>A (possibly asycnhronous) function to apply to each element: <code>(done)</code></p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A function to be executed when all tasks are done or an error occurred: <code>(err)</code></p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                </section>
-              <section>
-                <p>Apply an asynchronous function over an array of values, in series.</p>
+          </section>
+                  <section class="method well" id="splunkjs.Async+seriesEach">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">splunkjs.Async.seriesEach</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Apply an asynchronous function over an array of values, in series.</p>
 <p>Async.seriesEach will execute a function over each element in an array in series, and only call the callback when all operations are done, or when there is an error.</p>
 <p>The callback will be invoked with nothing except a possible error parameter</p>
 <h2>Example</h2>
@@ -1022,10 +918,54 @@
      }
  );
 </code></pre>
-              </section>
-              <section class='source'>
-                <h4>Source</h4>
-                <pre><code>root.seriesEach = function(vals, fn, callback) {    
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>root.seriesEach = function(vals, fn, callback)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">vals</td>
+                    <td class="param-type">Array</td>
+                    <td class="param-description"><p>An array of the values to apply over.</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">fn</td>
+                    <td class="param-type">Function</td>
+                    <td class="param-description"><p>A (possibly asycnhronous) function to apply to each element: <code>(done)</code></p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">callback</td>
+                    <td class="param-type">Function</td>
+                    <td class="param-description"><p>A function to be executed when all tasks are done or an error occurred: <code>(err)</code></p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/async.js#L429">lib/async.js:429</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>root.seriesEach = function(vals, fn, callback) {    
     vals = vals || []; 
     callback = callback || function() {};
     
@@ -1033,26 +973,17 @@
         callback(err); 
     });
 };</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Async+chain'>
-              <header>
-                <h3>chain</h3>
-                <h4>splunkjs.Async.chain</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">tasks</span> - <span class="em">Function</span> <p>An array of functions: <code>(done)</code></p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A function to be executed when the chain is done or an error occurred: <code>(err, ...)</code></p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                </section>
-              <section>
-                <p>Chain asynchronous tasks.</p>
+          </section>
+                  <section class="method well" id="splunkjs.Async+chain">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">splunkjs.Async.chain</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Chain asynchronous tasks.</p>
 <p>Async.chain will chain asynchronous together by executing a task, and passing the results to the next task as arguments. If an error occurs at any point, or when the chain completes, the callback will be executed</p>
 <p>Each task takes 1-N parameters, where the amount is dependent on the previous task in the chain. The last parameter will always be a function to invoke when the task is complete.</p>
 <p>The callback will be invoked with the result of the final task.</p>
@@ -1074,10 +1005,49 @@
     }
 );
 </code></pre>
-              </section>
-              <section class='source'>
-                <h4>Source</h4>
-                <pre><code>root.chain = function(tasks, callback) {
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>root.chain = function(tasks, callback)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">tasks</td>
+                    <td class="param-type">Function</td>
+                    <td class="param-description"><p>An array of functions: <code>(done)</code></p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">callback</td>
+                    <td class="param-type">Function</td>
+                    <td class="param-description"><p>A function to be executed when the chain is done or an error occurred: <code>(err, ...)</code></p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/async.js#L476">lib/async.js:476</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>root.chain = function(tasks, callback) {
     // Allow for just a list of functions
     if (arguments.length &gt; 1 &amp;&amp; utils.isFunction(arguments[0])) {
         var args = utils.toArray(arguments);
@@ -1119,58 +1089,79 @@
         innerChain(tasks[0], tasks.slice(1), []);
     }
 };</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Async+sleep'>
-              <header>
-                <h3>sleep</h3>
-                <h4>splunkjs.Async.sleep</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">timeout</span> - <span class="em">Number</span> <p>The specified timeout in milliseconds.</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>A function to be executed when the timeout occurs.</p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                </section>
-              <section>
-                <p>Execute a function after a certain delay.</p>
+          </section>
+                  <section class="method well" id="splunkjs.Async+sleep">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">splunkjs.Async.sleep</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Execute a function after a certain delay.</p>
 <p>Async.sleep will execute the given function after the specified timeout period. This function mostly exists to make <code>setTimeout</code> adhere to Node.js style function signatures.</p>
 <h2>Example</h2>
 <pre><code>Async.sleep(1000, function() { console.log("TIMEOUT");});
 </code></pre>
-              </section>
-              <section class='source'>
-                <h4>Source</h4>
-                <pre><code>root.sleep = function(timeout, callback) {
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>root.sleep = function(timeout, callback)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">timeout</td>
+                    <td class="param-type">Number</td>
+                    <td class="param-description"><p>The specified timeout in milliseconds.</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">callback</td>
+                    <td class="param-type">Function</td>
+                    <td class="param-description"><p>A function to be executed when the timeout occurs.</p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/async.js#L534">lib/async.js:534</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>root.sleep = function(timeout, callback) {
     setTimeout(function() {
         callback();   
     }, timeout);
 };</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Async+augment'>
-              <header>
-                <h3>augment</h3>
-                <h4>splunkjs.Async.augment</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>The callback to augment.</p></li>
-                                      <li><span class="bold">rest</span> - <span class="em">Anything...</span> <p>Variable number of arguments to augment the callback with.</p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                </section>
-              <section>
-                <p>Augment a callback with extra parameters</p>
+          </section>
+                  <section class="method well" id="splunkjs.Async+augment">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">splunkjs.Async.augment</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Augment a callback with extra parameters</p>
 <p>Async.augment will cause a callback to be invoked with the extra specified parameters.</p>
 <p>Note that the augmented parameters are appended to the end of the parameter list.</p>
 <h2>Example</h2>
@@ -1181,10 +1172,49 @@
  var augmented = Async.augment(callback, 2);
  augmented(1);
 </code></pre>
-              </section>
-              <section class='source'>
-                <h4>Source</h4>
-                <pre><code>root.augment = function(callback) {
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>root.augment = function(callback)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">callback</td>
+                    <td class="param-type">Function</td>
+                    <td class="param-description"><p>The callback to augment.</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">rest</td>
+                    <td class="param-type">Anything...</td>
+                    <td class="param-description"><p>Variable number of arguments to augment the callback with.</p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/async.js#L562">lib/async.js:562</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>root.augment = function(callback) {
         var args = Array.prototype.slice.call(arguments, 1);
         return function() {
             var augmentedArgs = Array.prototype.slice.call(arguments);
@@ -1196,95 +1226,168 @@
         };
     };
 })();</code></pre>
-              </section>
-              
             </section>
-          </article>
-      </div>
-  </div>
-  <script>
-    (function (hijs) {
-    //
-    // hijs - JavaScript Syntax Highlighter
-    //
-    // Copyright (c) 2010 Alexis Sellier
-    //
-    // All elements which match this will be syntax highlighted.
-    var selector = hijs || 'code';
-    var keywords = ('var function if else for while break switch case do new null in with void '
-                   +'continue delete return this true false throw catch typeof with instanceof').split(' '),
-        special  = ('eval window document undefined NaN Infinity parseInt parseFloat '
-                   +'encodeURI decodeURI encodeURIComponent decodeURIComponent').split(' ');
-    // Syntax definition
-    // The key becomes the class name of the <span>
-    // around the matched block of code.
-    var syntax = [
-      ['comment', /(\/\*(?:[^*\n]|\*+[^\/*])*\*+\/)/g],
-      ['comment', /(\/\/[^\n]*)/g],
-      ['string' , /("(?:(?!")[^\\\n]|\\.)*"|'(?:(?!')[^\\\n]|\\.)*')/g],
-      ['regexp' , /(\/.+\/[mgi]*)(?!\s*\w)/g],
-      ['class'  , /\b([A-Z][a-zA-Z]+)\b/g],
-      ['number' , /\b([0-9]+(?:\.[0-9]+)?)\b/g],
-      ['keyword', new(RegExp)('\\b(' + keywords.join('|') + ')\\b', 'g')],
-      ['special', new(RegExp)('\\b(' + special.join('|') + ')\\b', 'g')]
-    ];
-    var nodes, table = {};
-    if (/^[a-z]+$/.test(selector)) {
-        nodes = document.getElementsByTagName(selector);
-    } else if (/^\.[\w-]+$/.test(selector)) {
-        nodes = document.getElementsByClassName(selector.slice(1));
-    } else if (document.querySelectorAll) {
-        nodes = document.querySelectorAll(selector);
-    } else {
-        nodes = [];
-    }
-    for (var i = 0, children; i < nodes.length; i++) {
-        children = nodes[i].childNodes;
-        for (var j = 0, str; j < children.length; j++) {
-            code = children[j];
-            if (code.length >= 0) { // It's a text node
-                // Don't highlight command-line snippets
-                if (! /^\$/.test(code.nodeValue.trim())) {
-                    syntax.forEach(function (s) {
-                        var k = s[0], v = s[1];
-                        code.nodeValue = code.nodeValue.replace(v, function (_, m) {
-                            return '\u00ab' + encode(k) + '\u00b7'
-                                            + encode(m) +
-                                   '\u00b7' + encode(k) + '\u00bb';
-                        });
-                    });
-                }
-            }
-        }
-    }
-    for (var i = 0; i < nodes.length; i++) {
-        nodes[i].innerHTML =
-            nodes[i].innerHTML.replace(/\u00ab(.+?)\u00b7(.+?)\u00b7\1\u00bb/g, function (_, name, value) {
-                value = value.replace(/\u00ab[^\u00b7]+\u00b7/g, '').replace(/\u00b7[^\u00bb]+\u00bb/g, '');
-                return '<span class="' + decode(name) + '">' + escape(decode(value)) + '</span>';
+          </section>
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+        </div><!--/span-->
+      </div><!--/row-->
+      <hr>
+      <footer>
+        <p>&copy; Splunk 2012</p>
+      </footer>
+    </div><!--/.fluid-container-->
+    <!-- Le javascript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="../../assets/js/jquery.js"></script>
+    <script src="../../assets/js/bootstrap-transition.js"></script>
+    <script src="../../assets/js/bootstrap-alert.js"></script>
+    <script src="../../assets/js/bootstrap-modal.js"></script>
+    <script src="../../assets/js/bootstrap-dropdown.js"></script>
+    <script src="../../assets/js/bootstrap-scrollspy.js"></script>
+    <script src="../../assets/js/bootstrap-tab.js"></script>
+    <script src="../../assets/js/bootstrap-tooltip.js"></script>
+    <script src="../../assets/js/bootstrap-popover.js"></script>
+    <script src="../../assets/js/bootstrap-button.js"></script>
+    <script src="../../assets/js/bootstrap-collapse.js"></script>
+    <script src="../../assets/js/bootstrap-carousel.js"></script>
+    <script src="../../assets/js/bootstrap-typeahead.js"></script>
+    
+    <script>
+      $(function() {
+        $("a.code-toggle").click(function(e) {
+          var code = $(this).parent().children("pre");
+          var isHidden = code.hasClass("hidden");
+          
+          if (isHidden) {
+            console.log("BOO");
+            $(code).removeClass("hidden");  
+            $(this).children("i").addClass("icon-minus");
+            $(this).children("i").removeClass("icon-plus");
+          }
+          else {
+            console.log("BOO2");
+            $(code).addClass("hidden");  
+            $(this).children("i").addClass("icon-plus");
+            $(this).children("i").removeClass("icon-minus");
+          }
+          
+          e.preventDefault();
+          e.stopPropagation();
         });
-    }
-    function escape(str) {
-        return str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    }
-    // Encode ASCII characters to, and from Braille
-    function encode (str, encoded) {
-        table[encoded = str.split('').map(function (s) {
-            if (s.charCodeAt(0) > 127) { return s }
-            return String.fromCharCode(s.charCodeAt(0) + 0x2800);
-        }).join('')] = str;
-        return encoded;
-    }
-    function decode (str) {
-        if (str in table) {
-            return table[str];
-        } else {
-            return str.trim().split('').map(function (s) {
-                if (s.charCodeAt(0) - 0x2800 > 127) { return s }
-                return String.fromCharCode(s.charCodeAt(0) - 0x2800);
-            }).join('');
-        }
-    }
-    })(window.hijs);
-  </script>
-</body>
+      });
+    </script>
+    <script>
+      (function (hijs) {
+      //
+      // hijs - JavaScript Syntax Highlighter
+      //
+      // Copyright (c) 2010 Alexis Sellier
+      //
+      // All elements which match this will be syntax highlighted.
+      var selector = hijs || "code";
+      var keywords = ("var function if else for while break switch case do new null in with void "
+                     +continue delete return this true false throw catch typeof with instanceof).split( ),
+          special  = (eval window document undefined NaN Infinity parseInt parseFloat 
+                     +encodeURI decodeURI encodeURIComponent decodeURIComponent).split( );
+      // Syntax definition
+      // The key becomes the class name of the <span>
+      // around the matched block of code.
+      var syntax = [
+        [comment, /(\/\*(?:[^*\n]|\*+[^\/*])*\*+\/)/g],
+        [comment, /(\/\/[^\n]*)/g],
+        [string , /("(?:(?!")[^\\\n]|\\.)*"|(?:(?!)[^\\\n]|\\.)*)/g],
+        [regexp , /(\/.+\/[mgi]*)(?!\s*\w)/g],
+        [class  , /\b([A-Z][a-zA-Z]+)\b/g],
+        [number , /\b([0-9]+(?:\.[0-9]+)?)\b/g],
+        [keyword, new(RegExp)(\\b( + keywords.join(|) + )\\b, g)],
+        [special, new(RegExp)(\\b( + special.join(|) + )\\b, g)]
+      ];
+      var nodes, table = {};
+      if (/^[a-z]+$/.test(selector)) {
+          nodes = document.getElementsByTagName(selector);
+      } else if (/^\.[\w-]+$/.test(selector)) {
+          nodes = document.getElementsByClassName(selector.slice(1));
+      } else if (document.querySelectorAll) {
+          nodes = document.querySelectorAll(selector);
+      } else {
+          nodes = [];
+      }
+      for (var i = 0, children; i < nodes.length; i++) {
+          children = nodes[i].childNodes;
+          for (var j = 0, str; j < children.length; j++) {
+              code = children[j];
+              if (code.length >= 0) { // Its a text node
+                  // Dont highlight command-line snippets
+                  if (! /^\$/.test(code.nodeValue.trim())) {
+                      syntax.forEach(function (s) {
+                          var k = s[0], v = s[1];
+                          code.nodeValue = code.nodeValue.replace(v, function (_, m) {
+                              return \u00ab + encode(k) + \u00b7
+                                              + encode(m) +
+                                     \u00b7 + encode(k) + \u00bb;
+                          });
+                      });
+                  }
+              }
+          }
+      }
+      for (var i = 0; i < nodes.length; i++) {
+          nodes[i].innerHTML =
+              nodes[i].innerHTML.replace(/\u00ab(.+?)\u00b7(.+?)\u00b7\1\u00bb/g, function (_, name, value) {
+                  value = value.replace(/\u00ab[^\u00b7]+\u00b7/g, ).replace(/\u00b7[^\u00bb]+\u00bb/g, );
+                  return <span class=" + decode(name) + "> + escape(decode(value)) + </span>;
+          });
+      }
+      function escape(str) {
+          return str.replace(/</g, &lt;).replace(/>/g, &gt;);
+      }
+      // Encode ASCII characters to, and from Braille
+      function encode (str, encoded) {
+          table[encoded = str.split().map(function (s) {
+              if (s.charCodeAt(0) > 127) { return s }
+              return String.fromCharCode(s.charCodeAt(0) + 0x2800);
+          }).join()] = str;
+          return encoded;
+      }
+      function decode (str) {
+          if (str in table) {
+              return table[str];
+          } else {
+              return str.trim().split().map(function (s) {
+                  if (s.charCodeAt(0) - 0x2800 > 127) { return s }
+                  return String.fromCharCode(s.charCodeAt(0) - 0x2800);
+              }).join();
+          }
+      }
+      })(window.hijs);
+    </script>
+  </body>
+</html>

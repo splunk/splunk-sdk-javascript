@@ -1,585 +1,329 @@
-<head>
-  <style type="text/css" media="screen">
-    body {
-      font-family: 'Helvetica Neue';
-      color: #333;
-    }
-    a {
-      color: #0f4bf0;
-    }
-    header h1 {
-      border-top: 4px solid #333;
-      font-size: 2.0em;
-    }
-    header .version {
-      font-size: 0.6em;
-    }
-    .main > header {
-      margin-bottom: 40px;
-    }
-    article {
-      margin-bottom: 10px;
-      padding-bottom: 30px;
-    }
-    article header h2 {
-      border-top: 3px solid #333;
-      font-size: 2em;
-      padding-top: 5px;
-      margin-bottom: 0px;
-    }
-    article > section {
-      margin-bottom: 30px;
-    }
-    article section h3 {
-      font-size: 1em;
-    }
-    article section header h3 {
-      padding-top: 2px;
-      font-size: 1.2em;
-      margin-bottom: 5px;
-      border-top: 2px solid #333;
-    }
-    article section header h4 {
-      font-size: 0.9em;
-      font-family: courier;
-      margin: 2px 0 5px 0;
-    }
-    @-webkit-keyframes highlight {
-      from {
-        background-color: #Ffff66;
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Splunk JavaScript SDK</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <!-- Le styles -->
+    <link href="../../assets/css/bootstrap.css" rel="stylesheet">
+    <style type="text/css">
+      body {
+        margin-top: 10px;
+        margin-bottom: 10px;
       }
-      to {
-        background-color: white;
+      .sidebar-nav {
+        padding: 9px 0;
       }
-    }
-    .extends {
-      margin-top: 0px;
-      font-size: 0.8em;
-    }
-    section.method:target {
-      -webkit-animation-duration: 1s;
-      -webkit-animation-name: highlight;
-    }
-    section header .type, section header .related {
-      margin-top: 0px;
-      font-size: 0.8em;
-    }
-    section header .endpoint {
-      margin-top: -.8em;
-      font-size: 0.8em;
-    }
-    section.params h4, section.source h4 {
-      margin-top: 5px;
-      margin-bottom: 2px;
-      font-size: 0.9em;
-    }
-    section.params ul {
-      margin-top: 2px;
-    }
-    a.show-source {
-      font-size: 0.8em;
-    }
-    .wrap {
-      width: 1050px;
-      margin: 0 auto;
-    }
-    .main {
-      width: 760px;
-      float: left;
-    }
-    p {
-      line-height: 1.4em;
-    }
-    nav {
-      padding-top: 15px;
-      float: left;
-      width: 250px;
-      margin-right: 30px;
-      text-align: right;
-      font-size: 0.8em;
-    }
-    nav ul {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-    }
-    nav ul h3 {
-      margin-bottom: 5px;
-      border-top: 2px solid #CCC;
-      padding-top: 2px;
-    }
-    
-    nav ul h4 {
-      margin-bottom: 5px;
-      padding-top: 2px;
-    }
-    nav ul ul li {
-      padding: 2px 0;
-    }
-    pre {
-      background-color: rgba(0,0,0,0.1);
-      padding: 8px;
-      overflow-x: auto;
-      overflow-y: auto;
-    }
-    code .keyword, code .special {
-      font-weight: bold;
-      color: black;
-    }
-    code .string, code .regexp {
-      color: green
-    }
-    code .class { 
-      color: blue
-    }
-    code .number {
-      color: red
-    }
-    code .comment {
-      color: grey;
-      font-style: italic;
-    }
-    
-    .em {
-      font-style: italic;
-      color: gray;
-      font-size: 12px;
-    }
-    
-    .bold {
-      font-weight: bold;
-    }
-    
-    section.params li p {
-      display: inline;
-    }
-  </style>
-</head>
-<body>
-  <div class='wrap'>
-    <nav>
-      <ul>
-                  <li>
-            <a href='splunkjs.Context.html'>
-              <h3>splunkjs.Context</h3>
-            </a>
-            <ul>
-                              <li><a href='#splunkjs.Context-init'>init</a></li>
-                              <li><a href='#splunkjs.Context-request'>request</a></li>
-                              <li><a href='#splunkjs.Context-post'>post</a></li>
-                              <li><a href='#splunkjs.Context-del'>del</a></li>
-                              <li><a href='#splunkjs.Context-get'>get</a></li>
-                              <li><a href='#splunkjs.Context-login'>login</a></li>
-                              <li><a href='#splunkjs.Context-urlify'>urlify</a></li>
-                              <li><a href='#splunkjs.Context-fullpath'>fullpath</a></li>
-                              <li><a href='#splunkjs.Context-_headers'>_headers</a></li>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Logger.html'>
-              <h3>splunkjs.Logger</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Http.html'>
-              <h3>splunkjs.Http</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Utils.html'>
-              <h3>splunkjs.Utils</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Async.html'>
-              <h3>splunkjs.Async</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.html'>
-              <h3>splunkjs.Service</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Endpoint.html'>
-              <h3>splunkjs.Service.Endpoint</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Resource.html'>
-              <h3>splunkjs.Service.Resource</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Entity.html'>
-              <h3>splunkjs.Service.Entity</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Collection.html'>
-              <h3>splunkjs.Service.Collection</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.SavedSearch.html'>
-              <h3>splunkjs.Service.SavedSearch</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.SavedSearches.html'>
-              <h3>splunkjs.Service.SavedSearches</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Application.html'>
-              <h3>splunkjs.Service.Application</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Applications.html'>
-              <h3>splunkjs.Service.Applications</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.ServerInfo.html'>
-              <h3>splunkjs.Service.ServerInfo</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.User.html'>
-              <h3>splunkjs.Service.User</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Users.html'>
-              <h3>splunkjs.Service.Users</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.View.html'>
-              <h3>splunkjs.Service.View</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Views.html'>
-              <h3>splunkjs.Service.Views</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Index.html'>
-              <h3>splunkjs.Service.Index</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Indexes.html'>
-              <h3>splunkjs.Service.Indexes</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.PropertyStanza.html'>
-              <h3>splunkjs.Service.PropertyStanza</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.PropertyFile.html'>
-              <h3>splunkjs.Service.PropertyFile</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Properties.html'>
-              <h3>splunkjs.Service.Properties</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.ConfigurationStanza.html'>
-              <h3>splunkjs.Service.ConfigurationStanza</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.ConfigurationFile.html'>
-              <h3>splunkjs.Service.ConfigurationFile</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Configurations.html'>
-              <h3>splunkjs.Service.Configurations</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Job.html'>
-              <h3>splunkjs.Service.Job</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-                  <li>
-            <a href='splunkjs.Service.Jobs.html'>
-              <h3>splunkjs.Service.Jobs</h3>
-            </a>
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-            
-            <ul>
-              </ul>
-          </li>
-        </ul>
-    </nav>
-    <div class='main'>
-              <article id='splunkjs.Context'>
-          <header>
-            <h2>splunkjs.Context</h2>
+      
+      .nav .nav-header {
+        text-transform: none;
+        font-size: 13px;
+      }
+      
+      .method {
+        margin-bottom: 18px;
+        clear: both;
+      }
+      
+      .method section {
+        margin-top: 10px;
+      }
+      
+      .method section h4 {
+        margin-bottom: 5px;
+      }
+      
+      .code-link {
+        margin-bottom: 5px;
+      }
+      
+      section.code {
+        position: relative;
+      }
+      
+      .pre-scrollable {
+        overflow-y: auto;
+      }
+      
+      .code-toggle {
+        position: absolute;
+        right: 0px;
+        top: 0px;
+        padding-bottom: 5px;
+      }
+      
+      section.code pre {
+        margin-top: 10px;
+      }
+      
+      code .keyword, code .special {
+        font-weight: bold;
+        color: black;
+      }
+      code .string, code .regexp {
+        color: green
+      }
+      code .class { 
+        color: blue
+      }
+      code .number {
+        color: red
+      }
+      code .comment {
+        color: grey;
+        font-style: italic;
+      }
+      
+      .param-name {
+        font-family: monospace;
+      }
+      
+      .param-type {
+        font-style: italic;
+      }
+      
+      .return-type {
+        font-style: italic;
+      }
+      
+      section.syntax span {
+        font-family: monospace;
+      }
+      
+      .method-name {
+        font-family: monospace;
+      }
+    </style>
+    <link href="../../assets/css/bootstrap-responsive.css" rel="stylesheet">
+    <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="container-fluid">
+      <div class="row-fluid">
+        <div class="span3">
+          <div class="well sidebar-nav">
+            <ul class="nav nav-list">
+                          <li class="nav-header"><a href="splunkjs.Context.html">splunkjs.Context</a></li>
+              <li>
+                <ul class="nav nav-list">
+                                  <li><a href="#splunkjs.Context-init">init</a></li>
+                                  <li><a href="#splunkjs.Context-request">request</a></li>
+                                  <li><a href="#splunkjs.Context-post">post</a></li>
+                                  <li><a href="#splunkjs.Context-del">del</a></li>
+                                  <li><a href="#splunkjs.Context-get">get</a></li>
+                                  <li><a href="#splunkjs.Context-login">login</a></li>
+                                  <li><a href="#splunkjs.Context-urlify">urlify</a></li>
+                                  <li><a href="#splunkjs.Context-fullpath">fullpath</a></li>
+                                  <li><a href="#splunkjs.Context-_headers">_headers</a></li>
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Logger.html">splunkjs.Logger</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Http.html">splunkjs.Http</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Utils.html">splunkjs.Utils</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Async.html">splunkjs.Async</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.html">splunkjs.Service</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Endpoint.html">splunkjs.Service.Endpoint</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Resource.html">splunkjs.Service.Resource</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Entity.html">splunkjs.Service.Entity</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Collection.html">splunkjs.Service.Collection</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.SavedSearch.html">splunkjs.Service.SavedSearch</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.SavedSearches.html">splunkjs.Service.SavedSearches</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Application.html">splunkjs.Service.Application</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Applications.html">splunkjs.Service.Applications</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.ServerInfo.html">splunkjs.Service.ServerInfo</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.User.html">splunkjs.Service.User</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Users.html">splunkjs.Service.Users</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.View.html">splunkjs.Service.View</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Views.html">splunkjs.Service.Views</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Index.html">splunkjs.Service.Index</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Indexes.html">splunkjs.Service.Indexes</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.PropertyStanza.html">splunkjs.Service.PropertyStanza</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.PropertyFile.html">splunkjs.Service.PropertyFile</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Properties.html">splunkjs.Service.Properties</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.ConfigurationStanza.html">splunkjs.Service.ConfigurationStanza</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.ConfigurationFile.html">splunkjs.Service.ConfigurationFile</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Configurations.html">splunkjs.Service.Configurations</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Job.html">splunkjs.Service.Job</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+                          <li class="nav-header"><a href="splunkjs.Service.Jobs.html">splunkjs.Service.Jobs</a></li>
+              <li>
+                <ul class="nav nav-list">
+                </ul>
+              </li>
+            </ul>
+          </div><!--/well -->
+        </div><!--/span-->
+        <div class="span8">
+                
+                  <div class="page-header" id="splunkjs.Context">
+            <h1>Methods</h1>
+          </div>
+                
+          <section class="method well" id="splunkjs.Context-init">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">init</h2>
+              </div>
             </header>
-          <section>
-            <p>splunkjs.Context</p>
-<p>Abstraction over the Splunk HTTP-wire protocol</p>
-<p>This class provides the basic functionality for communicating with a Splunk instance over HTTP. It will handle authentication and authorization, and formatting HTTP requests (GET/POST/DELETE) in the format Splunk expects.</p>
-          </section>
-                      <section class='method' id='splunkjs.Context-init'>
-              <header>
-                <h3>init</h3>
-                <h4>splunkjs.Context.init</h4>
-                <p class='type'>constructor</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">http</span> - <span class="em">splunkjs.Http</span> <p>An instance of a <code>splunkjs.Http</code> class</p></li>
-                                      <li><span class="bold">params</span> - <span class="em">Object</span> <p>Dictionary of optional parameters: scheme, host, port, username, password, owner, app, sessionKey</p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                                  <h4>Returns</h4>
-                                      <p><span class="em">splunkjs.Context</span> A splunkjs.Context instance</p>
-                  </section>
-              <section>
-                <p>Constructor for splunkjs.Context</p>
-              </section>
-              <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L49">lib/context.js:49</a>)</h4>
-                <pre><code>init: function(http, params) {
+          
+            <section class="content">
+              <p>Constructor for splunkjs.Context</p>
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>init: function(http, params)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">http</td>
+                    <td class="param-type">splunkjs.Http</td>
+                    <td class="param-description"><p>An instance of a <code>splunkjs.Http</code> class</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">params</td>
+                    <td class="param-type">Object</td>
+                    <td class="param-description"><p>Dictionary of optional parameters: scheme, host, port, username, password, owner, app, sessionKey</p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                                      <h4>Return</h4>
+              <span class="return-type">splunkjs.Context</span> A splunkjs.Context instance
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L49">lib/context.js:49</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>init: function(http, params) {
     if (!(http instanceof Http) &amp;&amp; !params) {
         // Move over the params
         params = http;
@@ -629,33 +373,75 @@
     this.post       = utils.bind(this, this.post);
     this.login      = utils.bind(this, this.login);
 },</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Context-request'>
-              <header>
-                <h3>request</h3>
-                <h4>splunkjs.Context.request</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">path</span> - <span class="em">String</span> <p>URL to request (with any query parameters already appended and encoded)</p></li>
-                                      <li><span class="bold">method</span> - <span class="em">String</span> <p>HTTP method (one of GET | POST | DELETE)</p></li>
-                                      <li><span class="bold">headers</span> - <span class="em">Object</span> <p>Object of headers for this request</p></li>
-                                      <li><span class="bold">body</span> - <span class="em">Object</span> <p>Body of parameters for this request</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>Callback for when the request is complete: <code>(err, response)</code></p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                </section>
-              <section>
-                <p>Perform a request</p>
-              </section>
-              <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L271">lib/context.js:271</a>)</h4>
-                <pre><code>request: function(path, method, headers, body, callback) {
+          </section>
+                
+          <section class="method well" id="splunkjs.Context-request">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">request</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Perform a request</p>
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>request: function(path, method, headers, body, callback)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">path</td>
+                    <td class="param-type">String</td>
+                    <td class="param-description"><p>URL to request (with any query parameters already appended and encoded)</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">method</td>
+                    <td class="param-type">String</td>
+                    <td class="param-description"><p>HTTP method (one of GET | POST | DELETE)</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">headers</td>
+                    <td class="param-type">Object</td>
+                    <td class="param-description"><p>Object of headers for this request</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">body</td>
+                    <td class="param-type">Object</td>
+                    <td class="param-description"><p>Body of parameters for this request</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">callback</td>
+                    <td class="param-type">Function</td>
+                    <td class="param-description"><p>Callback for when the request is complete: <code>(err, response)</code></p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L271">lib/context.js:271</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>request: function(path, method, headers, body, callback) {
         return this.http.request(
             this.urlify(path),    
             {
@@ -668,31 +454,65 @@
         );
     }
 });</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Context-post'>
-              <header>
-                <h3>post</h3>
-                <h4>splunkjs.Context.post</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">path</span> - <span class="em">String</span> <p>Path to request</p></li>
-                                      <li><span class="bold">params</span> - <span class="em">Object</span> <p>Body parameters for this request</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>Callback for when the request is complete: <code>(err, response)</code></p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                </section>
-              <section>
-                <p>Perform a POST request</p>
-              </section>
-              <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L250">lib/context.js:250</a>)</h4>
-                <pre><code>post: function(path, params, callback) {
+          </section>
+                
+          <section class="method well" id="splunkjs.Context-post">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">post</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Perform a POST request</p>
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>post: function(path, params, callback)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">path</td>
+                    <td class="param-type">String</td>
+                    <td class="param-description"><p>Path to request</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">params</td>
+                    <td class="param-type">Object</td>
+                    <td class="param-description"><p>Body parameters for this request</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">callback</td>
+                    <td class="param-type">Function</td>
+                    <td class="param-description"><p>Callback for when the request is complete: <code>(err, response)</code></p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L250">lib/context.js:250</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>post: function(path, params, callback) {
     return this.http.post(
         this.urlify(path),
         this._headers(),
@@ -701,31 +521,65 @@
         callback
     );  
 },</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Context-del'>
-              <header>
-                <h3>del</h3>
-                <h4>splunkjs.Context.del</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">path</span> - <span class="em">String</span> <p>Path to request</p></li>
-                                      <li><span class="bold">params</span> - <span class="em">Object</span> <p>Query parameters for this request</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>Callback for when the request is complete: <code>(err, response)</code></p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                </section>
-              <section>
-                <p>Perform a DELETE request</p>
-              </section>
-              <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L231">lib/context.js:231</a>)</h4>
-                <pre><code>del: function(path, params, callback) {
+          </section>
+                
+          <section class="method well" id="splunkjs.Context-del">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">del</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Perform a DELETE request</p>
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>del: function(path, params, callback)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">path</td>
+                    <td class="param-type">String</td>
+                    <td class="param-description"><p>Path to request</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">params</td>
+                    <td class="param-type">Object</td>
+                    <td class="param-description"><p>Query parameters for this request</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">callback</td>
+                    <td class="param-type">Function</td>
+                    <td class="param-description"><p>Callback for when the request is complete: <code>(err, response)</code></p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L231">lib/context.js:231</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>del: function(path, params, callback) {
     return this.http.del(
         this.urlify(path),
         this._headers(),
@@ -734,31 +588,65 @@
         callback
     );  
 },</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Context-get'>
-              <header>
-                <h3>get</h3>
-                <h4>splunkjs.Context.get</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">path</span> - <span class="em">String</span> <p>Path to request</p></li>
-                                      <li><span class="bold">params</span> - <span class="em">Object</span> <p>Query parameters for this request</p></li>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>Callback for when the request is complete: <code>(err, response)</code></p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                </section>
-              <section>
-                <p>Perform a GET request</p>
-              </section>
-              <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L212">lib/context.js:212</a>)</h4>
-                <pre><code>get: function(path, params, callback) {
+          </section>
+                
+          <section class="method well" id="splunkjs.Context-get">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">get</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Perform a GET request</p>
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>get: function(path, params, callback)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">path</td>
+                    <td class="param-type">String</td>
+                    <td class="param-description"><p>Path to request</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">params</td>
+                    <td class="param-type">Object</td>
+                    <td class="param-description"><p>Query parameters for this request</p></td>
+                  </tr>
+                                  <tr>
+                    <td class="param-name">callback</td>
+                    <td class="param-type">Function</td>
+                    <td class="param-description"><p>Callback for when the request is complete: <code>(err, response)</code></p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L212">lib/context.js:212</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>get: function(path, params, callback) {
     return this.http.get(
         this.urlify(path),
         this._headers(),
@@ -767,30 +655,56 @@
         callback
     );  
 },</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Context-login'>
-              <header>
-                <h3>login</h3>
-                <h4>splunkjs.Context.login</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">callback</span> - <span class="em">Function</span> <p>Callback to be executed when login is complete: <code>(err, wasSuccessful)</code></p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                </section>
-              <section>
-                <p>Login to a Splunk instance</p>
+          </section>
+                
+          <section class="method well" id="splunkjs.Context-login">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">login</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Login to a Splunk instance</p>
 <p>Perform authentication to a Splunk instance and store the resulting session key.</p>
-              </section>
-              <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L184">lib/context.js:184</a>)</h4>
-                <pre><code>login: function(callback) {
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>login: function(callback)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">callback</td>
+                    <td class="param-type">Function</td>
+                    <td class="param-description"><p>Callback to be executed when login is complete: <code>(err, wasSuccessful)</code></p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L184">lib/context.js:184</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>login: function(callback) {
     var that = this;
     var url = this.paths.login;
     var params = { username: this.username, password: this.password };
@@ -807,60 +721,112 @@
     
     return this.post(url, params, wrappedCallback);
 },</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Context-urlify'>
-              <header>
-                <h3>urlify</h3>
-                <h4>splunkjs.Context.urlify</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">path</span> - <span class="em">String</span> <p>Partial path</p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                                  <h4>Returns</h4>
-                                      <p><span class="em">String</span> Fully qualified URL</p>
-                  </section>
-              <section>
-                <p>Convert partial paths to a fully qualified URL</p>
+          </section>
+                
+          <section class="method well" id="splunkjs.Context-urlify">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">urlify</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Convert partial paths to a fully qualified URL</p>
 <p>Convert any partial path into a fully qualified URL.</p>
-              </section>
-              <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L169">lib/context.js:169</a>)</h4>
-                <pre><code>urlify: function(path) {
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>urlify: function(path)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">path</td>
+                    <td class="param-type">String</td>
+                    <td class="param-description"><p>Partial path</p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                                      <h4>Return</h4>
+              <span class="return-type">String</span> Fully qualified URL
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L169">lib/context.js:169</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>urlify: function(path) {
     return this.prefix + this.fullpath(path);
 },</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Context-fullpath'>
-              <header>
-                <h3>fullpath</h3>
-                <h4>splunkjs.Context.fullpath</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">path</span> - <span class="em">String</span> <p>Partial path</p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                                  <h4>Returns</h4>
-                                      <p><span class="em">String</span> Fully qualified path</p>
-                  </section>
-              <section>
-                <p>Convert partial paths to fully qualified ones</p>
+          </section>
+                
+          <section class="method well" id="splunkjs.Context-fullpath">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">fullpath</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Convert partial paths to fully qualified ones</p>
 <p>Convert any partial path into a full path containing the full owner and app prefixes if necessary</p>
-              </section>
-              <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L127">lib/context.js:127</a>)</h4>
-                <pre><code>fullpath: function(path, namespace) {
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>fullpath: function(path, namespace)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">path</td>
+                    <td class="param-type">String</td>
+                    <td class="param-description"><p>Partial path</p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                                      <h4>Return</h4>
+              <span class="return-type">String</span> Fully qualified path
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L127">lib/context.js:127</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>fullpath: function(path, namespace) {
     namespace = namespace || {};
     
     if (utils.startsWith(path, "/")) {
@@ -887,124 +853,223 @@
     }
     return utils.trim("/servicesNS/" + owner + "/" + app + "/" + path); 
 },</code></pre>
-              </section>
-              
             </section>
-                      <section class='method' id='splunkjs.Context-_headers'>
-              <header>
-                <h3>_headers</h3>
-                <h4>splunkjs.Context._headers</h4>
-                <p class='type'>method</p>
-                </header>
-              <section class='params'>
-                                  <h4>Params</h4>
-                <ul>
-                                      <li><span class="bold">headers</span> - <span class="em">Object</span> <p>Dictionary of headers (optional)</p></li>
-                  </ul>
-              </section>
-              <section class='params'>
-                                  <h4>Returns</h4>
-                                      <p><span class="em">Object</span> Augmented dictionary of headers</p>
-                  </section>
-              <section>
-                <p>Append Splunk-specific headers</p>
-              </section>
-              <section class='source'>
-                <h4>Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L110">lib/context.js:110</a>)</h4>
-                <pre><code>_headers: function (headers) {
+          </section>
+                
+          <section class="method well" id="splunkjs.Context-_headers">
+            <header>
+              <div class="method-header">
+                <h2 class="method-name">_headers</h2>
+              </div>
+            </header>
+          
+            <section class="content">
+              <p>Append Splunk-specific headers</p>
+            </section>
+            
+            <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>_headers: function (headers)</span>
+            </section>
+            
+            <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">headers</td>
+                    <td class="param-type">Object</td>
+                    <td class="param-description"><p>Dictionary of headers (optional)</p></td>
+                  </tr>
+                </tbody>
+              </table>
+            </section>
+            
+            <section class="returns">
+                                      <h4>Return</h4>
+              <span class="return-type">Object</span> Augmented dictionary of headers
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L110">lib/context.js:110</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>_headers: function (headers) {
     headers = headers || {};
     headers["Authorization"] = this.authorization + " " + this.sessionKey;
     return headers;
 },</code></pre>
-              </section>
-              
             </section>
-          </article>
-      </div>
-  </div>
-  <script>
-    (function (hijs) {
-    //
-    // hijs - JavaScript Syntax Highlighter
-    //
-    // Copyright (c) 2010 Alexis Sellier
-    //
-    // All elements which match this will be syntax highlighted.
-    var selector = hijs || 'code';
-    var keywords = ('var function if else for while break switch case do new null in with void '
-                   +'continue delete return this true false throw catch typeof with instanceof').split(' '),
-        special  = ('eval window document undefined NaN Infinity parseInt parseFloat '
-                   +'encodeURI decodeURI encodeURIComponent decodeURIComponent').split(' ');
-    // Syntax definition
-    // The key becomes the class name of the <span>
-    // around the matched block of code.
-    var syntax = [
-      ['comment', /(\/\*(?:[^*\n]|\*+[^\/*])*\*+\/)/g],
-      ['comment', /(\/\/[^\n]*)/g],
-      ['string' , /("(?:(?!")[^\\\n]|\\.)*"|'(?:(?!')[^\\\n]|\\.)*')/g],
-      ['regexp' , /(\/.+\/[mgi]*)(?!\s*\w)/g],
-      ['class'  , /\b([A-Z][a-zA-Z]+)\b/g],
-      ['number' , /\b([0-9]+(?:\.[0-9]+)?)\b/g],
-      ['keyword', new(RegExp)('\\b(' + keywords.join('|') + ')\\b', 'g')],
-      ['special', new(RegExp)('\\b(' + special.join('|') + ')\\b', 'g')]
-    ];
-    var nodes, table = {};
-    if (/^[a-z]+$/.test(selector)) {
-        nodes = document.getElementsByTagName(selector);
-    } else if (/^\.[\w-]+$/.test(selector)) {
-        nodes = document.getElementsByClassName(selector.slice(1));
-    } else if (document.querySelectorAll) {
-        nodes = document.querySelectorAll(selector);
-    } else {
-        nodes = [];
-    }
-    for (var i = 0, children; i < nodes.length; i++) {
-        children = nodes[i].childNodes;
-        for (var j = 0, str; j < children.length; j++) {
-            code = children[j];
-            if (code.length >= 0) { // It's a text node
-                // Don't highlight command-line snippets
-                if (! /^\$/.test(code.nodeValue.trim())) {
-                    syntax.forEach(function (s) {
-                        var k = s[0], v = s[1];
-                        code.nodeValue = code.nodeValue.replace(v, function (_, m) {
-                            return '\u00ab' + encode(k) + '\u00b7'
-                                            + encode(m) +
-                                   '\u00b7' + encode(k) + '\u00bb';
-                        });
-                    });
-                }
-            }
-        }
-    }
-    for (var i = 0; i < nodes.length; i++) {
-        nodes[i].innerHTML =
-            nodes[i].innerHTML.replace(/\u00ab(.+?)\u00b7(.+?)\u00b7\1\u00bb/g, function (_, name, value) {
-                value = value.replace(/\u00ab[^\u00b7]+\u00b7/g, '').replace(/\u00b7[^\u00bb]+\u00bb/g, '');
-                return '<span class="' + decode(name) + '">' + escape(decode(value)) + '</span>';
+          </section>
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+                
+        </div><!--/span-->
+      </div><!--/row-->
+      <hr>
+      <footer>
+        <p>&copy; Splunk 2012</p>
+      </footer>
+    </div><!--/.fluid-container-->
+    <!-- Le javascript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="../../assets/js/jquery.js"></script>
+    <script src="../../assets/js/bootstrap-transition.js"></script>
+    <script src="../../assets/js/bootstrap-alert.js"></script>
+    <script src="../../assets/js/bootstrap-modal.js"></script>
+    <script src="../../assets/js/bootstrap-dropdown.js"></script>
+    <script src="../../assets/js/bootstrap-scrollspy.js"></script>
+    <script src="../../assets/js/bootstrap-tab.js"></script>
+    <script src="../../assets/js/bootstrap-tooltip.js"></script>
+    <script src="../../assets/js/bootstrap-popover.js"></script>
+    <script src="../../assets/js/bootstrap-button.js"></script>
+    <script src="../../assets/js/bootstrap-collapse.js"></script>
+    <script src="../../assets/js/bootstrap-carousel.js"></script>
+    <script src="../../assets/js/bootstrap-typeahead.js"></script>
+    
+    <script>
+      $(function() {
+        $("a.code-toggle").click(function(e) {
+          var code = $(this).parent().children("pre");
+          var isHidden = code.hasClass("hidden");
+          
+          if (isHidden) {
+            console.log("BOO");
+            $(code).removeClass("hidden");  
+            $(this).children("i").addClass("icon-minus");
+            $(this).children("i").removeClass("icon-plus");
+          }
+          else {
+            console.log("BOO2");
+            $(code).addClass("hidden");  
+            $(this).children("i").addClass("icon-plus");
+            $(this).children("i").removeClass("icon-minus");
+          }
+          
+          e.preventDefault();
+          e.stopPropagation();
         });
-    }
-    function escape(str) {
-        return str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    }
-    // Encode ASCII characters to, and from Braille
-    function encode (str, encoded) {
-        table[encoded = str.split('').map(function (s) {
-            if (s.charCodeAt(0) > 127) { return s }
-            return String.fromCharCode(s.charCodeAt(0) + 0x2800);
-        }).join('')] = str;
-        return encoded;
-    }
-    function decode (str) {
-        if (str in table) {
-            return table[str];
-        } else {
-            return str.trim().split('').map(function (s) {
-                if (s.charCodeAt(0) - 0x2800 > 127) { return s }
-                return String.fromCharCode(s.charCodeAt(0) - 0x2800);
-            }).join('');
-        }
-    }
-    })(window.hijs);
-  </script>
-</body>
+      });
+    </script>
+    <script>
+      (function (hijs) {
+      //
+      // hijs - JavaScript Syntax Highlighter
+      //
+      // Copyright (c) 2010 Alexis Sellier
+      //
+      // All elements which match this will be syntax highlighted.
+      var selector = hijs || "code";
+      var keywords = ("var function if else for while break switch case do new null in with void "
+                     +continue delete return this true false throw catch typeof with instanceof).split( ),
+          special  = (eval window document undefined NaN Infinity parseInt parseFloat 
+                     +encodeURI decodeURI encodeURIComponent decodeURIComponent).split( );
+      // Syntax definition
+      // The key becomes the class name of the <span>
+      // around the matched block of code.
+      var syntax = [
+        [comment, /(\/\*(?:[^*\n]|\*+[^\/*])*\*+\/)/g],
+        [comment, /(\/\/[^\n]*)/g],
+        [string , /("(?:(?!")[^\\\n]|\\.)*"|(?:(?!)[^\\\n]|\\.)*)/g],
+        [regexp , /(\/.+\/[mgi]*)(?!\s*\w)/g],
+        [class  , /\b([A-Z][a-zA-Z]+)\b/g],
+        [number , /\b([0-9]+(?:\.[0-9]+)?)\b/g],
+        [keyword, new(RegExp)(\\b( + keywords.join(|) + )\\b, g)],
+        [special, new(RegExp)(\\b( + special.join(|) + )\\b, g)]
+      ];
+      var nodes, table = {};
+      if (/^[a-z]+$/.test(selector)) {
+          nodes = document.getElementsByTagName(selector);
+      } else if (/^\.[\w-]+$/.test(selector)) {
+          nodes = document.getElementsByClassName(selector.slice(1));
+      } else if (document.querySelectorAll) {
+          nodes = document.querySelectorAll(selector);
+      } else {
+          nodes = [];
+      }
+      for (var i = 0, children; i < nodes.length; i++) {
+          children = nodes[i].childNodes;
+          for (var j = 0, str; j < children.length; j++) {
+              code = children[j];
+              if (code.length >= 0) { // Its a text node
+                  // Dont highlight command-line snippets
+                  if (! /^\$/.test(code.nodeValue.trim())) {
+                      syntax.forEach(function (s) {
+                          var k = s[0], v = s[1];
+                          code.nodeValue = code.nodeValue.replace(v, function (_, m) {
+                              return \u00ab + encode(k) + \u00b7
+                                              + encode(m) +
+                                     \u00b7 + encode(k) + \u00bb;
+                          });
+                      });
+                  }
+              }
+          }
+      }
+      for (var i = 0; i < nodes.length; i++) {
+          nodes[i].innerHTML =
+              nodes[i].innerHTML.replace(/\u00ab(.+?)\u00b7(.+?)\u00b7\1\u00bb/g, function (_, name, value) {
+                  value = value.replace(/\u00ab[^\u00b7]+\u00b7/g, ).replace(/\u00b7[^\u00bb]+\u00bb/g, );
+                  return <span class=" + decode(name) + "> + escape(decode(value)) + </span>;
+          });
+      }
+      function escape(str) {
+          return str.replace(/</g, &lt;).replace(/>/g, &gt;);
+      }
+      // Encode ASCII characters to, and from Braille
+      function encode (str, encoded) {
+          table[encoded = str.split().map(function (s) {
+              if (s.charCodeAt(0) > 127) { return s }
+              return String.fromCharCode(s.charCodeAt(0) + 0x2800);
+          }).join()] = str;
+          return encoded;
+      }
+      function decode (str) {
+          if (str in table) {
+              return table[str];
+          } else {
+              return str.trim().split().map(function (s) {
+                  if (s.charCodeAt(0) - 0x2800 > 127) { return s }
+                  return String.fromCharCode(s.charCodeAt(0) - 0x2800);
+              }).join();
+          }
+      }
+      })(window.hijs);
+    </script>
+  </body>
+</html>
