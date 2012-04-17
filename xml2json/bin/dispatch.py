@@ -179,14 +179,6 @@ def forward_request(request):
 def status_ok(status):
     return status >= 200 and status <= 299
     
-def eai(request, *args,  **kwargs):   
-    status, content = forward_request(request)
-    if status_ok(status):
-        return status, xml2json.from_feed(content)
-    else:
-        return status, xml2json.from_messages_only(content)
-        
-
 def auth(request, *args, **kwargs):    
     status, content = forward_request(request)
     if status_ok(status):
@@ -311,6 +303,25 @@ def saved_dispatch(request, name, *args, **kwargs):
         return status, xml2json.from_propertizes_stanza(content)
     else:
         return status, xml2json.from_job_create(content)
+
+def unless_error(ok_handler, request_filter=lambda x: x):
+    def f(request, *args, **kwargs):
+        status, content = forward_request(request)
+        if status_ok(status):
+            return status, ok_handler(content, *args, **kwargs)
+        else:
+            return status, xml2json.from_message_only(content)
+    return f
+
+only_messages = unless_error(xml2json.from_messages_only)
+eai = unless_error(xml2json.from_feed)
+
+def output_mode(output_type):
+    def f(request):
+        request["get"]["output_mode"] = output_type
+        return request
+    return f
+
 
 router = route.Router()
 
