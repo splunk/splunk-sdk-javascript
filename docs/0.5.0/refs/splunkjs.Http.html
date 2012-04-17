@@ -7,7 +7,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
     <!-- Le styles -->
-    <link href="../../assets/css/bootstrap.css" rel="stylesheet">
+    <link href="assets/css/bootstrap.css" rel="stylesheet">
     <style type="text/css">
       body {
         margin-top: 10px;
@@ -98,12 +98,11 @@
         font-family: monospace;
       }
       
-      .signature,
-      .method-name {
+      .signature {
         font-family: monospace;
       }
     </style>
-    <link href="../../assets/css/bootstrap-responsive.css" rel="stylesheet">
+    <link href="assets/css/bootstrap-responsive.css" rel="stylesheet">
     <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
     <!--[if lt IE 9]>
       <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
@@ -276,13 +275,13 @@
         <div class="span8">
                 
                   <div class="page-header" id="splunkjs.Http">
-            <h1>Methods</h1>
+            <h2>Methods</h2>
           </div>
                 
           <section class="method well" id="splunkjs.Http-init">
             <header>
               <div class="method-header">
-                <h2 class="method-name">init</h2>
+                <h3 class="method-name">init</h3>
               </div>
               <h5 class="signature">splunkjs.Http.init</h5>
             </header>
@@ -319,7 +318,7 @@
             
             <section class="returns">
                                       <h4>Return</h4>
-              <span class="return-type">splunkjs.Http</span> A splunkjs.Http instance
+              <span class="return-type">splunkjs.Http</span>. A splunkjs.Http instance
             </section>
             
             <section class="examples">
@@ -327,7 +326,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L104">lib/http.js:104</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L104">lib/http.js:104</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>init: function(isSplunk) {
@@ -347,7 +346,7 @@
           <section class="method well" id="splunkjs.Http-_buildResponse">
             <header>
               <div class="method-header">
-                <h2 class="method-name">_buildResponse</h2>
+                <h3 class="method-name">_buildResponse</h3>
               </div>
               <h5 class="signature">splunkjs.Http._buildResponse</h5>
             </header>
@@ -395,7 +394,7 @@
             
             <section class="returns">
                                       <h4>Return</h4>
-              <span class="return-type">Object</span> A unified response object
+              <span class="return-type">Object</span>. A unified response object
             </section>
             
             <section class="examples">
@@ -403,7 +402,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L258">lib/http.js:258</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L258">lib/http.js:258</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>_buildResponse: function(error, response, data) {            
@@ -433,7 +432,7 @@
           <section class="method well" id="splunkjs.Http-parseJson">
             <header>
               <div class="method-header">
-                <h2 class="method-name">parseJson</h2>
+                <h3 class="method-name">parseJson</h3>
               </div>
               <h5 class="signature">splunkjs.Http.parseJson</h5>
             </header>
@@ -477,7 +476,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L241">lib/http.js:241</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L241">lib/http.js:241</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>parseJson: function(json) {
@@ -489,7 +488,7 @@
           <section class="method well" id="splunkjs.Http-makeRequest">
             <header>
               <div class="method-header">
-                <h2 class="method-name">makeRequest</h2>
+                <h3 class="method-name">makeRequest</h3>
               </div>
               <h5 class="signature">splunkjs.Http.makeRequest</h5>
             </header>
@@ -543,7 +542,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L226">lib/http.js:226</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L226">lib/http.js:226</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>makeRequest: function(url, message, callback) {
@@ -555,7 +554,7 @@
           <section class="method well" id="splunkjs.Http-request">
             <header>
               <div class="method-header">
-                <h2 class="method-name">request</h2>
+                <h3 class="method-name">request</h3>
               </div>
               <h5 class="signature">splunkjs.Http.request</h5>
                           <h5 class="related">See: <a href="makeRequest.html#makeRequest">makeRequest</a></h5>
@@ -610,7 +609,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L197">lib/http.js:197</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L197">lib/http.js:197</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>request: function(url, message, callback) {
@@ -633,7 +632,7 @@
           <section class="method well" id="splunkjs.Http-del">
             <header>
               <div class="method-header">
-                <h2 class="method-name">del</h2>
+                <h3 class="method-name">del</h3>
               </div>
               <h5 class="signature">splunkjs.Http.del</h5>
             </header>
@@ -696,7 +695,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L173">lib/http.js:173</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L173">lib/http.js:173</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>del: function(url, headers, params, timeout, callback) {
@@ -714,7 +713,7 @@
           <section class="method well" id="splunkjs.Http-post">
             <header>
               <div class="method-header">
-                <h2 class="method-name">post</h2>
+                <h3 class="method-name">post</h3>
               </div>
               <h5 class="signature">splunkjs.Http.post</h5>
             </header>
@@ -777,7 +776,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L150">lib/http.js:150</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L150">lib/http.js:150</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>post: function(url, headers, params, timeout, callback) {
@@ -796,7 +795,7 @@
           <section class="method well" id="splunkjs.Http-get">
             <header>
               <div class="method-header">
-                <h2 class="method-name">get</h2>
+                <h3 class="method-name">get</h3>
               </div>
               <h5 class="signature">splunkjs.Http.get</h5>
             </header>
@@ -859,7 +858,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L128">lib/http.js:128</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L128">lib/http.js:128</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>get: function(url, headers, params, timeout, callback) {
@@ -874,12 +873,12 @@
             </section>
           </section>
                   <div class="page-header" id="splunkjs.Http-globals">
-            <h1>splunkjs.Http Module Globals</h1>
+            <h2>splunkjs.Http Module Globals</h2>
           </div>
                   <section class="method well" id="splunkjs.Http+encode">
             <header>
               <div class="method-header">
-                <h2 class="method-name">encode</h2>
+                <h3 class="method-name">encode</h3>
               </div>
               <h5 class="signature">splunkjs.Http.encode</h5>
             </header>
@@ -916,7 +915,7 @@
             
             <section class="returns">
                                       <h4>Return</h4>
-              <span class="return-type">String</span> URL-encoded query string
+              <span class="return-type">String</span>. URL-encoded query string
             </section>
             
             <section class="examples">
@@ -928,7 +927,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L39">lib/http.js:39</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/http.js#L39">lib/http.js:39</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>root.encode = function(params) {
@@ -1011,19 +1010,19 @@
     <!-- Le javascript
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
-    <script src="../../assets/js/jquery.js"></script>
-    <script src="../../assets/js/bootstrap-transition.js"></script>
-    <script src="../../assets/js/bootstrap-alert.js"></script>
-    <script src="../../assets/js/bootstrap-modal.js"></script>
-    <script src="../../assets/js/bootstrap-dropdown.js"></script>
-    <script src="../../assets/js/bootstrap-scrollspy.js"></script>
-    <script src="../../assets/js/bootstrap-tab.js"></script>
-    <script src="../../assets/js/bootstrap-tooltip.js"></script>
-    <script src="../../assets/js/bootstrap-popover.js"></script>
-    <script src="../../assets/js/bootstrap-button.js"></script>
-    <script src="../../assets/js/bootstrap-collapse.js"></script>
-    <script src="../../assets/js/bootstrap-carousel.js"></script>
-    <script src="../../assets/js/bootstrap-typeahead.js"></script>
+    <script src="assets/js/jquery.js"></script>
+    <script src="assets/js/bootstrap-transition.js"></script>
+    <script src="assets/js/bootstrap-alert.js"></script>
+    <script src="assets/js/bootstrap-modal.js"></script>
+    <script src="assets/js/bootstrap-dropdown.js"></script>
+    <script src="assets/js/bootstrap-scrollspy.js"></script>
+    <script src="assets/js/bootstrap-tab.js"></script>
+    <script src="assets/js/bootstrap-tooltip.js"></script>
+    <script src="assets/js/bootstrap-popover.js"></script>
+    <script src="assets/js/bootstrap-button.js"></script>
+    <script src="assets/js/bootstrap-collapse.js"></script>
+    <script src="assets/js/bootstrap-carousel.js"></script>
+    <script src="assets/js/bootstrap-typeahead.js"></script>
     
     <script>
       $(function() {

@@ -7,7 +7,7 @@
     <meta name="description" content="">
     <meta name="author" content="">
     <!-- Le styles -->
-    <link href="../../assets/css/bootstrap.css" rel="stylesheet">
+    <link href="assets/css/bootstrap.css" rel="stylesheet">
     <style type="text/css">
       body {
         margin-top: 10px;
@@ -98,12 +98,11 @@
         font-family: monospace;
       }
       
-      .signature,
-      .method-name {
+      .signature {
         font-family: monospace;
       }
     </style>
-    <link href="../../assets/css/bootstrap-responsive.css" rel="stylesheet">
+    <link href="assets/css/bootstrap-responsive.css" rel="stylesheet">
     <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
     <!--[if lt IE 9]>
       <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
@@ -288,13 +287,13 @@
         <div class="span8">
                 
                   <div class="page-header" id="splunkjs.Service">
-            <h1>Methods</h1>
+            <h2>Methods</h2>
           </div>
                 
           <section class="method well" id="splunkjs.Service-init">
             <header>
               <div class="method-header">
-                <h2 class="method-name">init</h2>
+                <h3 class="method-name">init</h3>
               </div>
               <h5 class="signature">splunkjs.Service.init</h5>
             </header>
@@ -336,7 +335,7 @@
             
             <section class="returns">
                                       <h4>Return</h4>
-              <span class="return-type">splunkjs.Service</span> A splunkjs.Service instance
+              <span class="return-type">splunkjs.Service</span>. A splunkjs.Service instance
             </section>
             
             <section class="examples">
@@ -344,7 +343,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L51">lib/service.js:51</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L51">lib/service.js:51</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>init: function() {
@@ -368,7 +367,7 @@
           <section class="method well" id="splunkjs.Service-users">
             <header>
               <div class="method-header">
-                <h2 class="method-name">users</h2>
+                <h3 class="method-name">users</h3>
               </div>
               <h5 class="signature">splunkjs.Service.users</h5>
                           <h5 class="endpoint">Endpoint: authorization/users</h5>
@@ -390,7 +389,7 @@
             
             <section class="returns">
                                       <h4>Return</h4>
-              <span class="return-type">splunkjs.Service.Users</span> The Users collection
+              <span class="return-type">splunkjs.Service.Users</span>. The Users collection
             </section>
             
             <section class="examples">
@@ -408,7 +407,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L276">lib/service.js:276</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L276">lib/service.js:276</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>users: function() {
@@ -420,7 +419,7 @@
           <section class="method well" id="splunkjs.Service-views">
             <header>
               <div class="method-header">
-                <h2 class="method-name">views</h2>
+                <h3 class="method-name">views</h3>
               </div>
               <h5 class="signature">splunkjs.Service.views</h5>
                           <h5 class="endpoint">Endpoint: data/ui/views</h5>
@@ -460,7 +459,7 @@
             
             <section class="returns">
                                       <h4>Return</h4>
-              <span class="return-type">splunkjs.Service.Views</span> The views collection
+              <span class="return-type">splunkjs.Service.Views</span>. The views collection
             </section>
             
             <section class="examples">
@@ -478,7 +477,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L304">lib/service.js:304</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L304">lib/service.js:304</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>views: function(namespace) {
@@ -490,7 +489,7 @@
           <section class="method well" id="splunkjs.Service-log">
             <header>
               <div class="method-header">
-                <h2 class="method-name">log</h2>
+                <h3 class="method-name">log</h3>
               </div>
               <h5 class="signature">splunkjs.Service.log</h5>
                           <h5 class="endpoint">Endpoint: receivers/simple</h5>
@@ -549,7 +548,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L513">lib/service.js:513</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L513">lib/service.js:513</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>log: function(event, params, callback) {
@@ -587,7 +586,7 @@
           <section class="method well" id="splunkjs.Service-search">
             <header>
               <div class="method-header">
-                <h2 class="method-name">search</h2>
+                <h3 class="method-name">search</h3>
               </div>
               <h5 class="signature">splunkjs.Service.search</h5>
                           <h5 class="endpoint">Endpoint: search/jobs</h5>
@@ -652,7 +651,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L327">lib/service.js:327</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L327">lib/service.js:327</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>search: function(query, params, namespace, callback) {
@@ -670,7 +669,7 @@
           <section class="method well" id="splunkjs.Service-apps">
             <header>
               <div class="method-header">
-                <h2 class="method-name">apps</h2>
+                <h3 class="method-name">apps</h3>
               </div>
               <h5 class="signature">splunkjs.Service.apps</h5>
                           <h5 class="endpoint">Endpoint: apps/local</h5>
@@ -692,7 +691,7 @@
             
             <section class="returns">
                                       <h4>Return</h4>
-              <span class="return-type">splunkjs.Service.Collection</span> The Applications collection
+              <span class="return-type">splunkjs.Service.Collection</span>. The Applications collection
             </section>
             
             <section class="examples">
@@ -705,7 +704,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L116">lib/service.js:116</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L116">lib/service.js:116</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>apps: function() {
@@ -717,7 +716,7 @@
           <section class="method well" id="splunkjs.Service-indexes">
             <header>
               <div class="method-header">
-                <h2 class="method-name">indexes</h2>
+                <h3 class="method-name">indexes</h3>
               </div>
               <h5 class="signature">splunkjs.Service.indexes</h5>
                           <h5 class="endpoint">Endpoint: data/indexes</h5>
@@ -757,7 +756,7 @@
             
             <section class="returns">
                                       <h4>Return</h4>
-              <span class="return-type">splunkjs.Service.Indexes</span> The Indexes collection
+              <span class="return-type">splunkjs.Service.Indexes</span>. The Indexes collection
             </section>
             
             <section class="examples">
@@ -774,7 +773,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L170">lib/service.js:170</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L170">lib/service.js:170</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>indexes: function(namespace) { 
@@ -786,7 +785,7 @@
           <section class="method well" id="splunkjs.Service-parse">
             <header>
               <div class="method-header">
-                <h2 class="method-name">parse</h2>
+                <h3 class="method-name">parse</h3>
               </div>
               <h5 class="signature">splunkjs.Service.parse</h5>
                           <h5 class="endpoint">Endpoint: search/parser</h5>
@@ -845,7 +844,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L444">lib/service.js:444</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L444">lib/service.js:444</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>parse: function(query, params, callback) {
@@ -905,7 +904,7 @@ typeahead: function(prefix, count, callback) {
           <section class="method well" id="splunkjs.Service-serverInfo">
             <header>
               <div class="method-header">
-                <h2 class="method-name">serverInfo</h2>
+                <h3 class="method-name">serverInfo</h3>
               </div>
               <h5 class="signature">splunkjs.Service.serverInfo</h5>
                           <h5 class="endpoint">Endpoint: server/info</h5>
@@ -954,7 +953,7 @@ typeahead: function(prefix, count, callback) {
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L421">lib/service.js:421</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L421">lib/service.js:421</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>serverInfo: function(callback) {
@@ -969,7 +968,7 @@ typeahead: function(prefix, count, callback) {
           <section class="method well" id="splunkjs.Service-currentUser">
             <header>
               <div class="method-header">
-                <h2 class="method-name">currentUser</h2>
+                <h3 class="method-name">currentUser</h3>
               </div>
               <h5 class="signature">splunkjs.Service.currentUser</h5>
                           <h5 class="endpoint">Endpoint: authorization/current-context</h5>
@@ -1019,7 +1018,7 @@ typeahead: function(prefix, count, callback) {
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L382">lib/service.js:382</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L382">lib/service.js:382</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>currentUser: function(callback) {
@@ -1052,7 +1051,7 @@ typeahead: function(prefix, count, callback) {
           <section class="method well" id="splunkjs.Service-oneshotSearch">
             <header>
               <div class="method-header">
-                <h2 class="method-name">oneshotSearch</h2>
+                <h3 class="method-name">oneshotSearch</h3>
               </div>
               <h5 class="signature">splunkjs.Service.oneshotSearch</h5>
                           <h5 class="endpoint">Endpoint: search/jobs</h5>
@@ -1117,7 +1116,7 @@ typeahead: function(prefix, count, callback) {
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L356">lib/service.js:356</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L356">lib/service.js:356</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>oneshotSearch: function(query, params, namespace, callback) {
@@ -1135,7 +1134,7 @@ typeahead: function(prefix, count, callback) {
           <section class="method well" id="splunkjs.Service-properties">
             <header>
               <div class="method-header">
-                <h2 class="method-name">properties</h2>
+                <h3 class="method-name">properties</h3>
               </div>
               <h5 class="signature">splunkjs.Service.properties</h5>
                           <h5 class="endpoint">Endpoint: properties</h5>
@@ -1157,7 +1156,7 @@ typeahead: function(prefix, count, callback) {
             
             <section class="returns">
                                       <h4>Return</h4>
-              <span class="return-type">splunkjs.Service.Properties</span> The Properties collection
+              <span class="return-type">splunkjs.Service.Properties</span>. The Properties collection
             </section>
             
             <section class="examples">
@@ -1174,7 +1173,7 @@ typeahead: function(prefix, count, callback) {
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L196">lib/service.js:196</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L196">lib/service.js:196</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>properties: function() {
@@ -1186,7 +1185,7 @@ typeahead: function(prefix, count, callback) {
           <section class="method well" id="splunkjs.Service-configurations">
             <header>
               <div class="method-header">
-                <h2 class="method-name">configurations</h2>
+                <h3 class="method-name">configurations</h3>
               </div>
               <h5 class="signature">splunkjs.Service.configurations</h5>
                           <h5 class="endpoint">Endpoint: configs</h5>
@@ -1226,7 +1225,7 @@ typeahead: function(prefix, count, callback) {
             
             <section class="returns">
                                       <h4>Return</h4>
-              <span class="return-type">splunkjs.Service.Configurations</span> The Configurations collection
+              <span class="return-type">splunkjs.Service.Configurations</span>. The Configurations collection
             </section>
             
             <section class="examples">
@@ -1243,7 +1242,7 @@ typeahead: function(prefix, count, callback) {
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L143">lib/service.js:143</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L143">lib/service.js:143</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>configurations: function(namespace) {
@@ -1255,7 +1254,7 @@ typeahead: function(prefix, count, callback) {
           <section class="method well" id="splunkjs.Service-specialize">
             <header>
               <div class="method-header">
-                <h2 class="method-name">specialize</h2>
+                <h3 class="method-name">specialize</h3>
               </div>
               <h5 class="signature">splunkjs.Service.specialize</h5>
             </header>
@@ -1298,7 +1297,7 @@ typeahead: function(prefix, count, callback) {
             
             <section class="returns">
                                       <h4>Return</h4>
-              <span class="return-type">splunkjs.Service</span> The specialized service.
+              <span class="return-type">splunkjs.Service</span>. The specialized service.
             </section>
             
             <section class="examples">
@@ -1310,7 +1309,7 @@ typeahead: function(prefix, count, callback) {
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L85">lib/service.js:85</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L85">lib/service.js:85</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>specialize: function(owner, app) {
@@ -1331,7 +1330,7 @@ typeahead: function(prefix, count, callback) {
           <section class="method well" id="splunkjs.Service-jobs">
             <header>
               <div class="method-header">
-                <h2 class="method-name">jobs</h2>
+                <h3 class="method-name">jobs</h3>
               </div>
               <h5 class="signature">splunkjs.Service.jobs</h5>
                           <h5 class="endpoint">Endpoint: search/jobs</h5>
@@ -1371,7 +1370,7 @@ typeahead: function(prefix, count, callback) {
             
             <section class="returns">
                                       <h4>Return</h4>
-              <span class="return-type">splunkjs.Service.Jobs</span> The Jobs collection
+              <span class="return-type">splunkjs.Service.Jobs</span>. The Jobs collection
             </section>
             
             <section class="examples">
@@ -1389,7 +1388,7 @@ typeahead: function(prefix, count, callback) {
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L249">lib/service.js:249</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L249">lib/service.js:249</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>jobs: function(namespace) {
@@ -1401,7 +1400,7 @@ typeahead: function(prefix, count, callback) {
           <section class="method well" id="splunkjs.Service-savedSearches">
             <header>
               <div class="method-header">
-                <h2 class="method-name">savedSearches</h2>
+                <h3 class="method-name">savedSearches</h3>
               </div>
               <h5 class="signature">splunkjs.Service.savedSearches</h5>
                           <h5 class="endpoint">Endpoint: saved/searches</h5>
@@ -1441,7 +1440,7 @@ typeahead: function(prefix, count, callback) {
             
             <section class="returns">
                                       <h4>Return</h4>
-              <span class="return-type">splunkjs.Service.SavedSearches</span> The SavedSearches collection
+              <span class="return-type">splunkjs.Service.SavedSearches</span>. The SavedSearches collection
             </section>
             
             <section class="examples">
@@ -1456,7 +1455,7 @@ typeahead: function(prefix, count, callback) {
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L221">lib/service.js:221</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L221">lib/service.js:221</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>savedSearches: function(namespace) {
@@ -1465,12 +1464,12 @@ typeahead: function(prefix, count, callback) {
             </section>
           </section>
                   <div class="page-header" id="splunkjs.Service-inherited">
-            <h1>Inherited Methods</h1>
+            <h2>Inherited Methods</h2>
           </div>
                   <section class="method well" id="splunkjs.Service^request">
             <header>
               <div class="method-header">
-                <h2 class="method-name">request</h2>
+                <h3 class="method-name">request</h3>
               </div>
               <h5 class="signature">splunkjs.Context.request</h5>
             </header>
@@ -1533,7 +1532,7 @@ typeahead: function(prefix, count, callback) {
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L277">lib/context.js:277</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L277">lib/context.js:277</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>request: function(path, method, headers, body, callback) {
@@ -1554,7 +1553,7 @@ typeahead: function(prefix, count, callback) {
                   <section class="method well" id="splunkjs.Service^post">
             <header>
               <div class="method-header">
-                <h2 class="method-name">post</h2>
+                <h3 class="method-name">post</h3>
               </div>
               <h5 class="signature">splunkjs.Context.post</h5>
             </header>
@@ -1607,7 +1606,7 @@ typeahead: function(prefix, count, callback) {
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L256">lib/context.js:256</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L256">lib/context.js:256</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>post: function(path, params, callback) {
@@ -1624,7 +1623,7 @@ typeahead: function(prefix, count, callback) {
                   <section class="method well" id="splunkjs.Service^del">
             <header>
               <div class="method-header">
-                <h2 class="method-name">del</h2>
+                <h3 class="method-name">del</h3>
               </div>
               <h5 class="signature">splunkjs.Context.del</h5>
             </header>
@@ -1677,7 +1676,7 @@ typeahead: function(prefix, count, callback) {
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L237">lib/context.js:237</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L237">lib/context.js:237</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>del: function(path, params, callback) {
@@ -1694,7 +1693,7 @@ typeahead: function(prefix, count, callback) {
                   <section class="method well" id="splunkjs.Service^get">
             <header>
               <div class="method-header">
-                <h2 class="method-name">get</h2>
+                <h3 class="method-name">get</h3>
               </div>
               <h5 class="signature">splunkjs.Context.get</h5>
             </header>
@@ -1747,7 +1746,7 @@ typeahead: function(prefix, count, callback) {
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L218">lib/context.js:218</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L218">lib/context.js:218</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>get: function(path, params, callback) {
@@ -1764,7 +1763,7 @@ typeahead: function(prefix, count, callback) {
                   <section class="method well" id="splunkjs.Service^fullpath">
             <header>
               <div class="method-header">
-                <h2 class="method-name">fullpath</h2>
+                <h3 class="method-name">fullpath</h3>
               </div>
               <h5 class="signature">splunkjs.Context.fullpath</h5>
             </header>
@@ -1802,7 +1801,7 @@ typeahead: function(prefix, count, callback) {
             
             <section class="returns">
                                       <h4>Return</h4>
-              <span class="return-type">String</span> Fully qualified path
+              <span class="return-type">String</span>. Fully qualified path
             </section>
             
             <section class="examples">
@@ -1810,7 +1809,7 @@ typeahead: function(prefix, count, callback) {
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L133">lib/context.js:133</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L133">lib/context.js:133</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>fullpath: function(path, namespace) {
@@ -1880,19 +1879,19 @@ typeahead: function(prefix, count, callback) {
     <!-- Le javascript
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
-    <script src="../../assets/js/jquery.js"></script>
-    <script src="../../assets/js/bootstrap-transition.js"></script>
-    <script src="../../assets/js/bootstrap-alert.js"></script>
-    <script src="../../assets/js/bootstrap-modal.js"></script>
-    <script src="../../assets/js/bootstrap-dropdown.js"></script>
-    <script src="../../assets/js/bootstrap-scrollspy.js"></script>
-    <script src="../../assets/js/bootstrap-tab.js"></script>
-    <script src="../../assets/js/bootstrap-tooltip.js"></script>
-    <script src="../../assets/js/bootstrap-popover.js"></script>
-    <script src="../../assets/js/bootstrap-button.js"></script>
-    <script src="../../assets/js/bootstrap-collapse.js"></script>
-    <script src="../../assets/js/bootstrap-carousel.js"></script>
-    <script src="../../assets/js/bootstrap-typeahead.js"></script>
+    <script src="assets/js/jquery.js"></script>
+    <script src="assets/js/bootstrap-transition.js"></script>
+    <script src="assets/js/bootstrap-alert.js"></script>
+    <script src="assets/js/bootstrap-modal.js"></script>
+    <script src="assets/js/bootstrap-dropdown.js"></script>
+    <script src="assets/js/bootstrap-scrollspy.js"></script>
+    <script src="assets/js/bootstrap-tab.js"></script>
+    <script src="assets/js/bootstrap-tooltip.js"></script>
+    <script src="assets/js/bootstrap-popover.js"></script>
+    <script src="assets/js/bootstrap-button.js"></script>
+    <script src="assets/js/bootstrap-collapse.js"></script>
+    <script src="assets/js/bootstrap-carousel.js"></script>
+    <script src="assets/js/bootstrap-typeahead.js"></script>
     
     <script>
       $(function() {

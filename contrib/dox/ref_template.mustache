@@ -8,7 +8,7 @@
     <meta name="author" content="">
 
     <!-- Le styles -->
-    <link href="../../assets/css/bootstrap.css" rel="stylesheet">
+    <link href="assets/css/bootstrap.css" rel="stylesheet">
     <style type="text/css">
       body {
         margin-top: 10px;
@@ -103,12 +103,11 @@
         font-family: monospace;
       }
       
-      .signature,
-      .method-name {
+      .signature {
         font-family: monospace;
       }
     </style>
-    <link href="../../assets/css/bootstrap-responsive.css" rel="stylesheet">
+    <link href="assets/css/bootstrap-responsive.css" rel="stylesheet">
 
     <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
     <!--[if lt IE 9]>
@@ -156,7 +155,7 @@
         
         {{#has_methods}}
           <div class="page-header" id="{{name}}">
-            <h1>Methods</h1>
+            <h2>Methods</h2>
           </div>
         {{/has_methods}}
         
@@ -164,7 +163,7 @@
           <section class="method well" id="{{parent}}-{{name}}">
             <header>
               <div class="method-header">
-                <h2 class="method-name">{{name}}</h2>
+                <h3 class="method-name">{{name}}</h3>
               </div>
               <h5 class="signature">{{signature}}</h5>
             {{#has_endpoint}}
@@ -215,7 +214,7 @@
             {{#has_returns}}
             {{#returns}}
               <h4>Return</h4>
-              <span class="return-type">{{types}}</span> {{description}}
+              <span class="return-type">{{types}}</span>. {{description}}
             {{/returns}}
             {{/has_returns}}
             </section>
@@ -231,7 +230,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="{{url}}#L{{line}}">{{filename}}:{{line}}</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="{{url}}#L{{line}}">{{filename}}:{{line}}</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>{{code}}</code></pre>
@@ -241,7 +240,7 @@
           
         {{#has_inherited}}
           <div class="page-header" id="{{name}}-inherited">
-            <h1>Inherited Methods</h1>
+            <h2>Inherited Methods</h2>
           </div>
         {{/has_inherited}}
           
@@ -249,7 +248,7 @@
           <section class="method well" id="{{parent}}^{{name}}">
             <header>
               <div class="method-header">
-                <h2 class="method-name">{{name}}</h2>
+                <h3 class="method-name">{{name}}</h3>
               </div>
               <h5 class="signature">{{signature}}</h5>
             {{#has_endpoint}}
@@ -300,7 +299,7 @@
             {{#has_returns}}
             {{#returns}}
               <h4>Return</h4>
-              <span class="return-type">{{types}}</span> {{description}}
+              <span class="return-type">{{types}}</span>. {{description}}
             {{/returns}}
             {{/has_returns}}
             </section>
@@ -316,7 +315,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="{{url}}#L{{line}}">{{filename}}:{{line}}</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="{{url}}#L{{line}}">{{filename}}:{{line}}</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>{{code}}</code></pre>
@@ -326,7 +325,7 @@
         
         {{#has_globals}}
           <div class="page-header" id="{{name}}-globals">
-            <h1>{{name}} Module Globals</h1>
+            <h2>{{name}} Module Globals</h2>
           </div>
         {{/has_globals}}
         
@@ -334,7 +333,7 @@
           <section class="method well" id="{{parent}}+{{name}}">
             <header>
               <div class="method-header">
-                <h2 class="method-name">{{name}}</h2>
+                <h3 class="method-name">{{name}}</h3>
               </div>
               <h5 class="signature">{{signature}}</h5>
             {{#has_endpoint}}
@@ -385,7 +384,7 @@
             {{#has_returns}}
             {{#returns}}
               <h4>Return</h4>
-              <span class="return-type">{{types}}</span> {{description}}
+              <span class="return-type">{{types}}</span>. {{description}}
             {{/returns}}
             {{/has_returns}}
             </section>
@@ -401,7 +400,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a href="{{url}}#L{{line}}">{{filename}}:{{line}}</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="{{url}}#L{{line}}">{{filename}}:{{line}}</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>{{code}}</code></pre>
@@ -423,19 +422,19 @@
     <!-- Le javascript
     ================================================== -->
     <!-- Placed at the end of the document so the pages load faster -->
-    <script src="../../assets/js/jquery.js"></script>
-    <script src="../../assets/js/bootstrap-transition.js"></script>
-    <script src="../../assets/js/bootstrap-alert.js"></script>
-    <script src="../../assets/js/bootstrap-modal.js"></script>
-    <script src="../../assets/js/bootstrap-dropdown.js"></script>
-    <script src="../../assets/js/bootstrap-scrollspy.js"></script>
-    <script src="../../assets/js/bootstrap-tab.js"></script>
-    <script src="../../assets/js/bootstrap-tooltip.js"></script>
-    <script src="../../assets/js/bootstrap-popover.js"></script>
-    <script src="../../assets/js/bootstrap-button.js"></script>
-    <script src="../../assets/js/bootstrap-collapse.js"></script>
-    <script src="../../assets/js/bootstrap-carousel.js"></script>
-    <script src="../../assets/js/bootstrap-typeahead.js"></script>
+    <script src="assets/js/jquery.js"></script>
+    <script src="assets/js/bootstrap-transition.js"></script>
+    <script src="assets/js/bootstrap-alert.js"></script>
+    <script src="assets/js/bootstrap-modal.js"></script>
+    <script src="assets/js/bootstrap-dropdown.js"></script>
+    <script src="assets/js/bootstrap-scrollspy.js"></script>
+    <script src="assets/js/bootstrap-tab.js"></script>
+    <script src="assets/js/bootstrap-tooltip.js"></script>
+    <script src="assets/js/bootstrap-popover.js"></script>
+    <script src="assets/js/bootstrap-button.js"></script>
+    <script src="assets/js/bootstrap-collapse.js"></script>
+    <script src="assets/js/bootstrap-carousel.js"></script>
+    <script src="assets/js/bootstrap-typeahead.js"></script>
     
     <script>
       $(function() {

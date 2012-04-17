@@ -559,8 +559,6 @@
                 fs.writeFileSync(htmlPath, data[name]);
             }
             
-            //fs.writeFileSync(GENERATED_REF_DOCS, data[1]);
-            
             callback(null);
         });
     };
