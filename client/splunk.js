@@ -5807,7 +5807,7 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      *
      * @example
      *      
-     *     Async.chain([
+     *     Async.chain(
      *         function(callback) { 
      *             callback(null, 1, 2);
      *         },
@@ -5816,7 +5816,7 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      *         },
      *         function(val1, callback) {
      *             callback(null, val1 + 1, 5);
-     *         }],
+     *         },
      *         function(err, val1, val2) {
      *             console.log(val1); //== 3
      *             console.log(val2); //== 5
