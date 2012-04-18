@@ -490,17 +490,16 @@ service.login(function(err, success) {
   // OK, we're logged in, let's do a oneshot search and just
   // get the results
   var query = "" +
-    'search index=_internal sourcetype=splunkd* | head 10000 | bucket span=1m _time | eval formatted_time=_time | chart count over formatted_time by status usenull=f';
-  service.oneshotSearch(query, {}, function(err, results) {
+    'search index=_internal sourcetype=splunkd* | head 10000 ' + 
+    '| timechart span=1m count by status | eval formatted_time=_time' +
+    '| fields - NULL, _*, _time';
+  service.oneshotSearch(query, {count: 0}, function(err, results) {
     if (err) {
       console.log(err);
       alert("An error occurred with the search");
       return;
     }
   
-    // The format Google Charts needs data in is very similar to ours - we just
-    // need to put the field headers in the same array, and convert the strings
-    // into numbers.
     var rows = results.rows.slice();
     var fields = results.fields.slice();
     
@@ -510,7 +509,7 @@ service.login(function(err, success) {
       for(var j = 0; j < row.length; j++) {
         
         // Don't change the time field
-        if (j !== timeIndex) {
+        if (j !== timeIndex && fields[j] !== "_time") {
           row[j] = parseInt(row[j]);
         }
       }
