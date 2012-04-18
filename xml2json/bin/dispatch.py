@@ -191,7 +191,13 @@ def create_job(request, *args, **kwargs):
 
 
 def job_data(request, data_source, *args, **kwargs):    
-    # Modify the arguments
+    """Handle GET responses from /search/jobs/<sid>/<data_source>.
+
+    """
+    # Splunk currently offers this endpoint as XML or JSON. We need to
+    # get XML back so we can use the same error handlers as elsewhere,
+    # but the request was obviously made in JSON, so we have to set
+    # the output.
     mode = request["get"].get("output_mode", "")
     request["get"]["output_mode"] = "xml"
     if data_source == 'summary':            
@@ -226,8 +232,11 @@ def job_data(request, data_source, *args, **kwargs):
         
 def unless_error(ok_handler, request_filter=lambda x: x, path_args=[]):
     def f(request, *args, **kwargs):
-        request = request_filter(request)
-        status, content = forward_request(request)
+        if callable(request_filter):
+            request = request_filter(request)
+        else:
+            for rf in request_filter:
+                request = rf(request)
         if status_ok(status):
             return status, ok_handler(content, *[args[k] for k in path_args])
         else:
