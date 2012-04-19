@@ -68,10 +68,10 @@
         var module = "Global";
         for(var i = 0; i < doc.tags.length; i++) {
             var tag = doc.tags[i];
-            if (tag.type === "module") {
+            if (tag.type === "method") {
                 module = tag.content;
             }
-            else if (tag.type === "globals") {
+            else if (tag.type === "function") {
                 module = tag.content;
             }
         }
@@ -99,7 +99,11 @@
     // name of this module?
     var moduleName = "";
     var isModule = doc.tags.some(function (tag) { 
-        if (tag.type === "moduleRoot") {
+        if (tag.type === "class") {
+            moduleName = tag.content;
+            return true;
+        }
+        else if (tag.type === "module") {
             moduleName = tag.content;
             return true;
         }
@@ -111,7 +115,7 @@
     // containing module?
     var globalName = "";
     var isGlobal = doc.tags.some(function (tag) { 
-        if (tag.type === "globals") {
+        if (tag.type === "function") {
             globalName = tag.content;
             return true;
         }
@@ -149,6 +153,12 @@
     
     var name = moduleName || doc.ctx && doc.ctx.name;
     var signature = (isGlobal || !isModule) ? parent() + "." + name : doc.ctx && doc.ctx.string;
+    
+    var firstLine = code.split("\n")[0].trim();
+    var syntax = firstLine.substr(0, firstLine.lastIndexOf("{") - 1);
+
+    if (isModule) {
+    }
 
     return {
         id: [counter++, Date.now()].join('-'),
@@ -164,6 +174,8 @@
         code: code,
         params: doc.tags.filter(function (tag) { return tag.type === 'param' }),
         has_params: !!doc.tags.filter(function (tag) { return tag.type === 'param' }).length,
+        examples: doc.tags.filter(function (tag) { return tag.type === 'example' }),
+        has_examples: !!doc.tags.filter(function (tag) { return tag.type === 'example' }).length,
         returns: doc.tags.filter(function (tag) { return tag.type === 'return' })[0],
         has_returns: !!doc.tags.filter(function (tag) { return tag.type === 'return' }).length,
         tags: doc.tags,
@@ -177,7 +189,9 @@
         "extends": extendsName,
         is_private: isPrivate,
         has_endpoint: hasEndpoint,
-        endpoint: endpointName
+        endpoint: endpointName,
+        syntax: syntax,
+        has_syntax: !!syntax
     };
   }
 
@@ -193,20 +207,30 @@
     });
 
     modules.forEach(function (module) {
-      module.methods = transformedDocs.filter(function (doc) {
-        return doc.parent === module.name && !doc.is_global
-      });
+        module.methods = transformedDocs.filter(function (doc) {
+            return doc.parent === module.name && !doc.is_global
+        });
       
-      module.helpers = transformedDocs.filter(function(doc) {
-        return doc.is_global && doc.global === module.name;
-      });
+        module.methods = module.methods.sort(function(method1, method2) {
+            if (method1.type === "constructor") {
+                return -1;
+            }
+            
+            return 1;
+        });
+        
+        module.has_methods = module.methods.length > 0;
       
-      module.has_globals = (module.helpers || []).length > 0;
+        module.helpers = transformedDocs.filter(function(doc) {
+            return doc.is_global && doc.global === module.name;
+        });
+      
+        module.has_globals = (module.helpers || []).length > 0;
     });
     
     var moduleStore = {};
     modules.forEach(function (module) {
-        moduleStore[module.name.trim()] = module;  
+        moduleStore[module.name.trim()] = module;
     });
     
     var getParentMethods = function(module) {
@@ -236,6 +260,8 @@
                         newMethod[k] = parentMethod[k]; 
                     }
                     newMethod.parent = module.name;
+                    newMethod.is_inherited = true;
+                    newMethod.id += module.id;
                     
                     // Push it
                     newMethods.push(newMethod);
@@ -255,17 +281,46 @@
             module.inherited = newMethods.filter(function(method) {
                 return (module.methods.indexOf(method) < 0);
             });
-            //console.log(module.inherited.map(function(method) { return method.name; })); 
             module.has_inherited = module.inherited.length;
         }
     });
     
-    var template = fs.readFileSync(path.resolve(__dirname, 'template.mustache')).toString("utf-8");
+    var ref_template = fs.readFileSync(path.resolve(__dirname, 'ref_template.mustache')).toString("utf-8");
     var context = {
         modules: modules,
         version: version
     }
-    var output = mustache.to_html(template, context, null);
-    callback(null, output);
+    
+    var outputs = {};
+    modules.forEach(function(module) {
+        var moduleList = [];
+        for(var i = 0; i < modules.length; i++) {
+            if (modules[i] === module) {
+                moduleList.unshift(module);
+            }
+            else {
+                moduleList.push({name: modules[i].name});
+            }
+        }
+        
+        var context = {
+            modules: moduleList,
+            module: module,
+            version: version
+        }
+        
+        outputs[module.name] = mustache.to_html(ref_template, context, null);
+    });
+    
+    // Generate index
+    var context = {
+        modules: modules.map(function(mod) { return {name: mod.name, full_description: mod.full_description}; }),
+        version: version
+    }
+    var ref_index_template = fs.readFileSync(path.resolve(__dirname, 'ref_index_template.mustache')).toString("utf-8");
+    outputs["index"] = mustache.to_html(ref_index_template, context, null);
+    
+    //var output = mustache.to_html(template, context, null);
+    callback(null, outputs);
   };
 })();

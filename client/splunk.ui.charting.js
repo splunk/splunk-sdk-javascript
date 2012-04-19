@@ -433,17 +433,15 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     var root = exports || this;
 
     /**
-     * splunkjs.Utils
-     * 
      * Various utility functions for the Splunk SDK
      *
-     * @moduleRoot splunkjs.Utils
+     * @module splunkjs.Utils
      */
 
     /**
      * Bind a function to a specific object
      *
-     * Example:
+     * @example
      *      
      *      var obj = {a: 1, b: function() { console.log(a); }};
      *      var bound = splunkjs.Utils.bind(obj, obj.b);
@@ -453,7 +451,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {Function} fn Function to bind
      * @return {Function} The bound function
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.bind = function(me, fn) { 
         return function() { 
@@ -464,7 +462,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     /**
      * Strip a string of all leading and trailing whitespace.
      *
-     * Example:
+     * @example
      *      
      *      var a = " aaa ";
      *      var b = splunkjs.Utils.trim(a); //== "aaa"
@@ -472,7 +470,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {String} str The string to trim
      * @return {String} The trimmed string
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.trim = function(str) {
         str = str || "";
@@ -488,7 +486,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     /**
      * Whether an array contains a specific object
      *
-     * Example:
+     * @example
      *      
      *      var a = ["a", "b', "c"];
      *      console.log(splunkjs.Utils.indexOf(a, "b")) //== 1
@@ -498,7 +496,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {Anything} search The thing to search for
      * @return {Number} The index of `search` or `-1` if it wasn't found
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.indexOf = function(arr, search) {
         for(var i=0; i<arr.length; i++) {
@@ -512,7 +510,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     /**
      * Whether an array contains a specific object
      *
-     * Example:
+     * @example
      *      
      *      var a = {a: 3};
      *      var b = [{}, {c: 1}, {b: 1}, a];
@@ -522,7 +520,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {Anything} obj Whether the array contains the element
      * @return {Boolean} Whether the array contains the element
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.contains = function(arr, obj) {
         arr = arr || [];
@@ -532,7 +530,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     /**
      * Whether a string starts with a specific prefix.
      *
-     * Example:
+     * @example
      *      
      *      var starts = splunkjs.Utils.startsWith("splunk-foo", "splunk-");
      *
@@ -540,7 +538,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {String} prefix Prefix to search with
      * @return {Boolean} Whether the string starts with the prefix
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.startsWith = function(original, prefix) {
         var matches = original.match("^" + prefix);
@@ -550,7 +548,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     /**
      * Whether a string ends with a specific suffix.
      *
-     * Example:
+     * @example
      *      
      *      var ends = splunkjs.Utils.endsWith("foo-splunk", "-splunk");
      *
@@ -558,7 +556,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {String} suffix Suffix to search with
      * @return {Boolean} Whether the string ends with the suffix
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.endsWith = function(original, suffix) {
         var matches = original.match(suffix + "$");
@@ -570,7 +568,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     /**
      * Convert an iterable to an array.
      *
-     * Example:
+     * @example
      *      
      *      function() { 
      *          console.log(arguments instanceof Array); // false
@@ -580,7 +578,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {Arguments} iterable Iterable to conver to an array
      * @return {Array} The converted array
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.toArray = function(iterable) {
         return Array.prototype.slice.call(iterable);
@@ -589,7 +587,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     /**
      * Whether or not the argument is an array
      *
-     * Example:
+     * @example
      *      
      *      function() { 
      *          console.log(splunkjs.Utils.isArray(arguments)); // false
@@ -599,7 +597,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {Anything} obj Parameter to check whether it is an array
      * @return {Boolean} Whether or not the passed in parameter was an array
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.isArray = Array.isArray || function(obj) {
         return toString.call(obj) === '[object Array]';
@@ -608,7 +606,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     /**
      * Whether or not the argument is a function
      *
-     * Example:
+     * @example
      *      
      *      function() { 
      *          console.log(splunkjs.Utils.isFunction([1,2,3]); // false
@@ -618,7 +616,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {Anything} obj Parameter to check whether it is a function
      * @return {Boolean} Whether or not the passed in parameter was a function
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.isFunction = function(obj) {
         return !!(obj && obj.constructor && obj.call && obj.apply);
@@ -627,7 +625,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     /**
      * Whether or not the argument is a number
      *
-     * Example:
+     * @example
      *      
      *      function() { 
      *          console.log(splunkjs.Utils.isNumber(1); // true
@@ -637,7 +635,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {Anything} obj Parameter to check whether it is a number
      * @return {Boolean} Whether or not the passed in parameter was a number
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.isNumber = function(obj) {
         return !!(obj === 0 || (obj && obj.toExponential && obj.toFixed));
@@ -646,7 +644,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     /**
      * Whether or not the argument is a string
      *
-     * Example:
+     * @example
      *      
      *      function() { 
      *          console.log(splunkjs.Utils.isString("abc"); // true
@@ -656,7 +654,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {Anything} obj Parameter to check whether it is a string
      * @return {Boolean} Whether or not the passed in parameter was a string
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.isString = function(obj) {
         return !!(obj === '' || (obj && obj.charCodeAt && obj.substr));
@@ -665,7 +663,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     /**
      * Whether or not the argument is an object
      *
-     * Example:
+     * @example
      *      
      *      function() { 
      *          console.log(splunkjs.Utils.isObject({abc: "abc"}); // true
@@ -675,7 +673,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {Anything} obj Parameter to check whether it is an object
      * @return {Boolean} Whether or not the passed in parameter was a object
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.isObject = function(obj) {
         return obj === Object(obj);
@@ -684,7 +682,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     /**
      * Whether or not the argument is empty
      *
-     * Example:
+     * @example
      *      
      *      function() { 
      *          console.log(splunkjs.Utils.isEmpty({})); // true
@@ -694,7 +692,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {Anything} obj Parameter to check whether it is empty
      * @return {Boolean} Whether or not the passed in parameter was empty
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.isEmpty = function(obj) {
         if (root.isArray(obj) || root.isString(obj)) {
@@ -713,7 +711,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     /**
      * Apply the iterator function to each element in the object
      *
-     * Example:
+     * @example
      *      
      *      splunkjs.Utils.forEach([1,2,3], function(el) { console.log(el); }); // 1,2,3
      *
@@ -721,7 +719,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {Function} iterator Function to apply with each element: `(element, list, index)`
      * @param {Object} context An optional context to apply the function on
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.forEach = function(obj, iterator, context) {
         if (obj === null) {
@@ -749,7 +747,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     /**
      * Extend a given object with all the properties in passed-in objects
      *
-     * Example:
+     * @example
      *      
      *      function() { 
      *          console.log(splunkjs.Utils.extend({foo: "bar"}, {a: 2})); // {foo: "bar", a: 2}
@@ -759,7 +757,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {Object...} sources Sources to extend from
      * @return {Object} The extended object
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.extend = function(obj) {
         root.forEach(Array.prototype.slice.call(arguments, 1), function(source) {
@@ -773,7 +771,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     /**
      * Create a shallow-cloned copy of the object/array
      *
-     * Example:
+     * @example
      *      
      *      function() { 
      *          console.log(splunkjs.Utils.clone({foo: "bar"})); // {foo: "bar"}
@@ -783,7 +781,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {Object|Array} obj Object/array to clone
      * @return {Object|Array} The cloned object/array
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.clone = function(obj) {
         if (!root.isObject(obj)) {
@@ -798,7 +796,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @param {Object} props Properties dictionary
      * @return {Object} Namespace information (owner, app, sharing) for the given properties
      *
-     * @globals splunkjs.Utils
+     * @function splunkjs.Utils
      */
     root.namespaceFromProperties = function(props) {
         return {

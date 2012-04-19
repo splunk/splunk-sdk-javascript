@@ -111,7 +111,21 @@ exports.parseComment = function(str) {
   // parse tags
   if (~str.indexOf('\n@')) {
     var tags = '@' + str.split('\n@').slice(1).join('\n@');
-    comment.tags = tags.split('\n').map(exports.parseTag);
+    
+    // Allow for multi-line tags
+    var rawLines = tags.split('\n');
+    var lines = [];
+    rawLines.forEach(function(line) {
+      var trimmedLine = line.trim();
+      if (trimmedLine && trimmedLine[0] === '@') {
+        lines.push(line);
+      }
+      else if (trimmedLine) {
+        lines[lines.length - 1] += ("\n" + line);
+      }
+    });
+    
+    comment.tags = lines.map(exports.parseTag);
     comment.isPrivate = comment.tags.some(function(tag){
       return 'api' == tag.type && 'private' == tag.visibility;
     })
@@ -136,13 +150,16 @@ exports.parseComment = function(str) {
 exports.parseTag = function(str) {
   var tag = {} 
     , parts = str.split(/ +/)
-    , type = tag.type = parts.shift().replace('@', '');
+    , type = tag.type = parts.shift().replace('@', '').split("\n")[0].trim();
 
   switch (type) {
     case 'param':
       tag.types = exports.parseTagTypes(parts.shift());
       tag.name = parts.shift() || '';
       tag.description = markdown(parts.join(' '));
+      break;
+    case 'example':
+      tag.content = markdown(str.replace("@example", ""));
       break;
     case 'return':
       tag.types = exports.parseTagTypes(parts.shift());

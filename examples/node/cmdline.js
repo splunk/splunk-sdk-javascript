@@ -15,8 +15,8 @@
 (function() {
     var path         = require('path');
     var fs           = require('fs');
-    var commander    = require('../contrib/commander');
-    var utils        = require('../lib/utils');
+    var commander    = require('../../contrib/commander');
+    var utils        = require('../../lib/utils');
     
     var DEFAULTS_PATHS = [
         process.env.HOME || process.env.HOMEPATH,

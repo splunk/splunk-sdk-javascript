@@ -17,3 +17,4 @@ cover_html
 .coverage_debug
 *.swp
 .splunkrc
+*.zip

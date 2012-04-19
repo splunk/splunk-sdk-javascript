@@ -1911,7 +1911,7 @@ exports.setup = function(svc) {
 
 if (module === require.main) {
     var splunkjs    = require('../splunk');
-    var options     = require('../internal/cmdline');
+    var options     = require('../examples/node/cmdline');
     var test        = require('../contrib/nodeunit/test_reporter');
     
     var parser = options.create();
