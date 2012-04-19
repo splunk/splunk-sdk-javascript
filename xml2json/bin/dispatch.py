@@ -179,21 +179,6 @@ def forward_request(request):
 def status_ok(status):
     return status >= 200 and status <= 299
     
-def eai(request, *args,  **kwargs):   
-    status, content = forward_request(request)
-    if status_ok(status):
-        return status, xml2json.from_feed(content)
-    else:
-        return status, xml2json.from_messages_only(content)
-        
-
-def auth(request, *args, **kwargs):    
-    status, content = forward_request(request)
-    if status_ok(status):
-        return status, xml2json.from_auth(content)
-    else:
-        return status, xml2json.from_messages_only(content)    
-
 def create_job(request, *args, **kwargs):    
     status, content = forward_request(request)
     if status_ok(status):
@@ -204,134 +189,100 @@ def create_job(request, *args, **kwargs):
     else:
         return status, xml2json.from_messages_only(content)
 
-def delete_job(request, *args, **kwargs): 
-    status, content = forward_request(request)
-    if status_ok(status):
-        return status, xml2json.from_messages_only(content)
-    else:
-        return status, xml2json.from_messages_only(content)  
-        
-def job_control(request, *args, **kwargs): 
-    status, content = forward_request(request)
-    if status_ok(status):
-       return status, xml2json.from_messages_only(content)
-    else:
-       return status, xml2json.from_messages_only(content)
 
-def job_data(request, data_source, *args, **kwargs):    
-    
-    # Modify the arguments
-    mode = request["get"].get("output_mode", "")
-    request["get"]["output_mode"] = "xml"
-    if data_source == 'summary':            
-        request["get"]["output_time_format"] = "%s"
-    
-    status, content = forward_request(request)
-    if status_ok(status):
-        if data_source == "search.log":
-            return status, {"entry": {"content": content}}
+def from_job_data(content, data_source, mode):
+    if data_source == "search.log":
+        return {"entry": {"content": content}}
+    if not content:
+        return content
+    root = et.fromstring(content)
+    if root.tag in ('events', 'results', 'results_preview'):
+        if mode == "json_rows":
+            format = xml2json.ResultFormat.ROW
+        elif mode == "json_cols":
+            format = xml2json.ResultFormat.COLUMN
+        elif mode == "json":
+            format = xml2json.ResultFormat.VERBOSE
         else:
-            if not content:
-                return status, content
-            
-            root = et.fromstring(content)
-            if root.tag in ('events', 'results', 'results_preview'):
-                if mode == "json_rows":
-                    format = xml2json.ResultFormat.ROW
-                elif mode == "json_cols":
-                    format = xml2json.ResultFormat.COLUMN
-                elif mode == "json":
-                    format = xml2json.ResultFormat.VERBOSE
-                else:
-                    format = xml2json.ResultFormat.ROW
-                    
-                return status, xml2json.from_job_results(root, format=format)
-            elif root.tag == 'timeline':
-                foo = xml2json.from_search_timeline(root)
-                return status, foo
-            elif root.tag == 'summary':
-                return status, xml2json.from_search_summary(root)
+            format = xml2json.ResultFormat.ROW
 
-def parse_query(request, *args, **kwargs):    
-    
-    # Modify the arguments
-    request["get"]["output_mode"] = "xml"
-    
-    status, content = forward_request(request)
-    if status_ok(status):
-        return status, xml2json.from_search_parser(content)
-    else:
-        return status, xml2json.from_messages_only(content)
+        return xml2json.from_job_results(root, format=format)
+    elif root.tag == 'timeline':
+        return xml2json.from_search_timeline(root)
+    elif root.tag == 'summary':
+        return xml2json.from_search_summary(root)
+
+
         
-def typeahead(request, *args, **kwargs):    
-    # Modify the arguments
-    request["get"]["output_mode"] = "json"
-    
-    status, content = forward_request(request)
-    if status_ok(status):
-        if content:
-            return status, xml2json.from_typeahead(content)
+def unless_error(ok_handler, request_filter=lambda x: x, keywords=[]):
+    """Create a wrapper to handle a particular route.
+
+    The wrapper takes a request and any other optional arguments, and
+    dispatches a request to Splunk. If the status code of the response
+    from the server is 2xx (200-299), then runs *ok_handler* and
+    returns (status, return value of *ok_handler*). If the status code
+    is not in 200-299, then it extracts messages and returns status
+    and messages.
+
+    The request can be filtered by a set of functions before being
+    dispatched. A single function that takes a request and returns a
+    request, or a list of such functions, can be passed to the
+    *request_filter* argument. The default value does nothing.
+    Finally, if the route being matched has fields to extract in the
+    URI (such as name in /path/<name>/something), you can select
+    fields from them to be passed as **kwargs to the request_filters
+    and ok_handler by listing their names as strings in *keywords*.
+    (An upshot of this: callables in *request_filter* must be able to
+    accept an arbitrary number of keyword arguments, even if they are
+    ignored, so their argument list should always terminate with
+    **kwargs).
+    """
+    def f(request, *args, **kwargs):
+        args_to_pass = dict([(k[0],k[1](request)) if len(k) == 2 and callable(k[1]) \
+                                 else (k,kwargs[k]) for k in keywords])
+        if callable(request_filter):
+            request = request_filter(request, **args_to_pass)
         else:
-            return status, {"entry": {"content": None}}
-    else:
-        return status, xml2json.from_messages_only(content)
+            for rf in request_filter:
+                request = rf(request, **args_to_pass)
+        status, content = forward_request(request)
+        if status_ok(status):
+            return status, ok_handler(content, **args_to_pass)
+        else:
+            return status, xml2json.from_messages_only(content)
+    return f
 
-        
-def modify_or_delete_tag(request, name, *args, **kwargs): 
-    status, content = forward_request(request)
-    if status_ok(status):
-       return status, xml2json.from_messages_only(content)
-    else:
-       return status, xml2json.from_messages_only(content)
+only_messages = unless_error(xml2json.from_messages_only)
+eai = unless_error(xml2json.from_feed)
 
-def http_simple_input(request, *args, **kwargs):
-    status, content = forward_request(request)
-    if status_ok(status):
-        return status, xml2json.from_http_simple_input(content)
-    else:
-        return status, xml2json.from_messages_only(content)
+def output_time_format(request, data_source, **kwargs):
+    if data_source == 'summary':
+       request["get"]["output_time_format"] = "%s"
+    return request
 
-def properties_stanza(request, file, stanza, *args, **kwargs):
-    status, content = forward_request(request)
-    if status_ok(status) and request["method"] == "GET":
-        return status, xml2json.from_propertizes_stanza(content)
-    else:
-        return status, xml2json.from_messages_only(content)
+def output_mode(output_type):
+    def f(request, **kwargs):
+        request["get"]["output_mode"] = output_type
+        return request
+    return f
 
-def properties_stanza_key(request, file, stanza, key, *args, **kwargs):
-    status, content = forward_request(request)
-    if status_ok(status):
-        return status, xml2json.from_propertizes_stanza_key(content, key)
-    else:
-        return status, xml2json.from_messages_only(content)
-
-def saved_dispatch(request, name, *args, **kwargs):
-    status, content = forward_request(request)
-    if status_ok(status) and request["method"] == "GET":
-        return status, xml2json.from_propertizes_stanza(content)
-    else:
-        return status, xml2json.from_job_create(content)
 
 router = route.Router()
 
-router.add(route.Route('/search/jobs/<sid>/control', {"POST": job_control}, 'job_control'))
-router.add(route.Route('/search/jobs/<sid>/<data_source>', {"GET": job_data}, 'job_data'))
-router.add(route.Route('/search/jobs/<sid>', {"GET": eai, "DELETE": delete_job}, 'job_info'))
-router.add(route.Route('/search/jobs', {"GET": eai, "POST": create_job}, 'jobs'))
-router.add(route.Route('/search/parser', parse_query, 'parse_query'))
-router.add(route.Route('/search/typeahead', typeahead, 'typeahead'))
+router.add(route.Route('/search/jobs/<sid>/control', {"POST": only_messages}, 'job_control'))
+router.add(route.Route('/search/jobs/<sid>/<data_source>', {"GET": unless_error(from_job_data, 
+                                                                                [output_mode('xml'), output_time_format], 
+                                                                                keywords=["data_source", ('mode', lambda rq: rq["get"].get("output_mode", ""))])},
+                       'job_data'))
+router.add(route.Route('/search/jobs/<sid>', {"GET": eai, "DELETE": only_messages}, 'job_info')) 
+router.add(route.Route('/search/jobs', {"GET": eai, "POST": create_job}, 'jobs')) # Leave it. Has a special case.
+router.add(route.Route('/search/parser', unless_error(xml2json.from_search_parser, output_mode('xml')), 'parse_query'))
+router.add(route.Route('/search/typeahead', unless_error(xml2json.from_typeahead, output_mode('json')), 'typeahead'))
 router.add(route.Route('/search/tags', {"GET": eai}, 'tags'))
-router.add(route.Route('/search/tags/<name>', 
-    {
-        "GET": eai, 
-        "DELETE": modify_or_delete_tag, 
-        "POST": modify_or_delete_tag
-    }, 
-    'tag_info'
-))
-router.add(route.Route('/saved/searches/<name>/dispatch', {"POST": saved_dispatch}, 'dispatch_saved_search'))
-router.add(route.Route('/properties/<file>/<stanza>', properties_stanza, 'properties_stanza_info'))
-router.add(route.Route('/properties/<file>/<stanza>/<key>', properties_stanza_key, 'properties_stanza_key'))
-router.add(route.Route('/receivers/simple', http_simple_input, 'http_simple_input'))
-router.add(route.Route('/auth/login', {"POST": auth}, 'auth'))
+router.add(route.Route('/search/tags/<name>', {"GET": eai, "DELETE": only_messages, "POST": only_messages}, 'tag_info'))
+router.add(route.Route('/saved/searches/<name>/dispatch', {"POST": unless_error(xml2json.from_job_create)}, 'dispatch_saved_search'))
+router.add(route.Route('/properties/<file>/<stanza>', unless_error(xml2json.from_propertizes_stanza), 'properties_stanza_info'))
+router.add(route.Route('/properties/<file>/<stanza>/<key>', unless_error(xml2json.from_propertizes_stanza_key, keywords=["key"]), 'properties_stanza_key'))
+router.add(route.Route('/receivers/simple', unless_error(xml2json.from_http_simple_input), 'http_simple_input'))
+router.add(route.Route('/auth/login', {"POST": unless_error(xml2json.from_auth)}, 'auth'))
 router.add(route.Route('/<:.*>', eai, 'eai'))
