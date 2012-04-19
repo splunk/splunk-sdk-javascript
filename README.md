@@ -202,9 +202,14 @@ To rebuild and minify the browser files, enter:
 
 ### Run unit tests
 
-The SDK includes several unit tests for each component. You can run individual
-test modules or run all tests. Open a command prompt and go to the splunk-sdk-
-javascript directory. To run all tests, enter the following command:
+The SDK includes several unit tests for each component. You can run
+individual test modules or run all tests. Before you run them, the
+splunkd instance that you are running against needs to have some
+running searches. You can generate some by logging into the web
+interface and opening the search app, which will run a few searches in
+order to populate its dashboard. To run the unit tests, open a command
+prompt and go to the splunk-sdk-javascript directory. To run all
+tests, enter the following command: 
 
 > node sdkdo tests
 
