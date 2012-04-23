@@ -282,7 +282,15 @@ router.add(route.Route('/search/typeahead', unless_error(xml2json.from_typeahead
 router.add(route.Route('/search/tags', {"GET": eai}, 'tags'))
 router.add(route.Route('/search/tags/<name>', {"GET": eai, "DELETE": only_messages, "POST": only_messages}, 'tag_info'))
 router.add(route.Route('/saved/searches/<name>/dispatch', {"POST": unless_error(xml2json.from_job_create)}, 'dispatch_saved_search'))
-router.add(route.Route('/properties/<file>/<stanza>', unless_error(xml2json.from_propertizes_stanza), 'properties_stanza_info'))
+router.add(route.Route(
+    '/properties/<file>/<stanza>', 
+    {
+        "GET": unless_error(xml2json.from_propertizes_stanza), 
+        "POST": only_messages,
+        "DELETE": only_messages
+    },
+    'properties_stanza_info')
+)
 router.add(route.Route('/properties/<file>/<stanza>/<key>', stanza_key, 'properties_stanza_key')) # Underlying response is going to change...
 router.add(route.Route('/receivers/simple', unless_error(xml2json.from_http_simple_input), 'http_simple_input'))
 router.add(route.Route('/auth/login', {"POST": unless_error(xml2json.from_auth)}, 'auth'))
