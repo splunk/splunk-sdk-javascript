@@ -337,6 +337,7 @@ exports.setup = function(svc) {
                 var jobs = this.service.jobs();
                 
                 jobs.search('search index=_internal | head 1', {id: sid}, function(err, job) {   
+                    test.ok(!err);
                     test.ok(job);
                     test.strictEqual(job.sid, sid);
 
@@ -1901,7 +1902,7 @@ exports.setup = function(svc) {
                 service.typeahead("index=", 1, function(err, options) {
                     test.ok(!err);
                     test.ok(options);
-                    test.strictEqual(options.length, 1); 
+                    test.strictEqual(options.length, 1);
                     test.done();
                 });
             }

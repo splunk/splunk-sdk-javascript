@@ -1254,7 +1254,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
                     callback(err, false);
                 }
                 else {
-                    that.sessionKey = response.data.entry.content.sessionKey;
+                    that.sessionKey = response.data.sessionKey;
                     callback(null, true);
                 }
             };
@@ -2408,13 +2408,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 if (err) {
                     callback(err);
                 } 
-                else {
-                    var data = response.data;
-                    if (response.data.entry) {
-                        data = response.data.entry.content;
-                    }
-                    
-                    callback(null, data);
+                else {                    
+                    callback(null, response.data);
                 }
             });
         },
@@ -2436,12 +2431,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    var data = response.data;
-                    if (response.data.entry) {
-                        data = response.data.entry.content;
-                    }
-                    
-                    callback(null, data);
+                    callback(null, response.data);
                 }
             });
         },
@@ -2481,10 +2471,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 } 
                 else {
-                    // TODO
-                    // Extract the content (format undecided)
-                    var content = response.data.entry ? response.data.entry.content : response.data;
-                    callback(null, content);
+                    callback(null, response.data);
                 }
             });
             
@@ -3542,7 +3529,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     return;
                 }
                 
-                var sid = response.data.entry.content.sid;
+                var sid = response.data.sid;
                 var job = new root.Job(that.service, sid, that.namespace);
                 
                 callback(null, job, that);
@@ -5165,7 +5152,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    callback(null, response.data.entry.content, that);
+                    callback(null, response.data, that);
                 }
             });
         },
@@ -5195,7 +5182,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    callback(null, response.data.entry.content, that);
+                    callback(null, response.data, that);
                 }
             });
         },
@@ -5340,8 +5327,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    
-                    var job = new root.Job(that.service, response.data.entry.content.sid, that.namespace);
+                    var job = new root.Job(that.service, response.data.sid, that.namespace);
                     callback(null, job);
                 }
             });
@@ -7321,7 +7307,7 @@ exports.setup = function(svc) {
         "Callback#post": function(test) { 
             var service = this.service;
             this.service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
-                    var sid = res.data.entry.content.sid;
+                    var sid = res.data.sid;
                     test.ok(sid);
 
                     var endpoint = "search/jobs/" + sid + "/control";
@@ -7344,7 +7330,7 @@ exports.setup = function(svc) {
         "Callback#delete": function(test) { 
             var service = this.service;
             this.service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
-                var sid = res.data.entry.content.sid;
+                var sid = res.data.sid;
                 test.ok(sid);
                 
                 var endpoint = "search/jobs/" + sid;
@@ -7385,7 +7371,7 @@ exports.setup = function(svc) {
             };
             var service = this.service;
             this.service.request("search/jobs", "POST", headers, body, function(err, res) {
-                var sid = res.data.entry.content.sid;
+                var sid = res.data.sid;
                 test.ok(sid);
                 
                 var endpoint = "search/jobs/" + sid + "/control";
@@ -7909,10 +7895,12 @@ exports.setup = function(svc) {
                 var jobs = this.service.jobs();
                 
                 jobs.search('search index=_internal | head 1', {id: sid}, function(err, job) {   
+                    test.ok(!err);
                     test.ok(job);
                     test.strictEqual(job.sid, sid);
 
                     jobs.refresh(function(err, jobs) {
+                        test.ok(!err);
                         var job = jobs.contains(sid);
                         test.ok(job);
 
@@ -9472,7 +9460,7 @@ exports.setup = function(svc) {
                 service.typeahead("index=", 1, function(err, options) {
                     test.ok(!err);
                     test.ok(options);
-                    test.strictEqual(options.length, 1); 
+                    test.strictEqual(options.length, 1);
                     test.done();
                 });
             }
@@ -11086,7 +11074,7 @@ exports.main = function(opts, callback) {
                 
                 service.search(
                     "search index=_internal | stats count by sourcetype", 
-                    {earliest_time: "rt-10m", latest_time: "rt"}, 
+                    {earliest_time: "rt", latest_time: "rt"}, 
                     done);
             },
             // The search is never going to be done, so we simply poll it every second to get

@@ -486,11 +486,7 @@ def from_search_timeline(root, timings={}):
         # TODO
         pass
     
-    return {
-        "messages": messages,
-        "entry": {"content": entry},
-        "timings": timings
-    }
+    return entry
     
 
 def from_search_summary(root, timings={}):
@@ -552,13 +548,7 @@ def from_search_summary(root, timings={}):
         # TODO
         pass
     
-    return {
-        "messages": messages,
-        'entry': {"content": summary},
-        'timings': timings
-    }
-    
-    return output
+    return summary
     
 
 def from_auth(root):
@@ -579,12 +569,7 @@ def from_auth(root):
         pass
         
     return {
-        "messages": messages,
-        "entry": {
-            "content": {
-                "sessionKey": session_key
-            }
-        }
+        "sessionKey": session_key
     }
     
 
@@ -606,12 +591,7 @@ def from_job_create(root):
         pass
         
     return {
-        "messages": messages,
-        "entry": {
-            "content": {
-                "sid": sid
-            }
-        }
+        "sid": sid
     }
     
 
@@ -635,10 +615,7 @@ def from_http_simple_input(root):
         # TODO
         pass
         
-    return {
-        "messages": messages,
-        "entry": {"content": entry}
-    }
+    return entry
     
 
 def from_typeahead(root):
@@ -647,9 +624,7 @@ def from_typeahead(root):
     elif isinstance(root, file):
         root = json.loads(root.read())
         
-    return {
-        "entry": {"content": root}
-    }
+    return root
     
 
 def from_search_parser(root):
@@ -691,10 +666,7 @@ def from_search_parser(root):
         # TODO
         pass
         
-    return {
-        "messages": messages,
-        "entry": {"content": entry}
-    }
+    return entry
     
 
 def from_propertizes_stanza_key(root, key):
@@ -707,16 +679,7 @@ def from_propertizes_stanza_key(root, key):
         # TODO
         pass
         
-    return {
-        "messages": messages,
-        "entry": {
-            "content": {
-                "key": key,
-                "value": root
-            }
-        }
-    }
-    
+    return root
 
 def from_propertizes_stanza(root):
     if isinstance(root, str):
@@ -772,6 +735,9 @@ def parse_stanza(root):
     
 
 def from_messages_only(root):
+    if not root:
+        return { "messages": {} };
+    
     if isinstance(root, str):
         root = et.fromstring(root)
     elif isinstance(root, file):
@@ -788,8 +754,7 @@ def from_messages_only(root):
         pass
         
     return {
-        "messages": messages,
-        "entry": None
+        "messages": messages
     }
     
 

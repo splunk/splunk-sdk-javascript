@@ -1184,7 +1184,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
                     callback(err, false);
                 }
                 else {
-                    that.sessionKey = response.data.entry.content.sessionKey;
+                    that.sessionKey = response.data.sessionKey;
                     callback(null, true);
                 }
             };
@@ -2338,13 +2338,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 if (err) {
                     callback(err);
                 } 
-                else {
-                    var data = response.data;
-                    if (response.data.entry) {
-                        data = response.data.entry.content;
-                    }
-                    
-                    callback(null, data);
+                else {                    
+                    callback(null, response.data);
                 }
             });
         },
@@ -2366,12 +2361,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    var data = response.data;
-                    if (response.data.entry) {
-                        data = response.data.entry.content;
-                    }
-                    
-                    callback(null, data);
+                    callback(null, response.data);
                 }
             });
         },
@@ -2411,10 +2401,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 } 
                 else {
-                    // TODO
-                    // Extract the content (format undecided)
-                    var content = response.data.entry ? response.data.entry.content : response.data;
-                    callback(null, content);
+                    callback(null, response.data);
                 }
             });
             
@@ -3472,7 +3459,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     return;
                 }
                 
-                var sid = response.data.entry.content.sid;
+                var sid = response.data.sid;
                 var job = new root.Job(that.service, sid, that.namespace);
                 
                 callback(null, job, that);
@@ -5095,7 +5082,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    callback(null, response.data.entry.content, that);
+                    callback(null, response.data, that);
                 }
             });
         },
@@ -5125,7 +5112,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    callback(null, response.data.entry.content, that);
+                    callback(null, response.data, that);
                 }
             });
         },
@@ -5270,8 +5257,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    
-                    var job = new root.Job(that.service, response.data.entry.content.sid, that.namespace);
+                    var job = new root.Job(that.service, response.data.sid, that.namespace);
                     callback(null, job);
                 }
             });

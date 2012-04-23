@@ -88,7 +88,7 @@ exports.setup = function(svc) {
         "Callback#post": function(test) { 
             var service = this.service;
             this.service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
-                    var sid = res.data.entry.content.sid;
+                    var sid = res.data.sid;
                     test.ok(sid);
 
                     var endpoint = "search/jobs/" + sid + "/control";
@@ -111,7 +111,7 @@ exports.setup = function(svc) {
         "Callback#delete": function(test) { 
             var service = this.service;
             this.service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
-                var sid = res.data.entry.content.sid;
+                var sid = res.data.sid;
                 test.ok(sid);
                 
                 var endpoint = "search/jobs/" + sid;
@@ -152,7 +152,7 @@ exports.setup = function(svc) {
             };
             var service = this.service;
             this.service.request("search/jobs", "POST", headers, body, function(err, res) {
-                var sid = res.data.entry.content.sid;
+                var sid = res.data.sid;
                 test.ok(sid);
                 
                 var endpoint = "search/jobs/" + sid + "/control";
