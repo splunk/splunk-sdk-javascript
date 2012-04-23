@@ -341,6 +341,7 @@ exports.setup = function(svc) {
                     test.strictEqual(job.sid, sid);
 
                     jobs.refresh(function(err, jobs) {
+                        test.ok(!err);
                         var job = jobs.contains(sid);
                         test.ok(job);
 
