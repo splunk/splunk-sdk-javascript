@@ -197,10 +197,10 @@ def job_data(request, sid, data_source, *args, **kwargs):
     # many more special cases than the other endpoints, and introduces
     # much more complexity into unless_error than is justified by
     # repeating a couple of lines here.
+    mode = request["get"].get("output_mode", "")
     request = output_mode('xml')(request)
     if data_source == 'summary':
        request["get"]["output_time_format"] = "%s"
-    mode = request["get"].get("output_mode", "")
     status, content = forward_request(request)
 
     if status_ok(status):
