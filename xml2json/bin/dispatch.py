@@ -99,7 +99,7 @@ def dispatch(request):
     # self['base_path'] = headers
     status = 500
     messages = {"ERROR": []}
-    data = {"entry": None, "messages": messages}
+    data = {"messages": messages}
     
     try:
         method = request['method']
@@ -132,7 +132,7 @@ def forward_request(request):
     method = request['method']
     
     messages = {"ERROR": []}
-    content = {"entry": None, "messages": messages}
+    content = {"messages": messages}
     
     response, content = forward.make_request(
         request["base_path"] + path,
@@ -208,6 +208,7 @@ def job_data(request, sid, data_source, *args, **kwargs):
             return status, {"entry": {"content": content}}
         if not content:
             return status, content
+            
         root = et.fromstring(content)
         if root.tag in ('events', 'results', 'results_preview'):
             if mode == "json_rows":
@@ -218,12 +219,14 @@ def job_data(request, sid, data_source, *args, **kwargs):
                 format = xml2json.ResultFormat.VERBOSE
             else:
                 format = xml2json.ResultFormat.ROW
-    
+            
             return status, xml2json.from_job_results(root, format=format)
         elif root.tag == 'timeline':
             return status, xml2json.from_search_timeline(root)
         elif root.tag == 'summary':
             return status, xml2json.from_search_summary(root)
+        else:
+            return status, xml2json.from_messages_only(root)
     else:
         return status, xml2json.from_messages_only(content)
 
