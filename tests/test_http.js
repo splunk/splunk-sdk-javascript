@@ -18,12 +18,13 @@ exports.setup = function(http) {
 
     splunkjs.Logger.setLevel("ALL");
     return {
+
         "HTTP GET Tests": {
             setUp: function(done) {
                 this.http = http;
                 done();
             },
-            
+
             "Callback#abort simple": function(test) {
                 var req = this.http.get("https://www.httpbin.org/get", {}, {}, 0, function(err, res) {
                     test.ok(err);
@@ -78,6 +79,19 @@ exports.setup = function(http) {
                     test.strictEqual(res.data.url, "http://www.httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
                     test.done();
                 });
+            },
+
+            "Callback#args with objects": function(test) {
+                this.http.get("http://www.httpbin.org/get", [],
+                             {a: 1, b: {c: "ab", d: 12}}, 0,
+                             function(err, res) {
+                                 var args = res.data.args;
+                                 test.strictEqual(args.a, "1");
+                                 test.strictEqual(args.b, "ab");
+                                 test.strictEqual(res.data.url,
+                                                 "http://www.httpbin.org/get?a=1&b=ab&b=12");
+                                 test.done();
+                             });
             },
             
             "Callback#headers": function(test) {
@@ -264,7 +278,21 @@ exports.setup = function(http) {
                     test.strictEqual(res.data.url, "http://www.httpbin.org/delete?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
                     test.done();
                 });
-            }
+            },
+
+            "Default arguments to Http work": function(test) {
+                var h = new NodeHttp();
+                test.strictEqual(h.isSplunk, true);
+                test.done();
+            },
+
+            "Http base class virtual methods are virtual": function(test) {
+                var h = new splunkjs.Http();
+                test.throws(function() { h.makeRequest("asdf", null, null); });
+                test.throws(function() { h.parseJson("{}"); });
+                test.done();
+            },
+
         }
     };
 };
