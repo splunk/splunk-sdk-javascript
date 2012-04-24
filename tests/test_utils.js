@@ -55,6 +55,12 @@ exports.setup = function() {
                 test.ok(!two);
                 test.done();
             });
+        },
+
+        "IsValueIn works": function(test) {
+            test.ok(splunkjs.Utils.isValueIn(3, {a: 3, b: 5}));
+            test.ok(!splunkjs.Utils.isValueIn(3, {a: 12, b: 6}));
+            test.done();
         }
     };
 };
