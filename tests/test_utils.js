@@ -62,9 +62,25 @@ exports.setup = function() {
             test.ok(!splunkjs.Utils.keyOf(3, {a: 12, b: 6}));
             test.done();
         },
+
+        "bind": function(test) {
+            var f;
+            (function() { f = function(a) { this.a = a; };})();
+            var q = {};
+            g = splunkjs.Utils.bind(q, f);
+            g(12);
+            test.strictEqual(q.a, 12);
+            test.done();
+        },
         
         "trim": function(test) {
             test.strictEqual(splunkjs.Utils.trim("  test of something  \n\r  \t"), "test of something");
+
+            var realTrim = String.prototype.trim;
+            String.prototype.trim = null;
+            test.strictEqual(splunkjs.Utils.trim("  test of something  \n\r  \t"), "test of something");
+            String.prototype.trim = realTrim;
+
             test.done();
         },
 
@@ -102,6 +118,12 @@ exports.setup = function() {
                     test.strictEqual(found[i], expected[i]);
                 }
             })(1,2,3,4,5);
+            test.done();
+        },
+
+        "isArray": function(test) {
+            var a = [1,2,3,4,5];
+            test.ok(splunkjs.Utils.isArray(a));
             test.done();
         },
 

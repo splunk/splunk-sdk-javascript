@@ -32,6 +32,15 @@
         password: cmdline.opts.password
     });
 
+    var loggedOutSvc = new splunkjs.Service({ 
+        scheme: cmdline.opts.scheme,
+        host: cmdline.opts.host,
+        port: cmdline.opts.port,
+        username: cmdline.opts.username,
+        password: cmdline.opts.password + 'wrong'
+    });
+
+
     exports.Tests = {};
 
     // Building block tests

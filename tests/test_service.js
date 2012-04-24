@@ -1415,6 +1415,7 @@ exports.setup = function(svc) {
         "Index Tests": {      
             setUp: function(done) {
                 this.service = svc;
+                this.loservice = loggedOutSvc;
                 
                 // Create the index for everyone to use
                 var name = this.indexName = "sdk-tests";
@@ -1565,6 +1566,50 @@ exports.setup = function(svc) {
                     }
                 );
             },
+
+            "Callback#Service submit event, abbreviated arguments": function(test) {
+                var message = "Hello World -- " + getNextId();
+                var sourcetype = "sdk-tests";
+                
+                var service = this.service;
+                var indexName = this.indexName;
+                Async.chain(
+                    function(done) {
+                        service.log(message, done);
+                    },
+                    function(eventInfo, done) {
+                        test.ok(eventInfo);
+                        test.strictEqual(eventInfo.bytes, message.length);
+                        
+                        // We could poll to make sure the index has eaten up the event,
+                        // but unfortunately this can take an unbounded amount of time.
+                        // As such, since we got a good response, we'll just be done with it.
+                        done();
+                    },
+                    function(err) {
+                        test.ok(!err);
+                        test.done(); 
+                    }
+                );
+            },
+
+            "Callback#Service submit event, failure": function(test) {
+                var message = "Hello World -- " + getNextId();
+                var sourcetype = "sdk-tests";
+                
+                var service = this.loservice;
+                var indexName = this.indexName;
+                Async.chain(
+                    [function(done) {
+                        service.log(message, done);
+                    }],
+                    function(err) {
+                        test.ok(err);
+                        test.done(); 
+                    }
+                );
+            },
+
                    
             "Callback#Index submit event": function(test) {
                 var message = "Hello World -- " + getNextId();
@@ -1605,6 +1650,7 @@ exports.setup = function(svc) {
         "User Tests": {
             setUp: function(done) {
                 this.service = svc;
+                this.loservice = loggedOutSvc;
                 done();
             },
             
@@ -1615,6 +1661,15 @@ exports.setup = function(svc) {
                     test.ok(!err);
                     test.ok(user);
                     test.strictEqual(user.name, service.username);
+                    test.done();
+                });
+            },
+
+            "Callback#Current user fails": function(test) {
+                var service = this.loservice;
+
+                service.currentUser(function(err, user) {
+                    test.ok(err);
                     test.done();
                 });
             },
@@ -1891,9 +1946,18 @@ exports.setup = function(svc) {
         "Typeahead Tests": {
             setUp: function(done) {
                 this.service = svc;
+                this.loservice = loggedOutSvc;
                 done();
             },
             
+            "Callback#Typeahead failure": function(test) {
+                var service = this.loservice;
+                service.typeahead("index=", 1, function(err, options) {
+                    test.ok(err);
+                    test.done();
+                });
+            },
+
             "Callback#Basic typeahead": function(test) {
                 var service = this.service;
                 
@@ -1903,11 +1967,41 @@ exports.setup = function(svc) {
                     test.strictEqual(options.length, 1); 
                     test.done();
                 });
+            },
+
+            "Argument munging in typeahead": function(test) {
+                var service = this.service;
+                service.typeahead("index=", function(err, options) {
+                    test.ok(!err);
+                    test.ok(options);
+                    test.done();
+                });
+            }
+        },
+
+        "Endpoint Tests": {
+            setUp: function(done) {
+                this.service = svc;
+                done();
+            },
+
+            "Throws on null arguments to init": function(test) {
+                var service = this.service;
+                test.throws(function() {new splunkjs.Service.Endpoint(null, "a/b"); });
+                test.throws(function() {new splunkjs.Service.Endpoint(service, null); });
+                test.done();
+            },
+
+            "Endpoint delete on a relative path": function(test) {
+                var service = this.service;
+                var endpoint = new splunkjs.Service.Endpoint(service, "/search/jobs/12345");
+                endpoint.del("search/jobs/12345", {}, function() { test.done();})
             }
         }
-    };
-
+    }
 };
+        
+            
 
 if (module === require.main) {
     var splunkjs    = require('../splunk');
@@ -1929,6 +2023,15 @@ if (module === require.main) {
         username: cmdline.opts.username,
         password: cmdline.opts.password
     });
+
+    var loggedOutSvc = new splunkjs.Service({ 
+        scheme: cmdline.opts.scheme,
+        host: cmdline.opts.host,
+        port: cmdline.opts.port,
+        username: cmdline.opts.username,
+        password: cmdline.opts.password + 'wrong'
+    });
+
     
     var suite = exports.setup(svc);
     
