@@ -25,6 +25,7 @@ import formatters
 # stdlib
 import re
 import json
+from urlparse import urlparse, parse_qs
 
 import xml.etree.cElementTree as et
 
