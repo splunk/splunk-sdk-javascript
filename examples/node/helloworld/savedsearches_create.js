@@ -16,7 +16,7 @@
 // This example will login to Splunk, and then retrieve the list of saved searchs,
 // printing each saved search's name and search query.
 
-var Splunk = require('../../../splunk').Splunk;
+var splunkjs = require('../../../splunk');
 
 exports.main = function(opts, done) {
     // This is just for testing - ignore it
@@ -28,7 +28,7 @@ exports.main = function(opts, done) {
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
     
-    var service = new Splunk.Client.Service({
+    var service = new splunkjs.Service({
         username: username,
         password: password,
         scheme: scheme,
@@ -54,7 +54,7 @@ exports.main = function(opts, done) {
         // Now that we're logged in, Let's create a saved search
         service.savedSearches().create(savedSearchOptions, function(err, savedSearch) {
             if (err && err.status === 409) {
-                console.error("ERROR: A saved search with the name '" + savedSearchOptions.name + "' already exists")
+                console.error("ERROR: A saved search with the name '" + savedSearchOptions.name + "' already exists");
                 done();
                 return;
             }

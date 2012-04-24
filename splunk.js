@@ -20,20 +20,20 @@
     // some globals here and have interop with node
     process.env = process.env || {};
 
-    root.Splunk = {
+    module.exports = root = {
         Logger          : require('./lib/log').Logger,
-        Binding         : require('./lib/binding'),
-        Client          : require('./lib/client'),
+        Context         : require('./lib/context'),
+        Service         : require('./lib/service'),
         Http            : require('./lib/http').Http,
-        ODataResponse   : require('./lib/odata').ODataResponse,
         Utils           : require('./lib/utils'),
         Async           : require('./lib/async'),
         Paths           : require('./lib/paths').Paths,
         Class           : require('./lib/jquery.class').Class,
-        Searcher        : require('./lib/searcher.js')
+        JobManager      : require('./lib/searcher.js'),
+        StormService    : require('./lib/storm.js')
     };
     
     if (typeof(window) === 'undefined') {
-        root.Splunk.NodeHttp = require('./lib/platform/node/node_http').NodeHttp;
+        root.NodeHttp = require('./lib/platform/node/node_http').NodeHttp;
     }
 })();

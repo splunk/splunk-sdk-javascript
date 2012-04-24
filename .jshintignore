@@ -11,8 +11,15 @@ examples\\browser\\minisplunk
 examples\\browser\\resources
 old_english
 new_english
+xml2json
 contrib
 external-nocheckin
 ui/timeline
 ui\\timeline
 cover_html
+ui/charting
+ui/timeline
+ui\\charting
+ui\\timeline
+.coverage_debug
+docs

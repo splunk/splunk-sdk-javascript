@@ -21,8 +21,9 @@ window.SplunkTest = {
     Utils    : require('../tests/test_utils'),
     Async    : require('../tests/test_async'),
     Http     : require('../tests/test_http'),
-    Binding  : require('../tests/test_binding'),
-    Client   : require('../tests/test_client'),
+    Context  : require('../tests/test_context'),
+    Service  : require('../tests/test_service'),
+    Storm    : require('../tests/test_storm'),
     Searcher : require('../tests/test_searcher'),
     Examples : require('../tests/test_examples')
 };

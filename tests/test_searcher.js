@@ -14,12 +14,12 @@
 // under the License.
 
 exports.setup = function(svc) {
-    var Splunk      = require('../splunk').Splunk;
-    var utils       = Splunk.Utils;
-    var Async       = Splunk.Async;
-    var Searcher    = Splunk.Searcher;
+    var splunkjs    = require('../splunk');
+    var utils       = splunkjs.Utils;
+    var Async       = splunkjs.Async;
+    var JobManager  = splunkjs.JobManager;
     
-    Splunk.Logger.setLevel("ALL");
+    splunkjs.Logger.setLevel("ALL");
     var idCounter = 0;
     var getNextId = function() {
         return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
@@ -39,8 +39,8 @@ exports.setup = function(svc) {
                     that.service.jobs().create('search index=_internal | head 10', {id: sid}, callback);
                 },
                 function(job, callback) {
-                    var searcher = new Searcher.JobManager(test.service, job);
-                    searcher.done(callback);
+                    var searcher = new JobManager(test.service, job);
+                    searcher.on("done", callback);
                 },
                 function(searcher, callback) {
                     var iterator = searcher.resultsIterator(2);
@@ -89,8 +89,8 @@ exports.setup = function(svc) {
                     that.service.jobs().create('search index=_internal | head 10', {id: sid}, callback);
                 },
                 function(job, callback) {
-                    var searcher = new Searcher.JobManager(test.service, job);
-                    searcher.done(callback);
+                    var searcher = new JobManager(test.service, job);
+                    searcher.on("done", callback);
                 },
                 function(searcher, callback) {
                     var iterator = searcher.eventsIterator(2);
@@ -139,8 +139,8 @@ exports.setup = function(svc) {
                     that.service.jobs().create('search index=_internal | head 10', {id: sid}, callback);
                 },
                 function(job, callback) {
-                    var searcher = new Searcher.JobManager(test.service, job);
-                    searcher.done(callback);
+                    var searcher = new JobManager(test.service, job);
+                    searcher.on("done", callback);
                 },
                 function(searcher, callback) {
                     var iterator = searcher.previewIterator(2);
@@ -179,13 +179,13 @@ exports.setup = function(svc) {
                 test.ok(!err);
                 test.done();  
             });
-        },
+        }
     };
 };
 
 if (module === require.main) {
-    var Splunk      = require('../splunk').Splunk;
-    var options     = require('../internal/cmdline');
+    var splunkjs    = require('../splunk');
+    var options     = require('../examples/node/cmdline');
     var test        = require('../contrib/nodeunit/test_reporter');
     
     var parser = options.create();
@@ -196,12 +196,12 @@ if (module === require.main) {
         throw new Error("Error in parsing command line parameters");
     }
     
-    var svc = new Splunk.Client.Service({ 
+    var svc = new splunkjs.Service({ 
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
         username: cmdline.opts.username,
-        password: cmdline.opts.password,
+        password: cmdline.opts.password
     });
     
     var suite = exports.setup(svc);

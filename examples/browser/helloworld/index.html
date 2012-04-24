@@ -83,8 +83,8 @@
       host     = "localhost";
       port     = "8089";
       
-      Async = Splunk.Async;
-      utils = Splunk.Utils;
+      Async = splunkjs.Async;
+      utils = splunkjs.Utils;
       
       var updateConnectionInformation = function() {
         username = utils.trim($("#id_username").pVal()) || "admin";
@@ -298,12 +298,12 @@
           <div class="span5">
             <h2>Description</h2>
               <p>
-                These sample demonstrate working with the <code>Splunk.Client.Applications</code> collection
-                and <code>Splunk.Client.Application</code> entity. It will list all the apps, and for each
+                This sample demonstrates working with the <code>splunkjs.Service.Applications</code> collection
+                and <code>splunkjs.Service.Application</code> entity. It will list all the apps, and for each
                 one print its name.
 
                 The only difference between the two files is that the latter uses the built-in
-                <code>Splunk.Async</code> module to make asynchronous control-flow easier.
+                <code>splunkjs.Async</code> module to make asynchronous control-flow easier.
               </p>
             
           </div>
@@ -311,14 +311,14 @@
             <h3>Code <button class="btn primary run" id="apps-run">Run</button></h3>
             <ul class="tabs" id="apps-tabs" data-tabs="tabs" >
               <li class="active"><a href="#apps-regular">Regular</a></li>
-              <li><a href="#apps-async"><code>Splunk.Async</code></a></li>
+              <li><a href="#apps-async"><code>splunkjs.Async</code></a></li>
               <li><a href="#apps-output">Output</a></li>
             </ul>
             <div id="apps-tab-content" class="tab-content">
               <div class="tab-pane active" id="apps-regular">
                 <pre class='prettyprint lang-js linenums'>
-var http = new Splunk.ProxyHttp("/proxy");
-var service = new Splunk.Client.Service(http, {
+var http = new splunkjs.ProxyHttp("/proxy");
+var service = new splunkjs.Service(http, {
     username: username,
     password: password,
     scheme: scheme,
@@ -337,16 +337,17 @@ service.login(function(err, success) {
     } 
     
     // Now that we're logged in, let's get a listing of all the apps.
-    service.apps().list(function(err, apps) {
+    service.apps().refresh(function(err, apps) {
         if (err) {
             console.log("There was an error retrieving the list of applications:", err);
             done(err);
             return;
         }
         
+        var appsList = apps.list();
         console.log("Applications:");
-        for(var i = 0; i < apps.length; i++) {
-            var app = apps[i];
+        for(var i = 0; i < appsList.length; i++) {
+            var app = appsList[i];
             console.log("  App " + i + ": " + app.name);
         } 
         
@@ -357,8 +358,8 @@ service.login(function(err, success) {
               </div>
               <div class="tab-pane" id="apps-async">
                 <pre class='prettyprint lang-js linenums'>
-var http = new Splunk.ProxyHttp("/proxy");
-var service = new Splunk.Client.Service(http, {
+var http = new splunkjs.ProxyHttp("/proxy");
+var service = new splunkjs.Service(http, {
     username: username,
     password: password,
     scheme: scheme,
@@ -377,13 +378,14 @@ Async.chain([
                 done("Error logging in");
             }
             
-            service.apps().list(done);
+            service.apps().refresh(done);
         },
         // Print them out
-        function(apps, done) {            
+        function(apps, done) {     
+            var appsList = apps.list();       
             console.log("Applications:");
-            for(var i = 0; i < apps.length; i++) {
-                var app = apps[i];
+            for(var i = 0; i < appsList.length; i++) {
+                var app = appsList[i];
                 console.log("  App " + i + ": " + app.name);
             } 
             done();
@@ -414,12 +416,12 @@ Async.chain([
           <div class="span5">
             <h2>Description</h2>
               <p>              
-                These sample demonstrate working with the <code>Splunk.Client.SavedSearches</code> collection
-                and <code>Splunk.Client.SavedSearch</code> entity. It will list all the saved searches, and 
+                This sample demonstrates working with the <code>splunkjs.Service.SavedSearches</code> collection
+                and <code>splunkjs.Service.SavedSearch</code> entity. It will list all the saved searches, and 
                 for each one print its name and the search query associated with it.
 
                 The only difference between the two files is that the latter uses the built-in
-                <code>Splunk.Async</code> module to make asynchronous control-flow easier.
+                <code>splunkjs.Async</code> module to make asynchronous control-flow easier.
               </p>
             
           </div>
@@ -427,15 +429,15 @@ Async.chain([
             <h3>Code <button class="btn primary run" id="savedsearches-run">Run</button></h3>
             <ul class="tabs" id="savedsearches-tabs" data-tabs="tabs" >
               <li class="active"><a href="#savedsearches-regular">Regular</a></li>
-              <li><a href="#savedsearches-async"><code>Splunk.Async</code></a></li>
+              <li><a href="#savedsearches-async"><code>splunkjs.Async</code></a></li>
               <li><a href="#savedsearches-create">Create A Saved Search</a></li>
               <li><a href="#savedsearches-output">Output</a></li>
             </ul>
             <div id="savedsearches-tab-content" class="tab-content">
               <div class="tab-pane active" id="savedsearches-regular">
                 <pre class='prettyprint lang-js linenums'>
-var http = new Splunk.ProxyHttp("/proxy");
-var service = new Splunk.Client.Service(http, {
+var http = new splunkjs.ProxyHttp("/proxy");
+var service = new splunkjs.Service(http, {
     username: username,
     password: password,
     scheme: scheme,
@@ -454,16 +456,17 @@ service.login(function(err, success) {
     } 
     
     // Now that we're logged in, let's get a listing of all the saved searches.
-    service.savedSearches().list(function(err, searches) {
+    service.savedSearches().refresh(function(err, searches) {
         if (err) {
             console.log("There was an error retrieving the list of saved searches:", err);
             done(err);
             return;
         }
         
+        var searchList = searches.list();
         console.log("Saved searches:");
-        for(var i = 0; i < searches.length; i++) {
-            var search = searches[i];
+        for(var i = 0; i < searchList.length; i++) {
+            var search = searchList[i];
             console.log("  Search " + i + ": " + search.name);
             console.log("    " + search.properties().search);
         } 
@@ -475,8 +478,8 @@ service.login(function(err, success) {
               </div>
               <div class="tab-pane" id="savedsearches-async">
                 <pre class='prettyprint lang-js linenums'>
-var http = new Splunk.ProxyHttp("/proxy");
-var service = new Splunk.Client.Service(http, {
+var http = new splunkjs.ProxyHttp("/proxy");
+var service = new splunkjs.Service(http, {
     username: username,
     password: password,
     scheme: scheme,
@@ -495,13 +498,14 @@ Async.chain([
                 done("Error logging in");
             }
             
-            service.savedSearches().list(done);
+            service.savedSearches().refresh(done);
         },
         // Print them out
         function(searches, done) {
+            var searchList = searches.list();
             console.log("Saved searches:");
-            for(var i = 0; i < searches.length; i++) {
-                var search = searches[i];
+            for(var i = 0; i < searchList.length; i++) {
+                var search = searchList[i];
                 console.log("  Search " + i + ": " + search.name);
                 console.log("    " + search.properties().search);
             } 
@@ -517,8 +521,8 @@ Async.chain([
               </div>
               <div class="tab-pane" id="savedsearches-create">
                 <pre class='prettyprint lang-js linenums'>
-var http = new Splunk.ProxyHttp("/proxy");
-var service = new Splunk.Client.Service(http, {
+var http = new splunkjs.ProxyHttp("/proxy");
+var service = new splunkjs.Service(http, {
     username: username,
     password: password,
     scheme: scheme,
@@ -579,10 +583,10 @@ service.login(function(err, success) {
           <div class="span5">
             <h2>Description</h2>
               <p>                              
-                <p>These samples demonstrate running searches on Splunk using the SDK. They will run the search, print out progress (if available), search statistics (if available), and finally, print out the search results (including some key-value fields).</p>
-                <p>These examples go over the space of possible search types:</p>
+                <p>This example demonstrates running searches on Splunk using the SDK. It will run the search, print out progress (if available), search statistics (if available), and finally, print out the search results (including some key-value fields).</p>
+                <p>This example goes over the possible search types:</p>
                 <ul>
-                <li><p>normal: execute a search with <code>exec_mode=normal</code>, wait untli the job is done, and then print out job statistics and the search results.</p></li>
+                <li><p>normal: execute a search with <code>exec_mode=normal</code>, wait until the job is done, and then print out job statistics and the search results.</p></li>
                 <li><p>blocking: execute a search with <code>exec_mode=blocking</code>, which will not return from the REST call until the job is done. Once it is done, it will print out job statistics and the search results.</p></li>
                 <li><p>oneshot: execute a search with <code>exec_mode=oneshot</code>, which will not return the REST call until the job is done, and then it will simply return the search results, rather than the search job ID. Once it is done, we print out the results.</p></li>
                 </ul>
@@ -599,8 +603,8 @@ service.login(function(err, success) {
             <div id="search-tab-content" class="tab-content">
               <div class="tab-pane active" id="search-normal">
                 <pre class='prettyprint lang-js linenums'>
-var http = new Splunk.ProxyHttp("/proxy");
-var service = new Splunk.Client.Service(http, {
+var http = new splunkjs.ProxyHttp("/proxy");
+var service = new splunkjs.Service(http, {
     username: username,
     password: password,
     scheme: scheme,
@@ -682,8 +686,8 @@ Async.chain([
               </div>
               <div class="tab-pane" id="search-blocking">
                 <pre class='prettyprint lang-js linenums'>
-var http = new Splunk.ProxyHttp("/proxy");
-var service = new Splunk.Client.Service(http, {
+var http = new splunkjs.ProxyHttp("/proxy");
+var service = new splunkjs.Service(http, {
     username: username,
     password: password,
     scheme: scheme,
@@ -706,7 +710,7 @@ Async.chain([
         },
         // The job is done, but let's some statistics from the server.
         function(job, done) {
-            job.read(done);
+            job.refresh(done);
         },
         // Print out the statistics and get the results
         function(job, done) {
@@ -747,8 +751,8 @@ Async.chain([
               </div>
               <div class="tab-pane" id="search-oneshot">
                 <pre class='prettyprint lang-js linenums'>
-var http = new Splunk.ProxyHttp("/proxy");
-var service = new Splunk.Client.Service(http, {
+var http = new splunkjs.ProxyHttp("/proxy");
+var service = new splunkjs.Service(http, {
     username: username,
     password: password,
     scheme: scheme,
@@ -829,8 +833,8 @@ Async.chain([
             <div id="search-realtime-tab-content" class="tab-content">
               <div class="tab-pane active" id="search-realtime-regular">
                 <pre class='prettyprint lang-js linenums'>
-var http = new Splunk.ProxyHttp("/proxy");
-var service = new Splunk.Client.Service(http, {
+var http = new splunkjs.ProxyHttp("/proxy");
+var service = new splunkjs.Service(http, {
     username: username,
     password: password,
     scheme: scheme,
@@ -869,6 +873,7 @@ Async.chain([
                         job.preview({}, function(err, results) {
                             if (err) {
                                 iterationDone(err);
+                                return;
                             }
                             
                             // Only do something if we have results

@@ -14,10 +14,10 @@
 // under the License.
 
 exports.setup = function() {
-    var Splunk      = require('../splunk').Splunk;
-    var Async       = Splunk.Async;
+    var splunkjs    = require('../splunk');
+    var Async       = splunkjs.Async;
 
-    Splunk.Logger.setLevel("ALL");
+    splunkjs.Logger.setLevel("ALL");
     var isBrowser = typeof "window" !== "undefined";
 
     return {        
@@ -315,8 +315,27 @@ exports.setup = function() {
             );
         },
         
-        "Chain multiple success": function(test) {
-            Async.chain([
+        "Chain flat single success": function(test) {
+            Async.chain(
+                function(callback) { 
+                    callback(null, 1);
+                },
+                function(val, callback) {
+                    callback(null, val + 1);
+                },
+                function(val, callback) {
+                    callback(null, val + 1);
+                },
+                function(err, val) {
+                    test.ok(!err);
+                    test.strictEqual(val, 3);
+                    test.done();
+                }
+            );
+        },
+        
+        "Chain flat multiple success": function(test) {
+            Async.chain(
                 function(callback) { 
                     callback(null, 1, 2);
                 },
@@ -325,7 +344,7 @@ exports.setup = function() {
                 },
                 function(val1, val2, callback) {
                     callback(null, val1 + 1, val2 + 1);
-                }],
+                },
                 function(err, val1, val2) {
                     test.ok(!err);
                     test.strictEqual(val1, 3);
@@ -335,8 +354,8 @@ exports.setup = function() {
             );
         },
         
-        "Chain arity change success": function(test) {
-            Async.chain([
+        "Chain flat arity change success": function(test) {
+            Async.chain(
                 function(callback) { 
                     callback(null, 1, 2);
                 },
@@ -345,7 +364,7 @@ exports.setup = function() {
                 },
                 function(val1, callback) {
                     callback(null, val1 + 1, 5);
-                }],
+                },
                 function(err, val1, val2) {
                     test.ok(!err);
                     test.strictEqual(val1, 3);
@@ -442,7 +461,7 @@ exports.setup = function() {
             
             var augmented = Async.augment(callback, 2);
             augmented(1);
-        },
+        }
     };
 };
 

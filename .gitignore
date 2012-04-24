@@ -14,4 +14,7 @@ v8.log
 cover_html
 .coverage_data
 .coverignore
+.coverage_debug
 *.swp
+.splunkrc
+*.zip

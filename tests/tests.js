@@ -16,20 +16,20 @@
     var path        = require('path');
     var fs          = require('fs');
     var test        = require('../contrib/nodeunit/test_reporter');
-    var options     = require('../internal/cmdline');
-    var Splunk      = require('../splunk').Splunk;
-    var NodeHttp    = Splunk.NodeHttp;
+    var options     = require('../examples/node/cmdline');
+    var splunkjs    = require('../splunk');
+    var NodeHttp    = splunkjs.NodeHttp;
     
     var parser = new options.create();
     var cmdline = parser.parse(process.argv);
     
     var nonSplunkHttp = new NodeHttp(false);
-    var svc = new Splunk.Client.Service({ 
+    var svc = new splunkjs.Service({ 
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
         username: cmdline.opts.username,
-        password: cmdline.opts.password,
+        password: cmdline.opts.password
     });
 
     exports.Tests = {};
@@ -37,15 +37,16 @@
     // Building block tests
     exports.Tests.Utils = require('./test_utils').setup();
     exports.Tests.Async = require('./test_async').setup();
-    exports.Tests.Http = require('./test_http').setup(nonSplunkHttp);
+    exports.Tests.Http  = require('./test_http').setup(nonSplunkHttp);
     
     // Splunk-specific tests
-    exports.Tests.Binding = require('./test_binding').setup(svc);
-    exports.Tests.Client = require('./test_client').setup(svc);
+    exports.Tests.Context  = require('./test_context').setup(svc);
+    exports.Tests.Service  = require('./test_service').setup(svc);
+    exports.Tests.Storm    = require('./test_storm').setup();
     exports.Tests.Searcher = require('./test_searcher').setup(svc);
     exports.Tests.Examples = require('./test_examples').setup(svc, cmdline.opts);
 
-    Splunk.Logger.setLevel("ALL");
+    splunkjs.Logger.setLevel("ALL");
     
     svc.login(function(err, success) {
         test.run([exports]);

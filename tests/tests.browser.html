@@ -130,8 +130,8 @@
             password: password
           };
           
-          var http = new Splunk.ProxyHttp("/proxy");
-          var svc = new Splunk.Client.Service(http, options);
+          var http = new splunkjs.ProxyHttp("/proxy");
+          var svc = new splunkjs.Service(http, options);
           svc.login(function(err, success) {
             if (err || !success) {
               if (err) throw err;
@@ -146,9 +146,10 @@
               
               "Utils Tests": SplunkTest.Utils.setup(svc),
               "Async Tests": SplunkTest.Async.setup(svc),
-              "Binding Tests": SplunkTest.Binding.setup(svc),
-              "Client Tests": SplunkTest.Client.setup(svc),
-              "Searcher Tests": SplunkTest.Searcher.setup(svc),
+              "Context Tests": SplunkTest.Context.setup(svc),
+              "Service Tests": SplunkTest.Service.setup(svc),
+              "Storm Tests": SplunkTest.Storm.setup(http),
+              "Searcher Tests": SplunkTest.Searcher.setup(svc)
             }]);
           });
         });

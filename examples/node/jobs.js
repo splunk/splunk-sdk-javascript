@@ -14,11 +14,11 @@
 // under the License.
 
 (function() {
-    var Splunk          = require('../../splunk').Splunk;
-    var Class           = Splunk.Class;
-    var utils           = Splunk.Utils;
-    var Async           = Splunk.Async;
-    var options         = require('../../internal/cmdline');
+    var splunkjs        = require('../../splunk');
+    var Class           = splunkjs.Class;
+    var utils           = splunkjs.Utils;
+    var Async           = splunkjs.Async;
+    var options         = require('./cmdline');
 
     var FLAGS_CREATE = [
         "search", "earliest_time", "latest_time", "now", "time_format",
@@ -26,15 +26,15 @@
         "rt_maxblocksecs", "rt_indexfilter", "id", "status_buckets",
         "max_count", "max_time", "timeout", "auto_finalize_ec", "enable_lookups",
         "reload_macros", "reduce_freq", "spawn_process", "required_field_list",
-        "rf", "auto_cancel", "auto_pause",
+        "rf", "auto_cancel", "auto_pause"
     ];
     var FLAGS_EVENTS = [
         "offset", "count", "earliest_time", "latest_time", "search",
         "time_format", "output_time_format", "field_list", "f", "max_lines",
-        "truncation_mode", "json_mode", "segmentation"
+        "truncation_mode", "output_mode", "segmentation"
     ];
     var FLAGS_RESULTS = [
-        "offset", "count", "search", "field_list", "f", "json_mode"
+        "offset", "count", "search", "field_list", "f", "output_mode"
     ];
     
     var printRows = function(data) {
@@ -88,15 +88,15 @@
             sids = sids || [];
             // We get a list of the current jobs, and for each of them,
             // we check whether it is the job we're looking for.
-            // If it is, we wrap it up in a Splunk.Job object, and invoke
+            // If it is, we wrap it up in a splunkjs.Job object, and invoke
             // our function on it.
-            var jobs = [];
-            this.service.jobs().list(function(err, list) {
-                list = list || [];
+            var jobsList = [];
+            this.service.jobs().refresh(function(err, jobs) {
+                var list = jobs.list() || [];
                 for(var i = 0; i < list.length; i++) {
                     if (utils.contains(sids, list[i].sid)) {
                         var job = list[i];
-                        jobs.push(job);
+                        jobsList.push(job);
                     }
                 }
                 
@@ -170,11 +170,11 @@
                         return;
                     }
                     
-                    var json_mode = options.json_mode || "rows";
-                    if (json_mode === "rows") {
+                    var output_mode = options.output_mode || "rows";
+                    if (output_mode === "json_rows") {
                         printRows(data);
                     }
-                    else if (json_mode === "column") {
+                    else if (output_mode === "json_cols") {
                         console.log(data);
                         printCols(data);
                     }
@@ -215,13 +215,13 @@
             if (sids.length === 0) {
                 // If no job SIDs are provided, we list all jobs.
                 var jobs = this.service.jobs();
-                jobs.list(function(err, list) {
+                jobs.refresh(function(err, jobs) {
                     if (err) {
                         callback(err);
                         return;
                     }
                     
-                    list = list || [];
+                    var list = jobs.list() || [];
                     for(var i = 0; i < list.length; i++) {
                         console.log("  Job " + (i + 1) + " sid: "+ list[i].sid);
                     }
@@ -267,11 +267,11 @@
                         return;
                     }
 
-                    var json_mode = options.json_mode || "rows";
-                    if (json_mode === "rows") {
+                    var output_mode = options.output_mode || "rows";
+                    if (output_mode === "json_rows") {
                         printRows(data);
                     }
-                    else if (json_mode === "column") {
+                    else if (output_mode === "json_cols") {
                         console.log(data);
                         printCols(data);
                     }
@@ -295,11 +295,11 @@
                         return;
                     }
                     
-                    var json_mode = options.json_mode || "rows";
-                    if (json_mode === "rows") {
+                    var output_mode = options.output_mode || "rows";
+                    if (output_mode === "json_rows") {
                         printRows(data);
                     }
-                    else if (json_mode === "column") {
+                    else if (output_mode === "json_cols") {
                         console.log(data);
                         printCols(data);
                     }
@@ -330,7 +330,7 @@
             var options = arguments[arguments.length - 1];
                     
             // Create our service context using the information from the command line
-            var svc = new Splunk.Client.Service({ 
+            var svc = new splunkjs.Service({ 
                 scheme: cmdline.opts.scheme,
                 host: cmdline.opts.host,
                 port: cmdline.opts.port,

@@ -34,7 +34,7 @@ var performSearch = function(svc, query, callback) {
   var job = null;
   var searcher = null;
   
-  if (!Splunk.Utils.startsWith(Splunk.Utils.trim(query), "search")) {
+  if (!splunkjs.Utils.startsWith(splunkjs.Utils.trim(query), "search")) {
     query = "search " + query;
   }
   
@@ -42,7 +42,7 @@ var performSearch = function(svc, query, callback) {
     if (err) {
       var response = args[0];
       var messages = {};
-      var message = response.odata.messages[1];
+      var message = response.data.messages[1];
       messages[message.type.toLowerCase()] = [message.text];
       App.events.trigger("search:failed", query, messages);
     }
@@ -50,13 +50,13 @@ var performSearch = function(svc, query, callback) {
       App.events.trigger("search:new", createdJob);
         
       job = createdJob;
-      searcher = new Splunk.Searcher.JobManager(svc, job);
+      searcher = new splunkjs.JobManager(svc, job);
       
-      searcher.onProgress(function(err, properties) {
+      searcher.on("progress", function(properties) {
         App.events.trigger("search:stats", properties);
       });
       
-      searcher.done(function(err) {
+      searcher.on("done", function(err) {
         if (err) {
           callback(err)
         }
@@ -84,7 +84,7 @@ var propertiesToActions = function(properties) {
   
   var okStates = ["INITIALIZED", "ACKED", "QUEUED", "PARSING", "RUNNING"];
   
-  if (Splunk.Utils.indexOf(okStates, properties.dispatchState) > -1) {
+  if (splunkjs.Utils.indexOf(okStates, properties.dispatchState) > -1) {
     return ["Pause", "Finalize", "Delete"];
   }
   
@@ -257,8 +257,8 @@ var EventsView = Backbone.View.extend({
   },
   
   stats: function(properties) {
-    var reportSearch = properties.reportSearch;
-    this.isTransform = (reportSearch && Splunk.Utils.trim(reportSearch) !== "");
+    var reportSearch = properties.content.reportSearch;
+    this.isTransform = (reportSearch && splunkjs.Utils.trim(reportSearch) !== "");
   },
   
   add: function(event) {
@@ -363,7 +363,7 @@ var PaginationView = Backbone.View.extend({
   },
   
   stats: function(properties) {
-    this.resultCount = properties.resultCount;
+    this.resultCount = properties.content.resultCount;
   },
   
   searchNew: function(job) {
@@ -389,7 +389,7 @@ var PaginationView = Backbone.View.extend({
   },
   
   render: function() {
-    var numPages = Math.ceil((this.resultCount / this.collection.resultsPerPage));    
+    var numPages = Math.ceil((this.resultCount / this.collection.resultsPerPage));
     var pageList = _.range(1, numPages + 1, 1);
     
     var paginationInfo = {
@@ -503,9 +503,9 @@ var SearchStatsView = Backbone.View.extend({
   
   stats: function(properties) {
     var stats = {
-      eventCount: properties.eventCount,
-      scanCount: properties.scanCount,
-      actions: propertiesToActions(properties)
+      eventCount: properties.content.eventCount,
+      scanCount: properties.content.scanCount,
+      actions: propertiesToActions(properties.content)
     };
     
     this.render(stats);
@@ -541,7 +541,7 @@ var SearchFormView = Backbone.View.extend({
   },
   
   stats: function(properties) {
-    this.sid = properties.sid;
+    this.sid = properties.content.sid;
     this.messages = properties.messages || {};
     this.render();
   },
@@ -564,7 +564,7 @@ var SearchFormView = Backbone.View.extend({
       return;
     }
     
-    var query = Splunk.Utils.trim($("#searchbox").val());
+    var query = splunkjs.Utils.trim($("#searchbox").val());
     
     if (query !== "") {
       performSearch(App.service(), query);
@@ -645,20 +645,20 @@ var JobView = Backbone.View.extend({
     var properties = this.model.toJSON();
     
     var expires = new Date();
-    expires = new Date(expires.valueOf() + properties.ttl * 1000);
-    runtime = new Date(parseFloat(properties.runDuration) * 1000 - (16 * 60 * 60 * 1000));
+    expires = new Date(expires.valueOf() + properties.content.ttl * 1000);
+    runtime = new Date(parseFloat(properties.content.runDuration) * 1000 - (16 * 60 * 60 * 1000));
     
     var templateData = {
       dispatchedAt: new Date(Date.parse(properties.published)).format("m/d/yy h:MM:ss TT"),
       owner: properties.author,
-      application: properties.__metadata.acl.app,
-      size: (properties.diskUsage / 1000000).toFixed(2) + "MB",
-      events: properties.eventCount,
+      application: properties.acl.app,
+      size: (properties.content.diskUsage / 1000000).toFixed(2) + "MB",
+      events: properties.content.eventCount,
       runtime: runtime.format("HH:MM:ss.l"),
       expires: expires.format("m/d/yy h:MM:ss TT"),
-      status: propertiesToState(properties),
-      query: properties.label || properties.__name,
-      actions: propertiesToActions(properties)
+      status: propertiesToState(properties.content),
+      query: properties.content.label || properties.name,
+      actions: propertiesToActions(properties.content)
     };
     var content = this.template.tmpl(templateData);
     
@@ -785,7 +785,7 @@ var MapView = Backbone.View.extend({
     var iterator = new this.searcher.resultsIterator();
     
     var hasMore = true;
-    Splunk.Async.whilst(
+    splunkjs.Async.whilst(
       function() { return hasMore; },
       function(iterationDone) {
         iterator.next(function(err, more, results) {
@@ -824,7 +824,7 @@ var MapView = Backbone.View.extend({
               var properties = [];
               for (var j = 0; j < fields.length; j++) {
                 property = fields[j];
-                if (!Splunk.Utils.startsWith(property, "_")) {
+                if (!splunkjs.Utils.startsWith(property, "_")) {
                   properties.push({
                     key: property,
                     value: result[j]
@@ -954,8 +954,8 @@ var SigninView = BootstrapModalView.extend({
     
     var base = scheme + "://" + host + ":" + port;
     
-    var http = new Splunk.ProxyHttp("/proxy");
-    var svc = new Splunk.Client.Service(http, { 
+    var http = new splunkjs.ProxyHttp("/proxy");
+    var svc = new splunkjs.Service(http, { 
         scheme: scheme,
         host: host,
         port: port,

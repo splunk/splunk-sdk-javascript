@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-var utils = Splunk.Utils;
+var utils = splunkjs.Utils;
 
 var Event = Backbone.Model.extend({
 });
@@ -48,7 +48,7 @@ var Events = Backbone.Collection.extend({
     
     this.headers = [];
     var that = this;
-    Splunk.Async.chain([
+    splunkjs.Async.chain([
       function(done) {
         that.searcher.job.results({
           count: that.resultsPerPage, 
@@ -72,7 +72,7 @@ var Events = Backbone.Collection.extend({
           
           for(var j = 0; j < fields.length; j++) {
             var property = fields[j]
-            if (!Splunk.Utils.startsWith(property, "_")) {
+            if (!splunkjs.Utils.startsWith(property, "_")) {
               properties.push({
                 key: property,
                 value: result[j]
@@ -124,7 +124,7 @@ var Job = Backbone.Model.extend({
     
     var job = this;
     this.job.cancel(function(err) {
-      job.destroy();
+      job.collection.remove(job);
       callback();
     });
   },
@@ -149,17 +149,18 @@ var Jobs = Backbone.Collection.extend({
       return;
     }
     
-    var jobs = this;
-    App.service().jobs().list(function(err, list) {
+    var that = this;
+    App.service().jobs().refresh(function(err, jobs) {
+      var list = jobs.list();
       var models = [];
       for(var i = 0; i < list.length; i++) {
         var job = list[i];
-        var properties = job.properties();
+        var properties = job.state();
         var jobModel = new Job(properties, {job: job});
         models.push(jobModel);
       }
       
-      jobs.reset(models);
+      that.reset(models);
       callback();
     });
   },
@@ -175,15 +176,15 @@ var Jobs = Backbone.Collection.extend({
     this.isFetchingStarted = true;
     
     var jobs = this;
-    Splunk.Async.whilst(
+    splunkjs.Async.whilst(
       function() { return true; },
       function(iterationDone) {
-        Splunk.Async.chain([
+        splunkjs.Async.chain([
           function(done) {
             jobs.fetch(done);
           },
           function(done) {
-            Splunk.Async.sleep(10000, done);
+            splunkjs.Async.sleep(10000, done);
           }
         ],
         iterationDone);

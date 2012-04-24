@@ -19,6 +19,7 @@
     <link type="text/css" rel="stylesheet" href="../resources/rickshaw/legend.css">
     <link type="text/css" rel="stylesheet" href="../resources/rickshaw/detail.css">
     <link type="text/css" rel="stylesheet" href="../resources/rickshaw/extensions.css">
+    <link type="text/css" rel="stylesheet" href="../resources/rickshaw/rickshaw.min.css">
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.2/jquery.min.js"></script>
     <style type="text/css">
       body {
@@ -127,8 +128,8 @@
       host     = "localhost";
       port     = "8089";
       
-      Async = Splunk.Async;
-      utils = Splunk.Utils;
+      Async = splunkjs.Async;
+      utils = splunkjs.Utils;
       
       var updateConnectionInformation = function() {
         username = utils.trim($("#id_username").pVal()) || "admin";
@@ -281,8 +282,8 @@
                 
             </div>
             <pre class='prettyprint lang-js linenums'>
-var http = new Splunk.ProxyHttp("/proxy");
-service = new Splunk.Client.Service(http, { 
+var http = new splunkjs.ProxyHttp("/proxy");
+service = new splunkjs.Service(http, { 
   scheme: scheme,
   host: host,
   port: port,
@@ -385,8 +386,8 @@ service.login(function(err, success) {
               <div id="slider"></div>
             </div>
             <pre class='prettyprint lang-js linenums'>
-var http = new Splunk.ProxyHttp("/proxy");
-service = new Splunk.Client.Service(http, { 
+var http = new splunkjs.ProxyHttp("/proxy");
+service = new splunkjs.Service(http, { 
   scheme: scheme,
   host: host,
   port: port,
@@ -489,17 +490,16 @@ service.login(function(err, success) {
   // OK, we're logged in, let's do a oneshot search and just
   // get the results
   var query = "" +
-    'search index=_internal sourcetype=splunkd* | head 10000 | bucket span=1m _time | eval formatted_time=_time | chart count over formatted_time by status usenull=f';
-  service.oneshotSearch(query, {}, function(err, results) {
+    'search index=_internal sourcetype=splunkd* | head 10000 ' + 
+    '| timechart span=1m count by status | eval formatted_time=_time' +
+    '| fields - NULL, _*, _time';
+  service.oneshotSearch(query, {count: 0}, function(err, results) {
     if (err) {
       console.log(err);
       alert("An error occurred with the search");
       return;
     }
   
-    // The format Google Charts needs data in is very similar to ours - we just
-    // need to put the field headers in the same array, and convert the strings
-    // into numbers.
     var rows = results.rows.slice();
     var fields = results.fields.slice();
     
@@ -509,7 +509,7 @@ service.login(function(err, success) {
       for(var j = 0; j < row.length; j++) {
         
         // Don't change the time field
-        if (j !== timeIndex) {
+        if (j !== timeIndex && fields[j] !== "_time") {
           row[j] = parseInt(row[j]);
         }
       }

@@ -14,10 +14,10 @@
 // under the License.
 
 exports.setup = function(svc, opts) {
-    var Splunk  = require('../splunk').Splunk;
-    var Async   = Splunk.Async;
+    var splunkjs= require('../splunk');
+    var Async   = splunkjs.Async;
 
-    Splunk.Logger.setLevel("ALL");
+    splunkjs.Logger.setLevel("ALL");
     var idCounter = 0;
     var getNextId = function() {
         return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
@@ -278,21 +278,22 @@ exports.setup = function(svc, opts) {
             },
             
             "List stanzas": function(test) {
-                this.run("stanzas", ["web"], null, function(err) {
+                this.run("stanzas", ["web"], {app: "search", owner: "nobody"}, function(err) {
                     test.ok(!err);
                     test.done();
                 });
             },
             
             "Show non-existent contents": function(test) {
-                this.run("contents", ["json", "settings"], null, function(err) {
+                this.run("contents", ["json", "settings"], {app: "search", owner: "nobody"}, function(err) {
                     test.ok(err);
                     test.done();
                 });
             },
             
             "Show contents with specialization": function(test) {
-                this.run("contents", ["json", "settings"], {app: "new_english"}, function(err) {
+                this.run("contents", ["json", "settings"], {app: "xml2json", owner: "nobody"}, function(err) {
+                    console.log(err);
                     test.ok(!err);
                     test.done();
                 });
@@ -306,21 +307,21 @@ exports.setup = function(svc, opts) {
             },
             
             "Edit contents with no user set": function(test) {
-                this.run("edit", ["json", "settings", "foo", "bar"], {app: "new_english"}, function(err) {
+                this.run("edit", ["json", "settings", "foo", "bar"], {app: "xml2json"}, function(err) {
                     test.ok(err);
                     test.done();
                 });
             },
             
             "Edit contents": function(test) {
-                this.run("edit", ["json", "settings", "foo", "bar"], {app: "new_english", user: "admin"}, function(err) {
+                this.run("edit", ["json", "settings", "foo", "bar"], {app: "xml2json", owner: "admin"}, function(err) {
                     test.ok(!err);
                     test.done();
                 });
             },
             
             "Create file": function(test) {
-                this.run("create", ["foo"], {app: "new_english", user: "admin"}, function(err) {
+                this.run("create", ["foo"], {app: "xml2json", owner: "admin"}, function(err) {
                     test.ok(!err);
                     test.done();
                 });
@@ -328,8 +329,8 @@ exports.setup = function(svc, opts) {
             
             "Create stanza": function(test) {
                 var options = {
-                    app: "new_english",
-                    user: "admin"
+                    app: "xml2json",
+                    owner: "admin"
                 };
                 
                 var that = this;
@@ -344,8 +345,8 @@ exports.setup = function(svc, opts) {
             
             "Create key=value": function(test) {
                 var options = {
-                    app: "new_english",
-                    user: "admin"
+                    app: "xml2json",
+                    owner: "admin"
                 };
                 
                 var that = this;
@@ -360,8 +361,8 @@ exports.setup = function(svc, opts) {
             
             "Create+delete stanza": function(test) {
                 var options = {
-                    app: "new_english",
-                    user: "admin"
+                    app: "xml2json",
+                    owner: "admin"
                 };
                 
                 var that = this;
@@ -464,7 +465,7 @@ exports.setup = function(svc, opts) {
                     {exec_mode: "blocking"}, 
                     function(err, job) {
                         test.ok(!err);
-                        job.results({json_mode: "rows"}, function(err, results) {
+                        job.results({output_mode: "rows"}, function(err, results) {
                             test.ok(!err);
                             process.stdin.emit("data", JSON.stringify(results));
                             process.stdin.emit("end");
@@ -486,7 +487,7 @@ exports.setup = function(svc, opts) {
                     {exec_mode: "blocking"}, 
                     function(err, job) {
                         test.ok(!err);
-                        job.results({json_mode: "column"}, function(err, results) {
+                        job.results({output_mode: "json_cols"}, function(err, results) {
                             test.ok(!err);
                             process.stdin.emit("data", JSON.stringify(results));
                             process.stdin.emit("end");
@@ -509,10 +510,10 @@ exports.setup = function(svc, opts) {
 };
 
 if (module === require.main) {
-    var Splunk      = require('../splunk').Splunk;
+    var splunkjs    = require('../splunk');
     var test        = require('../contrib/nodeunit/test_reporter');
     
-    var options = require('../internal/cmdline');    
+    var options = require('../examples/node/cmdline');    
     var parser  = options.create();
     var cmdline = parser.parse(process.argv);
         
@@ -521,12 +522,12 @@ if (module === require.main) {
         throw new Error("Error in parsing command line parameters");
     }    
     
-    var svc = new Splunk.Client.Service({ 
+    var svc = new splunkjs.Service({ 
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
         username: cmdline.opts.username,
-        password: cmdline.opts.password,
+        password: cmdline.opts.password
     });
     
     var suite = exports.setup(svc, cmdline.opts);

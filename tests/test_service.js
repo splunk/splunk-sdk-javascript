@@ -1,0 +1,1969 @@
+
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+exports.setup = function(svc) {
+    var splunkjs    = require('../splunk');
+    var utils       = splunkjs.Utils;
+    var Async       = splunkjs.Async;
+    var tutils      = require('./utils');
+
+    splunkjs.Logger.setLevel("ALL");
+    var idCounter = 0;
+    var getNextId = function() {
+        return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
+    };
+
+    return {
+        "Namespace Tests": {
+            setUp: function(finished) {
+                this.service = svc;
+                var that = this;
+                                
+                var appName1 = "jssdk_testapp_" + getNextId();
+                var appName2 = "jssdk_testapp_" + getNextId();
+                
+                var userName1 = "jssdk_testuser_" + getNextId();
+                var userName2 = "jssdk_testuser_" + getNextId();
+                
+                var apps = this.service.apps();
+                var users = this.service.users();
+                
+                this.namespace11 = {owner: userName1, app: appName1};
+                this.namespace12 = {owner: userName1, app: appName2};
+                this.namespace21 = {owner: userName2, app: appName1};
+                this.namespace22 = {owner: userName2, app: appName2};
+                
+                Async.chain([
+                        function(done) {
+                            apps.create({name: appName1}, done);
+                        },
+                        function(app1, done) {
+                            that.app1 = app1;
+                            that.appName1 = appName1;
+                            apps.create({name: appName2}, done);
+                        },
+                        function(app2, done) {
+                            that.app2 = app2;
+                            that.appName2 = appName2;
+                            users.create({name: userName1, password: "abc", roles: ["user"]}, done);
+                        },
+                        function(user1, done) {
+                            that.user1 = user1;
+                            that.userName1 = userName1;
+                            users.create({name: userName2, password: "abc", roles: ["user"]}, done);
+                        },
+                        function(user2, done) {
+                            that.user2 = user2;
+                            that.userName2 = userName2;
+                            
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        finished(); 
+                    }
+                );
+            },        
+            
+            "Callback#Namespace protection": function(test) {    
+                var searchName = "jssdk_search_" + getNextId();
+                var search = "search *";
+                var service = this.service;
+                
+                var savedSearches11 = service.savedSearches(this.namespace11);
+                var savedSearches21 = service.savedSearches(this.namespace21);
+                
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            // Create the saved search only in the 11 namespace
+                            savedSearches11.create({name: searchName, search: search}, done);
+                        },
+                        function(savedSearch, done) {
+                            // Refresh the 11 saved searches
+                            savedSearches11.refresh(done);
+                        },
+                        function(savedSearches, done) {
+                            // Refresh the 21 saved searches
+                            savedSearches21.refresh(done);
+                        },
+                        function(savedSearches, done) {                            
+                            var entity11 = savedSearches11.item(searchName);
+                            var entity21 = savedSearches21.item(searchName);
+                            
+                            // Make sure the saved search exists in the 11 namespace
+                            test.ok(entity11);
+                            test.strictEqual(entity11.name, searchName);
+                            test.strictEqual(entity11.properties().search, search);
+                            
+                            // Make sure the saved search doesn't exist in the 11 namespace
+                            test.ok(!entity21);
+                            
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },    
+            
+            "Callback#Namespace item": function(test) {    
+                var searchName = "jssdk_search_" + getNextId();
+                var search = "search *";
+                var service = this.service;
+                
+                var namespace_1 = {owner: "-", app: this.appName1};
+                var namespace_nobody1 = {owner: "nobody", app: this.appName1};
+                
+                var savedSearches11 = service.savedSearches(this.namespace11);
+                var savedSearches21 = service.savedSearches(this.namespace21);
+                var savedSearches_1 = service.savedSearches(namespace_1);
+                var savedSearches_nobody1 = service.savedSearches(namespace_nobody1);
+                
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            // Create a saved search in the 11 namespace
+                            savedSearches11.create({name: searchName, search: search}, done);
+                        },
+                        function(savedSearch, done) {
+                            // Create a saved search in the 21 namespace
+                            savedSearches21.create({name: searchName, search: search}, done);
+                        },
+                        function(savedSearch, done) {
+                            // Refresh the -/1 namespace
+                            savedSearches_1.refresh(done);
+                        },
+                        function(savedSearches, done) {
+                            // Refresh the 1/1 namespace
+                            savedSearches11.refresh(done);
+                        },
+                        function(savedSearches, done) {
+                            // Refresh the 2/1 namespace
+                            savedSearches21.refresh(done);
+                        },
+                        function(savedSearches, done) {                            
+                            var entity11 = savedSearches11.item(searchName, that.namespace11);
+                            var entity21 = savedSearches21.item(searchName, that.namespace21);
+                            
+                            // Ensure that the saved search exists in the 11 namespace
+                            test.ok(entity11);
+                            test.strictEqual(entity11.name, searchName);
+                            test.strictEqual(entity11.properties().search, search);
+                            test.strictEqual(entity11.namespace.owner, that.namespace11.owner);
+                            test.strictEqual(entity11.namespace.app, that.namespace11.app);
+                            
+                            // Ensure that the saved search exists in the 21 namespace
+                            test.ok(entity21);
+                            test.strictEqual(entity21.name, searchName);
+                            test.strictEqual(entity21.properties().search, search);
+                            test.strictEqual(entity21.namespace.owner, that.namespace21.owner);
+                            test.strictEqual(entity21.namespace.app, that.namespace21.app);
+                            
+                            done();
+                        },
+                        function(done) {
+                            // Create a saved search in the nobody/1 namespace
+                            savedSearches_nobody1.create({name: searchName, search: search}, done);
+                        },
+                        function(savedSearch, done) {
+                            // Refresh the 1/1 namespace
+                            savedSearches11.refresh(done);
+                        },
+                        function(savedSearches, done) {
+                            // Refresh the 2/1 namespace
+                            savedSearches21.refresh(done);
+                        },
+                        function(savedSearches, done) {  
+                            // Ensure that we can't get the item from the generic
+                            // namespace without specifying a namespace
+                            var thrown = false;
+                            try {
+                                var entity = savedSearches_1.item(searchName);
+                            }
+                            catch(ex) {
+                                thrown = true;
+                            }
+                            
+                            test.ok(thrown);
+                                                    
+                            // Ensure we get the right entities from the -/1 namespace when we
+                            // specify it.  
+                            var entity11 = savedSearches_1.item(searchName, that.namespace11);
+                            var entity21 = savedSearches_1.item(searchName, that.namespace21);
+                            
+                            test.ok(entity11);
+                            test.strictEqual(entity11.name, searchName);
+                            test.strictEqual(entity11.properties().search, search);
+                            test.strictEqual(entity11.namespace.owner, that.namespace11.owner);
+                            test.strictEqual(entity11.namespace.app, that.namespace11.app);
+                            
+                            test.ok(entity21);
+                            test.strictEqual(entity21.name, searchName);
+                            test.strictEqual(entity21.properties().search, search);
+                            test.strictEqual(entity21.namespace.owner, that.namespace21.owner);
+                            test.strictEqual(entity21.namespace.app, that.namespace21.app);
+                            
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            
+            "Callback#delete test applications": function(test) {
+                var apps = this.service.apps();
+                apps.refresh(function(err, apps) {
+                    var appList = apps.list();
+                    
+                    Async.parallelEach(
+                        appList,
+                        function(app, idx, callback) {
+                            if (utils.startsWith(app.name, "jssdk_")) {
+                                app.remove(callback);
+                            }
+                            else {
+                                callback();
+                            }
+                        }, function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
+                });
+            },
+            
+            "Callback#delete test users": function(test) {
+                var users = this.service.users();
+                users.refresh(function(err, users) {
+                    var userList = users.list();
+                    
+                    Async.parallelEach(
+                        userList,
+                        function(user, idx, callback) {
+                            if (utils.startsWith(user.name, "jssdk_")) {
+                                user.remove(callback);
+                            }
+                            else {
+                                callback();
+                            }
+                        }, function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
+                });
+            }
+        },
+        
+        "Job Tests": {
+            setUp: function(done) {
+                this.service = svc;
+                done();
+            },
+            
+            "Callback#Create+abort job": function(test) {
+                var sid = getNextId();
+                var options = {id: sid};
+                var jobs = this.service.jobs({app: "xml2json"});
+                var req = jobs.oneshotSearch('search index=_internal |  head 1 | sleep 10', options, function(err, job) {   
+                    test.ok(err);
+                    test.ok(!job);
+                    test.strictEqual(err.error, "abort");
+                    test.done();
+                }); 
+                
+                splunkjs.Async.sleep(1000, function() {
+                    req.abort();
+                });
+            },
+
+            "Callback#Create+cancel job": function(test) {
+                var sid = getNextId();
+                this.service.jobs().search('search index=_internal | head 1', {id: sid}, function(err, job) {   
+                    test.ok(job);
+                    test.strictEqual(job.sid, sid);
+
+                    job.cancel(function() {
+                        test.done();
+                    });
+                }); 
+            },
+
+            "Callback#Create job error": function(test) {
+                var sid = getNextId();
+                this.service.jobs().search({search: 'index=_internal | head 1', id: sid}, function(err) { 
+                    test.ok(!!err);
+                    test.done(); 
+                });
+            },
+
+            "Callback#List jobs": function(test) {
+                this.service.jobs().refresh(function(err, jobs) {
+                    test.ok(!err);
+                    test.ok(jobs);
+                    
+                    var jobsList = jobs.list();
+                    test.ok(jobsList.length > 0);
+                    
+                    for(var i = 0; i < jobsList.length; i++) {
+                        test.ok(jobsList[i]);
+                    }
+                    
+                    test.done();
+                });
+            },
+
+            "Callback#Contains job": function(test) {
+                var that = this;
+                var sid = getNextId();
+                var jobs = this.service.jobs();
+                
+                jobs.search('search index=_internal | head 1', {id: sid}, function(err, job) {   
+                    test.ok(!err);
+                    test.ok(job);
+                    test.strictEqual(job.sid, sid);
+
+                    jobs.refresh(function(err, jobs) {
+                        test.ok(!err);
+                        var job = jobs.contains(sid);
+                        test.ok(job);
+
+                        job.cancel(function() {
+                            test.done();
+                        });
+                    });
+                }); 
+            },
+
+            "Callback#job results": function(test) {
+                var sid = getNextId();
+                var service = this.service;
+                var that = this;
+                
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().search('search index=_internal | head 1 | stats count', {id: sid}, done);
+                        },
+                        function(job, done) {
+                            test.strictEqual(job.sid, sid);
+                            tutils.pollUntil(
+                                job,
+                                function(j) {
+                                    return job.properties()["isDone"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            job.results({}, done);
+                        },
+                        function(results, job, done) {
+                            test.strictEqual(results.rows.length, 1);
+                            test.strictEqual(results.fields.length, 1);
+                            test.strictEqual(results.fields[0], "count");
+                            test.strictEqual(results.rows[0][0], "1");
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#job events": function(test) {
+                var sid = getNextId();
+                var service = this.service;
+                var that = this;
+                
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().search('search index=_internal | head 1', {id: sid}, done);
+                        },
+                        function(job, done) {
+                            test.strictEqual(job.sid, sid);
+                            tutils.pollUntil(
+                                job,
+                                function(j) {
+                                    return job.properties()["isDone"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            job.events({}, done);
+                        },
+                        function(results, job, done) {
+                            test.strictEqual(results.rows.length, 1);
+                            test.strictEqual(results.fields.length, results.rows[0].length);
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#job results preview": function(test) {
+                var sid = getNextId();
+                var service = this.service;
+                var that = this;
+                
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().search('search index=_internal | head 1 | stats count', {id: sid}, done);
+                        },
+                        function(job, done) {
+                            test.strictEqual(job.sid, sid);
+                            tutils.pollUntil(
+                                job,
+                                function(j) {
+                                    return job.properties()["isDone"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            job.preview({}, done);
+                        },
+                        function(results, job, done) {
+                            test.strictEqual(results.rows.length, 1);
+                            test.strictEqual(results.fields.length, 1);
+                            test.strictEqual(results.fields[0], "count");
+                            test.strictEqual(results.rows[0][0], "1");
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#Enable + disable preview": function(test) {
+                var that = this;
+                var sid = getNextId();
+                
+                var service = this.service.specialize("nobody", "xml2json");
+                
+                Async.chain([
+                        function(done) {
+                            service.jobs().search('search index=_internal | head 1 | sleep 60', {id: sid}, done);
+                        },
+                        function(job, done) {
+                            job.enablePreview(done);
+                            
+                        },
+                        function(job, done) {
+                            job.disablePreview(done);
+                        },
+                        function(job, done) {
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
+
+            "Callback#Pause + unpause + finalize preview": function(test) {
+                var that = this;
+                var sid = getNextId();
+                
+                var service = this.service.specialize("nobody", "xml2json");
+                
+                Async.chain([
+                        function(done) {
+                            service.jobs().search('search index=_internal | head 1 | sleep 5', {id: sid}, done);
+                        },
+                        function(job, done) {
+                            job.pause(done);
+                        },
+                        function(job, done) {
+                            tutils.pollUntil(
+                                job, 
+                                function(j) {
+                                    return j.properties()["isPaused"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            test.ok(job.properties()["isPaused"]);
+                            job.unpause(done);
+                        },
+                        function(job, done) {
+                            tutils.pollUntil(
+                                job, 
+                                function(j) {
+                                    return !j.properties()["isPaused"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            test.ok(!job.properties()["isPaused"]);
+                            job.finalize(done);
+                        },
+                        function(job, done) {
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
+
+            "Callback#Set TTL": function(test) {
+                var sid = getNextId();
+                var originalTTL = 0;
+                var that = this;
+                
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().search('search index=_internal | head 1', {id: sid}, done);
+                        },
+                        function(job, done) {
+                            job.refresh(done);
+                        },
+                        function(job, done) {
+                            var ttl = job.properties()["ttl"];
+                            originalTTL = ttl;
+                            
+                            job.setTTL(ttl*2, done);
+                        },
+                        function(job, done) {
+                            job.refresh(done);
+                        },
+                        function(job, done) {
+                            var ttl = job.properties()["ttl"];
+                            test.ok(ttl > originalTTL);
+                            test.ok(ttl <= (originalTTL*2));
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
+
+            "Callback#Set priority": function(test) {
+                var sid = getNextId();
+                var originalPriority = 0;
+                var that = this;
+                
+                var service = this.service.specialize("nobody", "xml2json");
+                
+                Async.chain([
+                        function(done) {
+                            service.jobs().search('search index=_internal | head 1 | sleep 5', {id: sid}, done);
+                        },
+                        function(job, done) {
+                            job.refresh(done);
+                        },
+                        function(job, done) {
+                            var priority = job.properties()["priority"];
+                            test.ok(priority, 5);
+                            job.setPriority(priority + 1, done);
+                        },
+                        function(job, done) {
+                            job.refresh(done);
+                        },
+                        function(job, done) {
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
+
+            "Callback#Search log": function(test) {
+                var sid = getNextId();
+                var that = this;
+                
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().search('search index=_internal | head 1', {id: sid}, done);
+                        },
+                        function(job, done) {
+                            job.searchlog(done);
+                        },
+                        function(log, job, done) {
+                            test.ok(job);
+                            test.ok(log);
+                            test.ok(log.length > 0);
+                            test.ok(log.split("\r\n").length > 0);
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
+
+            "Callback#Search summary": function(test) {
+                var sid = getNextId();
+                var that = this;
+                
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().search(
+                                'search index=_internal | head 1 | eval foo="bar" | fields foo', 
+                                {
+                                    id: sid,
+                                    status_buckets: 300,
+                                    rf: ["foo"]
+                                }, 
+                                done);
+                        },
+                        function(job, done) {
+                            job.summary({}, done);
+                        },
+                        function(summary, job, done) {
+                            test.ok(job);
+                            test.ok(summary);
+                            test.strictEqual(summary.event_count, 1);
+                            test.strictEqual(summary.fields.foo.count, 1);
+                            test.strictEqual(summary.fields.foo.distinct_count, 1);
+                            test.ok(summary.fields.foo.is_exact, 1);
+                            test.strictEqual(summary.fields.foo.name, "foo");
+                            test.strictEqual(summary.fields.foo.modes.length, 1);
+                            test.strictEqual(summary.fields.foo.modes[0].count, 1);
+                            test.strictEqual(summary.fields.foo.modes[0].value, "bar");
+                            test.ok(summary.fields.foo.modes[0].is_exact);
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
+
+            "Callback#Search timeline": function(test) {
+                var sid = getNextId();
+                var that = this;
+                
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().search(
+                                'search index=_internal | head 1 | eval foo="bar" | fields foo', 
+                                {
+                                    id: sid,
+                                    status_buckets: 300,
+                                    rf: ["foo"],
+                                    exec_mode: "blocking"
+                                }, 
+                                done);
+                        },
+                        function(job, done) {
+                            job.timeline({}, done);
+                        },
+                        function(timeline, job, done) {
+                            test.ok(job);
+                            test.ok(timeline);
+                            test.strictEqual(timeline.buckets.length, 1);
+                            test.strictEqual(timeline.event_count, 1);
+                            test.strictEqual(timeline.buckets[0].available_count, 1);
+                            test.strictEqual(timeline.buckets[0].duration, 0.001);
+                            test.strictEqual(timeline.buckets[0].earliest_time_offset, timeline.buckets[0].latest_time_offset);
+                            test.strictEqual(timeline.buckets[0].total_count, 1);
+                            test.ok(timeline.buckets[0].is_finalized);
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
+
+            "Callback#Touch": function(test) {
+                var sid = getNextId();
+                var that = this;
+                var originalTime = "";
+                
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().search('search index=_internal | head 1', {id: sid}, done);
+                        },
+                        function(job, done) {
+                            job.refresh(done);
+                        },
+                        function(job, done) {
+                            test.ok(job);
+                            originalTime = job.properties().updated;
+                            Async.sleep(1200, function() { job.touch(done); });
+                        },
+                        function(job, done) {
+                            job.refresh(done);
+                        },
+                        function(job, done) {
+                            test.ok(originalTime !== job.updated());
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
+
+            "Callback#Oneshot search": function(test) {
+                var sid = getNextId();
+                var that = this;
+                var originalTime = "";
+                
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().oneshotSearch('search index=_internal | head 1 | stats count', {id: sid}, done);
+                        },
+                        function(results, done) {
+                            test.ok(results);
+                            test.ok(results.fields);
+                            test.strictEqual(results.fields.length, 1);
+                            test.strictEqual(results.fields[0], "count");
+                            test.ok(results.rows);
+                            test.strictEqual(results.rows.length, 1);
+                            test.strictEqual(results.rows[0].length, 1);
+                            test.strictEqual(results.rows[0][0], "1");
+                            
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
+
+            "Callback#Oneshot search with no results": function(test) {
+                var sid = getNextId();
+                var that = this;
+                var originalTime = "";
+                
+                Async.chain([
+                        function(done) {
+                            var query = 'search index=history MUST_NOT_EXITABCDEF';
+                            that.service.jobs().oneshotSearch(query, {id: sid}, done);
+                        },
+                        function(results, done) {
+                            test.ok(results);
+                            test.strictEqual(results.fields.length, 0);
+                            test.strictEqual(results.rows.length, 0);
+                            test.ok(!results.preview);
+                            
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
+
+            "Callback#Service oneshot search": function(test) {
+                var sid = getNextId();
+                var that = this;
+                var originalTime = "";
+                
+                Async.chain([
+                        function(done) {
+                            that.service.oneshotSearch('search index=_internal | head 1 | stats count', {id: sid}, done);
+                        },
+                        function(results, done) {
+                            test.ok(results);
+                            test.ok(results.fields);
+                            test.strictEqual(results.fields.length, 1);
+                            test.strictEqual(results.fields[0], "count");
+                            test.ok(results.rows);
+                            test.strictEqual(results.rows.length, 1);
+                            test.strictEqual(results.rows[0].length, 1);
+                            test.strictEqual(results.rows[0][0], "1");
+                            
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
+                        
+            "Callback#Service search": function(test) {
+                var sid = getNextId();
+                var service = this.service;
+                var that = this;
+                
+                Async.chain([
+                        function(done) {
+                            that.service.search('search index=_internal | head 1 | stats count', {id: sid}, done);
+                        },
+                        function(job, done) {
+                            test.strictEqual(job.sid, sid);
+                            tutils.pollUntil(
+                                job,
+                                function(j) {
+                                    return job.properties()["isDone"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            job.results({}, done);
+                        },
+                        function(results, job, done) {
+                            test.strictEqual(results.rows.length, 1);
+                            test.strictEqual(results.fields.length, 1);
+                            test.strictEqual(results.fields[0], "count");
+                            test.strictEqual(results.rows[0][0], "1");
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            }
+        },
+        
+        "App Tests": {      
+            setUp: function(done) {
+                this.service = svc;
+                done();
+            },
+                         
+            "Callback#list applications": function(test) {
+                var apps = this.service.apps();
+                apps.refresh(function(err, apps) {
+                    var appList = apps.list();
+                    test.ok(appList.length > 0);
+                    test.done();
+                });
+            },
+                   
+            "Callback#contains applications": function(test) {
+                var apps = this.service.apps();
+                apps.refresh(function(err, apps) {
+                    var app = apps.contains("search");
+                    test.ok(app);
+                    test.done();
+                });
+            },
+            
+            "Callback#create + contains app": function(test) {
+                var name = "jssdk_testapp_" + getNextId();
+                var apps = this.service.apps();
+                
+                apps.create({name: name}, function(err, app) {
+                    var appName = app.name;
+                    apps.refresh(function(err, apps) {
+                        var entity = apps.contains(appName);
+                        test.ok(entity);
+                        app.remove(function() {
+                            test.done();
+                        });
+                    });
+                });
+            },
+            
+            "Callback#create + modify app": function(test) {
+                var DESCRIPTION = "TEST DESCRIPTION";
+                var VERSION = "1.1";
+                
+                var name = "jssdk_testapp_" + getNextId();
+                var apps = this.service.apps();
+                
+                Async.chain([
+                    function(callback) {
+                        apps.create({name: name}, callback);     
+                    },
+                    function(app, callback) {
+                        test.ok(app);
+                        test.strictEqual(app.name, name);  
+                        test.strictEqual(app.properties().version, "1.0");
+                        
+                        app.update({
+                            description: DESCRIPTION,
+                            version: VERSION
+                        }, callback);
+                    },
+                    function(app, callback) {
+                        test.ok(app);
+                        var properties = app.properties();
+                        
+                        test.strictEqual(properties.description, DESCRIPTION);
+                        test.strictEqual(properties.version, VERSION);
+                        
+                        app.remove(callback);
+                    },
+                    function(callback) {
+                        test.done();
+                        callback();
+                    }
+                ]);
+            },
+            
+            "Callback#delete test applications": function(test) {
+                var apps = this.service.apps();
+                apps.refresh(function(err, apps) {
+                    var appList = apps.list();
+                    
+                    Async.parallelEach(
+                        appList,
+                        function(app, idx, callback) {
+                            if (utils.startsWith(app.name, "jssdk_")) {
+                                app.remove(callback);
+                            }
+                            else {
+                                callback();
+                            }
+                        }, function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
+                });
+            }
+        },
+        
+        "Saved Search Tests": {        
+            setUp: function(done) {
+                this.service = svc;
+                done();
+            },
+                   
+            "Callback#list": function(test) {
+                var searches = this.service.savedSearches();
+                searches.refresh(function(err, searches) {
+                    var savedSearches = searches.list();
+                    test.ok(savedSearches.length > 0);
+                    
+                    for(var i = 0; i < savedSearches.length; i++) {
+                        test.ok(savedSearches[i]);
+                    }
+                    
+                    test.done();
+                });
+            },
+            
+            "Callback#contains": function(test) {
+                var searches = this.service.savedSearches();
+                searches.refresh(function(err, searches) {
+                    var search = searches.contains("Indexing workload");
+                    test.ok(search);
+                    
+                    test.done();
+                });
+            },
+            
+            "Callback#suppress": function(test) {
+                var searches = this.service.savedSearches();
+                searches.refresh(function(err, searches) {
+                    var search = searches.contains("Indexing workload");
+                    test.ok(search);
+                    
+                    search.suppressInfo(function(err, info, search) {
+                        test.ok(!err);
+                        test.done();
+                    });
+                });
+            },
+            
+            "Callback#list limit count": function(test) {
+                var searches = this.service.savedSearches();
+                searches.refresh({count: 2}, function(err, searches) {
+                    var savedSearches = searches.list();
+                    test.strictEqual(savedSearches.length, 2);
+                    
+                    for(var i = 0; i < savedSearches.length; i++) {
+                        test.ok(savedSearches[i]);
+                    }
+                    
+                    test.done();
+                });
+            },
+            
+            "Callback#list filter": function(test) {
+                var searches = this.service.savedSearches();
+                searches.refresh({search: "Error"}, function(err, searches) {
+                    var savedSearches = searches.list();
+                    test.ok(savedSearches.length > 0);
+                    
+                    for(var i = 0; i < savedSearches.length; i++) {
+                        test.ok(savedSearches[i]);
+                    }
+                    
+                    test.done();
+                });
+            },
+            
+            "Callback#list offset": function(test) {
+                var searches = this.service.savedSearches();
+                searches.refresh({offset: 2, count: 1}, function(err, searches) {
+                    var savedSearches = searches.list();
+                    test.strictEqual(searches.paging().offset, 2);
+                    test.strictEqual(searches.paging().count, 1);
+                    test.strictEqual(searches.paging().page, 1);
+                    test.strictEqual(savedSearches.length, 1);
+                    
+                    for(var i = 0; i < savedSearches.length; i++) {
+                        test.ok(savedSearches[i]);
+                    }
+                    
+                    test.done();
+                });
+            },
+            
+            "Callback#create + modify + delete saved search": function(test) {
+                var name = "jssdk_savedsearch";
+                var originalSearch = "search * | head 1";
+                var updatedSearch = "search * | head 10";
+                var updatedDescription = "description";
+            
+                var searches = this.service.savedSearches({owner: this.service.username, app: "xml2json"});
+                
+                Async.chain([
+                        function(done) {
+                            searches.create({search: originalSearch, name: name}, done);
+                        },
+                        function(search, done) {
+                            test.ok(search);
+                            
+                            test.strictEqual(search.name, name); 
+                            test.strictEqual(search.properties().search, originalSearch);
+                            test.ok(!search.properties().description);
+                            
+                            search.update({search: updatedSearch}, done);
+                        },
+                        function(search, done) {
+                            test.ok(search);
+                            test.ok(search);
+                            
+                            test.strictEqual(search.name, name); 
+                            test.strictEqual(search.properties().search, updatedSearch);
+                            test.ok(!search.properties().description);
+                            
+                            search.update({description: updatedDescription}, done);
+                        },
+                        function(search, done) {
+                            test.ok(search);
+                            test.ok(search);
+                            
+                            test.strictEqual(search.name, name); 
+                            test.strictEqual(search.properties().search, updatedSearch);
+                            test.strictEqual(search.properties().description, updatedDescription);
+                            
+                            search.refresh(done);
+                        },
+                        function(search, done) {
+                            // Verify that we have the required fields
+                            test.strictEqual(search.fields().required[0], "search");
+                            
+                            search.remove(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            
+            "Callback#Create + dispatch + history": function(test) {
+                var name = "jssdk_savedsearch_" + getNextId();
+                var originalSearch = "search index=_internal | head 1";
+            
+                var searches = this.service.savedSearches({owner: this.service.username, app: "xml2json"});
+                
+                Async.chain(
+                    function(done) {
+                        searches.create({search: originalSearch, name: name}, done);
+                    },
+                    function(search, done) {
+                        test.ok(search);
+                        
+                        test.strictEqual(search.name, name); 
+                        test.strictEqual(search.properties().search, originalSearch);
+                        test.ok(!search.properties().description);
+                        
+                        search.dispatch({force_dispatch: false, "dispatch.buckets": 295}, done);
+                    },
+                    function(job, search, done) {
+                        test.ok(job);
+                        test.ok(search);
+                        
+                        tutils.pollUntil(
+                            job,
+                            function(j) {
+                                return job.properties()["isDone"];
+                            },
+                            10,
+                            Async.augment(done, search)
+                        );
+                    },
+                    function(job, search, done) {
+                        test.strictEqual(job.properties().statusBuckets, 295);
+                        search.history(Async.augment(done, job));
+                    },
+                    function(jobs, search, originalJob, done) {
+                        test.ok(jobs);
+                        test.ok(jobs.length > 0);
+                        test.ok(search);
+                        test.ok(originalJob);
+                        
+                        var cancel = function(job) {
+                            return function(cb) {
+                                job.cancel(cb);
+                            };
+                        };
+                        
+                        var found = false;
+                        var cancellations = [];
+                        for(var i = 0; i < jobs.length; i++) {
+                            cancellations.push(cancel(jobs[i]));
+                            found = found || (jobs[i].sid === originalJob.sid);
+                        }
+                        
+                        test.ok(found);
+                        
+                        search.remove(function(err) {
+                            if (err) {
+                                done(err);
+                            }
+                            else {
+                                Async.parallel(cancellations, done);
+                            }
+                        });
+                    },
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            
+            "Callback#delete test saved searches": function(test) {
+                var searches = this.service.savedSearches({owner: this.service.username, app: "xml2json"});
+                searches.refresh(function(err, searches) {
+                    var searchList = searches.list();            
+                    Async.parallelEach(
+                        searchList,
+                        function(search, idx, callback) {
+                            console.log(search.name);
+                            if (utils.startsWith(search.name, "jssdk_")) {
+                                search.remove(callback);
+                            }
+                            else {
+                                callback();
+                            }
+                        }, function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
+                });
+            }
+        },
+        
+        "Properties Tests": {        
+            setUp: function(done) {
+                this.service = svc;
+                done();
+            },
+                   
+            "Callback#list": function(test) {
+                var that = this;
+                
+                Async.chain([
+                    function(done) { that.service.properties().refresh(done); },
+                    function(props, done) { 
+                        var files = props.list();
+                        test.ok(files.length > 0);
+                        done();
+                    }
+                ],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+                   
+            "Callback#contains": function(test) {
+                var that = this;
+                
+                Async.chain([
+                    function(done) { that.service.properties().refresh(done); },
+                    function(props, done) { 
+                        var file = props.contains("web");
+                        test.ok(file);
+                        file.refresh(done);
+                    },
+                    function(file, done) {
+                        test.strictEqual(file.name, "web");
+                        done();
+                    }
+                ],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+                   
+            "Callback#contains stanza": function(test) {
+                var that = this;
+                
+                Async.chain([
+                    function(done) { that.service.properties().refresh(done); },
+                    function(props, done) { 
+                        var file = props.contains("web");
+                        test.ok(file);
+                        file.refresh(done);
+                    },
+                    function(file, done) {
+                        test.strictEqual(file.name, "web");
+                        
+                        var stanza = file.contains("settings");
+                        test.ok(stanza);
+                        stanza.refresh(done);
+                    },
+                    function(stanza, done) {
+                        test.ok(stanza.properties().hasOwnProperty("httpport"));
+                        done();
+                    }
+                ],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+                   
+            "Callback#create file + create stanza + update stanza": function(test) {
+                var that = this;
+                var fileName = "jssdk_file";
+                var value = "barfoo_" + getNextId();
+                
+                Async.chain([
+                    function(done) {
+                        var properties = that.service.properties(); 
+                        properties.refresh(done);
+                    },
+                    function(properties, done) {
+                        properties.create(fileName, done);
+                    },
+                    function(file, done) {
+                        file.create("stanza", done);
+                    },
+                    function(stanza, done) {
+                        stanza.update({"jssdk_foobar": value}, done);
+                    },
+                    function(stanza, done) {
+                        test.strictEqual(stanza.properties()["jssdk_foobar"], value);
+                        done();
+                    },
+                    function(done) {
+                        var file = new splunkjs.Service.PropertyFile(svc, fileName);
+                        file.refresh(done);
+                    },
+                    function(file, done) {
+                        var stanza = file.contains("stanza");
+                        test.ok(stanza);
+                        stanza.remove(done);
+                    }
+                ],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            }
+        },
+        
+        "Configuration Tests": {        
+            setUp: function(done) {
+                this.service = svc;
+                done();
+            },
+                   
+            "Callback#list": function(test) {
+                var that = this;
+                var namespace = {owner: "admin", app: "search"};
+                
+                Async.chain([
+                    function(done) { that.service.configurations(namespace).refresh(done); },
+                    function(props, done) { 
+                        var files = props.list();
+                        test.ok(files.length > 0);
+                        done();
+                    }
+                ],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+                   
+            "Callback#contains": function(test) {
+                var that = this;
+                var namespace = {owner: "admin", app: "search"};
+                
+                Async.chain([
+                    function(done) { that.service.configurations(namespace).refresh(done); },
+                    function(props, done) { 
+                        var file = props.contains("web");
+                        test.ok(file);
+                        file.refresh(done);
+                    },
+                    function(file, done) {
+                        test.strictEqual(file.name, "web");
+                        done();
+                    }
+                ],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+                   
+            "Callback#contains stanza": function(test) {
+                var that = this;
+                var namespace = {owner: "admin", app: "search"};
+                
+                Async.chain([
+                    function(done) { that.service.configurations(namespace).refresh(done); },
+                    function(props, done) { 
+                        var file = props.contains("web");
+                        test.ok(file);
+                        file.refresh(done);
+                    },
+                    function(file, done) {
+                        test.strictEqual(file.name, "web");
+                        
+                        var stanza = file.contains("settings");
+                        test.ok(stanza);
+                        stanza.refresh(done);
+                    },
+                    function(stanza, done) {
+                        test.ok(stanza.properties().hasOwnProperty("httpport"));
+                        done();
+                    }
+                ],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+                   
+            "Callback#create file + create stanza + update stanza": function(test) {
+                var that = this;
+                var namespace = {owner: "nobody", app: "system"};
+                var fileName = "jssdk_file";
+                var value = "barfoo_" + getNextId();
+                
+                Async.chain([
+                    function(done) {
+                        var configs = svc.configurations(namespace); 
+                        configs.refresh(done);
+                    },
+                    function(configs, done) {
+                        configs.create({__conf: fileName}, done);
+                    },
+                    function(file, done) {
+                        file.create("stanza", done);
+                    },
+                    function(stanza, done) {
+                        stanza.update({"jssdk_foobar": value}, done);
+                    },
+                    function(stanza, done) {
+                        test.strictEqual(stanza.properties()["jssdk_foobar"], value);
+                        done();
+                    },
+                    function(done) {
+                        var file = new splunkjs.Service.ConfigurationFile(svc, fileName);
+                        file.refresh(done);
+                    },
+                    function(file, done) {
+                        var stanza = file.contains("stanza");
+                        test.ok(stanza);
+                        stanza.remove(done);
+                    }
+                ],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            }
+        },
+        
+        "Index Tests": {      
+            setUp: function(done) {
+                this.service = svc;
+                
+                // Create the index for everyone to use
+                var name = this.indexName = "sdk-tests";
+                var indexes = this.service.indexes();
+                indexes.create(name, {}, function(err, index) {
+                    if (err && err.status !== 409) {
+                        throw new Error("Index creation failed for an unknown reason");
+                    }
+                    
+                    done();
+                });
+            },
+                         
+            "Callback#list indexes": function(test) {
+                var indexes = this.service.indexes();
+                indexes.refresh(function(err, indexes) {
+                    var indexList = indexes.list();
+                    test.ok(indexList.length > 0);
+                    test.done();
+                });
+            },
+                   
+            "Callback#contains index": function(test) {
+                var indexes = this.service.indexes();
+                var indexName = this.indexName;
+                
+                indexes.refresh(function(err, indexes) {
+                    var index = indexes.contains(indexName);
+                    test.ok(index);
+                    test.done();
+                });
+            },
+            
+            "Callback#modify index": function(test) {
+                
+                var name = this.indexName;
+                var indexes = this.service.indexes();
+                var originalAssureUTF8Value = false;
+                
+                Async.chain([
+                        function(callback) {
+                            indexes.refresh(callback);     
+                        },
+                        function(indexes, callback) {
+                            var index = indexes.contains(name);
+                            test.ok(index);
+                            
+                            originalAssureUTF8Value = index.properties().assureUTF8;
+                            index.update({
+                                assureUTF8: !originalAssureUTF8Value
+                            }, callback);
+                        },
+                        function(index, callback) {
+                            test.ok(index);
+                            var properties = index.properties();
+                            
+                            test.strictEqual(!originalAssureUTF8Value, properties.assureUTF8);
+                            
+                            index.update({
+                                assureUTF8: !properties.assureUTF8
+                            }, callback);
+                        },
+                        function(index, callback) {
+                            test.ok(index);
+                            var properties = index.properties();
+                            
+                            test.strictEqual(originalAssureUTF8Value, properties.assureUTF8);
+                            callback();
+                        },
+                        function(callback) {
+                            callback();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            
+            "Callback#Enable+disable index": function(test) {
+                
+                var name = this.indexName;
+                var indexes = this.service.indexes();
+                
+                Async.chain([
+                        function(callback) {
+                            indexes.refresh(callback);     
+                        },
+                        function(indexes, callback) {
+                            var index = indexes.contains(name);
+                            test.ok(index);
+                            
+                            index.disable(callback);
+                        },
+                        function(index, callback) {
+                            test.ok(index);
+                            index.refresh(callback);
+                        },
+                        function(index, callback) {
+                            test.ok(index);
+                            test.ok(index.properties().disabled);
+                            
+                            index.enable(callback);
+                        },
+                        function(index, callback) {
+                            test.ok(index);
+                            index.refresh(callback);
+                        },
+                        function(index, callback) {
+                            test.ok(index);
+                            test.ok(!index.properties().disabled);
+                            
+                            callback();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+                   
+            "Callback#Service submit event": function(test) {
+                var message = "Hello World -- " + getNextId();
+                var sourcetype = "sdk-tests";
+                
+                var service = this.service;
+                var indexName = this.indexName;
+                Async.chain(
+                    function(done) {
+                        service.log(message, {sourcetype: sourcetype, index: indexName}, done);
+                    },
+                    function(eventInfo, done) {
+                        test.ok(eventInfo);
+                        test.strictEqual(eventInfo.sourcetype, sourcetype);
+                        test.strictEqual(eventInfo.bytes, message.length);
+                        test.strictEqual(eventInfo._index, indexName);
+                        
+                        // We could poll to make sure the index has eaten up the event,
+                        // but unfortunately this can take an unbounded amount of time.
+                        // As such, since we got a good response, we'll just be done with it.
+                        done();
+                    },
+                    function(err) {
+                        test.ok(!err);
+                        test.done(); 
+                    }
+                );
+            },
+                   
+            "Callback#Index submit event": function(test) {
+                var message = "Hello World -- " + getNextId();
+                var sourcetype = "sdk-tests";
+                
+                var indexName = this.indexName;
+                var indexes = this.service.indexes();
+                Async.chain([
+                        function(done) {
+                            indexes.refresh(done);     
+                        },
+                        function(indexes, done) {
+                            var index = indexes.contains(indexName);
+                            test.ok(index);
+                            test.strictEqual(index.name, indexName);                            
+                            index.submitEvent(message, {sourcetype: sourcetype}, done);
+                        },
+                        function(eventInfo, index, done) {
+                            test.ok(eventInfo);
+                            test.strictEqual(eventInfo.sourcetype, sourcetype);
+                            test.strictEqual(eventInfo.bytes, message.length);
+                            test.strictEqual(eventInfo._index, indexName);
+                            
+                            // We could poll to make sure the index has eaten up the event,
+                            // but unfortunately this can take an unbounded amount of time.
+                            // As such, since we got a good response, we'll just be done with it.
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done(); 
+                    }
+                );
+            }
+        },
+        
+        "User Tests": {
+            setUp: function(done) {
+                this.service = svc;
+                done();
+            },
+            
+            "Callback#Current user": function(test) {
+                var service = this.service;
+                
+                service.currentUser(function(err, user) {
+                    test.ok(!err);
+                    test.ok(user);
+                    test.strictEqual(user.name, service.username);
+                    test.done();
+                });
+            },
+            
+            "Callback#List users": function(test) {
+                var service = this.service;
+                
+                service.users().refresh(function(err, users) {
+                    var userList = users.list();
+                    test.ok(!err);
+                    test.ok(users);
+                    
+                    test.ok(userList);
+                    test.ok(userList.length > 0);
+                    test.done();
+                });
+            },
+            
+            "Callback#Create + update + delete user": function(test) {
+                var service = this.service;
+                var name = "jssdk_testuser";
+                
+                Async.chain([
+                        function(done) {
+                            service.users().create({name: "jssdk_testuser", password: "abc", roles: "user"}, done);
+                        },
+                        function(user, done) {
+                            test.ok(user);
+                            test.strictEqual(user.name, name);
+                            test.strictEqual(user.properties().roles.length, 1);
+                            test.strictEqual(user.properties().roles[0], "user");
+                        
+                            user.update({realname: "JS SDK", roles: ["admin", "user"]}, done);
+                        },
+                        function(user, done) {
+                            test.ok(user);
+                            test.strictEqual(user.properties().realname, "JS SDK");
+                            test.strictEqual(user.properties().roles.length, 2);
+                            test.strictEqual(user.properties().roles[0], "admin");
+                            test.strictEqual(user.properties().roles[1], "user");
+                            
+                            user.remove(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            
+            "Callback#Roles": function(test) {
+                var service = this.service;
+                var name = "jssdk_testuser_" + getNextId();
+                
+                Async.chain([
+                        function(done) {
+                            service.users().create({name: name, password: "abc", roles: "user"}, done);
+                        },
+                        function(user, done) {
+                            test.ok(user);
+                            test.strictEqual(user.name, name);
+                            test.strictEqual(user.properties().roles.length, 1);
+                            test.strictEqual(user.properties().roles[0], "user");
+                        
+                            user.update({roles: ["admin", "user"]}, done);
+                        },
+                        function(user, done) {
+                            test.ok(user);
+                            test.strictEqual(user.properties().roles.length, 2);
+                            test.strictEqual(user.properties().roles[0], "admin");
+                            test.strictEqual(user.properties().roles[1], "user");
+                            
+                            user.update({roles: "user"}, done);
+                        },
+                        function(user, done) {
+                            test.ok(user);
+                            test.strictEqual(user.properties().roles.length, 1);
+                            test.strictEqual(user.properties().roles[0], "user");
+                            
+                            user.update({roles: "__unknown__"}, done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(err);
+                        test.strictEqual(err.status, 400);
+                        test.done();
+                    }
+                );
+            },
+            
+            "Callback#Passwords": function(test) {
+                var service = this.service;
+                var newService = null;
+                var name = "jssdk_testuser_" + getNextId();
+                
+                Async.chain([
+                        function(done) {
+                            service.users().create({name: name, password: "abc", roles: "user"}, done);
+                        },
+                        function(user, done) {
+                            test.ok(user);
+                            test.strictEqual(user.name, name);
+                            test.strictEqual(user.properties().roles.length, 1);
+                            test.strictEqual(user.properties().roles[0], "user");
+                        
+                            newService = new splunkjs.Service(service.http, {
+                                username: name, 
+                                password: "abc",
+                                host: service.host,
+                                port: service.port,
+                                scheme: service.scheme
+                            });
+                        
+                            newService.login(Async.augment(done, user));
+                        },
+                        function(success, user, done) {
+                            test.ok(success);
+                            test.ok(user);
+                            
+                            user.update({password: "abc2"}, done);
+                        },
+                        function(user, done) {
+                            newService.login(function(err, success) {
+                                test.ok(err);
+                                test.ok(!success);
+                                
+                                user.update({password: "abc"}, done);
+                            });
+                        },
+                        function(user, done) {
+                            test.ok(user);
+                            newService.login(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            
+            "Callback#delete test users": function(test) {
+                var users = this.service.users();
+                users.refresh(function(err, users) {
+                    var userList = users.list();
+                    
+                    Async.parallelEach(
+                        userList,
+                        function(user, idx, callback) {
+                            if (utils.startsWith(user.name, "jssdk_")) {
+                                user.remove(callback);
+                            }
+                            else {
+                                callback();
+                            }
+                        }, function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
+                });
+            }
+        },
+        
+        "Server Info Tests": {
+            setUp: function(done) {
+                this.service = svc;
+                done();
+            },
+            
+            "Callback#Basic": function(test) {
+                var service = this.service;
+                
+                service.serverInfo(function(err, info) {
+                    test.ok(!err);
+                    test.ok(info);
+                    test.strictEqual(info.name, "server-info");
+                    test.ok(info.properties().hasOwnProperty("version"));
+                    test.ok(info.properties().hasOwnProperty("serverName"));
+                    test.ok(info.properties().hasOwnProperty("os_version"));
+                    
+                    test.done();
+                });
+            }
+        },
+        
+        "View Tests": {
+            setUp: function(done) {
+                this.service = svc;
+                done();
+            },
+            
+            "Callback#List views": function(test) {
+                var service = this.service;
+                
+                service.views({owner: "admin", app: "search"}).refresh(function(err, views) {
+                    test.ok(!err);
+                    test.ok(views);
+                    
+                    var viewsList = views.list();
+                    test.ok(viewsList);
+                    test.ok(viewsList.length > 0);
+                    
+                    for(var i = 0; i < viewsList.length; i++) {
+                        test.ok(viewsList[i]);
+                    }
+                    
+                    test.done();
+                });
+            },
+            
+            "Callback#Create + update + delete view": function(test) {
+                var service = this.service;
+                var name = "jssdk_testview";
+                var originalData = "<view/>";
+                var newData = "<view isVisible='false'></view>";
+                
+                Async.chain([
+                        function(done) {
+                            service.views({owner: "admin", app: "xml2json"}).create({name: name, "eai:data": originalData}, done);
+                        },
+                        function(view, done) {
+                            test.ok(view);
+                            
+                            test.strictEqual(view.name, name);
+                            test.strictEqual(view.properties()["eai:data"], originalData);
+                            
+                            view.update({"eai:data": newData}, done);
+                        },
+                        function(view, done) {
+                            test.ok(view);
+                            test.strictEqual(view.properties()["eai:data"], newData);
+                            
+                            view.remove(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            }
+        },
+        
+        "Parser Tests": {
+            setUp: function(done) {
+                this.service = svc;
+                done();
+            },
+            
+            "Callback#Basic parse": function(test) {
+                var service = this.service;
+                
+                service.parse("search index=_internal | head 1", function(err, parse) {
+                    test.ok(!err);
+                    test.ok(parse);
+                    test.ok(parse.commands.length > 0); 
+                    test.done();
+                });
+            },
+            
+            "Callback#Parse error": function(test) {
+                var service = this.service;
+                
+                service.parse("ABCXYZ", function(err, parse) {
+                    test.ok(err);
+                    test.strictEqual(err.status, 400);
+                    test.done();
+                });
+            }
+        },
+        
+        "Typeahead Tests": {
+            setUp: function(done) {
+                this.service = svc;
+                done();
+            },
+            
+            "Callback#Basic typeahead": function(test) {
+                var service = this.service;
+                
+                service.typeahead("index=", 1, function(err, options) {
+                    test.ok(!err);
+                    test.ok(options);
+                    test.strictEqual(options.length, 1);
+                    test.done();
+                });
+            }
+        }
+    };
+
+};
+
+if (module === require.main) {
+    var splunkjs    = require('../splunk');
+    var options     = require('../examples/node/cmdline');
+    var test        = require('../contrib/nodeunit/test_reporter');
+    
+    var parser = options.create();
+    var cmdline = parser.parse(process.argv);
+        
+    // If there is no command line, we should return
+    if (!cmdline) {
+        throw new Error("Error in parsing command line parameters");
+    }
+    
+    var svc = new splunkjs.Service({ 
+        scheme: cmdline.opts.scheme,
+        host: cmdline.opts.host,
+        port: cmdline.opts.port,
+        username: cmdline.opts.username,
+        password: cmdline.opts.password
+    });
+    
+    var suite = exports.setup(svc);
+    
+    svc.login(function(err, success) {
+        if (err || !success) {
+            throw new Error("Login failed - not running tests", err || "");
+        }
+        test.run([{"Tests": suite}]);
+    });
+}

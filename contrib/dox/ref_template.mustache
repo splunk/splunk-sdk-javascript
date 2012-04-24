@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Splunk JavaScript SDK</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Le styles -->
+    <link href="assets/css/bootstrap.css" rel="stylesheet">
+    <style type="text/css">
+      body {
+        margin-top: 10px;
+        margin-bottom: 10px;
+      }
+      .sidebar-nav {
+        padding: 9px 0;
+      }
+      
+      .nav .nav-header {
+        text-transform: none;
+        font-size: 13px;
+      }
+      
+      .method {
+        margin-bottom: 18px;
+        clear: both;
+      }
+      
+      .method section {
+        margin-top: 10px;
+      }
+      
+      .method section h4 {
+        margin-bottom: 5px;
+      }
+      
+      .code-link {
+        margin-bottom: 5px;
+      }
+      
+      section.code {
+        position: relative;
+      }
+      
+      pre {
+        overflow-x: auto;
+        white-space: pre;
+        word-wrap: normal;
+      }
+      
+      .pre-scrollable {
+        overflow-y: auto;
+      }
+      
+      .code-toggle {
+        position: absolute;
+        right: 0px;
+        top: 0px;
+        padding-bottom: 5px;
+      }
+      
+      section.code pre {
+        margin-top: 10px;
+      }
+      
+      code .keyword, code .special {
+        font-weight: bold;
+        color: black;
+      }
+
+      code .string, code .regexp {
+        color: green
+      }
+
+      code .class { 
+        color: blue
+      }
+
+      code .number {
+        color: red
+      }
+
+      code .comment {
+        color: grey;
+        font-style: italic;
+      }
+      
+      .param-name {
+        font-family: monospace;
+      }
+      
+      .param-type {
+        font-style: italic;
+      }
+      
+      .return-type {
+        font-style: italic;
+      }
+      
+      section.syntax span {
+        font-family: monospace;
+      }
+      
+      .signature {
+        font-family: monospace;
+      }
+    </style>
+    <link href="assets/css/bootstrap-responsive.css" rel="stylesheet">
+
+    <!-- Le HTML5 shim, for IE6-8 support of HTML5 elements -->
+    <!--[if lt IE 9]>
+      <script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+  </head>
+
+  <body>
+    <div class="container-fluid">
+      <div class="row-fluid">
+        <div class="span3">
+          <div class="well sidebar-nav">
+            <ul class="nav nav-list">
+            {{#modules}}
+              <li class="nav-header"><a href="{{name}}.html">{{name}}</a></li>
+              <li>
+                <ul class="nav nav-list">
+                {{#methods}}
+                  <li><a href="#{{parent}}-{{name}}">{{name}}</a></li>
+                {{/methods}}
+                
+                {{#has_globals}}
+                  <li class="nav-header"><a href="#{{name}}-globals">Globals</a></li>
+                {{/has_globals}}
+                
+                {{#helpers}}
+                  <li><a href="#{{parent}}+{{name}}">{{name}}</a></li>
+                {{/helpers}}
+                
+                {{#has_inherited}}
+                  <li class="nav-header"><a href="#{{name}}-inherited">Inherited</a></li>
+                {{/has_inherited}}
+                
+                {{#inherited}}
+                  <li><a href="#{{parent}}^{{name}}">{{name}}</a></li>
+                {{/inherited}}
+                </ul>
+              </li>
+            {{/modules}}
+            </ul>
+          </div><!--/well -->
+        </div><!--/span-->
+        <div class="span8">
+        {{#modules}}
+        
+        {{#has_methods}}
+          <div class="page-header" id="{{name}}">
+            <h2>Methods</h2>
+          </div>
+        {{/has_methods}}
+        
+        {{#methods}}        
+          <section class="method well" id="{{parent}}-{{name}}">
+            <header>
+              <div class="method-header">
+                <h3 class="method-name">{{name}}</h3>
+              </div>
+              <h5 class="signature">{{signature}}</h5>
+            {{#has_endpoint}}
+              <h5 class="endpoint">Endpoint: {{endpoint}}</h5>
+            {{/has_endpoint}}
+            {{#related}}
+              <h5 class="related">See: <a href="{{href}}.html#{{href}}">{{name}}</a></h5>
+            {{/related}}
+            </header>
+          
+            <section class="content">
+              {{{full_description}}}
+            </section>
+            
+            <section class="syntax">
+            {{#has_syntax}}
+              <h4>Syntax</h4>
+              <span>{{syntax}}</span>
+            {{/has_syntax}}
+            </section>
+            
+            <section class="params">
+            {{#has_params}}
+              <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                {{#params}}
+                  <tr>
+                    <td class="param-name">{{name}}</td>
+                    <td class="param-type">{{types}}</td>
+                    <td class="param-description">{{{description}}}</td>
+                  </tr>
+                {{/params}}
+                </tbody>
+              </table>
+            {{/has_params}}
+            </section>
+            
+            <section class="returns">
+            {{#has_returns}}
+            {{#returns}}
+              <h4>Return</h4>
+              <span class="return-type">{{types}}</span>. {{description}}
+            {{/returns}}
+            {{/has_returns}}
+            </section>
+            
+            <section class="examples">
+            {{#has_examples}}
+              <h4>Examples</h4>
+            {{#examples}}
+              {{{content}}}
+            {{/examples}}
+            {{/has_examples}}
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a target="_blank" href="{{url}}#L{{line}}">{{filename}}:{{line}}</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>{{code}}</code></pre>
+            </section>
+          </section>
+        {{/methods}}
+          
+        {{#has_inherited}}
+          <div class="page-header" id="{{name}}-inherited">
+            <h2>Inherited Methods</h2>
+          </div>
+        {{/has_inherited}}
+          
+        {{#inherited}}
+          <section class="method well" id="{{parent}}^{{name}}">
+            <header>
+              <div class="method-header">
+                <h3 class="method-name">{{name}}</h3>
+              </div>
+              <h5 class="signature">{{signature}}</h5>
+            {{#has_endpoint}}
+              <h5 class="endpoint">Endpoint: {{endpoint}}</h5>
+            {{/has_endpoint}}
+            {{#related}}
+              <h5 class="related">See: <a href="{{href}}.html#{{href}}">{{name}}</a></h5>
+            {{/related}}
+            </header>
+          
+            <section class="content">
+              {{{full_description}}}
+            </section>
+            
+            <section class="syntax">
+            {{#has_syntax}}
+              <h4>Syntax</h4>
+              <span>{{syntax}}</span>
+            {{/has_syntax}}
+            </section>
+            
+            <section class="params">
+            {{#has_params}}
+              <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                {{#params}}
+                  <tr>
+                    <td class="param-name">{{name}}</td>
+                    <td class="param-type">{{types}}</td>
+                    <td class="param-description">{{{description}}}</td>
+                  </tr>
+                {{/params}}
+                </tbody>
+              </table>
+            {{/has_params}}
+            </section>
+            
+            <section class="returns">
+            {{#has_returns}}
+            {{#returns}}
+              <h4>Return</h4>
+              <span class="return-type">{{types}}</span>. {{description}}
+            {{/returns}}
+            {{/has_returns}}
+            </section>
+            
+            <section class="examples">
+            {{#has_examples}}
+              <h4>Examples</h4>
+            {{#examples}}
+              {{{content}}}
+            {{/examples}}
+            {{/has_examples}}
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a target="_blank" href="{{url}}#L{{line}}">{{filename}}:{{line}}</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>{{code}}</code></pre>
+            </section>
+          </section>
+        {{/inherited}}
+        
+        {{#has_globals}}
+          <div class="page-header" id="{{name}}-globals">
+            <h2>{{name}} Module Globals</h2>
+          </div>
+        {{/has_globals}}
+        
+        {{#helpers}}
+          <section class="method well" id="{{parent}}+{{name}}">
+            <header>
+              <div class="method-header">
+                <h3 class="method-name">{{name}}</h3>
+              </div>
+              <h5 class="signature">{{signature}}</h5>
+            {{#has_endpoint}}
+              <h5 class="endpoint">Endpoint: {{endpoint}}</h5>
+            {{/has_endpoint}}
+            {{#related}}
+              <h5 class="related">See: <a href="{{href}}.html#{{href}}">{{name}}</a></h5>
+            {{/related}}
+            </header>
+          
+            <section class="content">
+              {{{full_description}}}
+            </section>
+            
+            <section class="syntax">
+            {{#has_syntax}}
+              <h4>Syntax</h4>
+              <span>{{syntax}}</span>
+            {{/has_syntax}}
+            </section>
+            
+            <section class="params">
+            {{#has_params}}
+              <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                {{#params}}
+                  <tr>
+                    <td class="param-name">{{name}}</td>
+                    <td class="param-type">{{types}}</td>
+                    <td class="param-description">{{{description}}}</td>
+                  </tr>
+                {{/params}}
+                </tbody>
+              </table>
+            {{/has_params}}
+            </section>
+            
+            <section class="returns">
+            {{#has_returns}}
+            {{#returns}}
+              <h4>Return</h4>
+              <span class="return-type">{{types}}</span>. {{description}}
+            {{/returns}}
+            {{/has_returns}}
+            </section>
+            
+            <section class="examples">
+            {{#has_examples}}
+              <h4>Examples</h4>
+            {{#examples}}
+              {{{content}}}
+            {{/examples}}
+            {{/has_examples}}
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a target="_blank" href="{{url}}#L{{line}}">{{filename}}:{{line}}</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>{{code}}</code></pre>
+            </section>
+          </section>
+        {{/helpers}}
+        {{/modules}}
+        </div><!--/span-->
+      </div><!--/row-->
+
+      <hr>
+
+      <footer>
+        <p>&copy; Splunk 2012</p>
+      </footer>
+
+    </div><!--/.fluid-container-->
+
+    <!-- Le javascript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script src="assets/js/jquery.js"></script>
+    <script src="assets/js/bootstrap-transition.js"></script>
+    <script src="assets/js/bootstrap-alert.js"></script>
+    <script src="assets/js/bootstrap-modal.js"></script>
+    <script src="assets/js/bootstrap-dropdown.js"></script>
+    <script src="assets/js/bootstrap-scrollspy.js"></script>
+    <script src="assets/js/bootstrap-tab.js"></script>
+    <script src="assets/js/bootstrap-tooltip.js"></script>
+    <script src="assets/js/bootstrap-popover.js"></script>
+    <script src="assets/js/bootstrap-button.js"></script>
+    <script src="assets/js/bootstrap-collapse.js"></script>
+    <script src="assets/js/bootstrap-carousel.js"></script>
+    <script src="assets/js/bootstrap-typeahead.js"></script>
+    
+    <script>
+      $(function() {
+        $("a.code-toggle").click(function(e) {
+          var code = $(this).parent().children("pre");
+          var isHidden = code.hasClass("hidden");
+          
+          if (isHidden) {
+            $(code).removeClass("hidden");  
+            $(this).children("i").addClass("icon-minus");
+            $(this).children("i").removeClass("icon-plus");
+          }
+          else {
+            $(code).addClass("hidden");  
+            $(this).children("i").addClass("icon-plus");
+            $(this).children("i").removeClass("icon-minus");
+          }
+          
+          e.preventDefault();
+          e.stopPropagation();
+        });
+      });
+    </script>
+    <script>
+      (function (hijs) {
+      //
+      // hijs - JavaScript Syntax Highlighter
+      //
+      // Copyright (c) 2010 Alexis Sellier
+      //
+      // All elements which match this will be syntax highlighted.
+      var selector = hijs || "code";
+      var keywords = ('var function if else for while break switch case do new null in with void '
+                     +'continue delete return this true false throw catch typeof with instanceof').split(' '),
+          special  = ('eval window document undefined NaN Infinity parseInt parseFloat '
+                     +'encodeURI decodeURI encodeURIComponent decodeURIComponent').split(' ');
+      // Syntax definition
+      // The key becomes the class name of the <span>
+      // around the matched block of code.
+      var syntax = [
+        ['comment', /(\/\*(?:[^*\n]|\*+[^\/*])*\*+\/)/g],
+        ['comment', /(\/\/[^\n]*)/g],
+        ['string' , /("(?:(?!")[^\\\n]|\\.)*"|'(?:(?!')[^\\\n]|\\.)*')/g],
+        ['regexp' , /(\/.+\/[mgi]*)(?!\s*\w)/g],
+        ['class'  , /\b([A-Z][a-zA-Z]+)\b/g],
+        ['number' , /\b([0-9]+(?:\.[0-9]+)?)\b/g],
+        ['keyword', new(RegExp)('\\b(' + keywords.join('|') + ')\\b', 'g')],
+        ['special', new(RegExp)('\\b(' + special.join('|') + ')\\b', 'g')]
+      ];
+      var nodes, table = {};
+
+      if (/^[a-z]+$/.test(selector)) {
+          nodes = document.getElementsByTagName(selector);
+      } else if (/^\.[\w-]+$/.test(selector)) {
+          nodes = document.getElementsByClassName(selector.slice(1));
+      } else if (document.querySelectorAll) {
+          nodes = document.querySelectorAll(selector);
+      } else {
+          nodes = [];
+      }
+
+      for (var i = 0, children; i < nodes.length; i++) {
+          children = nodes[i].childNodes;
+
+          for (var j = 0, str; j < children.length; j++) {
+              code = children[j];
+
+              if (code.length >= 0) { // It's a text node
+                  // Don't highlight command-line snippets
+                  if (! /^\$/.test(code.nodeValue.trim())) {
+                      syntax.forEach(function (s) {
+                          var k = s[0], v = s[1];
+                          code.nodeValue = code.nodeValue.replace(v, function (_, m) {
+                              return '\u00ab' + encode(k) + '\u00b7'
+                                              + encode(m) +
+                                     '\u00b7' + encode(k) + '\u00bb';
+                          });
+                      });
+                  }
+              }
+          }
+      }
+      for (var i = 0; i < nodes.length; i++) {
+          nodes[i].innerHTML =
+              nodes[i].innerHTML.replace(/\u00ab(.+?)\u00b7(.+?)\u00b7\1\u00bb/g, function (_, name, value) {
+                  value = value.replace(/\u00ab[^\u00b7]+\u00b7/g, '').replace(/\u00b7[^\u00bb]+\u00bb/g, '');
+                  return '<span class="' + decode(name) + '">' + escape(decode(value)) + '</span>';
+          });
+      }
+
+      function escape(str) {
+          return str.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+
+      // Encode ASCII characters to, and from Braille
+      function encode (str, encoded) {
+          table[encoded = str.split('').map(function (s) {
+              if (s.charCodeAt(0) > 127) { return s }
+              return String.fromCharCode(s.charCodeAt(0) + 0x2800);
+          }).join('')] = str;
+          return encoded;
+      }
+      function decode (str) {
+          if (str in table) {
+              return table[str];
+          } else {
+              return str.trim().split('').map(function (s) {
+                  if (s.charCodeAt(0) - 0x2800 > 127) { return s }
+                  return String.fromCharCode(s.charCodeAt(0) - 0x2800);
+              }).join('');
+          }
+      }
+
+      })(window.hijs);
+    </script>
+  </body>
+</html>

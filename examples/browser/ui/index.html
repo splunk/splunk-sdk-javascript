@@ -87,8 +87,8 @@
       host     = "localhost";
       port     = "8089";
       
-      Async = Splunk.Async;
-      utils = Splunk.Utils;
+      Async = splunkjs.Async;
+      utils = splunkjs.Utils;
       
       var updateConnectionInformation = function() {
         username = utils.trim($("#id_username").pVal()) || "admin";
@@ -239,8 +239,8 @@
                 
             </div>
             <pre class='prettyprint lang-js linenums'>
-var http = new Splunk.ProxyHttp("/proxy");
-svc = new Splunk.Client.Service(http, { 
+var http = new splunkjs.ProxyHttp("/proxy");
+svc = new splunkjs.Service(http, { 
   scheme: scheme,
   host: host,
   port: port,
@@ -249,9 +249,9 @@ svc = new Splunk.Client.Service(http, {
 });
 
 var timeline = null;
-var timelineToken = Splunk.UI.loadTimeline("../../../client/splunk.ui.timeline.js", function() {
+var timelineToken = splunkjs.UI.loadTimeline("../../../client/splunk.ui.timeline.js", function() {
   // Once we have the charting code, create a chart.
-  timeline = new Splunk.UI.Timeline.Timeline($("#timeline-container"));
+  timeline = new splunkjs.UI.Timeline.Timeline($("#timeline-container"));
 });
 
 var searchTerm = 'search index=_internal | head 10000 | stats count(host), count(source) by sourcetype';
@@ -264,7 +264,7 @@ var updateTimeline = function(data) {
   }
   
   if (timeline === null) {
-    Splunk.UI.ready(timelineToken, function() { setData(); });
+    splunkjs.UI.ready(timelineToken, function() { setData(); });
   }
   else {
     setData();
@@ -280,17 +280,17 @@ Async.chain([
   },
   // Loop until the job is "done"
   function(job, callback) {
-    var searcher = new Splunk.Searcher.JobManager(job.service, job);
+    var searcher = new splunkjs.JobManager(job.service, job);
     
     // Queue up timeline displays while we are querying the job
-    searcher.onProgress(function(properties) {
+    searcher.on("progress", function(properties) {
       job.timeline({}, function(err, data) { 
         if (!err) updateTimeline(data);
       });
     });
     
     // Move forward once the search is done
-    searcher.done(callback);
+    searcher.on("done", callback);
   },
   // Get the final timeline data
   function(searcher, callback) {
@@ -338,8 +338,8 @@ function(err, job) {
                 
             </div>
             <pre class='prettyprint lang-js linenums'>
-var http = new Splunk.ProxyHttp("/proxy");
-svc = new Splunk.Client.Service(http, { 
+var http = new splunkjs.ProxyHttp("/proxy");
+svc = new splunkjs.Service(http, { 
   scheme: scheme,
   host: host,
   port: port,
@@ -348,9 +348,9 @@ svc = new Splunk.Client.Service(http, {
 });
 
 var chart = null; 
-var chartToken = Splunk.UI.loadCharting("../../../client/splunk.ui.charting.js", function() {
+var chartToken = splunkjs.UI.loadCharting("../../../client/splunk.ui.charting.js", function() {
   // Once we have the charting code, create a chart and update it.
-  chart = new Splunk.UI.Charting.Chart($("#chart-container"), Splunk.UI.Charting.ChartType.COLUMN, false);
+  chart = new splunkjs.UI.Charting.Chart($("#chart-container"), splunkjs.UI.Charting.ChartType.COLUMN, false);
 });
 
 var searchTerm = 'search index=_internal | head 1000 | stats count(host), count(source) by sourcetype';
@@ -363,18 +363,18 @@ Async.chain([
   },
   // Loop until the job is "done"
   function(job, callback) {
-    var searcher = new Splunk.Searcher.JobManager(job.service, job);
+    var searcher = new splunkjs.JobManager(job.service, job);
     
     // Move forward once the search is done
-    searcher.done(callback);
+    searcher.on("done", callback);
   },
   // Get the final results data
   function(searcher, callback) {
-    searcher.job.results({json_mode: "column"}, callback);
+    searcher.job.results({output_mode: "json_cols"}, callback);
   },
   // Update the chart
-  function(results, job, callback) {  
-    Splunk.UI.ready(chartToken, function() {
+  function(results, job, callback) { 
+    splunkjs.UI.ready(chartToken, function() {
       chart.setData(results, {
         "chart.stackMode": "stacked"
       });

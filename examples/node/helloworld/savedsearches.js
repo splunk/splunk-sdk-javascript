@@ -16,7 +16,7 @@
 // This example will login to Splunk, and then retrieve the list of saved searchs,
 // printing each saved search's name and search query.
 
-var Splunk = require('../../../splunk').Splunk;
+var splunkjs = require('../../../splunk');
 
 exports.main = function(opts, done) {
     // This is just for testing - ignore it
@@ -28,7 +28,7 @@ exports.main = function(opts, done) {
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
     
-    var service = new Splunk.Client.Service({
+    var service = new splunkjs.Service({
         username: username,
         password: password,
         scheme: scheme,
@@ -47,16 +47,17 @@ exports.main = function(opts, done) {
         } 
         
         // Now that we're logged in, let's get a listing of all the saved searches.
-        service.savedSearches().list(function(err, searches) {
+        service.savedSearches().refresh(function(err, searches) {
             if (err) {
                 console.log("There was an error retrieving the list of saved searches:", err);
                 done(err);
                 return;
             }
             
+            var searchList = searches.list();
             console.log("Saved searches:");
-            for(var i = 0; i < searches.length; i++) {
-                var search = searches[i];
+            for(var i = 0; i < searchList.length; i++) {
+                var search = searchList[i];
                 console.log("  Search " + i + ": " + search.name);
                 console.log("    " + search.properties().search);
             } 
