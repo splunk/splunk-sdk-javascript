@@ -57,11 +57,155 @@ exports.setup = function() {
             });
         },
 
-        "IsValueIn works": function(test) {
-            test.ok(splunkjs.Utils.isValueIn(3, {a: 3, b: 5}));
-            test.ok(!splunkjs.Utils.isValueIn(3, {a: 12, b: 6}));
+        "keyOf works": function(test) {
+            test.ok(splunkjs.Utils.keyOf(3, {a: 3, b: 5}));
+            test.ok(!splunkjs.Utils.keyOf(3, {a: 12, b: 6}));
             test.done();
+        },
+        
+        "trim": function(test) {
+            test.strictEqual(splunkjs.Utils.trim("  test of something  \n\r  \t"), "test of something");
+            test.done();
+        },
+
+        "indexOf": function(test) {
+            test.strictEqual(splunkjs.Utils.indexOf([1,2,3,4,5], 3), 2);
+            test.strictEqual(splunkjs.Utils.indexOf([1,2,3,4,3], 3), 2);
+            test.strictEqual(splunkjs.Utils.indexOf([1,2,3,4,5], 12), -1);
+            test.done();
+        },
+
+        "contains": function(test) {
+            test.ok(splunkjs.Utils.contains([1,2,3,4,5], 3));
+            test.ok(splunkjs.Utils.contains([1,2,3,4,3], 3));
+            test.ok(!splunkjs.Utils.contains([1,2,3,4,5], 12));
+            test.done();
+        },
+
+        "startsWith": function(test) {
+            test.ok(splunkjs.Utils.startsWith("abcdefg", "abc"));
+            test.ok(!splunkjs.Utils.startsWith("bcdefg", "abc"));
+            test.done();
+        },
+
+        "endsWith": function(test) {
+            test.ok(splunkjs.Utils.endsWith("abcdef", "def"));
+            test.ok(!splunkjs.Utils.endsWith("abcdef", "bcd"));
+            test.done();
+        },
+
+        "toArray": function(test) {
+            (function() {
+                var found = splunkjs.Utils.toArray(arguments);
+                var expected = [1,2,3,4,5];
+                for (var i = 0; i < found.length; i++) {
+                    test.strictEqual(found[i], expected[i]);
+                }
+            })(1,2,3,4,5);
+            test.done();
+        },
+
+        "isFunction": function(test) {
+            test.ok(splunkjs.Utils.isFunction(function() {}));
+            test.ok(!splunkjs.Utils.isFunction(3));
+            test.ok(!splunkjs.Utils.isFunction("abc"));
+            test.ok(!splunkjs.Utils.isFunction({}));
+            test.done();
+        },
+
+        "isNumber": function(test) {
+            test.ok(splunkjs.Utils.isNumber(3));
+            test.ok(splunkjs.Utils.isNumber(-2.55113e12));
+            test.ok(!splunkjs.Utils.isNumber("3"));
+            test.ok(!splunkjs.Utils.isNumber({3: 5}));
+            test.done();
+        },
+
+        "isObject": function(test) {
+            test.ok(splunkjs.Utils.isObject({}));
+            test.ok(!splunkjs.Utils.isObject(3));
+            test.ok(!splunkjs.Utils.isObject("3"));
+            test.done();
+        },
+
+        "isEmpty": function(test) {
+            test.ok(splunkjs.Utils.isEmpty({}));
+            test.ok(splunkjs.Utils.isEmpty([]));
+            test.ok(splunkjs.Utils.isEmpty(""));
+            test.ok(!splunkjs.Utils.isEmpty({a: 3}));
+            test.ok(!splunkjs.Utils.isEmpty([1,2]));
+            test.ok(!splunkjs.Utils.isEmpty("abc"));
+            test.done();
+        },
+
+        "forEach": function(test) {
+            var a = [1,2,3,4,5];
+            splunkjs.Utils.forEach(a,
+                                   function(elem, index, list) {
+                                       test.strictEqual(a[index], elem)
+                                   });
+            var b = {1: 2, 2: 4, 3: 6};
+            splunkjs.Utils.forEach(b,
+                                   function(elem, key, obj) {
+                                       test.strictEqual(b[key], elem);
+                                   });
+            splunkjs.Utils.forEach(null, function(elem, key, obj) {});
+            var c = {length: 5, 1: 12, 2: 15, 3: 8};
+            splunkjs.Utils.forEach(c,
+                                   function(elem, key, obj) {
+                                       test.strictEqual(c[key], elem);
+                                   });
+            test.done();
+        },
+
+        "extend": function(test) {
+            var found = splunkjs.Utils.extend({}, {a: 1, b: 2}, {c: 3, b: 4});
+            var expected = {a: 1, b: 4, c:3};
+            for (k in found) {
+                if (found.hasOwnProperty(k)) {
+                    test.strictEqual(found[k], expected[k]);
+                };
+            };
+            test.done()
+        },
+
+        "clone": function(test) {
+            var a = {a: 1, b: 2, c: {p: 5, q: 6}};
+            var b = splunkjs.Utils.clone(a);
+            splunkjs.Utils.forEach(a, function(val, key, obj) { test.strictEqual(val, b[key]); });
+            a.a = 5;
+            test.strictEqual(b.a, 1);
+            a.c.p = 4;
+            test.strictEqual(b.c.p, 4);
+            test.done();
+            test.strictEqual(splunkjs.Utils.clone(3), 3);
+            test.strictEqual(splunkjs.Utils.clone("asdf"), "asdf");
+            var p = [1,2,[3,4],3];
+            var q = splunkjs.Utils.clone(p);
+            splunkjs.Utils.forEach(p, function(val, index, arr) { test.strictEqual(p[index], q[index]); });
+            p[0] = 3;
+            test.strictEqual(q[0], 1);
+            p[2][0] = 7;
+            test.strictEqual(q[2][0], 7);
+        },
+
+        "namespaceFromProperties": function(test) {
+            test.throws(function() { splunkjs.Utils.namespaceFromProperties({}); });
+            var a = splunkjs.Utils.namespaceFromProperties({acl: {owner: "boris",
+                                                                  app: "factory",
+                                                                  sharing: "system",
+                                                                  other: 3},
+                                                            more: 12});
+            splunkjs.Utils.forEach(a,
+                                   function(val, key, obj) {
+                                       test.ok((key === "owner" && val === "boris") ||
+                                               (key === "app" && val === "factory") ||
+                                               (key === "sharing" && val === "system"));
+                                   });
+            test.done();
+            
         }
+        
     };
 };
 
