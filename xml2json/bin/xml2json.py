@@ -31,6 +31,8 @@ ATOM_NS         = 'http://www.w3.org/2005/Atom'
 SPLUNK_NS       = 'http://dev.splunk.com/ns/rest'
 OPENSEARCH_NS   = 'http://a9.com/-/spec/opensearch/1.1/'
 
+XML_HEADER = "<?xml version='1.0' encoding='UTF-8'?>"
+
 SPLUNK_TAGF = '{%s}%%s' % SPLUNK_NS
 
 
@@ -282,7 +284,15 @@ def from_attributes(attr_dict):
 
 
 def from_job_results(root, format=ResultFormat.ROW, timings={}):
-    if isinstance(root, str):
+
+    
+    if isinstance(root, str):    
+        # When we have a oneshot search with no results,
+        # we get back an invalid XML string. We simply
+        # replace it with an empty results tag
+        if root.strip() == XML_HEADER:
+            root = "<results preview='0'/>"
+            
         time_start = time.time()
         root = et.fromstring(root)
         time_end = time.time()
