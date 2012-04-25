@@ -200,8 +200,6 @@ def job_data(request, sid, data_source, *args, **kwargs):
     # repeating a couple of lines here.
     mode = request["get"].get("output_mode", "")
     request = output_mode('xml')(request)
-    if data_source == 'summary':
-       request["get"]["output_time_format"] = "%s"
     status, content = forward_request(request)
 
     if status_ok(status):
