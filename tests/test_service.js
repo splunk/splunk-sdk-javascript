@@ -2050,19 +2050,51 @@ exports.setup = function(svc) {
             },
 
             "Does reload work?": function(test) {
-                var indexes = this.service.indexes();
-                Async.chain([
-                    function(done) { indexes.create("FictionalTestIndex", {assureUTF8: true}, done)},
-                    function(newIndex, done) { newIndex.reload(done); newIndex.del();}
-                ],
-                function(err) {
+                var idx = new splunkjs.Service.Index(this.service,
+                                                 "data/indexes/_internal",
+                                                 {owner: "admin", 
+                                                  app: "search", 
+                                                  sharing: "app"});
+                idx.reload(function(err) {
                     test.ok(!err);
                 });
 
-                var idx = new splunkjs.Service.Index(this.loservice, "", {});
-                idx.reload(function(err) { test.ok(err); test.done();});
+                var idx2 = new splunkjs.Service.Index(this.loservice, "", {});
+                idx2.reload(function(err) { test.ok(err); test.done();});
                 }
 
+        },
+        
+        "Collections": {
+            setUp: function(done) {
+                this.service = svc;
+                this.loservice = loggedOutSvc;
+                done();
+            },
+
+            "Methods to be overridden throw": function(test) {
+                var coll = new splunkjs.Service.Collection(this.service,
+                                                       "/data/indexes",
+                                                       {owner: "admin",
+                                                        app: "search",
+                                                        sharing: "app"});
+                test.throws(function() {
+                    coll.instantiateEntity({});
+                });
+                test.done();
+            },
+
+            "Accessors work": function(test) {
+                var coll = new splunkjs.Service.Collection(this.service,
+                                                       "/data/indexes",
+                                                       {owner: "admin",
+                                                        app: "search",
+                                                        sharing: "app"});
+                coll._load({links: "Hilda", updated: true});
+                test.strictEqual(coll.links(), "Hilda");
+                test.ok(coll.updated());
+                test.done();
+            }
         }
     }
 };
