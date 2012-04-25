@@ -284,8 +284,6 @@ def from_attributes(attr_dict):
 
 
 def from_job_results(root, format=ResultFormat.ROW, timings={}):
-
-    
     if isinstance(root, str):    
         # When we have a oneshot search with no results,
         # we get back an invalid XML string. We simply
@@ -370,7 +368,6 @@ def from_job_results(root, format=ResultFormat.ROW, timings={}):
         results["messages"] = messages
         results["timings"] = timings
         
-                    
     return results
     
 

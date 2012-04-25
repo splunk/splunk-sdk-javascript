@@ -30,7 +30,7 @@ class BaseFormatter(object):
     def format(self, D, prefix=""):
         if isinstance(D, list):
             for i, elem in enumerate(D):
-                D[i] = self.format(D[i])
+                self.format(D[i])
         else:
             for k in D:            
                 datatype = "string"

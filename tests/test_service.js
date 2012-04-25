@@ -1929,6 +1929,7 @@ exports.setup = function(svc) {
                     test.ok(!err);
                     test.ok(options);
                     test.strictEqual(options.length, 1);
+                    test.ok(options[0]);
                     test.done();
                 });
             }

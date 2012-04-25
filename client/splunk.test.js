@@ -8337,6 +8337,32 @@ exports.setup = function(svc) {
                 ); 
             },
 
+            "Callback#Oneshot search with no results": function(test) {
+                var sid = getNextId();
+                var that = this;
+                var originalTime = "";
+                
+                Async.chain([
+                        function(done) {
+                            var query = 'search index=history MUST_NOT_EXITABCDEF';
+                            that.service.jobs().oneshotSearch(query, {id: sid}, done);
+                        },
+                        function(results, done) {
+                            test.ok(results);
+                            test.strictEqual(results.fields.length, 0);
+                            test.strictEqual(results.rows.length, 0);
+                            test.ok(!results.preview);
+                            
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
+
             "Callback#Service oneshot search": function(test) {
                 var sid = getNextId();
                 var that = this;
@@ -9461,6 +9487,7 @@ exports.setup = function(svc) {
                     test.ok(!err);
                     test.ok(options);
                     test.strictEqual(options.length, 1);
+                    test.ok(options[0]);
                     test.done();
                 });
             }
