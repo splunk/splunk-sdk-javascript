@@ -290,7 +290,7 @@ exports.setup = function(svc) {
                     test.done();
                 }); 
                 
-                splunkjs.Async.sleep(1000, function() {
+                Async.sleep(1000, function() {
                     req.abort();
                 });
             },
@@ -1996,7 +1996,73 @@ exports.setup = function(svc) {
                 var service = this.service;
                 var endpoint = new splunkjs.Service.Endpoint(service, "/search/jobs/12345");
                 endpoint.del("search/jobs/12345", {}, function() { test.done();})
+            },
+
+            "Virtual methods of Resource are virtual": function(test) {
+                var service = this.service;
+                var resource = new splunkjs.Service.Resource(service, "/search/jobs/12345");
+                test.throws(function() { resource.path(); });
+                test.throws(function() { resource.refresh(); });
+                test.ok(splunkjs.Utils.isEmpty(resource.state()));
+                test.done();
             }
+        },
+
+        "Entity tests": {
+            setUp: function(done) {
+                this.service = svc;
+                this.loservice = loggedOutSvc;
+                done();
+            },
+
+            "Accessors function properly": function(test) {
+                var ent = new splunkjs.Service.Entity(this.service, "/search/jobs/12345", {owner: "boris", app: "factory", sharing: "app"});
+                ent._load({acl: {owner: "boris", app: "factory", sharing: "app"},
+                           links: {link1: 35},
+                           published: "meep",
+                           author: "Hilda"});
+                test.ok(ent.acl().owner === "boris" && ent.acl().app === "factory" && ent.acl().sharing === "app");
+                test.ok(ent.links().link1 === 35);
+                test.strictEqual(ent.author(), "Hilda");
+                test.strictEqual(ent.published(), "meep");
+                test.done();
+            },
+
+            "Refresh throws error correctly": function(test) {
+                var ent = new splunkjs.Service.Entity(this.loservice, "/search/jobs/12345", {owner: "boris", app: "factory", sharing: "app"});
+                ent.refresh({}, function(err) { test.ok(err); test.done();});
+            },
+
+            "Cannot update name of entity": function(test) {
+                var ent = new splunkjs.Service.Entity(this.service, "/search/jobs/12345", {owner: "boris", app: "factory", sharing: "app"});
+                test.throws(function() { ent.update({name: "asdf"});});
+                test.done();
+            },
+
+            "Disable throws error correctly": function(test) {
+                var ent = new splunkjs.Service.Entity(this.loservice, "/search/jobs/12345", {owner: "boris", app: "factory", sharing: "app"});
+                ent.disable(function(err) { test.ok(err); test.done();});
+            },
+            
+            "Enable throws error correctly": function(test) {
+                var ent = new splunkjs.Service.Entity(this.loservice, "/search/jobs/12345", {owner: "boris", app: "factory", sharing: "app"});
+                ent.enable(function(err) { test.ok(err); test.done();});
+            },
+
+            "Does reload work?": function(test) {
+                var indexes = this.service.indexes();
+                Async.chain([
+                    function(done) { indexes.create("FictionalTestIndex", {assureUTF8: true}, done)},
+                    function(newIndex, done) { newIndex.reload(done); newIndex.del();}
+                ],
+                function(err) {
+                    test.ok(!err);
+                });
+
+                var idx = new splunkjs.Service.Index(this.loservice, "", {});
+                idx.reload(function(err) { test.ok(err); test.done();});
+                }
+
         }
     }
 };
