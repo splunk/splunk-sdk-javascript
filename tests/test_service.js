@@ -2060,8 +2060,9 @@ exports.setup = function(svc) {
                 });
 
                 var idx2 = new splunkjs.Service.Index(this.loservice, "", {});
-                idx2.reload(function(err) { test.ok(err); test.done();});
-                }
+                idx2.reload(function(err) { test.ok(err); });
+                test.done();
+            }
 
         },
         
@@ -2094,7 +2095,18 @@ exports.setup = function(svc) {
                 test.strictEqual(coll.links(), "Hilda");
                 test.ok(coll.updated());
                 test.done();
+            },
+
+            "Contains throws without a good id": function(test) {
+                var coll = new splunkjs.Service.Collection(this.service,
+                                                       "/data/indexes",
+                                                       {owner: "admin",
+                                                        app: "search",
+                                                        sharing: "app"});
+                test.throws(function() { coll.contains(null);});
+                test.done();
             }
+
         }
     }
 };
