@@ -189,7 +189,7 @@ Similarly, you can pass in parameters:
         // You will get 5 events, starting from offset 2
     });
 
-You can read more about what options are applicable [here](http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#search.2Fjobs.2F.7Bsearch_id.7D.2Fevents).
+You can read more about what options are applicable [here][api_search_events].
 
 ##### Retrieving Results/Preview
 
@@ -234,8 +234,16 @@ Getting preview results is as simple as replacing `results` with `preview`
         }
     });
 
-You can pass the same options to `results` and `preview` as well, as detailed [here](http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#search.2Fjobs.2F.7Bsearch_id.7D.2Fresults)
-for `results`, and [here](http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#search.2Fjobs.2F.7Bsearch_id.7D.2Fresults_preview)f or `preview`.
+You can pass the same options to `results` and `preview` as well, as detailed 
+[here][api_search_results]
+for `results`, and [here][api_search_preview] for `preview`.
+
+##### Real-time searches and events/results/preview
+
+Real-time searches in Splunk are never "done", so to speak. As such, asking for
+`results` or `events` for a real-time search will always return nothing. To
+get the current event-set or result-set of a real-time search, you should use
+`preview`.
 
 #### A Quick Note about Formats
 
@@ -301,7 +309,199 @@ Similar to `json_rows`, just transposed:
         ...
     ]
 
+#### Summary and timeline
+
+The "timeline" of a Splunk search is one of the most distinctive
+features of Splunk. It can also be useful to get a summary of the search,
+to be able to know some key statistics. These are accessed through the 
+`timeline` and `summary` endpoints.
+
+**Note:** Both `timeline` and `summary` require that the `status_buckets`
+parameter be used with a value greater than 0. For example, you could
+create the following job:
+
+    var svc = ...;
+    svc.search("search * | head 10", {status_buckets: 300}, function(err, job) {
+        // search is running and job is the instance of that job 
+    });
+
+The value of `300` is the default value used by the Splunk UI.
+
+##### Summary
+
+The summary of a search will give you information about the search. For example,
+you can find out how long a time span the search results represent, what the
+earliest and latest events are, how many events total, and also various
+statistics about each field:
+
+    // Print the summary
+    job.summary({}, function(err, summary) {
+        console.log(summary);
+    });
+    
+The summary will look something like this:
+
+    {
+        "duration": 0.0, 
+        "earliest_time": "1969-12-31T16:00:00.000-08:00",
+        "event_count": 100, 
+        "fields": {
+            "field1": {
+                "count": 100, 
+                "distinct_count": 1, 
+                "is_exact": true, 
+                "max": null, 
+                "mean": null, 
+                "min": null, 
+                "modes": [
+                    {
+                        "count": 100, 
+                        "is_exact": true, 
+                        "value": "Octavian.local"
+                    }
+                ], 
+                "name": "host", 
+                "nc": 0, 
+                "stdev": null
+            }, 
+            "field2": {
+                "count": 100, 
+                "distinct_count": 1, 
+                "is_exact": true, 
+                "max": null, 
+                "mean": null, 
+                "min": null, 
+                "modes": [
+                    {
+                        "count": 100, 
+                        "is_exact": true, 
+                        "value": "twitter"
+                    }
+                ], 
+                "name": "index", 
+                "nc": 0, 
+                "stdev": null
+            },
+            ...
+        }, 
+        "latest_time": "1969-12-31T16:00:00.000-08:00"
+    }
+
+You can find the various options that `summary` takes [here][api_search_summary].
+
+##### Timeline
+
+The timeline will provide with information about how events that were looked
+at for this search are distributed over time. Each entry in the `buckets` array
+represents a single bucket, with things like the span of the bucket (`duration`),
+how many events in the bucket (`available_count`), etc:
+
+    // Print the timeline
+    job.timeline({}, function(err, timeline) {
+        console.log(timeline);
+    });
+
+The timeline response will look somethign like this:
+
+    {
+        "buckets": [
+            {
+                "available_count": 27, 
+                "duration": 0.01, 
+                "earliest_strftime": "2012-04-23T18:35:40.000-07:00", 
+                "earliest_time": 1335231340.0, 
+                "earliest_time_offset": -25200, 
+                "is_finalized": true, 
+                "latest_time_offset": -25200, 
+                "total_count": 27
+            }, 
+            {
+                "available_count": 0, 
+                "duration": 0.01, 
+                "earliest_strftime": "2012-04-23T18:35:40.010-07:00", 
+                "earliest_time": 1335231340.01, 
+                "earliest_time_offset": -25200, 
+                "is_finalized": true, 
+                "latest_time_offset": -25200, 
+                "total_count": 0
+            }, 
+            ...
+        ], 
+        "cursor_time": 1335231339.0, 
+        "event_count": 100
+    }
+    
+You can find the various options that `timeline` takes and more information about the
+response [here][api_search_timeline].
+
+#### Enabling and Disabling Previews
+
+When you create a historical search in Splunk, it defaults to having preview
+disabled (unless you pass in `status_buckets>0`). You can also enable and 
+disable previews manually by using the `enablePreview` and `disablePreview`
+methods:
+
+    job.enablePreview(function(err, job) {
+        // preview is now enabled 
+    });
+    
+and disabling:
+    
+    job.disablePreview(function(err, job) {
+        // preview is now disabled 
+    });
+
+#### Pausing, Unpausing and Finalizing Searches
+
+Splunk allows you to pause a search (and allow it to be restarted), and of 
+course to unpause it as well:
+    
+    job.pause(function(err, job) {
+        // search is now paused
+    });
+    
+And to unpause it:
+
+    job.unpause(function(err, job) {
+        // search is now running again 
+    });
+
+You can also finalize a search, which will tell the search to basically stop, 
+but making any events  and results it has already collected still available:
+
+    job.finalize(function(err, job) {
+        // search is now finalizing 
+    });
+
+#### Setting search priority and TTL
+
+It can be useful to increase or decrease the search priority, and you can use
+the SDK to do this (acceptable values are between `0` and `10`):
+
+    job.setPriority(7, function(err, job) {
+        // job priority is now 7 
+    });
+    
+You can also set the TTL for the job, which will determine when the results
+will be deleted from disk (defaults to `600` seconds):
+
+    job.setTTL(24 * 60 * 60, function(err, job) {
+        // TTL is now set to a whole day!  
+    });
+
+You can also "reset" the TTL by touching a job:
+
+    job.touch(function(err, job) {
+        // TTL should now be reset 
+    });
+
 [ref_Job]: https://TODO.com
 [ref_Job_events]: https://TODO.com
 [ref_Job_results]: https://TODO.com
 [ref_Job_preview]: https://TODO.com
+
+[api_search_events]: http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#search.2Fjobs.2F.7Bsearch_id.7D.2Fevents
+[api_search_results]: http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#search.2Fjobs.2F.7Bsearch_id.7D.2Fresults
+[api_search_preview]: http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#search.2Fjobs.2F.7Bsearch_id.7D.2Fresults_preview
+[api_search_summary]: http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#search.2Fjobs.2F.7Bsearch_id.7D.2Fsummary
+[api_search_timeline]: http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#search.2Fjobs.2F.7Bsearch_id.7D.2Ftimeline
