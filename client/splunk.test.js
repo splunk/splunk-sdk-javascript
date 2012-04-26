@@ -1126,7 +1126,17 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
             this.app           = params.app;  
             this.sessionKey    = params.sessionKey || "";
             this.authorization = params.authorization || "Splunk";
-            this.paths         = params.paths || Paths;
+            this.paths         = params.paths || Paths; 
+            this.autologin     = true;
+            
+            // Initialize autologin
+            // The reason we explicitly check to see if 'autologin'
+            // is actually set is because we need to distinguish the
+            // case of it being set to 'false', and it not being set.
+            // Unfortunately, in JavaScript, these are both false-y
+            if (params.hasOwnProperty("autologin")) {
+                this.autologin = params.autologin;
+            }
             
             if (!http) {
                 // If there is no HTTP implementation set, we check what platform
@@ -1151,13 +1161,15 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
 
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
-            this._headers   = utils.bind(this, this._headers);
-            this.fullpath   = utils.bind(this, this.fullpath);
-            this.urlify     = utils.bind(this, this.urlify);
-            this.get        = utils.bind(this, this.get);
-            this.del        = utils.bind(this, this.del);
-            this.post       = utils.bind(this, this.post);
-            this.login      = utils.bind(this, this.login);
+            this._headers         = utils.bind(this, this._headers);
+            this.fullpath         = utils.bind(this, this.fullpath);
+            this.urlify           = utils.bind(this, this.urlify);
+            this.get              = utils.bind(this, this.get);
+            this.del              = utils.bind(this, this.del);
+            this.post             = utils.bind(this, this.post);
+            this.login            = utils.bind(this, this.login);
+            this._shouldAutoLogin = utils.bind(this, this._shouldAutoLogin);
+            this._requestWrapper  = utils.bind(this, this._requestWrapper);
         },
         
         /**
@@ -1173,6 +1185,93 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
             headers = headers || {};
             headers["Authorization"] = this.authorization + " " + this.sessionKey;
             return headers;
+        },   
+        
+        /*!*/
+        _shouldAutoLogin: function() {
+            return this.username && this.password && this.autologin;
+        },
+
+        /*!*/
+        /**
+         * This is an internal function aimed to aid with the autologin feature.
+         * It takes two parameters: `task`, which is a function describing an
+         * HTTP request, and `callback`, to be invoked when all is said 
+         * and done.
+         *  
+         * @param  {Function} task A function taking a single argument: `(callback)`
+         * @param  {Function} callback A callback to be invoked when the request is complete: `(err, response)`
+         */
+        _requestWrapper: function(task, callback) {
+            var that = this;
+            var req = null;
+            
+            // This is the callback that will be invoked
+            // if we are currently logged in but our session key
+            // expired (i.e. we get a 401 response from the server).
+            // We will only retry once.
+            var reloginIfNecessary = function(err) {
+                // If we aborted, ignore it
+                if (req.wasAborted) {
+                    return;
+                }
+                
+                if (err && err.status === 401 && that._shouldAutoLogin()) {
+                    // If we had an authorization error, we'll try and login
+                    // again, but only once
+                    that.sessionKey = null;
+                    that.login(function(err, success) {
+                        // If we've already aborted the request,
+                        // just do nothing
+                        if (req.wasAborted) {
+                            return;
+                        }
+                        
+                        if (err) {
+                            // If there was an error logging in, send it through
+                            callback(err);
+                        }
+                        else { 
+                            // Relogging in was successful, so we execute
+                            // our task again.
+                            task(callback);
+                        }
+                    });
+                }
+                else {
+                    callback.apply(null, arguments);
+                }
+            };
+            
+            if (!this._shouldAutoLogin() || this.sessionKey) {
+                // Since we are not auto-logging in, just execute our task,
+                // but intercept any 401s so we can login then
+                req = task(reloginIfNecessary);
+                return req;
+            }
+            
+            // OK, so we know that we should try and autologin,
+            // so we try and login, and if we succeed, execute
+            // the original task
+            req = this.login(function(err, success) {
+                // If we've already aborted the request,
+                // just do nothing
+                if (req.wasAborted) {
+                    return;
+                }
+                
+                if (err) {
+                    // If there was an error logging in, send it through
+                    callback(err);
+                } 
+                else {
+                    // Logging in was successful, so we execute
+                    // our task. 
+                    task(callback);
+                }
+            });
+            
+            return req;
         },
 
         /**
@@ -1259,7 +1358,13 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
                 }
             };
             
-            return this.post(url, params, wrappedCallback);
+            return this.http.post(
+                this.urlify(url),
+                this._headers(),
+                params,
+                0,
+                wrappedCallback
+            ); 
         },
 
         /**
@@ -1272,13 +1377,18 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
          * @method splunkjs.Context 
          */
         get: function(path, params, callback) {
-            return this.http.get(
-                this.urlify(path),
-                this._headers(),
-                params,
-                0,
-                callback
-            );  
+            var that = this;
+            var request = function(callback) {
+                return that.http.get(
+                    that.urlify(path),
+                    that._headers(),
+                    params,
+                    0,
+                    callback
+                );
+            };
+            
+            return this._requestWrapper(request, callback);
         },
 
         /**
@@ -1291,13 +1401,18 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
          * @method splunkjs.Context 
          */
         del: function(path, params, callback) {
-            return this.http.del(
-                this.urlify(path),
-                this._headers(),
-                params,
-                0,
-                callback
-            );  
+            var that = this;
+            var request = function(callback) {
+                return that.http.del(
+                    that.urlify(path),
+                    that._headers(),
+                    params,
+                    0,
+                    callback
+                );  
+            };
+            
+            return this._requestWrapper(request, callback);
         },
 
         /**
@@ -1310,13 +1425,18 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
          * @method splunkjs.Context 
          */
         post: function(path, params, callback) {
-            return this.http.post(
-                this.urlify(path),
-                this._headers(),
-                params,
-                0,
-                callback
-            );  
+            var that = this;
+            var request = function(callback) {
+                return that.http.post(
+                    that.urlify(path),
+                    that._headers(),
+                    params,
+                    0,
+                    callback
+                );  
+            };
+            
+            return this._requestWrapper(request, callback);
         },
 
         /**
@@ -1331,16 +1451,21 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
          * @method splunkjs.Context 
          */
         request: function(path, method, headers, body, callback) {
-            return this.http.request(
-                this.urlify(path),    
-                {
-                    method: method,
-                    headers: this._headers(headers),
-                    body: body,
-                    timeout: 0
-                },
-                callback
-            );
+            var that = this;
+            var request = function(callback) {
+                return that.http.request(
+                    that.urlify(path),    
+                    {
+                        method: method,
+                        headers: that._headers(headers),
+                        body: body,
+                        timeout: 0
+                    },
+                    callback
+                );  
+            };
+            
+            return this._requestWrapper(request, callback);
         }
     });
 
@@ -7303,6 +7428,110 @@ exports.setup = function(svc) {
                 test.done();
             });
         },
+        
+        "Callback#get autologin - success": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password
+                }
+            );
+            
+            service.get("search/jobs", {count: 2}, function(err, res) {
+                test.strictEqual(res.data.paging.offset, 0);
+                test.ok(res.data.paging.count <= res.data.paging.total);
+                test.strictEqual(res.data.paging.count, 2);
+                test.strictEqual(res.data.paging.count, res.data.entry.length);
+                test.ok(res.data.entry[0].content.sid);
+                test.done();
+            });
+        },
+        
+        "Callback#get autologin - error": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password + "ABC"
+                }
+            );
+            
+            service.get("search/jobs", {count: 2}, function(err, res) {
+                test.ok(err);
+                test.strictEqual(err.status, 401);
+                test.done();
+            });
+        },
+        
+        "Callback#get autologin - disabled": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    autologin: false
+                }
+            );
+            
+            service.get("search/jobs", {count: 2}, function(err, res) {
+                test.ok(err);
+                test.strictEqual(err.status, 401);
+                test.done();
+            });
+        },
+        
+        "Callback#get relogin - success": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    sessionKey: "ABCDEF-not-real"
+                }
+            );
+            
+            service.get("search/jobs", {count: 2}, function(err, res) {
+                test.strictEqual(res.data.paging.offset, 0);
+                test.ok(res.data.paging.count <= res.data.paging.total);
+                test.strictEqual(res.data.paging.count, 2);
+                test.strictEqual(res.data.paging.count, res.data.entry.length);
+                test.ok(res.data.entry[0].content.sid);
+                test.done();
+            });
+        },
+        
+        "Callback#get relogin - error": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password + "ABC",
+                    sessionKey: "ABCDEF-not-real"
+                }
+            );
+            
+            service.get("search/jobs", {count: 2}, function(err, res) {
+                test.ok(err);
+                test.strictEqual(err.status, 401);
+                test.done();
+            });
+        },
 
         "Callback#post": function(test) { 
             var service = this.service;
@@ -7326,6 +7555,116 @@ exports.setup = function(svc) {
                 test.done();
             });
         },
+        
+        "Callback#post autologin - success": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password
+                }
+            );
+            
+            service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
+                    var sid = res.data.sid;
+                    test.ok(sid);
+
+                    var endpoint = "search/jobs/" + sid + "/control";
+                    service.post(endpoint, {action: "cancel"}, function(err, res) {
+                            test.done();
+                        }
+                    );
+                }
+            );
+        },
+        
+        "Callback#post autologin - error": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password + "ABC"
+                }
+            );
+            
+            service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
+                test.ok(err);
+                test.strictEqual(err.status, 401);
+                test.done();
+            });
+        },
+        
+        "Callback#post autologin - disabled": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    autologin: false
+                }
+            );
+            
+            service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
+                test.ok(err);
+                test.strictEqual(err.status, 401);
+                test.done();
+            });
+        },
+        
+        "Callback#post relogin - success": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    sessionKey: "ABCDEF-not-real"
+                }
+            );
+            
+            service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
+                    var sid = res.data.sid;
+                    test.ok(sid);
+
+                    var endpoint = "search/jobs/" + sid + "/control";
+                    service.post(endpoint, {action: "cancel"}, function(err, res) {
+                            test.done();
+                        }
+                    );
+                }
+            );
+        },
+        
+        "Callback#post relogin - error": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password + "ABC",
+                    sessionKey: "ABCDEF-not-real"
+                }
+            );
+            
+            service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
+                test.ok(err);
+                test.strictEqual(err.status, 401);
+                test.done();
+            });
+        },
 
         "Callback#delete": function(test) { 
             var service = this.service;
@@ -7344,6 +7683,114 @@ exports.setup = function(svc) {
             this.service.del("search/jobs/1234_nosuchjob", {}, function(res) {
                 test.ok(!!res);
                 test.strictEqual(res.status, 404);
+                test.done();
+            });
+        },
+        
+        "Callback#delete autologin - success": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password
+                }
+            );
+            
+            service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
+                var sid = res.data.sid;
+                test.ok(sid);
+                
+                service.sessionKey = null;
+                var endpoint = "search/jobs/" + sid;
+                service.del(endpoint, {}, function(err, res) {
+                    test.done();
+                });
+            });
+        },
+        
+        "Callback#delete autologin - error": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password + "ABC"
+                }
+            );
+            
+            service.del("search/jobs/NO_SUCH_SID", {}, function(err, res) {
+                test.ok(err);
+                test.strictEqual(err.status, 401);
+                test.done();
+            });
+        },
+        
+        "Callback#delete autologin - disabled": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    autologin: false
+                }
+            );
+            
+            service.del("search/jobs/NO_SUCH_SID", {}, function(err, res) {
+                test.ok(err);
+                test.strictEqual(err.status, 401);
+                test.done();
+            });
+        },
+        
+        "Callback#delete relogin - success": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    sessionKey: "ABCDEF-not-real"
+                }
+            );
+            
+            service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
+                var sid = res.data.sid;
+                test.ok(sid);
+                
+                service.sessionKey = "ABCDEF-not-real";
+                var endpoint = "search/jobs/" + sid;
+                service.del(endpoint, {}, function(err, res) {
+                    test.done();
+                });
+            });
+        },
+        
+        "Callback#delete relogin - error": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password + "ABC",
+                    sessionKey: "ABCDEF-not-real"
+                }
+            );
+            
+            service.del("search/jobs/NO_SUCH_SID", {}, function(err, res) {
+                test.ok(err);
+                test.strictEqual(err.status, 401);
                 test.done();
             });
         },
@@ -7390,6 +7837,120 @@ exports.setup = function(svc) {
                 }
                 
                 test.strictEqual(res.status, 404);
+                test.done();
+            });
+        },
+        
+        "Callback#request autologin - success": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password
+                }
+            );
+            
+            service.request("search/jobs?count=2", "GET", {"X-TestHeader": 1}, "", function(err, res) {
+                test.strictEqual(res.data.paging.offset, 0);
+                test.ok(res.data.paging.count <= res.data.paging.total);
+                test.strictEqual(res.data.paging.count, 2);
+                test.strictEqual(res.data.paging.count, res.data.entry.length);
+                test.ok(res.data.entry[0].content.sid);
+                
+                if (res.response.request) {
+                    test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
+                }
+                
+                test.done();
+            });
+        },
+        
+        "Callback#request autologin - error": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password + "ABC"
+                }
+            );
+            
+            service.request("search/jobs?count=2", "GET", {"X-TestHeader": 1}, "", function(err, res) {
+                test.ok(err);
+                test.strictEqual(err.status, 401);
+                test.done();
+            });
+        },
+        
+        "Callback#request autologin - disabled": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    autologin: false
+                }
+            );
+            
+            service.request("search/jobs?count=2", "GET", {"X-TestHeader": 1}, "", function(err, res) {
+                test.ok(err);
+                test.strictEqual(err.status, 401);
+                test.done();
+            });
+        },
+        
+        "Callback#request relogin - success": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    sessionKey: "ABCDEF-not-real"
+                }
+            );
+            
+            service.request("search/jobs?count=2", "GET", {"X-TestHeader": 1}, "", function(err, res) {
+                test.strictEqual(res.data.paging.offset, 0);
+                test.ok(res.data.paging.count <= res.data.paging.total);
+                test.strictEqual(res.data.paging.count, 2);
+                test.strictEqual(res.data.paging.count, res.data.entry.length);
+                test.ok(res.data.entry[0].content.sid);
+                
+                if (res.response.request) {
+                    test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
+                }
+                
+                test.done();
+            });
+        },
+        
+        "Callback#request relogin - error": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password + "ABC",
+                    sessionKey: "ABCDEF-not-real"
+                }
+            );
+            
+            service.request("search/jobs?count=2", "GET", {"X-TestHeader": 1}, "", function(err, res) {
+                test.ok(err);
+                test.strictEqual(err.status, 401);
                 test.done();
             });
         },
@@ -9655,6 +10216,7 @@ exports.setup = function(http) {
                 var didFail = false;
                 var message = "GO GO SDK -- " + getNextId();
                 this.service.log(message, {sourcetype: "sdk-test", project: project}, function(err, data) {
+                    test.ok(!err);
                     test.strictEqual(data.length, message.length);
                     test.done();
                 });
@@ -9664,6 +10226,7 @@ exports.setup = function(http) {
                 var didFail = false;
                 var message = { id: getNextId() };
                 this.service.log(message, {sourcetype: "json", project: project}, function(err, data) {
+                    test.ok(!err);
                     test.strictEqual(data.length, JSON.stringify(message).length);
                     test.done();
                 });
