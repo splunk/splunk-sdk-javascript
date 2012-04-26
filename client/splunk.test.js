@@ -3186,16 +3186,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         refreshOnEntityCreation: false,
         
         /**
-         * Whether or not to call `refresh()` after an entity
-         * is instantiated locally. By default we don't refresh
-         * the entity, as the endpoint will return (echo) the created
-         * entities when we list it.
-         *
-         * @method splunkjs.Service.Collection
-         */
-        refreshOnEntityInstantiation: false,
-        
-        /**
          * Constructor for splunkjs.Service.Collection
          *
          * @constructor
@@ -3332,12 +3322,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 options.count = 0;
             }
             
-            var recursive = false;
-            if (options.hasOwnProperty("recursive")) {
-                recursive = options.recursive;
-                delete options.recursive;
-            }
-            
             var that = this;
             var req = that.get("", options, function(err, response) {
                 if (err) {
@@ -3345,32 +3329,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 }
                 else {
                     that._load(response.data);
-                    
-                    if (that.refreshOnEntityInstantiation && recursive) {
-                        var wasAbortedAlready = false;
-                        var fns = [];
-                        utils.forEach(that._entities, function(entity) {
-                            fns.push(function(done) {
-                                entity.refresh({recursive: true}, function() {
-                                    if (req.wasAborted) {
-                                        if (!wasAbortedAlready) {
-                                            wasAbortedAlready = true;
-                                        }
-                                    }
-                                    else {
-                                        callback.apply(null, arguments);
-                                    }
-                                }); 
-                            });
-                        });
-                        
-                        Async.parallel(fns, function(err) {
-                            callback(err, that); 
-                        });
-                    }
-                    else {
-                        callback(null, that);
-                    }
+                    callback(null, that);
                 }
             });
             
@@ -4566,16 +4525,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         refreshOnEntityCreation: true,
         
         /**
-         * Whether or not to call `refresh()` after an entity
-         * is instantiated locally. By default we don't refresh
-         * the entity, as the endpoint will return (echo) the created
-         * entities when we list it.
-         *
-         * @method splunkjs.Service.Properties
-         */
-        refreshOnEntityInstantiation: true,
-        
-        /**
          * REST path for this resource (with no namespace)
          *
          * @method splunkjs.Service.Properties
@@ -4795,16 +4744,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @method splunkjs.Service.Configurations
          */
         refreshOnEntityCreation: true,
-        
-        /**
-         * Whether or not to call `refresh()` after an entity
-         * is instantiated locally. By default we don't refresh
-         * the entity, as the endpoint will return (echo) the created
-         * entities when we list it.
-         *
-         * @method splunkjs.Service.Configurations
-         */
-        refreshOnEntityInstantiation: true,
         
         /**
          * REST path for this resource (with no namespace)
