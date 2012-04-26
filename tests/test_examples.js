@@ -48,6 +48,21 @@ exports.setup = function(svc, opts) {
                 main(opts, test.done);
             },
             
+            "Saved Searches#Delete": function(test) {
+                var main = require("../examples/node/helloworld/savedsearches_delete").main;
+                main(opts, test.done);
+            },
+            
+            "Saved Searches#Create": function(test) {
+                var main = require("../examples/node/helloworld/savedsearches_create").main;
+                main(opts, test.done);
+            },
+            
+            "Saved Searches#Delete Again": function(test) {
+                var main = require("../examples/node/helloworld/savedsearches_delete").main;
+                main(opts, test.done);
+            },
+            
             "Search#normal": function(test) {
                 var main = require("../examples/node/helloworld/search_normal").main;
                 main(opts, test.done);

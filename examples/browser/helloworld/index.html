@@ -431,6 +431,7 @@ Async.chain([
               <li class="active"><a href="#savedsearches-regular">Regular</a></li>
               <li><a href="#savedsearches-async"><code>splunkjs.Async</code></a></li>
               <li><a href="#savedsearches-create">Create A Saved Search</a></li>
+              <li><a href="#savedsearches-delete">Delete A Saved Search</a></li>
               <li><a href="#savedsearches-output">Output</a></li>
             </ul>
             <div id="savedsearches-tab-content" class="tab-content">
@@ -455,23 +456,26 @@ service.login(function(err, success) {
         return;
     } 
     
-    // Now that we're logged in, let's get a listing of all the saved searches.
-    service.savedSearches().refresh(function(err, searches) {
+    var name = "My Awesome Saved Search";
+    
+    // Now that we're logged in, Let's create a saved search
+    service.savedSearches().refresh(function(err, savedSearches) {
         if (err) {
-            console.log("There was an error retrieving the list of saved searches:", err);
+            console.log("There was an error in fetching the saved searches");
             done(err);
             return;
-        }
-        
-        var searchList = searches.list();
-        console.log("Saved searches:");
-        for(var i = 0; i < searchList.length; i++) {
-            var search = searchList[i];
-            console.log("  Search " + i + ": " + search.name);
-            console.log("    " + search.properties().search);
         } 
         
-        done();
+        var savedSearchToDelete = savedSearches.item(name);
+        if (!savedSearchToDelete) {
+            console.log("Can't delete '" + name + "' because it doesn't exist!");
+            done();
+        }
+        else {                
+            savedSearchToDelete.remove();
+            console.log("Deleted saved search: " + name + "")
+            done();
+        }
     });
 });
                 </pre>
@@ -560,6 +564,51 @@ service.login(function(err, success) {
         
         console.log("Created saved search: " + savedSearch.name);            
         done();
+    });
+});
+                </pre>
+              </div>
+              <div class="tab-pane" id="savedsearches-delete">
+                <pre class='prettyprint lang-js linenums'>
+var http = new splunkjs.ProxyHttp("/proxy");
+var service = new splunkjs.Service(http, {
+    username: username,
+    password: password,
+    scheme: scheme,
+    host: host,
+    port: port
+});
+
+// First, we log in
+service.login(function(err, success) {
+    // We check for both errors in the connection as well
+    // as if the login itself failed.
+    if (err || !success) {
+        console.log("Error in logging in");
+        done(err || "Login failed");
+        return;
+    } 
+    
+    var name = "My Awesome Saved Search";
+    
+    // Now that we're logged in, Let's create a saved search
+    service.savedSearches().refresh(function(err, savedSearches) {
+        if (err) {
+            console.log("There was an error in fetching the saved searches");
+            done(err);
+            return;
+        } 
+        
+        var savedSearchToDelete = savedSearches.item(name);
+        if (!savedSearchToDelete) {
+            console.log("Can't delete '" + name + "' because it doesn't exist!");
+            done();
+        }
+        else {                
+            savedSearchToDelete.remove();
+            console.log("Deleted saved search: " + name + "")
+            done();
+        }
     });
 });
                 </pre>
