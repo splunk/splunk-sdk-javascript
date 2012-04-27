@@ -2897,7 +2897,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 fields: {},
                 acl: {},
                 links: {}
-            }
+            };
             
             this._super(properties);
             
