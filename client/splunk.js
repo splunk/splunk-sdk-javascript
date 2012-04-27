@@ -6294,7 +6294,7 @@ require.define("/lib/platform/client/proxy_http.js", function (require, module, 
 })();
 });
 
-require.define("/entries/browser.ui.entry.js", function (require, module, exports, __dirname, __filename) {
+require.define("/lib/entries/browser.ui.entry.js", function (require, module, exports, __dirname, __filename) {
 
 // Copyright 2011 Splunk, Inc.
 //
@@ -6315,7 +6315,7 @@ require.define("/entries/browser.ui.entry.js", function (require, module, export
 // include it.
 
 (function(exportName) {
-    var $script = require('../contrib/script');
+    var $script = require('../../contrib/script');
     
     if (!window[exportName]) {
         window[exportName] = {};
@@ -6407,9 +6407,9 @@ require.define("/browser.entry.js", function (require, module, exports, __dirnam
 (function(exportName) {
     var previousSplunk = window[exportName];
     
-    var ourSplunk = require('../index');
-    var ourXDM    = require('../lib/platform/client/easyxdm_http').XdmHttp;
-    var proxyHttp = require('../lib/platform/client/proxy_http').ProxyHttp;
+    var ourSplunk = require('../../index');
+    var ourXDM    = require('../../lib/platform/client/easyxdm_http').XdmHttp;
+    var proxyHttp = require('../../lib/platform/client/proxy_http').ProxyHttp;
     
     window[exportName] = ourSplunk;
     window[exportName].XdmHttp = ourXDM;
@@ -6424,7 +6424,7 @@ require.define("/browser.entry.js", function (require, module, exports, __dirnam
     };
     
     // Load the UI component loader
-    require("../entries/browser.ui.entry");
+    require("../../lib/entries/browser.ui.entry");
 })(__exportName);
 });
 require("/browser.entry.js");

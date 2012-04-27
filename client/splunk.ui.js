@@ -376,7 +376,7 @@ require.define("/browser.ui.entry.js", function (require, module, exports, __dir
 // include it.
 
 (function(exportName) {
-    var $script = require('../contrib/script');
+    var $script = require('../../contrib/script');
     
     if (!window[exportName]) {
         window[exportName] = {};

@@ -12490,14 +12490,14 @@ require.define("/browser.test.entry.js", function (require, module, exports, __d
 // include it.
 
 window.SplunkTest = {
-    Utils    : require('../tests/test_utils'),
-    Async    : require('../tests/test_async'),
-    Http     : require('../tests/test_http'),
-    Context  : require('../tests/test_context'),
-    Service  : require('../tests/test_service'),
-    Storm    : require('../tests/test_storm'),
-    Searcher : require('../tests/test_searcher'),
-    Examples : require('../tests/test_examples')
+    Utils    : require('../../tests/test_utils'),
+    Async    : require('../../tests/test_async'),
+    Http     : require('../../tests/test_http'),
+    Context  : require('../../tests/test_context'),
+    Service  : require('../../tests/test_service'),
+    Storm    : require('../../tests/test_storm'),
+    Searcher : require('../../tests/test_searcher'),
+    Examples : require('../../tests/test_examples')
 };
 });
 require("/browser.test.entry.js");

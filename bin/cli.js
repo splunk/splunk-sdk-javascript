@@ -37,9 +37,9 @@
     var TEST_DIRECTORY      = "tests";
     var TEST_PREFIX         = "test_";
     var ALL_TESTS           = "tests.js";
-    var SDK_BROWSER_ENTRY   = "entries/browser.entry.js";
-    var TEST_BROWSER_ENTRY  = "entries/browser.test.entry.js";
-    var UI_BROWSER_ENTRY    = "entries/browser.ui.entry.js";
+    var SDK_BROWSER_ENTRY   = "./lib/entries/browser.entry.js";
+    var TEST_BROWSER_ENTRY  = "./lib/entries/browser.test.entry.js";
+    var UI_BROWSER_ENTRY    = "./lib/entries/browser.ui.entry.js";
     var DOC_FILE            = "index.html";
     var BUILD_CACHE_FILE    = ".buildcache";
     var SDK_VERSION         = JSON.parse(fs.readFileSync(path.resolve(__dirname, "../package.json")).toString("utf-8")).version;
@@ -56,8 +56,8 @@
      * UI Component Entry Points (for async loading)
      */
     var UI_COMPONENT_BROWSER_ENTRY  = {
-        timeline: "entries/browser.ui.timeline.entry.js",
-        charting: "entries/browser.ui.charting.entry.js"
+        timeline: "./lib/entries/browser.ui.timeline.entry.js",
+        charting: "./lib/entries/browser.ui.charting.entry.js"
     };
     
     /**

@@ -345,7 +345,7 @@ exports.extname = function(path) {
 
 });
 
-require.define("/lib/ui/charting.js", function (require, module, exports, __dirname, __filename) {
+require.define("/ui/charting.js", function (require, module, exports, __dirname, __filename) {
 
 // Copyright 2011 Splunk, Inc.
 //
@@ -411,7 +411,7 @@ require.define("/lib/ui/charting.js", function (require, module, exports, __dirn
 })();
 });
 
-require.define("/lib/utils.js", function (require, module, exports, __dirname, __filename) {
+require.define("/utils.js", function (require, module, exports, __dirname, __filename) {
 /*!*/
 // Copyright 2011 Splunk, Inc.
 //
@@ -808,7 +808,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
 })();
 });
 
-require.define("/lib/jquery.class.js", function (require, module, exports, __dirname, __filename) {
+require.define("/jquery.class.js", function (require, module, exports, __dirname, __filename) {
 /*! Simple JavaScript Inheritance
  * By John Resig http://ejohn.org/
  * MIT Licensed.
@@ -877,7 +877,7 @@ require.define("/lib/jquery.class.js", function (require, module, exports, __dir
 })();
 });
 
-require.define("/lib/ui/charting/js_charting.js", function (require, module, exports, __dirname, __filename) {
+require.define("/ui/charting/js_charting.js", function (require, module, exports, __dirname, __filename) {
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -8489,7 +8489,7 @@ require.define("/lib/ui/charting/js_charting.js", function (require, module, exp
 })();
 });
 
-require.define("/lib/ui/charting/splunk.js", function (require, module, exports, __dirname, __filename) {
+require.define("/ui/charting/splunk.js", function (require, module, exports, __dirname, __filename) {
 
 // Copyright 2011 Splunk, Inc.
 //
@@ -8538,7 +8538,7 @@ require.define("/lib/ui/charting/splunk.js", function (require, module, exports,
 })();
 });
 
-require.define("/lib/ui/charting/i18n.js", function (require, module, exports, __dirname, __filename) {
+require.define("/ui/charting/i18n.js", function (require, module, exports, __dirname, __filename) {
 
 // Copyright 2011 Splunk, Inc.
 //
@@ -9958,7 +9958,7 @@ require.define("/lib/ui/charting/i18n.js", function (require, module, exports, _
 })();
 });
 
-require.define("/lib/ui/charting/i18n_locale.js", function (require, module, exports, __dirname, __filename) {
+require.define("/ui/charting/i18n_locale.js", function (require, module, exports, __dirname, __filename) {
 
 // Copyright 2011 Splunk, Inc.
 //
@@ -9979,7 +9979,7 @@ require.define("/lib/ui/charting/i18n_locale.js", function (require, module, exp
 })();
 });
 
-require.define("/lib/ui/charting/highcharts.js", function (require, module, exports, __dirname, __filename) {
+require.define("/ui/charting/highcharts.js", function (require, module, exports, __dirname, __filename) {
 // ==ClosureCompiler==
 // @compilation_level SIMPLE_OPTIMIZATIONS
 
@@ -21667,7 +21667,7 @@ exports.Highcharts = {
 
 });
 
-require.define("/lib/ui/charting/util.js", function (require, module, exports, __dirname, __filename) {
+require.define("/ui/charting/util.js", function (require, module, exports, __dirname, __filename) {
 
 // Copyright 2011 Splunk, Inc.
 //
@@ -22911,7 +22911,7 @@ require.define("/lib/ui/charting/util.js", function (require, module, exports, _
 })();
 });
 
-require.define("/lib/ui/charting/lowpro_for_jquery.js", function (require, module, exports, __dirname, __filename) {
+require.define("/ui/charting/lowpro_for_jquery.js", function (require, module, exports, __dirname, __filename) {
 (function($) {
   
   var addMethods = function(source) {
@@ -23163,7 +23163,7 @@ require.define("/browser.ui.charting.entry.js", function (require, module, expor
         window[exportName].UI = {};
     }
 
-    window[exportName].UI.Charting = require('../lib/ui/charting.js');
+    window[exportName].UI.Charting = require('../ui/charting.js');
 })(__exportName);
 });
 require("/browser.ui.charting.entry.js");
