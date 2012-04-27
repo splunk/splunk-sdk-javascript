@@ -49,7 +49,7 @@ exports.main = function(opts, done) {
         var name = "My Awesome Saved Search";
         
         // Now that we're logged in, Let's create a saved search
-        service.savedSearches().refresh(function(err, savedSearches) {
+        service.savedSearches().fetch(function(err, savedSearches) {
             if (err) {
                 console.log("There was an error in fetching the saved searches");
                 done(err);

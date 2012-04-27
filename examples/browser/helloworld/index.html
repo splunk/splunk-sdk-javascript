@@ -337,7 +337,7 @@ service.login(function(err, success) {
     } 
     
     // Now that we're logged in, let's get a listing of all the apps.
-    service.apps().refresh(function(err, apps) {
+    service.apps().fetch(function(err, apps) {
         if (err) {
             console.log("There was an error retrieving the list of applications:", err);
             done(err);
@@ -378,7 +378,7 @@ Async.chain([
                 done("Error logging in");
             }
             
-            service.apps().refresh(done);
+            service.apps().fetch(done);
         },
         // Print them out
         function(apps, done) {     
@@ -456,26 +456,23 @@ service.login(function(err, success) {
         return;
     } 
     
-    var name = "My Awesome Saved Search";
-    
-    // Now that we're logged in, Let's create a saved search
-    service.savedSearches().refresh(function(err, savedSearches) {
+    // Now that we're logged in, let's get a listing of all the saved searches.
+    service.savedSearches().fetch(function(err, searches) {
         if (err) {
-            console.log("There was an error in fetching the saved searches");
+            console.log("There was an error retrieving the list of saved searches:", err);
             done(err);
             return;
+        }
+        
+        var searchList = searches.list();
+        console.log("Saved searches:");
+        for(var i = 0; i < searchList.length; i++) {
+            var search = searchList[i];
+            console.log("  Search " + i + ": " + search.name);
+            console.log("    " + search.properties().search);
         } 
         
-        var savedSearchToDelete = savedSearches.item(name);
-        if (!savedSearchToDelete) {
-            console.log("Can't delete '" + name + "' because it doesn't exist!");
-            done();
-        }
-        else {                
-            savedSearchToDelete.remove();
-            console.log("Deleted saved search: " + name + "")
-            done();
-        }
+        done();
     });
 });
                 </pre>
@@ -502,7 +499,7 @@ Async.chain([
                 done("Error logging in");
             }
             
-            service.savedSearches().refresh(done);
+            service.savedSearches().fetch(done);
         },
         // Print them out
         function(searches, done) {
@@ -592,7 +589,7 @@ service.login(function(err, success) {
     var name = "My Awesome Saved Search";
     
     // Now that we're logged in, Let's create a saved search
-    service.savedSearches().refresh(function(err, savedSearches) {
+    service.savedSearches().fetch(function(err, savedSearches) {
         if (err) {
             console.log("There was an error in fetching the saved searches");
             done(err);
@@ -683,8 +680,8 @@ Async.chain([
                 function(iterationDone) {
                     Async.sleep(1000, function() {
                         // Refresh the job and note how many events we've looked at so far
-                        job.refresh(function(err) {
-                            console.log("-- refreshing, " + (job.properties().eventCount || 0) + " events so far");
+                        job.fetch(function(err) {
+                            console.log("-- fetching, " + (job.properties().eventCount || 0) + " events so far");
                             iterationDone();
                         });
                     });
@@ -759,7 +756,7 @@ Async.chain([
         },
         // The job is done, but let's some statistics from the server.
         function(job, done) {
-            job.refresh(done);
+            job.fetch(done);
         },
         // Print out the statistics and get the results
         function(job, done) {

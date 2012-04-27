@@ -2111,7 +2111,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // List installed apps
          *      var apps = svc.apps();
-         *      apps.refresh(function(err) { console.log(apps.list()); });
+         *      apps.fetch(function(err) { console.log(apps.list()); });
          *
          * @return {splunkjs.Service.Collection} The Applications collection
          *
@@ -2134,7 +2134,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      // List all properties in the 'props.conf' file
          *      var files = svc.configurations();
          *      files.item("props", function(err, propsFile) {
-         *          propsFile.refresh(function(err, props) {
+         *          propsFile.fetch(function(err, props) {
          *              console.log(props.properties()); 
          *          });
          *      });
@@ -2160,7 +2160,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // Check if we have an _internal index
          *      var indexes = svc.configurations();
-         *      indexes.refresh(function(err, indexes) {
+         *      indexes.fetch(function(err, indexes) {
          *          var index = indexes.contains("_internal");
          *          console.log("Was index found: " + !!index);
          *          // `index` contains the Index object.
@@ -2187,7 +2187,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // List all # of saved searches
          *      var savedSearches = svc.savedSearches();
-         *      savedSearches.refresh(function(err, savedSearches) {
+         *      savedSearches.fetch(function(err, savedSearches) {
          *          console.log("# Of Saved Searches: " + savedSearches.list().length);
          *      });
          *
@@ -2212,7 +2212,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // List all job IDs
          *      var jobs = svc.jobs();
-         *      jobs.refresh(function(err, jobs) {
+         *      jobs.fetch(function(err, jobs) {
          *          var list = jobs.list();
          *          for(var i = 0; i < list.length; i++) {
          *              console.log("Job " + (i+1) + ": " + list[i].sid);
@@ -2240,7 +2240,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // List all usernames
          *      var users = svc.users();
-         *      users.refresh(function(err, users) {
+         *      users.fetch(function(err, users) {
          *          var list = users.list();
          *          for(var i = 0; i < list.length; i++) {
          *              console.log("User " + (i+1) + ": " + list[i].properties().name);
@@ -2267,7 +2267,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // List all views
          *      var views = svc.views();
-         *      views.refresh(function(err, views) {
+         *      views.fetch(function(err, views) {
          *          var list = views.list();
          *          for(var i = 0; i < list.length; i++) {
          *              console.log("View " + (i+1) + ": " + list[i].properties().name);
@@ -2370,7 +2370,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 else {
                     var username = response.data.entry[0].content.username;
                     var user = new root.User(that, username);
-                    user.refresh(function() {
+                    user.fetch(function() {
                         if (req.wasAborted) {
                             return; // aborted, so ignore
                         }
@@ -2402,7 +2402,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             callback = callback || function() {};
             
             var serverInfo = new root.ServerInfo(this);
-            return serverInfo.refresh(callback);
+            return serverInfo.fetch(callback);
         },
         
         /**
@@ -2682,7 +2682,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
             this._load       = utils.bind(this, this._load);
-            this.refresh     = utils.bind(this, this.refresh);
+            this.fetch       = utils.bind(this, this.fetch);
             this.properties  = utils.bind(this, this.properties);
             this.state       = utils.bind(this, this.state);
             this.path        = utils.bind(this, this.path);
@@ -2713,7 +2713,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Refresh the resource
          *
-         * This will unconditionally refresh the object from the server
+         * This will fetch the object from the server
          * and load it up.
          *
          * @param {Function} callback A callback when the object is retrieved: `(err, resource)`
@@ -2721,7 +2721,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @method splunkjs.Service.Resource
          * @protected
          */
-        refresh: function(callback) {
+        fetch: function(callback) {
             throw new Error("MUST BE OVERRIDDEN");
         },
         
@@ -2759,21 +2759,21 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      * with certain operations (like "properties", "update", "delete").
      *
      * This `Entity` class provides basic methods for handling Splunk entities, 
-     * such as refreshing them, updating, etc.
+     * such as fetching them, updating, etc.
      *
      * @class splunkjs.Service.Entity
      * @extends splunkjs.Service.Resource
      */
     root.Entity = root.Resource.extend({
         /**
-         * Whether or not to call `refresh()` after an update
-         * to fetch the updated item. By default we don't refresh
+         * Whether or not to call `fetch()` after an update
+         * to fetch the updated item. By default we don't fetch
          * the entity, as the endpoint will return (echo) the updated
          * entity
          *
          * @method splunkjs.Service.Entity
          */
-        refreshOnUpdate: false,
+        fetchOnUpdate: false,
         
         /**
          * Constructor for splunkjs.Service.Entity
@@ -2792,7 +2792,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
             this._load     = utils.bind(this, this._load);
-            this.refresh   = utils.bind(this, this.refresh);
+            this.fetch     = utils.bind(this, this.fetch);
             this.remove    = utils.bind(this, this.remove);
             this.update    = utils.bind(this, this.update);
             this.fields    = utils.bind(this, this.fields);
@@ -2904,7 +2904,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Refresh the resource
          *
-         * This will unconditionally refresh the object from the server
+         * This will fetch the object from the server
          * and load it up.
          *
          * @param {Object} options Optional dictionary of collection filtering and pagination options
@@ -2912,7 +2912,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @method splunkjs.Service.Entity
          */
-        refresh: function(options, callback) {
+        fetch: function(options, callback) {
             if (!callback && utils.isFunction(options)) {
                 callback = options;
                 options = {};
@@ -2972,12 +2972,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             var that = this;
             var req = this.post("", props, function(err, response) {
-                if (!err && !that.refreshOnUpdate) {
+                if (!err && !that.fetchOnUpdate) {
                     that._load(response.data.entry);
                     callback(err, that);
                 }
-                else if (!err && that.refreshOnUpdate) {
-                    that.refresh(function() {
+                else if (!err && that.fetchOnUpdate) {
+                    that.fetch(function() {
                         if (req.wasAborted) {
                             return; // aborted, so ignore
                         }
@@ -3079,14 +3079,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      */
     root.Collection = root.Resource.extend({
         /**
-         * Whether or not to call `refresh()` after an entity
-         * is created. By default we don't refresh
+         * Whether or not to call `fetch()` after an entity
+         * is created. By default we don't fetch
          * the entity, as the endpoint will return (echo) the created
          * entity
          *
          * @method splunkjs.Service.Collection
          */
-        refreshOnEntityCreation: false,
+        fetchOnEntityCreation: false,
         
         /**
          * Constructor for splunkjs.Service.Collection
@@ -3105,7 +3105,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
             this._load             = utils.bind(this, this._load);
-            this.refresh           = utils.bind(this, this.refresh);
+            this.fetch           = utils.bind(this, this.fetch);
             this.create            = utils.bind(this, this.create);
             this.list              = utils.bind(this, this.list);
             this.contains          = utils.bind(this, this.contains);
@@ -3205,7 +3205,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Refresh the resource
          *
-         * This will unconditionally refresh the object from the server
+         * This will unconditionally fetch the object from the server
          * and load it up.
          *
          * @param {Object} options Dictionary of collection filtering and pagination options
@@ -3213,7 +3213,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @method splunkjs.Service.Collection
          */
-        refresh: function(options, callback) {
+        fetch: function(options, callback) {
             if (!callback && utils.isFunction(options)) {
                 callback = options;
                 options = {};
@@ -3296,8 +3296,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     var entity = that.instantiateEntity(props);
                     entity._load(props); 
                     
-                    if (that.refreshOnEntityCreation) {
-                        entity.refresh(function() {
+                    if (that.fetchOnEntityCreation) {
+                        entity.fetch(function() {
                             if (req.wasAborted) {
                                 return; // aborted, so ignore
                             }
@@ -3323,7 +3323,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @example
          *
          *      var apps = service.apps();
-         *      apps.refresh(function(err, apps) {
+         *      apps.fetch(function(err, apps) {
          *          var appList = apps.list();
          *          console.log(appList.length);
          *      });
@@ -3347,7 +3347,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @example
          *
          *      var apps = service.apps();
-         *      apps.refresh(function(err, apps) {
+         *      apps.fetch(function(err, apps) {
          *          var app = apps.contains("search");
          *          console.log("Search App Found: " + !!app);
          *          // `app` contains the Application object.
@@ -3611,7 +3611,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             if (!params.search) {
                 var update = this._super;
-                var req = this.refresh(function(err, search) {
+                var req = this.fetch(function(err, search) {
                     if (err) {
                         callback(err);
                     }
@@ -3693,12 +3693,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      */
     root.Application = root.Entity.extend({
         /**
-         * Whether or not to call `refresh()` after an update
+         * Whether or not to call `fetch()` after an update
          * to fetch the updated item.
          *
          * @method splunkjs.Service.Application
          */
-        refreshOnUpdate: true,
+        fetchOnUpdate: true,
         
         /**
          * REST path for this resource (with no namespace)
@@ -3796,14 +3796,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      */  
     root.Applications = root.Collection.extend({
         /**
-         * Whether or not to call `refresh()` after an entity
-         * is created. By default we don't refresh
+         * Whether or not to call `fetch()` after an entity
+         * is created. By default we don't fetch
          * the entity, as the endpoint will return (echo) the created
          * entity
          *
          * @method splunkjs.Service.Applications
          */
-        refreshOnEntityCreation: true,
+        fetchOnEntityCreation: true,
         
         /**
          * REST path for this resource (with no namespace)
@@ -3916,14 +3916,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      */  
     root.Users = root.Collection.extend({
         /**
-         * Whether or not to call `refresh()` after an entity
-         * is created. By default we don't refresh
+         * Whether or not to call `fetch()` after an entity
+         * is created. By default we don't fetch
          * the entity, as the endpoint will return (echo) the created
          * entity
          *
          * @method splunkjs.Service.Users
          */
-        refreshOnEntityCreation: true,
+        fetchOnEntityCreation: true,
         
         /**
          * REST path for this resource (with no namespace)
@@ -3984,7 +3984,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     var props = {name: params.name};
                     
                     var entity = that.instantiateEntity(props);                    
-                    entity.refresh(function() {
+                    entity.fetch(function() {
                         if (req.wasAborted) {
                             return; // aborted, so ignore
                         }
@@ -4366,14 +4366,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      */  
     root.Configurations = root.Collection.extend({
         /**
-         * Whether or not to call `refresh()` after an entity
-         * is created. By default we don't refresh
+         * Whether or not to call `fetch()` after an entity
+         * is created. By default we don't fetch
          * the entity, as the endpoint will return (echo) the created
          * entity
          *
          * @method splunkjs.Service.Configurations
          */
-        refreshOnEntityCreation: true,
+        fetchOnEntityCreation: true,
         
         /**
          * REST path for this resource (with no namespace)
@@ -4446,7 +4446,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 }
                 else {
                     var entity = new root.ConfigurationFile(that.service, filename);
-                    entity.refresh(function() {
+                    entity.fetch(function() {
                         if (req.wasAborted) {
                             return; // aborted, so ignore
                         }
@@ -5739,7 +5739,7 @@ require.define("/lib/searcher.js", function (require, module, exports, __dirname
             Async.whilst(
                 function() { return !stopLooping; },
                 function(iterationDone) {
-                    job.refresh(function(err, job) {
+                    job.fetch(function(err, job) {
                         if (err) {
                             iterationDone(err);
                             return;

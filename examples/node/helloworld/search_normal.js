@@ -59,8 +59,8 @@ exports.main = function(opts, callback) {
                     function(iterationDone) {
                         Async.sleep(1000, function() {
                             // Refresh the job and note how many events we've looked at so far
-                            job.refresh(function(err) {
-                                console.log("-- refreshing, " + (job.properties().eventCount || 0) + " events so far");
+                            job.fetch(function(err) {
+                                console.log("-- fetching, " + (job.properties().eventCount || 0) + " events so far");
                                 iterationDone();
                             });
                         });

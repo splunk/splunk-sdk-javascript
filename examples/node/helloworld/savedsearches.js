@@ -47,7 +47,7 @@ exports.main = function(opts, done) {
         } 
         
         // Now that we're logged in, let's get a listing of all the saved searches.
-        service.savedSearches().refresh(function(err, searches) {
+        service.savedSearches().fetch(function(err, searches) {
             if (err) {
                 console.log("There was an error retrieving the list of saved searches:", err);
                 done(err);

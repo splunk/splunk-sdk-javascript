@@ -47,7 +47,7 @@ exports.main = function(opts, done) {
         } 
         
         // Now that we're logged in, let's get a listing of all the apps.
-        service.apps().refresh(function(err, apps) {
+        service.apps().fetch(function(err, apps) {
             if (err) {
                 console.log("There was an error retrieving the list of applications:", err);
                 done(err);

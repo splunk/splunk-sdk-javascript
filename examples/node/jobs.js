@@ -91,7 +91,7 @@
             // If it is, we wrap it up in a splunkjs.Job object, and invoke
             // our function on it.
             var jobsList = [];
-            this.service.jobs().refresh(function(err, jobs) {
+            this.service.jobs().fetch(function(err, jobs) {
                 var list = jobs.list() || [];
                 for(var i = 0; i < list.length; i++) {
                     if (utils.contains(sids, list[i].sid)) {
@@ -215,7 +215,7 @@
             if (sids.length === 0) {
                 // If no job SIDs are provided, we list all jobs.
                 var jobs = this.service.jobs();
-                jobs.refresh(function(err, jobs) {
+                jobs.fetch(function(err, jobs) {
                     if (err) {
                         callback(err);
                         return;
@@ -233,7 +233,7 @@
                 // If certain job SIDs are provided,
                 // then we simply read the properties of those jobs
                 this._foreach(sids, function(job, idx, done) {
-                    job.refresh(function(err, job) {
+                    job.fetch(function(err, job) {
                         if (err) {
                             done(err);
                             return;

@@ -84,7 +84,7 @@ This HTML example uses the Splunk JavaScript SDK to list all jobs:
             }
 
             console.log("Login was successful: " + success);
-            service.jobs().refresh(function(err, jobs) {
+            service.jobs().fetch(function(err, jobs) {
                 var jobList = jobs.list();
                 for(var i = 0; i < jobList.length; i++) {
                     console.log("Job " + i + ": " + jobList[i].sid);
@@ -106,7 +106,7 @@ This example shows how to use the Splunk JavaScript SDK and Node.js to list all 
         }
 
         console.log("Login was successful: " + success);
-        service.jobs().refresh(function(err, jobs) {
+        service.jobs().fetch(function(err, jobs) {
             var jobList = jobs.list();
             for(var i = 0; i < jobList.length; i++) {
                 console.log("Job " + i + ": " + jobList[i].sid);

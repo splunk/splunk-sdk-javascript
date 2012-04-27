@@ -49,7 +49,7 @@ exports.main = function(opts, callback) {
                     done("Error logging in");
                 }
                 
-                service.apps().refresh(done);
+                service.apps().fetch(done);
             },
             // Print them out
             function(apps, done) {           

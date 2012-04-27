@@ -62,7 +62,7 @@
                     Async.whilst(
                         function() { return !job.properties().isDone; },
                         function(iterationDone) {
-                            job.refresh(function(err, job) {
+                            job.fetch(function(err, job) {
                                 if (err) {
                                     callback(err);
                                 }

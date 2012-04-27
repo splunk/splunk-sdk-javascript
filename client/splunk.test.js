@@ -2181,7 +2181,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // List installed apps
          *      var apps = svc.apps();
-         *      apps.refresh(function(err) { console.log(apps.list()); });
+         *      apps.fetch(function(err) { console.log(apps.list()); });
          *
          * @return {splunkjs.Service.Collection} The Applications collection
          *
@@ -2204,7 +2204,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      // List all properties in the 'props.conf' file
          *      var files = svc.configurations();
          *      files.item("props", function(err, propsFile) {
-         *          propsFile.refresh(function(err, props) {
+         *          propsFile.fetch(function(err, props) {
          *              console.log(props.properties()); 
          *          });
          *      });
@@ -2230,7 +2230,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // Check if we have an _internal index
          *      var indexes = svc.configurations();
-         *      indexes.refresh(function(err, indexes) {
+         *      indexes.fetch(function(err, indexes) {
          *          var index = indexes.contains("_internal");
          *          console.log("Was index found: " + !!index);
          *          // `index` contains the Index object.
@@ -2257,7 +2257,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // List all # of saved searches
          *      var savedSearches = svc.savedSearches();
-         *      savedSearches.refresh(function(err, savedSearches) {
+         *      savedSearches.fetch(function(err, savedSearches) {
          *          console.log("# Of Saved Searches: " + savedSearches.list().length);
          *      });
          *
@@ -2282,7 +2282,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // List all job IDs
          *      var jobs = svc.jobs();
-         *      jobs.refresh(function(err, jobs) {
+         *      jobs.fetch(function(err, jobs) {
          *          var list = jobs.list();
          *          for(var i = 0; i < list.length; i++) {
          *              console.log("Job " + (i+1) + ": " + list[i].sid);
@@ -2310,7 +2310,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // List all usernames
          *      var users = svc.users();
-         *      users.refresh(function(err, users) {
+         *      users.fetch(function(err, users) {
          *          var list = users.list();
          *          for(var i = 0; i < list.length; i++) {
          *              console.log("User " + (i+1) + ": " + list[i].properties().name);
@@ -2337,7 +2337,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // List all views
          *      var views = svc.views();
-         *      views.refresh(function(err, views) {
+         *      views.fetch(function(err, views) {
          *          var list = views.list();
          *          for(var i = 0; i < list.length; i++) {
          *              console.log("View " + (i+1) + ": " + list[i].properties().name);
@@ -2440,7 +2440,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 else {
                     var username = response.data.entry[0].content.username;
                     var user = new root.User(that, username);
-                    user.refresh(function() {
+                    user.fetch(function() {
                         if (req.wasAborted) {
                             return; // aborted, so ignore
                         }
@@ -2472,7 +2472,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             callback = callback || function() {};
             
             var serverInfo = new root.ServerInfo(this);
-            return serverInfo.refresh(callback);
+            return serverInfo.fetch(callback);
         },
         
         /**
@@ -2752,7 +2752,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
             this._load       = utils.bind(this, this._load);
-            this.refresh     = utils.bind(this, this.refresh);
+            this.fetch       = utils.bind(this, this.fetch);
             this.properties  = utils.bind(this, this.properties);
             this.state       = utils.bind(this, this.state);
             this.path        = utils.bind(this, this.path);
@@ -2783,7 +2783,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Refresh the resource
          *
-         * This will unconditionally refresh the object from the server
+         * This will fetch the object from the server
          * and load it up.
          *
          * @param {Function} callback A callback when the object is retrieved: `(err, resource)`
@@ -2791,7 +2791,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @method splunkjs.Service.Resource
          * @protected
          */
-        refresh: function(callback) {
+        fetch: function(callback) {
             throw new Error("MUST BE OVERRIDDEN");
         },
         
@@ -2829,21 +2829,21 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      * with certain operations (like "properties", "update", "delete").
      *
      * This `Entity` class provides basic methods for handling Splunk entities, 
-     * such as refreshing them, updating, etc.
+     * such as fetching them, updating, etc.
      *
      * @class splunkjs.Service.Entity
      * @extends splunkjs.Service.Resource
      */
     root.Entity = root.Resource.extend({
         /**
-         * Whether or not to call `refresh()` after an update
-         * to fetch the updated item. By default we don't refresh
+         * Whether or not to call `fetch()` after an update
+         * to fetch the updated item. By default we don't fetch
          * the entity, as the endpoint will return (echo) the updated
          * entity
          *
          * @method splunkjs.Service.Entity
          */
-        refreshOnUpdate: false,
+        fetchOnUpdate: false,
         
         /**
          * Constructor for splunkjs.Service.Entity
@@ -2862,7 +2862,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
             this._load     = utils.bind(this, this._load);
-            this.refresh   = utils.bind(this, this.refresh);
+            this.fetch     = utils.bind(this, this.fetch);
             this.remove    = utils.bind(this, this.remove);
             this.update    = utils.bind(this, this.update);
             this.fields    = utils.bind(this, this.fields);
@@ -2974,7 +2974,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Refresh the resource
          *
-         * This will unconditionally refresh the object from the server
+         * This will fetch the object from the server
          * and load it up.
          *
          * @param {Object} options Optional dictionary of collection filtering and pagination options
@@ -2982,7 +2982,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @method splunkjs.Service.Entity
          */
-        refresh: function(options, callback) {
+        fetch: function(options, callback) {
             if (!callback && utils.isFunction(options)) {
                 callback = options;
                 options = {};
@@ -3042,12 +3042,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             var that = this;
             var req = this.post("", props, function(err, response) {
-                if (!err && !that.refreshOnUpdate) {
+                if (!err && !that.fetchOnUpdate) {
                     that._load(response.data.entry);
                     callback(err, that);
                 }
-                else if (!err && that.refreshOnUpdate) {
-                    that.refresh(function() {
+                else if (!err && that.fetchOnUpdate) {
+                    that.fetch(function() {
                         if (req.wasAborted) {
                             return; // aborted, so ignore
                         }
@@ -3149,14 +3149,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      */
     root.Collection = root.Resource.extend({
         /**
-         * Whether or not to call `refresh()` after an entity
-         * is created. By default we don't refresh
+         * Whether or not to call `fetch()` after an entity
+         * is created. By default we don't fetch
          * the entity, as the endpoint will return (echo) the created
          * entity
          *
          * @method splunkjs.Service.Collection
          */
-        refreshOnEntityCreation: false,
+        fetchOnEntityCreation: false,
         
         /**
          * Constructor for splunkjs.Service.Collection
@@ -3175,7 +3175,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
             this._load             = utils.bind(this, this._load);
-            this.refresh           = utils.bind(this, this.refresh);
+            this.fetch           = utils.bind(this, this.fetch);
             this.create            = utils.bind(this, this.create);
             this.list              = utils.bind(this, this.list);
             this.contains          = utils.bind(this, this.contains);
@@ -3275,7 +3275,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Refresh the resource
          *
-         * This will unconditionally refresh the object from the server
+         * This will unconditionally fetch the object from the server
          * and load it up.
          *
          * @param {Object} options Dictionary of collection filtering and pagination options
@@ -3283,7 +3283,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @method splunkjs.Service.Collection
          */
-        refresh: function(options, callback) {
+        fetch: function(options, callback) {
             if (!callback && utils.isFunction(options)) {
                 callback = options;
                 options = {};
@@ -3366,8 +3366,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     var entity = that.instantiateEntity(props);
                     entity._load(props); 
                     
-                    if (that.refreshOnEntityCreation) {
-                        entity.refresh(function() {
+                    if (that.fetchOnEntityCreation) {
+                        entity.fetch(function() {
                             if (req.wasAborted) {
                                 return; // aborted, so ignore
                             }
@@ -3393,7 +3393,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @example
          *
          *      var apps = service.apps();
-         *      apps.refresh(function(err, apps) {
+         *      apps.fetch(function(err, apps) {
          *          var appList = apps.list();
          *          console.log(appList.length);
          *      });
@@ -3417,7 +3417,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @example
          *
          *      var apps = service.apps();
-         *      apps.refresh(function(err, apps) {
+         *      apps.fetch(function(err, apps) {
          *          var app = apps.contains("search");
          *          console.log("Search App Found: " + !!app);
          *          // `app` contains the Application object.
@@ -3681,7 +3681,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             if (!params.search) {
                 var update = this._super;
-                var req = this.refresh(function(err, search) {
+                var req = this.fetch(function(err, search) {
                     if (err) {
                         callback(err);
                     }
@@ -3763,12 +3763,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      */
     root.Application = root.Entity.extend({
         /**
-         * Whether or not to call `refresh()` after an update
+         * Whether or not to call `fetch()` after an update
          * to fetch the updated item.
          *
          * @method splunkjs.Service.Application
          */
-        refreshOnUpdate: true,
+        fetchOnUpdate: true,
         
         /**
          * REST path for this resource (with no namespace)
@@ -3866,14 +3866,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      */  
     root.Applications = root.Collection.extend({
         /**
-         * Whether or not to call `refresh()` after an entity
-         * is created. By default we don't refresh
+         * Whether or not to call `fetch()` after an entity
+         * is created. By default we don't fetch
          * the entity, as the endpoint will return (echo) the created
          * entity
          *
          * @method splunkjs.Service.Applications
          */
-        refreshOnEntityCreation: true,
+        fetchOnEntityCreation: true,
         
         /**
          * REST path for this resource (with no namespace)
@@ -3986,14 +3986,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      */  
     root.Users = root.Collection.extend({
         /**
-         * Whether or not to call `refresh()` after an entity
-         * is created. By default we don't refresh
+         * Whether or not to call `fetch()` after an entity
+         * is created. By default we don't fetch
          * the entity, as the endpoint will return (echo) the created
          * entity
          *
          * @method splunkjs.Service.Users
          */
-        refreshOnEntityCreation: true,
+        fetchOnEntityCreation: true,
         
         /**
          * REST path for this resource (with no namespace)
@@ -4054,7 +4054,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     var props = {name: params.name};
                     
                     var entity = that.instantiateEntity(props);                    
-                    entity.refresh(function() {
+                    entity.fetch(function() {
                         if (req.wasAborted) {
                             return; // aborted, so ignore
                         }
@@ -4436,14 +4436,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      */  
     root.Configurations = root.Collection.extend({
         /**
-         * Whether or not to call `refresh()` after an entity
-         * is created. By default we don't refresh
+         * Whether or not to call `fetch()` after an entity
+         * is created. By default we don't fetch
          * the entity, as the endpoint will return (echo) the created
          * entity
          *
          * @method splunkjs.Service.Configurations
          */
-        refreshOnEntityCreation: true,
+        fetchOnEntityCreation: true,
         
         /**
          * REST path for this resource (with no namespace)
@@ -4516,7 +4516,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 }
                 else {
                     var entity = new root.ConfigurationFile(that.service, filename);
-                    entity.refresh(function() {
+                    entity.fetch(function() {
                         if (req.wasAborted) {
                             return; // aborted, so ignore
                         }
@@ -5809,7 +5809,7 @@ require.define("/lib/searcher.js", function (require, module, exports, __dirname
             Async.whilst(
                 function() { return !stopLooping; },
                 function(iterationDone) {
-                    job.refresh(function(err, job) {
+                    job.fetch(function(err, job) {
                         if (err) {
                             iterationDone(err);
                             return;
@@ -7851,11 +7851,11 @@ exports.setup = function(svc) {
                         },
                         function(savedSearch, done) {
                             // Refresh the 11 saved searches
-                            savedSearches11.refresh(done);
+                            savedSearches11.fetch(done);
                         },
                         function(savedSearches, done) {
                             // Refresh the 21 saved searches
-                            savedSearches21.refresh(done);
+                            savedSearches21.fetch(done);
                         },
                         function(savedSearches, done) {                            
                             var entity11 = savedSearches11.item(searchName);
@@ -7904,15 +7904,15 @@ exports.setup = function(svc) {
                         },
                         function(savedSearch, done) {
                             // Refresh the -/1 namespace
-                            savedSearches_1.refresh(done);
+                            savedSearches_1.fetch(done);
                         },
                         function(savedSearches, done) {
                             // Refresh the 1/1 namespace
-                            savedSearches11.refresh(done);
+                            savedSearches11.fetch(done);
                         },
                         function(savedSearches, done) {
                             // Refresh the 2/1 namespace
-                            savedSearches21.refresh(done);
+                            savedSearches21.fetch(done);
                         },
                         function(savedSearches, done) {                            
                             var entity11 = savedSearches11.item(searchName, that.namespace11);
@@ -7940,11 +7940,11 @@ exports.setup = function(svc) {
                         },
                         function(savedSearch, done) {
                             // Refresh the 1/1 namespace
-                            savedSearches11.refresh(done);
+                            savedSearches11.fetch(done);
                         },
                         function(savedSearches, done) {
                             // Refresh the 2/1 namespace
-                            savedSearches21.refresh(done);
+                            savedSearches21.fetch(done);
                         },
                         function(savedSearches, done) {  
                             // Ensure that we can't get the item from the generic
@@ -7988,7 +7988,7 @@ exports.setup = function(svc) {
             
             "Callback#delete test applications": function(test) {
                 var apps = this.service.apps();
-                apps.refresh(function(err, apps) {
+                apps.fetch(function(err, apps) {
                     var appList = apps.list();
                     
                     Async.parallelEach(
@@ -8010,7 +8010,7 @@ exports.setup = function(svc) {
             
             "Callback#delete test users": function(test) {
                 var users = this.service.users();
-                users.refresh(function(err, users) {
+                users.fetch(function(err, users) {
                     var userList = users.list();
                     
                     Async.parallelEach(
@@ -8074,7 +8074,7 @@ exports.setup = function(svc) {
             },
 
             "Callback#List jobs": function(test) {
-                this.service.jobs().refresh(function(err, jobs) {
+                this.service.jobs().fetch(function(err, jobs) {
                     test.ok(!err);
                     test.ok(jobs);
                     
@@ -8099,7 +8099,7 @@ exports.setup = function(svc) {
                     test.ok(job);
                     test.strictEqual(job.sid, sid);
 
-                    jobs.refresh(function(err, jobs) {
+                    jobs.fetch(function(err, jobs) {
                         test.ok(!err);
                         var job = jobs.contains(sid);
                         test.ok(job);
@@ -8313,7 +8313,7 @@ exports.setup = function(svc) {
                             that.service.jobs().search('search index=_internal | head 1', {id: sid}, done);
                         },
                         function(job, done) {
-                            job.refresh(done);
+                            job.fetch(done);
                         },
                         function(job, done) {
                             var ttl = job.properties()["ttl"];
@@ -8322,7 +8322,7 @@ exports.setup = function(svc) {
                             job.setTTL(ttl*2, done);
                         },
                         function(job, done) {
-                            job.refresh(done);
+                            job.fetch(done);
                         },
                         function(job, done) {
                             var ttl = job.properties()["ttl"];
@@ -8350,7 +8350,7 @@ exports.setup = function(svc) {
                             service.jobs().search('search index=_internal | head 1 | sleep 5', {id: sid}, done);
                         },
                         function(job, done) {
-                            job.refresh(done);
+                            job.fetch(done);
                         },
                         function(job, done) {
                             var priority = job.properties()["priority"];
@@ -8358,7 +8358,7 @@ exports.setup = function(svc) {
                             job.setPriority(priority + 1, done);
                         },
                         function(job, done) {
-                            job.refresh(done);
+                            job.fetch(done);
                         },
                         function(job, done) {
                             job.cancel(done);
@@ -8486,7 +8486,7 @@ exports.setup = function(svc) {
                             that.service.jobs().search('search index=_internal | head 1', {id: sid}, done);
                         },
                         function(job, done) {
-                            job.refresh(done);
+                            job.fetch(done);
                         },
                         function(job, done) {
                             test.ok(job);
@@ -8494,7 +8494,7 @@ exports.setup = function(svc) {
                             Async.sleep(1200, function() { job.touch(done); });
                         },
                         function(job, done) {
-                            job.refresh(done);
+                            job.fetch(done);
                         },
                         function(job, done) {
                             test.ok(originalTime !== job.updated());
@@ -8639,7 +8639,7 @@ exports.setup = function(svc) {
                          
             "Callback#list applications": function(test) {
                 var apps = this.service.apps();
-                apps.refresh(function(err, apps) {
+                apps.fetch(function(err, apps) {
                     var appList = apps.list();
                     test.ok(appList.length > 0);
                     test.done();
@@ -8648,7 +8648,7 @@ exports.setup = function(svc) {
                    
             "Callback#contains applications": function(test) {
                 var apps = this.service.apps();
-                apps.refresh(function(err, apps) {
+                apps.fetch(function(err, apps) {
                     var app = apps.contains("search");
                     test.ok(app);
                     test.done();
@@ -8661,7 +8661,7 @@ exports.setup = function(svc) {
                 
                 apps.create({name: name}, function(err, app) {
                     var appName = app.name;
-                    apps.refresh(function(err, apps) {
+                    apps.fetch(function(err, apps) {
                         var entity = apps.contains(appName);
                         test.ok(entity);
                         app.remove(function() {
@@ -8710,7 +8710,7 @@ exports.setup = function(svc) {
             
             "Callback#delete test applications": function(test) {
                 var apps = this.service.apps();
-                apps.refresh(function(err, apps) {
+                apps.fetch(function(err, apps) {
                     var appList = apps.list();
                     
                     Async.parallelEach(
@@ -8739,7 +8739,7 @@ exports.setup = function(svc) {
                    
             "Callback#list": function(test) {
                 var searches = this.service.savedSearches();
-                searches.refresh(function(err, searches) {
+                searches.fetch(function(err, searches) {
                     var savedSearches = searches.list();
                     test.ok(savedSearches.length > 0);
                     
@@ -8753,7 +8753,7 @@ exports.setup = function(svc) {
             
             "Callback#contains": function(test) {
                 var searches = this.service.savedSearches();
-                searches.refresh(function(err, searches) {
+                searches.fetch(function(err, searches) {
                     var search = searches.contains("Indexing workload");
                     test.ok(search);
                     
@@ -8763,7 +8763,7 @@ exports.setup = function(svc) {
             
             "Callback#suppress": function(test) {
                 var searches = this.service.savedSearches();
-                searches.refresh(function(err, searches) {
+                searches.fetch(function(err, searches) {
                     var search = searches.contains("Indexing workload");
                     test.ok(search);
                     
@@ -8776,7 +8776,7 @@ exports.setup = function(svc) {
             
             "Callback#list limit count": function(test) {
                 var searches = this.service.savedSearches();
-                searches.refresh({count: 2}, function(err, searches) {
+                searches.fetch({count: 2}, function(err, searches) {
                     var savedSearches = searches.list();
                     test.strictEqual(savedSearches.length, 2);
                     
@@ -8790,7 +8790,7 @@ exports.setup = function(svc) {
             
             "Callback#list filter": function(test) {
                 var searches = this.service.savedSearches();
-                searches.refresh({search: "Error"}, function(err, searches) {
+                searches.fetch({search: "Error"}, function(err, searches) {
                     var savedSearches = searches.list();
                     test.ok(savedSearches.length > 0);
                     
@@ -8804,7 +8804,7 @@ exports.setup = function(svc) {
             
             "Callback#list offset": function(test) {
                 var searches = this.service.savedSearches();
-                searches.refresh({offset: 2, count: 1}, function(err, searches) {
+                searches.fetch({offset: 2, count: 1}, function(err, searches) {
                     var savedSearches = searches.list();
                     test.strictEqual(searches.paging().offset, 2);
                     test.strictEqual(searches.paging().count, 1);
@@ -8858,7 +8858,7 @@ exports.setup = function(svc) {
                             test.strictEqual(search.properties().search, updatedSearch);
                             test.strictEqual(search.properties().description, updatedDescription);
                             
-                            search.refresh(done);
+                            search.fetch(done);
                         },
                         function(search, done) {
                             // Verify that we have the required fields
@@ -8949,7 +8949,7 @@ exports.setup = function(svc) {
             
             "Callback#delete test saved searches": function(test) {
                 var searches = this.service.savedSearches({owner: this.service.username, app: "xml2json"});
-                searches.refresh(function(err, searches) {
+                searches.fetch(function(err, searches) {
                     var searchList = searches.list();            
                     Async.parallelEach(
                         searchList,
@@ -8981,7 +8981,7 @@ exports.setup = function(svc) {
                 var namespace = {owner: "admin", app: "search"};
                 
                 Async.chain([
-                    function(done) { that.service.configurations(namespace).refresh(done); },
+                    function(done) { that.service.configurations(namespace).fetch(done); },
                     function(props, done) { 
                         var files = props.list();
                         test.ok(files.length > 0);
@@ -8999,11 +8999,11 @@ exports.setup = function(svc) {
                 var namespace = {owner: "admin", app: "search"};
                 
                 Async.chain([
-                    function(done) { that.service.configurations(namespace).refresh(done); },
+                    function(done) { that.service.configurations(namespace).fetch(done); },
                     function(props, done) { 
                         var file = props.contains("web");
                         test.ok(file);
-                        file.refresh(done);
+                        file.fetch(done);
                     },
                     function(file, done) {
                         test.strictEqual(file.name, "web");
@@ -9021,18 +9021,18 @@ exports.setup = function(svc) {
                 var namespace = {owner: "admin", app: "search"};
                 
                 Async.chain([
-                    function(done) { that.service.configurations(namespace).refresh(done); },
+                    function(done) { that.service.configurations(namespace).fetch(done); },
                     function(props, done) { 
                         var file = props.contains("web");
                         test.ok(file);
-                        file.refresh(done);
+                        file.fetch(done);
                     },
                     function(file, done) {
                         test.strictEqual(file.name, "web");
                         
                         var stanza = file.contains("settings");
                         test.ok(stanza);
-                        stanza.refresh(done);
+                        stanza.fetch(done);
                     },
                     function(stanza, done) {
                         test.ok(stanza.properties().hasOwnProperty("httpport"));
@@ -9054,7 +9054,7 @@ exports.setup = function(svc) {
                 Async.chain([
                     function(done) {
                         var configs = svc.configurations(namespace); 
-                        configs.refresh(done);
+                        configs.fetch(done);
                     },
                     function(configs, done) {
                         configs.create({__conf: fileName}, done);
@@ -9071,7 +9071,7 @@ exports.setup = function(svc) {
                     },
                     function(done) {
                         var file = new splunkjs.Service.ConfigurationFile(svc, fileName);
-                        file.refresh(done);
+                        file.fetch(done);
                     },
                     function(file, done) {
                         var stanza = file.contains("stanza");
@@ -9104,7 +9104,7 @@ exports.setup = function(svc) {
                          
             "Callback#list indexes": function(test) {
                 var indexes = this.service.indexes();
-                indexes.refresh(function(err, indexes) {
+                indexes.fetch(function(err, indexes) {
                     var indexList = indexes.list();
                     test.ok(indexList.length > 0);
                     test.done();
@@ -9115,7 +9115,7 @@ exports.setup = function(svc) {
                 var indexes = this.service.indexes();
                 var indexName = this.indexName;
                 
-                indexes.refresh(function(err, indexes) {
+                indexes.fetch(function(err, indexes) {
                     var index = indexes.contains(indexName);
                     test.ok(index);
                     test.done();
@@ -9130,7 +9130,7 @@ exports.setup = function(svc) {
                 
                 Async.chain([
                         function(callback) {
-                            indexes.refresh(callback);     
+                            indexes.fetch(callback);     
                         },
                         function(indexes, callback) {
                             var index = indexes.contains(name);
@@ -9176,7 +9176,7 @@ exports.setup = function(svc) {
                 
                 Async.chain([
                         function(callback) {
-                            indexes.refresh(callback);     
+                            indexes.fetch(callback);     
                         },
                         function(indexes, callback) {
                             var index = indexes.contains(name);
@@ -9186,7 +9186,7 @@ exports.setup = function(svc) {
                         },
                         function(index, callback) {
                             test.ok(index);
-                            index.refresh(callback);
+                            index.fetch(callback);
                         },
                         function(index, callback) {
                             test.ok(index);
@@ -9196,7 +9196,7 @@ exports.setup = function(svc) {
                         },
                         function(index, callback) {
                             test.ok(index);
-                            index.refresh(callback);
+                            index.fetch(callback);
                         },
                         function(index, callback) {
                             test.ok(index);
@@ -9248,7 +9248,7 @@ exports.setup = function(svc) {
                 var indexes = this.service.indexes();
                 Async.chain([
                         function(done) {
-                            indexes.refresh(done);     
+                            indexes.fetch(done);     
                         },
                         function(indexes, done) {
                             var index = indexes.contains(indexName);
@@ -9296,7 +9296,7 @@ exports.setup = function(svc) {
             "Callback#List users": function(test) {
                 var service = this.service;
                 
-                service.users().refresh(function(err, users) {
+                service.users().fetch(function(err, users) {
                     var userList = users.list();
                     test.ok(!err);
                     test.ok(users);
@@ -9433,7 +9433,7 @@ exports.setup = function(svc) {
             
             "Callback#delete test users": function(test) {
                 var users = this.service.users();
-                users.refresh(function(err, users) {
+                users.fetch(function(err, users) {
                     var userList = users.list();
                     
                     Async.parallelEach(
@@ -9485,7 +9485,7 @@ exports.setup = function(svc) {
             "Callback#List views": function(test) {
                 var service = this.service;
                 
-                service.views({owner: "admin", app: "search"}).refresh(function(err, views) {
+                service.views({owner: "admin", app: "search"}).fetch(function(err, views) {
                     test.ok(!err);
                     test.ok(views);
                     
@@ -9652,7 +9652,7 @@ require.define("/tests/utils.js", function (require, module, exports, __dirname,
             function() { return !condition(obj) && (i++ < iterations); },
             function(done) {
                 Async.sleep(500, function() {
-                    obj.refresh(done); 
+                    obj.fetch(done); 
                 });
             },
             function(err) {
@@ -10445,7 +10445,7 @@ exports.main = function(opts, done) {
         } 
         
         // Now that we're logged in, let's get a listing of all the apps.
-        service.apps().refresh(function(err, apps) {
+        service.apps().fetch(function(err, apps) {
             if (err) {
                 console.log("There was an error retrieving the list of applications:", err);
                 done(err);
@@ -10521,7 +10521,7 @@ exports.main = function(opts, callback) {
                     done("Error logging in");
                 }
                 
-                service.apps().refresh(done);
+                service.apps().fetch(done);
             },
             // Print them out
             function(apps, done) {           
@@ -10595,7 +10595,7 @@ exports.main = function(opts, done) {
         } 
         
         // Now that we're logged in, let's get a listing of all the saved searches.
-        service.savedSearches().refresh(function(err, searches) {
+        service.savedSearches().fetch(function(err, searches) {
             if (err) {
                 console.log("There was an error retrieving the list of saved searches:", err);
                 done(err);
@@ -10672,7 +10672,7 @@ exports.main = function(opts, callback) {
                     done("Error logging in");
                 }
                 
-                service.savedSearches().refresh(done);
+                service.savedSearches().fetch(done);
             },
             // Print them out
             function(searches, done) {
@@ -10750,7 +10750,7 @@ exports.main = function(opts, done) {
         var name = "My Awesome Saved Search";
         
         // Now that we're logged in, Let's create a saved search
-        service.savedSearches().refresh(function(err, savedSearches) {
+        service.savedSearches().fetch(function(err, savedSearches) {
             if (err) {
                 console.log("There was an error in fetching the saved searches");
                 done(err);
@@ -10916,8 +10916,8 @@ exports.main = function(opts, callback) {
                     function(iterationDone) {
                         Async.sleep(1000, function() {
                             // Refresh the job and note how many events we've looked at so far
-                            job.refresh(function(err) {
-                                console.log("-- refreshing, " + (job.properties().eventCount || 0) + " events so far");
+                            job.fetch(function(err) {
+                                console.log("-- fetching, " + (job.properties().eventCount || 0) + " events so far");
                                 iterationDone();
                             });
                         });
@@ -11027,7 +11027,7 @@ exports.main = function(opts, callback) {
             },
             // The job is done, but let's some statistics from the server.
             function(job, done) {
-                job.refresh(done);
+                job.fetch(done);
             },
             // Print out the statistics and get the results
             function(job, done) {
@@ -11370,7 +11370,7 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
             // If it is, we wrap it up in a splunkjs.Job object, and invoke
             // our function on it.
             var jobsList = [];
-            this.service.jobs().refresh(function(err, jobs) {
+            this.service.jobs().fetch(function(err, jobs) {
                 var list = jobs.list() || [];
                 for(var i = 0; i < list.length; i++) {
                     if (utils.contains(sids, list[i].sid)) {
@@ -11494,7 +11494,7 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
             if (sids.length === 0) {
                 // If no job SIDs are provided, we list all jobs.
                 var jobs = this.service.jobs();
-                jobs.refresh(function(err, jobs) {
+                jobs.fetch(function(err, jobs) {
                     if (err) {
                         callback(err);
                         return;
@@ -11512,7 +11512,7 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
                 // If certain job SIDs are provided,
                 // then we simply read the properties of those jobs
                 this._foreach(sids, function(job, idx, done) {
-                    job.refresh(function(err, job) {
+                    job.fetch(function(err, job) {
                         if (err) {
                             done(err);
                             return;
@@ -11727,7 +11727,7 @@ require.define("/examples/node/search.js", function (require, module, exports, _
                     Async.whilst(
                         function() { return !job.properties().isDone; },
                         function(iterationDone) {
-                            job.refresh(function(err, job) {
+                            job.fetch(function(err, job) {
                                 if (err) {
                                     callback(err);
                                 }
