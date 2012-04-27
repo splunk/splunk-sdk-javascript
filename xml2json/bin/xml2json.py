@@ -178,7 +178,7 @@ def from_feed(content, timings={}, messages={}):
                 collection["paging"] = paging
                 
                 try:
-                    paging["page"] = int(root.findall('{%s}itemsPerPage' % (OPENSEARCH_NS))[0].text)
+                    paging["perPage"] = int(root.findall('{%s}itemsPerPage' % (OPENSEARCH_NS))[0].text)
                     paging["offset"] = int(root.findall('{%s}startIndex' % (OPENSEARCH_NS))[0].text)
                     paging["total"] = int(root.findall('{%s}totalResults' % (OPENSEARCH_NS))[0].text)
                 except:
@@ -190,10 +190,7 @@ def from_feed(content, timings={}, messages={}):
                 # if it is "none" or actually
                 # 0, since they are both false-y values
                 if paging["total"] is None:
-                    paging["count"] = len(entries)
-                    paging["total"] = paging["count"]
-                else:
-                    paging["count"] = min(paging["total"], len(entries))
+                    paging["total"] = len(entries)
                 
                 try:
                     

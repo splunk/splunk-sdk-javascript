@@ -7038,9 +7038,8 @@ exports.setup = function(svc) {
         "Callback#get": function(test) { 
             this.service.get("search/jobs", {count: 2}, function(err, res) {
                 test.strictEqual(res.data.paging.offset, 0);
-                test.ok(res.data.paging.count <= res.data.paging.total);
-                test.strictEqual(res.data.paging.count, 2);
-                test.strictEqual(res.data.paging.count, res.data.entry.length);
+                test.ok(res.data.entry.length <= res.data.paging.total);
+                test.strictEqual(res.data.entry.length, 2);
                 test.ok(res.data.entry[0].content.sid);
                 test.done();
             });
@@ -7068,9 +7067,8 @@ exports.setup = function(svc) {
             
             service.get("search/jobs", {count: 2}, function(err, res) {
                 test.strictEqual(res.data.paging.offset, 0);
-                test.ok(res.data.paging.count <= res.data.paging.total);
-                test.strictEqual(res.data.paging.count, 2);
-                test.strictEqual(res.data.paging.count, res.data.entry.length);
+                test.ok(res.data.entry.length <= res.data.paging.total);
+                test.strictEqual(res.data.entry.length, 2);
                 test.ok(res.data.entry[0].content.sid);
                 test.done();
             });
@@ -7130,9 +7128,8 @@ exports.setup = function(svc) {
             
             service.get("search/jobs", {count: 2}, function(err, res) {
                 test.strictEqual(res.data.paging.offset, 0);
-                test.ok(res.data.paging.count <= res.data.paging.total);
-                test.strictEqual(res.data.paging.count, 2);
-                test.strictEqual(res.data.paging.count, res.data.entry.length);
+                test.ok(res.data.entry.length <= res.data.paging.total);
+                test.strictEqual(res.data.entry.length, 2);
                 test.ok(res.data.entry[0].content.sid);
                 test.done();
             });
@@ -7423,9 +7420,8 @@ exports.setup = function(svc) {
         "Callback#request get": function(test) { 
             this.service.request("search/jobs?count=2", "GET", {"X-TestHeader": 1}, "", function(err, res) {
                 test.strictEqual(res.data.paging.offset, 0);
-                test.ok(res.data.paging.count <= res.data.paging.total);
-                test.strictEqual(res.data.paging.count, 2);
-                test.strictEqual(res.data.paging.count, res.data.entry.length);
+                test.ok(res.data.entry.length <= res.data.paging.total);
+                test.strictEqual(res.data.entry.length, 2);
                 test.ok(res.data.entry[0].content.sid);
                 
                 if (res.response.request) {
@@ -7480,9 +7476,8 @@ exports.setup = function(svc) {
             
             service.request("search/jobs?count=2", "GET", {"X-TestHeader": 1}, "", function(err, res) {
                 test.strictEqual(res.data.paging.offset, 0);
-                test.ok(res.data.paging.count <= res.data.paging.total);
-                test.strictEqual(res.data.paging.count, 2);
-                test.strictEqual(res.data.paging.count, res.data.entry.length);
+                test.ok(res.data.entry.length <= res.data.paging.total);
+                test.strictEqual(res.data.entry.length, 2);
                 test.ok(res.data.entry[0].content.sid);
                 
                 if (res.response.request) {
@@ -7547,9 +7542,8 @@ exports.setup = function(svc) {
             
             service.request("search/jobs?count=2", "GET", {"X-TestHeader": 1}, "", function(err, res) {
                 test.strictEqual(res.data.paging.offset, 0);
-                test.ok(res.data.paging.count <= res.data.paging.total);
-                test.strictEqual(res.data.paging.count, 2);
-                test.strictEqual(res.data.paging.count, res.data.entry.length);
+                test.ok(res.data.entry.length <= res.data.paging.total);
+                test.strictEqual(res.data.entry.length, 2);
                 test.ok(res.data.entry[0].content.sid);
                 
                 if (res.response.request) {
@@ -8793,8 +8787,7 @@ exports.setup = function(svc) {
                 searches.fetch({offset: 2, count: 1}, function(err, searches) {
                     var savedSearches = searches.list();
                     test.strictEqual(searches.paging().offset, 2);
-                    test.strictEqual(searches.paging().count, 1);
-                    test.strictEqual(searches.paging().page, 1);
+                    test.strictEqual(searches.paging().perPage, 1);
                     test.strictEqual(savedSearches.length, 1);
                     
                     for(var i = 0; i < savedSearches.length; i++) {
