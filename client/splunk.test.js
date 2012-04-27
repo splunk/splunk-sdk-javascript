@@ -2231,9 +2231,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      // Check if we have an _internal index
          *      var indexes = svc.configurations();
          *      indexes.fetch(function(err, indexes) {
-         *          var index = indexes.contains("_internal");
+         *          var index = indexes.item("_internal");
          *          console.log("Was index found: " + !!index);
-         *          // `index` contains the Index object.
+         *          // `index` is an Index object.
          *      });
          *
          * @param {Object} namespace Namespace information (owner, app, sharing)
@@ -3178,7 +3178,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.fetch           = utils.bind(this, this.fetch);
             this.create            = utils.bind(this, this.create);
             this.list              = utils.bind(this, this.list);
-            this.contains          = utils.bind(this, this.contains);
             this.item              = utils.bind(this, this.item);
             this.instantiateEntity = utils.bind(this, this.instantiateEntity);
             
@@ -3310,25 +3309,79 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Fetch a specific entity.
+         * Get a specific entity.
          *
-         * Return a specific entity given its name.
+         * Return a specific entity given its name from the
+         * collection
          *
          * @example
          *
          *      var apps = service.apps();
-         *      apps.item("search", function(err, app) {
-         *          console.log(app.properties());
-         *      })
+         *      apps.fetch(function(err, apps) {
+         *          var app = apps.item("search");
+         *          console.log("Search App Found: " + !!app);
+         *          // `app` is an Application object.
+         *      });
          *
-         * @param {String} name The name of the entity to retrieve
+         * @param {String} id The name of the entity to retrieve
          * @param {Object} namespace Namespace information (owner, app, sharing)
          * @returns {splunkjs.Service.Entity} The entity with that name/namespace or null if none is found
          *
          * @method splunkjs.Service.Collection
          */
-        item: function(name, namespace) {    
-            return this.contains(name, namespace);     
+        item: function(id, namespace) {                
+            if (utils.isEmpty(namespace)) {
+                namespace = null;
+            }          
+            
+            if (!id) {
+                throw new Error("Must suply a non-empty name.");
+            }
+            
+            var fullPath = null;
+            if (this._entitiesByName.hasOwnProperty(id)) {
+                var entities = this._entitiesByName[id];                 
+                
+                if (entities.length === 1 && !namespace) {
+                    // If there is only one entity with the
+                    // specified name and the user did not
+                    // specify a namespace, then we just
+                    // return it
+                    return entities[0];
+                }
+                else if (entities.length === 1 && namespace) {
+                    // If we specified a namespace, then we 
+                    // only return the entity if it matches
+                    // the full path
+                    fullPath = this.service.fullpath(entities[0].path(), namespace);
+                    if (entities[0].qualifiedPath === fullPath) {
+                        return entities[0];
+                    }
+                    else {
+                        return null;
+                    }
+                }
+                else if (entities.length > 1 && !namespace) {
+                    // If there is more than one entity and we didn't
+                    // specify a namespace, then we return an error
+                    // saying the match is ambiguous
+                    throw new Error("Ambiguous match for name '" + id + "'");
+                }
+                else {
+                    // There is more than one entity, and we do have
+                    // a namespace, so we try and find it
+                    for(var i = 0; i < entities.length; i++) {
+                        var entity = entities[i];
+                        fullPath = this.service.fullpath(entities[i].path(), namespace);
+                        if (entity.qualifiedPath === fullPath) {
+                            return entity;
+                        }
+                    }                            
+                }
+            }
+            else {
+                return null;
+            }    
         },
         
         /**
@@ -3406,82 +3459,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             callback = callback || function() {};
             
             return utils.clone(this._entities);
-        },
-        
-        /**
-         * Check whether a specific entity exists
-         *
-         * Check to see if the collection contains a specific entity, and if so,
-         * return that entity.
-         *
-         * @example
-         *
-         *      var apps = service.apps();
-         *      apps.fetch(function(err, apps) {
-         *          var app = apps.contains("search");
-         *          console.log("Search App Found: " + !!app);
-         *          // `app` contains the Application object.
-         *      });
-         *
-         * @param {String} id The name of the entity to retrieve
-         * @param {Object} namespace Namespace information (owner, app, sharing)
-         * @returns {splunkjs.Service.Entity} The entity with that name/namespace or null if none is found
-         *
-         * @method splunkjs.Service.Collection
-         */
-        contains: function(id, namespace) {                
-            if (utils.isEmpty(namespace)) {
-                namespace = null;
-            }          
-            
-            if (!id) {
-                throw new Error("Must suply a non-empty name.");
-            }
-            
-            var fullPath = null;
-            if (this._entitiesByName.hasOwnProperty(id)) {
-                var entities = this._entitiesByName[id];                 
-                
-                if (entities.length === 1 && !namespace) {
-                    // If there is only one entity with the
-                    // specified name and the user did not
-                    // specify a namespace, then we just
-                    // return it
-                    return entities[0];
-                }
-                else if (entities.length === 1 && namespace) {
-                    // If we specified a namespace, then we 
-                    // only return the entity if it matches
-                    // the full path
-                    fullPath = this.service.fullpath(entities[0].path(), namespace);
-                    if (entities[0].qualifiedPath === fullPath) {
-                        return entities[0];
-                    }
-                    else {
-                        return null;
-                    }
-                }
-                else if (entities.length > 1 && !namespace) {
-                    // If there is more than one entity and we didn't
-                    // specify a namespace, then we return an error
-                    // saying the match is ambiguous
-                    throw new Error("Ambiguous match for name '" + id + "'");
-                }
-                else {
-                    // There is more than one entity, and we do have
-                    // a namespace, so we try and find it
-                    for(var i = 0; i < entities.length; i++) {
-                        var entity = entities[i];
-                        fullPath = this.service.fullpath(entities[i].path(), namespace);
-                        if (entity.qualifiedPath === fullPath) {
-                            return entity;
-                        }
-                    }                            
-                }
-            }
-            else {
-                return null;
-            }
         }
     });
     
@@ -8101,7 +8078,7 @@ exports.setup = function(svc) {
 
                     jobs.fetch(function(err, jobs) {
                         test.ok(!err);
-                        var job = jobs.contains(sid);
+                        var job = jobs.item(sid);
                         test.ok(job);
 
                         job.cancel(function() {
@@ -8649,7 +8626,7 @@ exports.setup = function(svc) {
             "Callback#contains applications": function(test) {
                 var apps = this.service.apps();
                 apps.fetch(function(err, apps) {
-                    var app = apps.contains("search");
+                    var app = apps.item("search");
                     test.ok(app);
                     test.done();
                 });
@@ -8662,7 +8639,7 @@ exports.setup = function(svc) {
                 apps.create({name: name}, function(err, app) {
                     var appName = app.name;
                     apps.fetch(function(err, apps) {
-                        var entity = apps.contains(appName);
+                        var entity = apps.item(appName);
                         test.ok(entity);
                         app.remove(function() {
                             test.done();
@@ -8754,7 +8731,7 @@ exports.setup = function(svc) {
             "Callback#contains": function(test) {
                 var searches = this.service.savedSearches();
                 searches.fetch(function(err, searches) {
-                    var search = searches.contains("Indexing workload");
+                    var search = searches.item("Indexing workload");
                     test.ok(search);
                     
                     test.done();
@@ -8764,7 +8741,7 @@ exports.setup = function(svc) {
             "Callback#suppress": function(test) {
                 var searches = this.service.savedSearches();
                 searches.fetch(function(err, searches) {
-                    var search = searches.contains("Indexing workload");
+                    var search = searches.item("Indexing workload");
                     test.ok(search);
                     
                     search.suppressInfo(function(err, info, search) {
@@ -9001,7 +8978,7 @@ exports.setup = function(svc) {
                 Async.chain([
                     function(done) { that.service.configurations(namespace).fetch(done); },
                     function(props, done) { 
-                        var file = props.contains("web");
+                        var file = props.item("web");
                         test.ok(file);
                         file.fetch(done);
                     },
@@ -9023,14 +9000,14 @@ exports.setup = function(svc) {
                 Async.chain([
                     function(done) { that.service.configurations(namespace).fetch(done); },
                     function(props, done) { 
-                        var file = props.contains("web");
+                        var file = props.item("web");
                         test.ok(file);
                         file.fetch(done);
                     },
                     function(file, done) {
                         test.strictEqual(file.name, "web");
                         
-                        var stanza = file.contains("settings");
+                        var stanza = file.item("settings");
                         test.ok(stanza);
                         stanza.fetch(done);
                     },
@@ -9074,7 +9051,7 @@ exports.setup = function(svc) {
                         file.fetch(done);
                     },
                     function(file, done) {
-                        var stanza = file.contains("stanza");
+                        var stanza = file.item("stanza");
                         test.ok(stanza);
                         stanza.remove(done);
                     }
@@ -9116,7 +9093,7 @@ exports.setup = function(svc) {
                 var indexName = this.indexName;
                 
                 indexes.fetch(function(err, indexes) {
-                    var index = indexes.contains(indexName);
+                    var index = indexes.item(indexName);
                     test.ok(index);
                     test.done();
                 });
@@ -9133,7 +9110,7 @@ exports.setup = function(svc) {
                             indexes.fetch(callback);     
                         },
                         function(indexes, callback) {
-                            var index = indexes.contains(name);
+                            var index = indexes.item(name);
                             test.ok(index);
                             
                             originalAssureUTF8Value = index.properties().assureUTF8;
@@ -9179,7 +9156,7 @@ exports.setup = function(svc) {
                             indexes.fetch(callback);     
                         },
                         function(indexes, callback) {
-                            var index = indexes.contains(name);
+                            var index = indexes.item(name);
                             test.ok(index);
                             
                             index.disable(callback);
@@ -9251,7 +9228,7 @@ exports.setup = function(svc) {
                             indexes.fetch(done);     
                         },
                         function(indexes, done) {
-                            var index = indexes.contains(indexName);
+                            var index = indexes.item(indexName);
                             test.ok(index);
                             test.strictEqual(index.name, indexName);                            
                             index.submitEvent(message, {sourcetype: sourcetype}, done);

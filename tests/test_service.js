@@ -343,7 +343,7 @@ exports.setup = function(svc) {
 
                     jobs.fetch(function(err, jobs) {
                         test.ok(!err);
-                        var job = jobs.contains(sid);
+                        var job = jobs.item(sid);
                         test.ok(job);
 
                         job.cancel(function() {
@@ -891,7 +891,7 @@ exports.setup = function(svc) {
             "Callback#contains applications": function(test) {
                 var apps = this.service.apps();
                 apps.fetch(function(err, apps) {
-                    var app = apps.contains("search");
+                    var app = apps.item("search");
                     test.ok(app);
                     test.done();
                 });
@@ -904,7 +904,7 @@ exports.setup = function(svc) {
                 apps.create({name: name}, function(err, app) {
                     var appName = app.name;
                     apps.fetch(function(err, apps) {
-                        var entity = apps.contains(appName);
+                        var entity = apps.item(appName);
                         test.ok(entity);
                         app.remove(function() {
                             test.done();
@@ -996,7 +996,7 @@ exports.setup = function(svc) {
             "Callback#contains": function(test) {
                 var searches = this.service.savedSearches();
                 searches.fetch(function(err, searches) {
-                    var search = searches.contains("Indexing workload");
+                    var search = searches.item("Indexing workload");
                     test.ok(search);
                     
                     test.done();
@@ -1006,7 +1006,7 @@ exports.setup = function(svc) {
             "Callback#suppress": function(test) {
                 var searches = this.service.savedSearches();
                 searches.fetch(function(err, searches) {
-                    var search = searches.contains("Indexing workload");
+                    var search = searches.item("Indexing workload");
                     test.ok(search);
                     
                     search.suppressInfo(function(err, info, search) {
@@ -1243,7 +1243,7 @@ exports.setup = function(svc) {
                 Async.chain([
                     function(done) { that.service.configurations(namespace).fetch(done); },
                     function(props, done) { 
-                        var file = props.contains("web");
+                        var file = props.item("web");
                         test.ok(file);
                         file.fetch(done);
                     },
@@ -1265,14 +1265,14 @@ exports.setup = function(svc) {
                 Async.chain([
                     function(done) { that.service.configurations(namespace).fetch(done); },
                     function(props, done) { 
-                        var file = props.contains("web");
+                        var file = props.item("web");
                         test.ok(file);
                         file.fetch(done);
                     },
                     function(file, done) {
                         test.strictEqual(file.name, "web");
                         
-                        var stanza = file.contains("settings");
+                        var stanza = file.item("settings");
                         test.ok(stanza);
                         stanza.fetch(done);
                     },
@@ -1316,7 +1316,7 @@ exports.setup = function(svc) {
                         file.fetch(done);
                     },
                     function(file, done) {
-                        var stanza = file.contains("stanza");
+                        var stanza = file.item("stanza");
                         test.ok(stanza);
                         stanza.remove(done);
                     }
@@ -1358,7 +1358,7 @@ exports.setup = function(svc) {
                 var indexName = this.indexName;
                 
                 indexes.fetch(function(err, indexes) {
-                    var index = indexes.contains(indexName);
+                    var index = indexes.item(indexName);
                     test.ok(index);
                     test.done();
                 });
@@ -1375,7 +1375,7 @@ exports.setup = function(svc) {
                             indexes.fetch(callback);     
                         },
                         function(indexes, callback) {
-                            var index = indexes.contains(name);
+                            var index = indexes.item(name);
                             test.ok(index);
                             
                             originalAssureUTF8Value = index.properties().assureUTF8;
@@ -1421,7 +1421,7 @@ exports.setup = function(svc) {
                             indexes.fetch(callback);     
                         },
                         function(indexes, callback) {
-                            var index = indexes.contains(name);
+                            var index = indexes.item(name);
                             test.ok(index);
                             
                             index.disable(callback);
@@ -1493,7 +1493,7 @@ exports.setup = function(svc) {
                             indexes.fetch(done);     
                         },
                         function(indexes, done) {
-                            var index = indexes.contains(indexName);
+                            var index = indexes.item(indexName);
                             test.ok(index);
                             test.strictEqual(index.name, indexName);                            
                             index.submitEvent(message, {sourcetype: sourcetype}, done);
