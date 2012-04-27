@@ -47,7 +47,7 @@ def extract_messages(node):
     that have been passed through the standard XML messaging spec
     '''
 
-    output = {}
+    output = []
     messages = node.find('messages')
     if messages == None:
         messages = node.find(SPLUNK_TAGF % 'messages')
@@ -58,20 +58,17 @@ def extract_messages(node):
             message_code = child.get('code')
             message_text = child.text
             
-            message_store = output.get(message_type, [])
-            message_store.append(message_text)
-            
-            output[message_type] = message_store
+            output.append({
+                "type": message_type,
+                "text": message_text,
+                "code": message_code
+            })
             
     return output
 
 
-def combine_messages(existing_messages = {}, new_messages = {}):
-    for message_type in new_messages.keys():
-        if message_type in existing_messages:
-            existing_messages[message_type].extend(new_messages[message_type])
-        else:
-            existing_messages[message_type] = new_messages[message_type]
+def combine_messages(existing_messages = [], new_messages = []):
+    existing_messages.extend(new_messages)
 
 
 def unesc(str):
@@ -128,7 +125,7 @@ def extract_result_inner_text(node):
 
 ####################
 
-def from_feed(content, timings={}, messages={}):
+def from_feed(content, timings={}, messages=[]):
     collection = {}
     
     if content:
@@ -299,7 +296,7 @@ def from_job_results(root, format=ResultFormat.ROW, timings={}):
         timings["job_results_parse"] = time_end - time_start
     
     results = {}
-    messages = {}
+    messages = []
     
     try:
         extracted_messages = extract_messages(root)
@@ -350,7 +347,7 @@ def from_job_results(root, format=ResultFormat.ROW, timings={}):
     time_end = time.time()
     timings["job_results_mold_data"] = time_end - time_start
     
-    messages = {}
+    messages = []
     try:
         extracted_messages = extract_messages(root)
         if extracted_messages:
@@ -481,7 +478,7 @@ def from_search_timeline(root, timings={}):
     time_end = time.time()
     timings["search_timeline_buckets"] = time_end - time_start
     
-    messages = {}
+    messages = []
     try:
         extracted_messages = extract_messages(root)
         if extracted_messages:
@@ -543,7 +540,7 @@ def from_search_summary(root, timings={}):
     time_end = time.time()
     timings["search_summary_fields"] = time_end - time_start
     
-    messages = {}
+    messages = []
     try:
         extracted_messages = extract_messages(root)
         if extracted_messages:
@@ -563,7 +560,7 @@ def from_auth(root):
         
     session_key = root.findtext("sessionKey")
     
-    messages = {}
+    messages = []
     try:
         extracted_messages = extract_messages(root)
         if extracted_messages:
@@ -585,7 +582,7 @@ def from_job_create(root):
         
     sid = root.findtext("sid")
     
-    messages = {}
+    messages = []
     try:
         extracted_messages = extract_messages(root)
         if extracted_messages:
@@ -610,7 +607,7 @@ def from_http_simple_input(root):
     for field in root.findall("results/result/field"):
         entry[field.get("k")] = field.findtext("value/text")
         
-    messages = {}
+    messages = []
     try:
         extracted_messages = extract_messages(root)
         if extracted_messages:
@@ -661,7 +658,7 @@ def from_search_parser(root):
                 command[key.get("name")] = key.text or ""
         entry["commands"].append(command)
         
-    messages = {}
+    messages = []
     try:
         extracted_messages = extract_messages(root)
         if extracted_messages:
@@ -673,16 +670,7 @@ def from_search_parser(root):
     return entry
     
 
-def from_propertizes_stanza_key(root, key):
-    messages = {}
-    try:
-        extracted_messages = extract_messages(root)
-        if extracted_messages:
-            combine_messages(messages, extracted_messages)
-    except:
-        # TODO
-        pass
-        
+def from_propertizes_stanza_key(root, key):        
     return root
 
 def from_propertizes_stanza(root):
@@ -710,7 +698,7 @@ def from_propertizes_stanza(root):
     if author_info:
         collection['author'] = author_info[0].text
             
-    messages = {}
+    messages = []
     try:
         extracted_messages = extract_messages(root)
         if extracted_messages:
@@ -740,14 +728,14 @@ def parse_stanza(root):
 
 def from_messages_only(root):
     if not root:
-        return { "messages": {} };
+        return { "messages": [] };
     
     if isinstance(root, str):
         root = et.fromstring(root)
     elif isinstance(root, file):
         root = et.parse(root).getroot()
         
-    messages = {}
+    messages = []
     
     try:
         extracted_messages = extract_messages(root)

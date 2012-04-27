@@ -158,6 +158,7 @@ exports.setup = function(svc) {
             );
             
             service.get("search/jobs", {count: 2}, function(err, res) {
+                test.ok(!err);
                 test.strictEqual(res.data.paging.offset, 0);
                 test.ok(res.data.entry.length <= res.data.paging.total);
                 test.strictEqual(res.data.entry.length, 2);

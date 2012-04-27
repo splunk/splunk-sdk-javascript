@@ -519,34 +519,31 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
          * @function splunkjs.Logger
          */
         printMessages: function(allMessages) {
-            allMessages = allMessages || {};
+            allMessages = allMessages || [];
             
-            for(var key in allMessages) {
-                if (allMessages.hasOwnProperty(key)) {
-                    var type = key;
-                    var messages = allMessages[key];
-                    for (var i = 0; i < messages.length; i++) {
-                        var msg = '[SPLUNKD] ' + messages[i];
-                        switch (type) {
-                            case 'HTTP':
-                            case 'FATAL':
-                            case 'ERROR':
-                                this.error(msg);
-                                break;
-                            case 'WARN':
-                                this.warn(msg);
-                                break;
-                            case 'INFO':
-                                this.info(msg);
-                                break;
-                            case 'HTTP':
-                                this.error(msg);
-                                break;
-                            default:
-                                this.info(msg);
-                                break;
-                        }
-                    }
+            for(var i = 0; i < allMessages.length; i++) {
+                var message = allMessages[i];
+                var type = message["type"];
+                var text = message["text"];
+                var msg = '[SPLUNKD] ' + text;
+                switch (type) {
+                    case 'HTTP':
+                    case 'FATAL':
+                    case 'ERROR':
+                        this.error(msg);
+                        break;
+                    case 'WARN':
+                        this.warn(msg);
+                        break;
+                    case 'INFO':
+                        this.info(msg);
+                        break;
+                    case 'HTTP':
+                        this.error(msg);
+                        break;
+                    default:
+                        this.info(msg);
+                        break;
                 }
             }  
         },

@@ -164,7 +164,8 @@ def forward_request(request):
             else:
                 extracted_messages = xml2json.extract_messages(body)
                 xml2json.combine_messages(messages, extracted_messages)
-        except et.XMLSyntaxError:
+        except Exception, e:
+            logger.info(e);
             pass
     elif response.status < 200 or response.status > 299:
         # service may return messages in the body; try to parse them
