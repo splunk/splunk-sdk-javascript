@@ -362,7 +362,7 @@ require.define("/tests/test_utils.js", function (require, module, exports, __dir
 // under the License.
 
 exports.setup = function() {
-    var splunkjs    = require('../splunk');
+    var splunkjs    = require('../index');
 
     splunkjs.Logger.setLevel("ALL");
     return {        
@@ -416,10 +416,10 @@ if (module === require.main) {
 });
 
 require.define("/package.json", function (require, module, exports, __dirname, __filename) {
-module.exports = {"main":"splunk.js"}
+module.exports = {"main":"index.js"}
 });
 
-require.define("/splunk.js", function (require, module, exports, __dirname, __filename) {
+require.define("/index.js", function (require, module, exports, __dirname, __filename) {
 
 // Copyright 2011 Splunk, Inc.
 //
@@ -6223,7 +6223,7 @@ require.define("/tests/test_async.js", function (require, module, exports, __dir
 // under the License.
 
 exports.setup = function() {
-    var splunkjs    = require('../splunk');
+    var splunkjs    = require('../index');
     var Async       = splunkjs.Async;
 
     splunkjs.Logger.setLevel("ALL");
@@ -6699,7 +6699,7 @@ require.define("/tests/test_http.js", function (require, module, exports, __dirn
 // under the License.
 
 exports.setup = function(http) {
-    var splunkjs    = require('../splunk');
+    var splunkjs    = require('../index');
 
     splunkjs.Logger.setLevel("ALL");
     return {
@@ -6955,7 +6955,7 @@ exports.setup = function(http) {
 };
 
 if (module === require.main) {
-    var splunkjs    = require('../splunk');
+    var splunkjs    = require('../index');
     var NodeHttp    = splunkjs.NodeHttp;
     var test        = require('../contrib/nodeunit/test_reporter');
 
@@ -6983,7 +6983,7 @@ require.define("/tests/test_context.js", function (require, module, exports, __d
 // under the License.
 
 exports.setup = function(svc) {
-    var splunkjs    = require('../splunk');
+    var splunkjs    = require('../index');
 
     splunkjs.Logger.setLevel("ALL");
     var isBrowser = typeof "window" !== "undefined";
@@ -7595,7 +7595,7 @@ exports.setup = function(svc) {
 };
 
 if (module === require.main) {
-    var splunkjs    = require('../splunk');
+    var splunkjs    = require('../index');
     var options     = require('../examples/node/cmdline');
     var test        = require('../contrib/nodeunit/test_reporter');
     
@@ -7758,7 +7758,7 @@ require.define("/tests/test_service.js", function (require, module, exports, __d
 // under the License.
 
 exports.setup = function(svc) {
-    var splunkjs    = require('../splunk');
+    var splunkjs    = require('../index');
     var utils       = splunkjs.Utils;
     var Async       = splunkjs.Async;
     var tutils      = require('./utils');
@@ -9571,7 +9571,7 @@ exports.setup = function(svc) {
 };
 
 if (module === require.main) {
-    var splunkjs    = require('../splunk');
+    var splunkjs    = require('../index');
     var options     = require('../examples/node/cmdline');
     var test        = require('../contrib/nodeunit/test_reporter');
     
@@ -9666,7 +9666,7 @@ require.define("/tests/test_storm.js", function (require, module, exports, __dir
 // under the License.
 
 exports.setup = function(http) {
-    var splunkjs    = require('../splunk');
+    var splunkjs    = require('../index');
     var utils       = splunkjs.Utils;
     var Async       = splunkjs.Async;
     var tutils      = require('./utils');
@@ -9773,7 +9773,7 @@ require.define("/tests/test_searcher.js", function (require, module, exports, __
 // under the License.
 
 exports.setup = function(svc) {
-    var splunkjs    = require('../splunk');
+    var splunkjs    = require('../index');
     var utils       = splunkjs.Utils;
     var Async       = splunkjs.Async;
     var JobManager  = splunkjs.JobManager;
@@ -9943,7 +9943,7 @@ exports.setup = function(svc) {
 };
 
 if (module === require.main) {
-    var splunkjs    = require('../splunk');
+    var splunkjs    = require('../index');
     var options     = require('../examples/node/cmdline');
     var test        = require('../contrib/nodeunit/test_reporter');
     
@@ -9991,7 +9991,7 @@ require.define("/tests/test_examples.js", function (require, module, exports, __
 // under the License.
 
 exports.setup = function(svc, opts) {
-    var splunkjs= require('../splunk');
+    var splunkjs= require('../index');
     var Async   = splunkjs.Async;
 
     splunkjs.Logger.setLevel("ALL");
@@ -10350,7 +10350,7 @@ exports.setup = function(svc, opts) {
 };
 
 if (module === require.main) {
-    var splunkjs    = require('../splunk');
+    var splunkjs    = require('../index');
     var test        = require('../contrib/nodeunit/test_reporter');
     
     var options = require('../examples/node/cmdline');    
@@ -10400,7 +10400,7 @@ require.define("/examples/node/helloworld/apps.js", function (require, module, e
 // This example will login to Splunk, and then retrieve the list of applications,
 // printing each application's name.
 
-var splunkjs = require('../../../splunk');
+var splunkjs = require('../../../index');
 
 exports.main = function(opts, done) {
     // This is just for testing - ignore it
@@ -10475,7 +10475,7 @@ require.define("/examples/node/helloworld/apps_async.js", function (require, mod
 // printing each application's name. It is the same as apps.js, except that it 
 // uses the Async library
 
-var splunkjs = require('../../../splunk');
+var splunkjs = require('../../../index');
 var Async  = splunkjs.Async;
 
 exports.main = function(opts, callback) {
@@ -10550,7 +10550,7 @@ require.define("/examples/node/helloworld/savedsearches.js", function (require, 
 // This example will login to Splunk, and then retrieve the list of saved searchs,
 // printing each saved search's name and search query.
 
-var splunkjs = require('../../../splunk');
+var splunkjs = require('../../../index');
 
 exports.main = function(opts, done) {
     // This is just for testing - ignore it
@@ -10626,7 +10626,7 @@ require.define("/examples/node/helloworld/savedsearches_async.js", function (req
 // printing each saved search's name and search query. It is the same as savedsearches.js, 
 // except that it uses the Async library
 
-var splunkjs = require('../../../splunk');
+var splunkjs = require('../../../index');
 var Async  = splunkjs.Async;
 
 exports.main = function(opts, callback) {
@@ -10703,7 +10703,7 @@ require.define("/examples/node/helloworld/savedsearches_delete.js", function (re
 // This example will login to Splunk, and then retrieve the list of saved searchs,
 // printing each saved search's name and search query.
 
-var splunkjs = require('../../../splunk');
+var splunkjs = require('../../../index');
 
 exports.main = function(opts, done) {
     // This is just for testing - ignore it
@@ -10781,7 +10781,7 @@ require.define("/examples/node/helloworld/savedsearches_create.js", function (re
 // This example will login to Splunk, and then retrieve the list of saved searchs,
 // printing each saved search's name and search query.
 
-var splunkjs = require('../../../splunk');
+var splunkjs = require('../../../index');
 
 exports.main = function(opts, done) {
     // This is just for testing - ignore it
@@ -10859,7 +10859,7 @@ require.define("/examples/node/helloworld/search_normal.js", function (require, 
 // This example will login to Splunk, perform a regular search, wait until
 // it is done, and then print out the raw results and some key-value pairs
 
-var splunkjs = require('../../../splunk');
+var splunkjs = require('../../../index');
 var Async  = splunkjs.Async;
 
 exports.main = function(opts, callback) {
@@ -10977,7 +10977,7 @@ require.define("/examples/node/helloworld/search_blocking.js", function (require
 // out the raw results and some key-value pairs. A blocking search is one that 
 // won't return until the search is complete.
 
-var splunkjs = require('../../../splunk');
+var splunkjs = require('../../../index');
 var Async  = splunkjs.Async;
 
 exports.main = function(opts, callback) {
@@ -11078,7 +11078,7 @@ require.define("/examples/node/helloworld/search_oneshot.js", function (require,
 // won't return until the search is complete and return all the search
 // results in the response.
 
-var splunkjs = require('../../../splunk');
+var splunkjs = require('../../../index');
 var Async  = splunkjs.Async;
 
 exports.main = function(opts, callback) {
@@ -11162,7 +11162,7 @@ require.define("/examples/node/helloworld/search_realtime.js", function (require
 // how many events of each sourcetype we have seen. It will then print out
 // this information every 1 second for a set number of iterations.
 
-var splunkjs = require('../../../splunk');
+var splunkjs = require('../../../index');
 var Async  = splunkjs.Async;
 
 exports.main = function(opts, callback) {
@@ -11279,7 +11279,7 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
 // under the License.
 
 (function() {
-    var splunkjs        = require('../../splunk');
+    var splunkjs        = require('../../index');
     var Class           = splunkjs.Class;
     var utils           = splunkjs.Utils;
     var Async           = splunkjs.Async;
@@ -11665,7 +11665,7 @@ require.define("/examples/node/search.js", function (require, module, exports, _
 // under the License.
 
 (function() {
-    var splunkjs        = require('../../splunk');
+    var splunkjs        = require('../../index');
     var Class           = splunkjs.Class;
     var utils           = splunkjs.Utils;
     var Async           = splunkjs.Async;
@@ -12361,7 +12361,7 @@ require.define("/examples/node/results.js", function (require, module, exports, 
 // under the License.
 
 (function() {
-    var splunkjs        = require('../../splunk');
+    var splunkjs        = require('../../index');
     var Class           = splunkjs.Class;
     var utils           = splunkjs.Utils;
     var Async           = splunkjs.Async;

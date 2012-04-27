@@ -16,7 +16,7 @@
 // This example will login to Splunk, and then retrieve the list of applications,
 // printing each application's name.
 
-var splunkjs = require('../../../splunk');
+var splunkjs = require('../../../index');
 
 exports.main = function(opts, done) {
     // This is just for testing - ignore it

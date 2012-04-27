@@ -14,7 +14,7 @@
 // under the License.
 
 exports.setup = function(svc) {
-    var splunkjs    = require('../splunk');
+    var splunkjs    = require('../index');
 
     splunkjs.Logger.setLevel("ALL");
     var isBrowser = typeof "window" !== "undefined";
@@ -626,7 +626,7 @@ exports.setup = function(svc) {
 };
 
 if (module === require.main) {
-    var splunkjs    = require('../splunk');
+    var splunkjs    = require('../index');
     var options     = require('../examples/node/cmdline');
     var test        = require('../contrib/nodeunit/test_reporter');
     

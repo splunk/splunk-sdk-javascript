@@ -14,7 +14,7 @@
 // under the License.
 
 (function() {
-    var splunkjs        = require('../../splunk');
+    var splunkjs        = require('../../index');
     var Class           = splunkjs.Class;
     var utils           = splunkjs.Utils;
     var Async           = splunkjs.Async;

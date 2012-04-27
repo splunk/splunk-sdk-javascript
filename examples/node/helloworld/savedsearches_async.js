@@ -17,7 +17,7 @@
 // printing each saved search's name and search query. It is the same as savedsearches.js, 
 // except that it uses the Async library
 
-var splunkjs = require('../../../splunk');
+var splunkjs = require('../../../index');
 var Async  = splunkjs.Async;
 
 exports.main = function(opts, callback) {

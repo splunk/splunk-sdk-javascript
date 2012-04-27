@@ -20,7 +20,7 @@
 (function(exportName) {
     var previousSplunk = window[exportName];
     
-    var ourSplunk = require('../splunk');
+    var ourSplunk = require('../index');
     var ourXDM    = require('../lib/platform/client/easyxdm_http').XdmHttp;
     var proxyHttp = require('../lib/platform/client/proxy_http').ProxyHttp;
     

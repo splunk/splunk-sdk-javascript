@@ -17,7 +17,7 @@
 // printing each application's name. It is the same as apps.js, except that it 
 // uses the Async library
 
-var splunkjs = require('../../../splunk');
+var splunkjs = require('../../../index');
 var Async  = splunkjs.Async;
 
 exports.main = function(opts, callback) {

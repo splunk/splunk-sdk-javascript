@@ -16,7 +16,7 @@
 // This example will login to Splunk, perform a regular search, wait until
 // it is done, and then print out the raw results and some key-value pairs
 
-var splunkjs = require('../../../splunk');
+var splunkjs = require('../../../index');
 var Async  = splunkjs.Async;
 
 exports.main = function(opts, callback) {

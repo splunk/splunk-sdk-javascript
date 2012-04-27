@@ -16,7 +16,7 @@
 // This example will login to Splunk, and then retrieve the list of saved searchs,
 // printing each saved search's name and search query.
 
-var splunkjs = require('../../../splunk');
+var splunkjs = require('../../../index');
 
 exports.main = function(opts, done) {
     // This is just for testing - ignore it

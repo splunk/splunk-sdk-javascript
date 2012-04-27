@@ -14,7 +14,7 @@
 // under the License.
 
 exports.setup = function(svc, opts) {
-    var splunkjs= require('../splunk');
+    var splunkjs= require('../index');
     var Async   = splunkjs.Async;
 
     splunkjs.Logger.setLevel("ALL");
@@ -373,7 +373,7 @@ exports.setup = function(svc, opts) {
 };
 
 if (module === require.main) {
-    var splunkjs    = require('../splunk');
+    var splunkjs    = require('../index');
     var test        = require('../contrib/nodeunit/test_reporter');
     
     var options = require('../examples/node/cmdline');    

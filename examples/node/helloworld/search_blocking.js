@@ -17,7 +17,7 @@
 // out the raw results and some key-value pairs. A blocking search is one that 
 // won't return until the search is complete.
 
-var splunkjs = require('../../../splunk');
+var splunkjs = require('../../../index');
 var Async  = splunkjs.Async;
 
 exports.main = function(opts, callback) {

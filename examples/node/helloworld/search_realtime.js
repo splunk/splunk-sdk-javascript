@@ -17,7 +17,7 @@
 // how many events of each sourcetype we have seen. It will then print out
 // this information every 1 second for a set number of iterations.
 
-var splunkjs = require('../../../splunk');
+var splunkjs = require('../../../index');
 var Async  = splunkjs.Async;
 
 exports.main = function(opts, callback) {

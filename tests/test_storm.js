@@ -14,7 +14,7 @@
 // under the License.
 
 exports.setup = function(http) {
-    var splunkjs    = require('../splunk');
+    var splunkjs    = require('../index');
     var utils       = splunkjs.Utils;
     var Async       = splunkjs.Async;
     var tutils      = require('./utils');

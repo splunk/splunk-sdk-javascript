@@ -346,10 +346,10 @@ exports.extname = function(path) {
 });
 
 require.define("/package.json", function (require, module, exports, __dirname, __filename) {
-module.exports = {"main":"splunk.js"}
+module.exports = {"main":"index.js"}
 });
 
-require.define("/splunk.js", function (require, module, exports, __dirname, __filename) {
+require.define("/index.js", function (require, module, exports, __dirname, __filename) {
 
 // Copyright 2011 Splunk, Inc.
 //
@@ -6407,7 +6407,7 @@ require.define("/browser.entry.js", function (require, module, exports, __dirnam
 (function(exportName) {
     var previousSplunk = window[exportName];
     
-    var ourSplunk = require('../splunk');
+    var ourSplunk = require('../index');
     var ourXDM    = require('../lib/platform/client/easyxdm_http').XdmHttp;
     var proxyHttp = require('../lib/platform/client/proxy_http').ProxyHttp;
     

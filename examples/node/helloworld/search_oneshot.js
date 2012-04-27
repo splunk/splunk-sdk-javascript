@@ -18,7 +18,7 @@
 // won't return until the search is complete and return all the search
 // results in the response.
 
-var splunkjs = require('../../../splunk');
+var splunkjs = require('../../../index');
 var Async  = splunkjs.Async;
 
 exports.main = function(opts, callback) {
