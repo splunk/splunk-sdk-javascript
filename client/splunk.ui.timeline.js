@@ -345,7 +345,7 @@ exports.extname = function(path) {
 
 });
 
-require.define("/ui/timeline.js", function (require, module, exports, __dirname, __filename) {
+require.define("/lib/ui/timeline.js", function (require, module, exports, __dirname, __filename) {
 
 // Copyright 2011 Splunk, Inc.
 //
@@ -369,8 +369,8 @@ require.define("/ui/timeline.js", function (require, module, exports, __dirname,
     var timeline    = require('./timeline/splunk_timeline.js');
     var format      = require('./timeline/format.js');
         
-    var Class = require('../lib/jquery.class').Class;
-    var utils = require('../lib/utils');
+    var Class = require('../jquery.class').Class;
+    var utils = require('../utils');
     
     var root = exports || this;
 
@@ -464,7 +464,7 @@ require.define("/ui/timeline.js", function (require, module, exports, __dirname,
 })();
 });
 
-require.define("/ui/timeline/jg_global.js", function (require, module, exports, __dirname, __filename) {
+require.define("/lib/ui/timeline/jg_global.js", function (require, module, exports, __dirname, __filename) {
 /**
  * Global functions for defining classes and managing scope.
  * 
@@ -1391,7 +1391,7 @@ require.define("/ui/timeline/jg_global.js", function (require, module, exports, 
 
 });
 
-require.define("/ui/timeline/splunk_time.js", function (require, module, exports, __dirname, __filename) {
+require.define("/lib/ui/timeline/splunk_time.js", function (require, module, exports, __dirname, __filename) {
 /**
  * Includes code from the jgatt library
  * Copyright (c) 2011 Jason Gatt
@@ -3321,7 +3321,7 @@ require.define("/ui/timeline/splunk_time.js", function (require, module, exports
 })();
 });
 
-require.define("/ui/timeline/splunk_timeline.js", function (require, module, exports, __dirname, __filename) {
+require.define("/lib/ui/timeline/splunk_timeline.js", function (require, module, exports, __dirname, __filename) {
 /**
  * Includes code from the jgatt library
  * Copyright (c) 2011 Jason Gatt
@@ -10743,7 +10743,7 @@ require.define("/ui/timeline/splunk_timeline.js", function (require, module, exp
 })();
 });
 
-require.define("/ui/timeline/format.js", function (require, module, exports, __dirname, __filename) {
+require.define("/lib/ui/timeline/format.js", function (require, module, exports, __dirname, __filename) {
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -11357,7 +11357,7 @@ require.define("/browser.ui.timeline.entry.js", function (require, module, expor
         window[exportName].UI = {};
     }
 
-    window[exportName].UI.Timeline = require('../ui/timeline.js');
+    window[exportName].UI.Timeline = require('../lib/ui/timeline.js');
 })(__exportName);
 });
 require("/browser.ui.timeline.entry.js");

@@ -26,5 +26,5 @@
         window[exportName].UI = {};
     }
 
-    window[exportName].UI.Timeline = require('../ui/timeline.js');
+    window[exportName].UI.Timeline = require('../lib/ui/timeline.js');
 })(__exportName);
