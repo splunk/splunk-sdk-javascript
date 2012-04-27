@@ -2893,6 +2893,15 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         _load: function(properties) {
             properties = utils.isArray(properties) ? properties[0] : properties;
             
+            // Initialize the properties to
+            // empty values
+            properties = properties || {
+                content: {},
+                fields: {},
+                acl: {},
+                links: {}
+            }
+            
             this._super(properties);
             
             // Take out the entity-specific content
@@ -10741,7 +10750,7 @@ exports.main = function(opts, done) {
             }
             else {                
                 savedSearchToDelete.remove();
-                console.log("Deleted saved search: " + name + "")
+                console.log("Deleted saved search: " + name + "");
                 done();
             }
         });
