@@ -63,7 +63,7 @@ exports.main = function(opts, done) {
             }
             else {                
                 savedSearchToDelete.remove();
-                console.log("Deleted saved search: " + name + "")
+                console.log("Deleted saved search: " + name + "");
                 done();
             }
         });
