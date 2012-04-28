@@ -230,21 +230,6 @@
                 <ul class="nav nav-list">
                 </ul>
               </li>
-                          <li class="nav-header"><a href="splunkjs.Service.PropertyStanza.html">splunkjs.Service.PropertyStanza</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.PropertyFile.html">splunkjs.Service.PropertyFile</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.Properties.html">splunkjs.Service.Properties</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
                           <li class="nav-header"><a href="splunkjs.Service.ConfigurationStanza.html">splunkjs.Service.ConfigurationStanza</a></li>
               <li>
                 <ul class="nav nav-list">
@@ -1054,7 +1039,7 @@
             
             <section class="examples">
                           <h4>Examples</h4>
-                          <pre><code>Async.chain([
+                          <pre><code>Async.chain(
     function(callback) { 
         callback(null, 1, 2);
     },
@@ -1063,7 +1048,7 @@
     },
     function(val1, callback) {
         callback(null, val1 + 1, 5);
-    }],
+    },
     function(err, val1, val2) {
         console.log(val1); //== 3
         console.log(val2); //== 5
@@ -1264,9 +1249,6 @@
 })();</code></pre>
             </section>
           </section>
-                
-                
-                
                 
                 
                 
