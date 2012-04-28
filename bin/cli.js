@@ -71,6 +71,7 @@
     var COMPILED_UI_MIN    = path.join(CLIENT_DIRECTORY, "splunk.ui.min.js");
     var GENERATED_DOCS     = path.join(DOC_DIRECTORY, SDK_VERSION, DOC_FILE);
     var GENERATED_REF_DOCS = path.join(DOC_DIRECTORY, SDK_VERSION, REFDOC_DIRECTORY, DOC_FILE);
+    var GENERATED_DOCS_DIR = path.join(DOC_DIRECTORY, SDK_VERSION);
     
     /**
      * Helpers
@@ -198,6 +199,77 @@
             fs.mkdirSync(tempDirPath, "755");
             return tempDirPath;
         }
+    };
+    
+    // Taken from wrench.js
+    var copyDirectoryRecursiveSync = function(sourceDir, newDirLocation, opts) {
+    
+        if (!opts || !opts.preserve) {
+            try {
+                if(fs.statSync(newDirLocation).isDirectory()) exports.rmdirSyncRecursive(newDirLocation);
+            } catch(e) { }
+        }
+    
+        /*  Create the directory where all our junk is moving to; read the mode of the source directory and mirror it */
+        var checkDir = fs.statSync(sourceDir);
+        try {
+            fs.mkdirSync(newDirLocation, checkDir.mode);
+        } 
+        catch (e) {
+            //if the directory already exists, that's okay
+            if (e.code !== 'EEXIST') throw e;
+        }
+    
+        var files = fs.readdirSync(sourceDir);
+    
+        for(var i = 0; i < files.length; i++) {
+            var currFile = fs.lstatSync(sourceDir + "/" + files[i]);
+    
+            if(currFile.isDirectory()) {
+                /*  recursion this thing right on back. */
+                copyDirectoryRecursiveSync(sourceDir + "/" + files[i], newDirLocation + "/" + files[i], opts);
+            } 
+            else if(currFile.isSymbolicLink()) {
+                var symlinkFull = fs.readlinkSync(sourceDir + "/" + files[i]);
+                fs.symlinkSync(symlinkFull, newDirLocation + "/" + files[i]);
+            } 
+            else {
+                /*  At this point, we've hit a file actually worth copying... so copy it on over. */
+                var contents = fs.readFileSync(sourceDir + "/" + files[i]);
+                fs.writeFileSync(newDirLocation + "/" + files[i], contents);
+            }
+        }
+    };
+
+    var rmdirRecursiveSync = function(path, failSilent) {
+        var files;
+
+        try {
+            files = fs.readdirSync(path);
+        } 
+        catch (err) {
+            if(failSilent) return;
+            throw new Error(err.message);
+        }
+
+        /*  Loop through and delete everything in the sub-tree after checking it */
+        for(var i = 0; i < files.length; i++) {
+            var currFile = fs.lstatSync(path + "/" + files[i]);
+
+            if(currFile.isDirectory()) {// Recursive function back to the beginning
+                rmdirRecursiveSync(path + "/" + files[i]);
+            }
+            else if(currFile.isSymbolicLink()) {// Unlink symlinks
+                fs.unlinkSync(path + "/" + files[i]);
+            } 
+            else { // Assume it's a file - perhaps a try/catch belongs here?
+                fs.unlinkSync(path + "/" + files[i]);
+            }
+        }
+
+        /*  Now that we know everything in the sub-tree has been deleted, we can delete the main
+            directory. Huzzah for the shopkeep. */
+        return fs.rmdirSync(path);
     };
     
     var git = {
@@ -579,8 +651,8 @@
             function(done) {
                 var tempDirPath = temp.mkdirSync();
                 
-                tempPath = path.join(tempDirPath, DOC_FILE);
-                fs.link(GENERATED_REF_DOCS, tempPath);
+                tempPath = tempDirPath;
+                copyDirectoryRecursiveSync(GENERATED_DOCS_DIR, tempDirPath);
                 
                 done();
             },
@@ -591,18 +663,19 @@
                 git.switchBranch("gh-pages", done);
             },
             function(done) {
+                if (path.existsSync(GENERATED_DOCS_DIR)) {
+                    rmdirRecursiveSync(GENERATED_DOCS_DIR);
+                }
+                
                 ensureDirectoryExists(DOC_DIRECTORY);
                 ensureDirectoryExists(path.join(DOC_DIRECTORY, SDK_VERSION));
                 
-                if (path.existsSync(GENERATED_REF_DOCS)) {
-                    fs.unlinkSync(GENERATED_REF_DOCS);
-                }
-                fs.link(tempPath, GENERATED_REF_DOCS);
+                copyDirectoryRecursiveSync(tempPath, GENERATED_DOCS_DIR);
                 
                 done();
             },
             function(done) {
-                git.add(GENERATED_REF_DOCS, done);
+                git.add(GENERATED_DOCS_DIR, done);
             },
             function(done) {
                 git.commit("Updating v" + SDK_VERSION + " docs: " + (new Date()), done);  
