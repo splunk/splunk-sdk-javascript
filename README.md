@@ -420,7 +420,7 @@ of embedded libraries and their licenses:
 [node_examples_dir]:        https://github.com/splunk/splunk-sdk-javascript/blob/master/examples/node
 [browser_examples_dir]:     https://github.com/splunk/splunk-sdk-javascript/blob/master/examples/browser
 [client_dir]:               https://github.com/splunk/splunk-sdk-javascript/blob/master/client
-[refdocs]:                  http://splunk.github.com/splunk-sdk-javascript/docs/0.5.0/index.html
+[refdocs]:                  http://splunk.github.com/splunk-sdk-javascript/docs/0.5.0/refs/index.html
 [devportal]:                http://dev.splunk.com
 [cli]:                      https://github.com/splunk/splunk-sdk-javascript/blob/master/bin/cli.js
 [SplunkInstall]:            http://docs.splunk.com/Documentation/Splunk/latest/Installation/WhatsintheInstallationManual
