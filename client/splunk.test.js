@@ -1200,6 +1200,8 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
          * @param  {Function} callback A callback to be invoked when the request is complete: `(err, response)`
          */
         _requestWrapper: function(task, callback) {
+            callback = callback || function() {};
+            
             var that = this;
             var req = null;
             
