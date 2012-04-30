@@ -83,15 +83,15 @@ exports.setup = function(http) {
 
             "Callback#args with objects": function(test) {
                 this.http.get("http://www.httpbin.org/get", [],
-                             {a: 1, b: {c: "ab", d: 12}}, 0,
-                             function(err, res) {
-                                 var args = res.data.args;
-                                 test.strictEqual(args.a, "1");
-                                 test.strictEqual(args.b, "ab");
-                                 test.strictEqual(res.data.url,
-                                                 "http://www.httpbin.org/get?a=1&b=ab&b=12");
-                                 test.done();
-                             });
+                              {a: 1, b: {c: "ab", d: 12}}, 0,
+                              function(err, res) {
+                                  var args = res.data.args;
+                                  test.strictEqual(args.a, "1");
+                                  test.strictEqual(args.b, "ab");
+                                  test.strictEqual(res.data.url,
+                                                   "http://www.httpbin.org/get?a=1&b=ab&b=12");
+                                  test.done();
+                              });
             },
             
             "Callback#headers": function(test) {
@@ -287,7 +287,7 @@ exports.setup = function(http) {
                 test.done();
             },
 
-            "Http base class virtual methods are virtual": function(test) {
+            "Methods of Http base class that must be overrided": function(test) {
                 var h = new splunkjs.Http();
                 test.throws(function() { h.makeRequest("asdf", null, null); });
                 test.throws(function() { h.parseJson("{}"); });

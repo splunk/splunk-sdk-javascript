@@ -16,7 +16,7 @@ exports.setup = function() {
 
     var unload = function(name) {
         for (k in require.cache) {
-            if (require.cache.hasOwnProperty(k) && k.match(name + '$')) {
+            if (require.cache.hasOwnProperty(k) && k.match(name + "$")) {
                 delete require.cache[k];
             };
         };
@@ -24,59 +24,60 @@ exports.setup = function() {
     
     if (isBrowser) {
         return {};
-    } else {
+    } 
+    else {
         return {
             "Default level with no environment variable": function(test) {
-                var old_val = process.env.LOG_LEVEL;
+                var oldVal = process.env.LOG_LEVEL;
                 delete process.env.LOG_LEVEL;
-                unload('log.js');
-                var logger = require('../lib/log.js');
+                unload("log.js");
+                var logger = require("../lib/log.js");
                 test.equal(process.env.LOG_LEVEL, logger.Logger.levels.ERROR);
-                process.env.LOG_LEVEL = old_val;
-                unload('log.js');
+                process.env.LOG_LEVEL = oldVal;
+                unload("log.js");
                 test.done();
             },
 
             "Setting a nonexistant level default to errors": function(test) {
-                var old_val = process.env.LOG_LEVEL;
+                var oldVal = process.env.LOG_LEVEL;
                 process.env.LOG_LEVEL = "25";
-                unload('log.js');
-                var logger = require('../lib/log.js');
+                unload("log.js");
+                var logger = require("../lib/log.js");
                 test.equal(process.env.LOG_LEVEL, logger.Logger.levels.ERROR);
-                process.env.LOG_LEVEL = old_val;
-                unload('log.js');
+                process.env.LOG_LEVEL = oldVal;
+                unload("log.js");
                 test.done();
             },
 
             "Setting logging level as integer works": function(test) {
-                var old_val = process.env.LOG_LEVEL;
+                var oldVal = process.env.LOG_LEVEL;
                 process.env.LOG_LEVEL = "3";
-                unload('log.js');
-                var logger = require('../lib/log.js');
+                unload("log.js");
+                var logger = require("../lib/log.js");
                 test.equal(process.env.LOG_LEVEL, logger.Logger.levels.INFO);
-                process.env.LOG_LEVEL = old_val;
-                unload('log.js');
+                process.env.LOG_LEVEL = oldVal;
+                unload("log.js");
                 test.done();
             },
 
             "Setting logging level as string works": function(test) {
-                var old_val = process.env.LOG_LEVEL;
+                var oldVal = process.env.LOG_LEVEL;
                 process.env.LOG_LEVEL = "INFO";
-                unload('log.js');
-                var logger = require('../lib/log.js');
+                unload("log.js");
+                var logger = require("../lib/log.js");
                 test.equal(process.env.LOG_LEVEL, logger.Logger.levels.INFO);
-                process.env.LOG_LEVEL = old_val;
-                unload('log.js');
+                process.env.LOG_LEVEL = oldVal;
+                unload("log.js");
                 test.done();
             },
 
             "Setting logging level after the fact works": function(test) {
-                var old_val = process.env.LOG_LEVEL;
-                unload('log.js');
-                var logger = require('../lib/log.js');
+                var oldVal = process.env.LOG_LEVEL;
+                unload("log.js");
+                var logger = require("../lib/log.js");
                 logger.Logger.setLevel()
-                process.env.LOG_LEVEL = old_val;
-                unload('log.js');
+                process.env.LOG_LEVEL = oldVal;
+                unload("log.js");
                 test.done();
             }
 
@@ -86,7 +87,7 @@ exports.setup = function() {
 }
 
 if (module === require.main) {
-    var test        = require('../contrib/nodeunit/test_reporter');
+    var test        = require("../contrib/nodeunit/test_reporter");
     
     var suite = exports.setup();
     test.run([{"Tests": suite}]);
