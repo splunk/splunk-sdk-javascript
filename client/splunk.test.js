@@ -5068,6 +5068,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             if (!params.search) {
                 callback("Must provide a query to create a search job");
+                return;
             } 
 
             var that = this;

@@ -206,8 +206,11 @@
     
         if (!opts || !opts.preserve) {
             try {
-                if(fs.statSync(newDirLocation).isDirectory()) exports.rmdirSyncRecursive(newDirLocation);
-            } catch(e) { }
+                if(fs.statSync(newDirLocation).isDirectory()) {
+                    exports.rmdirSyncRecursive(newDirLocation);
+                }
+            } 
+            catch(e) { }
         }
     
         /*  Create the directory where all our junk is moving to; read the mode of the source directory and mirror it */
@@ -217,7 +220,9 @@
         } 
         catch (e) {
             //if the directory already exists, that's okay
-            if (e.code !== 'EEXIST') throw e;
+            if (e.code !== 'EEXIST') {
+                throw e;
+            }
         }
     
         var files = fs.readdirSync(sourceDir);
@@ -248,7 +253,9 @@
             files = fs.readdirSync(path);
         } 
         catch (err) {
-            if(failSilent) return;
+            if(failSilent) {
+                return;
+            }
             throw new Error(err.message);
         }
 
