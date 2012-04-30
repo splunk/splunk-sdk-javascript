@@ -1759,7 +1759,7 @@ exports.setup = function(svc) {
                 );
             },
 
-            "Callback#Service submit event, abbreviated arguments": function(test) {
+            "Callback#Service submit event, omitting optional arguments": function(test) {
                 var message = "Hello World -- " + getNextId();
                 var sourcetype = "sdk-tests";
                 
@@ -1792,9 +1792,9 @@ exports.setup = function(svc) {
                 var service = this.loggedOutService;
                 var indexName = this.indexName;
                 Async.chain(
-                    [function(done) {
+                    function(done) {
                         service.log(message, done);
-                    }],
+                    },
                     function(err) {
                         test.ok(err);
                         test.done(); 
@@ -2222,7 +2222,7 @@ exports.setup = function(svc) {
                 });
             },
 
-            "Argument munging in typeahead": function(test) {
+            "Typeahead with omitted optional arguments": function(test) {
                 var service = this.service;
                 service.typeahead("index=", function(err, options) {
                     test.ok(!err);
@@ -2248,10 +2248,10 @@ exports.setup = function(svc) {
             "Endpoint delete on a relative path": function(test) {
                 var service = this.service;
                 var endpoint = new splunkjs.Service.Endpoint(service, "/search/jobs/12345");
-                endpoint.del("search/jobs/12345", {}, function() { test.done();})
+                endpoint.del("search/jobs/12345", {}, function() { test.done();});
             },
 
-            "Virtual methods of Resource are virtual": function(test) {
+            "Methods of Resource to be overridden": function(test) {
                 var service = this.service;
                 var resource = new splunkjs.Service.Resource(service, "/search/jobs/12345");
                 test.throws(function() { resource.path(); });
@@ -2269,45 +2269,63 @@ exports.setup = function(svc) {
             },
 
             "Accessors function properly": function(test) {
-                var ent = new splunkjs.Service.Entity(this.service, "/search/jobs/12345", {owner: "boris", app: "factory", sharing: "app"});
-                ent._load({acl: {owner: "boris", app: "factory", sharing: "app"},
-                           links: {link1: 35},
-                           published: "meep",
-                           author: "Hilda"});
-                test.ok(ent.acl().owner === "boris" && ent.acl().app === "factory" && ent.acl().sharing === "app");
-                test.ok(ent.links().link1 === 35);
-                test.strictEqual(ent.author(), "Hilda");
-                test.strictEqual(ent.published(), "meep");
+                var entity = new splunkjs.Service.Entity(
+                    this.service, 
+                    "/search/jobs/12345", 
+                    {owner: "boris", app: "factory", sharing: "app"}
+                );
+                entity._load(
+                    {acl: {owner: "boris", app: "factory", sharing: "app"},
+                     links: {link1: 35},
+                     published: "meep",
+                     author: "Hilda"}
+                );
+                test.ok(entity.acl().owner === "boris");
+                test.ok(entity.acl().app === "factory");
+                test.ok(entity.acl().sharing === "app");
+                test.ok(entity.links().link1 === 35);
+                test.strictEqual(entity.author(), "Hilda");
+                test.strictEqual(entity.published(), "meep");
                 test.done();
             },
 
             "Refresh throws error correctly": function(test) {
-                var ent = new splunkjs.Service.Entity(this.loggedOutService, "/search/jobs/12345", {owner: "boris", app: "factory", sharing: "app"});
-                ent.refresh({}, function(err) { test.ok(err); test.done();});
+                var entity = new splunkjs.Service.Entity(this.loggedOutService, "/search/jobs/12345", {owner: "boris", app: "factory", sharing: "app"});
+                entity.refresh({}, function(err) { test.ok(err); test.done();});
             },
 
             "Cannot update name of entity": function(test) {
-                var ent = new splunkjs.Service.Entity(this.service, "/search/jobs/12345", {owner: "boris", app: "factory", sharing: "app"});
-                test.throws(function() { ent.update({name: "asdf"});});
+                var entity = new splunkjs.Service.Entity(this.service, "/search/jobs/12345", {owner: "boris", app: "factory", sharing: "app"});
+                test.throws(function() { entity.update({name: "asdf"});});
                 test.done();
             },
 
             "Disable throws error correctly": function(test) {
-                var ent = new splunkjs.Service.Entity(this.loggedOutService, "/search/jobs/12345", {owner: "boris", app: "factory", sharing: "app"});
-                ent.disable(function(err) { test.ok(err); test.done();});
+                var entity = new splunkjs.Service.Entity(
+                    this.loggedOutService, 
+                    "/search/jobs/12345", 
+                    {owner: "boris", app: "factory", sharing: "app"}
+                );
+                entity.disable(function(err) { test.ok(err); test.done();});
             },
             
             "Enable throws error correctly": function(test) {
-                var ent = new splunkjs.Service.Entity(this.loggedOutService, "/search/jobs/12345", {owner: "boris", app: "factory", sharing: "app"});
-                ent.enable(function(err) { test.ok(err); test.done();});
+                var entity = new splunkjs.Service.Entity(
+                    this.loggedOutService,
+                    "/search/jobs/12345", 
+                    {owner: "boris", app: "factory", sharing: "app"}
+                );
+                entity.enable(function(err) { test.ok(err); test.done();});
             },
 
             "Does reload work?": function(test) {
-                var idx = new splunkjs.Service.Index(this.service,
-                                                 "data/indexes/_internal",
-                                                 {owner: "admin", 
-                                                  app: "search", 
-                                                  sharing: "app"});
+                var idx = new splunkjs.Service.Index(
+                    this.service,
+                    "data/indexes/_internal",
+                    {owner: "admin", 
+                     app: "search", 
+                     sharing: "app"}
+                );
                 idx.reload(function(err) {
                     test.ok(!err);
                 });

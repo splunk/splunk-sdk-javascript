@@ -30,7 +30,7 @@ exports.setup = function() {
                 },
                 function(err) {
                     test.ok(!err);
-                    test.done();
+n                    test.done();
                 }
             );
         },
@@ -65,33 +65,34 @@ exports.setup = function() {
         },
 
         "Whilst sans condition is never": function(test) {
-          var i = false;
-          Async.whilst(undefined, 
-                       function(done) { i = true; done();},
-                       function(err) {
-                         test.strictEqual(i, false);
-                         test.done();
-                       }
-                      );
-          
-
+            var i = false;
+            Async.whilst(
+                undefined, 
+                function(done) { i = true; done();},
+                function(err) {
+                    test.strictEqual(i, false);
+                    test.done();
+                }
+            );
         },
 
-        "Empty body does nothing": function(test) {
-          var i = true;
-          Async.whilst(function() { 
-            if (i) {
-              i = false;
-              return true;
-            } else {
-              return i;
-            }
-          },
-                       undefined,
-                       function (err) {
-                         test.done();
-                       }
-                      );
+        "Whilst with empty body does nothing": function(test) {
+            var i = true;
+            Async.whilst(
+                function() { 
+                    if (i) {
+                        i = false;
+                        return true;
+                    } 
+                    else {
+                        return i;
+                    }
+                },
+                undefined,
+                function (err) {
+                    test.done();
+                }
+            );
         },
         
         "Parallel success": function(test) {
