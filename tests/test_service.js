@@ -748,6 +748,23 @@ exports.setup = function(svc) {
                 ); 
             },
 
+            "Callback#Create failure": function(test) {
+                var name = "jssdk_savedsearch_" + getNextId();
+                var originalSearch = "search index=_internal | head 1";
+            
+                var jobs = this.service.jobs();
+                test.ok(jobs instanceof splunkjs.Service.Jobs);
+                test.throws(function() {jobs.create({search: originalSearch, name: name, exec_mode: "oneshot"}, function() {});});
+                test.done();
+            },
+
+            // TODO: Fix this
+            // "Callback#Create fails with no search string": function(test) {
+            //     var jobs = this.service.jobs();
+            //     test.ok(jobs instanceof splunkjs.Service.Jobs);
+            //     jobs.create("", {}, function(err) { test.done();});
+            // },
+
             "Callback#Oneshot search": function(test) {
                 var sid = getNextId();
                 var that = this;
@@ -1163,6 +1180,11 @@ exports.setup = function(svc) {
                     });
             },
 
+            "Callback#oneshot requires search string": function(test) {
+                test.throws(function() { this.service.oneshotSearch({name: "jssdk_oneshot_" + getNextId()}, function(err) {});});
+                test.done();
+            },
+
             "Callback#Create + dispatch + history": function(test) {
                 var name = "jssdk_savedsearch_" + getNextId();
                 var originalSearch = "search index=_internal | head 1";
@@ -1234,6 +1256,54 @@ exports.setup = function(svc) {
                         test.done();
                     }
                 );
+            },
+
+            "Callback#job events fails": function(test) {
+                var job = new splunkjs.Service.Job(this.loggedOutService, "abc", {});
+                job.events({}, function (err) {
+                    test.ok(err);
+                    test.done();
+                });
+            },
+
+            "Callback#job preview fails": function(test) {
+                var job = new splunkjs.Service.Job(this.loggedOutService, "abc", {});
+                job.preview({}, function(err) {
+                    test.ok(err);
+                    test.done();
+                });
+            },
+
+            "Callback#job results fails": function(test) {
+                var job = new splunkjs.Service.Job(this.loggedOutService, "abc", {});
+                job.results({}, function(err) {
+                    test.ok(err);
+                    test.done();
+                });
+            },
+
+            "Callback#job searchlog fails": function(test) {
+                var job = new splunkjs.Service.Job(this.loggedOutService, "abc", {});
+                job.searchlog(function(err) {
+                    test.ok(err);
+                    test.done();
+                });
+            },
+
+            "Callback#job summary fails": function(test) {
+                var job = new splunkjs.Service.Job(this.loggedOutService, "abc", {});
+                job.summary({}, function(err) {
+                    test.ok(err);
+                    test.done();
+                });
+            },
+
+            "Callback#job timeline fails": function(test) {
+                var job = new splunkjs.Service.Job(this.loggedOutService, "abc", {});
+                job.timeline({}, function(err) {
+                    test.ok(err);
+                    test.done();
+                });
             },
             
             "Callback#delete test saved searches": function(test) {
@@ -1479,48 +1549,53 @@ exports.setup = function(svc) {
                     test.done();
                 });
             },
-                   
-            "Callback#create file + create stanza + update stanza": function(test) {
-                var that = this;
-                var namespace = {owner: "nobody", app: "system"};
-                var fileName = "jssdk_file";
-                var value = "barfoo_" + getNextId();
-                
-                Async.chain([
-                    function(done) {
-                        var configs = svc.configurations(namespace); 
-                        configs.refresh(done);
-                    },
-                    function(configs, done) {
-                        configs.create({__conf: fileName}, done);
-                    },
-                    function(file, done) {
-                        file.create("stanza", done);
-                    },
-                    function(stanza, done) {
-                        stanza.update({"jssdk_foobar": value}, done);
-                    },
-                    function(stanza, done) {
-                        test.strictEqual(stanza.properties()["jssdk_foobar"], value);
-                        done();
-                    },
-                    function(done) {
-                        var file = new splunkjs.Service.ConfigurationFile(svc, fileName);
-                        file.refresh(done);
-                    },
-                    function(file, done) {
-                        var stanza = file.contains("stanza");
-                        test.ok(stanza);
-                        stanza.remove(done);
 
-                    }
-                ],
-                function(err) {
-                    console.log(err);
-                    test.ok(!err);
-                    test.done();
-                });
+            "Callback#configurations init": function(test) {
+                test.throws(function() {new splunkjs.Service.Configurations(this.service, {owner: "-", app: "-", sharing: "system"});});
+                test.done();
             }
+                   
+            // "Callback#create file + create stanza + update stanza": function(test) {
+            //     var that = this;
+            //     var namespace = {owner: "nobody", app: "system"};
+            //     var fileName = "jssdk_file";
+            //     var value = "barfoo_" + getNextId();
+                
+            //     Async.chain([
+            //         function(done) {
+            //             var configs = svc.configurations(namespace); 
+            //             configs.refresh(done);
+            //         },
+            //         function(configs, done) {
+            //             configs.create({__conf: fileName}, done);
+            //         },
+            //         function(file, done) {
+            //             file.create("stanza", done);
+            //         },
+            //         function(stanza, done) {
+            //             stanza.update({"jssdk_foobar": value}, done);
+            //         },
+            //         function(stanza, done) {
+            //             test.strictEqual(stanza.properties()["jssdk_foobar"], value);
+            //             done();
+            //         },
+            //         function(done) {
+            //             var file = new splunkjs.Service.ConfigurationFile(svc, fileName);
+            //             file.refresh(done);
+            //         },
+            //         function(file, done) {
+            //             var stanza = file.contains("stanza");
+            //             test.ok(stanza);
+            //             stanza.remove(done);
+
+            //         }
+            //     ],
+            //     function(err) {
+            //         console.log(err);
+            //         test.ok(!err);
+            //         test.done();
+            //     });
+            // }
         },
         
         "Index Tests": {      
@@ -1538,6 +1613,12 @@ exports.setup = function(svc) {
                     
                     done();
                 });
+            },
+
+            "Callback#remove index fails": function(test) {
+                var index = this.service.indexes().contains(this.indexName);
+                test.throws(function() { index.remove();});
+                test.done();
             },
                          
             "Callback#list indexes": function(test) {
@@ -2053,7 +2134,7 @@ exports.setup = function(svc) {
                     test.done();
                 });
             },
-            
+
             "Callback#Create + update + delete view": function(test) {
                 var service = this.service;
                 var name = "jssdk_testview";
