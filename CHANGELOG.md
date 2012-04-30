@@ -7,7 +7,7 @@ some of which will break existing applications.
 
 ### Features
 
-* Improved naming
+#### Improved naming
 
 The root namespace of the SDK has switched from `Splunk` to `splunkjs`. 
 Furthermore, `Client` has been renamed to `Service`. Before you had:
@@ -17,10 +17,10 @@ Furthermore, `Client` has been renamed to `Service`. Before you had:
 
 Now you have:
 
-    new Splunk.Service(...);
-    new Splunk.Service.Job(...);
+    new splunkjs.Service(...);
+    new splunkjs.Service.Job(...);
 
-* Improvement to state management
+#### Improvement to state management
 
 In previous versions, the SDK kept a notion of whether an entity or 
 collection was in a "valid" state. This notion has been taken out, and these
@@ -53,14 +53,14 @@ And for instances of `Collection` (e.g. `Jobs`, `SavedSearches`):
   - `links()`: the links for this collection
   - `updated`: the updated time for this collection
 
-* Improvement to asynchronous state management functions
+#### Improvement to asynchronous state management functions
 
 In previous versions of the SDK, nearly all functions that interacted with a 
 given resource (e.g. a `Job` entity) where asynchronous. Now, only three core
 functions are asynchronous: `fetch()`, `update()` and `create()`. Both `list()`
 and `item()` are now completely synchronous.
 
-* Proper support for Splunk namespaces (i.e. `owner/app`).
+#### Proper support for Splunk namespaces (i.e. `owner/app`).
 
 In previous versons of the SDK, the only way to specify which namespace you 
 wanted a particular resource fetched from was to create a new `Service` 
@@ -70,7 +70,7 @@ fetched. For example:
     // Fetch from "user"/"awesome_app" namespace
     var jobs = service.jobs({owner: "user", app: "awesome_app"});
 
-* Ability to paginate and filter collections.
+#### Ability to paginate and filter collections.
 
 You can now paginate and filter collections. For example, to get only two
 saved searches starting from the 2nd offset:
@@ -83,7 +83,7 @@ saved searches starting from the 2nd offset:
 The full list of options is: `count`, `offset`, `search`, `sort_dir`, 
 `sort_key`, `sort_mode`.
 
-* You can now abort asynchronous HTTP requests.
+#### You can now abort asynchronous HTTP requests.
 
 When you issue an asynchronous HTTP request (which is all requests), you can now
 abort this request at any time:
@@ -94,7 +94,7 @@ abort this request at any time:
 
 The callback will be invoked with the error value set to `"abort"`.
 
-* Explicit login is not required if a username and password is provided.
+#### Explicit login is not required if a username and password is provided.
 
 In previous versions of the SDK, you always had to either perform an explicit
 login or provide a session key. You can now simply pass in a username and
@@ -114,7 +114,7 @@ is now simply:
     var service = new splunkjs.Service(...);
     service.search(...);
     
-* Storm support
+#### Storm support
 
 Splunk Storm is an exciting new offering providing you with the Splunk you know,
 on the cloud, and much improved! The SDK now supports Storm, specifically
@@ -130,7 +130,7 @@ simply create a `StormService` rather than a `Service`:
         }
     );
 
-* Several new entities and collections have been implemented:
+#### Several new entities and collections have been implemented:
     
 We now have support for more of the Splunk REST API, specifically:
 
@@ -140,7 +140,7 @@ We now have support for more of the Splunk REST API, specifically:
   - `Service.typeahead()`.
   - `Service.serverInfo()`.
     
-* Streamlining of submitting events to Splunk
+#### Streamlining of submitting events to Splunk
 
 Submitting events to Splunk over HTTP is now easier, with a simple method
 on the `Service`:
@@ -154,25 +154,28 @@ on the `Service`:
         }
     );
 
-* `SavedSearch.history` returns actual `Job` instances
+#### `SavedSearch.history` returns actual `Job` instances
 
-The SDK will now create real `Job` instances when you call `SavedSearch.history`:
+Previously, when calling `SavedSearch.history()`, the SDK returned a simple 
+object containing the information corresponding to that dispatch of the saved
+search. The SDK will now create real `Job` instances when you call 
+`SavedSearch.history`:
 
     var savedSearch = ...;
     savedSearch.history(function(err, jobs) {
         // jobs is an array of splunkjs.Service.Job instances 
     });
 
-* Improved JSON format
+#### Improved JSON format
 
 The JSON format that is returned by Splunk (through the `xml2json`, previously
 known as `new_english`, translation app) has been improved. It is now much
 closer to the JSON format that will be available in core Splunk in a future
 version.
 
-* More unit tests 
+#### More unit tests 
 
-* Improved documentation
+#### Improved documentation
 
 ### Breaking Changes
 
