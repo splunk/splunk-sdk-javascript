@@ -26,7 +26,7 @@ exports.setup = function(svc) {
     };
 
     return {
-        "Namespace Tests": {
+        /*"Namespace Tests": {
             setUp: function(finished) {
                 this.service = svc;
                 var that = this;
@@ -271,7 +271,7 @@ exports.setup = function(svc) {
                     );
                 });
             }
-        },
+        },*/
         
         "Job Tests": {
             setUp: function(done) {
@@ -279,7 +279,7 @@ exports.setup = function(svc) {
                 done();
             },
             
-            "Callback#Create+abort job": function(test) {
+            /*"Callback#Create+abort job": function(test) {
                 var sid = getNextId();
                 var options = {id: sid};
                 var jobs = this.service.jobs({app: "xml2json"});
@@ -293,9 +293,9 @@ exports.setup = function(svc) {
                 splunkjs.Async.sleep(1000, function() {
                     req.abort();
                 });
-            },
+            },*/
 
-            "Callback#Create+cancel job": function(test) {
+            /*"Callback#Create+cancel job": function(test) {
                 var sid = getNextId();
                 this.service.jobs().search('search index=_internal | head 1', {id: sid}, function(err, job) {   
                     test.ok(job);
@@ -377,6 +377,7 @@ exports.setup = function(svc) {
                             job.results({}, done);
                         },
                         function(results, job, done) {
+                            console.log(arguments);
                             test.strictEqual(results.rows.length, 1);
                             test.strictEqual(results.fields.length, 1);
                             test.strictEqual(results.fields[0], "count");
@@ -491,7 +492,7 @@ exports.setup = function(svc) {
                         test.done();
                     }
                 ); 
-            },
+            },*/
 
             "Callback#Pause + unpause + finalize preview": function(test) {
                 var that = this;
@@ -510,6 +511,7 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job, 
                                 function(j) {
+                                    console.log(j.properties());
                                     return j.properties()["isPaused"];
                                 },
                                 10,
@@ -535,7 +537,7 @@ exports.setup = function(svc) {
                             job.finalize(done);
                         },
                         function(job, done) {
-                            job.cancel(done);
+                            //job.cancel(done);
                         }
                     ],
                     function(err) {
@@ -545,7 +547,7 @@ exports.setup = function(svc) {
                 ); 
             },
 
-            "Callback#Set TTL": function(test) {
+            /*"Callback#Set TTL": function(test) {
                 var sid = getNextId();
                 var originalTTL = 0;
                 var that = this;
@@ -870,10 +872,10 @@ exports.setup = function(svc) {
                         test.done();
                     }
                 );
-            }
+            }*/
         },
         
-        "App Tests": {      
+        /*"App Tests": {      
             setUp: function(done) {
                 this.service = svc;
                 done();
@@ -1820,7 +1822,7 @@ exports.setup = function(svc) {
                     test.done();
                 });
             }
-        }
+        }*/
     };
 
 };
