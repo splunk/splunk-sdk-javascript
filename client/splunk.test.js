@@ -2560,7 +2560,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             var path = this.paths.submitEvent + "?" + Http.encode(params);
             var method = "POST";
-            var headers = {};
+            var headers = {"Content-Type": "text/plain"};
             var body = event;
             
             var req = this.request(path, method, headers, body, function(err, response) {
