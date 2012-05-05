@@ -26,7 +26,7 @@ exports.setup = function(svc) {
     };
 
     return {
-        /*"Namespace Tests": {
+        "Namespace Tests": {
             setUp: function(finished) {
                 this.service = svc;
                 var that = this;
@@ -271,7 +271,7 @@ exports.setup = function(svc) {
                     );
                 });
             }
-        },*/
+        },
         
         "Job Tests": {
             setUp: function(done) {
@@ -279,7 +279,7 @@ exports.setup = function(svc) {
                 done();
             },
             
-            /*"Callback#Create+abort job": function(test) {
+            "Callback#Create+abort job": function(test) {
                 var sid = getNextId();
                 var options = {id: sid};
                 var jobs = this.service.jobs({app: "xml2json"});
@@ -293,9 +293,9 @@ exports.setup = function(svc) {
                 splunkjs.Async.sleep(1000, function() {
                     req.abort();
                 });
-            },*/
+            },
 
-            /*"Callback#Create+cancel job": function(test) {
+            "Callback#Create+cancel job": function(test) {
                 var sid = getNextId();
                 this.service.jobs().search('search index=_internal | head 1', {id: sid}, function(err, job) {   
                     test.ok(job);
@@ -377,7 +377,6 @@ exports.setup = function(svc) {
                             job.results({}, done);
                         },
                         function(results, job, done) {
-                            console.log(arguments);
                             test.strictEqual(results.rows.length, 1);
                             test.strictEqual(results.fields.length, 1);
                             test.strictEqual(results.fields[0], "count");
@@ -492,7 +491,7 @@ exports.setup = function(svc) {
                         test.done();
                     }
                 ); 
-            },*/
+            },
 
             "Callback#Pause + unpause + finalize preview": function(test) {
                 var that = this;
@@ -511,7 +510,6 @@ exports.setup = function(svc) {
                             tutils.pollUntil(
                                 job, 
                                 function(j) {
-                                    console.log(j.properties());
                                     return j.properties()["isPaused"];
                                 },
                                 10,
@@ -537,7 +535,7 @@ exports.setup = function(svc) {
                             job.finalize(done);
                         },
                         function(job, done) {
-                            //job.cancel(done);
+                            job.cancel(done);
                         }
                     ],
                     function(err) {
@@ -547,7 +545,7 @@ exports.setup = function(svc) {
                 ); 
             },
 
-            /*"Callback#Set TTL": function(test) {
+            "Callback#Set TTL": function(test) {
                 var sid = getNextId();
                 var originalTTL = 0;
                 var that = this;
@@ -663,14 +661,16 @@ exports.setup = function(svc) {
                             test.ok(job);
                             test.ok(summary);
                             test.strictEqual(summary.event_count, 1);
-                            test.strictEqual(summary.fields.foo.count, 1);
-                            test.strictEqual(summary.fields.foo.distinct_count, 1);
-                            test.ok(summary.fields.foo.is_exact, 1);
-                            test.strictEqual(summary.fields.foo.name, "foo");
-                            test.strictEqual(summary.fields.foo.modes.length, 1);
-                            test.strictEqual(summary.fields.foo.modes[0].count, 1);
-                            test.strictEqual(summary.fields.foo.modes[0].value, "bar");
-                            test.ok(summary.fields.foo.modes[0].is_exact);
+                            test.strictEqual(summary.fields.length, 1);
+                            test.strictEqual(summary.fields[0].name, "foo");
+                            test.strictEqual(summary.fields[0].count, 1);
+                            test.strictEqual(summary.fields[0].distinct_count, 1);
+                            test.ok(summary.fields[0].is_exact, 1);
+                            test.strictEqual(summary.fields[0].name, "foo");
+                            test.strictEqual(summary.fields[0].modes.length, 1);
+                            test.strictEqual(summary.fields[0].modes[0].count, 1);
+                            test.strictEqual(summary.fields[0].modes[0].value, "bar");
+                            test.ok(summary.fields[0].modes[0].is_exact);
                             job.cancel(done);
                         }
                     ],
@@ -703,13 +703,13 @@ exports.setup = function(svc) {
                         function(timeline, job, done) {
                             test.ok(job);
                             test.ok(timeline);
-                            test.strictEqual(timeline.buckets.length, 1);
+                            test.strictEqual(timeline.bucket.length, 1);
                             test.strictEqual(timeline.event_count, 1);
-                            test.strictEqual(timeline.buckets[0].available_count, 1);
-                            test.strictEqual(timeline.buckets[0].duration, 0.001);
-                            test.strictEqual(timeline.buckets[0].earliest_time_offset, timeline.buckets[0].latest_time_offset);
-                            test.strictEqual(timeline.buckets[0].total_count, 1);
-                            test.ok(timeline.buckets[0].is_finalized);
+                            test.strictEqual(timeline.bucket[0].available_count, 1);
+                            test.strictEqual(timeline.bucket[0].duration, 0.001);
+                            test.strictEqual(timeline.bucket[0].earliest_time_offset, timeline.bucket[0].latest_time_offset);
+                            test.strictEqual(timeline.bucket[0].total_count, 1);
+                            test.ok(timeline.bucket[0].is_finalized);
                             job.cancel(done);
                         }
                     ],
@@ -788,14 +788,11 @@ exports.setup = function(svc) {
                 
                 Async.chain([
                         function(done) {
-                            var query = 'search index=history MUST_NOT_EXITABCDEF';
+                            var query = 'search index=history MUST_NOT_EXISTABCDEF';
                             that.service.jobs().oneshotSearch(query, {id: sid}, done);
                         },
                         function(results, done) {
-                            test.ok(results);
-                            test.strictEqual(results.fields.length, 0);
-                            test.strictEqual(results.rows.length, 0);
-                            test.ok(!results.preview);
+                            test.ok(!results.trim());
                             
                             done();
                         }
@@ -872,10 +869,10 @@ exports.setup = function(svc) {
                         test.done();
                     }
                 );
-            }*/
+            }
         },
         
-        /*"App Tests": {      
+        "App Tests": {      
             setUp: function(done) {
                 this.service = svc;
                 done();
@@ -1105,7 +1102,7 @@ exports.setup = function(svc) {
                         },
                         function(search, done) {
                             // Verify that we have the required fields
-                            test.strictEqual(search.fields().required[0], "search");
+                            //test.strictEqual(search.fields().required[0], "search");
                             
                             search.remove(done);
                         }
@@ -1197,7 +1194,6 @@ exports.setup = function(svc) {
                     Async.parallelEach(
                         searchList,
                         function(search, idx, callback) {
-                            console.log(search.name);
                             if (utils.startsWith(search.name, "jssdk_")) {
                                 search.remove(callback);
                             }
@@ -1369,7 +1365,7 @@ exports.setup = function(svc) {
                 
                 var name = this.indexName;
                 var indexes = this.service.indexes();
-                var originalAssureUTF8Value = false;
+                var originalSyncMeta = false;
                 
                 Async.chain([
                         function(callback) {
@@ -1379,26 +1375,26 @@ exports.setup = function(svc) {
                             var index = indexes.item(name);
                             test.ok(index);
                             
-                            originalAssureUTF8Value = index.properties().assureUTF8;
+                            originalSyncMeta = index.properties().syncMeta;
                             index.update({
-                                assureUTF8: !originalAssureUTF8Value
+                                syncMeta: !originalSyncMeta
                             }, callback);
                         },
                         function(index, callback) {
                             test.ok(index);
                             var properties = index.properties();
                             
-                            test.strictEqual(!originalAssureUTF8Value, properties.assureUTF8);
+                            test.strictEqual(!originalSyncMeta, properties.syncMeta);
                             
                             index.update({
-                                assureUTF8: !properties.assureUTF8
+                                syncMeta: !properties.syncMeta
                             }, callback);
                         },
                         function(index, callback) {
                             test.ok(index);
                             var properties = index.properties();
                             
-                            test.strictEqual(originalAssureUTF8Value, properties.assureUTF8);
+                            test.strictEqual(originalSyncMeta, properties.syncMeta);
                             callback();
                         },
                         function(callback) {
@@ -1469,7 +1465,7 @@ exports.setup = function(svc) {
                         test.ok(eventInfo);
                         test.strictEqual(eventInfo.sourcetype, sourcetype);
                         test.strictEqual(eventInfo.bytes, message.length);
-                        test.strictEqual(eventInfo._index, indexName);
+                        test.strictEqual(eventInfo.index, indexName);
                         
                         // We could poll to make sure the index has eaten up the event,
                         // but unfortunately this can take an unbounded amount of time.
@@ -1503,7 +1499,7 @@ exports.setup = function(svc) {
                             test.ok(eventInfo);
                             test.strictEqual(eventInfo.sourcetype, sourcetype);
                             test.strictEqual(eventInfo.bytes, message.length);
-                            test.strictEqual(eventInfo._index, indexName);
+                            test.strictEqual(eventInfo.index, indexName);
                             
                             // We could poll to make sure the index has eaten up the event,
                             // but unfortunately this can take an unbounded amount of time.
@@ -1822,7 +1818,7 @@ exports.setup = function(svc) {
                     test.done();
                 });
             }
-        }*/
+        }
     };
 
 };
