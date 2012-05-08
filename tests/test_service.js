@@ -1367,7 +1367,7 @@ exports.setup = function(svc) {
             "Callback#setupInfo succeeds": function(test) {
                 var app = new splunkjs.Service.Application(this.service, "xml2json");
                 app.setupInfo(function(err, content, search) {
-                    test.ok(err.response.body.match("Setup configuration file does not"));
+                    test.ok(err.data.messages[0].text.match("Setup configuration file does not"));
                     test.done();
                 });
             },
@@ -1391,8 +1391,6 @@ exports.setup = function(svc) {
             }
         },
         
-<<<<<<< HEAD
-=======
         "Properties Tests": {        
             setUp: function(done) {
                 this.service = svc;
@@ -1463,50 +1461,48 @@ exports.setup = function(svc) {
                     test.ok(!err);
                     test.done();
                 });
-            }
+            },
              
-            // This always times out and fails.
-            // "Callback#create file + create stanza + update stanza": function(test) {
-            //     var that = this;
-            //     var fileName = "jssdk_file";
-            //     var value = "barfoo_" + getNextId();
+            "Callback#create file + create stanza + update stanza": function(test) {
+                var that = this;
+                var fileName = "jssdk_file";
+                var value = "barfoo_" + getNextId();
                 
-            //     Async.chain([
-            //         function(done) {
-            //             var properties = that.service.properties(); 
-            //             properties.refresh(done);
-            //         },
-            //         function(properties, done) {
-            //             properties.create(fileName, done);
-            //         },
-            //         function(file, done) {
-            //             file.create("stanza", done);
-            //         },
-            //         function(stanza, done) {
-            //             stanza.update({"jssdk_foobar": value}, done);
-            //         },
-            //         function(stanza, done) {
-            //             test.strictEqual(stanza.properties()["jssdk_foobar"], value);
-            //             done();
-            //         },
-            //         function(done) {
-            //             var file = new splunkjs.Service.PropertyFile(svc, fileName);
-            //             file.refresh(done);
-            //         },
-            //         function(file, done) {
-            //             var stanza = file.contains("stanza");
-            //             test.ok(stanza);
-            //             stanza.remove(done);
-            //         }
-            //     ],
-            //     function(err) {
-            //         test.ok(!err);
-            //         test.done();
-            //     });
-            // }
+                Async.chain([
+                    function(done) {
+                        var properties = that.service.properties(); 
+                        properties.refresh(done);
+                    },
+                    function(properties, done) {
+                        properties.create(fileName, done);
+                    },
+                    function(file, done) {
+                        file.create("stanza", done);
+                    },
+                    function(stanza, done) {
+                        stanza.update({"jssdk_foobar": value}, done);
+                    },
+                    function(stanza, done) {
+                        test.strictEqual(stanza.properties()["jssdk_foobar"], value);
+                        done();
+                    },
+                    function(done) {
+                        var file = new splunkjs.Service.PropertyFile(svc, fileName);
+                        file.refresh(done);
+                    },
+                    function(file, done) {
+                        var stanza = file.contains("stanza");
+                        test.ok(stanza);
+                        stanza.remove(done);
+                    }
+                ],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            }
         },
         
->>>>>>> a502c3b6d904e9d3ea3f1197d091189a836a4b3f
         "Configuration Tests": {        
             setUp: function(done) {
                 this.service = svc;
@@ -1585,13 +1581,13 @@ exports.setup = function(svc) {
             "Callback#configurations init": function(test) {
                 test.throws(function() {new splunkjs.Service.Configurations(this.service, {owner: "-", app: "-", sharing: "system"});});
                 test.done();
-            }
+            },
                    
-            // "Callback#create file + create stanza + update stanza": function(test) {
-            //     var that = this;
-            //     var namespace = {owner: "nobody", app: "system"};
-            //     var fileName = "jssdk_file";
-            //     var value = "barfoo_" + getNextId();
+            "Callback#create file + create stanza + update stanza": function(test) {
+                var that = this;
+                var namespace = {owner: "nobody", app: "system"};
+                var fileName = "jssdk_file";
+                var value = "barfoo_" + getNextId();
                 
                 Async.chain([
                     function(done) {

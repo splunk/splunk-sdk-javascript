@@ -82,16 +82,20 @@ exports.setup = function(http) {
             },
 
             "Callback#args with objects": function(test) {
-                this.http.get("http://www.httpbin.org/get", [],
-                              {a: 1, b: {c: "ab", d: 12}}, 0,
-                              function(err, res) {
-                                  var args = res.data.args;
-                                  test.strictEqual(args.a, "1");
-                                  test.strictEqual(args.b, "ab");
-                                  test.strictEqual(res.data.url,
-                                                   "http://www.httpbin.org/get?a=1&b=ab&b=12");
-                                  test.done();
-                              });
+                this.http.get(
+                    "http://www.httpbin.org/get", [],
+                    {a: 1, b: {c: "ab", d: 12}}, 0,
+                    function(err, res) {
+                        var args = res.data.args;
+                        test.strictEqual(args.a, "1");
+                        test.strictEqual(args.b, "ab");
+                        test.strictEqual(
+                            res.data.url,
+                            "http://www.httpbin.org/get?a=1&b=ab&b=12"
+                        );
+                        test.done();
+                    }
+                );
             },
             
             "Callback#headers": function(test) {
@@ -281,7 +285,7 @@ exports.setup = function(http) {
             },
 
             "Default arguments to Http work": function(test) {
-                var NodeHttp    = splunkjs.NodeHttp;
+                var NodeHttp = splunkjs.NodeHttp;
                 var h = new NodeHttp();
                 test.strictEqual(h.isSplunk, true);
                 test.done();

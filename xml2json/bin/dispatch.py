@@ -102,7 +102,7 @@ def dispatch(request):
     # self['origin'] = request origin
     # self['base_path'] = headers
     status = 500
-    messages = {"ERROR": []}
+    messages = []
     data = {"messages": messages}
     
     try:
@@ -121,7 +121,10 @@ def dispatch(request):
                 handler = handler[method]
             else:
                 status = 400
-                messages["ERROR"].append("No handler found for path %s" % scrubbed_path)
+                messages.append({
+                        "type": "ERROR",
+                        "text": "No handler found for path %s" % scrubbed_path
+                        })
                 
                 return status, render_response(data)
         
@@ -135,7 +138,7 @@ def forward_request(request):
     path = request['path'].replace("/services/json/v2", "")                
     method = request['method']
     
-    messages = {"ERROR": []}
+    messages = []
     content = {"messages": messages}
     
     response, content = forward.make_request(
@@ -149,11 +152,14 @@ def forward_request(request):
         basic_auth=get_authorization(request) if is_basicauth(request) else None
     )
     if response.status == 401:
-        messages["ERROR"].append("Login Failed")
+        messages.append({"type": "ERROR",
+                         "text": "Login Failed"})
     elif response.status == 402:
-        messages["ERROR"].append("License Restriction")    
+        messages.append({"type": "ERROR",
+                         "text": "License Restriction"})
     elif response.status == 403:
-        messages["ERROR"].append("Authorization Failed: %s" % uri)  
+        messages.append({"type": "ERROR",
+                         "text": "Authorization Failed: %s" % uri})  
     elif response.status == 404:
         # Some 404 reponses, such as those for expired jobs which were originally
         # run by the scheduler return extra data about the original resource.
@@ -163,7 +169,8 @@ def forward_request(request):
             body = et.fromstring(content)
             resource_info = body.find('dict')
             if resource_info is not None:
-                messages["ERROR"].append("Resource not found: %s" % xml2json.node_to_primitive(resource_info))
+                messages.append({"type": "ERROR",
+                                 "text": "Resource not found: %s" % xml2json.node_to_primitive(resource_info)})
             else:
                 extracted_messages = xml2json.extract_messages(body)
                 xml2json.combine_messages(messages, extracted_messages)
