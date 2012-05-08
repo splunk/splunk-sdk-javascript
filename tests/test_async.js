@@ -30,7 +30,7 @@ exports.setup = function() {
                 },
                 function(err) {
                     test.ok(!err);
-n                    test.done();
+                    test.done();
                 }
             );
         },

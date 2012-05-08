@@ -162,21 +162,27 @@ exports.setup = function() {
 
         "forEach": function(test) {
             var a = [1,2,3,4,5];
-            splunkjs.Utils.forEach(a,
-                                   function(elem, index, list) {
-                                       test.strictEqual(a[index], elem)
-                                   });
+            splunkjs.Utils.forEach(
+                a,
+                function(elem, index, list) {
+                    test.strictEqual(a[index], elem)
+                }
+            );
             var b = {1: 2, 2: 4, 3: 6};
-            splunkjs.Utils.forEach(b,
-                                   function(elem, key, obj) {
-                                       test.strictEqual(b[key], elem);
-                                   });
+            splunkjs.Utils.forEach(
+                b,
+                function(elem, key, obj) {
+                    test.strictEqual(b[key], elem);
+                }
+            );
             splunkjs.Utils.forEach(null, function(elem, key, obj) {});
             var c = {length: 5, 1: 12, 2: 15, 3: 8};
-            splunkjs.Utils.forEach(c,
-                                   function(elem, key, obj) {
-                                       test.strictEqual(c[key], elem);
-                                   });
+            splunkjs.Utils.forEach(
+                c,
+                function(elem, key, obj) {
+                    test.strictEqual(c[key], elem);
+                }
+            );
             test.done();
         },
 
@@ -213,17 +219,21 @@ exports.setup = function() {
 
         "namespaceFromProperties": function(test) {
             test.throws(function() { splunkjs.Utils.namespaceFromProperties({}); });
-            var a = splunkjs.Utils.namespaceFromProperties({acl: {owner: "boris",
-                                                                  app: "factory",
-                                                                  sharing: "system",
-                                                                  other: 3},
-                                                            more: 12});
-            splunkjs.Utils.forEach(a,
-                                   function(val, key, obj) {
-                                       test.ok((key === "owner" && val === "boris") ||
-                                               (key === "app" && val === "factory") ||
-                                               (key === "sharing" && val === "system"));
-                                   });
+            var a = splunkjs.Utils.namespaceFromProperties(
+                {acl: {owner: "boris",
+                       app: "factory",
+                       sharing: "system",
+                       other: 3},
+                 more: 12}
+            );
+            splunkjs.Utils.forEach(
+                a,
+                function(val, key, obj) {
+                    test.ok((key === "owner" && val === "boris") ||
+                            (key === "app" && val === "factory") ||
+                            (key === "sharing" && val === "system"));
+                }
+            );
             test.done();
             
         }
