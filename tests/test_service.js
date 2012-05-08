@@ -13,7 +13,7 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-exports.setup = function(svc) {
+exports.setup = function(svc, loggedOutSvc) {
     var splunkjs    = require('../splunk');
     var utils       = splunkjs.Utils;
     var Async       = splunkjs.Async;
@@ -2402,7 +2402,8 @@ if (module === require.main) {
         host: cmdline.opts.host,
         port: cmdline.opts.port,
         username: cmdline.opts.username,
-        password: cmdline.opts.password
+        password: cmdline.opts.password,
+        version: cmdline.opts.version
     });
 
     var loggedOutSvc = new splunkjs.Service({ 
@@ -2410,7 +2411,8 @@ if (module === require.main) {
         host: cmdline.opts.host,
         port: cmdline.opts.port,
         username: cmdline.opts.username,
-        password: cmdline.opts.password + 'wrong'
+        password: cmdline.opts.password + 'wrong',
+        version: cmdline.opts.version
     });
 
     
