@@ -75,7 +75,7 @@ exports.main = function(opts, callback) {
                                 }
                                 
                                 // Only do something if we have results
-                                if (results.rows) {
+                                if (results && results.rows) {
                                     // Up the iteration counter
                                     count++;
                                     

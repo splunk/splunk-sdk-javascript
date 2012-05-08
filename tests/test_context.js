@@ -467,7 +467,10 @@ exports.setup = function(svc) {
         },
 
         "Callback#request get": function(test) { 
-            this.service.request("search/jobs?count=2", "GET", {"X-TestHeader": 1}, "", function(err, res) {
+            var get = {count: 2};
+            var post = null;
+            var body = null;
+            this.service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
                 test.strictEqual(res.data.paging.offset, 0);
                 test.ok(res.data.entry.length <= res.data.paging.total);
                 test.strictEqual(res.data.entry.length, 2);
@@ -487,7 +490,7 @@ exports.setup = function(svc) {
                 "Content-Type": "application/x-www-form-urlencoded"  
             };
             var service = this.service;
-            this.service.request("search/jobs", "POST", headers, body, function(err, res) {
+            this.service.request("search/jobs", "POST", null, null, body, headers, function(err, res) {
                 var sid = res.data.sid;
                 test.ok(sid);
                 
@@ -499,7 +502,7 @@ exports.setup = function(svc) {
         },
 
         "Callback#request error": function(test) { 
-            this.service.request("search/jobs/1234_nosuchjob", "GET", {"X-TestHeader": 1}, "", function(res) {
+            this.service.request("search/jobs/1234_nosuchjob", "GET", null, null, null, {"X-TestHeader": 1}, function(res) {
                 test.ok(!!res);
                 
                 if (res.response.request) {
@@ -524,7 +527,10 @@ exports.setup = function(svc) {
                 }
             );
             
-            service.request("search/jobs?count=2", "GET", {"X-TestHeader": 1}, "", function(err, res) {
+            var get = {count: 2};
+            var post = null;
+            var body = null;
+            service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
                 test.strictEqual(res.data.paging.offset, 0);
                 test.ok(res.data.entry.length <= res.data.paging.total);
                 test.strictEqual(res.data.entry.length, 2);
@@ -551,7 +557,10 @@ exports.setup = function(svc) {
                 }
             );
             
-            service.request("search/jobs?count=2", "GET", {"X-TestHeader": 1}, "", function(err, res) {
+            var get = {count: 2};
+            var post = null;
+            var body = null;
+            service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
                 test.ok(err);
                 test.strictEqual(err.status, 401);
                 test.done();
@@ -572,7 +581,10 @@ exports.setup = function(svc) {
                 }
             );
             
-            service.request("search/jobs?count=2", "GET", {"X-TestHeader": 1}, "", function(err, res) {
+            var get = {count: 2};
+            var post = null;
+            var body = null;
+            service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
                 test.ok(err);
                 test.strictEqual(err.status, 401);
                 test.done();
@@ -593,7 +605,10 @@ exports.setup = function(svc) {
                 }
             );
             
-            service.request("search/jobs?count=2", "GET", {"X-TestHeader": 1}, "", function(err, res) {
+            var get = {count: 2};
+            var post = null;
+            var body = null;
+            service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
                 test.strictEqual(res.data.paging.offset, 0);
                 test.ok(res.data.entry.length <= res.data.paging.total);
                 test.strictEqual(res.data.entry.length, 2);
@@ -621,7 +636,10 @@ exports.setup = function(svc) {
                 }
             );
             
-            service.request("search/jobs?count=2", "GET", {"X-TestHeader": 1}, "", function(err, res) {
+            var get = {count: 2};
+            var post = null;
+            var body = null;
+            service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
                 test.ok(err);
                 test.strictEqual(err.status, 401);
                 test.done();

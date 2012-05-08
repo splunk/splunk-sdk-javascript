@@ -507,13 +507,12 @@ def from_search_summary(root, timings={}):
         'latest_time': root.get('latest_time', ''),
         'duration': float(root.get('duration', 0)),
         'event_count': int(root.get('c', 0)),
-        'fields': []
+        'fields': {}
     }
     
     time_start = time.time()
     for node in root.findall('field'):
         field = {
-            'name': node.get('k'),
             'count': int(node.get('c', 0)),
             'nc': int(node.get('nc', 0)),
             'distinct_count': int(node.get('dc', 0)),
@@ -536,7 +535,7 @@ def from_search_summary(root, timings={}):
                 'count': int(val.get('c', 0)),
                 'is_exact': True if (node.get('exact', False)) == '1' else False
             })
-        summary['fields'].append(field)
+        summary['fields'][node.get('k')] = field
     time_end = time.time()
     timings["search_summary_fields"] = time_end - time_start
     
@@ -607,7 +606,7 @@ def from_http_simple_input(root):
     for field in root.findall("results/result/field"):
         field_name = field.get("k")
         if field_name == "_index":
-            field_name = index;
+            field_name = "index";
         entry[field_name] = field.findtext("value/text")
     
     messages = []

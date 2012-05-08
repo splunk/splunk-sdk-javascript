@@ -231,6 +231,8 @@ exports.setup = function(svc) {
             "Callback#delete test applications": function(test) {
                 var apps = this.service.apps();
                 apps.fetch(function(err, apps) {
+                    test.ok(!err);
+                    test.ok(apps);
                     var appList = apps.list();
                     
                     Async.parallelEach(
@@ -282,7 +284,7 @@ exports.setup = function(svc) {
             "Callback#Create+abort job": function(test) {
                 var sid = getNextId();
                 var options = {id: sid};
-                var jobs = this.service.jobs();
+                var jobs = this.service.jobs({app: "xml2json"});
                 var req = jobs.oneshotSearch('search index=_internal |  head 1 | sleep 10', options, function(err, job) {   
                     test.ok(err);
                     test.ok(!job);
@@ -1102,8 +1104,8 @@ exports.setup = function(svc) {
                         },
                         function(search, done) {
                             // Verify that we have the required fields
-                            test.strictEqual(search.fields().required.length, 0);
                             test.ok(search.fields().optional.length > 1);
+                            test.ok(utils.indexOf(search.fields().optional, "disabled") > -1);
                             
                             search.remove(done);
                         }
