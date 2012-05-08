@@ -26,7 +26,8 @@
             host:       options.host,
             port:       options.port,
             username:   options.username,
-            password:   options.password
+            password:   options.password,
+            version:    options.version
         });
     };
     

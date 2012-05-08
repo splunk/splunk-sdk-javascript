@@ -376,7 +376,7 @@ require.define("/index.js", function (require, module, exports, __dirname, __fil
         Logger          : require('./lib/log').Logger,
         Context         : require('./lib/context'),
         Service         : require('./lib/service'),
-        Http            : require('./lib/http').Http,
+        Http            : require('./lib/http'),
         Utils           : require('./lib/utils'),
         Async           : require('./lib/async'),
         Paths           : require('./lib/paths').Paths,
@@ -977,6 +977,34 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
             sharing: props.acl.sharing
         };
     };  
+    
+    /**
+     * Given a version and a dictionary, find the value in the map corresponding
+     * to that version
+     *
+     * @param {String} version The version to lookup
+     * @param {Object} map The dictionary to look up in
+     * @return {Anything} The value of the dictionary at the closest version match.
+     *
+     * @function splunkjs.Utils
+     */
+    root.getWithVersion = function(version, map) {
+        map = map || {};
+        var currentVersion = (version + "") || "";
+        while (currentVersion !== "") {
+            if (map.hasOwnProperty(currentVersion)) {
+                return map[currentVersion];
+            }
+            else {
+                currentVersion = currentVersion.slice(
+                    0, 
+                    currentVersion.lastIndexOf(".")
+                );
+            }
+        }
+        
+        return map["default"];
+    };
 })();
 });
 
@@ -1001,10 +1029,16 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
     
     var Paths    = require('./paths').Paths;
     var Class    = require('./jquery.class').Class;
-    var Http     = require('./http').Http;
+    var Http     = require('./http');
     var utils    = require('./utils');
 
     var root = exports || this;
+
+    var prefixMap = {
+        "5": "",
+        "4.3": "/services/json/v2",
+        "default": "/services/json/v2"
+    };
 
     /**
      * Abstraction over the Splunk HTTP-wire protocol
@@ -1053,7 +1087,8 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
             this.app           = params.app;  
             this.sessionKey    = params.sessionKey || "";
             this.authorization = params.authorization || "Splunk";
-            this.paths         = params.paths || Paths; 
+            this.paths         = params.paths || Paths;
+            this.version       = params.version || "default"; 
             this.autologin     = true;
             
             // Initialize autologin
@@ -1081,10 +1116,12 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
             
             // Store the HTTP implementation
             this.http = http;
+            this.http._setSplunkVersion(this.version);
             
             // Store our full prefix, which is just combining together
             // the scheme with the host
-            this.prefix = this.scheme + "://" + this.host + ":" + this.port + "/services/json/v2";
+            var versionPrefix = utils.getWithVersion(this.version, prefixMap);
+            this.prefix = this.scheme + "://" + this.host + ":" + this.port + versionPrefix;
 
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
@@ -1329,7 +1366,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
          *
          * @method splunkjs.Context 
          */
-        del: function(path, params, callback) {
+        del: function(path, params, callback) {            
             var that = this;
             var request = function(callback) {
                 return that.http.del(
@@ -1379,7 +1416,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
          *
          * @method splunkjs.Context 
          */
-        request: function(path, method, headers, body, callback) {
+        request: function(path, method, query, post, body, headers, callback) {
             var that = this;
             var request = function(callback) {
                 return that.http.request(
@@ -1387,6 +1424,8 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
                     {
                         method: method,
                         headers: that._headers(headers),
+                        query: query,
+                        post: post,
                         body: body,
                         timeout: 0
                     },
@@ -1565,65 +1604,35 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
     var utils           = require('./utils');
 
     var root = exports || this;
-
-    /**
-     * Helper function to encode a dictionary of values into a URL-encoded
-     * format.
-     *
-     * @example
-     *      
-     *      // should be a=1&b=2&b=3&b=4
-     *      encode({a: 1, b: [2,3,4]})
-     *
-     * @param {Object} params Parameters to URL-encode
-     * @return {String} URL-encoded query string
-     *
-     * @function splunkjs.Http
-     */
-    root.encode = function(params) {
-        var encodedStr = "";
-
-        // We loop over all the keys so we encode them.
-        for (var key in params) {
-            if (params.hasOwnProperty(key)) {
-                // Only append the ampersand if we already have
-                // something encoded, and the last character isn't
-                // already an ampersand
-                if (encodedStr && encodedStr[encodedStr.length - 1] !== "&") {
-                    encodedStr = encodedStr + "&";
-                }
-                
-                // Get the value
-                var value = params[key];
-
-                // If it's an array, we loop over each value
-                // and encode it in the form &key=value[i]
-                if (value instanceof Array) {
-                    for (var i = 0; i < value.length; i++) {
-                        encodedStr = encodedStr + key + "=" + encodeURIComponent(value[i]) + "&";
-                    }
-                }
-                else if (typeof value === "object") {
-                    for(var innerKey in value) {
-                        if (value.hasOwnProperty(innerKey)) {
-                            var innerValue = value[innerKey];
-                            encodedStr = encodedStr + key + "=" + encodeURIComponent(value[innerKey]) + "&";
-                        }
-                    }
-                }
-                else {
-                    // If it's not an array, we just encode it
-                    encodedStr = encodedStr + key + "=" + encodeURIComponent(value);
-                }
+    var Http = null;
+    
+    var queryBuilderMap = {
+        "5": function(message) {      
+            var query = message.query || {};
+            var post = message.post || {};      
+            var outputMode = query.output_mode || post.output_mode || "json";
+            
+            // If the output mode doesn't start with "json" (e.g. "csv" or
+            // "xml"), we change it to "json".
+            if (!utils.startsWith(outputMode, "json")) {
+                outputMode = "json";
             }
+            
+            query.output_mode = outputMode;
+            
+            return query;
+        },
+        "4": function(message) {
+            return message.query || {};
+        },
+        "default": function(message) {
+            return message.query || {};
+        },
+        "none": function(message) {
+            return message.query || {};
         }
-
-        if (encodedStr[encodedStr.length - 1] === '&') {
-            encodedStr = encodedStr.substr(0, encodedStr.length - 1);
-        }
-
-        return encodedStr;
-    };
+    }; 
+    
      
     /**
      * Base class for HTTP abstraction. 
@@ -1635,7 +1644,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
      *
      * @class splunkjs.Http
      */
-    root.Http = Class.extend({
+    module.exports = root = Http = Class.extend({
         /**
          * Constructor for splunkjs.Http
          *
@@ -1645,9 +1654,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
          *
          * @method splunkjs.Http 
          */
-        init: function(isSplunk) {
-            // Whether or not this HTTP provider is talking to Splunk or not
-            this.isSplunk = (isSplunk === undefined ? true : isSplunk);
+        init: function() {
 
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
@@ -1656,6 +1663,14 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
             this.post               = utils.bind(this, this.post);
             this.request            = utils.bind(this, this.request);
             this._buildResponse     = utils.bind(this, this._buildResponse);
+            
+            // Set our default version to "none"
+            this._setSplunkVersion("none");
+        },
+        
+        /*!*/
+        _setSplunkVersion: function(version) {
+            this.version = version;
         },
 
         /**
@@ -1670,14 +1685,14 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
          * @method splunkjs.Http 
          */
         get: function(url, headers, params, timeout, callback) {
-            var encoded_url = url + "?" + root.encode(params);
             var message = {
                 method: "GET",
                 headers: headers,
-                timeout: timeout
+                timeout: timeout,
+                query: params
             };
 
-            return this.request(encoded_url, message, callback);
+            return this.request(url, message, callback);
         },
 
         /**
@@ -1697,7 +1712,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
                 method: "POST",
                 headers: headers,
                 timeout: timeout,
-                body: root.encode(params)
+                post: params
             };
 
             return this.request(url, message, callback);
@@ -1715,14 +1730,14 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
          * @method splunkjs.Http 
          */
         del: function(url, headers, params, timeout, callback) {
-            var encoded_url = url + "?" + root.encode(params);
             var message = {
                 method: "DELETE",
                 headers: headers,
-                timeout: timeout
+                timeout: timeout,
+                query: params
             };
 
-            return this.request(encoded_url, message, callback);
+            return this.request(url, message, callback);
         },
 
         /**
@@ -1749,10 +1764,23 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
                     callback(response);
                 }
             };
+            
+            var query = utils.getWithVersion(this.version, queryBuilderMap)(message);
+            var post = message.post || {};
+            
+            var encodedUrl = url + "?" + Http.encode(query);
+            var body = message.body ? message.body : Http.encode(post);
+            
+            var options = {
+                method: message.method,
+                headers: message.headers,
+                timeout: message.timeout,
+                body: body
+            };
 
             // Now we can invoke the user-provided HTTP class,
             // passing in our "wrapped" callback
-            return this.makeRequest(url, message, wrappedCallback);
+            return this.makeRequest(encodedUrl, options, wrappedCallback);
         },
 
         /**
@@ -1802,16 +1830,28 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
         _buildResponse: function(error, response, data) {            
             var complete_response, json = {};
 
+            //console.log(response, data);
             var contentType = null;
             if (response && response.headers) {
                 contentType = utils.trim(response.headers["content-type"] || response.headers["Content-Type"]);
             }
 
-            if (utils.startsWith(contentType, "application/json")) {
-                json = this.parseJson(data) || {};
+            if (utils.startsWith(contentType, "application/json") && data) {
+                try {
+                    json = this.parseJson(data) || {};
+                }
+                catch(e) {
+                    logger.error("Error in parsing JSON:", data, e);
+                    json = data;
+                }
+            }
+            else {
+                json = data;
             }
 
-            logger.printMessages(json.messages);                
+            if (json) {
+                logger.printMessages(json.messages);                
+            }
             
             complete_response = {
                 response: response,
@@ -1823,6 +1863,65 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
             return complete_response;
         }
     });
+
+    /**
+     * Helper function to encode a dictionary of values into a URL-encoded
+     * format.
+     *
+     * @example
+     *      
+     *      // should be a=1&b=2&b=3&b=4
+     *      encode({a: 1, b: [2,3,4]})
+     *
+     * @param {Object} params Parameters to URL-encode
+     * @return {String} URL-encoded query string
+     *
+     * @function splunkjs.Http
+     */
+    Http.encode = function(params) {
+        var encodedStr = "";
+
+        // We loop over all the keys so we encode them.
+        for (var key in params) {
+            if (params.hasOwnProperty(key)) {
+                // Only append the ampersand if we already have
+                // something encoded, and the last character isn't
+                // already an ampersand
+                if (encodedStr && encodedStr[encodedStr.length - 1] !== "&") {
+                    encodedStr = encodedStr + "&";
+                }
+                
+                // Get the value
+                var value = params[key];
+
+                // If it's an array, we loop over each value
+                // and encode it in the form &key=value[i]
+                if (value instanceof Array) {
+                    for (var i = 0; i < value.length; i++) {
+                        encodedStr = encodedStr + key + "=" + encodeURIComponent(value[i]) + "&";
+                    }
+                }
+                else if (typeof value === "object") {
+                    for(var innerKey in value) {
+                        if (value.hasOwnProperty(innerKey)) {
+                            var innerValue = value[innerKey];
+                            encodedStr = encodedStr + key + "=" + encodeURIComponent(value[innerKey]) + "&";
+                        }
+                    }
+                }
+                else {
+                    // If it's not an array, we just encode it
+                    encodedStr = encodedStr + key + "=" + encodeURIComponent(value);
+                }
+            }
+        }
+
+        if (encodedStr[encodedStr.length - 1] === '&') {
+            encodedStr = encodedStr.substr(0, encodedStr.length - 1);
+        }
+
+        return encodedStr;
+    };
 })();
 });
 
@@ -1843,7 +1942,7 @@ require.define("/lib/platform/client/easyxdm_http.js", function (require, module
 // under the License.
 
 (function() {
-    var Http    = require('../../http').Http;
+    var Http    = require('../../http');
     var utils   = require('../../utils');
     
     // Include it so it gets put in splunk.js
@@ -1877,7 +1976,7 @@ require.define("/lib/platform/client/easyxdm_http.js", function (require, module
 
     root.XdmHttp = Http.extend({
         init: function(remoteServer) {
-            this._super(true);
+            this._super();
             
             // Get a no conflict version of easyXDM
             var xdm = xdmLocal.noConflict(getNamespace());
@@ -2096,7 +2195,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 password: this.password,
                 owner: owner,
                 app: app, 
-                sessionKey: this.sessionKey
+                sessionKey: this.sessionKey,
+                version: this.version
             });
         },
         
@@ -2488,19 +2588,29 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             callback = callback || function() {};
             params = params || {};
             
-            var path = this.paths.submitEvent + "?" + Http.encode(params);
+            var path = this.paths.submitEvent;
             var method = "POST";
             var headers = {"Content-Type": "text/plain"};
             var body = event;
+            var get = params;
+            var post = {};
             
-            var req = this.request(path, method, headers, body, function(err, response) {
-                if (err) {
-                    callback(err);
-                } 
-                else {
-                    callback(null, response.data);
+            var req = this.request(
+                path, 
+                method, 
+                get, 
+                post, 
+                body, 
+                headers, 
+                function(err, response) {
+                    if (err) {
+                        callback(err);
+                    } 
+                    else {
+                        callback(null, response.data);
+                    }
                 }
-            });
+            );
             
             return req;
         }
@@ -4593,6 +4703,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         events: function(params, callback) {
             callback = callback || function() {};
+            params = params || {};
+            params.output_mode = params.output_mode || "json_rows"; 
             
             var that = this;
             return this.get("events", params, function(err, response) { 
@@ -4677,6 +4789,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         preview: function(params, callback) {
             callback = callback || function() {};
+            params = params || {};
+            params.output_mode = params.output_mode || "json_rows"; 
             
             var that = this;
             return this.get("results_preview", params, function(err, response) {
@@ -4709,6 +4823,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         results: function(params, callback) {
             callback = callback || function() {};
+            params = params || {};
+            params.output_mode = params.output_mode || "json_rows";            
             
             var that = this;
             return this.get("results", params, function(err, response) {
@@ -4745,7 +4861,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    callback(null, response.data.entry.content, that);
+                    callback(null, response.data, that);
                 }
             });
         },
@@ -5074,17 +5190,35 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             if (!params.search) {
                 callback("Must provide a query to create a search job");
-            } 
-
-            var that = this;
-            return this.post("", params, function(err, response) {
-                if (err) {
-                    callback(err);
+            }
+            
+            var outputMode = params.output_mode || "json_rows";
+            
+            var path = this.qualifiedPath;
+            var method = "POST";
+            var headers = {};
+            var post = params;
+            var get = {output_mode: outputMode};
+            var body = null;
+            
+            var req = this.service.request(
+                path, 
+                method, 
+                get, 
+                post, 
+                body, 
+                headers, 
+                function(err, response) {
+                    if (err) {
+                        callback(err);
+                    } 
+                    else {
+                        callback(null, response.data);
+                    }
                 }
-                else {
-                    callback(null, response.data);
-                }
-            });
+            );
+            
+            return req;
         }
     });
 })();
@@ -5798,7 +5932,7 @@ require.define("/lib/searcher.js", function (require, module, exports, __dirname
                 if (err) {
                     callback(err);
                 }
-                else {
+                else {                    
                     var numResults = (results.rows ? results.rows.length : 0);
                     iterator.currentOffset += numResults;
                     
@@ -5844,7 +5978,7 @@ require.define("/lib/storm.js", function (require, module, exports, __dirname, _
     "use strict";
     
     var Service         = require('./service');
-    var Http            = require('./http').Http;
+    var Http            = require('./http');
     var Paths           = require('./paths').Paths;
     var utils           = require('./utils');
     var base64          = require('../contrib/base64');
@@ -6153,7 +6287,7 @@ require.define("/lib/platform/client/proxy_http.js", function (require, module, 
 // under the License.
 
 (function() {
-    var Http    = require('../../http').Http;
+    var Http    = require('../../http');
     var utils   = require('../../utils');
 
     var root = exports || this;
@@ -6216,7 +6350,7 @@ require.define("/lib/platform/client/proxy_http.js", function (require, module, 
     root.ProxyHttp = Http.extend({
         init: function(prefix) {
             this.prefix = prefix;
-            this._super(true);
+            this._super();
         },
 
         makeRequest: function(url, message, callback) {
@@ -6239,7 +6373,7 @@ require.define("/lib/platform/client/proxy_http.js", function (require, module, 
                 type: message.method,
                 headers: message.headers,
                 data: message.body || "",
-                dataType: "json",
+                dataType: "text",
                 success: function(data, error, res) {
                     if (req.wasAborted) {
                         return;
@@ -6267,7 +6401,7 @@ require.define("/lib/platform/client/proxy_http.js", function (require, module, 
                         response.statusCode = "abort";
                         res.responseText = "{}";
                     }
-                    var json = JSON.parse(res.responseText);
+                    var json = res.responseText;
 
                     var complete_response = that._buildResponse(error, response, json);
                     callback(complete_response);
@@ -6288,7 +6422,7 @@ require.define("/lib/platform/client/proxy_http.js", function (require, module, 
 
         parseJson: function(json) {
             // JQuery does this for us
-            return json;
+            return JSON.parse(json);
         }
     });
 })();

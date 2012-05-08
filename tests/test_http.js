@@ -274,7 +274,7 @@ if (module === require.main) {
     var NodeHttp    = splunkjs.NodeHttp;
     var test        = require('../contrib/nodeunit/test_reporter');
 
-    var http = new NodeHttp(false);
+    var http = new NodeHttp();
     
     var suite = exports.setup(http);
     test.run([{"Tests": suite}]);

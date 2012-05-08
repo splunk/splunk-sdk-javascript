@@ -127,6 +127,7 @@
       scheme   = "https";
       host     = "localhost";
       port     = "8089";
+      version  = "4.3";
       
       Async = splunkjs.Async;
       utils = splunkjs.Utils;
@@ -137,6 +138,7 @@
         scheme   = utils.trim($("#id_scheme").pVal())   || "https";
         host     = utils.trim($("#id_host").pVal())     || "localhost";
         port     = utils.trim($("#id_port").pVal())     || "8089";
+        version  = utils.trim($("#id_version").pVal())  || "4.3";
         
         var connectionString = username + " : ****** @ " + scheme + "://" + host + ":" + port;
         $("#signin-dropdown").text(connectionString);
@@ -253,6 +255,9 @@
                   <li>
                     <input type="text" name="port" id="id_port" placeholder="port: 8089"/>
                   </li>
+                  <li>
+                    <input type="text" name="port" id="id_version" placeholder="version: 4.3"/>
+                  </li>
               </ul>
             </li>
           </ul>
@@ -288,7 +293,8 @@ service = new splunkjs.Service(http, {
   host: host,
   port: port,
   username: username,
-  password: password
+  password: password,
+  version: version
 });
 
 var drawChart = function(rows) {  
@@ -392,7 +398,8 @@ service = new splunkjs.Service(http, {
   host: host,
   port: port,
   username: username,
-  password: password
+  password: password,
+  version: version
 });
 
 var palette = new Rickshaw.Color.Palette( { scheme: 'httpStatus' } );

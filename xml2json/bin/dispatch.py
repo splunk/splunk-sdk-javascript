@@ -85,6 +85,9 @@ def get_authorization(request):
     return request["headers"].get("authorization", "")
 
 def render_response(data):
+    if not isinstance(data, dict) and not isinstance(data, list):
+        return data
+    
     formatter = formatters.get_formatter()
     formatter.format(data)
     return json.dumps(data, sort_keys=True, indent=4)
@@ -205,7 +208,7 @@ def job_data(request, sid, data_source, *args, **kwargs):
 
     if status_ok(status):
         if data_source == "search.log":
-            return status, {"entry": {"content": content}}
+            return status, content
         if not content:
             return status, content
             

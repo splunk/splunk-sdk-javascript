@@ -231,6 +231,8 @@ exports.setup = function(svc) {
             "Callback#delete test applications": function(test) {
                 var apps = this.service.apps();
                 apps.fetch(function(err, apps) {
+                    test.ok(!err);
+                    test.ok(apps);
                     var appList = apps.list();
                     
                     Async.parallelEach(
@@ -664,7 +666,6 @@ exports.setup = function(svc) {
                             test.strictEqual(summary.fields.foo.count, 1);
                             test.strictEqual(summary.fields.foo.distinct_count, 1);
                             test.ok(summary.fields.foo.is_exact, 1);
-                            test.strictEqual(summary.fields.foo.name, "foo");
                             test.strictEqual(summary.fields.foo.modes.length, 1);
                             test.strictEqual(summary.fields.foo.modes[0].count, 1);
                             test.strictEqual(summary.fields.foo.modes[0].value, "bar");
@@ -786,7 +787,7 @@ exports.setup = function(svc) {
                 
                 Async.chain([
                         function(done) {
-                            var query = 'search index=history MUST_NOT_EXITABCDEF';
+                            var query = 'search index=history MUST_NOT_EXISTABCDEF';
                             that.service.jobs().oneshotSearch(query, {id: sid}, done);
                         },
                         function(results, done) {
@@ -1103,7 +1104,8 @@ exports.setup = function(svc) {
                         },
                         function(search, done) {
                             // Verify that we have the required fields
-                            test.strictEqual(search.fields().required[0], "search");
+                            test.ok(search.fields().optional.length > 1);
+                            test.ok(utils.indexOf(search.fields().optional, "disabled") > -1);
                             
                             search.remove(done);
                         }
@@ -1195,7 +1197,6 @@ exports.setup = function(svc) {
                     Async.parallelEach(
                         searchList,
                         function(search, idx, callback) {
-                            console.log(search.name);
                             if (utils.startsWith(search.name, "jssdk_")) {
                                 search.remove(callback);
                             }
@@ -1367,7 +1368,7 @@ exports.setup = function(svc) {
                 
                 var name = this.indexName;
                 var indexes = this.service.indexes();
-                var originalAssureUTF8Value = false;
+                var originalSyncMeta = false;
                 
                 Async.chain([
                         function(callback) {
@@ -1377,26 +1378,26 @@ exports.setup = function(svc) {
                             var index = indexes.item(name);
                             test.ok(index);
                             
-                            originalAssureUTF8Value = index.properties().assureUTF8;
+                            originalSyncMeta = index.properties().syncMeta;
                             index.update({
-                                assureUTF8: !originalAssureUTF8Value
+                                syncMeta: !originalSyncMeta
                             }, callback);
                         },
                         function(index, callback) {
                             test.ok(index);
                             var properties = index.properties();
                             
-                            test.strictEqual(!originalAssureUTF8Value, properties.assureUTF8);
+                            test.strictEqual(!originalSyncMeta, properties.syncMeta);
                             
                             index.update({
-                                assureUTF8: !properties.assureUTF8
+                                syncMeta: !properties.syncMeta
                             }, callback);
                         },
                         function(index, callback) {
                             test.ok(index);
                             var properties = index.properties();
                             
-                            test.strictEqual(originalAssureUTF8Value, properties.assureUTF8);
+                            test.strictEqual(originalSyncMeta, properties.syncMeta);
                             callback();
                         },
                         function(callback) {
@@ -1467,7 +1468,7 @@ exports.setup = function(svc) {
                         test.ok(eventInfo);
                         test.strictEqual(eventInfo.sourcetype, sourcetype);
                         test.strictEqual(eventInfo.bytes, message.length);
-                        test.strictEqual(eventInfo._index, indexName);
+                        test.strictEqual(eventInfo.index, indexName);
                         
                         // We could poll to make sure the index has eaten up the event,
                         // but unfortunately this can take an unbounded amount of time.
@@ -1501,7 +1502,7 @@ exports.setup = function(svc) {
                             test.ok(eventInfo);
                             test.strictEqual(eventInfo.sourcetype, sourcetype);
                             test.strictEqual(eventInfo.bytes, message.length);
-                            test.strictEqual(eventInfo._index, indexName);
+                            test.strictEqual(eventInfo.index, indexName);
                             
                             // We could poll to make sure the index has eaten up the event,
                             // but unfortunately this can take an unbounded amount of time.
@@ -1641,7 +1642,8 @@ exports.setup = function(svc) {
                                 password: "abc",
                                 host: service.host,
                                 port: service.port,
-                                scheme: service.scheme
+                                scheme: service.scheme,
+                                version: service.version
                             });
                         
                             newService.login(Async.augment(done, user));
@@ -1822,7 +1824,6 @@ exports.setup = function(svc) {
             }
         }
     };
-
 };
 
 if (module === require.main) {
@@ -1843,7 +1844,8 @@ if (module === require.main) {
         host: cmdline.opts.host,
         port: cmdline.opts.port,
         username: cmdline.opts.username,
-        password: cmdline.opts.password
+        password: cmdline.opts.password,
+        version: cmdline.opts.version
     });
     
     var suite = exports.setup(svc);

@@ -36,7 +36,8 @@ exports.setup = function(svc) {
                 host: svc.host,
                 port: svc.port,
                 username: svc.username,
-                password: svc.password
+                password: svc.password,
+                version: svc.version
             });
 
             newService.login(function(err, success) {
@@ -51,7 +52,8 @@ exports.setup = function(svc) {
                 host: svc.host,
                 port: svc.port,
                 username: svc.username,
-                password: svc.password + "wrong_password"
+                password: svc.password + "wrong_password",
+                version: svc.version
             });
 
             if (!isBrowser) {
@@ -92,7 +94,8 @@ exports.setup = function(svc) {
                     host: this.service.host,
                     port: this.service.port,
                     username: this.service.username,
-                    password: this.service.password
+                    password: this.service.password,
+                    version: svc.version
                 }
             );
             
@@ -113,7 +116,8 @@ exports.setup = function(svc) {
                     host: this.service.host,
                     port: this.service.port,
                     username: this.service.username,
-                    password: this.service.password + "ABC"
+                    password: this.service.password + "ABC",
+                    version: svc.version
                 }
             );
             
@@ -133,7 +137,8 @@ exports.setup = function(svc) {
                     port: this.service.port,
                     username: this.service.username,
                     password: this.service.password,
-                    autologin: false
+                    autologin: false,
+                    version: svc.version
                 }
             );
             
@@ -153,7 +158,8 @@ exports.setup = function(svc) {
                     port: this.service.port,
                     username: this.service.username,
                     password: this.service.password,
-                    sessionKey: "ABCDEF-not-real"
+                    sessionKey: "ABCDEF-not-real",
+                    version: svc.version
                 }
             );
             
@@ -176,7 +182,8 @@ exports.setup = function(svc) {
                     port: this.service.port,
                     username: this.service.username,
                     password: this.service.password + "ABC",
-                    sessionKey: "ABCDEF-not-real"
+                    sessionKey: "ABCDEF-not-real",
+                    version: svc.version
                 }
             );
             
@@ -218,7 +225,8 @@ exports.setup = function(svc) {
                     host: this.service.host,
                     port: this.service.port,
                     username: this.service.username,
-                    password: this.service.password
+                    password: this.service.password,
+                    version: svc.version
                 }
             );
             
@@ -243,7 +251,8 @@ exports.setup = function(svc) {
                     host: this.service.host,
                     port: this.service.port,
                     username: this.service.username,
-                    password: this.service.password + "ABC"
+                    password: this.service.password + "ABC",
+                    version: svc.version
                 }
             );
             
@@ -263,7 +272,8 @@ exports.setup = function(svc) {
                     port: this.service.port,
                     username: this.service.username,
                     password: this.service.password,
-                    autologin: false
+                    autologin: false,
+                    version: svc.version
                 }
             );
             
@@ -283,7 +293,8 @@ exports.setup = function(svc) {
                     port: this.service.port,
                     username: this.service.username,
                     password: this.service.password,
-                    sessionKey: "ABCDEF-not-real"
+                    sessionKey: "ABCDEF-not-real",
+                    version: svc.version
                 }
             );
             
@@ -309,7 +320,8 @@ exports.setup = function(svc) {
                     port: this.service.port,
                     username: this.service.username,
                     password: this.service.password + "ABC",
-                    sessionKey: "ABCDEF-not-real"
+                    sessionKey: "ABCDEF-not-real",
+                    version: svc.version
                 }
             );
             
@@ -349,7 +361,8 @@ exports.setup = function(svc) {
                     host: this.service.host,
                     port: this.service.port,
                     username: this.service.username,
-                    password: this.service.password
+                    password: this.service.password,
+                    version: svc.version
                 }
             );
             
@@ -373,7 +386,8 @@ exports.setup = function(svc) {
                     host: this.service.host,
                     port: this.service.port,
                     username: this.service.username,
-                    password: this.service.password + "ABC"
+                    password: this.service.password + "ABC",
+                    version: svc.version
                 }
             );
             
@@ -393,7 +407,8 @@ exports.setup = function(svc) {
                     port: this.service.port,
                     username: this.service.username,
                     password: this.service.password,
-                    autologin: false
+                    autologin: false,
+                    version: svc.version
                 }
             );
             
@@ -413,7 +428,8 @@ exports.setup = function(svc) {
                     port: this.service.port,
                     username: this.service.username,
                     password: this.service.password,
-                    sessionKey: "ABCDEF-not-real"
+                    sessionKey: "ABCDEF-not-real",
+                    version: svc.version
                 }
             );
             
@@ -438,7 +454,8 @@ exports.setup = function(svc) {
                     port: this.service.port,
                     username: this.service.username,
                     password: this.service.password + "ABC",
-                    sessionKey: "ABCDEF-not-real"
+                    sessionKey: "ABCDEF-not-real",
+                    version: svc.version
                 }
             );
             
@@ -450,7 +467,10 @@ exports.setup = function(svc) {
         },
 
         "Callback#request get": function(test) { 
-            this.service.request("search/jobs?count=2", "GET", {"X-TestHeader": 1}, "", function(err, res) {
+            var get = {count: 2};
+            var post = null;
+            var body = null;
+            this.service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
                 test.strictEqual(res.data.paging.offset, 0);
                 test.ok(res.data.entry.length <= res.data.paging.total);
                 test.strictEqual(res.data.entry.length, 2);
@@ -470,7 +490,7 @@ exports.setup = function(svc) {
                 "Content-Type": "application/x-www-form-urlencoded"  
             };
             var service = this.service;
-            this.service.request("search/jobs", "POST", headers, body, function(err, res) {
+            this.service.request("search/jobs", "POST", null, null, body, headers, function(err, res) {
                 var sid = res.data.sid;
                 test.ok(sid);
                 
@@ -482,7 +502,7 @@ exports.setup = function(svc) {
         },
 
         "Callback#request error": function(test) { 
-            this.service.request("search/jobs/1234_nosuchjob", "GET", {"X-TestHeader": 1}, "", function(res) {
+            this.service.request("search/jobs/1234_nosuchjob", "GET", null, null, null, {"X-TestHeader": 1}, function(res) {
                 test.ok(!!res);
                 
                 if (res.response.request) {
@@ -502,11 +522,15 @@ exports.setup = function(svc) {
                     host: this.service.host,
                     port: this.service.port,
                     username: this.service.username,
-                    password: this.service.password
+                    password: this.service.password,
+                    version: svc.version
                 }
             );
             
-            service.request("search/jobs?count=2", "GET", {"X-TestHeader": 1}, "", function(err, res) {
+            var get = {count: 2};
+            var post = null;
+            var body = null;
+            service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
                 test.strictEqual(res.data.paging.offset, 0);
                 test.ok(res.data.entry.length <= res.data.paging.total);
                 test.strictEqual(res.data.entry.length, 2);
@@ -528,11 +552,15 @@ exports.setup = function(svc) {
                     host: this.service.host,
                     port: this.service.port,
                     username: this.service.username,
-                    password: this.service.password + "ABC"
+                    password: this.service.password + "ABC",
+                    version: svc.version
                 }
             );
             
-            service.request("search/jobs?count=2", "GET", {"X-TestHeader": 1}, "", function(err, res) {
+            var get = {count: 2};
+            var post = null;
+            var body = null;
+            service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
                 test.ok(err);
                 test.strictEqual(err.status, 401);
                 test.done();
@@ -548,11 +576,15 @@ exports.setup = function(svc) {
                     port: this.service.port,
                     username: this.service.username,
                     password: this.service.password,
-                    autologin: false
+                    autologin: false,
+                    version: svc.version
                 }
             );
             
-            service.request("search/jobs?count=2", "GET", {"X-TestHeader": 1}, "", function(err, res) {
+            var get = {count: 2};
+            var post = null;
+            var body = null;
+            service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
                 test.ok(err);
                 test.strictEqual(err.status, 401);
                 test.done();
@@ -568,11 +600,15 @@ exports.setup = function(svc) {
                     port: this.service.port,
                     username: this.service.username,
                     password: this.service.password,
-                    sessionKey: "ABCDEF-not-real"
+                    sessionKey: "ABCDEF-not-real",
+                    version: svc.version
                 }
             );
             
-            service.request("search/jobs?count=2", "GET", {"X-TestHeader": 1}, "", function(err, res) {
+            var get = {count: 2};
+            var post = null;
+            var body = null;
+            service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
                 test.strictEqual(res.data.paging.offset, 0);
                 test.ok(res.data.entry.length <= res.data.paging.total);
                 test.strictEqual(res.data.entry.length, 2);
@@ -595,11 +631,15 @@ exports.setup = function(svc) {
                     port: this.service.port,
                     username: this.service.username,
                     password: this.service.password + "ABC",
-                    sessionKey: "ABCDEF-not-real"
+                    sessionKey: "ABCDEF-not-real",
+                    version: svc.version
                 }
             );
             
-            service.request("search/jobs?count=2", "GET", {"X-TestHeader": 1}, "", function(err, res) {
+            var get = {count: 2};
+            var post = null;
+            var body = null;
+            service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
                 test.ok(err);
                 test.strictEqual(err.status, 401);
                 test.done();
@@ -638,7 +678,8 @@ if (module === require.main) {
         host: cmdline.opts.host,
         port: cmdline.opts.port,
         username: cmdline.opts.username,
-        password: cmdline.opts.password
+        password: cmdline.opts.password,
+        version: cmdline.opts.version
     });
     
     var suite = exports.setup(svc);

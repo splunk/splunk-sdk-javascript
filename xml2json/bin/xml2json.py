@@ -513,7 +513,6 @@ def from_search_summary(root, timings={}):
     time_start = time.time()
     for node in root.findall('field'):
         field = {
-            'name': node.get('k'),
             'count': int(node.get('c', 0)),
             'nc': int(node.get('nc', 0)),
             'distinct_count': int(node.get('dc', 0)),
@@ -605,8 +604,11 @@ def from_http_simple_input(root):
     entry = {}
     
     for field in root.findall("results/result/field"):
-        entry[field.get("k")] = field.findtext("value/text")
-        
+        field_name = field.get("k")
+        if field_name == "_index":
+            field_name = "index";
+        entry[field_name] = field.findtext("value/text")
+    
     messages = []
     try:
         extracted_messages = extract_messages(root)

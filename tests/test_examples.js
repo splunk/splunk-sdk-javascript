@@ -328,7 +328,7 @@ exports.setup = function(svc, opts) {
                     {exec_mode: "blocking"}, 
                     function(err, job) {
                         test.ok(!err);
-                        job.results({output_mode: "rows"}, function(err, results) {
+                        job.results({output_mode: "json_rows"}, function(err, results) {
                             test.ok(!err);
                             process.stdin.emit("data", JSON.stringify(results));
                             process.stdin.emit("end");
@@ -390,7 +390,8 @@ if (module === require.main) {
         host: cmdline.opts.host,
         port: cmdline.opts.port,
         username: cmdline.opts.username,
-        password: cmdline.opts.password
+        password: cmdline.opts.password,
+        version: cmdline.opts.version
     });
     
     var suite = exports.setup(svc, cmdline.opts);

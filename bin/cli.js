@@ -103,16 +103,17 @@
                         "Content-Type": req.headers["content-type"],
                         "Authorization": req.headers["authorization"]
                     },
+                    followAllRedirects: true,
                     body: body,
                     jar: false
                 };
-                
                 
                 try {
                     request(options, function(err, response, data) {
                         try {
                             var statusCode = (response ? response.statusCode : 500) || 500;
                             var headers = (response ? response.headers : {}) || {};
+                            
                             res.writeHead(statusCode, headers);
                             res.write(data || JSON.stringify(err));
                             res.end();
@@ -724,6 +725,7 @@
             .concat(cmdline.opts.host      ?   makeOption("host",      cmdline.opts.host)      : "")
             .concat(cmdline.opts.port      ?   makeOption("port",      cmdline.opts.port)      : "")
             .concat(cmdline.opts.app       ?   makeOption("app",       cmdline.opts.app)       : "")
+            .concat(cmdline.opts.version   ?   makeOption("version",   cmdline.opts.version)   : "")
             .concat(cmdline.opts.password  ?   makeOption("password",  cmdline.opts.password)  : "");
         
         var testFunctions = files.map(function(file) {
@@ -786,6 +788,7 @@
         .option('--scheme <scheme>', 'Splunk scheme')
         .option('--host <host>', 'Splunk host')
         .option('--port <port>', 'Splunk port')
+        .option('--version <version>', 'Splunk version')
         .option('--namespace <namespace>', 'Splunk namespace (in the form of owner:app)')
         .action(runTests);
     
