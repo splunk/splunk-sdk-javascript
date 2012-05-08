@@ -110,7 +110,6 @@ exports.setup = function(svc, loggedOutSvc) {
                             
                             // Make sure the saved search doesn't exist in the 11 namespace
                             test.ok(!entity21);
-                            
                             done();
                         }
                     ],
@@ -218,7 +217,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual(entity21.namespace.owner, that.namespace21.owner);
                             test.strictEqual(entity21.namespace.app, that.namespace21.app);
                             
-                            done();
+                            test.done();
                         }
                     ],
                     function(err) {
@@ -758,12 +757,17 @@ exports.setup = function(svc, loggedOutSvc) {
                 test.done();
             },
 
-            // TODO: Fix this
-            // "Callback#Create fails with no search string": function(test) {
-            //     var jobs = this.service.jobs();
-            //     test.ok(jobs instanceof splunkjs.Service.Jobs);
-            //     jobs.create("", {}, function(err) { test.done();});
-            // },
+            "Callback#Create fails with no search string": function(test) {
+                var jobs = this.service.jobs();
+                test.ok(jobs instanceof splunkjs.Service.Jobs);
+                jobs.create(
+                    "", {},
+                    function(err) { 
+                        test.ok(err);
+                        test.done();
+                    }
+                );
+            },
 
             "Callback#Oneshot search": function(test) {
                 var sid = getNextId();
@@ -1115,7 +1119,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var search = new splunkjs.Service.SavedSearch(
                     this.loggedOutService, 
                     name, 
-                    {owner: "nobody", app: "search", sharing: "system"}
+                    {owner: "nobody", app: "search"}
                 );
                 search.dispatch(function(err) {
                     test.ok(err);
@@ -1432,48 +1436,49 @@ exports.setup = function(svc, loggedOutSvc) {
                     test.ok(!err);
                     test.done();
                 });
-            }
+            },
              
-            // This always times out and fails.
-            // "Callback#create file + create stanza + update stanza": function(test) {
-            //     var that = this;
-            //     var fileName = "jssdk_file";
-            //     var value = "barfoo_" + getNextId();
+            "Callback#create file + create stanza + update stanza": function(test) {
+                var that = this;
+                var fileName = "jssdk_file";
+                var value = "barfoo_" + getNextId();
                 
-            //     Async.chain([
-            //         function(done) {
-            //             var properties = that.service.properties(); 
-            //             properties.refresh(done);
-            //         },
-            //         function(properties, done) {
-            //             properties.create(fileName, done);
-            //         },
-            //         function(file, done) {
-            //             file.create("stanza", done);
-            //         },
-            //         function(stanza, done) {
-            //             stanza.update({"jssdk_foobar": value}, done);
-            //         },
-            //         function(stanza, done) {
-            //             test.strictEqual(stanza.properties()["jssdk_foobar"], value);
-            //             done();
-            //         },
-            //         function(done) {
-            //             var file = new splunkjs.Service.PropertyFile(svc, fileName);
-            //             file.refresh(done);
-            //         },
-            //         function(file, done) {
-            //             var stanza = file.contains("stanza");
-            //             test.ok(stanza);
-            //             stanza.remove(done);
-            //         }
-            //     ],
-            //     function(err) {
-            //         test.ok(!err);
-            //         test.done();
-            //     });
-            // }
-        },
+                Async.chain([
+                    function(done) {
+                        var properties = that.service.properties(); 
+                        properties.refresh(done);
+                    },
+                    function(properties, done) {
+                        properties.create(fileName, done);
+                    },
+                    function(file, done) {
+                        file.create("stanza", done);
+                    },
+                    function(stanza, done) {
+                        stanza.update({"jssdk_foobar": value}, done);
+                    },
+                    function(stanza, done) {
+                        test.strictEqual(stanza.properties()["jssdk_foobar"], value);
+                        done();
+                    },
+                    function(done) {
+                        var file = new splunkjs.Service.PropertyFile(svc, fileName);
+                        file.refresh(done);
+                    },
+                    function(file, done) {
+                        var stanza = file.contains("stanza");
+                        test.ok(stanza);
+                        stanza.remove(done);
+                    }
+                ],
+                function(err) {
+                    console.log(err);
+                    test.ok(!err);
+                    test.done();
+                });
+            }
+        }
+        ,
         
         "Configuration Tests": {        
             setUp: function(done) {
@@ -1553,49 +1558,49 @@ exports.setup = function(svc, loggedOutSvc) {
             "Callback#configurations init": function(test) {
                 test.throws(function() {new splunkjs.Service.Configurations(this.service, {owner: "-", app: "-", sharing: "system"});});
                 test.done();
-            }
+            },
                    
-            // "Callback#create file + create stanza + update stanza": function(test) {
-            //     var that = this;
-            //     var namespace = {owner: "nobody", app: "system"};
-            //     var fileName = "jssdk_file";
-            //     var value = "barfoo_" + getNextId();
+            "Callback#create file + create stanza + update stanza": function(test) {
+                var that = this;
+                var namespace = {owner: "nobody", app: "system"};
+                var fileName = "jssdk_file";
+                var value = "barfoo_" + getNextId();
                 
-            //     Async.chain([
-            //         function(done) {
-            //             var configs = svc.configurations(namespace); 
-            //             configs.refresh(done);
-            //         },
-            //         function(configs, done) {
-            //             configs.create({__conf: fileName}, done);
-            //         },
-            //         function(file, done) {
-            //             file.create("stanza", done);
-            //         },
-            //         function(stanza, done) {
-            //             stanza.update({"jssdk_foobar": value}, done);
-            //         },
-            //         function(stanza, done) {
-            //             test.strictEqual(stanza.properties()["jssdk_foobar"], value);
-            //             done();
-            //         },
-            //         function(done) {
-            //             var file = new splunkjs.Service.ConfigurationFile(svc, fileName);
-            //             file.refresh(done);
-            //         },
-            //         function(file, done) {
-            //             var stanza = file.contains("stanza");
-            //             test.ok(stanza);
-            //             stanza.remove(done);
+                Async.chain([
+                    function(done) {
+                        var configs = svc.configurations(namespace); 
+                        configs.refresh(done);
+                    },
+                    function(configs, done) {
+                        configs.create({__conf: fileName}, done);
+                    },
+                    function(file, done) {
+                        file.create("stanza", done);
+                    },
+                    function(stanza, done) {
+                        stanza.update({"jssdk_foobar": value}, done);
+                    },
+                    function(stanza, done) {
+                        test.strictEqual(stanza.properties()["jssdk_foobar"], value);
+                        done();
+                    },
+                    function(done) {
+                        var file = new splunkjs.Service.ConfigurationFile(svc, fileName);
+                        file.refresh(done);
+                    },
+                    function(file, done) {
+                        var stanza = file.contains("stanza");
+                        test.ok(stanza);
+                        stanza.remove(done);
 
-            //         }
-            //     ],
-            //     function(err) {
-            //         console.log(err);
-            //         test.ok(!err);
-            //         test.done();
-            //     });
-            // }
+                    }
+                ],
+                function(err) {
+                    console.log(err);
+                    test.ok(!err);
+                    test.done();
+                });
+            }
         },
         
         "Index Tests": {      
@@ -1793,6 +1798,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var indexName = this.indexName;
                 Async.chain(
                     function(done) {
+                        test.ok(service);
                         service.log(message, done);
                     },
                     function(err) {
@@ -2345,11 +2351,13 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Methods to be overridden throw": function(test) {
-                var coll = new splunkjs.Service.Collection(this.service,
-                                                       "/data/indexes",
-                                                       {owner: "admin",
-                                                        app: "search",
-                                                        sharing: "app"});
+                var coll = new splunkjs.Service.Collection(
+                    this.service,
+                    "/data/indexes",
+                    {owner: "admin",
+                     app: "search",
+                     sharing: "app"}
+                );
                 test.throws(function() {
                     coll.instantiateEntity({});
                 });
@@ -2357,11 +2365,13 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Accessors work": function(test) {
-                var coll = new splunkjs.Service.Collection(this.service,
-                                                       "/data/indexes",
-                                                       {owner: "admin",
-                                                        app: "search",
-                                                        sharing: "app"});
+                var coll = new splunkjs.Service.Collection(
+                    this.service,
+                    "/data/indexes",
+                    {owner: "admin",
+                     app: "search",
+                     sharing: "app"}
+                );
                 coll._load({links: "Hilda", updated: true});
                 test.strictEqual(coll.links(), "Hilda");
                 test.ok(coll.updated());
@@ -2369,16 +2379,18 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Contains throws without a good id": function(test) {
-                var coll = new splunkjs.Service.Collection(this.service,
-                                                       "/data/indexes",
-                                                       {owner: "admin",
-                                                        app: "search",
-                                                        sharing: "app"});
+                var coll = new splunkjs.Service.Collection(
+                    this.service,
+                    "/data/indexes",
+                    {owner: "admin",
+                     app: "search",
+                     sharing: "app"}
+                );
                 test.throws(function() { coll.contains(null);});
                 test.done();
             }
 
-        }
+       }
     }
 };
         
@@ -2415,8 +2427,7 @@ if (module === require.main) {
         version: cmdline.opts.version
     });
 
-    
-    var suite = exports.setup(svc);
+    var suite = exports.setup(svc, loggedOutSvc);
     
     svc.login(function(err, success) {
         if (err || !success) {

@@ -76,7 +76,8 @@ def make_request(url, headers={}, get=None, post=None, payload=None, method={},
             disable_ssl_certificate_validation=True)
     except:
         h = httplib2.Http(
-            timeout=SPLUNKD_CONNECTION_TIMEOUT) 
+            timeout=SPLUNKD_CONNECTION_TIMEOUT)
+    h.follow_redirects = False
     
     if "authorization" in headers:
         del headers["authorization"]
@@ -104,4 +105,16 @@ def make_request(url, headers={}, get=None, post=None, payload=None, method={},
         body=payload,
         headers=headers)
     
+    # httplib2 doesn't seem to do anything useful with a 303, so we go
+    # ahead and redirect, and then return as if nothing had happened.
+    if status['status'] == '303':
+        offset = url.index('//')+2
+        base_url = url[: offset + url[offset:].find('/')]
+        url = base_url + status['location']
+        status, response = h.request(
+            url,
+            method='GET',
+            body=payload,
+            headers=headers)
+
     return status, response
