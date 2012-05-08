@@ -25,6 +25,7 @@ import formatters
 # stdlib
 import re
 import json
+from urlparse import urlparse, parse_qs
 
 import xml.etree.cElementTree as et
 
@@ -84,6 +85,9 @@ def get_authorization(request):
     return request["headers"].get("authorization", "")
 
 def render_response(data):
+    if not isinstance(data, dict) and not isinstance(data, list):
+        return data
+    
     formatter = formatters.get_formatter()
     formatter.format(data)
     return json.dumps(data, sort_keys=True, indent=4)
@@ -99,7 +103,7 @@ def dispatch(request):
     # self['base_path'] = headers
     status = 500
     messages = {"ERROR": []}
-    data = {"entry": None, "messages": messages}
+    data = {"messages": messages}
     
     try:
         method = request['method']
@@ -132,7 +136,7 @@ def forward_request(request):
     method = request['method']
     
     messages = {"ERROR": []}
-    content = {"entry": None, "messages": messages}
+    content = {"messages": messages}
     
     response, content = forward.make_request(
         request["base_path"] + path,
@@ -163,7 +167,8 @@ def forward_request(request):
             else:
                 extracted_messages = xml2json.extract_messages(body)
                 xml2json.combine_messages(messages, extracted_messages)
-        except et.XMLSyntaxError:
+        except Exception, e:
+            logger.info(e);
             pass
     elif response.status < 200 or response.status > 299:
         # service may return messages in the body; try to parse them
@@ -197,17 +202,16 @@ def job_data(request, sid, data_source, *args, **kwargs):
     # many more special cases than the other endpoints, and introduces
     # much more complexity into unless_error than is justified by
     # repeating a couple of lines here.
-    request = output_mode('xml')(request)
-    if data_source == 'summary':
-       request["get"]["output_time_format"] = "%s"
     mode = request["get"].get("output_mode", "")
+    request = output_mode('xml')(request)
     status, content = forward_request(request)
 
     if status_ok(status):
         if data_source == "search.log":
-            return status, {"entry": {"content": content}}
+            return status, content
         if not content:
             return status, content
+            
         root = et.fromstring(content)
         if root.tag in ('events', 'results', 'results_preview'):
             if mode == "json_rows":
@@ -218,12 +222,14 @@ def job_data(request, sid, data_source, *args, **kwargs):
                 format = xml2json.ResultFormat.VERBOSE
             else:
                 format = xml2json.ResultFormat.ROW
-    
+            
             return status, xml2json.from_job_results(root, format=format)
         elif root.tag == 'timeline':
             return status, xml2json.from_search_timeline(root)
         elif root.tag == 'summary':
             return status, xml2json.from_search_summary(root)
+        else:
+            return status, xml2json.from_messages_only(root)
     else:
         return status, xml2json.from_messages_only(content)
 
@@ -282,7 +288,15 @@ router.add(route.Route('/search/typeahead', unless_error(xml2json.from_typeahead
 router.add(route.Route('/search/tags', {"GET": eai}, 'tags'))
 router.add(route.Route('/search/tags/<name>', {"GET": eai, "DELETE": only_messages, "POST": only_messages}, 'tag_info'))
 router.add(route.Route('/saved/searches/<name>/dispatch', {"POST": unless_error(xml2json.from_job_create)}, 'dispatch_saved_search'))
-router.add(route.Route('/properties/<file>/<stanza>', unless_error(xml2json.from_propertizes_stanza), 'properties_stanza_info'))
+router.add(route.Route(
+    '/properties/<file>/<stanza>', 
+    {
+        "GET": unless_error(xml2json.from_propertizes_stanza), 
+        "POST": only_messages,
+        "DELETE": only_messages
+    },
+    'properties_stanza_info')
+)
 router.add(route.Route('/properties/<file>/<stanza>/<key>', stanza_key, 'properties_stanza_key')) # Underlying response is going to change...
 router.add(route.Route('/receivers/simple', unless_error(xml2json.from_http_simple_input), 'http_simple_input'))
 router.add(route.Route('/auth/login', {"POST": unless_error(xml2json.from_auth)}, 'auth'))

@@ -31,6 +31,8 @@ ATOM_NS         = 'http://www.w3.org/2005/Atom'
 SPLUNK_NS       = 'http://dev.splunk.com/ns/rest'
 OPENSEARCH_NS   = 'http://a9.com/-/spec/opensearch/1.1/'
 
+XML_HEADER = "<?xml version='1.0' encoding='UTF-8'?>"
+
 SPLUNK_TAGF = '{%s}%%s' % SPLUNK_NS
 
 
@@ -45,7 +47,7 @@ def extract_messages(node):
     that have been passed through the standard XML messaging spec
     '''
 
-    output = {}
+    output = []
     messages = node.find('messages')
     if messages == None:
         messages = node.find(SPLUNK_TAGF % 'messages')
@@ -56,20 +58,17 @@ def extract_messages(node):
             message_code = child.get('code')
             message_text = child.text
             
-            message_store = output.get(message_type, [])
-            message_store.append(message_text)
-            
-            output[message_type] = message_store
+            output.append({
+                "type": message_type,
+                "text": message_text,
+                "code": message_code
+            })
             
     return output
 
 
-def combine_messages(existing_messages = {}, new_messages = {}):
-    for message_type in new_messages.keys():
-        if message_type in existing_messages:
-            existing_messages[message_type].extend(new_messages[message_type])
-        else:
-            existing_messages[message_type] = new_messages[message_type]
+def combine_messages(existing_messages = [], new_messages = []):
+    existing_messages.extend(new_messages)
 
 
 def unesc(str):
@@ -126,7 +125,7 @@ def extract_result_inner_text(node):
 
 ####################
 
-def from_feed(content, timings={}, messages={}):
+def from_feed(content, timings={}, messages=[]):
     collection = {}
     
     if content:
@@ -176,7 +175,7 @@ def from_feed(content, timings={}, messages={}):
                 collection["paging"] = paging
                 
                 try:
-                    paging["page"] = int(root.findall('{%s}itemsPerPage' % (OPENSEARCH_NS))[0].text)
+                    paging["perPage"] = int(root.findall('{%s}itemsPerPage' % (OPENSEARCH_NS))[0].text)
                     paging["offset"] = int(root.findall('{%s}startIndex' % (OPENSEARCH_NS))[0].text)
                     paging["total"] = int(root.findall('{%s}totalResults' % (OPENSEARCH_NS))[0].text)
                 except:
@@ -188,10 +187,7 @@ def from_feed(content, timings={}, messages={}):
                 # if it is "none" or actually
                 # 0, since they are both false-y values
                 if paging["total"] is None:
-                    paging["count"] = len(entries)
-                    paging["total"] = paging["count"]
-                else:
-                    paging["count"] = min(paging["total"], len(entries))
+                    paging["total"] = len(entries)
                 
                 try:
                     
@@ -282,7 +278,13 @@ def from_attributes(attr_dict):
 
 
 def from_job_results(root, format=ResultFormat.ROW, timings={}):
-    if isinstance(root, str):
+    if isinstance(root, str):    
+        # When we have a oneshot search with no results,
+        # we get back an invalid XML string. We simply
+        # replace it with an empty results tag
+        if root.strip() == XML_HEADER:
+            root = "<results preview='0'/>"
+            
         time_start = time.time()
         root = et.fromstring(root)
         time_end = time.time()
@@ -294,7 +296,7 @@ def from_job_results(root, format=ResultFormat.ROW, timings={}):
         timings["job_results_parse"] = time_end - time_start
     
     results = {}
-    messages = {}
+    messages = []
     
     try:
         extracted_messages = extract_messages(root)
@@ -345,7 +347,7 @@ def from_job_results(root, format=ResultFormat.ROW, timings={}):
     time_end = time.time()
     timings["job_results_mold_data"] = time_end - time_start
     
-    messages = {}
+    messages = []
     try:
         extracted_messages = extract_messages(root)
         if extracted_messages:
@@ -360,7 +362,6 @@ def from_job_results(root, format=ResultFormat.ROW, timings={}):
         results["messages"] = messages
         results["timings"] = timings
         
-                    
     return results
     
 
@@ -477,7 +478,7 @@ def from_search_timeline(root, timings={}):
     time_end = time.time()
     timings["search_timeline_buckets"] = time_end - time_start
     
-    messages = {}
+    messages = []
     try:
         extracted_messages = extract_messages(root)
         if extracted_messages:
@@ -486,11 +487,7 @@ def from_search_timeline(root, timings={}):
         # TODO
         pass
     
-    return {
-        "messages": messages,
-        "entry": {"content": entry},
-        "timings": timings
-    }
+    return entry
     
 
 def from_search_summary(root, timings={}):
@@ -516,7 +513,6 @@ def from_search_summary(root, timings={}):
     time_start = time.time()
     for node in root.findall('field'):
         field = {
-            'name': node.get('k'),
             'count': int(node.get('c', 0)),
             'nc': int(node.get('nc', 0)),
             'distinct_count': int(node.get('dc', 0)),
@@ -543,7 +539,7 @@ def from_search_summary(root, timings={}):
     time_end = time.time()
     timings["search_summary_fields"] = time_end - time_start
     
-    messages = {}
+    messages = []
     try:
         extracted_messages = extract_messages(root)
         if extracted_messages:
@@ -552,13 +548,7 @@ def from_search_summary(root, timings={}):
         # TODO
         pass
     
-    return {
-        "messages": messages,
-        'entry': {"content": summary},
-        'timings': timings
-    }
-    
-    return output
+    return summary
     
 
 def from_auth(root):
@@ -569,7 +559,7 @@ def from_auth(root):
         
     session_key = root.findtext("sessionKey")
     
-    messages = {}
+    messages = []
     try:
         extracted_messages = extract_messages(root)
         if extracted_messages:
@@ -579,12 +569,7 @@ def from_auth(root):
         pass
         
     return {
-        "messages": messages,
-        "entry": {
-            "content": {
-                "sessionKey": session_key
-            }
-        }
+        "sessionKey": session_key
     }
     
 
@@ -596,7 +581,7 @@ def from_job_create(root):
         
     sid = root.findtext("sid")
     
-    messages = {}
+    messages = []
     try:
         extracted_messages = extract_messages(root)
         if extracted_messages:
@@ -606,12 +591,7 @@ def from_job_create(root):
         pass
         
     return {
-        "messages": messages,
-        "entry": {
-            "content": {
-                "sid": sid
-            }
-        }
+        "sid": sid
     }
     
 
@@ -624,9 +604,12 @@ def from_http_simple_input(root):
     entry = {}
     
     for field in root.findall("results/result/field"):
-        entry[field.get("k")] = field.findtext("value/text")
-        
-    messages = {}
+        field_name = field.get("k")
+        if field_name == "_index":
+            field_name = "index";
+        entry[field_name] = field.findtext("value/text")
+    
+    messages = []
     try:
         extracted_messages = extract_messages(root)
         if extracted_messages:
@@ -635,10 +618,7 @@ def from_http_simple_input(root):
         # TODO
         pass
         
-    return {
-        "messages": messages,
-        "entry": {"content": entry}
-    }
+    return entry
     
 
 def from_typeahead(root):
@@ -647,9 +627,7 @@ def from_typeahead(root):
     elif isinstance(root, file):
         root = json.loads(root.read())
         
-    return {
-        "entry": {"content": root}
-    }
+    return root
     
 
 def from_search_parser(root):
@@ -682,7 +660,7 @@ def from_search_parser(root):
                 command[key.get("name")] = key.text or ""
         entry["commands"].append(command)
         
-    messages = {}
+    messages = []
     try:
         extracted_messages = extract_messages(root)
         if extracted_messages:
@@ -691,32 +669,11 @@ def from_search_parser(root):
         # TODO
         pass
         
-    return {
-        "messages": messages,
-        "entry": {"content": entry}
-    }
+    return entry
     
 
-def from_propertizes_stanza_key(root, key):
-    messages = {}
-    try:
-        extracted_messages = extract_messages(root)
-        if extracted_messages:
-            combine_messages(messages, extracted_messages)
-    except:
-        # TODO
-        pass
-        
-    return {
-        "messages": messages,
-        "entry": {
-            "content": {
-                "key": key,
-                "value": root
-            }
-        }
-    }
-    
+def from_propertizes_stanza_key(root, key):        
+    return root
 
 def from_propertizes_stanza(root):
     if isinstance(root, str):
@@ -743,7 +700,7 @@ def from_propertizes_stanza(root):
     if author_info:
         collection['author'] = author_info[0].text
             
-    messages = {}
+    messages = []
     try:
         extracted_messages = extract_messages(root)
         if extracted_messages:
@@ -772,12 +729,15 @@ def parse_stanza(root):
     
 
 def from_messages_only(root):
+    if not root:
+        return { "messages": [] };
+    
     if isinstance(root, str):
         root = et.fromstring(root)
     elif isinstance(root, file):
         root = et.parse(root).getroot()
         
-    messages = {}
+    messages = []
     
     try:
         extracted_messages = extract_messages(root)
@@ -788,8 +748,7 @@ def from_messages_only(root):
         pass
         
     return {
-        "messages": messages,
-        "entry": None
+        "messages": messages
     }
     
 

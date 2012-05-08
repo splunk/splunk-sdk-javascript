@@ -33,7 +33,7 @@
             function() { return !condition(obj) && (i++ < iterations); },
             function(done) {
                 Async.sleep(500, function() {
-                    obj.refresh(done); 
+                    obj.fetch(done); 
                 });
             },
             function(err) {

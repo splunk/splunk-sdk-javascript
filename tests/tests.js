@@ -17,7 +17,7 @@
     var fs          = require('fs');
     var test        = require('../contrib/nodeunit/test_reporter');
     var options     = require('../examples/node/cmdline');
-    var splunkjs    = require('../splunk');
+    var splunkjs    = require('../index');
     var NodeHttp    = splunkjs.NodeHttp;
     
     var parser = new options.create();
@@ -29,7 +29,8 @@
         host: cmdline.opts.host,
         port: cmdline.opts.port,
         username: cmdline.opts.username,
-        password: cmdline.opts.password
+        password: cmdline.opts.password,
+        version: cmdline.opts.version
     });
 
     exports.Tests = {};

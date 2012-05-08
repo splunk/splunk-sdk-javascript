@@ -123,13 +123,11 @@
                                   <li><a href="#splunkjs.Service.Indexes-path">path</a></li>
                                   <li class="nav-header"><a href="#splunkjs.Service.Indexes-inherited">Inherited</a></li>
                                   <li><a href="#splunkjs.Service.Indexes^paging">paging</a></li>
-                                  <li><a href="#splunkjs.Service.Indexes^contains">contains</a></li>
-                                  <li><a href="#splunkjs.Service.Indexes^refreshOnEntityCreation">refreshOnEntityCreation</a></li>
                                   <li><a href="#splunkjs.Service.Indexes^list">list</a></li>
+                                  <li><a href="#splunkjs.Service.Indexes^fetchOnEntityCreation">fetchOnEntityCreation</a></li>
                                   <li><a href="#splunkjs.Service.Indexes^item">item</a></li>
-                                  <li><a href="#splunkjs.Service.Indexes^refresh">refresh</a></li>
+                                  <li><a href="#splunkjs.Service.Indexes^fetch">fetch</a></li>
                                   <li><a href="#splunkjs.Service.Indexes^updated">updated</a></li>
-                                  <li><a href="#splunkjs.Service.Indexes^refreshOnEntityInstantiation">refreshOnEntityInstantiation</a></li>
                                   <li><a href="#splunkjs.Service.Indexes^links">links</a></li>
                                   <li><a href="#splunkjs.Service.Indexes^state">state</a></li>
                                   <li><a href="#splunkjs.Service.Indexes^properties">properties</a></li>
@@ -238,21 +236,6 @@
                 <ul class="nav nav-list">
                 </ul>
               </li>
-                          <li class="nav-header"><a href="splunkjs.Service.PropertyStanza.html">splunkjs.Service.PropertyStanza</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.PropertyFile.html">splunkjs.Service.PropertyFile</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.Properties.html">splunkjs.Service.Properties</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
                           <li class="nav-header"><a href="splunkjs.Service.ConfigurationStanza.html">splunkjs.Service.ConfigurationStanza</a></li>
               <li>
                 <ul class="nav nav-list">
@@ -340,7 +323,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2274">lib/service.js:2274</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2179">lib/service.js:2179</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>init: function(service, namespace) {
@@ -413,7 +396,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2297">lib/service.js:2297</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2202">lib/service.js:2202</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>create: function(name, params, callback) {
@@ -482,7 +465,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2259">lib/service.js:2259</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2164">lib/service.js:2164</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>instantiateEntity: function(props) {
@@ -520,7 +503,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2247">lib/service.js:2247</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L2152">lib/service.js:2152</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>path: function() {
@@ -561,164 +544,12 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1233">lib/service.js:1233</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1191">lib/service.js:1191</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>paging: function() {
     return this._paging;
 },</code></pre>
-            </section>
-          </section>
-                  <section class="method well" id="splunkjs.Service.Indexes^contains">
-            <header>
-              <div class="method-header">
-                <h3 class="method-name">contains</h3>
-              </div>
-              <h5 class="signature">splunkjs.Service.Collection.contains</h5>
-            </header>
-          
-            <section class="content">
-              <p>Check whether a specific entity exists</p>
-<p>Check to see if the collection contains a specific entity, and if so, return that entity.</p>
-            </section>
-            
-            <section class="syntax">
-                          <h4>Syntax</h4>
-              <span>contains: function(id, namespace)</span>
-            </section>
-            
-            <section class="params">
-                          <h4>Parameters</h4>
-              
-              <table class="table table-bordered">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Type</th>
-                    <th>Description</th>
-                  </tr>
-                </thead>
-                <tbody>
-                                  <tr>
-                    <td class="param-name">id</td>
-                    <td class="param-type">String</td>
-                    <td class="param-description"><p>The name of the entity to retrieve</p></td>
-                  </tr>
-                                  <tr>
-                    <td class="param-name">namespace</td>
-                    <td class="param-type">Object</td>
-                    <td class="param-description"><p>Namespace information (owner, app, sharing)</p></td>
-                  </tr>
-                </tbody>
-              </table>
-            </section>
-            
-            <section class="returns">
-            </section>
-            
-            <section class="examples">
-                          <h4>Examples</h4>
-                          <pre><code> var apps = service.apps();
- apps.refresh(function(err, apps) {
-     var app = apps.contains("search");
-     console.log("Search App Found: " + !!app);
-     // `app` contains the Application object.
- });
-</code></pre>
-            </section>
-                        
-            <section class="code">
-              
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1436">lib/service.js:1436</a>)</h4>  
-              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
-              
-              <pre class="hidden" class="linenums pre-scrollable"><code>contains: function(id, namespace) {                
-        if (utils.isEmpty(namespace)) {
-            namespace = null;
-        }          
-        
-        if (!id) {
-            throw new Error("Must suply a non-empty name.");
-        }
-        
-        var fullPath = null;
-        if (this._entitiesByName.hasOwnProperty(id)) {
-            var entities = this._entitiesByName[id];                 
-            
-            if (entities.length === 1 &amp;&amp; !namespace) {
-                // If there is only one entity with the
-                // specified name and the user did not
-                // specify a namespace, then we just
-                // return it
-                return entities[0];
-            }
-            else if (entities.length === 1 &amp;&amp; namespace) {
-                // If we specified a namespace, then we 
-                // only return the entity if it matches
-                // the full path
-                fullPath = this.service.fullpath(entities[0].path(), namespace);
-                if (entities[0].qualifiedPath === fullPath) {
-                    return entities[0];
-                }
-                else {
-                    return null;
-                }
-            }
-            else if (entities.length &gt; 1 &amp;&amp; !namespace) {
-                // If there is more than one entity and we didn't
-                // specify a namespace, then we return an error
-                // saying the match is ambiguous
-                throw new Error("Ambiguous match for name '" + id + "'");
-            }
-            else {
-                // There is more than one entity, and we do have
-                // a namespace, so we try and find it
-                for(var i = 0; i &lt; entities.length; i++) {
-                    var entity = entities[i];
-                    fullPath = this.service.fullpath(entities[i].path(), namespace);
-                    if (entity.qualifiedPath === fullPath) {
-                        return entity;
-                    }
-                }                            
-            }
-        }
-        else {
-            return null;
-        }
-    }
-});</code></pre>
-            </section>
-          </section>
-                  <section class="method well" id="splunkjs.Service.Indexes^refreshOnEntityCreation">
-            <header>
-              <div class="method-header">
-                <h3 class="method-name">refreshOnEntityCreation</h3>
-              </div>
-              <h5 class="signature">splunkjs.Service.Collection.refreshOnEntityCreation</h5>
-            </header>
-          
-            <section class="content">
-              <p>Whether or not to call <code>refresh()</code> after an entity is created. By default we don't refresh the entity, as the endpoint will return (echo) the created entity</p>
-            </section>
-            
-            <section class="syntax">
-            </section>
-            
-            <section class="params">
-            </section>
-            
-            <section class="returns">
-            </section>
-            
-            <section class="examples">
-            </section>
-                        
-            <section class="code">
-              
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1122">lib/service.js:1122</a>)</h4>  
-              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
-              
-              <pre class="hidden" class="linenums pre-scrollable"><code>refreshOnEntityCreation: false,</code></pre>
             </section>
           </section>
                   <section class="method well" id="splunkjs.Service.Indexes^list">
@@ -766,7 +597,7 @@
             <section class="examples">
                           <h4>Examples</h4>
                           <pre><code> var apps = service.apps();
- apps.refresh(function(err, apps) {
+ apps.fetch(function(err, apps) {
      var appList = apps.list();
      console.log(appList.length);
  });
@@ -775,14 +606,47 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1409">lib/service.js:1409</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1390">lib/service.js:1390</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>list: function(callback) {
-    callback = callback || function() {};
-    
-    return utils.clone(this._entities);
-},</code></pre>
+        callback = callback || function() {};
+        
+        return utils.clone(this._entities);
+    }
+});</code></pre>
+            </section>
+          </section>
+                  <section class="method well" id="splunkjs.Service.Indexes^fetchOnEntityCreation">
+            <header>
+              <div class="method-header">
+                <h3 class="method-name">fetchOnEntityCreation</h3>
+              </div>
+              <h5 class="signature">splunkjs.Service.Collection.fetchOnEntityCreation</h5>
+            </header>
+          
+            <section class="content">
+              <p>Whether or not to call <code>fetch()</code> after an entity is created. By default we don't fetch the entity, as the endpoint will return (echo) the created entity</p>
+            </section>
+            
+            <section class="syntax">
+            </section>
+            
+            <section class="params">
+            </section>
+            
+            <section class="returns">
+            </section>
+            
+            <section class="examples">
+            </section>
+                        
+            <section class="code">
+              
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1091">lib/service.js:1091</a>)</h4>  
+              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
+              
+              <pre class="hidden" class="linenums pre-scrollable"><code>fetchOnEntityCreation: false,</code></pre>
             </section>
           </section>
                   <section class="method well" id="splunkjs.Service.Indexes^item">
@@ -794,13 +658,13 @@
             </header>
           
             <section class="content">
-              <p>Fetch a specific entity.</p>
-<p>Return a specific entity given its name.</p>
+              <p>Get a specific entity.</p>
+<p>Return a specific entity given its name from the collection</p>
             </section>
             
             <section class="syntax">
                           <h4>Syntax</h4>
-              <span>item: function(name, namespace)</span>
+              <span>item: function(id, namespace)</span>
             </section>
             
             <section class="params">
@@ -816,7 +680,7 @@
                 </thead>
                 <tbody>
                                   <tr>
-                    <td class="param-name">name</td>
+                    <td class="param-name">id</td>
                     <td class="param-type">String</td>
                     <td class="param-description"><p>The name of the entity to retrieve</p></td>
                   </tr>
@@ -835,38 +699,91 @@
             <section class="examples">
                           <h4>Examples</h4>
                           <pre><code> var apps = service.apps();
- apps.item("search", function(err, app) {
-     console.log(app.properties());
- })
+ apps.fetch(function(err, apps) {
+     var app = apps.item("search");
+     console.log("Search App Found: " + !!app);
+     // `app` is an Application object.
+ });
 </code></pre>
             </section>
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1334">lib/service.js:1334</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1264">lib/service.js:1264</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
-              <pre class="hidden" class="linenums pre-scrollable"><code>item: function(name, namespace) {    
-    return this.contains(name, namespace);     
+              <pre class="hidden" class="linenums pre-scrollable"><code>item: function(id, namespace) {                
+    if (utils.isEmpty(namespace)) {
+        namespace = null;
+    }          
+    
+    if (!id) {
+        throw new Error("Must suply a non-empty name.");
+    }
+    
+    var fullPath = null;
+    if (this._entitiesByName.hasOwnProperty(id)) {
+        var entities = this._entitiesByName[id];                 
+        
+        if (entities.length === 1 &amp;&amp; !namespace) {
+            // If there is only one entity with the
+            // specified name and the user did not
+            // specify a namespace, then we just
+            // return it
+            return entities[0];
+        }
+        else if (entities.length === 1 &amp;&amp; namespace) {
+            // If we specified a namespace, then we 
+            // only return the entity if it matches
+            // the full path
+            fullPath = this.service.fullpath(entities[0].path(), namespace);
+            if (entities[0].qualifiedPath === fullPath) {
+                return entities[0];
+            }
+            else {
+                return null;
+            }
+        }
+        else if (entities.length &gt; 1 &amp;&amp; !namespace) {
+            // If there is more than one entity and we didn't
+            // specify a namespace, then we return an error
+            // saying the match is ambiguous
+            throw new Error("Ambiguous match for name '" + id + "'");
+        }
+        else {
+            // There is more than one entity, and we do have
+            // a namespace, so we try and find it
+            for(var i = 0; i &lt; entities.length; i++) {
+                var entity = entities[i];
+                fullPath = this.service.fullpath(entities[i].path(), namespace);
+                if (entity.qualifiedPath === fullPath) {
+                    return entity;
+                }
+            }                            
+        }
+    }
+    else {
+        return null;
+    }    
 },</code></pre>
             </section>
           </section>
-                  <section class="method well" id="splunkjs.Service.Indexes^refresh">
+                  <section class="method well" id="splunkjs.Service.Indexes^fetch">
             <header>
               <div class="method-header">
-                <h3 class="method-name">refresh</h3>
+                <h3 class="method-name">fetch</h3>
               </div>
-              <h5 class="signature">splunkjs.Service.Collection.refresh</h5>
+              <h5 class="signature">splunkjs.Service.Collection.fetch</h5>
             </header>
           
             <section class="content">
               <p>Refresh the resource</p>
-<p>This will unconditionally refresh the object from the server and load it up.</p>
+<p>This will unconditionally fetch the object from the server and load it up.</p>
             </section>
             
             <section class="syntax">
                           <h4>Syntax</h4>
-              <span>refresh: function(options, callback)</span>
+              <span>fetch: function(options, callback)</span>
             </section>
             
             <section class="params">
@@ -903,10 +820,10 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1259">lib/service.js:1259</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1217">lib/service.js:1217</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
-              <pre class="hidden" class="linenums pre-scrollable"><code>refresh: function(options, callback) {
+              <pre class="hidden" class="linenums pre-scrollable"><code>fetch: function(options, callback) {
     if (!callback &amp;&amp; utils.isFunction(options)) {
         callback = options;
         options = {};
@@ -918,12 +835,6 @@
         options.count = 0;
     }
     
-    var recursive = false;
-    if (options.hasOwnProperty("recursive")) {
-        recursive = options.recursive;
-        delete options.recursive;
-    }
-    
     var that = this;
     var req = that.get("", options, function(err, response) {
         if (err) {
@@ -931,32 +842,7 @@
         }
         else {
             that._load(response.data);
-            
-            if (that.refreshOnEntityInstantiation &amp;&amp; recursive) {
-                var wasAbortedAlready = false;
-                var fns = [];
-                utils.forEach(that._entities, function(entity) {
-                    fns.push(function(done) {
-                        entity.refresh({recursive: true}, function() {
-                            if (req.wasAborted) {
-                                if (!wasAbortedAlready) {
-                                    wasAbortedAlready = true;
-                                }
-                            }
-                            else {
-                                callback.apply(null, arguments);
-                            }
-                        }); 
-                    });
-                });
-                
-                Async.parallel(fns, function(err) {
-                    callback(err, that); 
-                });
-            }
-            else {
-                callback(null, that);
-            }
+            callback(null, that);
         }
     });
     
@@ -994,44 +880,12 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1244">lib/service.js:1244</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1202">lib/service.js:1202</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>updated: function() {
     return this._updated;
 },</code></pre>
-            </section>
-          </section>
-                  <section class="method well" id="splunkjs.Service.Indexes^refreshOnEntityInstantiation">
-            <header>
-              <div class="method-header">
-                <h3 class="method-name">refreshOnEntityInstantiation</h3>
-              </div>
-              <h5 class="signature">splunkjs.Service.Collection.refreshOnEntityInstantiation</h5>
-            </header>
-          
-            <section class="content">
-              <p>Whether or not to call <code>refresh()</code> after an entity is instantiated locally. By default we don't refresh the entity, as the endpoint will return (echo) the created entities when we list it.</p>
-            </section>
-            
-            <section class="syntax">
-            </section>
-            
-            <section class="params">
-            </section>
-            
-            <section class="returns">
-            </section>
-            
-            <section class="examples">
-            </section>
-                        
-            <section class="code">
-              
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1132">lib/service.js:1132</a>)</h4>  
-              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
-              
-              <pre class="hidden" class="linenums pre-scrollable"><code>refreshOnEntityInstantiation: false,</code></pre>
             </section>
           </section>
                   <section class="method well" id="splunkjs.Service.Indexes^links">
@@ -1064,7 +918,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1222">lib/service.js:1222</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1180">lib/service.js:1180</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>links: function() {
@@ -1103,7 +957,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L785">lib/service.js:785</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L745">lib/service.js:745</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>state: function() {
@@ -1143,7 +997,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L771">lib/service.js:771</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L731">lib/service.js:731</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>properties: function() {
@@ -1213,7 +1067,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L668">lib/service.js:668</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L628">lib/service.js:628</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>del: function(relpath, params, callback) {
@@ -1294,7 +1148,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L634">lib/service.js:634</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L594">lib/service.js:594</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>post: function(relpath, params, callback) {
@@ -1374,7 +1228,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L600">lib/service.js:600</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L560">lib/service.js:560</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>get: function(relpath, params, callback) {
@@ -1392,9 +1246,6 @@
 },</code></pre>
             </section>
           </section>
-                
-                
-                
                 
                 
                 

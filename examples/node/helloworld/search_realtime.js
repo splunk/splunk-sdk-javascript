@@ -17,7 +17,7 @@
 // how many events of each sourcetype we have seen. It will then print out
 // this information every 1 second for a set number of iterations.
 
-var splunkjs = require('../../../splunk');
+var splunkjs = require('../../../index');
 var Async  = splunkjs.Async;
 
 exports.main = function(opts, callback) {
@@ -29,13 +29,15 @@ exports.main = function(opts, callback) {
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
+    var version  = opts.version     || "default";
     
     var service = new splunkjs.Service({
         username: username,
         password: password,
         scheme: scheme,
         host: host,
-        port: port
+        port: port,
+        version: version
     });
 
     Async.chain([
@@ -73,7 +75,7 @@ exports.main = function(opts, callback) {
                                 }
                                 
                                 // Only do something if we have results
-                                if (results.rows) {
+                                if (results && results.rows) {
                                     // Up the iteration counter
                                     count++;
                                     
