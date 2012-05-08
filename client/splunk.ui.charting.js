@@ -805,6 +805,34 @@ require.define("/utils.js", function (require, module, exports, __dirname, __fil
             sharing: props.acl.sharing
         };
     };  
+    
+    /**
+     * Given a version and a dictionary, find the value in the map corresponding
+     * to that version
+     *
+     * @param {String} version The version to lookup
+     * @param {Object} map The dictionary to look up in
+     * @return {Anything} The value of the dictionary at the closest version match.
+     *
+     * @function splunkjs.Utils
+     */
+    root.getWithVersion = function(version, map) {
+        map = map || {};
+        var currentVersion = (version + "") || "";
+        while (currentVersion !== "") {
+            if (map.hasOwnProperty(currentVersion)) {
+                return map[currentVersion];
+            }
+            else {
+                currentVersion = currentVersion.slice(
+                    0, 
+                    currentVersion.lastIndexOf(".")
+                );
+            }
+        }
+        
+        return map["default"];
+    };
 })();
 });
 

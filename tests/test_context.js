@@ -36,7 +36,8 @@ exports.setup = function(svc) {
                 host: svc.host,
                 port: svc.port,
                 username: svc.username,
-                password: svc.password
+                password: svc.password,
+                version: svc.version
             });
 
             newService.login(function(err, success) {
@@ -51,7 +52,8 @@ exports.setup = function(svc) {
                 host: svc.host,
                 port: svc.port,
                 username: svc.username,
-                password: svc.password + "wrong_password"
+                password: svc.password + "wrong_password",
+                version: svc.version
             });
 
             if (!isBrowser) {
@@ -92,7 +94,8 @@ exports.setup = function(svc) {
                     host: this.service.host,
                     port: this.service.port,
                     username: this.service.username,
-                    password: this.service.password
+                    password: this.service.password,
+                    version: svc.version
                 }
             );
             
@@ -113,7 +116,8 @@ exports.setup = function(svc) {
                     host: this.service.host,
                     port: this.service.port,
                     username: this.service.username,
-                    password: this.service.password + "ABC"
+                    password: this.service.password + "ABC",
+                    version: svc.version
                 }
             );
             
@@ -133,7 +137,8 @@ exports.setup = function(svc) {
                     port: this.service.port,
                     username: this.service.username,
                     password: this.service.password,
-                    autologin: false
+                    autologin: false,
+                    version: svc.version
                 }
             );
             
@@ -153,7 +158,8 @@ exports.setup = function(svc) {
                     port: this.service.port,
                     username: this.service.username,
                     password: this.service.password,
-                    sessionKey: "ABCDEF-not-real"
+                    sessionKey: "ABCDEF-not-real",
+                    version: svc.version
                 }
             );
             
@@ -176,7 +182,8 @@ exports.setup = function(svc) {
                     port: this.service.port,
                     username: this.service.username,
                     password: this.service.password + "ABC",
-                    sessionKey: "ABCDEF-not-real"
+                    sessionKey: "ABCDEF-not-real",
+                    version: svc.version
                 }
             );
             
@@ -218,7 +225,8 @@ exports.setup = function(svc) {
                     host: this.service.host,
                     port: this.service.port,
                     username: this.service.username,
-                    password: this.service.password
+                    password: this.service.password,
+                    version: svc.version
                 }
             );
             
@@ -243,7 +251,8 @@ exports.setup = function(svc) {
                     host: this.service.host,
                     port: this.service.port,
                     username: this.service.username,
-                    password: this.service.password + "ABC"
+                    password: this.service.password + "ABC",
+                    version: svc.version
                 }
             );
             
@@ -263,7 +272,8 @@ exports.setup = function(svc) {
                     port: this.service.port,
                     username: this.service.username,
                     password: this.service.password,
-                    autologin: false
+                    autologin: false,
+                    version: svc.version
                 }
             );
             
@@ -283,7 +293,8 @@ exports.setup = function(svc) {
                     port: this.service.port,
                     username: this.service.username,
                     password: this.service.password,
-                    sessionKey: "ABCDEF-not-real"
+                    sessionKey: "ABCDEF-not-real",
+                    version: svc.version
                 }
             );
             
@@ -309,7 +320,8 @@ exports.setup = function(svc) {
                     port: this.service.port,
                     username: this.service.username,
                     password: this.service.password + "ABC",
-                    sessionKey: "ABCDEF-not-real"
+                    sessionKey: "ABCDEF-not-real",
+                    version: svc.version
                 }
             );
             
@@ -349,7 +361,8 @@ exports.setup = function(svc) {
                     host: this.service.host,
                     port: this.service.port,
                     username: this.service.username,
-                    password: this.service.password
+                    password: this.service.password,
+                    version: svc.version
                 }
             );
             
@@ -373,7 +386,8 @@ exports.setup = function(svc) {
                     host: this.service.host,
                     port: this.service.port,
                     username: this.service.username,
-                    password: this.service.password + "ABC"
+                    password: this.service.password + "ABC",
+                    version: svc.version
                 }
             );
             
@@ -393,7 +407,8 @@ exports.setup = function(svc) {
                     port: this.service.port,
                     username: this.service.username,
                     password: this.service.password,
-                    autologin: false
+                    autologin: false,
+                    version: svc.version
                 }
             );
             
@@ -413,7 +428,8 @@ exports.setup = function(svc) {
                     port: this.service.port,
                     username: this.service.username,
                     password: this.service.password,
-                    sessionKey: "ABCDEF-not-real"
+                    sessionKey: "ABCDEF-not-real",
+                    version: svc.version
                 }
             );
             
@@ -438,7 +454,8 @@ exports.setup = function(svc) {
                     port: this.service.port,
                     username: this.service.username,
                     password: this.service.password + "ABC",
-                    sessionKey: "ABCDEF-not-real"
+                    sessionKey: "ABCDEF-not-real",
+                    version: svc.version
                 }
             );
             
@@ -502,7 +519,8 @@ exports.setup = function(svc) {
                     host: this.service.host,
                     port: this.service.port,
                     username: this.service.username,
-                    password: this.service.password
+                    password: this.service.password,
+                    version: svc.version
                 }
             );
             
@@ -528,7 +546,8 @@ exports.setup = function(svc) {
                     host: this.service.host,
                     port: this.service.port,
                     username: this.service.username,
-                    password: this.service.password + "ABC"
+                    password: this.service.password + "ABC",
+                    version: svc.version
                 }
             );
             
@@ -548,7 +567,8 @@ exports.setup = function(svc) {
                     port: this.service.port,
                     username: this.service.username,
                     password: this.service.password,
-                    autologin: false
+                    autologin: false,
+                    version: svc.version
                 }
             );
             
@@ -568,7 +588,8 @@ exports.setup = function(svc) {
                     port: this.service.port,
                     username: this.service.username,
                     password: this.service.password,
-                    sessionKey: "ABCDEF-not-real"
+                    sessionKey: "ABCDEF-not-real",
+                    version: svc.version
                 }
             );
             
@@ -595,7 +616,8 @@ exports.setup = function(svc) {
                     port: this.service.port,
                     username: this.service.username,
                     password: this.service.password + "ABC",
-                    sessionKey: "ABCDEF-not-real"
+                    sessionKey: "ABCDEF-not-real",
+                    version: svc.version
                 }
             );
             
@@ -638,7 +660,8 @@ if (module === require.main) {
         host: cmdline.opts.host,
         port: cmdline.opts.port,
         username: cmdline.opts.username,
-        password: cmdline.opts.password
+        password: cmdline.opts.password,
+        version: cmdline.opts.version
     });
     
     var suite = exports.setup(svc);

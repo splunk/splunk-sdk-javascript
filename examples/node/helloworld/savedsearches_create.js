@@ -27,13 +27,15 @@ exports.main = function(opts, done) {
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
+    var version  = opts.version     || "default";
     
     var service = new splunkjs.Service({
         username: username,
         password: password,
         scheme: scheme,
         host: host,
-        port: port
+        port: port,
+        version: version
     });
 
     // First, we log in

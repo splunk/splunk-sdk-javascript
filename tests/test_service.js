@@ -282,7 +282,7 @@ exports.setup = function(svc) {
             "Callback#Create+abort job": function(test) {
                 var sid = getNextId();
                 var options = {id: sid};
-                var jobs = this.service.jobs({app: "xml2json"});
+                var jobs = this.service.jobs();
                 var req = jobs.oneshotSearch('search index=_internal |  head 1 | sleep 10', options, function(err, job) {   
                     test.ok(err);
                     test.ok(!job);
@@ -661,16 +661,13 @@ exports.setup = function(svc) {
                             test.ok(job);
                             test.ok(summary);
                             test.strictEqual(summary.event_count, 1);
-                            test.strictEqual(summary.fields.length, 1);
-                            test.strictEqual(summary.fields[0].name, "foo");
-                            test.strictEqual(summary.fields[0].count, 1);
-                            test.strictEqual(summary.fields[0].distinct_count, 1);
-                            test.ok(summary.fields[0].is_exact, 1);
-                            test.strictEqual(summary.fields[0].name, "foo");
-                            test.strictEqual(summary.fields[0].modes.length, 1);
-                            test.strictEqual(summary.fields[0].modes[0].count, 1);
-                            test.strictEqual(summary.fields[0].modes[0].value, "bar");
-                            test.ok(summary.fields[0].modes[0].is_exact);
+                            test.strictEqual(summary.fields.foo.count, 1);
+                            test.strictEqual(summary.fields.foo.distinct_count, 1);
+                            test.ok(summary.fields.foo.is_exact, 1);
+                            test.strictEqual(summary.fields.foo.modes.length, 1);
+                            test.strictEqual(summary.fields.foo.modes[0].count, 1);
+                            test.strictEqual(summary.fields.foo.modes[0].value, "bar");
+                            test.ok(summary.fields.foo.modes[0].is_exact);
                             job.cancel(done);
                         }
                     ],
@@ -703,13 +700,13 @@ exports.setup = function(svc) {
                         function(timeline, job, done) {
                             test.ok(job);
                             test.ok(timeline);
-                            test.strictEqual(timeline.bucket.length, 1);
+                            test.strictEqual(timeline.buckets.length, 1);
                             test.strictEqual(timeline.event_count, 1);
-                            test.strictEqual(timeline.bucket[0].available_count, 1);
-                            test.strictEqual(timeline.bucket[0].duration, 0.001);
-                            test.strictEqual(timeline.bucket[0].earliest_time_offset, timeline.bucket[0].latest_time_offset);
-                            test.strictEqual(timeline.bucket[0].total_count, 1);
-                            test.ok(timeline.bucket[0].is_finalized);
+                            test.strictEqual(timeline.buckets[0].available_count, 1);
+                            test.strictEqual(timeline.buckets[0].duration, 0.001);
+                            test.strictEqual(timeline.buckets[0].earliest_time_offset, timeline.buckets[0].latest_time_offset);
+                            test.strictEqual(timeline.buckets[0].total_count, 1);
+                            test.ok(timeline.buckets[0].is_finalized);
                             job.cancel(done);
                         }
                     ],
@@ -792,7 +789,10 @@ exports.setup = function(svc) {
                             that.service.jobs().oneshotSearch(query, {id: sid}, done);
                         },
                         function(results, done) {
-                            test.ok(!results.trim());
+                            test.ok(results);
+                            test.strictEqual(results.fields.length, 0);
+                            test.strictEqual(results.rows.length, 0);
+                            test.ok(!results.preview);
                             
                             done();
                         }
@@ -1102,7 +1102,8 @@ exports.setup = function(svc) {
                         },
                         function(search, done) {
                             // Verify that we have the required fields
-                            //test.strictEqual(search.fields().required[0], "search");
+                            test.strictEqual(search.fields().required.length, 0);
+                            test.ok(search.fields().optional.length > 1);
                             
                             search.remove(done);
                         }
@@ -1639,7 +1640,8 @@ exports.setup = function(svc) {
                                 password: "abc",
                                 host: service.host,
                                 port: service.port,
-                                scheme: service.scheme
+                                scheme: service.scheme,
+                                version: service.version
                             });
                         
                             newService.login(Async.augment(done, user));
@@ -1820,7 +1822,6 @@ exports.setup = function(svc) {
             }
         }
     };
-
 };
 
 if (module === require.main) {
@@ -1841,7 +1842,8 @@ if (module === require.main) {
         host: cmdline.opts.host,
         port: cmdline.opts.port,
         username: cmdline.opts.username,
-        password: cmdline.opts.password
+        password: cmdline.opts.password,
+        version: cmdline.opts.version
     });
     
     var suite = exports.setup(svc);

@@ -121,13 +121,15 @@
           var port     = $("#server-port").val() || "8089";
           var username = $("#server-username").val() || "admin";
           var password = $("#server-password").val() || "changeme";
+          var version  = $("#server-version").val() || "4.3";
           
           var options = {
             scheme: scheme,
             host: host,
             port: port,
             username: username,
-            password: password
+            password: password,
+            version: version
           };
           
           var http = new splunkjs.ProxyHttp("/proxy");
@@ -179,6 +181,10 @@
         <div class="server-info-field">
             <h3>Password</h3> 
             <input type="password" id="server-password" value="changeme"/>
+        </div>
+        <div class="server-info-field">
+            <h3>Version</h3> 
+            <input type="text" id="server-version" value="4.3"/>
         </div>
         <div class="server-info-field">
             <h3>&nbsp;</h3> 
