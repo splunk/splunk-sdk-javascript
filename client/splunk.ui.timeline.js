@@ -369,8 +369,8 @@ require.define("/ui/timeline.js", function (require, module, exports, __dirname,
     var timeline    = require('./timeline/splunk_timeline.js');
     var format      = require('./timeline/format.js');
         
-    var Class = require('../lib/jquery.class').Class;
-    var utils = require('../lib/utils');
+    var Class = require('../jquery.class').Class;
+    var utils = require('../utils');
     
     var root = exports || this;
 
@@ -10862,7 +10862,7 @@ require.define("/ui/timeline/format.js", function (require, module, exports, __d
 })();
 });
 
-require.define("/lib/jquery.class.js", function (require, module, exports, __dirname, __filename) {
+require.define("/jquery.class.js", function (require, module, exports, __dirname, __filename) {
 /*! Simple JavaScript Inheritance
  * By John Resig http://ejohn.org/
  * MIT Licensed.
@@ -10931,7 +10931,7 @@ require.define("/lib/jquery.class.js", function (require, module, exports, __dir
 })();
 });
 
-require.define("/lib/utils.js", function (require, module, exports, __dirname, __filename) {
+require.define("/utils.js", function (require, module, exports, __dirname, __filename) {
 /*!*/
 // Copyright 2011 Splunk, Inc.
 //
@@ -11325,6 +11325,34 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
             sharing: props.acl.sharing
         };
     };  
+    
+    /**
+     * Given a version and a dictionary, find the value in the map corresponding
+     * to that version
+     *
+     * @param {String} version The version to lookup
+     * @param {Object} map The dictionary to look up in
+     * @return {Anything} The value of the dictionary at the closest version match.
+     *
+     * @function splunkjs.Utils
+     */
+    root.getWithVersion = function(version, map) {
+        map = map || {};
+        var currentVersion = (version + "") || "";
+        while (currentVersion !== "") {
+            if (map.hasOwnProperty(currentVersion)) {
+                return map[currentVersion];
+            }
+            else {
+                currentVersion = currentVersion.slice(
+                    0, 
+                    currentVersion.lastIndexOf(".")
+                );
+            }
+        }
+        
+        return map["default"];
+    };
 })();
 });
 

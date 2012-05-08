@@ -226,21 +226,6 @@
                 <ul class="nav nav-list">
                 </ul>
               </li>
-                          <li class="nav-header"><a href="splunkjs.Service.PropertyStanza.html">splunkjs.Service.PropertyStanza</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.PropertyFile.html">splunkjs.Service.PropertyFile</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.Properties.html">splunkjs.Service.Properties</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
                           <li class="nav-header"><a href="splunkjs.Service.ConfigurationStanza.html">splunkjs.Service.ConfigurationStanza</a></li>
               <li>
                 <ul class="nav nav-list">
@@ -458,34 +443,31 @@
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>printMessages: function(allMessages) {
-    allMessages = allMessages || {};
+    allMessages = allMessages || [];
     
-    for(var key in allMessages) {
-        if (allMessages.hasOwnProperty(key)) {
-            var type = key;
-            var messages = allMessages[key];
-            for (var i = 0; i &lt; messages.length; i++) {
-                var msg = '[SPLUNKD] ' + messages[i];
-                switch (type) {
-                    case 'HTTP':
-                    case 'FATAL':
-                    case 'ERROR':
-                        this.error(msg);
-                        break;
-                    case 'WARN':
-                        this.warn(msg);
-                        break;
-                    case 'INFO':
-                        this.info(msg);
-                        break;
-                    case 'HTTP':
-                        this.error(msg);
-                        break;
-                    default:
-                        this.info(msg);
-                        break;
-                }
-            }
+    for(var i = 0; i &lt; allMessages.length; i++) {
+        var message = allMessages[i];
+        var type = message["type"];
+        var text = message["text"];
+        var msg = '[SPLUNKD] ' + text;
+        switch (type) {
+            case 'HTTP':
+            case 'FATAL':
+            case 'ERROR':
+                this.error(msg);
+                break;
+            case 'WARN':
+                this.warn(msg);
+                break;
+            case 'INFO':
+                this.info(msg);
+                break;
+            case 'HTTP':
+                this.error(msg);
+                break;
+            default:
+                this.info(msg);
+                break;
         }
     }  
 },</code></pre>
@@ -541,7 +523,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/log.js#L172">lib/log.js:172</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/log.js#L169">lib/log.js:169</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>setLevel: function(level) {    
@@ -562,9 +544,6 @@
 },</code></pre>
             </section>
           </section>
-                
-                
-                
                 
                 
                 

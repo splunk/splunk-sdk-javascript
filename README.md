@@ -84,7 +84,7 @@ This HTML example uses the Splunk JavaScript SDK to list all jobs:
             }
 
             console.log("Login was successful: " + success);
-            service.jobs().refresh(function(err, jobs) {
+            service.jobs().fetch(function(err, jobs) {
                 var jobList = jobs.list();
                 for(var i = 0; i < jobList.length; i++) {
                     console.log("Job " + i + ": " + jobList[i].sid);
@@ -106,7 +106,7 @@ This example shows how to use the Splunk JavaScript SDK and Node.js to list all 
         }
 
         console.log("Login was successful: " + success);
-        service.jobs().refresh(function(err, jobs) {
+        service.jobs().fetch(function(err, jobs) {
             var jobList = jobs.list();
             for(var i = 0; i < jobList.length; i++) {
                 console.log("Job " + i + ": " + jobList[i].sid);
@@ -388,10 +388,10 @@ of embedded libraries and their licenses:
 6. [showdown.js]: [BSD][showdown-license]
 7. [staticresource]: [MIT][staticresource-license]
 8. [webapp2]: [Apache][webapp2-license]
-7. [commander]: [MIT][commander-license]
-8. [script.js]: [Apache][scriptjs-license]
-9. [base64.js]: [MIT][base64-license]
-10.[eventemitter.js]: [MIT][event-license]
+9. [commander]: [MIT][commander-license]
+10.[script.js]: [Apache][scriptjs-license]
+11.[base64.js]: [MIT][base64-license]
+12.[eventemitter.js]: [MIT][event-license]
 
 
 [dox]:                      https://github.com/visionmedia/dox
@@ -425,7 +425,7 @@ of embedded libraries and their licenses:
 [node_examples_dir]:        https://github.com/splunk/splunk-sdk-javascript/blob/master/examples/node
 [browser_examples_dir]:     https://github.com/splunk/splunk-sdk-javascript/blob/master/examples/browser
 [client_dir]:               https://github.com/splunk/splunk-sdk-javascript/blob/master/client
-[refdocs]:                  http://splunk.github.com/splunk-sdk-javascript/docs/0.1.0/index.html
+[refdocs]:                  http://splunk.github.com/splunk-sdk-javascript/docs/0.5.0/refs/index.html
 [devportal]:                http://dev.splunk.com
 [cli]:                      https://github.com/splunk/splunk-sdk-javascript/blob/master/bin/cli.js
 [SplunkInstall]:            http://docs.splunk.com/Documentation/Splunk/latest/Installation/WhatsintheInstallationManual

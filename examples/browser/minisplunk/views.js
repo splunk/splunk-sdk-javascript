@@ -951,6 +951,7 @@ var SigninView = BootstrapModalView.extend({
     var host     = this.$("#id_host").val() || "localhost";
     var port     = this.$("#id_port").val() || "8089";
     var app      = this.$("#id_app").val() || "search";
+    var version  = this.$("#id_version").val() || "4.3";
     
     var base = scheme + "://" + host + ":" + port;
     
@@ -961,7 +962,8 @@ var SigninView = BootstrapModalView.extend({
         port: port,
         username: username,
         password: password,
-        app: app
+        app: app,
+        version: version
     });
       
     svc.login(function(err, success) {

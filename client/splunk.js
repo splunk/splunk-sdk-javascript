@@ -346,10 +346,10 @@ exports.extname = function(path) {
 });
 
 require.define("/package.json", function (require, module, exports, __dirname, __filename) {
-module.exports = {"main":"splunk.js"}
+module.exports = {"main":"index.js"}
 });
 
-require.define("/splunk.js", function (require, module, exports, __dirname, __filename) {
+require.define("/index.js", function (require, module, exports, __dirname, __filename) {
 
 // Copyright 2011 Splunk, Inc.
 //
@@ -376,7 +376,7 @@ require.define("/splunk.js", function (require, module, exports, __dirname, __fi
         Logger          : require('./lib/log').Logger,
         Context         : require('./lib/context'),
         Service         : require('./lib/service'),
-        Http            : require('./lib/http').Http,
+        Http            : require('./lib/http'),
         Utils           : require('./lib/utils'),
         Async           : require('./lib/async'),
         Paths           : require('./lib/paths').Paths,
@@ -519,34 +519,31 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
          * @function splunkjs.Logger
          */
         printMessages: function(allMessages) {
-            allMessages = allMessages || {};
+            allMessages = allMessages || [];
             
-            for(var key in allMessages) {
-                if (allMessages.hasOwnProperty(key)) {
-                    var type = key;
-                    var messages = allMessages[key];
-                    for (var i = 0; i < messages.length; i++) {
-                        var msg = '[SPLUNKD] ' + messages[i];
-                        switch (type) {
-                            case 'HTTP':
-                            case 'FATAL':
-                            case 'ERROR':
-                                this.error(msg);
-                                break;
-                            case 'WARN':
-                                this.warn(msg);
-                                break;
-                            case 'INFO':
-                                this.info(msg);
-                                break;
-                            case 'HTTP':
-                                this.error(msg);
-                                break;
-                            default:
-                                this.info(msg);
-                                break;
-                        }
-                    }
+            for(var i = 0; i < allMessages.length; i++) {
+                var message = allMessages[i];
+                var type = message["type"];
+                var text = message["text"];
+                var msg = '[SPLUNKD] ' + text;
+                switch (type) {
+                    case 'HTTP':
+                    case 'FATAL':
+                    case 'ERROR':
+                        this.error(msg);
+                        break;
+                    case 'WARN':
+                        this.warn(msg);
+                        break;
+                    case 'INFO':
+                        this.info(msg);
+                        break;
+                    case 'HTTP':
+                        this.error(msg);
+                        break;
+                    default:
+                        this.info(msg);
+                        break;
                 }
             }  
         },
@@ -980,6 +977,34 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
             sharing: props.acl.sharing
         };
     };  
+    
+    /**
+     * Given a version and a dictionary, find the value in the map corresponding
+     * to that version
+     *
+     * @param {String} version The version to lookup
+     * @param {Object} map The dictionary to look up in
+     * @return {Anything} The value of the dictionary at the closest version match.
+     *
+     * @function splunkjs.Utils
+     */
+    root.getWithVersion = function(version, map) {
+        map = map || {};
+        var currentVersion = (version + "") || "";
+        while (currentVersion !== "") {
+            if (map.hasOwnProperty(currentVersion)) {
+                return map[currentVersion];
+            }
+            else {
+                currentVersion = currentVersion.slice(
+                    0, 
+                    currentVersion.lastIndexOf(".")
+                );
+            }
+        }
+        
+        return map["default"];
+    };
 })();
 });
 
@@ -1004,10 +1029,16 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
     
     var Paths    = require('./paths').Paths;
     var Class    = require('./jquery.class').Class;
-    var Http     = require('./http').Http;
+    var Http     = require('./http');
     var utils    = require('./utils');
 
     var root = exports || this;
+
+    var prefixMap = {
+        "5": "",
+        "4.3": "/services/json/v2",
+        "default": "/services/json/v2"
+    };
 
     /**
      * Abstraction over the Splunk HTTP-wire protocol
@@ -1057,6 +1088,17 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
             this.sessionKey    = params.sessionKey || "";
             this.authorization = params.authorization || "Splunk";
             this.paths         = params.paths || Paths;
+            this.version       = params.version || "default"; 
+            this.autologin     = true;
+            
+            // Initialize autologin
+            // The reason we explicitly check to see if 'autologin'
+            // is actually set is because we need to distinguish the
+            // case of it being set to 'false', and it not being set.
+            // Unfortunately, in JavaScript, these are both false-y
+            if (params.hasOwnProperty("autologin")) {
+                this.autologin = params.autologin;
+            }
             
             if (!http) {
                 // If there is no HTTP implementation set, we check what platform
@@ -1074,20 +1116,24 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
             
             // Store the HTTP implementation
             this.http = http;
+            this.http._setSplunkVersion(this.version);
             
             // Store our full prefix, which is just combining together
             // the scheme with the host
-            this.prefix = this.scheme + "://" + this.host + ":" + this.port + "/services/json/v2";
+            var versionPrefix = utils.getWithVersion(this.version, prefixMap);
+            this.prefix = this.scheme + "://" + this.host + ":" + this.port + versionPrefix;
 
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
-            this._headers   = utils.bind(this, this._headers);
-            this.fullpath   = utils.bind(this, this.fullpath);
-            this.urlify     = utils.bind(this, this.urlify);
-            this.get        = utils.bind(this, this.get);
-            this.del        = utils.bind(this, this.del);
-            this.post       = utils.bind(this, this.post);
-            this.login      = utils.bind(this, this.login);
+            this._headers         = utils.bind(this, this._headers);
+            this.fullpath         = utils.bind(this, this.fullpath);
+            this.urlify           = utils.bind(this, this.urlify);
+            this.get              = utils.bind(this, this.get);
+            this.del              = utils.bind(this, this.del);
+            this.post             = utils.bind(this, this.post);
+            this.login            = utils.bind(this, this.login);
+            this._shouldAutoLogin = utils.bind(this, this._shouldAutoLogin);
+            this._requestWrapper  = utils.bind(this, this._requestWrapper);
         },
         
         /**
@@ -1103,6 +1149,95 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
             headers = headers || {};
             headers["Authorization"] = this.authorization + " " + this.sessionKey;
             return headers;
+        },   
+        
+        /*!*/
+        _shouldAutoLogin: function() {
+            return this.username && this.password && this.autologin;
+        },
+
+        /*!*/
+        /**
+         * This is an internal function aimed to aid with the autologin feature.
+         * It takes two parameters: `task`, which is a function describing an
+         * HTTP request, and `callback`, to be invoked when all is said 
+         * and done.
+         *  
+         * @param  {Function} task A function taking a single argument: `(callback)`
+         * @param  {Function} callback A callback to be invoked when the request is complete: `(err, response)`
+         */
+        _requestWrapper: function(task, callback) {
+            callback = callback || function() {};
+            
+            var that = this;
+            var req = null;
+            
+            // This is the callback that will be invoked
+            // if we are currently logged in but our session key
+            // expired (i.e. we get a 401 response from the server).
+            // We will only retry once.
+            var reloginIfNecessary = function(err) {
+                // If we aborted, ignore it
+                if (req.wasAborted) {
+                    return;
+                }
+                
+                if (err && err.status === 401 && that._shouldAutoLogin()) {
+                    // If we had an authorization error, we'll try and login
+                    // again, but only once
+                    that.sessionKey = null;
+                    that.login(function(err, success) {
+                        // If we've already aborted the request,
+                        // just do nothing
+                        if (req.wasAborted) {
+                            return;
+                        }
+                        
+                        if (err) {
+                            // If there was an error logging in, send it through
+                            callback(err);
+                        }
+                        else { 
+                            // Relogging in was successful, so we execute
+                            // our task again.
+                            task(callback);
+                        }
+                    });
+                }
+                else {
+                    callback.apply(null, arguments);
+                }
+            };
+            
+            if (!this._shouldAutoLogin() || this.sessionKey) {
+                // Since we are not auto-logging in, just execute our task,
+                // but intercept any 401s so we can login then
+                req = task(reloginIfNecessary);
+                return req;
+            }
+            
+            // OK, so we know that we should try and autologin,
+            // so we try and login, and if we succeed, execute
+            // the original task
+            req = this.login(function(err, success) {
+                // If we've already aborted the request,
+                // just do nothing
+                if (req.wasAborted) {
+                    return;
+                }
+                
+                if (err) {
+                    // If there was an error logging in, send it through
+                    callback(err);
+                } 
+                else {
+                    // Logging in was successful, so we execute
+                    // our task. 
+                    task(callback);
+                }
+            });
+            
+            return req;
         },
 
         /**
@@ -1184,12 +1319,18 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
                     callback(err, false);
                 }
                 else {
-                    that.sessionKey = response.data.entry.content.sessionKey;
+                    that.sessionKey = response.data.sessionKey;
                     callback(null, true);
                 }
             };
             
-            return this.post(url, params, wrappedCallback);
+            return this.http.post(
+                this.urlify(url),
+                this._headers(),
+                params,
+                0,
+                wrappedCallback
+            ); 
         },
 
         /**
@@ -1202,13 +1343,18 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
          * @method splunkjs.Context 
          */
         get: function(path, params, callback) {
-            return this.http.get(
-                this.urlify(path),
-                this._headers(),
-                params,
-                0,
-                callback
-            );  
+            var that = this;
+            var request = function(callback) {
+                return that.http.get(
+                    that.urlify(path),
+                    that._headers(),
+                    params,
+                    0,
+                    callback
+                );
+            };
+            
+            return this._requestWrapper(request, callback);
         },
 
         /**
@@ -1220,14 +1366,19 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
          *
          * @method splunkjs.Context 
          */
-        del: function(path, params, callback) {
-            return this.http.del(
-                this.urlify(path),
-                this._headers(),
-                params,
-                0,
-                callback
-            );  
+        del: function(path, params, callback) {            
+            var that = this;
+            var request = function(callback) {
+                return that.http.del(
+                    that.urlify(path),
+                    that._headers(),
+                    params,
+                    0,
+                    callback
+                );  
+            };
+            
+            return this._requestWrapper(request, callback);
         },
 
         /**
@@ -1240,13 +1391,18 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
          * @method splunkjs.Context 
          */
         post: function(path, params, callback) {
-            return this.http.post(
-                this.urlify(path),
-                this._headers(),
-                params,
-                0,
-                callback
-            );  
+            var that = this;
+            var request = function(callback) {
+                return that.http.post(
+                    that.urlify(path),
+                    that._headers(),
+                    params,
+                    0,
+                    callback
+                );  
+            };
+            
+            return this._requestWrapper(request, callback);
         },
 
         /**
@@ -1260,17 +1416,24 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
          *
          * @method splunkjs.Context 
          */
-        request: function(path, method, headers, body, callback) {
-            return this.http.request(
-                this.urlify(path),    
-                {
-                    method: method,
-                    headers: this._headers(headers),
-                    body: body,
-                    timeout: 0
-                },
-                callback
-            );
+        request: function(path, method, query, post, body, headers, callback) {
+            var that = this;
+            var request = function(callback) {
+                return that.http.request(
+                    that.urlify(path),    
+                    {
+                        method: method,
+                        headers: that._headers(headers),
+                        query: query,
+                        post: post,
+                        body: body,
+                        timeout: 0
+                    },
+                    callback
+                );  
+            };
+            
+            return this._requestWrapper(request, callback);
         }
     });
 
@@ -1441,65 +1604,35 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
     var utils           = require('./utils');
 
     var root = exports || this;
-
-    /**
-     * Helper function to encode a dictionary of values into a URL-encoded
-     * format.
-     *
-     * @example
-     *      
-     *      // should be a=1&b=2&b=3&b=4
-     *      encode({a: 1, b: [2,3,4]})
-     *
-     * @param {Object} params Parameters to URL-encode
-     * @return {String} URL-encoded query string
-     *
-     * @function splunkjs.Http
-     */
-    root.encode = function(params) {
-        var encodedStr = "";
-
-        // We loop over all the keys so we encode them.
-        for (var key in params) {
-            if (params.hasOwnProperty(key)) {
-                // Only append the ampersand if we already have
-                // something encoded, and the last character isn't
-                // already an ampersand
-                if (encodedStr && encodedStr[encodedStr.length - 1] !== "&") {
-                    encodedStr = encodedStr + "&";
-                }
-                
-                // Get the value
-                var value = params[key];
-
-                // If it's an array, we loop over each value
-                // and encode it in the form &key=value[i]
-                if (value instanceof Array) {
-                    for (var i = 0; i < value.length; i++) {
-                        encodedStr = encodedStr + key + "=" + encodeURIComponent(value[i]) + "&";
-                    }
-                }
-                else if (typeof value === "object") {
-                    for(var innerKey in value) {
-                        if (value.hasOwnProperty(innerKey)) {
-                            var innerValue = value[innerKey];
-                            encodedStr = encodedStr + key + "=" + encodeURIComponent(value[innerKey]) + "&";
-                        }
-                    }
-                }
-                else {
-                    // If it's not an array, we just encode it
-                    encodedStr = encodedStr + key + "=" + encodeURIComponent(value);
-                }
+    var Http = null;
+    
+    var queryBuilderMap = {
+        "5": function(message) {      
+            var query = message.query || {};
+            var post = message.post || {};      
+            var outputMode = query.output_mode || post.output_mode || "json";
+            
+            // If the output mode doesn't start with "json" (e.g. "csv" or
+            // "xml"), we change it to "json".
+            if (!utils.startsWith(outputMode, "json")) {
+                outputMode = "json";
             }
+            
+            query.output_mode = outputMode;
+            
+            return query;
+        },
+        "4": function(message) {
+            return message.query || {};
+        },
+        "default": function(message) {
+            return message.query || {};
+        },
+        "none": function(message) {
+            return message.query || {};
         }
-
-        if (encodedStr[encodedStr.length - 1] === '&') {
-            encodedStr = encodedStr.substr(0, encodedStr.length - 1);
-        }
-
-        return encodedStr;
-    };
+    }; 
+    
      
     /**
      * Base class for HTTP abstraction. 
@@ -1511,7 +1644,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
      *
      * @class splunkjs.Http
      */
-    root.Http = Class.extend({
+    module.exports = root = Http = Class.extend({
         /**
          * Constructor for splunkjs.Http
          *
@@ -1521,9 +1654,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
          *
          * @method splunkjs.Http 
          */
-        init: function(isSplunk) {
-            // Whether or not this HTTP provider is talking to Splunk or not
-            this.isSplunk = (isSplunk === undefined ? true : isSplunk);
+        init: function() {
 
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
@@ -1532,6 +1663,14 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
             this.post               = utils.bind(this, this.post);
             this.request            = utils.bind(this, this.request);
             this._buildResponse     = utils.bind(this, this._buildResponse);
+            
+            // Set our default version to "none"
+            this._setSplunkVersion("none");
+        },
+        
+        /*!*/
+        _setSplunkVersion: function(version) {
+            this.version = version;
         },
 
         /**
@@ -1546,14 +1685,14 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
          * @method splunkjs.Http 
          */
         get: function(url, headers, params, timeout, callback) {
-            var encoded_url = url + "?" + root.encode(params);
             var message = {
                 method: "GET",
                 headers: headers,
-                timeout: timeout
+                timeout: timeout,
+                query: params
             };
 
-            return this.request(encoded_url, message, callback);
+            return this.request(url, message, callback);
         },
 
         /**
@@ -1573,7 +1712,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
                 method: "POST",
                 headers: headers,
                 timeout: timeout,
-                body: root.encode(params)
+                post: params
             };
 
             return this.request(url, message, callback);
@@ -1591,14 +1730,14 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
          * @method splunkjs.Http 
          */
         del: function(url, headers, params, timeout, callback) {
-            var encoded_url = url + "?" + root.encode(params);
             var message = {
                 method: "DELETE",
                 headers: headers,
-                timeout: timeout
+                timeout: timeout,
+                query: params
             };
 
-            return this.request(encoded_url, message, callback);
+            return this.request(url, message, callback);
         },
 
         /**
@@ -1625,10 +1764,23 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
                     callback(response);
                 }
             };
+            
+            var query = utils.getWithVersion(this.version, queryBuilderMap)(message);
+            var post = message.post || {};
+            
+            var encodedUrl = url + "?" + Http.encode(query);
+            var body = message.body ? message.body : Http.encode(post);
+            
+            var options = {
+                method: message.method,
+                headers: message.headers,
+                timeout: message.timeout,
+                body: body
+            };
 
             // Now we can invoke the user-provided HTTP class,
             // passing in our "wrapped" callback
-            return this.makeRequest(url, message, wrappedCallback);
+            return this.makeRequest(encodedUrl, options, wrappedCallback);
         },
 
         /**
@@ -1678,16 +1830,28 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
         _buildResponse: function(error, response, data) {            
             var complete_response, json = {};
 
+            //console.log(response, data);
             var contentType = null;
             if (response && response.headers) {
                 contentType = utils.trim(response.headers["content-type"] || response.headers["Content-Type"]);
             }
 
-            if (utils.startsWith(contentType, "application/json")) {
-                json = this.parseJson(data) || {};
+            if (utils.startsWith(contentType, "application/json") && data) {
+                try {
+                    json = this.parseJson(data) || {};
+                }
+                catch(e) {
+                    logger.error("Error in parsing JSON:", data, e);
+                    json = data;
+                }
+            }
+            else {
+                json = data;
             }
 
-            logger.printMessages(json.messages);                
+            if (json) {
+                logger.printMessages(json.messages);                
+            }
             
             complete_response = {
                 response: response,
@@ -1699,6 +1863,65 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
             return complete_response;
         }
     });
+
+    /**
+     * Helper function to encode a dictionary of values into a URL-encoded
+     * format.
+     *
+     * @example
+     *      
+     *      // should be a=1&b=2&b=3&b=4
+     *      encode({a: 1, b: [2,3,4]})
+     *
+     * @param {Object} params Parameters to URL-encode
+     * @return {String} URL-encoded query string
+     *
+     * @function splunkjs.Http
+     */
+    Http.encode = function(params) {
+        var encodedStr = "";
+
+        // We loop over all the keys so we encode them.
+        for (var key in params) {
+            if (params.hasOwnProperty(key)) {
+                // Only append the ampersand if we already have
+                // something encoded, and the last character isn't
+                // already an ampersand
+                if (encodedStr && encodedStr[encodedStr.length - 1] !== "&") {
+                    encodedStr = encodedStr + "&";
+                }
+                
+                // Get the value
+                var value = params[key];
+
+                // If it's an array, we loop over each value
+                // and encode it in the form &key=value[i]
+                if (value instanceof Array) {
+                    for (var i = 0; i < value.length; i++) {
+                        encodedStr = encodedStr + key + "=" + encodeURIComponent(value[i]) + "&";
+                    }
+                }
+                else if (typeof value === "object") {
+                    for(var innerKey in value) {
+                        if (value.hasOwnProperty(innerKey)) {
+                            var innerValue = value[innerKey];
+                            encodedStr = encodedStr + key + "=" + encodeURIComponent(value[innerKey]) + "&";
+                        }
+                    }
+                }
+                else {
+                    // If it's not an array, we just encode it
+                    encodedStr = encodedStr + key + "=" + encodeURIComponent(value);
+                }
+            }
+        }
+
+        if (encodedStr[encodedStr.length - 1] === '&') {
+            encodedStr = encodedStr.substr(0, encodedStr.length - 1);
+        }
+
+        return encodedStr;
+    };
 })();
 });
 
@@ -1719,7 +1942,7 @@ require.define("/lib/platform/client/easyxdm_http.js", function (require, module
 // under the License.
 
 (function() {
-    var Http    = require('../../http').Http;
+    var Http    = require('../../http');
     var utils   = require('../../utils');
     
     // Include it so it gets put in splunk.js
@@ -1753,7 +1976,7 @@ require.define("/lib/platform/client/easyxdm_http.js", function (require, module
 
     root.XdmHttp = Http.extend({
         init: function(remoteServer) {
-            this._super(true);
+            this._super();
             
             // Get a no conflict version of easyXDM
             var xdm = xdmLocal.noConflict(getNamespace());
@@ -1939,7 +2162,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.apps           = utils.bind(this, this.apps);
             this.configurations = utils.bind(this, this.configurations);
             this.indexes        = utils.bind(this, this.indexes);
-            this.properties     = utils.bind(this, this.properties);
             this.savedSearches  = utils.bind(this, this.savedSearches);
             this.jobs           = utils.bind(this, this.jobs);
             this.users          = utils.bind(this, this.users);
@@ -1973,7 +2195,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 password: this.password,
                 owner: owner,
                 app: app, 
-                sessionKey: this.sessionKey
+                sessionKey: this.sessionKey,
+                version: this.version
             });
         },
         
@@ -1987,7 +2210,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // List installed apps
          *      var apps = svc.apps();
-         *      apps.refresh(function(err) { console.log(apps.list()); });
+         *      apps.fetch(function(err) { console.log(apps.list()); });
          *
          * @return {splunkjs.Service.Collection} The Applications collection
          *
@@ -2010,7 +2233,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      // List all properties in the 'props.conf' file
          *      var files = svc.configurations();
          *      files.item("props", function(err, propsFile) {
-         *          propsFile.refresh(function(err, props) {
+         *          propsFile.fetch(function(err, props) {
          *              console.log(props.properties()); 
          *          });
          *      });
@@ -2036,10 +2259,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // Check if we have an _internal index
          *      var indexes = svc.configurations();
-         *      indexes.refresh(function(err, indexes) {
-         *          var index = indexes.contains("_internal");
+         *      indexes.fetch(function(err, indexes) {
+         *          var index = indexes.item("_internal");
          *          console.log("Was index found: " + !!index);
-         *          // `index` contains the Index object.
+         *          // `index` is an Index object.
          *      });
          *
          * @param {Object} namespace Namespace information (owner, app, sharing)
@@ -2054,32 +2277,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Get an instance of the Properties collection 
-         *
-         * The Properties collection allows you to list configuration files,
-         * create new files, get specific files, etc.
-         *
-         * @example
-         *
-         *      // List all properties in the 'props.conf' file
-         *      var files = svc.properties();
-         *      files.item("props", function(err, propsFile) {
-         *          propsFile.refresh(function(err, props) {
-         *              console.log(props.properties()); 
-         *          });
-         *      });
-         *
-         * @return {splunkjs.Service.Properties} The Properties collection
-         *
-         * @endpoint properties
-         * @method splunkjs.Service
-         * @see splunkjs.Service.Properties
-         */
-        properties: function() {
-            return new root.Properties(this);
-        },
-        
-        /**
          * Get an instance of the SavedSearches collection 
          *
          * The SavedSearches collection allows you to list saved searches,
@@ -2089,7 +2286,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // List all # of saved searches
          *      var savedSearches = svc.savedSearches();
-         *      savedSearches.refresh(function(err, savedSearches) {
+         *      savedSearches.fetch(function(err, savedSearches) {
          *          console.log("# Of Saved Searches: " + savedSearches.list().length);
          *      });
          *
@@ -2114,7 +2311,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // List all job IDs
          *      var jobs = svc.jobs();
-         *      jobs.refresh(function(err, jobs) {
+         *      jobs.fetch(function(err, jobs) {
          *          var list = jobs.list();
          *          for(var i = 0; i < list.length; i++) {
          *              console.log("Job " + (i+1) + ": " + list[i].sid);
@@ -2142,7 +2339,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // List all usernames
          *      var users = svc.users();
-         *      users.refresh(function(err, users) {
+         *      users.fetch(function(err, users) {
          *          var list = users.list();
          *          for(var i = 0; i < list.length; i++) {
          *              console.log("User " + (i+1) + ": " + list[i].properties().name);
@@ -2169,7 +2366,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // List all views
          *      var views = svc.views();
-         *      views.refresh(function(err, views) {
+         *      views.fetch(function(err, views) {
          *          var list = views.list();
          *          for(var i = 0; i < list.length; i++) {
          *              console.log("View " + (i+1) + ": " + list[i].properties().name);
@@ -2272,7 +2469,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 else {
                     var username = response.data.entry[0].content.username;
                     var user = new root.User(that, username);
-                    user.refresh(function() {
+                    user.fetch(function() {
                         if (req.wasAborted) {
                             return; // aborted, so ignore
                         }
@@ -2304,7 +2501,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             callback = callback || function() {};
             
             var serverInfo = new root.ServerInfo(this);
-            return serverInfo.refresh(callback);
+            return serverInfo.fetch(callback);
         },
         
         /**
@@ -2338,13 +2535,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 if (err) {
                     callback(err);
                 } 
-                else {
-                    var data = response.data;
-                    if (response.data.entry) {
-                        data = response.data.entry.content;
-                    }
-                    
-                    callback(null, data);
+                else {                    
+                    callback(null, response.data);
                 }
             });
         },
@@ -2366,12 +2558,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    var data = response.data;
-                    if (response.data.entry) {
-                        data = response.data.entry.content;
-                    }
-                    
-                    callback(null, data);
+                    callback(null, response.data);
                 }
             });
         },
@@ -2401,22 +2588,29 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             callback = callback || function() {};
             params = params || {};
             
-            var path = this.paths.submitEvent + "?" + Http.encode(params);
+            var path = this.paths.submitEvent;
             var method = "POST";
-            var headers = {};
+            var headers = {"Content-Type": "text/plain"};
             var body = event;
+            var get = params;
+            var post = {};
             
-            var req = this.request(path, method, headers, body, function(err, response) {
-                if (err) {
-                    callback(err);
-                } 
-                else {
-                    // TODO
-                    // Extract the content (format undecided)
-                    var content = response.data.entry ? response.data.entry.content : response.data;
-                    callback(null, content);
+            var req = this.request(
+                path, 
+                method, 
+                get, 
+                post, 
+                body, 
+                headers, 
+                function(err, response) {
+                    if (err) {
+                        callback(err);
+                    } 
+                    else {
+                        callback(null, response.data);
+                    }
                 }
-            });
+            );
             
             return req;
         }
@@ -2597,7 +2791,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
             this._load       = utils.bind(this, this._load);
-            this.refresh     = utils.bind(this, this.refresh);
+            this.fetch       = utils.bind(this, this.fetch);
             this.properties  = utils.bind(this, this.properties);
             this.state       = utils.bind(this, this.state);
             this.path        = utils.bind(this, this.path);
@@ -2628,7 +2822,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Refresh the resource
          *
-         * This will unconditionally refresh the object from the server
+         * This will fetch the object from the server
          * and load it up.
          *
          * @param {Function} callback A callback when the object is retrieved: `(err, resource)`
@@ -2636,7 +2830,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @method splunkjs.Service.Resource
          * @protected
          */
-        refresh: function(callback) {
+        fetch: function(callback) {
             throw new Error("MUST BE OVERRIDDEN");
         },
         
@@ -2674,21 +2868,21 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      * with certain operations (like "properties", "update", "delete").
      *
      * This `Entity` class provides basic methods for handling Splunk entities, 
-     * such as refreshing them, updating, etc.
+     * such as fetching them, updating, etc.
      *
      * @class splunkjs.Service.Entity
      * @extends splunkjs.Service.Resource
      */
     root.Entity = root.Resource.extend({
         /**
-         * Whether or not to call `refresh()` after an update
-         * to fetch the updated item. By default we don't refresh
+         * Whether or not to call `fetch()` after an update
+         * to fetch the updated item. By default we don't fetch
          * the entity, as the endpoint will return (echo) the updated
          * entity
          *
          * @method splunkjs.Service.Entity
          */
-        refreshOnUpdate: false,
+        fetchOnUpdate: false,
         
         /**
          * Constructor for splunkjs.Service.Entity
@@ -2707,7 +2901,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
             this._load     = utils.bind(this, this._load);
-            this.refresh   = utils.bind(this, this.refresh);
+            this.fetch     = utils.bind(this, this.fetch);
             this.remove    = utils.bind(this, this.remove);
             this.update    = utils.bind(this, this.update);
             this.fields    = utils.bind(this, this.fields);
@@ -2737,6 +2931,15 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         _load: function(properties) {
             properties = utils.isArray(properties) ? properties[0] : properties;
+            
+            // Initialize the properties to
+            // empty values
+            properties = properties || {
+                content: {},
+                fields: {},
+                acl: {},
+                links: {}
+            };
             
             this._super(properties);
             
@@ -2819,7 +3022,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Refresh the resource
          *
-         * This will unconditionally refresh the object from the server
+         * This will fetch the object from the server
          * and load it up.
          *
          * @param {Object} options Optional dictionary of collection filtering and pagination options
@@ -2827,7 +3030,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @method splunkjs.Service.Entity
          */
-        refresh: function(options, callback) {
+        fetch: function(options, callback) {
             if (!callback && utils.isFunction(options)) {
                 callback = options;
                 options = {};
@@ -2887,12 +3090,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             var that = this;
             var req = this.post("", props, function(err, response) {
-                if (!err && !that.refreshOnUpdate) {
+                if (!err && !that.fetchOnUpdate) {
                     that._load(response.data.entry);
                     callback(err, that);
                 }
-                else if (!err && that.refreshOnUpdate) {
-                    that.refresh(function() {
+                else if (!err && that.fetchOnUpdate) {
+                    that.fetch(function() {
                         if (req.wasAborted) {
                             return; // aborted, so ignore
                         }
@@ -2994,24 +3197,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      */
     root.Collection = root.Resource.extend({
         /**
-         * Whether or not to call `refresh()` after an entity
-         * is created. By default we don't refresh
+         * Whether or not to call `fetch()` after an entity
+         * is created. By default we don't fetch
          * the entity, as the endpoint will return (echo) the created
          * entity
          *
          * @method splunkjs.Service.Collection
          */
-        refreshOnEntityCreation: false,
-        
-        /**
-         * Whether or not to call `refresh()` after an entity
-         * is instantiated locally. By default we don't refresh
-         * the entity, as the endpoint will return (echo) the created
-         * entities when we list it.
-         *
-         * @method splunkjs.Service.Collection
-         */
-        refreshOnEntityInstantiation: false,
+        fetchOnEntityCreation: false,
         
         /**
          * Constructor for splunkjs.Service.Collection
@@ -3030,10 +3223,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
             this._load             = utils.bind(this, this._load);
-            this.refresh           = utils.bind(this, this.refresh);
+            this.fetch           = utils.bind(this, this.fetch);
             this.create            = utils.bind(this, this.create);
             this.list              = utils.bind(this, this.list);
-            this.contains          = utils.bind(this, this.contains);
             this.item              = utils.bind(this, this.item);
             this.instantiateEntity = utils.bind(this, this.instantiateEntity);
             
@@ -3130,7 +3322,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Refresh the resource
          *
-         * This will unconditionally refresh the object from the server
+         * This will unconditionally fetch the object from the server
          * and load it up.
          *
          * @param {Object} options Dictionary of collection filtering and pagination options
@@ -3138,7 +3330,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @method splunkjs.Service.Collection
          */
-        refresh: function(options, callback) {
+        fetch: function(options, callback) {
             if (!callback && utils.isFunction(options)) {
                 callback = options;
                 options = {};
@@ -3150,12 +3342,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 options.count = 0;
             }
             
-            var recursive = false;
-            if (options.hasOwnProperty("recursive")) {
-                recursive = options.recursive;
-                delete options.recursive;
-            }
-            
             var that = this;
             var req = that.get("", options, function(err, response) {
                 if (err) {
@@ -3163,32 +3349,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 }
                 else {
                     that._load(response.data);
-                    
-                    if (that.refreshOnEntityInstantiation && recursive) {
-                        var wasAbortedAlready = false;
-                        var fns = [];
-                        utils.forEach(that._entities, function(entity) {
-                            fns.push(function(done) {
-                                entity.refresh({recursive: true}, function() {
-                                    if (req.wasAborted) {
-                                        if (!wasAbortedAlready) {
-                                            wasAbortedAlready = true;
-                                        }
-                                    }
-                                    else {
-                                        callback.apply(null, arguments);
-                                    }
-                                }); 
-                            });
-                        });
-                        
-                        Async.parallel(fns, function(err) {
-                            callback(err, that); 
-                        });
-                    }
-                    else {
-                        callback(null, that);
-                    }
+                    callback(null, that);
                 }
             });
             
@@ -3196,117 +3357,18 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Fetch a specific entity.
+         * Get a specific entity.
          *
-         * Return a specific entity given its name.
-         *
-         * @example
-         *
-         *      var apps = service.apps();
-         *      apps.item("search", function(err, app) {
-         *          console.log(app.properties());
-         *      })
-         *
-         * @param {String} name The name of the entity to retrieve
-         * @param {Object} namespace Namespace information (owner, app, sharing)
-         * @returns {splunkjs.Service.Entity} The entity with that name/namespace or null if none is found
-         *
-         * @method splunkjs.Service.Collection
-         */
-        item: function(name, namespace) {    
-            return this.contains(name, namespace);     
-        },
-        
-        /**
-         * Create an entity for this collection.
-         *
-         * Create an entity on the server for this collection with the specified
-         * parameters.
+         * Return a specific entity given its name from the
+         * collection
          *
          * @example
          *
          *      var apps = service.apps();
-         *      apps.create({name: "NewSearchApp"}, function(err, newApp) {
-         *          console.log("CREATED");
-         *      });
-         *
-         * @param {Object} params A dictionary of properties to create the entity with.
-         * @returns {Array} Array of splunkjs.Service.Entity objects
-         *
-         * @method splunkjs.Service.Collection
-         */
-        create: function(params, callback) {
-            callback = callback || function() {};
-            
-            var that = this;
-            var req = this.post("", params, function(err, response) {
-                if (err) {
-                    callback(err);
-                }
-                else {
-                    var props = response.data.entry;
-                    if (utils.isArray(props)) {
-                        props = props[0];
-                    }
-                    
-                    var entity = that.instantiateEntity(props);
-                    entity._load(props); 
-                    
-                    if (that.refreshOnEntityCreation) {
-                        entity.refresh(function() {
-                            if (req.wasAborted) {
-                                return; // aborted, so ignore
-                            }
-                            else {
-                                callback.apply(null, arguments);
-                            }
-                        });
-                    }
-                    else {                   
-                        callback(null, entity);
-                    }
-                }
-            });
-            
-            return req;
-        },
-        
-        /**
-         * Retrieve a list of all entities in the collection
-         *
-         * Return the list of all the entities in this collection.
-         *
-         * @example
-         *
-         *      var apps = service.apps();
-         *      apps.refresh(function(err, apps) {
-         *          var appList = apps.list();
-         *          console.log(appList.length);
-         *      });
-         *
-         * @param {Function} callback A callback with the list of entities: `(err, list)`
-         *
-         * @method splunkjs.Service.Collection
-         */
-        list: function(callback) {
-            callback = callback || function() {};
-            
-            return utils.clone(this._entities);
-        },
-        
-        /**
-         * Check whether a specific entity exists
-         *
-         * Check to see if the collection contains a specific entity, and if so,
-         * return that entity.
-         *
-         * @example
-         *
-         *      var apps = service.apps();
-         *      apps.refresh(function(err, apps) {
-         *          var app = apps.contains("search");
+         *      apps.fetch(function(err, apps) {
+         *          var app = apps.item("search");
          *          console.log("Search App Found: " + !!app);
-         *          // `app` contains the Application object.
+         *          // `app` is an Application object.
          *      });
          *
          * @param {String} id The name of the entity to retrieve
@@ -3315,7 +3377,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @method splunkjs.Service.Collection
          */
-        contains: function(id, namespace) {                
+        item: function(id, namespace) {                
             if (utils.isEmpty(namespace)) {
                 namespace = null;
             }          
@@ -3367,7 +3429,84 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             }
             else {
                 return null;
-            }
+            }    
+        },
+        
+        /**
+         * Create an entity for this collection.
+         *
+         * Create an entity on the server for this collection with the specified
+         * parameters.
+         *
+         * @example
+         *
+         *      var apps = service.apps();
+         *      apps.create({name: "NewSearchApp"}, function(err, newApp) {
+         *          console.log("CREATED");
+         *      });
+         *
+         * @param {Object} params A dictionary of properties to create the entity with.
+         * @returns {Array} Array of splunkjs.Service.Entity objects
+         *
+         * @method splunkjs.Service.Collection
+         */
+        create: function(params, callback) {
+            callback = callback || function() {};
+            
+            var that = this;
+            var req = this.post("", params, function(err, response) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    var props = response.data.entry;
+                    if (utils.isArray(props)) {
+                        props = props[0];
+                    }
+                    
+                    var entity = that.instantiateEntity(props);
+                    entity._load(props); 
+                    
+                    if (that.fetchOnEntityCreation) {
+                        entity.fetch(function() {
+                            if (req.wasAborted) {
+                                return; // aborted, so ignore
+                            }
+                            else {
+                                callback.apply(null, arguments);
+                            }
+                        });
+                    }
+                    else {                   
+                        callback(null, entity);
+                    }
+                }
+            });
+            
+            return req;
+        },
+        
+        /**
+         * Retrieve a list of all entities in the collection
+         *
+         * Return the list of all the entities in this collection.
+         *
+         * @example
+         *
+         *      var apps = service.apps();
+         *      apps.fetch(function(err, apps) {
+         *          var appList = apps.list();
+         *          console.log(appList.length);
+         *      });
+         *
+         * @param {Function} callback A callback with the list of entities: `(err, list)`
+         *
+         * @method splunkjs.Service.Collection
+         */
+        list: function(callback) {
+            callback = callback || function() {};
+            
+            return utils.clone(this._entities);
         }
     });
     
@@ -3472,7 +3611,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     return;
                 }
                 
-                var sid = response.data.entry.content.sid;
+                var sid = response.data.sid;
                 var job = new root.Job(that.service, sid, that.namespace);
                 
                 callback(null, job, that);
@@ -3567,7 +3706,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             if (!params.search) {
                 var update = this._super;
-                var req = this.refresh(function(err, search) {
+                var req = this.fetch(function(err, search) {
                     if (err) {
                         callback(err);
                     }
@@ -3649,12 +3788,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      */
     root.Application = root.Entity.extend({
         /**
-         * Whether or not to call `refresh()` after an update
+         * Whether or not to call `fetch()` after an update
          * to fetch the updated item.
          *
          * @method splunkjs.Service.Application
          */
-        refreshOnUpdate: true,
+        fetchOnUpdate: true,
         
         /**
          * REST path for this resource (with no namespace)
@@ -3752,14 +3891,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      */  
     root.Applications = root.Collection.extend({
         /**
-         * Whether or not to call `refresh()` after an entity
-         * is created. By default we don't refresh
+         * Whether or not to call `fetch()` after an entity
+         * is created. By default we don't fetch
          * the entity, as the endpoint will return (echo) the created
          * entity
          *
          * @method splunkjs.Service.Applications
          */
-        refreshOnEntityCreation: true,
+        fetchOnEntityCreation: true,
         
         /**
          * REST path for this resource (with no namespace)
@@ -3872,14 +4011,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      */  
     root.Users = root.Collection.extend({
         /**
-         * Whether or not to call `refresh()` after an entity
-         * is created. By default we don't refresh
+         * Whether or not to call `fetch()` after an entity
+         * is created. By default we don't fetch
          * the entity, as the endpoint will return (echo) the created
          * entity
          *
          * @method splunkjs.Service.Users
          */
-        refreshOnEntityCreation: true,
+        fetchOnEntityCreation: true,
         
         /**
          * REST path for this resource (with no namespace)
@@ -3940,7 +4079,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     var props = {name: params.name};
                     
                     var entity = that.instantiateEntity(props);                    
-                    entity.refresh(function() {
+                    entity.fetch(function() {
                         if (req.wasAborted) {
                             return; // aborted, so ignore
                         }
@@ -4196,289 +4335,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      * Represents a specific Splunk stanza.  You can update and remove this
      * stanza.
      *
-     * @endpoint properties/{file_name}/{stanza_name}
-     * @class splunkjs.Service.PropertyStanza
-     * @extends splunkjs.Service.Entity
-     */
-    root.PropertyStanza = root.Entity.extend({
-        /**
-         * Whether or not to call `refresh()` after an update
-         * to fetch the updated item.
-         *
-         * @method splunkjs.Service.PropertyStanza
-         */
-        refreshOnUpdate: true,
-        
-        /**
-         * REST path for this resource (with no namespace)
-         *
-         * @method splunkjs.Service.PropertyStanza
-         */
-        path: function() {
-            return Paths.properties + "/" + encodeURIComponent(this.file) + "/" + encodeURIComponent(this.name);
-        },
-        
-        /**
-         * Constructor for splunkjs.Service.PropertyStanza
-         *
-         * @constructor
-         * @param {splunkjs.Service} service A service instance
-         * @param {String} name The name of the index
-         * @return {splunkjs.Service.PropertyStanza} A splunkjs.Service.PropertyStanza instance
-         *
-         * @method splunkjs.Service.PropertyStanza
-         */ 
-        init: function(service, file, name) {
-            this.name = name;
-            this.file = file;
-            // We always enforce the "globalness" of properties
-            var namespace = {owner: "-", app: "-"};
-            this._super(service, this.path(), namespace);
-        } 
-    });
-    
-    /**
-     * Represents the Splunk collection of stanzas for a specific property file.  
-     * You can create and list stanzas using this container, or get a specific one.
-     *
-     * @endpoint properties/{file_name}
-     * @class splunkjs.Service.PropertyFile
-     * @extends splunkjs.Service.Collection
-     */  
-    root.PropertyFile = root.Collection.extend({
-        /**
-         * Whether or not to call `refresh()` after an entity
-         * is created. By default we don't refresh
-         * the entity, as the endpoint will return (echo) the created
-         * entity
-         *
-         * @method splunkjs.Service.PropertyFile
-         */
-        refreshOnEntityCreation: true,
-        
-        /**
-         * REST path for this resource (with no namespace)
-         *
-         * @method splunkjs.Service.PropertyFile
-         */
-        path: function() {
-            return Paths.properties + "/" + encodeURIComponent(this.name);
-        },
-        
-        /**
-         * Create a local instance of an entity
-         *
-         * @param {Object} props The properties for this entity
-         * @return {splunkjs.Service.PropertyStanza} A splunkjs.Service.PropertyStanza instance
-         
-         * @method splunkjs.Service.PropertyFile
-         */
-        instantiateEntity: function(props) {
-            return new root.PropertyStanza(this.service, this.name, props.name);
-        },
-        
-        /**
-         * Constructor for splunkjs.Service.PropertyFile
-         *
-         * @constructor
-         * @param {splunkjs.Service} service A service instance
-         * @return {splunkjs.Service.PropertyFile} A splunkjs.Service.PropertyFile instance
-         *
-         * @method splunkjs.Service.PropertyFile
-         */  
-        init: function(service, name) {
-            this.name = name;
-            
-            // We always enforce the "globalness" of properties
-            var namespace = {owner: "-", app: "-"};
-            
-            this._super(service, this.path(), namespace);
-        },
-        
-        /**
-         * Refresh the resource
-         *
-         * This will unconditionally refresh the object from the server
-         * and load it up.
-         *
-         * @param {Object} options Dictionary of collection filtering and pagination options
-         * @param {Function} callback A callback when the object is retrieved: `(err, resource)`
-         *
-         * @method splunkjs.Service.PropertyFile
-         */
-        refresh: function(options, callback) {
-            if (!callback && utils.isFunction(options)) {
-                callback = options;
-                options = {};
-            }
-            
-            // Add fillcontents so we get a full stanzas
-            options.fillcontents = 1;
-            return this._super(options, callback);
-        },
-        
-        /**
-         * Create a stanza in this property file
-         *
-         * @example
-         *
-         *      var file = service.properties().item("props");
-         *      file.create("my_stanza", function(err, newStanza) {
-         *          console.log("CREATED");
-         *      });
-         *
-         * @param {String} stanzaName A name for this stanza
-         * @param {Function} callback A callback with the created stanza: `(err, createdStanza)`
-         *
-         * @endpoint property/{file_name}
-         * @method splunkjs.Service.PropertyFile
-         */
-        create: function(stanzaName, callback) {
-            // If someone called us with the default style of (params, callback),
-            // lets make it work
-            if (utils.isObject(stanzaName)) {
-                stanzaName = stanzaName["__conf"];
-            }
-            
-            callback = callback || function() {};
-            
-            var that = this;
-            var req = this.post("", {__stanza: stanzaName}, function(err, response) {
-                if (err) {
-                    callback(err);
-                }
-                else {
-                    var entity = new root.PropertyStanza(that.service, that.name, stanzaName);
-                    entity.refresh(function() {
-                        if (req.wasAborted) {
-                            return; // aborted, so ignore
-                        }
-                        else {
-                            callback.apply(null, arguments);
-                        }
-                    });
-                }
-            });
-            
-            return req;
-        }
-    });
-    
-    /**
-     * Represents the Splunk collection of property files.  You can create and
-     * list files using this container, or get a specific one.
-     *
-     * @endpoint properties
-     * @class splunkjs.Service.Properties
-     * @extends splunkjs.Service.Collection
-     */  
-    root.Properties = root.Collection.extend({
-        /**
-         * Whether or not to call `refresh()` after an entity
-         * is created. By default we don't refresh
-         * the entity, as the endpoint will return (echo) the created
-         * entity
-         *
-         * @method splunkjs.Service.Properties
-         */
-        refreshOnEntityCreation: true,
-        
-        /**
-         * Whether or not to call `refresh()` after an entity
-         * is instantiated locally. By default we don't refresh
-         * the entity, as the endpoint will return (echo) the created
-         * entities when we list it.
-         *
-         * @method splunkjs.Service.Properties
-         */
-        refreshOnEntityInstantiation: true,
-        
-        /**
-         * REST path for this resource (with no namespace)
-         *
-         * @method splunkjs.Service.Properties
-         */
-        path: function() {
-            return Paths.properties;
-        },
-        
-        /**
-         * Create a local instance of an entity
-         *
-         * @param {Object} props The properties for this entity
-         * @return {splunkjs.Service.PropertyFile} A splunkjs.Service.PropertyFile instance
-         
-         * @method splunkjs.Service.Properties
-         */
-        instantiateEntity: function(props) {
-            return new root.PropertyFile(this.service, props.name, this.namespace);
-        },
-        
-        /**
-         * Constructor for splunkjs.Service.Properties
-         *
-         * @constructor
-         * @param {splunkjs.Service} service A service instance
-         * @return {splunkjs.Service.Properties} A splunkjs.Service.Properties instance
-         *
-         * @method splunkjs.Service.Properties
-         */  
-        init: function(service) {
-            var namespace = {owner: "-", app: "-"};
-            this._super(service, this.path(), namespace);
-        },
-
-        /**
-         * Create a property file
-         *
-         * @example
-         *
-         *      var properties = service.properties();
-         *      properties.create("myprops", function(err, newFile) {
-         *          console.log("CREATED");
-         *      });
-         *
-         * @param {String} filename A name for this property file
-         * @param {Function} callback A callback with the created property file: `(err, createdFile)`
-         *
-         * @endpoint properties
-         * @method splunkjs.Service.Properties
-         */
-        create: function(filename, callback) {
-            // If someone called us with the default style of (params, callback),
-            // lets make it work
-            if (utils.isObject(filename)) {
-                filename = filename["__conf"];
-            }
-            
-            callback = callback || function() {};
-            
-            var that = this;
-            var req = this.post("", {__conf: filename}, function(err, response) {
-                if (err) {
-                    callback(err);
-                }
-                else {
-                    var entity = new root.PropertyFile(that.service, filename);
-                    entity.refresh(function() {
-                        if (req.wasAborted) {
-                            return; // aborted, so ignore
-                        }
-                        else {
-                            callback.apply(null, arguments);
-                        }
-                    });
-                }
-            });
-            
-            return req;
-        }
-    });
-    
-    /**
-     * Represents a specific Splunk stanza.  You can update and remove this
-     * stanza.
-     *
      * @endpoint configs/conf-{file}/{name}`
      * @class splunkjs.Service.ConfigurationStanza
      * @extends splunkjs.Service.Entity
@@ -4605,24 +4461,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      */  
     root.Configurations = root.Collection.extend({
         /**
-         * Whether or not to call `refresh()` after an entity
-         * is created. By default we don't refresh
+         * Whether or not to call `fetch()` after an entity
+         * is created. By default we don't fetch
          * the entity, as the endpoint will return (echo) the created
          * entity
          *
          * @method splunkjs.Service.Configurations
          */
-        refreshOnEntityCreation: true,
-        
-        /**
-         * Whether or not to call `refresh()` after an entity
-         * is instantiated locally. By default we don't refresh
-         * the entity, as the endpoint will return (echo) the created
-         * entities when we list it.
-         *
-         * @method splunkjs.Service.Configurations
-         */
-        refreshOnEntityInstantiation: true,
+        fetchOnEntityCreation: true,
         
         /**
          * REST path for this resource (with no namespace)
@@ -4695,7 +4541,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 }
                 else {
                     var entity = new root.ConfigurationFile(that.service, filename);
-                    entity.refresh(function() {
+                    entity.fetch(function() {
                         if (req.wasAborted) {
                             return; // aborted, so ignore
                         }
@@ -4857,6 +4703,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         events: function(params, callback) {
             callback = callback || function() {};
+            params = params || {};
+            params.output_mode = params.output_mode || "json_rows"; 
             
             var that = this;
             return this.get("events", params, function(err, response) { 
@@ -4941,6 +4789,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         preview: function(params, callback) {
             callback = callback || function() {};
+            params = params || {};
+            params.output_mode = params.output_mode || "json_rows"; 
             
             var that = this;
             return this.get("results_preview", params, function(err, response) {
@@ -4973,6 +4823,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         results: function(params, callback) {
             callback = callback || function() {};
+            params = params || {};
+            params.output_mode = params.output_mode || "json_rows";            
             
             var that = this;
             return this.get("results", params, function(err, response) {
@@ -5009,7 +4861,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    callback(null, response.data.entry.content, that);
+                    callback(null, response.data, that);
                 }
             });
         },
@@ -5095,7 +4947,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    callback(null, response.data.entry.content, that);
+                    callback(null, response.data, that);
                 }
             });
         },
@@ -5125,7 +4977,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    callback(null, response.data.entry.content, that);
+                    callback(null, response.data, that);
                 }
             });
         },
@@ -5262,6 +5114,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             if (!params.search) {
                 callback("Must provide a query to create a search job");
+                return;
             } 
 
             var that = this;
@@ -5270,8 +5123,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    
-                    var job = new root.Job(that.service, response.data.entry.content.sid, that.namespace);
+                    var job = new root.Job(that.service, response.data.sid, that.namespace);
                     callback(null, job);
                 }
             });
@@ -5338,17 +5190,35 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             if (!params.search) {
                 callback("Must provide a query to create a search job");
-            } 
-
-            var that = this;
-            return this.post("", params, function(err, response) {
-                if (err) {
-                    callback(err);
+            }
+            
+            var outputMode = params.output_mode || "json_rows";
+            
+            var path = this.qualifiedPath;
+            var method = "POST";
+            var headers = {};
+            var post = params;
+            var get = {output_mode: outputMode};
+            var body = null;
+            
+            var req = this.service.request(
+                path, 
+                method, 
+                get, 
+                post, 
+                body, 
+                headers, 
+                function(err, response) {
+                    if (err) {
+                        callback(err);
+                    } 
+                    else {
+                        callback(null, response.data);
+                    }
                 }
-                else {
-                    callback(null, response.data);
-                }
-            });
+            );
+            
+            return req;
         }
     });
 })();
@@ -5989,7 +5859,7 @@ require.define("/lib/searcher.js", function (require, module, exports, __dirname
             Async.whilst(
                 function() { return !stopLooping; },
                 function(iterationDone) {
-                    job.refresh(function(err, job) {
+                    job.fetch(function(err, job) {
                         if (err) {
                             iterationDone(err);
                             return;
@@ -6062,7 +5932,7 @@ require.define("/lib/searcher.js", function (require, module, exports, __dirname
                 if (err) {
                     callback(err);
                 }
-                else {
+                else {                    
                     var numResults = (results.rows ? results.rows.length : 0);
                     iterator.currentOffset += numResults;
                     
@@ -6108,7 +5978,7 @@ require.define("/lib/storm.js", function (require, module, exports, __dirname, _
     "use strict";
     
     var Service         = require('./service');
-    var Http            = require('./http').Http;
+    var Http            = require('./http');
     var Paths           = require('./paths').Paths;
     var utils           = require('./utils');
     var base64          = require('../contrib/base64');
@@ -6417,7 +6287,7 @@ require.define("/lib/platform/client/proxy_http.js", function (require, module, 
 // under the License.
 
 (function() {
-    var Http    = require('../../http').Http;
+    var Http    = require('../../http');
     var utils   = require('../../utils');
 
     var root = exports || this;
@@ -6480,7 +6350,7 @@ require.define("/lib/platform/client/proxy_http.js", function (require, module, 
     root.ProxyHttp = Http.extend({
         init: function(prefix) {
             this.prefix = prefix;
-            this._super(true);
+            this._super();
         },
 
         makeRequest: function(url, message, callback) {
@@ -6503,7 +6373,7 @@ require.define("/lib/platform/client/proxy_http.js", function (require, module, 
                 type: message.method,
                 headers: message.headers,
                 data: message.body || "",
-                dataType: "json",
+                dataType: "text",
                 success: function(data, error, res) {
                     if (req.wasAborted) {
                         return;
@@ -6528,14 +6398,20 @@ require.define("/lib/platform/client/proxy_http.js", function (require, module, 
                     };
 
                     if (data === "abort") {
-                        req.wasAborted = true;
                         response.statusCode = "abort";
                         res.responseText = "{}";
                     }
-                    var json = JSON.parse(res.responseText);
+                    var json = res.responseText;
 
                     var complete_response = that._buildResponse(error, response, json);
                     callback(complete_response);
+                    
+                    // Note the fact that we aborted after we call
+                    // our initial callback, otherwise it will never
+                    // execute
+                    if (data === "abort") {
+                        req.wasAborted = true;
+                    }
                 }
             };
             
@@ -6546,13 +6422,13 @@ require.define("/lib/platform/client/proxy_http.js", function (require, module, 
 
         parseJson: function(json) {
             // JQuery does this for us
-            return json;
+            return JSON.parse(json);
         }
     });
 })();
 });
 
-require.define("/entries/browser.ui.entry.js", function (require, module, exports, __dirname, __filename) {
+require.define("/lib/entries/browser.ui.entry.js", function (require, module, exports, __dirname, __filename) {
 
 // Copyright 2011 Splunk, Inc.
 //
@@ -6573,7 +6449,7 @@ require.define("/entries/browser.ui.entry.js", function (require, module, export
 // include it.
 
 (function(exportName) {
-    var $script = require('../contrib/script');
+    var $script = require('../../contrib/script');
     
     if (!window[exportName]) {
         window[exportName] = {};
@@ -6665,9 +6541,9 @@ require.define("/browser.entry.js", function (require, module, exports, __dirnam
 (function(exportName) {
     var previousSplunk = window[exportName];
     
-    var ourSplunk = require('../splunk');
-    var ourXDM    = require('../lib/platform/client/easyxdm_http').XdmHttp;
-    var proxyHttp = require('../lib/platform/client/proxy_http').ProxyHttp;
+    var ourSplunk = require('../../index');
+    var ourXDM    = require('../../lib/platform/client/easyxdm_http').XdmHttp;
+    var proxyHttp = require('../../lib/platform/client/proxy_http').ProxyHttp;
     
     window[exportName] = ourSplunk;
     window[exportName].XdmHttp = ourXDM;
@@ -6682,7 +6558,7 @@ require.define("/browser.entry.js", function (require, module, exports, __dirnam
     };
     
     // Load the UI component loader
-    require("../entries/browser.ui.entry");
+    require("../../lib/entries/browser.ui.entry");
 })(__exportName);
 });
 require("/browser.entry.js");

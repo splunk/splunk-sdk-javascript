@@ -128,11 +128,10 @@
                                   <li><a href="#splunkjs.Service-serverInfo">serverInfo</a></li>
                                   <li><a href="#splunkjs.Service-currentUser">currentUser</a></li>
                                   <li><a href="#splunkjs.Service-oneshotSearch">oneshotSearch</a></li>
-                                  <li><a href="#splunkjs.Service-properties">properties</a></li>
+                                  <li><a href="#splunkjs.Service-savedSearches">savedSearches</a></li>
                                   <li><a href="#splunkjs.Service-configurations">configurations</a></li>
                                   <li><a href="#splunkjs.Service-specialize">specialize</a></li>
                                   <li><a href="#splunkjs.Service-jobs">jobs</a></li>
-                                  <li><a href="#splunkjs.Service-savedSearches">savedSearches</a></li>
                                   <li class="nav-header"><a href="#splunkjs.Service-inherited">Inherited</a></li>
                                   <li><a href="#splunkjs.Service^request">request</a></li>
                                   <li><a href="#splunkjs.Service^post">post</a></li>
@@ -241,21 +240,6 @@
                 <ul class="nav nav-list">
                 </ul>
               </li>
-                          <li class="nav-header"><a href="splunkjs.Service.PropertyStanza.html">splunkjs.Service.PropertyStanza</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.PropertyFile.html">splunkjs.Service.PropertyFile</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.Properties.html">splunkjs.Service.Properties</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
                           <li class="nav-header"><a href="splunkjs.Service.ConfigurationStanza.html">splunkjs.Service.ConfigurationStanza</a></li>
               <li>
                 <ul class="nav nav-list">
@@ -354,7 +338,6 @@
     this.apps           = utils.bind(this, this.apps);
     this.configurations = utils.bind(this, this.configurations);
     this.indexes        = utils.bind(this, this.indexes);
-    this.properties     = utils.bind(this, this.properties);
     this.savedSearches  = utils.bind(this, this.savedSearches);
     this.jobs           = utils.bind(this, this.jobs);
     this.users          = utils.bind(this, this.users);
@@ -396,7 +379,7 @@
                           <h4>Examples</h4>
                           <pre><code> // List all usernames
  var users = svc.users();
- users.refresh(function(err, users) {
+ users.fetch(function(err, users) {
      var list = users.list();
      for(var i = 0; i &lt; list.length; i++) {
          console.log("User " + (i+1) + ": " + list[i].properties().name);
@@ -407,7 +390,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L276">lib/service.js:276</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L249">lib/service.js:249</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>users: function() {
@@ -466,7 +449,7 @@
                           <h4>Examples</h4>
                           <pre><code> // List all views
  var views = svc.views();
- views.refresh(function(err, views) {
+ views.fetch(function(err, views) {
      var list = views.list();
      for(var i = 0; i &lt; list.length; i++) {
          console.log("View " + (i+1) + ": " + list[i].properties().name);
@@ -477,7 +460,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L304">lib/service.js:304</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L277">lib/service.js:277</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>views: function(namespace) {
@@ -548,7 +531,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L513">lib/service.js:513</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L476">lib/service.js:476</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>log: function(event, params, callback) {
@@ -570,10 +553,7 @@
                 callback(err);
             } 
             else {
-                // TODO
-                // Extract the content (format undecided)
-                var content = response.data.entry ? response.data.entry.content : response.data;
-                callback(null, content);
+                callback(null, response.data);
             }
         });
         
@@ -651,7 +631,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L327">lib/service.js:327</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L300">lib/service.js:300</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>search: function(query, params, namespace, callback) {
@@ -698,13 +678,13 @@
                           <h4>Examples</h4>
                           <pre><code> // List installed apps
  var apps = svc.apps();
- apps.refresh(function(err) { console.log(apps.list()); });
+ apps.fetch(function(err) { console.log(apps.list()); });
 </code></pre>
             </section>
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L116">lib/service.js:116</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L115">lib/service.js:115</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>apps: function() {
@@ -763,17 +743,17 @@
                           <h4>Examples</h4>
                           <pre><code> // Check if we have an _internal index
  var indexes = svc.configurations();
- indexes.refresh(function(err, indexes) {
-     var index = indexes.contains("_internal");
+ indexes.fetch(function(err, indexes) {
+     var index = indexes.item("_internal");
      console.log("Was index found: " + !!index);
-     // `index` contains the Index object.
+     // `index` is an Index object.
  });
 </code></pre>
             </section>
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L170">lib/service.js:170</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L169">lib/service.js:169</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>indexes: function(namespace) { 
@@ -844,7 +824,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L444">lib/service.js:444</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L417">lib/service.js:417</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>parse: function(query, params, callback) {
@@ -862,13 +842,8 @@
         if (err) {
             callback(err);
         } 
-        else {
-            var data = response.data;
-            if (response.data.entry) {
-                data = response.data.entry.content;
-            }
-            
-            callback(null, data);
+        else {                    
+            callback(null, response.data);
         }
     });
 },
@@ -889,12 +864,7 @@ typeahead: function(prefix, count, callback) {
             callback(err);
         }
         else {
-            var data = response.data;
-            if (response.data.entry) {
-                data = response.data.entry.content;
-            }
-            
-            callback(null, data);
+            callback(null, response.data);
         }
     });
 },</code></pre>
@@ -953,14 +923,14 @@ typeahead: function(prefix, count, callback) {
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L421">lib/service.js:421</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L394">lib/service.js:394</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>serverInfo: function(callback) {
     callback = callback || function() {};
     
     var serverInfo = new root.ServerInfo(this);
-    return serverInfo.refresh(callback);
+    return serverInfo.fetch(callback);
 },</code></pre>
             </section>
           </section>
@@ -1018,7 +988,7 @@ typeahead: function(prefix, count, callback) {
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L382">lib/service.js:382</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L355">lib/service.js:355</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>currentUser: function(callback) {
@@ -1032,7 +1002,7 @@ typeahead: function(prefix, count, callback) {
         else {
             var username = response.data.entry[0].content.username;
             var user = new root.User(that, username);
-            user.refresh(function() {
+            user.fetch(function() {
                 if (req.wasAborted) {
                     return; // aborted, so ignore
                 }
@@ -1116,7 +1086,7 @@ typeahead: function(prefix, count, callback) {
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L356">lib/service.js:356</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L329">lib/service.js:329</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>oneshotSearch: function(query, params, namespace, callback) {
@@ -1131,53 +1101,69 @@ typeahead: function(prefix, count, callback) {
             </section>
           </section>
                 
-          <section class="method well" id="splunkjs.Service-properties">
+          <section class="method well" id="splunkjs.Service-savedSearches">
             <header>
               <div class="method-header">
-                <h3 class="method-name">properties</h3>
+                <h3 class="method-name">savedSearches</h3>
               </div>
-              <h5 class="signature">splunkjs.Service.properties</h5>
-                          <h5 class="endpoint">Endpoint: properties</h5>
-                          <h5 class="related">See: <a href="splunkjs.Service.Properties.html#splunkjs.Service.Properties">splunkjs.Service.Properties</a></h5>
+              <h5 class="signature">splunkjs.Service.savedSearches</h5>
+                          <h5 class="endpoint">Endpoint: saved/searches</h5>
+                          <h5 class="related">See: <a href="splunkjs.Service.SavedSearches.html#splunkjs.Service.SavedSearches">splunkjs.Service.SavedSearches</a></h5>
             </header>
           
             <section class="content">
-              <p>Get an instance of the Properties collection </p>
-<p>The Properties collection allows you to list configuration files, create new files, get specific files, etc.</p>
+              <p>Get an instance of the SavedSearches collection </p>
+<p>The SavedSearches collection allows you to list saved searches, create new ones, update a saved search, etc.</p>
             </section>
             
             <section class="syntax">
                           <h4>Syntax</h4>
-              <span>properties: function()</span>
+              <span>savedSearches: function(namespace)</span>
             </section>
             
             <section class="params">
+                          <h4>Parameters</h4>
+              
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                  </tr>
+                </thead>
+                <tbody>
+                                  <tr>
+                    <td class="param-name">namespace</td>
+                    <td class="param-type">Object</td>
+                    <td class="param-description"><p>Namespace information (owner, app, sharing)</p></td>
+                  </tr>
+                </tbody>
+              </table>
             </section>
             
             <section class="returns">
                                       <h4>Return</h4>
-              <span class="return-type">splunkjs.Service.Properties</span>. The Properties collection
+              <span class="return-type">splunkjs.Service.SavedSearches</span>. The SavedSearches collection
             </section>
             
             <section class="examples">
                           <h4>Examples</h4>
-                          <pre><code> // List all properties in the 'props.conf' file
- var files = svc.properties();
- files.item("props", function(err, propsFile) {
-     propsFile.refresh(function(err, props) {
-         console.log(props.properties()); 
-     });
+                          <pre><code> // List all # of saved searches
+ var savedSearches = svc.savedSearches();
+ savedSearches.fetch(function(err, savedSearches) {
+     console.log("# Of Saved Searches: " + savedSearches.list().length);
  });
 </code></pre>
             </section>
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L196">lib/service.js:196</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L194">lib/service.js:194</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
-              <pre class="hidden" class="linenums pre-scrollable"><code>properties: function() {
-    return new root.Properties(this);
+              <pre class="hidden" class="linenums pre-scrollable"><code>savedSearches: function(namespace) {
+    return new root.SavedSearches(this, namespace);
 },</code></pre>
             </section>
           </section>
@@ -1233,16 +1219,16 @@ typeahead: function(prefix, count, callback) {
                           <pre><code> // List all properties in the 'props.conf' file
  var files = svc.configurations();
  files.item("props", function(err, propsFile) {
-     propsFile.refresh(function(err, props) {
+     propsFile.fetch(function(err, props) {
          console.log(props.properties()); 
      });
- });
+});
 </code></pre>
             </section>
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L143">lib/service.js:143</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L142">lib/service.js:142</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>configurations: function(namespace) {
@@ -1309,7 +1295,7 @@ typeahead: function(prefix, count, callback) {
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L85">lib/service.js:85</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L84">lib/service.js:84</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>specialize: function(owner, app) {
@@ -1377,7 +1363,7 @@ typeahead: function(prefix, count, callback) {
                           <h4>Examples</h4>
                           <pre><code> // List all job IDs
  var jobs = svc.jobs();
- jobs.refresh(function(err, jobs) {
+ jobs.fetch(function(err, jobs) {
      var list = jobs.list();
      for(var i = 0; i &lt; list.length; i++) {
          console.log("Job " + (i+1) + ": " + list[i].sid);
@@ -1388,78 +1374,11 @@ typeahead: function(prefix, count, callback) {
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L249">lib/service.js:249</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L222">lib/service.js:222</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>jobs: function(namespace) {
     return new root.Jobs(this, namespace);  
-},</code></pre>
-            </section>
-          </section>
-                
-          <section class="method well" id="splunkjs.Service-savedSearches">
-            <header>
-              <div class="method-header">
-                <h3 class="method-name">savedSearches</h3>
-              </div>
-              <h5 class="signature">splunkjs.Service.savedSearches</h5>
-                          <h5 class="endpoint">Endpoint: saved/searches</h5>
-                          <h5 class="related">See: <a href="splunkjs.Service.SavedSearches.html#splunkjs.Service.SavedSearches">splunkjs.Service.SavedSearches</a></h5>
-            </header>
-          
-            <section class="content">
-              <p>Get an instance of the SavedSearches collection </p>
-<p>The SavedSearches collection allows you to list saved searches, create new ones, update a saved search, etc.</p>
-            </section>
-            
-            <section class="syntax">
-                          <h4>Syntax</h4>
-              <span>savedSearches: function(namespace)</span>
-            </section>
-            
-            <section class="params">
-                          <h4>Parameters</h4>
-              
-              <table class="table table-bordered">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Type</th>
-                    <th>Description</th>
-                  </tr>
-                </thead>
-                <tbody>
-                                  <tr>
-                    <td class="param-name">namespace</td>
-                    <td class="param-type">Object</td>
-                    <td class="param-description"><p>Namespace information (owner, app, sharing)</p></td>
-                  </tr>
-                </tbody>
-              </table>
-            </section>
-            
-            <section class="returns">
-                                      <h4>Return</h4>
-              <span class="return-type">splunkjs.Service.SavedSearches</span>. The SavedSearches collection
-            </section>
-            
-            <section class="examples">
-                          <h4>Examples</h4>
-                          <pre><code> // List all # of saved searches
- var savedSearches = svc.savedSearches();
- savedSearches.refresh(function(err, savedSearches) {
-     console.log("# Of Saved Searches: " + savedSearches.list().length);
- });
-</code></pre>
-            </section>
-                        
-            <section class="code">
-              
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L221">lib/service.js:221</a>)</h4>  
-              <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
-              
-              <pre class="hidden" class="linenums pre-scrollable"><code>savedSearches: function(namespace) {
-    return new root.SavedSearches(this, namespace);
 },</code></pre>
             </section>
           </section>
@@ -1532,20 +1451,25 @@ typeahead: function(prefix, count, callback) {
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L277">lib/context.js:277</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L399">lib/context.js:399</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>request: function(path, method, headers, body, callback) {
-        return this.http.request(
-            this.urlify(path),    
-            {
-                method: method,
-                headers: this._headers(headers),
-                body: body,
-                timeout: 0
-            },
-            callback
-        );
+        var that = this;
+        var request = function(callback) {
+            return that.http.request(
+                that.urlify(path),    
+                {
+                    method: method,
+                    headers: that._headers(headers),
+                    body: body,
+                    timeout: 0
+                },
+                callback
+            );  
+        };
+        
+        return this._requestWrapper(request, callback);
     }
 });</code></pre>
             </section>
@@ -1606,17 +1530,22 @@ typeahead: function(prefix, count, callback) {
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L256">lib/context.js:256</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L373">lib/context.js:373</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>post: function(path, params, callback) {
-    return this.http.post(
-        this.urlify(path),
-        this._headers(),
-        params,
-        0,
-        callback
-    );  
+    var that = this;
+    var request = function(callback) {
+        return that.http.post(
+            that.urlify(path),
+            that._headers(),
+            params,
+            0,
+            callback
+        );  
+    };
+    
+    return this._requestWrapper(request, callback);
 },</code></pre>
             </section>
           </section>
@@ -1676,17 +1605,22 @@ typeahead: function(prefix, count, callback) {
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L237">lib/context.js:237</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L349">lib/context.js:349</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>del: function(path, params, callback) {
-    return this.http.del(
-        this.urlify(path),
-        this._headers(),
-        params,
-        0,
-        callback
-    );  
+    var that = this;
+    var request = function(callback) {
+        return that.http.del(
+            that.urlify(path),
+            that._headers(),
+            params,
+            0,
+            callback
+        );  
+    };
+    
+    return this._requestWrapper(request, callback);
 },</code></pre>
             </section>
           </section>
@@ -1746,17 +1680,22 @@ typeahead: function(prefix, count, callback) {
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L218">lib/context.js:218</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L325">lib/context.js:325</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>get: function(path, params, callback) {
-    return this.http.get(
-        this.urlify(path),
-        this._headers(),
-        params,
-        0,
-        callback
-    );  
+    var that = this;
+    var request = function(callback) {
+        return that.http.get(
+            that.urlify(path),
+            that._headers(),
+            params,
+            0,
+            callback
+        );
+    };
+    
+    return this._requestWrapper(request, callback);
 },</code></pre>
             </section>
           </section>
@@ -1809,7 +1748,7 @@ typeahead: function(prefix, count, callback) {
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L133">lib/context.js:133</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/context.js#L234">lib/context.js:234</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>fullpath: function(path, namespace) {
@@ -1841,9 +1780,6 @@ typeahead: function(prefix, count, callback) {
 },</code></pre>
             </section>
           </section>
-                
-                
-                
                 
                 
                 

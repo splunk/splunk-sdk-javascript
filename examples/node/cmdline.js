@@ -61,7 +61,8 @@
             .option('--password <password>', "Username to login with", undefined, false)
             .option('--scheme <scheme>', "Scheme to use", "https", false)
             .option('--host <host>', "Hostname to use", "localhost", false)
-            .option('--port <port>', "Port to use", 8089, false);
+            .option('--port <port>', "Port to use", 8089, false)
+            .option('--version <version>', "Which version to use", "4", false);
         
         parser.parse = function(argv) {
             argv = (argv || []).slice(2);

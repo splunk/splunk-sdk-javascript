@@ -18,7 +18,7 @@
 // won't return until the search is complete and return all the search
 // results in the response.
 
-var splunkjs = require('../../../splunk');
+var splunkjs = require('../../../index');
 var Async  = splunkjs.Async;
 
 exports.main = function(opts, callback) {
@@ -30,13 +30,15 @@ exports.main = function(opts, callback) {
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
+    var version  = opts.version     || "default";
     
     var service = new splunkjs.Service({
         username: username,
         password: password,
         scheme: scheme,
         host: host,
-        port: port
+        port: port,
+        version: version
     });
 
     Async.chain([

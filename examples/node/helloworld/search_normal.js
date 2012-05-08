@@ -16,7 +16,7 @@
 // This example will login to Splunk, perform a regular search, wait until
 // it is done, and then print out the raw results and some key-value pairs
 
-var splunkjs = require('../../../splunk');
+var splunkjs = require('../../../index');
 var Async  = splunkjs.Async;
 
 exports.main = function(opts, callback) {
@@ -28,13 +28,15 @@ exports.main = function(opts, callback) {
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
+    var version  = opts.version     || "default";
     
     var service = new splunkjs.Service({
         username: username,
         password: password,
         scheme: scheme,
         host: host,
-        port: port
+        port: port,
+        version: version
     });
 
     Async.chain([
@@ -59,8 +61,8 @@ exports.main = function(opts, callback) {
                     function(iterationDone) {
                         Async.sleep(1000, function() {
                             // Refresh the job and note how many events we've looked at so far
-                            job.refresh(function(err) {
-                                console.log("-- refreshing, " + (job.properties().eventCount || 0) + " events so far");
+                            job.fetch(function(err) {
+                                console.log("-- fetching, " + (job.properties().eventCount || 0) + " events so far");
                                 iterationDone();
                             });
                         });
