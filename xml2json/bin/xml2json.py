@@ -283,9 +283,8 @@ def from_job_results(root, format=ResultFormat.ROW, timings={}):
         # When we have a oneshot search with no results,
         # we get back an invalid XML string. We simply
         # replace it with an empty results tag
-        if root.strip() == XML_HEADER:
+        if root.strip() == XML_HEADER or root.strip() == '':
             root = "<results preview='0'/>"
-            
         time_start = time.time()
         root = et.fromstring(root)
         time_end = time.time()

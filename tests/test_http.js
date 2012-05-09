@@ -287,7 +287,7 @@ exports.setup = function(http) {
             "Default arguments to Http work": function(test) {
                 var NodeHttp = splunkjs.NodeHttp;
                 var h = new NodeHttp();
-                test.strictEqual(h.isSplunk, true);
+                test.ok(h);
                 test.done();
             },
 

@@ -665,7 +665,6 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual(summary.fields.foo.count, 1);
                             test.strictEqual(summary.fields.foo.distinct_count, 1);
                             test.ok(summary.fields.foo.is_exact, 1);
-                            test.strictEqual(summary.fields.foo.name, "foo");
                             test.strictEqual(summary.fields.foo.modes.length, 1);
                             test.strictEqual(summary.fields.foo.modes[0].count, 1);
                             test.strictEqual(summary.fields.foo.modes[0].value, "bar");
@@ -822,6 +821,9 @@ exports.setup = function(svc, loggedOutSvc) {
                         }
                     ],
                     function(err) {
+                        if (err) {
+                            console.log(err.data.messages);
+                        };
                         test.ok(!err);
                         test.done();
                     }
@@ -1369,7 +1371,7 @@ exports.setup = function(svc, loggedOutSvc) {
             "Callback#setupInfo succeeds": function(test) {
                 var app = new splunkjs.Service.Application(this.service, "xml2json");
                 app.setupInfo(function(err, content, search) {
-                    test.ok(err.response.body.match("Setup configuration file does not"));
+                    test.ok(err.data.messages[0].text.match("Setup configuration file does not"));
                     test.done();
                 });
             },
@@ -1401,9 +1403,10 @@ exports.setup = function(svc, loggedOutSvc) {
                    
             "Callback#list": function(test) {
                 var that = this;
+                var namespace = {owner: "admin", app: "search"};
                 
                 Async.chain([
-                    function(done) { that.service.properties().refresh(done); },
+                    function(done) { that.service.configurations(namespace).fetch(done); },
                     function(props, done) { 
                         var files = props.list();
                         test.ok(files.length > 0);
@@ -1416,15 +1419,16 @@ exports.setup = function(svc, loggedOutSvc) {
                 });
             },
                    
-            "Callback#contains": function(test) {
+            "Callback#item": function(test) {
                 var that = this;
+                var namespace = {owner: "admin", app: "search"};
                 
                 Async.chain([
-                    function(done) { that.service.properties().refresh(done); },
+                    function(done) { that.service.configurations(namespace).fetch(done); },
                     function(props, done) { 
-                        var file = props.contains("web");
+                        var file = props.item("web");
                         test.ok(file);
-                        file.refresh(done);
+                        file.fetch(done);
                     },
                     function(file, done) {
                         test.strictEqual(file.name, "web");
@@ -1439,19 +1443,20 @@ exports.setup = function(svc, loggedOutSvc) {
                    
             "Callback#contains stanza": function(test) {
                 var that = this;
+                var namespace = {owner: "admin", app: "search"};
                 
                 Async.chain([
-                    function(done) { that.service.properties().refresh(done); },
+                    function(done) { that.service.configurations(namespace).fetch(done); },
                     function(props, done) { 
-                        var file = props.contains("web");
+                        var file = props.item("web");
                         test.ok(file);
-                        file.refresh(done);
+                        file.fetch(done);
                     },
                     function(file, done) {
                         test.strictEqual(file.name, "web");                        
-                        var stanza = file.contains("settings");
+                        var stanza = file.item("settings");
                         test.ok(stanza);
-                        stanza.refresh(done);
+                        stanza.fetch(done);
                     },
                     function(stanza, done) {
                         test.ok(stanza.properties().hasOwnProperty("httpport"));
@@ -1468,11 +1473,12 @@ exports.setup = function(svc, loggedOutSvc) {
                 var that = this;
                 var fileName = "jssdk_file";
                 var value = "barfoo_" + getNextId();
+                var namespace = {owner: "admin", app: "search"};
                 
                 Async.chain([
                     function(done) {
-                        var properties = that.service.properties(); 
-                        properties.refresh(done);
+                        var properties = that.service.configurations(namespace); 
+                        properties.fetch(done);
                     },
                     function(properties, done) {
                         properties.create(fileName, done);
@@ -1488,17 +1494,19 @@ exports.setup = function(svc, loggedOutSvc) {
                         done();
                     },
                     function(done) {
-                        var file = new splunkjs.Service.PropertyFile(svc, fileName);
-                        file.refresh(done);
+                        var file = new splunkjs.Service.ConfigurationFile(svc, fileName);
+                        file.fetch(done);
                     },
                     function(file, done) {
-                        var stanza = file.contains("stanza");
+                        var stanza = file.item("stanza");
                         test.ok(stanza);
                         stanza.remove(done);
                     }
                 ],
                 function(err) {
-                    console.log(err);
+                    if (err) {
+                        console.log(err.data.messages);
+                    };
                     test.ok(!err);
                     test.done();
                 });
@@ -1600,6 +1608,9 @@ exports.setup = function(svc, loggedOutSvc) {
                         configs.create({__conf: fileName}, done);
                     },
                     function(file, done) {
+                        if (file.item("stanza")) {
+                            file.item("stanza").remove();
+                        }
                         file.create("stanza", done);
                     },
                     function(stanza, done) {
@@ -1620,6 +1631,9 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 ],
                 function(err) {
+                    if (err) {
+                        console.log(err.data.messages);
+                    };
                     test.ok(!err);
                     test.done();
                 });
@@ -1644,7 +1658,7 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#remove index fails": function(test) {
-                var index = this.service.indexes().contains(this.indexName);
+                var index = this.service.indexes().item(this.indexName);
                 test.throws(function() { index.remove();});
                 test.done();
             },
@@ -1832,7 +1846,7 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#remove throws an error": function(test) {
-                var index = this.service.indexes().contains("_internal");
+                var index = this.service.indexes().item("_internal");
                 test.throws(function() {index.remove});
                 test.done();
             },
@@ -1842,7 +1856,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 indexes.create(
                     {name: "_internal"},
                     function(err, newIndex) {
-                        test.ok(err.response.body.match("Index name=_internal already exists"));
+                        test.ok(err.data.messages[0].text.match("Index name=_internal already exists"));
                         test.done();
                     }
                 );
@@ -1857,10 +1871,10 @@ exports.setup = function(svc, loggedOutSvc) {
                 Async.chain(
                     [
                         function(done) {
-                            indexes.refresh(done);     
+                            indexes.fetch(done);     
                         },
                         function(indexes, done) {
-                            var index = indexes.contains(indexName);
+                            var index = indexes.item(indexName);
                             test.ok(index);
                             test.strictEqual(index.name, indexName);                            
                             index.submitEvent(message, done);
@@ -1868,7 +1882,7 @@ exports.setup = function(svc, loggedOutSvc) {
                         function(eventInfo, index, done) {
                             test.ok(eventInfo);
                             test.strictEqual(eventInfo.bytes, message.length);
-                            test.strictEqual(eventInfo._index, indexName);
+                            test.strictEqual(eventInfo.index, indexName);
                             
                             // We could poll to make sure the index has eaten up the event,
                             // but unfortunately this can take an unbounded amount of time.
@@ -2286,7 +2300,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var service = this.service;
                 var resource = new splunkjs.Service.Resource(service, "/search/jobs/12345");
                 test.throws(function() { resource.path(); });
-                test.throws(function() { resource.refresh(); });
+                test.throws(function() { resource.fetch(); });
                 test.ok(splunkjs.Utils.isEmpty(resource.state()));
                 test.done();
             }
@@ -2322,7 +2336,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
             "Refresh throws error correctly": function(test) {
                 var entity = new splunkjs.Service.Entity(this.loggedOutService, "/search/jobs/12345", {owner: "boris", app: "factory", sharing: "app"});
-                entity.refresh({}, function(err) { test.ok(err); test.done();});
+                entity.fetch({}, function(err) { test.ok(err); test.done();});
             },
 
             "Cannot update name of entity": function(test) {
@@ -2411,7 +2425,7 @@ exports.setup = function(svc, loggedOutSvc) {
                      app: "search",
                      sharing: "app"}
                 );
-                test.throws(function() { coll.contains(null);});
+                test.throws(function() { coll.item(null);});
                 test.done();
             }
 
