@@ -17,7 +17,7 @@
 // out the raw results and some key-value pairs. A blocking search is one that 
 // won't return until the search is complete.
 
-var splunkjs = require('../../../splunk');
+var splunkjs = require('../../../index');
 var Async  = splunkjs.Async;
 
 exports.main = function(opts, callback) {
@@ -29,13 +29,15 @@ exports.main = function(opts, callback) {
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
+    var version  = opts.version     || "default";
     
     var service = new splunkjs.Service({
         username: username,
         password: password,
         scheme: scheme,
         host: host,
-        port: port
+        port: port,
+        version: version
     });
 
     Async.chain([
@@ -53,7 +55,7 @@ exports.main = function(opts, callback) {
             },
             // The job is done, but let's some statistics from the server.
             function(job, done) {
-                job.refresh(done);
+                job.fetch(done);
             },
             // Print out the statistics and get the results
             function(job, done) {

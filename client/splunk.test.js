@@ -362,7 +362,7 @@ require.define("/tests/test_utils.js", function (require, module, exports, __dir
 // under the License.
 
 exports.setup = function() {
-    var splunkjs    = require('../splunk');
+    var splunkjs    = require('../index');
 
     splunkjs.Logger.setLevel("ALL");
     return {        
@@ -416,10 +416,10 @@ if (module === require.main) {
 });
 
 require.define("/package.json", function (require, module, exports, __dirname, __filename) {
-module.exports = {"main":"splunk.js"}
+module.exports = {"main":"index.js"}
 });
 
-require.define("/splunk.js", function (require, module, exports, __dirname, __filename) {
+require.define("/index.js", function (require, module, exports, __dirname, __filename) {
 
 // Copyright 2011 Splunk, Inc.
 //
@@ -446,7 +446,7 @@ require.define("/splunk.js", function (require, module, exports, __dirname, __fi
         Logger          : require('./lib/log').Logger,
         Context         : require('./lib/context'),
         Service         : require('./lib/service'),
-        Http            : require('./lib/http').Http,
+        Http            : require('./lib/http'),
         Utils           : require('./lib/utils'),
         Async           : require('./lib/async'),
         Paths           : require('./lib/paths').Paths,
@@ -589,34 +589,31 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
          * @function splunkjs.Logger
          */
         printMessages: function(allMessages) {
-            allMessages = allMessages || {};
+            allMessages = allMessages || [];
             
-            for(var key in allMessages) {
-                if (allMessages.hasOwnProperty(key)) {
-                    var type = key;
-                    var messages = allMessages[key];
-                    for (var i = 0; i < messages.length; i++) {
-                        var msg = '[SPLUNKD] ' + messages[i];
-                        switch (type) {
-                            case 'HTTP':
-                            case 'FATAL':
-                            case 'ERROR':
-                                this.error(msg);
-                                break;
-                            case 'WARN':
-                                this.warn(msg);
-                                break;
-                            case 'INFO':
-                                this.info(msg);
-                                break;
-                            case 'HTTP':
-                                this.error(msg);
-                                break;
-                            default:
-                                this.info(msg);
-                                break;
-                        }
-                    }
+            for(var i = 0; i < allMessages.length; i++) {
+                var message = allMessages[i];
+                var type = message["type"];
+                var text = message["text"];
+                var msg = '[SPLUNKD] ' + text;
+                switch (type) {
+                    case 'HTTP':
+                    case 'FATAL':
+                    case 'ERROR':
+                        this.error(msg);
+                        break;
+                    case 'WARN':
+                        this.warn(msg);
+                        break;
+                    case 'INFO':
+                        this.info(msg);
+                        break;
+                    case 'HTTP':
+                        this.error(msg);
+                        break;
+                    default:
+                        this.info(msg);
+                        break;
                 }
             }  
         },
@@ -1050,6 +1047,34 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
             sharing: props.acl.sharing
         };
     };  
+    
+    /**
+     * Given a version and a dictionary, find the value in the map corresponding
+     * to that version
+     *
+     * @param {String} version The version to lookup
+     * @param {Object} map The dictionary to look up in
+     * @return {Anything} The value of the dictionary at the closest version match.
+     *
+     * @function splunkjs.Utils
+     */
+    root.getWithVersion = function(version, map) {
+        map = map || {};
+        var currentVersion = (version + "") || "";
+        while (currentVersion !== "") {
+            if (map.hasOwnProperty(currentVersion)) {
+                return map[currentVersion];
+            }
+            else {
+                currentVersion = currentVersion.slice(
+                    0, 
+                    currentVersion.lastIndexOf(".")
+                );
+            }
+        }
+        
+        return map["default"];
+    };
 })();
 });
 
@@ -1074,10 +1099,16 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
     
     var Paths    = require('./paths').Paths;
     var Class    = require('./jquery.class').Class;
-    var Http     = require('./http').Http;
+    var Http     = require('./http');
     var utils    = require('./utils');
 
     var root = exports || this;
+
+    var prefixMap = {
+        "5": "",
+        "4.3": "/services/json/v2",
+        "default": "/services/json/v2"
+    };
 
     /**
      * Abstraction over the Splunk HTTP-wire protocol
@@ -1127,6 +1158,17 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
             this.sessionKey    = params.sessionKey || "";
             this.authorization = params.authorization || "Splunk";
             this.paths         = params.paths || Paths;
+            this.version       = params.version || "default"; 
+            this.autologin     = true;
+            
+            // Initialize autologin
+            // The reason we explicitly check to see if 'autologin'
+            // is actually set is because we need to distinguish the
+            // case of it being set to 'false', and it not being set.
+            // Unfortunately, in JavaScript, these are both false-y
+            if (params.hasOwnProperty("autologin")) {
+                this.autologin = params.autologin;
+            }
             
             if (!http) {
                 // If there is no HTTP implementation set, we check what platform
@@ -1144,20 +1186,24 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
             
             // Store the HTTP implementation
             this.http = http;
+            this.http._setSplunkVersion(this.version);
             
             // Store our full prefix, which is just combining together
             // the scheme with the host
-            this.prefix = this.scheme + "://" + this.host + ":" + this.port + "/services/json/v2";
+            var versionPrefix = utils.getWithVersion(this.version, prefixMap);
+            this.prefix = this.scheme + "://" + this.host + ":" + this.port + versionPrefix;
 
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
-            this._headers   = utils.bind(this, this._headers);
-            this.fullpath   = utils.bind(this, this.fullpath);
-            this.urlify     = utils.bind(this, this.urlify);
-            this.get        = utils.bind(this, this.get);
-            this.del        = utils.bind(this, this.del);
-            this.post       = utils.bind(this, this.post);
-            this.login      = utils.bind(this, this.login);
+            this._headers         = utils.bind(this, this._headers);
+            this.fullpath         = utils.bind(this, this.fullpath);
+            this.urlify           = utils.bind(this, this.urlify);
+            this.get              = utils.bind(this, this.get);
+            this.del              = utils.bind(this, this.del);
+            this.post             = utils.bind(this, this.post);
+            this.login            = utils.bind(this, this.login);
+            this._shouldAutoLogin = utils.bind(this, this._shouldAutoLogin);
+            this._requestWrapper  = utils.bind(this, this._requestWrapper);
         },
         
         /**
@@ -1173,6 +1219,95 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
             headers = headers || {};
             headers["Authorization"] = this.authorization + " " + this.sessionKey;
             return headers;
+        },   
+        
+        /*!*/
+        _shouldAutoLogin: function() {
+            return this.username && this.password && this.autologin;
+        },
+
+        /*!*/
+        /**
+         * This is an internal function aimed to aid with the autologin feature.
+         * It takes two parameters: `task`, which is a function describing an
+         * HTTP request, and `callback`, to be invoked when all is said 
+         * and done.
+         *  
+         * @param  {Function} task A function taking a single argument: `(callback)`
+         * @param  {Function} callback A callback to be invoked when the request is complete: `(err, response)`
+         */
+        _requestWrapper: function(task, callback) {
+            callback = callback || function() {};
+            
+            var that = this;
+            var req = null;
+            
+            // This is the callback that will be invoked
+            // if we are currently logged in but our session key
+            // expired (i.e. we get a 401 response from the server).
+            // We will only retry once.
+            var reloginIfNecessary = function(err) {
+                // If we aborted, ignore it
+                if (req.wasAborted) {
+                    return;
+                }
+                
+                if (err && err.status === 401 && that._shouldAutoLogin()) {
+                    // If we had an authorization error, we'll try and login
+                    // again, but only once
+                    that.sessionKey = null;
+                    that.login(function(err, success) {
+                        // If we've already aborted the request,
+                        // just do nothing
+                        if (req.wasAborted) {
+                            return;
+                        }
+                        
+                        if (err) {
+                            // If there was an error logging in, send it through
+                            callback(err);
+                        }
+                        else { 
+                            // Relogging in was successful, so we execute
+                            // our task again.
+                            task(callback);
+                        }
+                    });
+                }
+                else {
+                    callback.apply(null, arguments);
+                }
+            };
+            
+            if (!this._shouldAutoLogin() || this.sessionKey) {
+                // Since we are not auto-logging in, just execute our task,
+                // but intercept any 401s so we can login then
+                req = task(reloginIfNecessary);
+                return req;
+            }
+            
+            // OK, so we know that we should try and autologin,
+            // so we try and login, and if we succeed, execute
+            // the original task
+            req = this.login(function(err, success) {
+                // If we've already aborted the request,
+                // just do nothing
+                if (req.wasAborted) {
+                    return;
+                }
+                
+                if (err) {
+                    // If there was an error logging in, send it through
+                    callback(err);
+                } 
+                else {
+                    // Logging in was successful, so we execute
+                    // our task. 
+                    task(callback);
+                }
+            });
+            
+            return req;
         },
 
         /**
@@ -1254,12 +1389,18 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
                     callback(err, false);
                 }
                 else {
-                    that.sessionKey = response.data.entry.content.sessionKey;
+                    that.sessionKey = response.data.sessionKey;
                     callback(null, true);
                 }
             };
             
-            return this.post(url, params, wrappedCallback);
+            return this.http.post(
+                this.urlify(url),
+                this._headers(),
+                params,
+                0,
+                wrappedCallback
+            ); 
         },
 
         /**
@@ -1272,13 +1413,18 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
          * @method splunkjs.Context 
          */
         get: function(path, params, callback) {
-            return this.http.get(
-                this.urlify(path),
-                this._headers(),
-                params,
-                0,
-                callback
-            );  
+            var that = this;
+            var request = function(callback) {
+                return that.http.get(
+                    that.urlify(path),
+                    that._headers(),
+                    params,
+                    0,
+                    callback
+                );
+            };
+            
+            return this._requestWrapper(request, callback);
         },
 
         /**
@@ -1290,14 +1436,19 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
          *
          * @method splunkjs.Context 
          */
-        del: function(path, params, callback) {
-            return this.http.del(
-                this.urlify(path),
-                this._headers(),
-                params,
-                0,
-                callback
-            );  
+        del: function(path, params, callback) {            
+            var that = this;
+            var request = function(callback) {
+                return that.http.del(
+                    that.urlify(path),
+                    that._headers(),
+                    params,
+                    0,
+                    callback
+                );  
+            };
+            
+            return this._requestWrapper(request, callback);
         },
 
         /**
@@ -1310,13 +1461,18 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
          * @method splunkjs.Context 
          */
         post: function(path, params, callback) {
-            return this.http.post(
-                this.urlify(path),
-                this._headers(),
-                params,
-                0,
-                callback
-            );  
+            var that = this;
+            var request = function(callback) {
+                return that.http.post(
+                    that.urlify(path),
+                    that._headers(),
+                    params,
+                    0,
+                    callback
+                );  
+            };
+            
+            return this._requestWrapper(request, callback);
         },
 
         /**
@@ -1330,17 +1486,24 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
          *
          * @method splunkjs.Context 
          */
-        request: function(path, method, headers, body, callback) {
-            return this.http.request(
-                this.urlify(path),    
-                {
-                    method: method,
-                    headers: this._headers(headers),
-                    body: body,
-                    timeout: 0
-                },
-                callback
-            );
+        request: function(path, method, query, post, body, headers, callback) {
+            var that = this;
+            var request = function(callback) {
+                return that.http.request(
+                    that.urlify(path),    
+                    {
+                        method: method,
+                        headers: that._headers(headers),
+                        query: query,
+                        post: post,
+                        body: body,
+                        timeout: 0
+                    },
+                    callback
+                );  
+            };
+            
+            return this._requestWrapper(request, callback);
         }
     });
 
@@ -1511,65 +1674,35 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
     var utils           = require('./utils');
 
     var root = exports || this;
-
-    /**
-     * Helper function to encode a dictionary of values into a URL-encoded
-     * format.
-     *
-     * @example
-     *      
-     *      // should be a=1&b=2&b=3&b=4
-     *      encode({a: 1, b: [2,3,4]})
-     *
-     * @param {Object} params Parameters to URL-encode
-     * @return {String} URL-encoded query string
-     *
-     * @function splunkjs.Http
-     */
-    root.encode = function(params) {
-        var encodedStr = "";
-
-        // We loop over all the keys so we encode them.
-        for (var key in params) {
-            if (params.hasOwnProperty(key)) {
-                // Only append the ampersand if we already have
-                // something encoded, and the last character isn't
-                // already an ampersand
-                if (encodedStr && encodedStr[encodedStr.length - 1] !== "&") {
-                    encodedStr = encodedStr + "&";
-                }
-                
-                // Get the value
-                var value = params[key];
-
-                // If it's an array, we loop over each value
-                // and encode it in the form &key=value[i]
-                if (value instanceof Array) {
-                    for (var i = 0; i < value.length; i++) {
-                        encodedStr = encodedStr + key + "=" + encodeURIComponent(value[i]) + "&";
-                    }
-                }
-                else if (typeof value === "object") {
-                    for(var innerKey in value) {
-                        if (value.hasOwnProperty(innerKey)) {
-                            var innerValue = value[innerKey];
-                            encodedStr = encodedStr + key + "=" + encodeURIComponent(value[innerKey]) + "&";
-                        }
-                    }
-                }
-                else {
-                    // If it's not an array, we just encode it
-                    encodedStr = encodedStr + key + "=" + encodeURIComponent(value);
-                }
+    var Http = null;
+    
+    var queryBuilderMap = {
+        "5": function(message) {      
+            var query = message.query || {};
+            var post = message.post || {};      
+            var outputMode = query.output_mode || post.output_mode || "json";
+            
+            // If the output mode doesn't start with "json" (e.g. "csv" or
+            // "xml"), we change it to "json".
+            if (!utils.startsWith(outputMode, "json")) {
+                outputMode = "json";
             }
+            
+            query.output_mode = outputMode;
+            
+            return query;
+        },
+        "4": function(message) {
+            return message.query || {};
+        },
+        "default": function(message) {
+            return message.query || {};
+        },
+        "none": function(message) {
+            return message.query || {};
         }
-
-        if (encodedStr[encodedStr.length - 1] === '&') {
-            encodedStr = encodedStr.substr(0, encodedStr.length - 1);
-        }
-
-        return encodedStr;
-    };
+    }; 
+    
      
     /**
      * Base class for HTTP abstraction. 
@@ -1581,7 +1714,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
      *
      * @class splunkjs.Http
      */
-    root.Http = Class.extend({
+    module.exports = root = Http = Class.extend({
         /**
          * Constructor for splunkjs.Http
          *
@@ -1591,9 +1724,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
          *
          * @method splunkjs.Http 
          */
-        init: function(isSplunk) {
-            // Whether or not this HTTP provider is talking to Splunk or not
-            this.isSplunk = (isSplunk === undefined ? true : isSplunk);
+        init: function() {
 
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
@@ -1602,6 +1733,14 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
             this.post               = utils.bind(this, this.post);
             this.request            = utils.bind(this, this.request);
             this._buildResponse     = utils.bind(this, this._buildResponse);
+            
+            // Set our default version to "none"
+            this._setSplunkVersion("none");
+        },
+        
+        /*!*/
+        _setSplunkVersion: function(version) {
+            this.version = version;
         },
 
         /**
@@ -1616,14 +1755,14 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
          * @method splunkjs.Http 
          */
         get: function(url, headers, params, timeout, callback) {
-            var encoded_url = url + "?" + root.encode(params);
             var message = {
                 method: "GET",
                 headers: headers,
-                timeout: timeout
+                timeout: timeout,
+                query: params
             };
 
-            return this.request(encoded_url, message, callback);
+            return this.request(url, message, callback);
         },
 
         /**
@@ -1643,7 +1782,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
                 method: "POST",
                 headers: headers,
                 timeout: timeout,
-                body: root.encode(params)
+                post: params
             };
 
             return this.request(url, message, callback);
@@ -1661,14 +1800,14 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
          * @method splunkjs.Http 
          */
         del: function(url, headers, params, timeout, callback) {
-            var encoded_url = url + "?" + root.encode(params);
             var message = {
                 method: "DELETE",
                 headers: headers,
-                timeout: timeout
+                timeout: timeout,
+                query: params
             };
 
-            return this.request(encoded_url, message, callback);
+            return this.request(url, message, callback);
         },
 
         /**
@@ -1695,10 +1834,23 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
                     callback(response);
                 }
             };
+            
+            var query = utils.getWithVersion(this.version, queryBuilderMap)(message);
+            var post = message.post || {};
+            
+            var encodedUrl = url + "?" + Http.encode(query);
+            var body = message.body ? message.body : Http.encode(post);
+            
+            var options = {
+                method: message.method,
+                headers: message.headers,
+                timeout: message.timeout,
+                body: body
+            };
 
             // Now we can invoke the user-provided HTTP class,
             // passing in our "wrapped" callback
-            return this.makeRequest(url, message, wrappedCallback);
+            return this.makeRequest(encodedUrl, options, wrappedCallback);
         },
 
         /**
@@ -1748,16 +1900,28 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
         _buildResponse: function(error, response, data) {            
             var complete_response, json = {};
 
+            //console.log(response, data);
             var contentType = null;
             if (response && response.headers) {
                 contentType = utils.trim(response.headers["content-type"] || response.headers["Content-Type"]);
             }
 
-            if (utils.startsWith(contentType, "application/json")) {
-                json = this.parseJson(data) || {};
+            if (utils.startsWith(contentType, "application/json") && data) {
+                try {
+                    json = this.parseJson(data) || {};
+                }
+                catch(e) {
+                    logger.error("Error in parsing JSON:", data, e);
+                    json = data;
+                }
+            }
+            else {
+                json = data;
             }
 
-            logger.printMessages(json.messages);                
+            if (json) {
+                logger.printMessages(json.messages);                
+            }
             
             complete_response = {
                 response: response,
@@ -1769,6 +1933,65 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
             return complete_response;
         }
     });
+
+    /**
+     * Helper function to encode a dictionary of values into a URL-encoded
+     * format.
+     *
+     * @example
+     *      
+     *      // should be a=1&b=2&b=3&b=4
+     *      encode({a: 1, b: [2,3,4]})
+     *
+     * @param {Object} params Parameters to URL-encode
+     * @return {String} URL-encoded query string
+     *
+     * @function splunkjs.Http
+     */
+    Http.encode = function(params) {
+        var encodedStr = "";
+
+        // We loop over all the keys so we encode them.
+        for (var key in params) {
+            if (params.hasOwnProperty(key)) {
+                // Only append the ampersand if we already have
+                // something encoded, and the last character isn't
+                // already an ampersand
+                if (encodedStr && encodedStr[encodedStr.length - 1] !== "&") {
+                    encodedStr = encodedStr + "&";
+                }
+                
+                // Get the value
+                var value = params[key];
+
+                // If it's an array, we loop over each value
+                // and encode it in the form &key=value[i]
+                if (value instanceof Array) {
+                    for (var i = 0; i < value.length; i++) {
+                        encodedStr = encodedStr + key + "=" + encodeURIComponent(value[i]) + "&";
+                    }
+                }
+                else if (typeof value === "object") {
+                    for(var innerKey in value) {
+                        if (value.hasOwnProperty(innerKey)) {
+                            var innerValue = value[innerKey];
+                            encodedStr = encodedStr + key + "=" + encodeURIComponent(value[innerKey]) + "&";
+                        }
+                    }
+                }
+                else {
+                    // If it's not an array, we just encode it
+                    encodedStr = encodedStr + key + "=" + encodeURIComponent(value);
+                }
+            }
+        }
+
+        if (encodedStr[encodedStr.length - 1] === '&') {
+            encodedStr = encodedStr.substr(0, encodedStr.length - 1);
+        }
+
+        return encodedStr;
+    };
 })();
 });
 
@@ -1789,7 +2012,7 @@ require.define("/lib/platform/client/easyxdm_http.js", function (require, module
 // under the License.
 
 (function() {
-    var Http    = require('../../http').Http;
+    var Http    = require('../../http');
     var utils   = require('../../utils');
     
     // Include it so it gets put in splunk.js
@@ -1823,7 +2046,7 @@ require.define("/lib/platform/client/easyxdm_http.js", function (require, module
 
     root.XdmHttp = Http.extend({
         init: function(remoteServer) {
-            this._super(true);
+            this._super();
             
             // Get a no conflict version of easyXDM
             var xdm = xdmLocal.noConflict(getNamespace());
@@ -2009,7 +2232,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.apps           = utils.bind(this, this.apps);
             this.configurations = utils.bind(this, this.configurations);
             this.indexes        = utils.bind(this, this.indexes);
-            this.properties     = utils.bind(this, this.properties);
             this.savedSearches  = utils.bind(this, this.savedSearches);
             this.jobs           = utils.bind(this, this.jobs);
             this.users          = utils.bind(this, this.users);
@@ -2043,7 +2265,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 password: this.password,
                 owner: owner,
                 app: app, 
-                sessionKey: this.sessionKey
+                sessionKey: this.sessionKey,
+                version: this.version
             });
         },
         
@@ -2057,7 +2280,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // List installed apps
          *      var apps = svc.apps();
-         *      apps.refresh(function(err) { console.log(apps.list()); });
+         *      apps.fetch(function(err) { console.log(apps.list()); });
          *
          * @return {splunkjs.Service.Collection} The Applications collection
          *
@@ -2080,7 +2303,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      // List all properties in the 'props.conf' file
          *      var files = svc.configurations();
          *      files.item("props", function(err, propsFile) {
-         *          propsFile.refresh(function(err, props) {
+         *          propsFile.fetch(function(err, props) {
          *              console.log(props.properties()); 
          *          });
          *      });
@@ -2106,10 +2329,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // Check if we have an _internal index
          *      var indexes = svc.configurations();
-         *      indexes.refresh(function(err, indexes) {
-         *          var index = indexes.contains("_internal");
+         *      indexes.fetch(function(err, indexes) {
+         *          var index = indexes.item("_internal");
          *          console.log("Was index found: " + !!index);
-         *          // `index` contains the Index object.
+         *          // `index` is an Index object.
          *      });
          *
          * @param {Object} namespace Namespace information (owner, app, sharing)
@@ -2124,32 +2347,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Get an instance of the Properties collection 
-         *
-         * The Properties collection allows you to list configuration files,
-         * create new files, get specific files, etc.
-         *
-         * @example
-         *
-         *      // List all properties in the 'props.conf' file
-         *      var files = svc.properties();
-         *      files.item("props", function(err, propsFile) {
-         *          propsFile.refresh(function(err, props) {
-         *              console.log(props.properties()); 
-         *          });
-         *      });
-         *
-         * @return {splunkjs.Service.Properties} The Properties collection
-         *
-         * @endpoint properties
-         * @method splunkjs.Service
-         * @see splunkjs.Service.Properties
-         */
-        properties: function() {
-            return new root.Properties(this);
-        },
-        
-        /**
          * Get an instance of the SavedSearches collection 
          *
          * The SavedSearches collection allows you to list saved searches,
@@ -2159,7 +2356,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // List all # of saved searches
          *      var savedSearches = svc.savedSearches();
-         *      savedSearches.refresh(function(err, savedSearches) {
+         *      savedSearches.fetch(function(err, savedSearches) {
          *          console.log("# Of Saved Searches: " + savedSearches.list().length);
          *      });
          *
@@ -2184,7 +2381,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // List all job IDs
          *      var jobs = svc.jobs();
-         *      jobs.refresh(function(err, jobs) {
+         *      jobs.fetch(function(err, jobs) {
          *          var list = jobs.list();
          *          for(var i = 0; i < list.length; i++) {
          *              console.log("Job " + (i+1) + ": " + list[i].sid);
@@ -2212,7 +2409,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // List all usernames
          *      var users = svc.users();
-         *      users.refresh(function(err, users) {
+         *      users.fetch(function(err, users) {
          *          var list = users.list();
          *          for(var i = 0; i < list.length; i++) {
          *              console.log("User " + (i+1) + ": " + list[i].properties().name);
@@ -2239,7 +2436,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      // List all views
          *      var views = svc.views();
-         *      views.refresh(function(err, views) {
+         *      views.fetch(function(err, views) {
          *          var list = views.list();
          *          for(var i = 0; i < list.length; i++) {
          *              console.log("View " + (i+1) + ": " + list[i].properties().name);
@@ -2342,7 +2539,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 else {
                     var username = response.data.entry[0].content.username;
                     var user = new root.User(that, username);
-                    user.refresh(function() {
+                    user.fetch(function() {
                         if (req.wasAborted) {
                             return; // aborted, so ignore
                         }
@@ -2374,7 +2571,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             callback = callback || function() {};
             
             var serverInfo = new root.ServerInfo(this);
-            return serverInfo.refresh(callback);
+            return serverInfo.fetch(callback);
         },
         
         /**
@@ -2408,13 +2605,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 if (err) {
                     callback(err);
                 } 
-                else {
-                    var data = response.data;
-                    if (response.data.entry) {
-                        data = response.data.entry.content;
-                    }
-                    
-                    callback(null, data);
+                else {                    
+                    callback(null, response.data);
                 }
             });
         },
@@ -2436,12 +2628,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    var data = response.data;
-                    if (response.data.entry) {
-                        data = response.data.entry.content;
-                    }
-                    
-                    callback(null, data);
+                    callback(null, response.data);
                 }
             });
         },
@@ -2471,22 +2658,29 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             callback = callback || function() {};
             params = params || {};
             
-            var path = this.paths.submitEvent + "?" + Http.encode(params);
+            var path = this.paths.submitEvent;
             var method = "POST";
-            var headers = {};
+            var headers = {"Content-Type": "text/plain"};
             var body = event;
+            var get = params;
+            var post = {};
             
-            var req = this.request(path, method, headers, body, function(err, response) {
-                if (err) {
-                    callback(err);
-                } 
-                else {
-                    // TODO
-                    // Extract the content (format undecided)
-                    var content = response.data.entry ? response.data.entry.content : response.data;
-                    callback(null, content);
+            var req = this.request(
+                path, 
+                method, 
+                get, 
+                post, 
+                body, 
+                headers, 
+                function(err, response) {
+                    if (err) {
+                        callback(err);
+                    } 
+                    else {
+                        callback(null, response.data);
+                    }
                 }
-            });
+            );
             
             return req;
         }
@@ -2667,7 +2861,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
             this._load       = utils.bind(this, this._load);
-            this.refresh     = utils.bind(this, this.refresh);
+            this.fetch       = utils.bind(this, this.fetch);
             this.properties  = utils.bind(this, this.properties);
             this.state       = utils.bind(this, this.state);
             this.path        = utils.bind(this, this.path);
@@ -2698,7 +2892,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Refresh the resource
          *
-         * This will unconditionally refresh the object from the server
+         * This will fetch the object from the server
          * and load it up.
          *
          * @param {Function} callback A callback when the object is retrieved: `(err, resource)`
@@ -2706,7 +2900,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @method splunkjs.Service.Resource
          * @protected
          */
-        refresh: function(callback) {
+        fetch: function(callback) {
             throw new Error("MUST BE OVERRIDDEN");
         },
         
@@ -2744,21 +2938,21 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      * with certain operations (like "properties", "update", "delete").
      *
      * This `Entity` class provides basic methods for handling Splunk entities, 
-     * such as refreshing them, updating, etc.
+     * such as fetching them, updating, etc.
      *
      * @class splunkjs.Service.Entity
      * @extends splunkjs.Service.Resource
      */
     root.Entity = root.Resource.extend({
         /**
-         * Whether or not to call `refresh()` after an update
-         * to fetch the updated item. By default we don't refresh
+         * Whether or not to call `fetch()` after an update
+         * to fetch the updated item. By default we don't fetch
          * the entity, as the endpoint will return (echo) the updated
          * entity
          *
          * @method splunkjs.Service.Entity
          */
-        refreshOnUpdate: false,
+        fetchOnUpdate: false,
         
         /**
          * Constructor for splunkjs.Service.Entity
@@ -2777,7 +2971,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
             this._load     = utils.bind(this, this._load);
-            this.refresh   = utils.bind(this, this.refresh);
+            this.fetch     = utils.bind(this, this.fetch);
             this.remove    = utils.bind(this, this.remove);
             this.update    = utils.bind(this, this.update);
             this.fields    = utils.bind(this, this.fields);
@@ -2807,6 +3001,15 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         _load: function(properties) {
             properties = utils.isArray(properties) ? properties[0] : properties;
+            
+            // Initialize the properties to
+            // empty values
+            properties = properties || {
+                content: {},
+                fields: {},
+                acl: {},
+                links: {}
+            };
             
             this._super(properties);
             
@@ -2889,7 +3092,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Refresh the resource
          *
-         * This will unconditionally refresh the object from the server
+         * This will fetch the object from the server
          * and load it up.
          *
          * @param {Object} options Optional dictionary of collection filtering and pagination options
@@ -2897,7 +3100,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @method splunkjs.Service.Entity
          */
-        refresh: function(options, callback) {
+        fetch: function(options, callback) {
             if (!callback && utils.isFunction(options)) {
                 callback = options;
                 options = {};
@@ -2957,12 +3160,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             var that = this;
             var req = this.post("", props, function(err, response) {
-                if (!err && !that.refreshOnUpdate) {
+                if (!err && !that.fetchOnUpdate) {
                     that._load(response.data.entry);
                     callback(err, that);
                 }
-                else if (!err && that.refreshOnUpdate) {
-                    that.refresh(function() {
+                else if (!err && that.fetchOnUpdate) {
+                    that.fetch(function() {
                         if (req.wasAborted) {
                             return; // aborted, so ignore
                         }
@@ -3064,24 +3267,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      */
     root.Collection = root.Resource.extend({
         /**
-         * Whether or not to call `refresh()` after an entity
-         * is created. By default we don't refresh
+         * Whether or not to call `fetch()` after an entity
+         * is created. By default we don't fetch
          * the entity, as the endpoint will return (echo) the created
          * entity
          *
          * @method splunkjs.Service.Collection
          */
-        refreshOnEntityCreation: false,
-        
-        /**
-         * Whether or not to call `refresh()` after an entity
-         * is instantiated locally. By default we don't refresh
-         * the entity, as the endpoint will return (echo) the created
-         * entities when we list it.
-         *
-         * @method splunkjs.Service.Collection
-         */
-        refreshOnEntityInstantiation: false,
+        fetchOnEntityCreation: false,
         
         /**
          * Constructor for splunkjs.Service.Collection
@@ -3100,10 +3293,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
             this._load             = utils.bind(this, this._load);
-            this.refresh           = utils.bind(this, this.refresh);
+            this.fetch           = utils.bind(this, this.fetch);
             this.create            = utils.bind(this, this.create);
             this.list              = utils.bind(this, this.list);
-            this.contains          = utils.bind(this, this.contains);
             this.item              = utils.bind(this, this.item);
             this.instantiateEntity = utils.bind(this, this.instantiateEntity);
             
@@ -3200,7 +3392,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Refresh the resource
          *
-         * This will unconditionally refresh the object from the server
+         * This will unconditionally fetch the object from the server
          * and load it up.
          *
          * @param {Object} options Dictionary of collection filtering and pagination options
@@ -3208,7 +3400,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @method splunkjs.Service.Collection
          */
-        refresh: function(options, callback) {
+        fetch: function(options, callback) {
             if (!callback && utils.isFunction(options)) {
                 callback = options;
                 options = {};
@@ -3220,12 +3412,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 options.count = 0;
             }
             
-            var recursive = false;
-            if (options.hasOwnProperty("recursive")) {
-                recursive = options.recursive;
-                delete options.recursive;
-            }
-            
             var that = this;
             var req = that.get("", options, function(err, response) {
                 if (err) {
@@ -3233,32 +3419,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 }
                 else {
                     that._load(response.data);
-                    
-                    if (that.refreshOnEntityInstantiation && recursive) {
-                        var wasAbortedAlready = false;
-                        var fns = [];
-                        utils.forEach(that._entities, function(entity) {
-                            fns.push(function(done) {
-                                entity.refresh({recursive: true}, function() {
-                                    if (req.wasAborted) {
-                                        if (!wasAbortedAlready) {
-                                            wasAbortedAlready = true;
-                                        }
-                                    }
-                                    else {
-                                        callback.apply(null, arguments);
-                                    }
-                                }); 
-                            });
-                        });
-                        
-                        Async.parallel(fns, function(err) {
-                            callback(err, that); 
-                        });
-                    }
-                    else {
-                        callback(null, that);
-                    }
+                    callback(null, that);
                 }
             });
             
@@ -3266,117 +3427,18 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Fetch a specific entity.
+         * Get a specific entity.
          *
-         * Return a specific entity given its name.
-         *
-         * @example
-         *
-         *      var apps = service.apps();
-         *      apps.item("search", function(err, app) {
-         *          console.log(app.properties());
-         *      })
-         *
-         * @param {String} name The name of the entity to retrieve
-         * @param {Object} namespace Namespace information (owner, app, sharing)
-         * @returns {splunkjs.Service.Entity} The entity with that name/namespace or null if none is found
-         *
-         * @method splunkjs.Service.Collection
-         */
-        item: function(name, namespace) {    
-            return this.contains(name, namespace);     
-        },
-        
-        /**
-         * Create an entity for this collection.
-         *
-         * Create an entity on the server for this collection with the specified
-         * parameters.
+         * Return a specific entity given its name from the
+         * collection
          *
          * @example
          *
          *      var apps = service.apps();
-         *      apps.create({name: "NewSearchApp"}, function(err, newApp) {
-         *          console.log("CREATED");
-         *      });
-         *
-         * @param {Object} params A dictionary of properties to create the entity with.
-         * @returns {Array} Array of splunkjs.Service.Entity objects
-         *
-         * @method splunkjs.Service.Collection
-         */
-        create: function(params, callback) {
-            callback = callback || function() {};
-            
-            var that = this;
-            var req = this.post("", params, function(err, response) {
-                if (err) {
-                    callback(err);
-                }
-                else {
-                    var props = response.data.entry;
-                    if (utils.isArray(props)) {
-                        props = props[0];
-                    }
-                    
-                    var entity = that.instantiateEntity(props);
-                    entity._load(props); 
-                    
-                    if (that.refreshOnEntityCreation) {
-                        entity.refresh(function() {
-                            if (req.wasAborted) {
-                                return; // aborted, so ignore
-                            }
-                            else {
-                                callback.apply(null, arguments);
-                            }
-                        });
-                    }
-                    else {                   
-                        callback(null, entity);
-                    }
-                }
-            });
-            
-            return req;
-        },
-        
-        /**
-         * Retrieve a list of all entities in the collection
-         *
-         * Return the list of all the entities in this collection.
-         *
-         * @example
-         *
-         *      var apps = service.apps();
-         *      apps.refresh(function(err, apps) {
-         *          var appList = apps.list();
-         *          console.log(appList.length);
-         *      });
-         *
-         * @param {Function} callback A callback with the list of entities: `(err, list)`
-         *
-         * @method splunkjs.Service.Collection
-         */
-        list: function(callback) {
-            callback = callback || function() {};
-            
-            return utils.clone(this._entities);
-        },
-        
-        /**
-         * Check whether a specific entity exists
-         *
-         * Check to see if the collection contains a specific entity, and if so,
-         * return that entity.
-         *
-         * @example
-         *
-         *      var apps = service.apps();
-         *      apps.refresh(function(err, apps) {
-         *          var app = apps.contains("search");
+         *      apps.fetch(function(err, apps) {
+         *          var app = apps.item("search");
          *          console.log("Search App Found: " + !!app);
-         *          // `app` contains the Application object.
+         *          // `app` is an Application object.
          *      });
          *
          * @param {String} id The name of the entity to retrieve
@@ -3385,7 +3447,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @method splunkjs.Service.Collection
          */
-        contains: function(id, namespace) {                
+        item: function(id, namespace) {                
             if (utils.isEmpty(namespace)) {
                 namespace = null;
             }          
@@ -3437,7 +3499,84 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             }
             else {
                 return null;
-            }
+            }    
+        },
+        
+        /**
+         * Create an entity for this collection.
+         *
+         * Create an entity on the server for this collection with the specified
+         * parameters.
+         *
+         * @example
+         *
+         *      var apps = service.apps();
+         *      apps.create({name: "NewSearchApp"}, function(err, newApp) {
+         *          console.log("CREATED");
+         *      });
+         *
+         * @param {Object} params A dictionary of properties to create the entity with.
+         * @returns {Array} Array of splunkjs.Service.Entity objects
+         *
+         * @method splunkjs.Service.Collection
+         */
+        create: function(params, callback) {
+            callback = callback || function() {};
+            
+            var that = this;
+            var req = this.post("", params, function(err, response) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    var props = response.data.entry;
+                    if (utils.isArray(props)) {
+                        props = props[0];
+                    }
+                    
+                    var entity = that.instantiateEntity(props);
+                    entity._load(props); 
+                    
+                    if (that.fetchOnEntityCreation) {
+                        entity.fetch(function() {
+                            if (req.wasAborted) {
+                                return; // aborted, so ignore
+                            }
+                            else {
+                                callback.apply(null, arguments);
+                            }
+                        });
+                    }
+                    else {                   
+                        callback(null, entity);
+                    }
+                }
+            });
+            
+            return req;
+        },
+        
+        /**
+         * Retrieve a list of all entities in the collection
+         *
+         * Return the list of all the entities in this collection.
+         *
+         * @example
+         *
+         *      var apps = service.apps();
+         *      apps.fetch(function(err, apps) {
+         *          var appList = apps.list();
+         *          console.log(appList.length);
+         *      });
+         *
+         * @param {Function} callback A callback with the list of entities: `(err, list)`
+         *
+         * @method splunkjs.Service.Collection
+         */
+        list: function(callback) {
+            callback = callback || function() {};
+            
+            return utils.clone(this._entities);
         }
     });
     
@@ -3542,7 +3681,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     return;
                 }
                 
-                var sid = response.data.entry.content.sid;
+                var sid = response.data.sid;
                 var job = new root.Job(that.service, sid, that.namespace);
                 
                 callback(null, job, that);
@@ -3637,7 +3776,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             if (!params.search) {
                 var update = this._super;
-                var req = this.refresh(function(err, search) {
+                var req = this.fetch(function(err, search) {
                     if (err) {
                         callback(err);
                     }
@@ -3719,12 +3858,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      */
     root.Application = root.Entity.extend({
         /**
-         * Whether or not to call `refresh()` after an update
+         * Whether or not to call `fetch()` after an update
          * to fetch the updated item.
          *
          * @method splunkjs.Service.Application
          */
-        refreshOnUpdate: true,
+        fetchOnUpdate: true,
         
         /**
          * REST path for this resource (with no namespace)
@@ -3822,14 +3961,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      */  
     root.Applications = root.Collection.extend({
         /**
-         * Whether or not to call `refresh()` after an entity
-         * is created. By default we don't refresh
+         * Whether or not to call `fetch()` after an entity
+         * is created. By default we don't fetch
          * the entity, as the endpoint will return (echo) the created
          * entity
          *
          * @method splunkjs.Service.Applications
          */
-        refreshOnEntityCreation: true,
+        fetchOnEntityCreation: true,
         
         /**
          * REST path for this resource (with no namespace)
@@ -3942,14 +4081,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      */  
     root.Users = root.Collection.extend({
         /**
-         * Whether or not to call `refresh()` after an entity
-         * is created. By default we don't refresh
+         * Whether or not to call `fetch()` after an entity
+         * is created. By default we don't fetch
          * the entity, as the endpoint will return (echo) the created
          * entity
          *
          * @method splunkjs.Service.Users
          */
-        refreshOnEntityCreation: true,
+        fetchOnEntityCreation: true,
         
         /**
          * REST path for this resource (with no namespace)
@@ -4010,7 +4149,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     var props = {name: params.name};
                     
                     var entity = that.instantiateEntity(props);                    
-                    entity.refresh(function() {
+                    entity.fetch(function() {
                         if (req.wasAborted) {
                             return; // aborted, so ignore
                         }
@@ -4266,289 +4405,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      * Represents a specific Splunk stanza.  You can update and remove this
      * stanza.
      *
-     * @endpoint properties/{file_name}/{stanza_name}
-     * @class splunkjs.Service.PropertyStanza
-     * @extends splunkjs.Service.Entity
-     */
-    root.PropertyStanza = root.Entity.extend({
-        /**
-         * Whether or not to call `refresh()` after an update
-         * to fetch the updated item.
-         *
-         * @method splunkjs.Service.PropertyStanza
-         */
-        refreshOnUpdate: true,
-        
-        /**
-         * REST path for this resource (with no namespace)
-         *
-         * @method splunkjs.Service.PropertyStanza
-         */
-        path: function() {
-            return Paths.properties + "/" + encodeURIComponent(this.file) + "/" + encodeURIComponent(this.name);
-        },
-        
-        /**
-         * Constructor for splunkjs.Service.PropertyStanza
-         *
-         * @constructor
-         * @param {splunkjs.Service} service A service instance
-         * @param {String} name The name of the index
-         * @return {splunkjs.Service.PropertyStanza} A splunkjs.Service.PropertyStanza instance
-         *
-         * @method splunkjs.Service.PropertyStanza
-         */ 
-        init: function(service, file, name) {
-            this.name = name;
-            this.file = file;
-            // We always enforce the "globalness" of properties
-            var namespace = {owner: "-", app: "-"};
-            this._super(service, this.path(), namespace);
-        } 
-    });
-    
-    /**
-     * Represents the Splunk collection of stanzas for a specific property file.  
-     * You can create and list stanzas using this container, or get a specific one.
-     *
-     * @endpoint properties/{file_name}
-     * @class splunkjs.Service.PropertyFile
-     * @extends splunkjs.Service.Collection
-     */  
-    root.PropertyFile = root.Collection.extend({
-        /**
-         * Whether or not to call `refresh()` after an entity
-         * is created. By default we don't refresh
-         * the entity, as the endpoint will return (echo) the created
-         * entity
-         *
-         * @method splunkjs.Service.PropertyFile
-         */
-        refreshOnEntityCreation: true,
-        
-        /**
-         * REST path for this resource (with no namespace)
-         *
-         * @method splunkjs.Service.PropertyFile
-         */
-        path: function() {
-            return Paths.properties + "/" + encodeURIComponent(this.name);
-        },
-        
-        /**
-         * Create a local instance of an entity
-         *
-         * @param {Object} props The properties for this entity
-         * @return {splunkjs.Service.PropertyStanza} A splunkjs.Service.PropertyStanza instance
-         
-         * @method splunkjs.Service.PropertyFile
-         */
-        instantiateEntity: function(props) {
-            return new root.PropertyStanza(this.service, this.name, props.name);
-        },
-        
-        /**
-         * Constructor for splunkjs.Service.PropertyFile
-         *
-         * @constructor
-         * @param {splunkjs.Service} service A service instance
-         * @return {splunkjs.Service.PropertyFile} A splunkjs.Service.PropertyFile instance
-         *
-         * @method splunkjs.Service.PropertyFile
-         */  
-        init: function(service, name) {
-            this.name = name;
-            
-            // We always enforce the "globalness" of properties
-            var namespace = {owner: "-", app: "-"};
-            
-            this._super(service, this.path(), namespace);
-        },
-        
-        /**
-         * Refresh the resource
-         *
-         * This will unconditionally refresh the object from the server
-         * and load it up.
-         *
-         * @param {Object} options Dictionary of collection filtering and pagination options
-         * @param {Function} callback A callback when the object is retrieved: `(err, resource)`
-         *
-         * @method splunkjs.Service.PropertyFile
-         */
-        refresh: function(options, callback) {
-            if (!callback && utils.isFunction(options)) {
-                callback = options;
-                options = {};
-            }
-            
-            // Add fillcontents so we get a full stanzas
-            options.fillcontents = 1;
-            return this._super(options, callback);
-        },
-        
-        /**
-         * Create a stanza in this property file
-         *
-         * @example
-         *
-         *      var file = service.properties().item("props");
-         *      file.create("my_stanza", function(err, newStanza) {
-         *          console.log("CREATED");
-         *      });
-         *
-         * @param {String} stanzaName A name for this stanza
-         * @param {Function} callback A callback with the created stanza: `(err, createdStanza)`
-         *
-         * @endpoint property/{file_name}
-         * @method splunkjs.Service.PropertyFile
-         */
-        create: function(stanzaName, callback) {
-            // If someone called us with the default style of (params, callback),
-            // lets make it work
-            if (utils.isObject(stanzaName)) {
-                stanzaName = stanzaName["__conf"];
-            }
-            
-            callback = callback || function() {};
-            
-            var that = this;
-            var req = this.post("", {__stanza: stanzaName}, function(err, response) {
-                if (err) {
-                    callback(err);
-                }
-                else {
-                    var entity = new root.PropertyStanza(that.service, that.name, stanzaName);
-                    entity.refresh(function() {
-                        if (req.wasAborted) {
-                            return; // aborted, so ignore
-                        }
-                        else {
-                            callback.apply(null, arguments);
-                        }
-                    });
-                }
-            });
-            
-            return req;
-        }
-    });
-    
-    /**
-     * Represents the Splunk collection of property files.  You can create and
-     * list files using this container, or get a specific one.
-     *
-     * @endpoint properties
-     * @class splunkjs.Service.Properties
-     * @extends splunkjs.Service.Collection
-     */  
-    root.Properties = root.Collection.extend({
-        /**
-         * Whether or not to call `refresh()` after an entity
-         * is created. By default we don't refresh
-         * the entity, as the endpoint will return (echo) the created
-         * entity
-         *
-         * @method splunkjs.Service.Properties
-         */
-        refreshOnEntityCreation: true,
-        
-        /**
-         * Whether or not to call `refresh()` after an entity
-         * is instantiated locally. By default we don't refresh
-         * the entity, as the endpoint will return (echo) the created
-         * entities when we list it.
-         *
-         * @method splunkjs.Service.Properties
-         */
-        refreshOnEntityInstantiation: true,
-        
-        /**
-         * REST path for this resource (with no namespace)
-         *
-         * @method splunkjs.Service.Properties
-         */
-        path: function() {
-            return Paths.properties;
-        },
-        
-        /**
-         * Create a local instance of an entity
-         *
-         * @param {Object} props The properties for this entity
-         * @return {splunkjs.Service.PropertyFile} A splunkjs.Service.PropertyFile instance
-         
-         * @method splunkjs.Service.Properties
-         */
-        instantiateEntity: function(props) {
-            return new root.PropertyFile(this.service, props.name, this.namespace);
-        },
-        
-        /**
-         * Constructor for splunkjs.Service.Properties
-         *
-         * @constructor
-         * @param {splunkjs.Service} service A service instance
-         * @return {splunkjs.Service.Properties} A splunkjs.Service.Properties instance
-         *
-         * @method splunkjs.Service.Properties
-         */  
-        init: function(service) {
-            var namespace = {owner: "-", app: "-"};
-            this._super(service, this.path(), namespace);
-        },
-
-        /**
-         * Create a property file
-         *
-         * @example
-         *
-         *      var properties = service.properties();
-         *      properties.create("myprops", function(err, newFile) {
-         *          console.log("CREATED");
-         *      });
-         *
-         * @param {String} filename A name for this property file
-         * @param {Function} callback A callback with the created property file: `(err, createdFile)`
-         *
-         * @endpoint properties
-         * @method splunkjs.Service.Properties
-         */
-        create: function(filename, callback) {
-            // If someone called us with the default style of (params, callback),
-            // lets make it work
-            if (utils.isObject(filename)) {
-                filename = filename["__conf"];
-            }
-            
-            callback = callback || function() {};
-            
-            var that = this;
-            var req = this.post("", {__conf: filename}, function(err, response) {
-                if (err) {
-                    callback(err);
-                }
-                else {
-                    var entity = new root.PropertyFile(that.service, filename);
-                    entity.refresh(function() {
-                        if (req.wasAborted) {
-                            return; // aborted, so ignore
-                        }
-                        else {
-                            callback.apply(null, arguments);
-                        }
-                    });
-                }
-            });
-            
-            return req;
-        }
-    });
-    
-    /**
-     * Represents a specific Splunk stanza.  You can update and remove this
-     * stanza.
-     *
      * @endpoint configs/conf-{file}/{name}`
      * @class splunkjs.Service.ConfigurationStanza
      * @extends splunkjs.Service.Entity
@@ -4675,24 +4531,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      */  
     root.Configurations = root.Collection.extend({
         /**
-         * Whether or not to call `refresh()` after an entity
-         * is created. By default we don't refresh
+         * Whether or not to call `fetch()` after an entity
+         * is created. By default we don't fetch
          * the entity, as the endpoint will return (echo) the created
          * entity
          *
          * @method splunkjs.Service.Configurations
          */
-        refreshOnEntityCreation: true,
-        
-        /**
-         * Whether or not to call `refresh()` after an entity
-         * is instantiated locally. By default we don't refresh
-         * the entity, as the endpoint will return (echo) the created
-         * entities when we list it.
-         *
-         * @method splunkjs.Service.Configurations
-         */
-        refreshOnEntityInstantiation: true,
+        fetchOnEntityCreation: true,
         
         /**
          * REST path for this resource (with no namespace)
@@ -4765,7 +4611,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 }
                 else {
                     var entity = new root.ConfigurationFile(that.service, filename);
-                    entity.refresh(function() {
+                    entity.fetch(function() {
                         if (req.wasAborted) {
                             return; // aborted, so ignore
                         }
@@ -4927,6 +4773,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         events: function(params, callback) {
             callback = callback || function() {};
+            params = params || {};
+            params.output_mode = params.output_mode || "json_rows"; 
             
             var that = this;
             return this.get("events", params, function(err, response) { 
@@ -5011,6 +4859,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         preview: function(params, callback) {
             callback = callback || function() {};
+            params = params || {};
+            params.output_mode = params.output_mode || "json_rows"; 
             
             var that = this;
             return this.get("results_preview", params, function(err, response) {
@@ -5043,6 +4893,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         results: function(params, callback) {
             callback = callback || function() {};
+            params = params || {};
+            params.output_mode = params.output_mode || "json_rows";            
             
             var that = this;
             return this.get("results", params, function(err, response) {
@@ -5079,7 +4931,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    callback(null, response.data.entry.content, that);
+                    callback(null, response.data, that);
                 }
             });
         },
@@ -5165,7 +5017,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    callback(null, response.data.entry.content, that);
+                    callback(null, response.data, that);
                 }
             });
         },
@@ -5195,7 +5047,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    callback(null, response.data.entry.content, that);
+                    callback(null, response.data, that);
                 }
             });
         },
@@ -5332,6 +5184,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             if (!params.search) {
                 callback("Must provide a query to create a search job");
+                return;
             } 
 
             var that = this;
@@ -5340,8 +5193,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 }
                 else {
-                    
-                    var job = new root.Job(that.service, response.data.entry.content.sid, that.namespace);
+                    var job = new root.Job(that.service, response.data.sid, that.namespace);
                     callback(null, job);
                 }
             });
@@ -5408,17 +5260,35 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             if (!params.search) {
                 callback("Must provide a query to create a search job");
-            } 
-
-            var that = this;
-            return this.post("", params, function(err, response) {
-                if (err) {
-                    callback(err);
+            }
+            
+            var outputMode = params.output_mode || "json_rows";
+            
+            var path = this.qualifiedPath;
+            var method = "POST";
+            var headers = {};
+            var post = params;
+            var get = {output_mode: outputMode};
+            var body = null;
+            
+            var req = this.service.request(
+                path, 
+                method, 
+                get, 
+                post, 
+                body, 
+                headers, 
+                function(err, response) {
+                    if (err) {
+                        callback(err);
+                    } 
+                    else {
+                        callback(null, response.data);
+                    }
                 }
-                else {
-                    callback(null, response.data);
-                }
-            });
+            );
+            
+            return req;
         }
     });
 })();
@@ -6059,7 +5929,7 @@ require.define("/lib/searcher.js", function (require, module, exports, __dirname
             Async.whilst(
                 function() { return !stopLooping; },
                 function(iterationDone) {
-                    job.refresh(function(err, job) {
+                    job.fetch(function(err, job) {
                         if (err) {
                             iterationDone(err);
                             return;
@@ -6132,7 +6002,7 @@ require.define("/lib/searcher.js", function (require, module, exports, __dirname
                 if (err) {
                     callback(err);
                 }
-                else {
+                else {                    
                     var numResults = (results.rows ? results.rows.length : 0);
                     iterator.currentOffset += numResults;
                     
@@ -6178,7 +6048,7 @@ require.define("/lib/storm.js", function (require, module, exports, __dirname, _
     "use strict";
     
     var Service         = require('./service');
-    var Http            = require('./http').Http;
+    var Http            = require('./http');
     var Paths           = require('./paths').Paths;
     var utils           = require('./utils');
     var base64          = require('../contrib/base64');
@@ -6487,7 +6357,7 @@ require.define("/tests/test_async.js", function (require, module, exports, __dir
 // under the License.
 
 exports.setup = function() {
-    var splunkjs    = require('../splunk');
+    var splunkjs    = require('../index');
     var Async       = splunkjs.Async;
 
     splunkjs.Logger.setLevel("ALL");
@@ -6963,7 +6833,7 @@ require.define("/tests/test_http.js", function (require, module, exports, __dirn
 // under the License.
 
 exports.setup = function(http) {
-    var splunkjs    = require('../splunk');
+    var splunkjs    = require('../index');
 
     splunkjs.Logger.setLevel("ALL");
     return {
@@ -7219,11 +7089,11 @@ exports.setup = function(http) {
 };
 
 if (module === require.main) {
-    var splunkjs    = require('../splunk');
+    var splunkjs    = require('../index');
     var NodeHttp    = splunkjs.NodeHttp;
     var test        = require('../contrib/nodeunit/test_reporter');
 
-    var http = new NodeHttp(false);
+    var http = new NodeHttp();
     
     var suite = exports.setup(http);
     test.run([{"Tests": suite}]);
@@ -7247,7 +7117,7 @@ require.define("/tests/test_context.js", function (require, module, exports, __d
 // under the License.
 
 exports.setup = function(svc) {
-    var splunkjs    = require('../splunk');
+    var splunkjs    = require('../index');
 
     splunkjs.Logger.setLevel("ALL");
     var isBrowser = typeof "window" !== "undefined";
@@ -7269,7 +7139,8 @@ exports.setup = function(svc) {
                 host: svc.host,
                 port: svc.port,
                 username: svc.username,
-                password: svc.password
+                password: svc.password,
+                version: svc.version
             });
 
             newService.login(function(err, success) {
@@ -7284,7 +7155,8 @@ exports.setup = function(svc) {
                 host: svc.host,
                 port: svc.port,
                 username: svc.username,
-                password: svc.password + "wrong_password"
+                password: svc.password + "wrong_password",
+                version: svc.version
             });
 
             if (!isBrowser) {
@@ -7302,9 +7174,8 @@ exports.setup = function(svc) {
         "Callback#get": function(test) { 
             this.service.get("search/jobs", {count: 2}, function(err, res) {
                 test.strictEqual(res.data.paging.offset, 0);
-                test.ok(res.data.paging.count <= res.data.paging.total);
-                test.strictEqual(res.data.paging.count, 2);
-                test.strictEqual(res.data.paging.count, res.data.entry.length);
+                test.ok(res.data.entry.length <= res.data.paging.total);
+                test.strictEqual(res.data.entry.length, 2);
                 test.ok(res.data.entry[0].content.sid);
                 test.done();
             });
@@ -7317,11 +7188,119 @@ exports.setup = function(svc) {
                 test.done();
             });
         },
+        
+        "Callback#get autologin - success": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    version: svc.version
+                }
+            );
+            
+            service.get("search/jobs", {count: 2}, function(err, res) {
+                test.strictEqual(res.data.paging.offset, 0);
+                test.ok(res.data.entry.length <= res.data.paging.total);
+                test.strictEqual(res.data.entry.length, 2);
+                test.ok(res.data.entry[0].content.sid);
+                test.done();
+            });
+        },
+        
+        "Callback#get autologin - error": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password + "ABC",
+                    version: svc.version
+                }
+            );
+            
+            service.get("search/jobs", {count: 2}, function(err, res) {
+                test.ok(err);
+                test.strictEqual(err.status, 401);
+                test.done();
+            });
+        },
+        
+        "Callback#get autologin - disabled": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    autologin: false,
+                    version: svc.version
+                }
+            );
+            
+            service.get("search/jobs", {count: 2}, function(err, res) {
+                test.ok(err);
+                test.strictEqual(err.status, 401);
+                test.done();
+            });
+        },
+        
+        "Callback#get relogin - success": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    sessionKey: "ABCDEF-not-real",
+                    version: svc.version
+                }
+            );
+            
+            service.get("search/jobs", {count: 2}, function(err, res) {
+                test.ok(!err);
+                test.strictEqual(res.data.paging.offset, 0);
+                test.ok(res.data.entry.length <= res.data.paging.total);
+                test.strictEqual(res.data.entry.length, 2);
+                test.ok(res.data.entry[0].content.sid);
+                test.done();
+            });
+        },
+        
+        "Callback#get relogin - error": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password + "ABC",
+                    sessionKey: "ABCDEF-not-real",
+                    version: svc.version
+                }
+            );
+            
+            service.get("search/jobs", {count: 2}, function(err, res) {
+                test.ok(err);
+                test.strictEqual(err.status, 401);
+                test.done();
+            });
+        },
 
         "Callback#post": function(test) { 
             var service = this.service;
             this.service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
-                    var sid = res.data.entry.content.sid;
+                    var sid = res.data.sid;
                     test.ok(sid);
 
                     var endpoint = "search/jobs/" + sid + "/control";
@@ -7340,11 +7319,126 @@ exports.setup = function(svc) {
                 test.done();
             });
         },
+        
+        "Callback#post autologin - success": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    version: svc.version
+                }
+            );
+            
+            service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
+                    var sid = res.data.sid;
+                    test.ok(sid);
+
+                    var endpoint = "search/jobs/" + sid + "/control";
+                    service.post(endpoint, {action: "cancel"}, function(err, res) {
+                            test.done();
+                        }
+                    );
+                }
+            );
+        },
+        
+        "Callback#post autologin - error": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password + "ABC",
+                    version: svc.version
+                }
+            );
+            
+            service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
+                test.ok(err);
+                test.strictEqual(err.status, 401);
+                test.done();
+            });
+        },
+        
+        "Callback#post autologin - disabled": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    autologin: false,
+                    version: svc.version
+                }
+            );
+            
+            service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
+                test.ok(err);
+                test.strictEqual(err.status, 401);
+                test.done();
+            });
+        },
+        
+        "Callback#post relogin - success": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    sessionKey: "ABCDEF-not-real",
+                    version: svc.version
+                }
+            );
+            
+            service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
+                    var sid = res.data.sid;
+                    test.ok(sid);
+
+                    var endpoint = "search/jobs/" + sid + "/control";
+                    service.post(endpoint, {action: "cancel"}, function(err, res) {
+                            test.done();
+                        }
+                    );
+                }
+            );
+        },
+        
+        "Callback#post relogin - error": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password + "ABC",
+                    sessionKey: "ABCDEF-not-real",
+                    version: svc.version
+                }
+            );
+            
+            service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
+                test.ok(err);
+                test.strictEqual(err.status, 401);
+                test.done();
+            });
+        },
 
         "Callback#delete": function(test) { 
             var service = this.service;
             this.service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
-                var sid = res.data.entry.content.sid;
+                var sid = res.data.sid;
                 test.ok(sid);
                 
                 var endpoint = "search/jobs/" + sid;
@@ -7361,13 +7455,128 @@ exports.setup = function(svc) {
                 test.done();
             });
         },
+        
+        "Callback#delete autologin - success": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    version: svc.version
+                }
+            );
+            
+            service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
+                var sid = res.data.sid;
+                test.ok(sid);
+                
+                service.sessionKey = null;
+                var endpoint = "search/jobs/" + sid;
+                service.del(endpoint, {}, function(err, res) {
+                    test.done();
+                });
+            });
+        },
+        
+        "Callback#delete autologin - error": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password + "ABC",
+                    version: svc.version
+                }
+            );
+            
+            service.del("search/jobs/NO_SUCH_SID", {}, function(err, res) {
+                test.ok(err);
+                test.strictEqual(err.status, 401);
+                test.done();
+            });
+        },
+        
+        "Callback#delete autologin - disabled": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    autologin: false,
+                    version: svc.version
+                }
+            );
+            
+            service.del("search/jobs/NO_SUCH_SID", {}, function(err, res) {
+                test.ok(err);
+                test.strictEqual(err.status, 401);
+                test.done();
+            });
+        },
+        
+        "Callback#delete relogin - success": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    sessionKey: "ABCDEF-not-real",
+                    version: svc.version
+                }
+            );
+            
+            service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
+                var sid = res.data.sid;
+                test.ok(sid);
+                
+                service.sessionKey = "ABCDEF-not-real";
+                var endpoint = "search/jobs/" + sid;
+                service.del(endpoint, {}, function(err, res) {
+                    test.done();
+                });
+            });
+        },
+        
+        "Callback#delete relogin - error": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password + "ABC",
+                    sessionKey: "ABCDEF-not-real",
+                    version: svc.version
+                }
+            );
+            
+            service.del("search/jobs/NO_SUCH_SID", {}, function(err, res) {
+                test.ok(err);
+                test.strictEqual(err.status, 401);
+                test.done();
+            });
+        },
 
         "Callback#request get": function(test) { 
-            this.service.request("search/jobs?count=2", "GET", {"X-TestHeader": 1}, "", function(err, res) {
+            var get = {count: 2};
+            var post = null;
+            var body = null;
+            this.service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
                 test.strictEqual(res.data.paging.offset, 0);
-                test.ok(res.data.paging.count <= res.data.paging.total);
-                test.strictEqual(res.data.paging.count, 2);
-                test.strictEqual(res.data.paging.count, res.data.entry.length);
+                test.ok(res.data.entry.length <= res.data.paging.total);
+                test.strictEqual(res.data.entry.length, 2);
                 test.ok(res.data.entry[0].content.sid);
                 
                 if (res.response.request) {
@@ -7384,8 +7593,8 @@ exports.setup = function(svc) {
                 "Content-Type": "application/x-www-form-urlencoded"  
             };
             var service = this.service;
-            this.service.request("search/jobs", "POST", headers, body, function(err, res) {
-                var sid = res.data.entry.content.sid;
+            this.service.request("search/jobs", "POST", null, null, body, headers, function(err, res) {
+                var sid = res.data.sid;
                 test.ok(sid);
                 
                 var endpoint = "search/jobs/" + sid + "/control";
@@ -7396,7 +7605,7 @@ exports.setup = function(svc) {
         },
 
         "Callback#request error": function(test) { 
-            this.service.request("search/jobs/1234_nosuchjob", "GET", {"X-TestHeader": 1}, "", function(res) {
+            this.service.request("search/jobs/1234_nosuchjob", "GET", null, null, null, {"X-TestHeader": 1}, function(res) {
                 test.ok(!!res);
                 
                 if (res.response.request) {
@@ -7404,6 +7613,138 @@ exports.setup = function(svc) {
                 }
                 
                 test.strictEqual(res.status, 404);
+                test.done();
+            });
+        },
+        
+        "Callback#request autologin - success": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    version: svc.version
+                }
+            );
+            
+            var get = {count: 2};
+            var post = null;
+            var body = null;
+            service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
+                test.strictEqual(res.data.paging.offset, 0);
+                test.ok(res.data.entry.length <= res.data.paging.total);
+                test.strictEqual(res.data.entry.length, 2);
+                test.ok(res.data.entry[0].content.sid);
+                
+                if (res.response.request) {
+                    test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
+                }
+                
+                test.done();
+            });
+        },
+        
+        "Callback#request autologin - error": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password + "ABC",
+                    version: svc.version
+                }
+            );
+            
+            var get = {count: 2};
+            var post = null;
+            var body = null;
+            service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
+                test.ok(err);
+                test.strictEqual(err.status, 401);
+                test.done();
+            });
+        },
+        
+        "Callback#request autologin - disabled": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    autologin: false,
+                    version: svc.version
+                }
+            );
+            
+            var get = {count: 2};
+            var post = null;
+            var body = null;
+            service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
+                test.ok(err);
+                test.strictEqual(err.status, 401);
+                test.done();
+            });
+        },
+        
+        "Callback#request relogin - success": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    sessionKey: "ABCDEF-not-real",
+                    version: svc.version
+                }
+            );
+            
+            var get = {count: 2};
+            var post = null;
+            var body = null;
+            service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
+                test.strictEqual(res.data.paging.offset, 0);
+                test.ok(res.data.entry.length <= res.data.paging.total);
+                test.strictEqual(res.data.entry.length, 2);
+                test.ok(res.data.entry[0].content.sid);
+                
+                if (res.response.request) {
+                    test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
+                }
+                
+                test.done();
+            });
+        },
+        
+        "Callback#request relogin - error": function(test) { 
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password + "ABC",
+                    sessionKey: "ABCDEF-not-real",
+                    version: svc.version
+                }
+            );
+            
+            var get = {count: 2};
+            var post = null;
+            var body = null;
+            service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
+                test.ok(err);
+                test.strictEqual(err.status, 401);
                 test.done();
             });
         },
@@ -7423,7 +7764,7 @@ exports.setup = function(svc) {
 };
 
 if (module === require.main) {
-    var splunkjs    = require('../splunk');
+    var splunkjs    = require('../index');
     var options     = require('../examples/node/cmdline');
     var test        = require('../contrib/nodeunit/test_reporter');
     
@@ -7440,7 +7781,8 @@ if (module === require.main) {
         host: cmdline.opts.host,
         port: cmdline.opts.port,
         username: cmdline.opts.username,
-        password: cmdline.opts.password
+        password: cmdline.opts.password,
+        version: cmdline.opts.version
     });
     
     var suite = exports.setup(svc);
@@ -7518,7 +7860,8 @@ require.define("/examples/node/cmdline.js", function (require, module, exports, 
             .option('--password <password>', "Username to login with", undefined, false)
             .option('--scheme <scheme>', "Scheme to use", "https", false)
             .option('--host <host>', "Hostname to use", "localhost", false)
-            .option('--port <port>', "Port to use", 8089, false);
+            .option('--port <port>', "Port to use", 8089, false)
+            .option('--version <version>', "Which version to use", "4", false);
         
         parser.parse = function(argv) {
             argv = (argv || []).slice(2);
@@ -7586,7 +7929,7 @@ require.define("/tests/test_service.js", function (require, module, exports, __d
 // under the License.
 
 exports.setup = function(svc) {
-    var splunkjs    = require('../splunk');
+    var splunkjs    = require('../index');
     var utils       = splunkjs.Utils;
     var Async       = splunkjs.Async;
     var tutils      = require('./utils');
@@ -7665,11 +8008,11 @@ exports.setup = function(svc) {
                         },
                         function(savedSearch, done) {
                             // Refresh the 11 saved searches
-                            savedSearches11.refresh(done);
+                            savedSearches11.fetch(done);
                         },
                         function(savedSearches, done) {
                             // Refresh the 21 saved searches
-                            savedSearches21.refresh(done);
+                            savedSearches21.fetch(done);
                         },
                         function(savedSearches, done) {                            
                             var entity11 = savedSearches11.item(searchName);
@@ -7718,15 +8061,15 @@ exports.setup = function(svc) {
                         },
                         function(savedSearch, done) {
                             // Refresh the -/1 namespace
-                            savedSearches_1.refresh(done);
+                            savedSearches_1.fetch(done);
                         },
                         function(savedSearches, done) {
                             // Refresh the 1/1 namespace
-                            savedSearches11.refresh(done);
+                            savedSearches11.fetch(done);
                         },
                         function(savedSearches, done) {
                             // Refresh the 2/1 namespace
-                            savedSearches21.refresh(done);
+                            savedSearches21.fetch(done);
                         },
                         function(savedSearches, done) {                            
                             var entity11 = savedSearches11.item(searchName, that.namespace11);
@@ -7754,11 +8097,11 @@ exports.setup = function(svc) {
                         },
                         function(savedSearch, done) {
                             // Refresh the 1/1 namespace
-                            savedSearches11.refresh(done);
+                            savedSearches11.fetch(done);
                         },
                         function(savedSearches, done) {
                             // Refresh the 2/1 namespace
-                            savedSearches21.refresh(done);
+                            savedSearches21.fetch(done);
                         },
                         function(savedSearches, done) {  
                             // Ensure that we can't get the item from the generic
@@ -7802,7 +8145,9 @@ exports.setup = function(svc) {
             
             "Callback#delete test applications": function(test) {
                 var apps = this.service.apps();
-                apps.refresh(function(err, apps) {
+                apps.fetch(function(err, apps) {
+                    test.ok(!err);
+                    test.ok(apps);
                     var appList = apps.list();
                     
                     Async.parallelEach(
@@ -7824,7 +8169,7 @@ exports.setup = function(svc) {
             
             "Callback#delete test users": function(test) {
                 var users = this.service.users();
-                users.refresh(function(err, users) {
+                users.fetch(function(err, users) {
                     var userList = users.list();
                     
                     Async.parallelEach(
@@ -7888,7 +8233,7 @@ exports.setup = function(svc) {
             },
 
             "Callback#List jobs": function(test) {
-                this.service.jobs().refresh(function(err, jobs) {
+                this.service.jobs().fetch(function(err, jobs) {
                     test.ok(!err);
                     test.ok(jobs);
                     
@@ -7909,11 +8254,13 @@ exports.setup = function(svc) {
                 var jobs = this.service.jobs();
                 
                 jobs.search('search index=_internal | head 1', {id: sid}, function(err, job) {   
+                    test.ok(!err);
                     test.ok(job);
                     test.strictEqual(job.sid, sid);
 
-                    jobs.refresh(function(err, jobs) {
-                        var job = jobs.contains(sid);
+                    jobs.fetch(function(err, jobs) {
+                        test.ok(!err);
+                        var job = jobs.item(sid);
                         test.ok(job);
 
                         job.cancel(function() {
@@ -8125,7 +8472,7 @@ exports.setup = function(svc) {
                             that.service.jobs().search('search index=_internal | head 1', {id: sid}, done);
                         },
                         function(job, done) {
-                            job.refresh(done);
+                            job.fetch(done);
                         },
                         function(job, done) {
                             var ttl = job.properties()["ttl"];
@@ -8134,7 +8481,7 @@ exports.setup = function(svc) {
                             job.setTTL(ttl*2, done);
                         },
                         function(job, done) {
-                            job.refresh(done);
+                            job.fetch(done);
                         },
                         function(job, done) {
                             var ttl = job.properties()["ttl"];
@@ -8162,7 +8509,7 @@ exports.setup = function(svc) {
                             service.jobs().search('search index=_internal | head 1 | sleep 5', {id: sid}, done);
                         },
                         function(job, done) {
-                            job.refresh(done);
+                            job.fetch(done);
                         },
                         function(job, done) {
                             var priority = job.properties()["priority"];
@@ -8170,7 +8517,7 @@ exports.setup = function(svc) {
                             job.setPriority(priority + 1, done);
                         },
                         function(job, done) {
-                            job.refresh(done);
+                            job.fetch(done);
                         },
                         function(job, done) {
                             job.cancel(done);
@@ -8234,7 +8581,6 @@ exports.setup = function(svc) {
                             test.strictEqual(summary.fields.foo.count, 1);
                             test.strictEqual(summary.fields.foo.distinct_count, 1);
                             test.ok(summary.fields.foo.is_exact, 1);
-                            test.strictEqual(summary.fields.foo.name, "foo");
                             test.strictEqual(summary.fields.foo.modes.length, 1);
                             test.strictEqual(summary.fields.foo.modes[0].count, 1);
                             test.strictEqual(summary.fields.foo.modes[0].value, "bar");
@@ -8298,7 +8644,7 @@ exports.setup = function(svc) {
                             that.service.jobs().search('search index=_internal | head 1', {id: sid}, done);
                         },
                         function(job, done) {
-                            job.refresh(done);
+                            job.fetch(done);
                         },
                         function(job, done) {
                             test.ok(job);
@@ -8306,7 +8652,7 @@ exports.setup = function(svc) {
                             Async.sleep(1200, function() { job.touch(done); });
                         },
                         function(job, done) {
-                            job.refresh(done);
+                            job.fetch(done);
                         },
                         function(job, done) {
                             test.ok(originalTime !== job.updated());
@@ -8338,6 +8684,32 @@ exports.setup = function(svc) {
                             test.strictEqual(results.rows.length, 1);
                             test.strictEqual(results.rows[0].length, 1);
                             test.strictEqual(results.rows[0][0], "1");
+                            
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
+
+            "Callback#Oneshot search with no results": function(test) {
+                var sid = getNextId();
+                var that = this;
+                var originalTime = "";
+                
+                Async.chain([
+                        function(done) {
+                            var query = 'search index=history MUST_NOT_EXISTABCDEF';
+                            that.service.jobs().oneshotSearch(query, {id: sid}, done);
+                        },
+                        function(results, done) {
+                            test.ok(results);
+                            test.strictEqual(results.fields.length, 0);
+                            test.strictEqual(results.rows.length, 0);
+                            test.ok(!results.preview);
                             
                             done();
                         }
@@ -8425,7 +8797,7 @@ exports.setup = function(svc) {
                          
             "Callback#list applications": function(test) {
                 var apps = this.service.apps();
-                apps.refresh(function(err, apps) {
+                apps.fetch(function(err, apps) {
                     var appList = apps.list();
                     test.ok(appList.length > 0);
                     test.done();
@@ -8434,8 +8806,8 @@ exports.setup = function(svc) {
                    
             "Callback#contains applications": function(test) {
                 var apps = this.service.apps();
-                apps.refresh(function(err, apps) {
-                    var app = apps.contains("search");
+                apps.fetch(function(err, apps) {
+                    var app = apps.item("search");
                     test.ok(app);
                     test.done();
                 });
@@ -8447,8 +8819,8 @@ exports.setup = function(svc) {
                 
                 apps.create({name: name}, function(err, app) {
                     var appName = app.name;
-                    apps.refresh(function(err, apps) {
-                        var entity = apps.contains(appName);
+                    apps.fetch(function(err, apps) {
+                        var entity = apps.item(appName);
                         test.ok(entity);
                         app.remove(function() {
                             test.done();
@@ -8496,7 +8868,7 @@ exports.setup = function(svc) {
             
             "Callback#delete test applications": function(test) {
                 var apps = this.service.apps();
-                apps.refresh(function(err, apps) {
+                apps.fetch(function(err, apps) {
                     var appList = apps.list();
                     
                     Async.parallelEach(
@@ -8525,7 +8897,7 @@ exports.setup = function(svc) {
                    
             "Callback#list": function(test) {
                 var searches = this.service.savedSearches();
-                searches.refresh(function(err, searches) {
+                searches.fetch(function(err, searches) {
                     var savedSearches = searches.list();
                     test.ok(savedSearches.length > 0);
                     
@@ -8539,8 +8911,8 @@ exports.setup = function(svc) {
             
             "Callback#contains": function(test) {
                 var searches = this.service.savedSearches();
-                searches.refresh(function(err, searches) {
-                    var search = searches.contains("Indexing workload");
+                searches.fetch(function(err, searches) {
+                    var search = searches.item("Indexing workload");
                     test.ok(search);
                     
                     test.done();
@@ -8549,8 +8921,8 @@ exports.setup = function(svc) {
             
             "Callback#suppress": function(test) {
                 var searches = this.service.savedSearches();
-                searches.refresh(function(err, searches) {
-                    var search = searches.contains("Indexing workload");
+                searches.fetch(function(err, searches) {
+                    var search = searches.item("Indexing workload");
                     test.ok(search);
                     
                     search.suppressInfo(function(err, info, search) {
@@ -8562,7 +8934,7 @@ exports.setup = function(svc) {
             
             "Callback#list limit count": function(test) {
                 var searches = this.service.savedSearches();
-                searches.refresh({count: 2}, function(err, searches) {
+                searches.fetch({count: 2}, function(err, searches) {
                     var savedSearches = searches.list();
                     test.strictEqual(savedSearches.length, 2);
                     
@@ -8576,7 +8948,7 @@ exports.setup = function(svc) {
             
             "Callback#list filter": function(test) {
                 var searches = this.service.savedSearches();
-                searches.refresh({search: "Error"}, function(err, searches) {
+                searches.fetch({search: "Error"}, function(err, searches) {
                     var savedSearches = searches.list();
                     test.ok(savedSearches.length > 0);
                     
@@ -8590,11 +8962,10 @@ exports.setup = function(svc) {
             
             "Callback#list offset": function(test) {
                 var searches = this.service.savedSearches();
-                searches.refresh({offset: 2, count: 1}, function(err, searches) {
+                searches.fetch({offset: 2, count: 1}, function(err, searches) {
                     var savedSearches = searches.list();
                     test.strictEqual(searches.paging().offset, 2);
-                    test.strictEqual(searches.paging().count, 1);
-                    test.strictEqual(searches.paging().page, 1);
+                    test.strictEqual(searches.paging().perPage, 1);
                     test.strictEqual(savedSearches.length, 1);
                     
                     for(var i = 0; i < savedSearches.length; i++) {
@@ -8644,11 +9015,12 @@ exports.setup = function(svc) {
                             test.strictEqual(search.properties().search, updatedSearch);
                             test.strictEqual(search.properties().description, updatedDescription);
                             
-                            search.refresh(done);
+                            search.fetch(done);
                         },
                         function(search, done) {
                             // Verify that we have the required fields
-                            test.strictEqual(search.fields().required[0], "search");
+                            test.ok(search.fields().optional.length > 1);
+                            test.ok(utils.indexOf(search.fields().optional, "disabled") > -1);
                             
                             search.remove(done);
                         }
@@ -8735,12 +9107,11 @@ exports.setup = function(svc) {
             
             "Callback#delete test saved searches": function(test) {
                 var searches = this.service.savedSearches({owner: this.service.username, app: "xml2json"});
-                searches.refresh(function(err, searches) {
+                searches.fetch(function(err, searches) {
                     var searchList = searches.list();            
                     Async.parallelEach(
                         searchList,
                         function(search, idx, callback) {
-                            console.log(search.name);
                             if (utils.startsWith(search.name, "jssdk_")) {
                                 search.remove(callback);
                             }
@@ -8756,118 +9127,6 @@ exports.setup = function(svc) {
             }
         },
         
-        "Properties Tests": {        
-            setUp: function(done) {
-                this.service = svc;
-                done();
-            },
-                   
-            "Callback#list": function(test) {
-                var that = this;
-                
-                Async.chain([
-                    function(done) { that.service.properties().refresh(done); },
-                    function(props, done) { 
-                        var files = props.list();
-                        test.ok(files.length > 0);
-                        done();
-                    }
-                ],
-                function(err) {
-                    test.ok(!err);
-                    test.done();
-                });
-            },
-                   
-            "Callback#contains": function(test) {
-                var that = this;
-                
-                Async.chain([
-                    function(done) { that.service.properties().refresh(done); },
-                    function(props, done) { 
-                        var file = props.contains("web");
-                        test.ok(file);
-                        file.refresh(done);
-                    },
-                    function(file, done) {
-                        test.strictEqual(file.name, "web");
-                        done();
-                    }
-                ],
-                function(err) {
-                    test.ok(!err);
-                    test.done();
-                });
-            },
-                   
-            "Callback#contains stanza": function(test) {
-                var that = this;
-                
-                Async.chain([
-                    function(done) { that.service.properties().refresh(done); },
-                    function(props, done) { 
-                        var file = props.contains("web");
-                        test.ok(file);
-                        file.refresh(done);
-                    },
-                    function(file, done) {
-                        test.strictEqual(file.name, "web");
-                        
-                        var stanza = file.contains("settings");
-                        test.ok(stanza);
-                        stanza.refresh(done);
-                    },
-                    function(stanza, done) {
-                        test.ok(stanza.properties().hasOwnProperty("httpport"));
-                        done();
-                    }
-                ],
-                function(err) {
-                    test.ok(!err);
-                    test.done();
-                });
-            },
-                   
-            "Callback#create file + create stanza + update stanza": function(test) {
-                var that = this;
-                var fileName = "jssdk_file";
-                var value = "barfoo_" + getNextId();
-                
-                Async.chain([
-                    function(done) {
-                        var properties = that.service.properties(); 
-                        properties.refresh(done);
-                    },
-                    function(properties, done) {
-                        properties.create(fileName, done);
-                    },
-                    function(file, done) {
-                        file.create("stanza", done);
-                    },
-                    function(stanza, done) {
-                        stanza.update({"jssdk_foobar": value}, done);
-                    },
-                    function(stanza, done) {
-                        test.strictEqual(stanza.properties()["jssdk_foobar"], value);
-                        done();
-                    },
-                    function(done) {
-                        var file = new splunkjs.Service.PropertyFile(svc, fileName);
-                        file.refresh(done);
-                    },
-                    function(file, done) {
-                        var stanza = file.contains("stanza");
-                        test.ok(stanza);
-                        stanza.remove(done);
-                    }
-                ],
-                function(err) {
-                    test.ok(!err);
-                    test.done();
-                });
-            }
-        },
-        
         "Configuration Tests": {        
             setUp: function(done) {
                 this.service = svc;
@@ -8879,7 +9138,7 @@ exports.setup = function(svc) {
                 var namespace = {owner: "admin", app: "search"};
                 
                 Async.chain([
-                    function(done) { that.service.configurations(namespace).refresh(done); },
+                    function(done) { that.service.configurations(namespace).fetch(done); },
                     function(props, done) { 
                         var files = props.list();
                         test.ok(files.length > 0);
@@ -8897,11 +9156,11 @@ exports.setup = function(svc) {
                 var namespace = {owner: "admin", app: "search"};
                 
                 Async.chain([
-                    function(done) { that.service.configurations(namespace).refresh(done); },
+                    function(done) { that.service.configurations(namespace).fetch(done); },
                     function(props, done) { 
-                        var file = props.contains("web");
+                        var file = props.item("web");
                         test.ok(file);
-                        file.refresh(done);
+                        file.fetch(done);
                     },
                     function(file, done) {
                         test.strictEqual(file.name, "web");
@@ -8919,18 +9178,18 @@ exports.setup = function(svc) {
                 var namespace = {owner: "admin", app: "search"};
                 
                 Async.chain([
-                    function(done) { that.service.configurations(namespace).refresh(done); },
+                    function(done) { that.service.configurations(namespace).fetch(done); },
                     function(props, done) { 
-                        var file = props.contains("web");
+                        var file = props.item("web");
                         test.ok(file);
-                        file.refresh(done);
+                        file.fetch(done);
                     },
                     function(file, done) {
                         test.strictEqual(file.name, "web");
                         
-                        var stanza = file.contains("settings");
+                        var stanza = file.item("settings");
                         test.ok(stanza);
-                        stanza.refresh(done);
+                        stanza.fetch(done);
                     },
                     function(stanza, done) {
                         test.ok(stanza.properties().hasOwnProperty("httpport"));
@@ -8952,7 +9211,7 @@ exports.setup = function(svc) {
                 Async.chain([
                     function(done) {
                         var configs = svc.configurations(namespace); 
-                        configs.refresh(done);
+                        configs.fetch(done);
                     },
                     function(configs, done) {
                         configs.create({__conf: fileName}, done);
@@ -8969,10 +9228,10 @@ exports.setup = function(svc) {
                     },
                     function(done) {
                         var file = new splunkjs.Service.ConfigurationFile(svc, fileName);
-                        file.refresh(done);
+                        file.fetch(done);
                     },
                     function(file, done) {
-                        var stanza = file.contains("stanza");
+                        var stanza = file.item("stanza");
                         test.ok(stanza);
                         stanza.remove(done);
                     }
@@ -9002,7 +9261,7 @@ exports.setup = function(svc) {
                          
             "Callback#list indexes": function(test) {
                 var indexes = this.service.indexes();
-                indexes.refresh(function(err, indexes) {
+                indexes.fetch(function(err, indexes) {
                     var indexList = indexes.list();
                     test.ok(indexList.length > 0);
                     test.done();
@@ -9013,8 +9272,8 @@ exports.setup = function(svc) {
                 var indexes = this.service.indexes();
                 var indexName = this.indexName;
                 
-                indexes.refresh(function(err, indexes) {
-                    var index = indexes.contains(indexName);
+                indexes.fetch(function(err, indexes) {
+                    var index = indexes.item(indexName);
                     test.ok(index);
                     test.done();
                 });
@@ -9024,36 +9283,36 @@ exports.setup = function(svc) {
                 
                 var name = this.indexName;
                 var indexes = this.service.indexes();
-                var originalAssureUTF8Value = false;
+                var originalSyncMeta = false;
                 
                 Async.chain([
                         function(callback) {
-                            indexes.refresh(callback);     
+                            indexes.fetch(callback);     
                         },
                         function(indexes, callback) {
-                            var index = indexes.contains(name);
+                            var index = indexes.item(name);
                             test.ok(index);
                             
-                            originalAssureUTF8Value = index.properties().assureUTF8;
+                            originalSyncMeta = index.properties().syncMeta;
                             index.update({
-                                assureUTF8: !originalAssureUTF8Value
+                                syncMeta: !originalSyncMeta
                             }, callback);
                         },
                         function(index, callback) {
                             test.ok(index);
                             var properties = index.properties();
                             
-                            test.strictEqual(!originalAssureUTF8Value, properties.assureUTF8);
+                            test.strictEqual(!originalSyncMeta, properties.syncMeta);
                             
                             index.update({
-                                assureUTF8: !properties.assureUTF8
+                                syncMeta: !properties.syncMeta
                             }, callback);
                         },
                         function(index, callback) {
                             test.ok(index);
                             var properties = index.properties();
                             
-                            test.strictEqual(originalAssureUTF8Value, properties.assureUTF8);
+                            test.strictEqual(originalSyncMeta, properties.syncMeta);
                             callback();
                         },
                         function(callback) {
@@ -9074,17 +9333,17 @@ exports.setup = function(svc) {
                 
                 Async.chain([
                         function(callback) {
-                            indexes.refresh(callback);     
+                            indexes.fetch(callback);     
                         },
                         function(indexes, callback) {
-                            var index = indexes.contains(name);
+                            var index = indexes.item(name);
                             test.ok(index);
                             
                             index.disable(callback);
                         },
                         function(index, callback) {
                             test.ok(index);
-                            index.refresh(callback);
+                            index.fetch(callback);
                         },
                         function(index, callback) {
                             test.ok(index);
@@ -9094,7 +9353,7 @@ exports.setup = function(svc) {
                         },
                         function(index, callback) {
                             test.ok(index);
-                            index.refresh(callback);
+                            index.fetch(callback);
                         },
                         function(index, callback) {
                             test.ok(index);
@@ -9124,7 +9383,7 @@ exports.setup = function(svc) {
                         test.ok(eventInfo);
                         test.strictEqual(eventInfo.sourcetype, sourcetype);
                         test.strictEqual(eventInfo.bytes, message.length);
-                        test.strictEqual(eventInfo._index, indexName);
+                        test.strictEqual(eventInfo.index, indexName);
                         
                         // We could poll to make sure the index has eaten up the event,
                         // but unfortunately this can take an unbounded amount of time.
@@ -9146,10 +9405,10 @@ exports.setup = function(svc) {
                 var indexes = this.service.indexes();
                 Async.chain([
                         function(done) {
-                            indexes.refresh(done);     
+                            indexes.fetch(done);     
                         },
                         function(indexes, done) {
-                            var index = indexes.contains(indexName);
+                            var index = indexes.item(indexName);
                             test.ok(index);
                             test.strictEqual(index.name, indexName);                            
                             index.submitEvent(message, {sourcetype: sourcetype}, done);
@@ -9158,7 +9417,7 @@ exports.setup = function(svc) {
                             test.ok(eventInfo);
                             test.strictEqual(eventInfo.sourcetype, sourcetype);
                             test.strictEqual(eventInfo.bytes, message.length);
-                            test.strictEqual(eventInfo._index, indexName);
+                            test.strictEqual(eventInfo.index, indexName);
                             
                             // We could poll to make sure the index has eaten up the event,
                             // but unfortunately this can take an unbounded amount of time.
@@ -9194,7 +9453,7 @@ exports.setup = function(svc) {
             "Callback#List users": function(test) {
                 var service = this.service;
                 
-                service.users().refresh(function(err, users) {
+                service.users().fetch(function(err, users) {
                     var userList = users.list();
                     test.ok(!err);
                     test.ok(users);
@@ -9298,7 +9557,8 @@ exports.setup = function(svc) {
                                 password: "abc",
                                 host: service.host,
                                 port: service.port,
-                                scheme: service.scheme
+                                scheme: service.scheme,
+                                version: service.version
                             });
                         
                             newService.login(Async.augment(done, user));
@@ -9331,7 +9591,7 @@ exports.setup = function(svc) {
             
             "Callback#delete test users": function(test) {
                 var users = this.service.users();
-                users.refresh(function(err, users) {
+                users.fetch(function(err, users) {
                     var userList = users.list();
                     
                     Async.parallelEach(
@@ -9383,7 +9643,7 @@ exports.setup = function(svc) {
             "Callback#List views": function(test) {
                 var service = this.service;
                 
-                service.views({owner: "admin", app: "search"}).refresh(function(err, views) {
+                service.views({owner: "admin", app: "search"}).fetch(function(err, views) {
                     test.ok(!err);
                     test.ok(views);
                     
@@ -9472,17 +9732,17 @@ exports.setup = function(svc) {
                 service.typeahead("index=", 1, function(err, options) {
                     test.ok(!err);
                     test.ok(options);
-                    test.strictEqual(options.length, 1); 
+                    test.strictEqual(options.length, 1);
+                    test.ok(options[0]);
                     test.done();
                 });
             }
         }
     };
-
 };
 
 if (module === require.main) {
-    var splunkjs    = require('../splunk');
+    var splunkjs    = require('../index');
     var options     = require('../examples/node/cmdline');
     var test        = require('../contrib/nodeunit/test_reporter');
     
@@ -9499,7 +9759,8 @@ if (module === require.main) {
         host: cmdline.opts.host,
         port: cmdline.opts.port,
         username: cmdline.opts.username,
-        password: cmdline.opts.password
+        password: cmdline.opts.password,
+        version: cmdline.opts.version
     });
     
     var suite = exports.setup(svc);
@@ -9549,7 +9810,7 @@ require.define("/tests/utils.js", function (require, module, exports, __dirname,
             function() { return !condition(obj) && (i++ < iterations); },
             function(done) {
                 Async.sleep(500, function() {
-                    obj.refresh(done); 
+                    obj.fetch(done); 
                 });
             },
             function(err) {
@@ -9577,7 +9838,7 @@ require.define("/tests/test_storm.js", function (require, module, exports, __dir
 // under the License.
 
 exports.setup = function(http) {
-    var splunkjs    = require('../splunk');
+    var splunkjs    = require('../index');
     var utils       = splunkjs.Utils;
     var Async       = splunkjs.Async;
     var tutils      = require('./utils');
@@ -9640,6 +9901,7 @@ exports.setup = function(http) {
                 var didFail = false;
                 var message = "GO GO SDK -- " + getNextId();
                 this.service.log(message, {sourcetype: "sdk-test", project: project}, function(err, data) {
+                    test.ok(!err);
                     test.strictEqual(data.length, message.length);
                     test.done();
                 });
@@ -9649,6 +9911,7 @@ exports.setup = function(http) {
                 var didFail = false;
                 var message = { id: getNextId() };
                 this.service.log(message, {sourcetype: "json", project: project}, function(err, data) {
+                    test.ok(!err);
                     test.strictEqual(data.length, JSON.stringify(message).length);
                     test.done();
                 });
@@ -9682,7 +9945,7 @@ require.define("/tests/test_searcher.js", function (require, module, exports, __
 // under the License.
 
 exports.setup = function(svc) {
-    var splunkjs    = require('../splunk');
+    var splunkjs    = require('../index');
     var utils       = splunkjs.Utils;
     var Async       = splunkjs.Async;
     var JobManager  = splunkjs.JobManager;
@@ -9852,7 +10115,7 @@ exports.setup = function(svc) {
 };
 
 if (module === require.main) {
-    var splunkjs    = require('../splunk');
+    var splunkjs    = require('../index');
     var options     = require('../examples/node/cmdline');
     var test        = require('../contrib/nodeunit/test_reporter');
     
@@ -9869,7 +10132,8 @@ if (module === require.main) {
         host: cmdline.opts.host,
         port: cmdline.opts.port,
         username: cmdline.opts.username,
-        password: cmdline.opts.password
+        password: cmdline.opts.password,
+        version: cmdline.opts.version
     });
     
     var suite = exports.setup(svc);
@@ -9900,7 +10164,7 @@ require.define("/tests/test_examples.js", function (require, module, exports, __
 // under the License.
 
 exports.setup = function(svc, opts) {
-    var splunkjs= require('../splunk');
+    var splunkjs= require('../index');
     var Async   = splunkjs.Async;
 
     splunkjs.Logger.setLevel("ALL");
@@ -9931,6 +10195,21 @@ exports.setup = function(svc, opts) {
             
             "Saved Searches#Async": function(test) {
                 var main = require("../examples/node/helloworld/savedsearches_async").main;
+                main(opts, test.done);
+            },
+            
+            "Saved Searches#Delete": function(test) {
+                var main = require("../examples/node/helloworld/savedsearches_delete").main;
+                main(opts, test.done);
+            },
+            
+            "Saved Searches#Create": function(test) {
+                var main = require("../examples/node/helloworld/savedsearches_create").main;
+                main(opts, test.done);
+            },
+            
+            "Saved Searches#Delete Again": function(test) {
+                var main = require("../examples/node/helloworld/savedsearches_delete").main;
                 main(opts, test.done);
             },
             
@@ -10110,158 +10389,6 @@ exports.setup = function(svc, opts) {
             }
         },
         
-        "Conf Example Tests": {
-            setUp: function(done) {   
-                var context = this;
-                
-                this.main = require("../examples/node/conf").main;
-                this.run = function(command, args, options, callback) {                
-                    var combinedArgs = argv.slice();
-                    if (command) {
-                        combinedArgs.push(command);
-                    }
-                    
-                    if (args) {
-                        for(var i = 0; i < args.length; i++) {
-                            combinedArgs.push(args[i]);
-                        }
-                    }
-                    
-                    if (options) {
-                        for(var key in options) {
-                            if (options.hasOwnProperty(key)) {
-                                combinedArgs.push("--" + key);
-                                combinedArgs.push(options[key]);
-                            }
-                        }
-                    }
-              
-                    return context.main(combinedArgs, callback);
-                };
-                
-                done(); 
-            },
-            
-            "help": function(test) {
-                this.run(null, null, null, function(err) {
-                    test.ok(!!err);
-                    test.done();
-                });
-            },
-            
-            "List files": function(test) {
-                this.run("files", null, null, function(err) {
-                    test.ok(!err);
-                    test.done();
-                });
-            },
-            
-            "List files with pattern": function(test) {
-                this.run("files", ["^v"], null, function(err) {
-                    test.ok(!err);
-                    test.done();
-                });
-            },
-            
-            "List stanzas": function(test) {
-                this.run("stanzas", ["web"], {app: "search", owner: "nobody"}, function(err) {
-                    test.ok(!err);
-                    test.done();
-                });
-            },
-            
-            "Show non-existent contents": function(test) {
-                this.run("contents", ["json", "settings"], {app: "search", owner: "nobody"}, function(err) {
-                    test.ok(err);
-                    test.done();
-                });
-            },
-            
-            "Show contents with specialization": function(test) {
-                this.run("contents", ["json", "settings"], {app: "xml2json", owner: "nobody"}, function(err) {
-                    console.log(err);
-                    test.ok(!err);
-                    test.done();
-                });
-            },
-            
-            "Show contents with --global": function(test) {
-                this.run("contents", ["json", "settings", "--global"], {}, function(err) {
-                    test.ok(!err);
-                    test.done();
-                });
-            },
-            
-            "Edit contents with no user set": function(test) {
-                this.run("edit", ["json", "settings", "foo", "bar"], {app: "xml2json"}, function(err) {
-                    test.ok(err);
-                    test.done();
-                });
-            },
-            
-            "Edit contents": function(test) {
-                this.run("edit", ["json", "settings", "foo", "bar"], {app: "xml2json", owner: "admin"}, function(err) {
-                    test.ok(!err);
-                    test.done();
-                });
-            },
-            
-            "Create file": function(test) {
-                this.run("create", ["foo"], {app: "xml2json", owner: "admin"}, function(err) {
-                    test.ok(!err);
-                    test.done();
-                });
-            },
-            
-            "Create stanza": function(test) {
-                var options = {
-                    app: "xml2json",
-                    owner: "admin"
-                };
-                
-                var that = this;
-                this.run("create", ["foo", "bar"], options, function(err) {
-                    test.ok(!err);
-                    that.run("delete", ["foo", "bar"], options, function(err) {
-                        test.ok(!err);
-                        test.done();
-                    });
-                });
-            },
-            
-            "Create key=value": function(test) {
-                var options = {
-                    app: "xml2json",
-                    owner: "admin"
-                };
-                
-                var that = this;
-                this.run("create", ["foo", "bar", "abc", "123"], options, function(err) {
-                    test.ok(!err);
-                    that.run("delete", ["foo", "bar"], options, function(err) {
-                        test.ok(!err);
-                        test.done();
-                    });
-                });
-            },
-            
-            "Create+delete stanza": function(test) {
-                var options = {
-                    app: "xml2json",
-                    owner: "admin"
-                };
-                
-                var that = this;
-                this.run("create", ["foo", "bar"], options, function(err) {
-                    test.ok(!err);
-                    that.run("delete", ["foo", "bar"], options, function(err) {
-                        test.ok(!err);
-                        test.done();
-                    });
-                });
-            }
-        },
-        
         "Search Example Tests": {
             setUp: function(done) {   
                 var context = this;
@@ -10351,7 +10478,7 @@ exports.setup = function(svc, opts) {
                     {exec_mode: "blocking"}, 
                     function(err, job) {
                         test.ok(!err);
-                        job.results({output_mode: "rows"}, function(err, results) {
+                        job.results({output_mode: "json_rows"}, function(err, results) {
                             test.ok(!err);
                             process.stdin.emit("data", JSON.stringify(results));
                             process.stdin.emit("end");
@@ -10396,7 +10523,7 @@ exports.setup = function(svc, opts) {
 };
 
 if (module === require.main) {
-    var splunkjs    = require('../splunk');
+    var splunkjs    = require('../index');
     var test        = require('../contrib/nodeunit/test_reporter');
     
     var options = require('../examples/node/cmdline');    
@@ -10413,7 +10540,8 @@ if (module === require.main) {
         host: cmdline.opts.host,
         port: cmdline.opts.port,
         username: cmdline.opts.username,
-        password: cmdline.opts.password
+        password: cmdline.opts.password,
+        version: cmdline.opts.version
     });
     
     var suite = exports.setup(svc, cmdline.opts);
@@ -10446,7 +10574,7 @@ require.define("/examples/node/helloworld/apps.js", function (require, module, e
 // This example will login to Splunk, and then retrieve the list of applications,
 // printing each application's name.
 
-var splunkjs = require('../../../splunk');
+var splunkjs = require('../../../index');
 
 exports.main = function(opts, done) {
     // This is just for testing - ignore it
@@ -10457,13 +10585,15 @@ exports.main = function(opts, done) {
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
+    var version  = opts.version     || "default";
     
     var service = new splunkjs.Service({
         username: username,
         password: password,
         scheme: scheme,
         host: host,
-        port: port
+        port: port,
+        version: version
     });
 
     // First, we log in
@@ -10477,7 +10607,7 @@ exports.main = function(opts, done) {
         } 
         
         // Now that we're logged in, let's get a listing of all the apps.
-        service.apps().refresh(function(err, apps) {
+        service.apps().fetch(function(err, apps) {
             if (err) {
                 console.log("There was an error retrieving the list of applications:", err);
                 done(err);
@@ -10521,7 +10651,7 @@ require.define("/examples/node/helloworld/apps_async.js", function (require, mod
 // printing each application's name. It is the same as apps.js, except that it 
 // uses the Async library
 
-var splunkjs = require('../../../splunk');
+var splunkjs = require('../../../index');
 var Async  = splunkjs.Async;
 
 exports.main = function(opts, callback) {
@@ -10533,13 +10663,15 @@ exports.main = function(opts, callback) {
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
+    var version  = opts.version     || "default";
     
     var service = new splunkjs.Service({
         username: username,
         password: password,
         scheme: scheme,
         host: host,
-        port: port
+        port: port,
+        version: version
     });
 
     Async.chain([
@@ -10553,7 +10685,7 @@ exports.main = function(opts, callback) {
                     done("Error logging in");
                 }
                 
-                service.apps().refresh(done);
+                service.apps().fetch(done);
             },
             // Print them out
             function(apps, done) {           
@@ -10596,7 +10728,7 @@ require.define("/examples/node/helloworld/savedsearches.js", function (require, 
 // This example will login to Splunk, and then retrieve the list of saved searchs,
 // printing each saved search's name and search query.
 
-var splunkjs = require('../../../splunk');
+var splunkjs = require('../../../index');
 
 exports.main = function(opts, done) {
     // This is just for testing - ignore it
@@ -10607,13 +10739,15 @@ exports.main = function(opts, done) {
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
+    var version  = opts.version     || "default";
     
     var service = new splunkjs.Service({
         username: username,
         password: password,
         scheme: scheme,
         host: host,
-        port: port
+        port: port,
+        version: version
     });
 
     // First, we log in
@@ -10627,7 +10761,7 @@ exports.main = function(opts, done) {
         } 
         
         // Now that we're logged in, let's get a listing of all the saved searches.
-        service.savedSearches().refresh(function(err, searches) {
+        service.savedSearches().fetch(function(err, searches) {
             if (err) {
                 console.log("There was an error retrieving the list of saved searches:", err);
                 done(err);
@@ -10672,7 +10806,7 @@ require.define("/examples/node/helloworld/savedsearches_async.js", function (req
 // printing each saved search's name and search query. It is the same as savedsearches.js, 
 // except that it uses the Async library
 
-var splunkjs = require('../../../splunk');
+var splunkjs = require('../../../index');
 var Async  = splunkjs.Async;
 
 exports.main = function(opts, callback) {
@@ -10684,13 +10818,15 @@ exports.main = function(opts, callback) {
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
+    var version  = opts.version     || "default";
     
     var service = new splunkjs.Service({
         username: username,
         password: password,
         scheme: scheme,
         host: host,
-        port: port
+        port: port,
+        version: version
     });
 
     Async.chain([
@@ -10704,7 +10840,7 @@ exports.main = function(opts, callback) {
                     done("Error logging in");
                 }
                 
-                service.savedSearches().refresh(done);
+                service.savedSearches().fetch(done);
             },
             // Print them out
             function(searches, done) {
@@ -10723,6 +10859,166 @@ exports.main = function(opts, callback) {
             callback(err);        
         }
     );
+};
+
+if (module === require.main) {
+    exports.main({}, function() {});
+}
+});
+
+require.define("/examples/node/helloworld/savedsearches_delete.js", function (require, module, exports, __dirname, __filename) {
+
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+// This example will login to Splunk, and then retrieve the list of saved searchs,
+// printing each saved search's name and search query.
+
+var splunkjs = require('../../../index');
+
+exports.main = function(opts, done) {
+    // This is just for testing - ignore it
+    opts = opts || {};
+    
+    var username = opts.username    || "admin";
+    var password = opts.password    || "changeme";
+    var scheme   = opts.scheme      || "https";
+    var host     = opts.host        || "localhost";
+    var port     = opts.port        || "8089";
+    var version  = opts.version     || "default";
+    
+    var service = new splunkjs.Service({
+        username: username,
+        password: password,
+        scheme: scheme,
+        host: host,
+        port: port,
+        version: version
+    });
+
+    // First, we log in
+    service.login(function(err, success) {
+        // We check for both errors in the connection as well
+        // as if the login itself failed.
+        if (err || !success) {
+            console.log("Error in logging in");
+            done(err || "Login failed");
+            return;
+        } 
+        
+        var name = "My Awesome Saved Search";
+        
+        // Now that we're logged in, Let's create a saved search
+        service.savedSearches().fetch(function(err, savedSearches) {
+            if (err) {
+                console.log("There was an error in fetching the saved searches");
+                done(err);
+                return;
+            } 
+            
+            var savedSearchToDelete = savedSearches.item(name);
+            if (!savedSearchToDelete) {
+                console.log("Can't delete '" + name + "' because it doesn't exist!");
+                done();
+            }
+            else {                
+                savedSearchToDelete.remove();
+                console.log("Deleted saved search: " + name + "");
+                done();
+            }
+        });
+    });
+};
+
+if (module === require.main) {
+    exports.main({}, function() {});
+}
+});
+
+require.define("/examples/node/helloworld/savedsearches_create.js", function (require, module, exports, __dirname, __filename) {
+
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+// This example will login to Splunk, and then retrieve the list of saved searchs,
+// printing each saved search's name and search query.
+
+var splunkjs = require('../../../index');
+
+exports.main = function(opts, done) {
+    // This is just for testing - ignore it
+    opts = opts || {};
+    
+    var username = opts.username    || "admin";
+    var password = opts.password    || "changeme";
+    var scheme   = opts.scheme      || "https";
+    var host     = opts.host        || "localhost";
+    var port     = opts.port        || "8089";
+    var version  = opts.version     || "default";
+    
+    var service = new splunkjs.Service({
+        username: username,
+        password: password,
+        scheme: scheme,
+        host: host,
+        port: port,
+        version: version
+    });
+
+    // First, we log in
+    service.login(function(err, success) {
+        // We check for both errors in the connection as well
+        // as if the login itself failed.
+        if (err || !success) {
+            console.log("Error in logging in");
+            done(err || "Login failed");
+            return;
+        } 
+        
+        var savedSearchOptions = {
+            name: "My Awesome Saved Search",
+            search: "index=_internal error sourcetype=splunkd* | head 10"
+        };
+        
+        // Now that we're logged in, Let's create a saved search
+        service.savedSearches().create(savedSearchOptions, function(err, savedSearch) {
+            if (err && err.status === 409) {
+                console.error("ERROR: A saved search with the name '" + savedSearchOptions.name + "' already exists");
+                done();
+                return;
+            }
+            else if (err) {
+                console.error("There was an error creating the saved search:", err);
+                done(err);
+                return;
+            }
+            
+            console.log("Created saved search: " + savedSearch.name);            
+            done();
+        });
+    });
 };
 
 if (module === require.main) {
@@ -10749,7 +11045,7 @@ require.define("/examples/node/helloworld/search_normal.js", function (require, 
 // This example will login to Splunk, perform a regular search, wait until
 // it is done, and then print out the raw results and some key-value pairs
 
-var splunkjs = require('../../../splunk');
+var splunkjs = require('../../../index');
 var Async  = splunkjs.Async;
 
 exports.main = function(opts, callback) {
@@ -10761,13 +11057,15 @@ exports.main = function(opts, callback) {
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
+    var version  = opts.version     || "default";
     
     var service = new splunkjs.Service({
         username: username,
         password: password,
         scheme: scheme,
         host: host,
-        port: port
+        port: port,
+        version: version
     });
 
     Async.chain([
@@ -10792,8 +11090,8 @@ exports.main = function(opts, callback) {
                     function(iterationDone) {
                         Async.sleep(1000, function() {
                             // Refresh the job and note how many events we've looked at so far
-                            job.refresh(function(err) {
-                                console.log("-- refreshing, " + (job.properties().eventCount || 0) + " events so far");
+                            job.fetch(function(err) {
+                                console.log("-- fetching, " + (job.properties().eventCount || 0) + " events so far");
                                 iterationDone();
                             });
                         });
@@ -10867,7 +11165,7 @@ require.define("/examples/node/helloworld/search_blocking.js", function (require
 // out the raw results and some key-value pairs. A blocking search is one that 
 // won't return until the search is complete.
 
-var splunkjs = require('../../../splunk');
+var splunkjs = require('../../../index');
 var Async  = splunkjs.Async;
 
 exports.main = function(opts, callback) {
@@ -10879,13 +11177,15 @@ exports.main = function(opts, callback) {
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
+    var version  = opts.version     || "default";
     
     var service = new splunkjs.Service({
         username: username,
         password: password,
         scheme: scheme,
         host: host,
-        port: port
+        port: port,
+        version: version
     });
 
     Async.chain([
@@ -10903,7 +11203,7 @@ exports.main = function(opts, callback) {
             },
             // The job is done, but let's some statistics from the server.
             function(job, done) {
-                job.refresh(done);
+                job.fetch(done);
             },
             // Print out the statistics and get the results
             function(job, done) {
@@ -10968,7 +11268,7 @@ require.define("/examples/node/helloworld/search_oneshot.js", function (require,
 // won't return until the search is complete and return all the search
 // results in the response.
 
-var splunkjs = require('../../../splunk');
+var splunkjs = require('../../../index');
 var Async  = splunkjs.Async;
 
 exports.main = function(opts, callback) {
@@ -10980,13 +11280,15 @@ exports.main = function(opts, callback) {
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
+    var version  = opts.version     || "default";
     
     var service = new splunkjs.Service({
         username: username,
         password: password,
         scheme: scheme,
         host: host,
-        port: port
+        port: port,
+        version: version
     });
 
     Async.chain([
@@ -11052,7 +11354,7 @@ require.define("/examples/node/helloworld/search_realtime.js", function (require
 // how many events of each sourcetype we have seen. It will then print out
 // this information every 1 second for a set number of iterations.
 
-var splunkjs = require('../../../splunk');
+var splunkjs = require('../../../index');
 var Async  = splunkjs.Async;
 
 exports.main = function(opts, callback) {
@@ -11064,13 +11366,15 @@ exports.main = function(opts, callback) {
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
+    var version  = opts.version     || "default";
     
     var service = new splunkjs.Service({
         username: username,
         password: password,
         scheme: scheme,
         host: host,
-        port: port
+        port: port,
+        version: version
     });
 
     Async.chain([
@@ -11086,7 +11390,7 @@ exports.main = function(opts, callback) {
                 
                 service.search(
                     "search index=_internal | stats count by sourcetype", 
-                    {earliest_time: "rt-10m", latest_time: "rt"}, 
+                    {earliest_time: "rt", latest_time: "rt"}, 
                     done);
             },
             // The search is never going to be done, so we simply poll it every second to get
@@ -11108,7 +11412,7 @@ exports.main = function(opts, callback) {
                                 }
                                 
                                 // Only do something if we have results
-                                if (results.rows) {
+                                if (results && results.rows) {
                                     // Up the iteration counter
                                     count++;
                                     
@@ -11169,7 +11473,7 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
 // under the License.
 
 (function() {
-    var splunkjs        = require('../../splunk');
+    var splunkjs        = require('../../index');
     var Class           = splunkjs.Class;
     var utils           = splunkjs.Utils;
     var Async           = splunkjs.Async;
@@ -11246,7 +11550,7 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
             // If it is, we wrap it up in a splunkjs.Job object, and invoke
             // our function on it.
             var jobsList = [];
-            this.service.jobs().refresh(function(err, jobs) {
+            this.service.jobs().fetch(function(err, jobs) {
                 var list = jobs.list() || [];
                 for(var i = 0; i < list.length; i++) {
                     if (utils.contains(sids, list[i].sid)) {
@@ -11370,7 +11674,7 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
             if (sids.length === 0) {
                 // If no job SIDs are provided, we list all jobs.
                 var jobs = this.service.jobs();
-                jobs.refresh(function(err, jobs) {
+                jobs.fetch(function(err, jobs) {
                     if (err) {
                         callback(err);
                         return;
@@ -11388,7 +11692,7 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
                 // If certain job SIDs are provided,
                 // then we simply read the properties of those jobs
                 this._foreach(sids, function(job, idx, done) {
-                    job.refresh(function(err, job) {
+                    job.fetch(function(err, job) {
                         if (err) {
                             done(err);
                             return;
@@ -11490,7 +11794,8 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
                 host: cmdline.opts.host,
                 port: cmdline.opts.port,
                 username: cmdline.opts.username,
-                password: cmdline.opts.password
+                password: cmdline.opts.password,
+                version: cmdline.opts.version
             });
             
             svc.login(function(err, success) {
@@ -11538,585 +11843,6 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
 })();
 });
 
-require.define("/examples/node/conf.js", function (require, module, exports, __dirname, __filename) {
-
-// Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-(function() {
-    var splunkjs        = require('../../splunk');
-    var Class           = splunkjs.Class;
-    var utils           = splunkjs.Utils;
-    var Async           = splunkjs.Async;
-    var options         = require('./cmdline');
-
-    var createService = function(options) {
-        return new splunkjs.Service({
-            scheme:     options.scheme,
-            host:       options.host,
-            port:       options.port,
-            username:   options.username,
-            password:   options.password
-        });
-    };
-    
-    var extractError = function(err) {
-        if (err && err instanceof Error) {
-            err = err.message;
-        }
-        
-        if (err && err.data) {
-            err = err.data.messages;
-        }
-        
-        return err;
-    };
-    
-    var Program = Class.extend({
-        init: function(cmdline, callback) {
-            this.cmdline = cmdline;
-            this.callback = callback;
-        },
-
-        run: function() {
-            var args = arguments;
-            var that = this;
-            
-            this.service = createService(this.cmdline.opts);
-            
-            var commands = {
-                files: this.files,
-                stanzas: this.stanzas,
-                contents: this.contents,
-                edit: this.edit,
-                create: this.create,
-                "delete": this.del
-            };
-            
-            this.service.login(function(err, success) {
-                if (err || !success) {
-                    that.callback(err || "Login failure");
-                    return;
-                }
-                
-                commands[that.cmdline.executedCommand].apply(that, args);    
-            });
-        },
-        
-        // List all the conf files that match the specified
-        // pattern (or all of them if no pattern is specified).
-        files: function(pattern, options, callback) {
-            pattern = pattern || ".*";
-            
-            var service = this.service;
-            Async.chain([
-                    function(done) {
-                        service.properties().refresh(done);
-                    },
-                    function(props, done) {
-                        var files = props.list();
-                        // Find all the files that match the pattern
-                        var regex = new RegExp(pattern);
-                        files = files.filter(function(file) {
-                            return file.name.match(regex);
-                        });
-                        
-                        // If there are any files, print their name
-                        if (files.length > 0) {
-                            console.log("Configuration Files: ");
-                            files.forEach(function(file) {
-                                console.log("  " + file.name);
-                            });
-                        }
-                        
-                        done();
-                    }
-                ],
-                function(err) {
-                    callback(extractError(err));
-                }
-            );
-        },
-        
-        // List all the stanzas in the specified conf file.
-        stanzas: function(filename, options, callback) {
-            var service = this.service;
-            
-            if (options.global && (!!options.app || !!options.owner)) {
-                callback("Cannot specify both --global and --owner or --app");
-                return;
-            }
-            
-            if (!options.global && (!options.app || !options.owner)) {
-                callback("Non-global lookup has to specify --owner and --app");
-                return;
-            }
-            
-            // Specialize our service if necessary
-            var namespace = null;
-            if (options.app || options.owner) {
-                namespace = {app: options.app, owner: options.owner};
-                service = service.specialize(options.owner, options.app);
-            }
-            
-            Async.chain([
-                    function(done) {
-                        var collection = options.global ? service.properties() : service.configurations(namespace);
-                        collection.refresh(done);
-                    },
-                    function(collection, done) {
-                        var file = collection.contains(filename, namespace);
-                        if (!file) {
-                            done("Could not find file '" + filename + "'");
-                            return;
-                        }
-                        file.refresh(done);
-                    },
-                    function(file, done) {
-                        var stanzas = file.list();
-                        // If there any stanzas, print their names
-                        if (stanzas.length > 0) {
-                            console.log("Stanzas for '" + filename + "': ");
-                            stanzas.forEach(function(stanza) {
-                                console.log("  " + stanza.name);
-                            });
-                        }
-                        done();
-                    }
-                ],
-                function(err) {
-                    callback(extractError(err));
-                }
-            );
-        },
-        
-        // List all the properties in the specified conf file::stanza
-        contents: function(filename, stanzaName, options, callback) {
-            var ignore = ["eai:userName", "eai:appName"];
-            var service = this.service;
-            
-            if (options.global && (!!options.app || !!options.owner)) {
-                callback("Cannot specify both --global and --owner or --app");
-                return;
-            }
-            
-            console.log("Missing: ", !options.global && (!options.app || !options.owner));
-            if (!options.global && (!options.app || !options.owner)) {
-                callback("Non-global lookup has to specify --owner and --app");
-                return;
-            }
-            
-            // Specialize our service if necessary
-            var namespace = null;
-            if (options.app || options.owner) {
-                namespace = {app: options.app, owner: options.owner};
-                service = service.specialize(options.owner, options.app);
-            }
-            
-            Async.chain([
-                    function(done) {
-                        var collection = options.global ? service.properties() : service.configurations(namespace);
-                        collection.refresh(done);
-                    },
-                    function(collection, done) {
-                        var file = collection.contains(filename, namespace);
-                        if (!file) {
-                            done("Could not find file: '" + filename + "'");
-                            return;
-                        }
-                        file.refresh(done);  
-                    },
-                    function(file, done) {
-                        var stanza = file.contains(stanzaName);
-                        if (!stanza) {
-                            done("Could not find stanza '" + stanzaName + "' in file '" + filename + "'");
-                            return;
-                        }
-                        stanza.refresh(done);
-                    },
-                    function(stanza, done) {
-                        // Find all the properties
-                        var keys = [];
-                        var properties = stanza.properties();
-                        for(var key in properties) {
-                            if (properties.hasOwnProperty(key) && ignore.indexOf(key) < 0) {
-                                keys.push(key);
-                            }
-                        }
-                        
-                        // If there are any properties, print their name and value
-                        if (keys.length > 0) {
-                            console.log("Properties for " + filename + ".conf [" + stanzaName + "]: ");
-                            keys.forEach(function(key) {
-                                console.log("  " + key + ": " + properties[key]);
-                            });
-                        }
-                        
-                        done();
-                    }
-                ],
-                function(err) {
-                    callback(extractError(err));
-                }
-            );
-        },
-        
-        // Edit the specified property in the specified conf file::stanza
-        edit: function(filename, stanzaName, key, value, options, callback) {
-            var service = this.service;
-            
-            if (options.global && (!!options.app || !!options.owner)) {
-                callback("Cannot specify both --global and --owner or --app");
-                return;
-            }
-            
-            if (!options.global && (!options.app || !options.owner)) {
-                callback("Non-global lookup has to specify --owner and --app");
-                return;
-            }
-            
-            // Specialize our service if necessary
-            var namespace = null;
-            if (options.app || options.owner) {
-                namespace = {app: options.app, owner: options.owner};
-                service = service.specialize(options.owner, options.app);
-            }
-            
-            Async.chain([
-                    function(done) {
-                        var collection = options.global ? service.properties() : service.configurations(namespace);
-                        collection.refresh(done);
-                    },
-                    function(collection, done) {
-                        var file = collection.contains(filename, namespace);
-                        if (!file) {
-                            done("Could not find file: '" + filename + "'");
-                            return;
-                        }
-                        file.refresh(done);  
-                    },
-                    function(file, done) {
-                        var stanza = file.contains(stanzaName);
-                        if (!stanza) {
-                            done("Could not find stanza '" + stanzaName + "' in file '" + filename + "'");
-                            return;
-                        }
-                        done(null, stanza);
-                    },
-                    function(stanza, done) {
-                        // Update the property
-                        var props = {};
-                        props[key] = value;
-                        stanza.update(props, done);                      
-                    }
-                ],
-                function(err) {                    
-                    if (!err) {
-                        console.log("Set '" + key + "' to '" + value + "' in stanza '" + stanzaName + "' in file '" + filename + "'");
-                    }
-                    
-                    callback(extractError(err));
-                }
-            );
-        },
-        
-        // Create the file, stanza and key
-        create: function(filename, stanzaName, key, value, options, callback) {
-            var service = this.service;
-            
-            if (options.global && (!!options.app || !!options.owner)) {
-                callback("Cannot specify both --global and --owner or --app");
-                return;
-            }
-            
-            if (!options.global && (!options.app || !options.owner)) {
-                callback("Non-global lookup has to specify --owner and --app");
-                return;
-            }
-            
-            // Specialize our service if necessary
-            var namespace = null;
-            if (options.app || options.owner) {
-                namespace = {app: options.app, owner: options.owner};
-                service = service.specialize(options.owner, options.app);
-            }
-            
-            var collection = null;
-            Async.chain([
-                    function(done) {
-                        collection = options.global ? service.properties() : service.configurations(namespace);
-                        collection.refresh(done);
-                    },
-                    function(collection, done) {
-                        var file = collection.contains(filename, namespace);
-                        
-                        // If we can't find the file, create it
-                        if (!file) {
-                            collection.create(filename, function(err, file) {
-                                if (!err) {
-                                    console.log("Created file '" + filename + "'");
-                                }
-                                
-                                // Don't do anything with the stanza if we 
-                                // didn't specify one
-                                if (stanzaName) {
-                                    done(null, file);
-                                    return;
-                                }
-                                
-                                file.refresh(done);
-                            });
-                            
-                            return;
-                        }
-                        
-                        // Don't do anything with the stanza if we 
-                        // didn't specify one
-                        if (!stanzaName) {
-                            done(null, file);
-                            return;
-                        }
-                        
-                        file.refresh(done);
-                    },
-                    function(file, done) {
-                        var stanza = stanzaName ? file.contains(stanzaName) : null;
-                        if (!stanzaName) {
-                            done(null, stanza);
-                            return;
-                        }
-                        
-                        // If we can't find the stanza, then create it
-                        if (!stanza) {                                
-                            file.create(stanzaName, {}, function(err, stanza) {
-                                if (err) {
-                                    done(err);
-                                    return;
-                                }
-                                
-                                if (!err) {
-                                    console.log("Created stanza '" + stanzaName + "' in file '" + filename + "'");
-                                }
-                                
-                                stanza.refresh(done);
-                            });
-                            return;
-                        }
-                        
-                        stanza.refresh(done);
-                    },
-                    function(stanza, done) {
-                        // If there is a key to update it,
-                        // then update it.
-                        if (stanzaName && key && value) {
-                            var props = {};
-                            props[key] = value;
-                            stanza.update(props, done);
-                            return;
-                        }
-
-                        done();
-                    }
-                ],
-                function(err) {
-                    if (key) {
-                        console.log("Set '" + key + "' to '" + value + "' in stanza '" + stanzaName + "' in file '" + filename + "'");
-                    }
-                    
-                    callback(extractError(err));
-                }
-            );
-        },
-        
-        // Delete the specified stanza in the specified conf file
-        del: function(filename, stanzaName, options, callback) {
-            var service = this.service;
-            
-            if (options.global && (!!options.app || !!options.owner)) {
-                callback("Cannot specify both --global and --owner or --app");
-                return;
-            }
-            
-            if (!options.global && (!options.app || !options.owner)) {
-                callback("Non-global lookup has to specify --owner and --app");
-                return;
-            }
-            
-            // Specialize our service if necessary
-            var namespace = null;
-            if (options.app || options.owner) {
-                namespace = {app: options.app, owner: options.owner};
-                service = service.specialize(options.owner, options.app);
-            }
-            
-            Async.chain([
-                    function(done) {
-                        var collection = options.global ? service.properties() : service.configurations(namespace);
-                        collection.refresh(done);
-                    },
-                    function(collection, done) {
-                        var file = collection.contains(filename, namespace);
-                        if (!file) {
-                            done("Could not find file: '" + filename + "'");
-                            return;
-                        }
-                        file.refresh( done);
-                    },
-                    function(file, done) {
-                        var stanza = file.contains(stanzaName);
-                        if (!stanza) {
-                            done("Could not find stanza '" + stanzaName + "' in file '" + filename + "'");
-                            return;
-                        }
-                        stanza.remove(done);
-                    }
-                ],
-                function(err) {
-                    if (!err) {
-                        console.log("Deleted stanza '" + stanzaName + "' in file '" + filename + "'");
-                    }
-                    
-                    callback(extractError(err));
-                }
-            );
-        }
-    });
-
-    exports.main = function(argv, callback) {     
-        splunkjs.Logger.setLevel("ALL");
-        
-        callback = callback || function(err) { 
-            if (err) {
-                console.log(err);
-            }
-            else {
-                console.log("=============="); 
-            }
-        };
-        var cmdline = options.create();
-        
-        var program = new Program(cmdline, callback);
-        
-        cmdline.name = "conf";
-        cmdline.description("View and edit configuration properties");
-        
-        cmdline
-            .command("files [pattern]")
-            .description("List all configuration files. Optional pattern to filter files")
-            .action(function(pattern, options) {
-                program.run(pattern, options, callback);
-            });
-            
-        cmdline
-            .command("stanzas <filename>")
-            .description("List all stanzas in the specified configuration file")
-            .option("-g, --global", "Get the contents of the file from the global (indexing) view.")
-            .option("-u, --owner <owner>", "Owner context to look in")
-            .option("-a, --app <app>", "App context to look in")
-            .action(function(filename, options) {
-                program.run(filename, options, callback);
-            });
-            
-        cmdline
-            .command("contents <filename> <stanza>")
-            .description("List all key=value properties of the specified file and stanza")
-            .option("-g, --global", "Get the contents of the file from the global (indexing) view.")
-            .option("-u, --owner <owner>", "Owner context to look in")
-            .option("-a, --app <app>", "App context to look in")
-            .action(function(filename, stanza, options) {
-                program.run(filename, stanza, options, callback);
-            });
-            
-        cmdline
-            .command("edit <filename> <stanza> <key> <value>")
-            .description("Edit the specified stanza")
-            .option("-g, --global", "Get the contents of the file from the global (indexing) view.")
-            .option("-u, --owner <owner>", "Owner context to look in")
-            .option("-a, --app <app>", "App context to look in")
-            .action(function(filename, stanza, key, value, options) {
-                program.run(filename, stanza, key, value, options, callback);
-            });
-            
-        cmdline
-            .command("create <filename> [stanza] [key] [value]")
-            .description("Create a file/stanza/key (will create up to the deepest level")
-            .option("-g, --global", "Get the contents of the file from the global (indexing) view.")
-            .option("-u, --owner <owner>", "Owner context to look in")
-            .option("-a, --app <app>", "App context to look in")
-            .action(function(filename, stanza, key, value, options) {
-                program.run(filename, stanza, key, value, options, callback);
-            });
-            
-        cmdline
-            .command("delete <filename> <stanza>")
-            .description("Delete the stanza in the specified file")
-            .option("-g, --global", "Get the contents of the file from the global (indexing) view.")
-            .option("-u, --owner <owner>", "Owner context to look in")
-            .option("-a, --app <app>", "App context to look in")
-            .action(function(filename, stanza, options) {
-                program.run(filename, stanza, options, callback);
-            });
-        
-        cmdline.on('--help', function(){
-            console.log("  Examples:");
-            console.log("  ");
-            console.log("  List all files:");
-            console.log("  > node conf.js files");
-            console.log("  ");
-            console.log("  List all files which start with 'foo':");
-            console.log("  > node conf.js files ^foo");
-            console.log("  ");
-            console.log("  List all stanzas in file 'foo':");
-            console.log("  > node conf.js stanzas foo");
-            console.log("  ");
-            console.log("  List the content of stanza 'bar' in file 'foo':");
-            console.log("  > node conf.js contents foo bar");
-            console.log("  ");
-            console.log("  > List the content of stanza 'bar' in file 'foo' in the namespace of user1/app1:");
-            console.log("  node conf.js contents foo bar --owner user1 --app app1");
-            console.log("  ");
-            console.log("  Set the key 'mykey' to value 'myval' in stanza 'bar' in file 'foo' in the namespace of user1/app1:");
-            console.log("  > node conf.js edit foo bar mykey myvalue --owner user1 --app app1");
-            console.log("  ");
-            console.log("  Create a file 'foo' in the namespace of user1/app1:");
-            console.log("  > node conf.js create foo --owner user1 --app app1");
-            console.log("  ");
-            console.log("  Create a stanza 'bar' in file 'foo' (and create if it doesn't exist) in the namespace of user1/app1:");
-            console.log("  > node conf.js create foo bar --owner user1 --app app1");
-            console.log("  ");
-            console.log("  Delete stanza 'bar' in file 'foo':");
-            console.log("  > node conf.js delete foo bar");
-            console.log("  ");
-            
-        });
-        cmdline.parse(argv);
-        
-        // Try and parse the command line
-        if (!cmdline.executedCommand) {
-            console.log(cmdline.helpInformation());
-            cmdline.emit("--help");
-            callback("You must specify a command to run.");
-            return;
-        }
-    };
-    
-    if (module === require.main) {
-        exports.main(process.argv);
-    }
-})();
-});
-
 require.define("/examples/node/search.js", function (require, module, exports, __dirname, __filename) {
 
 // Copyright 2011 Splunk, Inc.
@@ -12134,7 +11860,7 @@ require.define("/examples/node/search.js", function (require, module, exports, _
 // under the License.
 
 (function() {
-    var splunkjs        = require('../../splunk');
+    var splunkjs        = require('../../index');
     var Class           = splunkjs.Class;
     var utils           = splunkjs.Utils;
     var Async           = splunkjs.Async;
@@ -12156,7 +11882,8 @@ require.define("/examples/node/search.js", function (require, module, exports, _
             host:       options.host,
             port:       options.port,
             username:   options.username,
-            password:   options.password
+            password:   options.password,
+            version:    options.version
         });
     };
     
@@ -12182,7 +11909,7 @@ require.define("/examples/node/search.js", function (require, module, exports, _
                     Async.whilst(
                         function() { return !job.properties().isDone; },
                         function(iterationDone) {
-                            job.refresh(function(err, job) {
+                            job.fetch(function(err, job) {
                                 if (err) {
                                     callback(err);
                                 }
@@ -12293,6 +12020,7 @@ require.define("/examples/node/search.js", function (require, module, exports, _
         
         cmdline.parse(argv);
         
+        console.log(cmdline.opts);
         var service = createService(cmdline.opts);
         service.login(function(err, success) {
             if (err || !success) {
@@ -12306,6 +12034,7 @@ require.define("/examples/node/search.js", function (require, module, exports, _
             delete cmdline.host;
             delete cmdline.port;
             delete cmdline.namespace;
+            delete cmdline.version;
             
             if (cmdline.opts.exec_mode === "oneshot") {
                 oneshotSearch(service, cmdline.opts, callback);
@@ -12830,7 +12559,7 @@ require.define("/examples/node/results.js", function (require, module, exports, 
 // under the License.
 
 (function() {
-    var splunkjs        = require('../../splunk');
+    var splunkjs        = require('../../index');
     var Class           = splunkjs.Class;
     var utils           = splunkjs.Utils;
     var Async           = splunkjs.Async;
@@ -12842,7 +12571,8 @@ require.define("/examples/node/results.js", function (require, module, exports, 
             host:       options.host,
             port:       options.port,
             username:   options.username,
-            password:   options.password
+            password:   options.password,
+            version:    options.version
         });
     };
     
@@ -12959,14 +12689,14 @@ require.define("/browser.test.entry.js", function (require, module, exports, __d
 // include it.
 
 window.SplunkTest = {
-    Utils    : require('../tests/test_utils'),
-    Async    : require('../tests/test_async'),
-    Http     : require('../tests/test_http'),
-    Context  : require('../tests/test_context'),
-    Service  : require('../tests/test_service'),
-    Storm    : require('../tests/test_storm'),
-    Searcher : require('../tests/test_searcher'),
-    Examples : require('../tests/test_examples')
+    Utils    : require('../../tests/test_utils'),
+    Async    : require('../../tests/test_async'),
+    Http     : require('../../tests/test_http'),
+    Context  : require('../../tests/test_context'),
+    Service  : require('../../tests/test_service'),
+    Storm    : require('../../tests/test_storm'),
+    Searcher : require('../../tests/test_searcher'),
+    Examples : require('../../tests/test_examples')
 };
 });
 require("/browser.test.entry.js");

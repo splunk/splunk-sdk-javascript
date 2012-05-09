@@ -14,7 +14,7 @@
 // under the License.
 
 exports.setup = function(http) {
-    var splunkjs    = require('../splunk');
+    var splunkjs    = require('../index');
     var utils       = splunkjs.Utils;
     var Async       = splunkjs.Async;
     var tutils      = require('./utils');
@@ -77,6 +77,7 @@ exports.setup = function(http) {
                 var didFail = false;
                 var message = "GO GO SDK -- " + getNextId();
                 this.service.log(message, {sourcetype: "sdk-test", project: project}, function(err, data) {
+                    test.ok(!err);
                     test.strictEqual(data.length, message.length);
                     test.done();
                 });
@@ -86,6 +87,7 @@ exports.setup = function(http) {
                 var didFail = false;
                 var message = { id: getNextId() };
                 this.service.log(message, {sourcetype: "json", project: project}, function(err, data) {
+                    test.ok(!err);
                     test.strictEqual(data.length, JSON.stringify(message).length);
                     test.done();
                 });

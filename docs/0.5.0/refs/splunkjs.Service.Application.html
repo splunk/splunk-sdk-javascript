@@ -121,11 +121,11 @@
                                   <li><a href="#splunkjs.Service.Application-updateInfo">updateInfo</a></li>
                                   <li><a href="#splunkjs.Service.Application-setupInfo">setupInfo</a></li>
                                   <li><a href="#splunkjs.Service.Application-path">path</a></li>
-                                  <li><a href="#splunkjs.Service.Application-refreshOnUpdate">refreshOnUpdate</a></li>
+                                  <li><a href="#splunkjs.Service.Application-fetchOnUpdate">fetchOnUpdate</a></li>
                                   <li class="nav-header"><a href="#splunkjs.Service.Application-inherited">Inherited</a></li>
                                   <li><a href="#splunkjs.Service.Application^updated">updated</a></li>
                                   <li><a href="#splunkjs.Service.Application^reload">reload</a></li>
-                                  <li><a href="#splunkjs.Service.Application^refresh">refresh</a></li>
+                                  <li><a href="#splunkjs.Service.Application^fetch">fetch</a></li>
                                   <li><a href="#splunkjs.Service.Application^fields">fields</a></li>
                                   <li><a href="#splunkjs.Service.Application^enable">enable</a></li>
                                   <li><a href="#splunkjs.Service.Application^disable">disable</a></li>
@@ -243,21 +243,6 @@
                 <ul class="nav nav-list">
                 </ul>
               </li>
-                          <li class="nav-header"><a href="splunkjs.Service.PropertyStanza.html">splunkjs.Service.PropertyStanza</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.PropertyFile.html">splunkjs.Service.PropertyFile</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
-                          <li class="nav-header"><a href="splunkjs.Service.Properties.html">splunkjs.Service.Properties</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
                           <li class="nav-header"><a href="splunkjs.Service.ConfigurationStanza.html">splunkjs.Service.ConfigurationStanza</a></li>
               <li>
                 <ul class="nav nav-list">
@@ -345,7 +330,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1796">lib/service.js:1796</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1701">lib/service.js:1701</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>init: function(service, name) {
@@ -411,7 +396,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1848">lib/service.js:1848</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1753">lib/service.js:1753</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>updateInfo: function(callback) {
@@ -484,7 +469,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1819">lib/service.js:1819</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1724">lib/service.js:1724</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>setupInfo: function(callback) {
@@ -531,7 +516,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1782">lib/service.js:1782</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1687">lib/service.js:1687</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>path: function() {
@@ -540,16 +525,16 @@
             </section>
           </section>
                 
-          <section class="method well" id="splunkjs.Service.Application-refreshOnUpdate">
+          <section class="method well" id="splunkjs.Service.Application-fetchOnUpdate">
             <header>
               <div class="method-header">
-                <h3 class="method-name">refreshOnUpdate</h3>
+                <h3 class="method-name">fetchOnUpdate</h3>
               </div>
-              <h5 class="signature">splunkjs.Service.Application.refreshOnUpdate</h5>
+              <h5 class="signature">splunkjs.Service.Application.fetchOnUpdate</h5>
             </header>
           
             <section class="content">
-              <p>Whether or not to call <code>refresh()</code> after an update to fetch the updated item.</p>
+              <p>Whether or not to call <code>fetch()</code> after an update to fetch the updated item.</p>
             </section>
             
             <section class="syntax">
@@ -566,10 +551,10 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1775">lib/service.js:1775</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1680">lib/service.js:1680</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
-              <pre class="hidden" class="linenums pre-scrollable"><code>refreshOnUpdate: true,</code></pre>
+              <pre class="hidden" class="linenums pre-scrollable"><code>fetchOnUpdate: true,</code></pre>
             </section>
           </section>
                   <div class="page-header" id="splunkjs.Service.Application-inherited">
@@ -605,7 +590,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L922">lib/service.js:922</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L891">lib/service.js:891</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>updated: function() {
@@ -660,7 +645,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1088">lib/service.js:1088</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1057">lib/service.js:1057</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>reload: function(callback) {
@@ -679,22 +664,22 @@
 });</code></pre>
             </section>
           </section>
-                  <section class="method well" id="splunkjs.Service.Application^refresh">
+                  <section class="method well" id="splunkjs.Service.Application^fetch">
             <header>
               <div class="method-header">
-                <h3 class="method-name">refresh</h3>
+                <h3 class="method-name">fetch</h3>
               </div>
-              <h5 class="signature">splunkjs.Service.Entity.refresh</h5>
+              <h5 class="signature">splunkjs.Service.Entity.fetch</h5>
             </header>
           
             <section class="content">
               <p>Refresh the resource</p>
-<p>This will unconditionally refresh the object from the server and load it up.</p>
+<p>This will fetch the object from the server and load it up.</p>
             </section>
             
             <section class="syntax">
                           <h4>Syntax</h4>
-              <span>refresh: function(options, callback)</span>
+              <span>fetch: function(options, callback)</span>
             </section>
             
             <section class="params">
@@ -731,10 +716,10 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L948">lib/service.js:948</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L917">lib/service.js:917</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
-              <pre class="hidden" class="linenums pre-scrollable"><code>refresh: function(options, callback) {
+              <pre class="hidden" class="linenums pre-scrollable"><code>fetch: function(options, callback) {
     if (!callback &amp;&amp; utils.isFunction(options)) {
         callback = options;
         options = {};
@@ -786,7 +771,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L878">lib/service.js:878</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L847">lib/service.js:847</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>fields: function() {
@@ -841,7 +826,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1064">lib/service.js:1064</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1033">lib/service.js:1033</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>enable: function(callback) {
@@ -906,7 +891,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1040">lib/service.js:1040</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L1009">lib/service.js:1009</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>disable: function(callback) {
@@ -976,7 +961,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L999">lib/service.js:999</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L968">lib/service.js:968</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>update: function(props, callback) {
@@ -988,12 +973,12 @@
     
     var that = this;
     var req = this.post("", props, function(err, response) {
-        if (!err &amp;&amp; !that.refreshOnUpdate) {
+        if (!err &amp;&amp; !that.fetchOnUpdate) {
             that._load(response.data.entry);
             callback(err, that);
         }
-        else if (!err &amp;&amp; that.refreshOnUpdate) {
-            that.refresh(function() {
+        else if (!err &amp;&amp; that.fetchOnUpdate) {
+            that.fetch(function() {
                 if (req.wasAborted) {
                     return; // aborted, so ignore
                 }
@@ -1058,7 +1043,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L979">lib/service.js:979</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L948">lib/service.js:948</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>remove: function(callback) {
@@ -1101,7 +1086,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L889">lib/service.js:889</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L858">lib/service.js:858</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>acl: function() {
@@ -1139,7 +1124,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L933">lib/service.js:933</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L902">lib/service.js:902</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>published: function() {
@@ -1193,11 +1178,20 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L856">lib/service.js:856</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L816">lib/service.js:816</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>_load: function(properties) {
     properties = utils.isArray(properties) ? properties[0] : properties;
+    
+    // Initialize the properties to
+    // empty values
+    properties = properties || {
+        content: {},
+        fields: {},
+        acl: {},
+        links: {}
+    };
     
     this._super(properties);
     
@@ -1242,7 +1236,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L911">lib/service.js:911</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L880">lib/service.js:880</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>author: function() {
@@ -1280,7 +1274,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L900">lib/service.js:900</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L869">lib/service.js:869</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>links: function() {
@@ -1319,7 +1313,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L785">lib/service.js:785</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L745">lib/service.js:745</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>state: function() {
@@ -1359,7 +1353,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L771">lib/service.js:771</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L731">lib/service.js:731</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>properties: function() {
@@ -1429,7 +1423,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L668">lib/service.js:668</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L628">lib/service.js:628</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>del: function(relpath, params, callback) {
@@ -1510,7 +1504,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L634">lib/service.js:634</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L594">lib/service.js:594</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>post: function(relpath, params, callback) {
@@ -1590,7 +1584,7 @@
                         
             <section class="code">
               
-              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L600">lib/service.js:600</a>)</h4>  
+              <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/service.js#L560">lib/service.js:560</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
               <pre class="hidden" class="linenums pre-scrollable"><code>get: function(relpath, params, callback) {
@@ -1608,9 +1602,6 @@
 },</code></pre>
             </section>
           </section>
-                
-                
-                
                 
                 
                 

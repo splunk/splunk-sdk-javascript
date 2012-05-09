@@ -37,9 +37,9 @@
     var TEST_DIRECTORY      = "tests";
     var TEST_PREFIX         = "test_";
     var ALL_TESTS           = "tests.js";
-    var SDK_BROWSER_ENTRY   = "entries/browser.entry.js";
-    var TEST_BROWSER_ENTRY  = "entries/browser.test.entry.js";
-    var UI_BROWSER_ENTRY    = "entries/browser.ui.entry.js";
+    var SDK_BROWSER_ENTRY   = "./lib/entries/browser.entry.js";
+    var TEST_BROWSER_ENTRY  = "./lib/entries/browser.test.entry.js";
+    var UI_BROWSER_ENTRY    = "./lib/entries/browser.ui.entry.js";
     var DOC_FILE            = "index.html";
     var BUILD_CACHE_FILE    = ".buildcache";
     var SDK_VERSION         = JSON.parse(fs.readFileSync(path.resolve(__dirname, "../package.json")).toString("utf-8")).version;
@@ -56,8 +56,8 @@
      * UI Component Entry Points (for async loading)
      */
     var UI_COMPONENT_BROWSER_ENTRY  = {
-        timeline: "entries/browser.ui.timeline.entry.js",
-        charting: "entries/browser.ui.charting.entry.js"
+        timeline: "./lib/entries/browser.ui.timeline.entry.js",
+        charting: "./lib/entries/browser.ui.charting.entry.js"
     };
     
     /**
@@ -71,6 +71,7 @@
     var COMPILED_UI_MIN    = path.join(CLIENT_DIRECTORY, "splunk.ui.min.js");
     var GENERATED_DOCS     = path.join(DOC_DIRECTORY, SDK_VERSION, DOC_FILE);
     var GENERATED_REF_DOCS = path.join(DOC_DIRECTORY, SDK_VERSION, REFDOC_DIRECTORY, DOC_FILE);
+    var GENERATED_DOCS_DIR = path.join(DOC_DIRECTORY, SDK_VERSION);
     
     /**
      * Helpers
@@ -102,16 +103,17 @@
                         "Content-Type": req.headers["content-type"],
                         "Authorization": req.headers["authorization"]
                     },
+                    followAllRedirects: true,
                     body: body,
                     jar: false
                 };
-                
                 
                 try {
                     request(options, function(err, response, data) {
                         try {
                             var statusCode = (response ? response.statusCode : 500) || 500;
                             var headers = (response ? response.headers : {}) || {};
+                            
                             res.writeHead(statusCode, headers);
                             res.write(data || JSON.stringify(err));
                             res.end();
@@ -198,6 +200,84 @@
             fs.mkdirSync(tempDirPath, "755");
             return tempDirPath;
         }
+    };
+    
+    // Taken from wrench.js
+    var copyDirectoryRecursiveSync = function(sourceDir, newDirLocation, opts) {
+    
+        if (!opts || !opts.preserve) {
+            try {
+                if(fs.statSync(newDirLocation).isDirectory()) {
+                    exports.rmdirSyncRecursive(newDirLocation);
+                }
+            } 
+            catch(e) { }
+        }
+    
+        /*  Create the directory where all our junk is moving to; read the mode of the source directory and mirror it */
+        var checkDir = fs.statSync(sourceDir);
+        try {
+            fs.mkdirSync(newDirLocation, checkDir.mode);
+        } 
+        catch (e) {
+            //if the directory already exists, that's okay
+            if (e.code !== 'EEXIST') {
+                throw e;
+            }
+        }
+    
+        var files = fs.readdirSync(sourceDir);
+    
+        for(var i = 0; i < files.length; i++) {
+            var currFile = fs.lstatSync(sourceDir + "/" + files[i]);
+    
+            if(currFile.isDirectory()) {
+                /*  recursion this thing right on back. */
+                copyDirectoryRecursiveSync(sourceDir + "/" + files[i], newDirLocation + "/" + files[i], opts);
+            } 
+            else if(currFile.isSymbolicLink()) {
+                var symlinkFull = fs.readlinkSync(sourceDir + "/" + files[i]);
+                fs.symlinkSync(symlinkFull, newDirLocation + "/" + files[i]);
+            } 
+            else {
+                /*  At this point, we've hit a file actually worth copying... so copy it on over. */
+                var contents = fs.readFileSync(sourceDir + "/" + files[i]);
+                fs.writeFileSync(newDirLocation + "/" + files[i], contents);
+            }
+        }
+    };
+
+    var rmdirRecursiveSync = function(path, failSilent) {
+        var files;
+
+        try {
+            files = fs.readdirSync(path);
+        } 
+        catch (err) {
+            if(failSilent) {
+                return;
+            }
+            throw new Error(err.message);
+        }
+
+        /*  Loop through and delete everything in the sub-tree after checking it */
+        for(var i = 0; i < files.length; i++) {
+            var currFile = fs.lstatSync(path + "/" + files[i]);
+
+            if(currFile.isDirectory()) {// Recursive function back to the beginning
+                rmdirRecursiveSync(path + "/" + files[i]);
+            }
+            else if(currFile.isSymbolicLink()) {// Unlink symlinks
+                fs.unlinkSync(path + "/" + files[i]);
+            } 
+            else { // Assume it's a file - perhaps a try/catch belongs here?
+                fs.unlinkSync(path + "/" + files[i]);
+            }
+        }
+
+        /*  Now that we know everything in the sub-tree has been deleted, we can delete the main
+            directory. Huzzah for the shopkeep. */
+        return fs.rmdirSync(path);
     };
     
     var git = {
@@ -579,8 +659,8 @@
             function(done) {
                 var tempDirPath = temp.mkdirSync();
                 
-                tempPath = path.join(tempDirPath, DOC_FILE);
-                fs.link(GENERATED_REF_DOCS, tempPath);
+                tempPath = tempDirPath;
+                copyDirectoryRecursiveSync(GENERATED_DOCS_DIR, tempDirPath);
                 
                 done();
             },
@@ -591,18 +671,19 @@
                 git.switchBranch("gh-pages", done);
             },
             function(done) {
+                if (path.existsSync(GENERATED_DOCS_DIR)) {
+                    rmdirRecursiveSync(GENERATED_DOCS_DIR);
+                }
+                
                 ensureDirectoryExists(DOC_DIRECTORY);
                 ensureDirectoryExists(path.join(DOC_DIRECTORY, SDK_VERSION));
                 
-                if (path.existsSync(GENERATED_REF_DOCS)) {
-                    fs.unlinkSync(GENERATED_REF_DOCS);
-                }
-                fs.link(tempPath, GENERATED_REF_DOCS);
+                copyDirectoryRecursiveSync(tempPath, GENERATED_DOCS_DIR);
                 
                 done();
             },
             function(done) {
-                git.add(GENERATED_REF_DOCS, done);
+                git.add(GENERATED_DOCS_DIR, done);
             },
             function(done) {
                 git.commit("Updating v" + SDK_VERSION + " docs: " + (new Date()), done);  
@@ -644,6 +725,7 @@
             .concat(cmdline.opts.host      ?   makeOption("host",      cmdline.opts.host)      : "")
             .concat(cmdline.opts.port      ?   makeOption("port",      cmdline.opts.port)      : "")
             .concat(cmdline.opts.app       ?   makeOption("app",       cmdline.opts.app)       : "")
+            .concat(cmdline.opts.version   ?   makeOption("version",   cmdline.opts.version)   : "")
             .concat(cmdline.opts.password  ?   makeOption("password",  cmdline.opts.password)  : "");
         
         var testFunctions = files.map(function(file) {
@@ -706,6 +788,7 @@
         .option('--scheme <scheme>', 'Splunk scheme')
         .option('--host <host>', 'Splunk host')
         .option('--port <port>', 'Splunk port')
+        .option('--version <version>', 'Splunk version')
         .option('--namespace <namespace>', 'Splunk namespace (in the form of owner:app)')
         .action(runTests);
     

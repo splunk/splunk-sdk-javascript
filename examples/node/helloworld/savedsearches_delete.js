@@ -48,26 +48,26 @@ exports.main = function(opts, done) {
             return;
         } 
         
-        var savedSearchOptions = {
-            name: "My Awesome Saved Search",
-            search: "index=_internal error sourcetype=splunkd* | head 10"
-        };
+        var name = "My Awesome Saved Search";
         
         // Now that we're logged in, Let's create a saved search
-        service.savedSearches().create(savedSearchOptions, function(err, savedSearch) {
-            if (err && err.status === 409) {
-                console.error("ERROR: A saved search with the name '" + savedSearchOptions.name + "' already exists");
-                done();
-                return;
-            }
-            else if (err) {
-                console.error("There was an error creating the saved search:", err);
+        service.savedSearches().fetch(function(err, savedSearches) {
+            if (err) {
+                console.log("There was an error in fetching the saved searches");
                 done(err);
                 return;
-            }
+            } 
             
-            console.log("Created saved search: " + savedSearch.name);            
-            done();
+            var savedSearchToDelete = savedSearches.item(name);
+            if (!savedSearchToDelete) {
+                console.log("Can't delete '" + name + "' because it doesn't exist!");
+                done();
+            }
+            else {                
+                savedSearchToDelete.remove();
+                console.log("Deleted saved search: " + name + "");
+                done();
+            }
         });
     });
 };

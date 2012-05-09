@@ -17,7 +17,7 @@
     var fs          = require('fs');
     var test        = require('../contrib/nodeunit/test_reporter');
     var options     = require('../examples/node/cmdline');
-    var splunkjs    = require('../splunk');
+    var splunkjs    = require('../index');
     var NodeHttp    = splunkjs.NodeHttp;
     
     var parser = new options.create();

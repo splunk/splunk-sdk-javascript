@@ -14,7 +14,7 @@
 // under the License.
 
 exports.setup = function() {
-    var splunkjs    = require('../splunk');
+    var splunkjs    = require('../index');
     var Async       = splunkjs.Async;
 
     splunkjs.Logger.setLevel("ALL");

@@ -14,7 +14,7 @@
 // under the License.
 
 (function() {
-    var splunkjs        = require('../../splunk');
+    var splunkjs        = require('../../index');
     var Class           = splunkjs.Class;
     var utils           = splunkjs.Utils;
     var Async           = splunkjs.Async;
@@ -36,7 +36,8 @@
             host:       options.host,
             port:       options.port,
             username:   options.username,
-            password:   options.password
+            password:   options.password,
+            version:    options.version
         });
     };
     
@@ -62,7 +63,7 @@
                     Async.whilst(
                         function() { return !job.properties().isDone; },
                         function(iterationDone) {
-                            job.refresh(function(err, job) {
+                            job.fetch(function(err, job) {
                                 if (err) {
                                     callback(err);
                                 }
@@ -173,6 +174,7 @@
         
         cmdline.parse(argv);
         
+        console.log(cmdline.opts);
         var service = createService(cmdline.opts);
         service.login(function(err, success) {
             if (err || !success) {
@@ -186,6 +188,7 @@
             delete cmdline.host;
             delete cmdline.port;
             delete cmdline.namespace;
+            delete cmdline.version;
             
             if (cmdline.opts.exec_mode === "oneshot") {
                 oneshotSearch(service, cmdline.opts, callback);

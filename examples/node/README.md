@@ -18,17 +18,6 @@ events, and cancel jobs.
 To see more options and example usage, you can execute:
 > node jobs.js --help
 
-### File: [`conf.js`]
-
-This file contains an example that enables navigation and modification of the Splunk
-configuration system. With it, you can list configuration files, stanzas and properties,
-as well as create, modify and delete files, stanzas and properties.
-
-These operations are available in both the global and namespace-specific variations.
-
-To see more options and example usage, you can execute:
-> node conf.js --help
-
 ### Files: [`search.js`] and [`results.js`]
 
 [`search.js`] contains an example that shows how to create searches (both regular and oneshot)

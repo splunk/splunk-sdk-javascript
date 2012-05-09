@@ -17,7 +17,7 @@
 // printing each saved search's name and search query. It is the same as savedsearches.js, 
 // except that it uses the Async library
 
-var splunkjs = require('../../../splunk');
+var splunkjs = require('../../../index');
 var Async  = splunkjs.Async;
 
 exports.main = function(opts, callback) {
@@ -29,13 +29,15 @@ exports.main = function(opts, callback) {
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
+    var version  = opts.version     || "default";
     
     var service = new splunkjs.Service({
         username: username,
         password: password,
         scheme: scheme,
         host: host,
-        port: port
+        port: port,
+        version: version
     });
 
     Async.chain([
@@ -49,7 +51,7 @@ exports.main = function(opts, callback) {
                     done("Error logging in");
                 }
                 
-                service.savedSearches().refresh(done);
+                service.savedSearches().fetch(done);
             },
             // Print them out
             function(searches, done) {

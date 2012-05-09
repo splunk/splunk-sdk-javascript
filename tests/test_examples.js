@@ -14,7 +14,7 @@
 // under the License.
 
 exports.setup = function(svc, opts) {
-    var splunkjs= require('../splunk');
+    var splunkjs= require('../index');
     var Async   = splunkjs.Async;
 
     splunkjs.Logger.setLevel("ALL");
@@ -45,6 +45,21 @@ exports.setup = function(svc, opts) {
             
             "Saved Searches#Async": function(test) {
                 var main = require("../examples/node/helloworld/savedsearches_async").main;
+                main(opts, test.done);
+            },
+            
+            "Saved Searches#Delete": function(test) {
+                var main = require("../examples/node/helloworld/savedsearches_delete").main;
+                main(opts, test.done);
+            },
+            
+            "Saved Searches#Create": function(test) {
+                var main = require("../examples/node/helloworld/savedsearches_create").main;
+                main(opts, test.done);
+            },
+            
+            "Saved Searches#Delete Again": function(test) {
+                var main = require("../examples/node/helloworld/savedsearches_delete").main;
                 main(opts, test.done);
             },
             
@@ -224,158 +239,6 @@ exports.setup = function(svc, opts) {
             }
         },
         
-        "Conf Example Tests": {
-            setUp: function(done) {   
-                var context = this;
-                
-                this.main = require("../examples/node/conf").main;
-                this.run = function(command, args, options, callback) {                
-                    var combinedArgs = argv.slice();
-                    if (command) {
-                        combinedArgs.push(command);
-                    }
-                    
-                    if (args) {
-                        for(var i = 0; i < args.length; i++) {
-                            combinedArgs.push(args[i]);
-                        }
-                    }
-                    
-                    if (options) {
-                        for(var key in options) {
-                            if (options.hasOwnProperty(key)) {
-                                combinedArgs.push("--" + key);
-                                combinedArgs.push(options[key]);
-                            }
-                        }
-                    }
-              
-                    return context.main(combinedArgs, callback);
-                };
-                
-                done(); 
-            },
-            
-            "help": function(test) {
-                this.run(null, null, null, function(err) {
-                    test.ok(!!err);
-                    test.done();
-                });
-            },
-            
-            "List files": function(test) {
-                this.run("files", null, null, function(err) {
-                    test.ok(!err);
-                    test.done();
-                });
-            },
-            
-            "List files with pattern": function(test) {
-                this.run("files", ["^v"], null, function(err) {
-                    test.ok(!err);
-                    test.done();
-                });
-            },
-            
-            "List stanzas": function(test) {
-                this.run("stanzas", ["web"], {app: "search", owner: "nobody"}, function(err) {
-                    test.ok(!err);
-                    test.done();
-                });
-            },
-            
-            "Show non-existent contents": function(test) {
-                this.run("contents", ["json", "settings"], {app: "search", owner: "nobody"}, function(err) {
-                    test.ok(err);
-                    test.done();
-                });
-            },
-            
-            "Show contents with specialization": function(test) {
-                this.run("contents", ["json", "settings"], {app: "xml2json", owner: "nobody"}, function(err) {
-                    console.log(err);
-                    test.ok(!err);
-                    test.done();
-                });
-            },
-            
-            "Show contents with --global": function(test) {
-                this.run("contents", ["json", "settings", "--global"], {}, function(err) {
-                    test.ok(!err);
-                    test.done();
-                });
-            },
-            
-            "Edit contents with no user set": function(test) {
-                this.run("edit", ["json", "settings", "foo", "bar"], {app: "xml2json"}, function(err) {
-                    test.ok(err);
-                    test.done();
-                });
-            },
-            
-            "Edit contents": function(test) {
-                this.run("edit", ["json", "settings", "foo", "bar"], {app: "xml2json", owner: "admin"}, function(err) {
-                    test.ok(!err);
-                    test.done();
-                });
-            },
-            
-            "Create file": function(test) {
-                this.run("create", ["foo"], {app: "xml2json", owner: "admin"}, function(err) {
-                    test.ok(!err);
-                    test.done();
-                });
-            },
-            
-            "Create stanza": function(test) {
-                var options = {
-                    app: "xml2json",
-                    owner: "admin"
-                };
-                
-                var that = this;
-                this.run("create", ["foo", "bar"], options, function(err) {
-                    test.ok(!err);
-                    that.run("delete", ["foo", "bar"], options, function(err) {
-                        test.ok(!err);
-                        test.done();
-                    });
-                });
-            },
-            
-            "Create key=value": function(test) {
-                var options = {
-                    app: "xml2json",
-                    owner: "admin"
-                };
-                
-                var that = this;
-                this.run("create", ["foo", "bar", "abc", "123"], options, function(err) {
-                    test.ok(!err);
-                    that.run("delete", ["foo", "bar"], options, function(err) {
-                        test.ok(!err);
-                        test.done();
-                    });
-                });
-            },
-            
-            "Create+delete stanza": function(test) {
-                var options = {
-                    app: "xml2json",
-                    owner: "admin"
-                };
-                
-                var that = this;
-                this.run("create", ["foo", "bar"], options, function(err) {
-                    test.ok(!err);
-                    that.run("delete", ["foo", "bar"], options, function(err) {
-                        test.ok(!err);
-                        test.done();
-                    });
-                });
-            }
-        },
-        
         "Search Example Tests": {
             setUp: function(done) {   
                 var context = this;
@@ -465,7 +328,7 @@ exports.setup = function(svc, opts) {
                     {exec_mode: "blocking"}, 
                     function(err, job) {
                         test.ok(!err);
-                        job.results({output_mode: "rows"}, function(err, results) {
+                        job.results({output_mode: "json_rows"}, function(err, results) {
                             test.ok(!err);
                             process.stdin.emit("data", JSON.stringify(results));
                             process.stdin.emit("end");
@@ -510,7 +373,7 @@ exports.setup = function(svc, opts) {
 };
 
 if (module === require.main) {
-    var splunkjs    = require('../splunk');
+    var splunkjs    = require('../index');
     var test        = require('../contrib/nodeunit/test_reporter');
     
     var options = require('../examples/node/cmdline');    
@@ -527,7 +390,8 @@ if (module === require.main) {
         host: cmdline.opts.host,
         port: cmdline.opts.port,
         username: cmdline.opts.username,
-        password: cmdline.opts.password
+        password: cmdline.opts.password,
+        version: cmdline.opts.version
     });
     
     var suite = exports.setup(svc, cmdline.opts);

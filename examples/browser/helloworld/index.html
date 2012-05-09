@@ -82,6 +82,7 @@
       scheme   = "https";
       host     = "localhost";
       port     = "8089";
+      version  = "4.3";
       
       Async = splunkjs.Async;
       utils = splunkjs.Utils;
@@ -92,6 +93,7 @@
         scheme   = utils.trim($("#id_scheme").pVal())   || "https";
         host     = utils.trim($("#id_host").pVal())     || "localhost";
         port     = utils.trim($("#id_port").pVal())     || "8089";
+        version  = utils.trim($("#id_version").pVal())  || "4.3";
         
         var connectionString = username + " : ****** @ " + scheme + "://" + host + ":" + port;
         $("#signin-dropdown").text(connectionString);
@@ -279,6 +281,9 @@
                   <li>
                     <input type="text" name="port" id="id_port" placeholder="port: 8089"/>
                   </li>
+                  <li>
+                    <input type="text" name="port" id="id_version" placeholder="version: 4.3"/>
+                  </li>
               </ul>
             </li>
           </ul>
@@ -323,7 +328,8 @@ var service = new splunkjs.Service(http, {
     password: password,
     scheme: scheme,
     host: host,
-    port: port
+    port: port,
+    version: version
 });
 
 // First, we log in
@@ -337,7 +343,7 @@ service.login(function(err, success) {
     } 
     
     // Now that we're logged in, let's get a listing of all the apps.
-    service.apps().refresh(function(err, apps) {
+    service.apps().fetch(function(err, apps) {
         if (err) {
             console.log("There was an error retrieving the list of applications:", err);
             done(err);
@@ -364,7 +370,8 @@ var service = new splunkjs.Service(http, {
     password: password,
     scheme: scheme,
     host: host,
-    port: port
+    port: port,
+    version: version
 });
 
 Async.chain([
@@ -378,7 +385,7 @@ Async.chain([
                 done("Error logging in");
             }
             
-            service.apps().refresh(done);
+            service.apps().fetch(done);
         },
         // Print them out
         function(apps, done) {     
@@ -431,6 +438,7 @@ Async.chain([
               <li class="active"><a href="#savedsearches-regular">Regular</a></li>
               <li><a href="#savedsearches-async"><code>splunkjs.Async</code></a></li>
               <li><a href="#savedsearches-create">Create A Saved Search</a></li>
+              <li><a href="#savedsearches-delete">Delete A Saved Search</a></li>
               <li><a href="#savedsearches-output">Output</a></li>
             </ul>
             <div id="savedsearches-tab-content" class="tab-content">
@@ -442,7 +450,8 @@ var service = new splunkjs.Service(http, {
     password: password,
     scheme: scheme,
     host: host,
-    port: port
+    port: port,
+    version: version
 });
 
 // First, we log in
@@ -456,7 +465,7 @@ service.login(function(err, success) {
     } 
     
     // Now that we're logged in, let's get a listing of all the saved searches.
-    service.savedSearches().refresh(function(err, searches) {
+    service.savedSearches().fetch(function(err, searches) {
         if (err) {
             console.log("There was an error retrieving the list of saved searches:", err);
             done(err);
@@ -484,7 +493,8 @@ var service = new splunkjs.Service(http, {
     password: password,
     scheme: scheme,
     host: host,
-    port: port
+    port: port,
+    version: version
 });
 
 Async.chain([
@@ -498,7 +508,7 @@ Async.chain([
                 done("Error logging in");
             }
             
-            service.savedSearches().refresh(done);
+            service.savedSearches().fetch(done);
         },
         // Print them out
         function(searches, done) {
@@ -527,7 +537,8 @@ var service = new splunkjs.Service(http, {
     password: password,
     scheme: scheme,
     host: host,
-    port: port
+    port: port,
+    version: version
 });
 
 // First, we log in
@@ -560,6 +571,52 @@ service.login(function(err, success) {
         
         console.log("Created saved search: " + savedSearch.name);            
         done();
+    });
+});
+                </pre>
+              </div>
+              <div class="tab-pane" id="savedsearches-delete">
+                <pre class='prettyprint lang-js linenums'>
+var http = new splunkjs.ProxyHttp("/proxy");
+var service = new splunkjs.Service(http, {
+    username: username,
+    password: password,
+    scheme: scheme,
+    host: host,
+    port: port,
+    version: version
+});
+
+// First, we log in
+service.login(function(err, success) {
+    // We check for both errors in the connection as well
+    // as if the login itself failed.
+    if (err || !success) {
+        console.log("Error in logging in");
+        done(err || "Login failed");
+        return;
+    } 
+    
+    var name = "My Awesome Saved Search";
+    
+    // Now that we're logged in, Let's create a saved search
+    service.savedSearches().fetch(function(err, savedSearches) {
+        if (err) {
+            console.log("There was an error in fetching the saved searches");
+            done(err);
+            return;
+        } 
+        
+        var savedSearchToDelete = savedSearches.item(name);
+        if (!savedSearchToDelete) {
+            console.log("Can't delete '" + name + "' because it doesn't exist!");
+            done();
+        }
+        else {                
+            savedSearchToDelete.remove();
+            console.log("Deleted saved search: " + name + "")
+            done();
+        }
     });
 });
                 </pre>
@@ -609,7 +666,8 @@ var service = new splunkjs.Service(http, {
     password: password,
     scheme: scheme,
     host: host,
-    port: port
+    port: port,
+    version: version
 });
 
 Async.chain([
@@ -634,8 +692,8 @@ Async.chain([
                 function(iterationDone) {
                     Async.sleep(1000, function() {
                         // Refresh the job and note how many events we've looked at so far
-                        job.refresh(function(err) {
-                            console.log("-- refreshing, " + (job.properties().eventCount || 0) + " events so far");
+                        job.fetch(function(err) {
+                            console.log("-- fetching, " + (job.properties().eventCount || 0) + " events so far");
                             iterationDone();
                         });
                     });
@@ -692,7 +750,8 @@ var service = new splunkjs.Service(http, {
     password: password,
     scheme: scheme,
     host: host,
-    port: port
+    port: port,
+    version: version
 });
 
 Async.chain([
@@ -710,7 +769,7 @@ Async.chain([
         },
         // The job is done, but let's some statistics from the server.
         function(job, done) {
-            job.refresh(done);
+            job.fetch(done);
         },
         // Print out the statistics and get the results
         function(job, done) {
@@ -757,7 +816,8 @@ var service = new splunkjs.Service(http, {
     password: password,
     scheme: scheme,
     host: host,
-    port: port
+    port: port,
+    version: version
 });
 
 Async.chain([
@@ -839,7 +899,8 @@ var service = new splunkjs.Service(http, {
     password: password,
     scheme: scheme,
     host: host,
-    port: port
+    port: port,
+    version: version
 });
 
 Async.chain([
