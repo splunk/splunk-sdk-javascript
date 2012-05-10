@@ -663,7 +663,7 @@ exports.setup = function(svc) {
             // Absolute paths are unchanged
             test.strictEqual(ctx.fullpath("/a/b/c"), "/a/b/c");
             // Fall through to /services if there is no app
-            test.strictEqual(ctx.fullpath("meep"), "/services/meep")
+            test.strictEqual(ctx.fullpath("meep"), "/services/meep");
             // Are username and app set properly?
             var ctx2 = new splunkjs.Context({owner: "alpha", app: "beta"});
             test.strictEqual(ctx2.fullpath("meep"), "/servicesNS/alpha/beta/meep");

@@ -435,7 +435,7 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
         } 
         else {
             process.env.LOG_LEVEL = levels["ERROR"];                
-        };
+        }
     };
 
     if (process.env.LOG_LEVEL) {
@@ -454,15 +454,19 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
 
         var logAs = function(level) {
             return function(str) {
-                try { console[level].apply(console, arguments) }
-                catch (ex) { console[level](str);};
-            }
+                try { 
+                    console[level].apply(console, arguments);
+                }
+                catch(ex) { 
+                    console[level](str);
+                }
+            };
         };
 
-        if (console.log) { _log = logAs("log"); };
-        if (console.error) { _error = logAs("error"); };
-        if (console.warn) { _warn = logAs("warn"); };
-        if (console.info) { _info = logAs("info"); };
+        if (console.log) { _log = logAs("log"); }
+        if (console.error) { _error = logAs("error"); }
+        if (console.warn) { _warn = logAs("warn"); }
+        if (console.info) { _info = logAs("info"); }
     }
 
     /**
@@ -982,7 +986,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
             if (obj.hasOwnProperty(k) && obj[k] === val) {
                 return k;
             }
-        };
+        }
         return undefined;
     };
 

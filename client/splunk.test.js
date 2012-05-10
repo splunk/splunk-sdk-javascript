@@ -413,9 +413,13 @@ exports.setup = function() {
 
         "bind": function(test) {
             var f;
-            (function() { f = function(a) { this.a = a; };})();
+            (function() { 
+                f = function(a) { 
+                    this.a = a; 
+                };
+            })();
             var q = {};
-            g = splunkjs.Utils.bind(q, f);
+            var g = splunkjs.Utils.bind(q, f);
             g(12);
             test.strictEqual(q.a, 12);
             test.done();
@@ -513,7 +517,7 @@ exports.setup = function() {
             splunkjs.Utils.forEach(
                 a,
                 function(elem, index, list) {
-                    test.strictEqual(a[index], elem)
+                    test.strictEqual(a[index], elem);
                 }
             );
             var b = {1: 2, 2: 4, 3: 6};
@@ -537,12 +541,12 @@ exports.setup = function() {
         "extend": function(test) {
             var found = splunkjs.Utils.extend({}, {a: 1, b: 2}, {c: 3, b: 4});
             var expected = {a: 1, b: 4, c:3};
-            for (k in found) {
+            for (var k in found) {
                 if (found.hasOwnProperty(k)) {
                     test.strictEqual(found[k], expected[k]);
-                };
-            };
-            test.done()
+                }
+            }
+            test.done();
         },
 
         "clone": function(test) {
@@ -688,7 +692,7 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
         } 
         else {
             process.env.LOG_LEVEL = levels["ERROR"];                
-        };
+        }
     };
 
     if (process.env.LOG_LEVEL) {
@@ -707,15 +711,19 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
 
         var logAs = function(level) {
             return function(str) {
-                try { console[level].apply(console, arguments) }
-                catch (ex) { console[level](str);};
-            }
+                try { 
+                    console[level].apply(console, arguments);
+                }
+                catch(ex) { 
+                    console[level](str);
+                }
+            };
         };
 
-        if (console.log) { _log = logAs("log"); };
-        if (console.error) { _error = logAs("error"); };
-        if (console.warn) { _warn = logAs("warn"); };
-        if (console.info) { _info = logAs("info"); };
+        if (console.log) { _log = logAs("log"); }
+        if (console.error) { _error = logAs("error"); }
+        if (console.warn) { _warn = logAs("warn"); }
+        if (console.info) { _info = logAs("info"); }
     }
 
     /**
@@ -1235,7 +1243,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
             if (obj.hasOwnProperty(k) && obj[k] === val) {
                 return k;
             }
-        };
+        }
         return undefined;
     };
 
@@ -7369,8 +7377,7 @@ exports.setup = function(http) {
                 test.throws(function() { h.makeRequest("asdf", null, null); });
                 test.throws(function() { h.parseJson("{}"); });
                 test.done();
-            },
-
+            }
         }
     };
 };
@@ -8054,7 +8061,7 @@ exports.setup = function(svc) {
             // Absolute paths are unchanged
             test.strictEqual(ctx.fullpath("/a/b/c"), "/a/b/c");
             // Fall through to /services if there is no app
-            test.strictEqual(ctx.fullpath("meep"), "/services/meep")
+            test.strictEqual(ctx.fullpath("meep"), "/services/meep");
             // Are username and app set properly?
             var ctx2 = new splunkjs.Context({owner: "alpha", app: "beta"});
             test.strictEqual(ctx2.fullpath("meep"), "/servicesNS/alpha/beta/meep");
@@ -9613,7 +9620,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 app.updateInfo(function(err, info, app) {
                     test.ok(err);
                     test.done();
-                })
+                });
             }
         },
         
@@ -9808,7 +9815,12 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#configurations init": function(test) {
-                test.throws(function() {new splunkjs.Service.Configurations(this.service, {owner: "-", app: "-", sharing: "system"});});
+                test.throws(function() {
+                    var confs = new splunkjs.Service.Configurations(
+                        this.service, 
+                        {owner: "-", app: "-", sharing: "system"}
+                    );
+                });
                 test.done();
             },
                    
@@ -10063,7 +10075,9 @@ exports.setup = function(svc, loggedOutSvc) {
 
             "Callback#remove throws an error": function(test) {
                 var index = this.service.indexes().item("_internal");
-                test.throws(function() {index.remove});
+                test.throws(function() {
+                    index.remove();
+                });
                 test.done();
             },
 
@@ -10501,8 +10515,12 @@ exports.setup = function(svc, loggedOutSvc) {
 
             "Throws on null arguments to init": function(test) {
                 var service = this.service;
-                test.throws(function() {new splunkjs.Service.Endpoint(null, "a/b"); });
-                test.throws(function() {new splunkjs.Service.Endpoint(service, null); });
+                test.throws(function() {
+                    var endpoint = new splunkjs.Service.Endpoint(null, "a/b"); 
+                });
+                test.throws(function() {
+                    var endpoint = new splunkjs.Service.Endpoint(service, null); 
+                });
                 test.done();
             },
 
@@ -10660,15 +10678,17 @@ exports.setup = function(svc, loggedOutSvc) {
                 var coll = new splunkjs.Service.Collection(
                     this.service,
                     "/data/indexes",
-                    {owner: "admin",
-                     app: "search",
-                     sharing: "app"}
+                    {
+                        owner: "admin",
+                        app: "search",
+                        sharing: "app"
+                    }
                 );
                 test.throws(function() { coll.item(null);});
                 test.done();
             }
-       }
-    }
+        }
+    };
 };
 
 if (module === require.main) {

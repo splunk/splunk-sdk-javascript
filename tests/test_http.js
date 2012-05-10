@@ -296,8 +296,7 @@ exports.setup = function(http) {
                 test.throws(function() { h.makeRequest("asdf", null, null); });
                 test.throws(function() { h.parseJson("{}"); });
                 test.done();
-            },
-
+            }
         }
     };
 };

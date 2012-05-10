@@ -65,9 +65,13 @@ exports.setup = function() {
 
         "bind": function(test) {
             var f;
-            (function() { f = function(a) { this.a = a; };})();
+            (function() { 
+                f = function(a) { 
+                    this.a = a; 
+                };
+            })();
             var q = {};
-            g = splunkjs.Utils.bind(q, f);
+            var g = splunkjs.Utils.bind(q, f);
             g(12);
             test.strictEqual(q.a, 12);
             test.done();
@@ -165,7 +169,7 @@ exports.setup = function() {
             splunkjs.Utils.forEach(
                 a,
                 function(elem, index, list) {
-                    test.strictEqual(a[index], elem)
+                    test.strictEqual(a[index], elem);
                 }
             );
             var b = {1: 2, 2: 4, 3: 6};
@@ -189,12 +193,12 @@ exports.setup = function() {
         "extend": function(test) {
             var found = splunkjs.Utils.extend({}, {a: 1, b: 2}, {c: 3, b: 4});
             var expected = {a: 1, b: 4, c:3};
-            for (k in found) {
+            for (var k in found) {
                 if (found.hasOwnProperty(k)) {
                     test.strictEqual(found[k], expected[k]);
-                };
-            };
-            test.done()
+                }
+            }
+            test.done();
         },
 
         "clone": function(test) {

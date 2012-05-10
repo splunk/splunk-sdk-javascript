@@ -15,11 +15,11 @@ exports.setup = function() {
     var isBrowser = typeof window !== "undefined";
 
     var unload = function(name) {
-        for (k in require.cache) {
+        for (var k in require.cache) {
             if (require.cache.hasOwnProperty(k) && k.match(name + "$")) {
                 delete require.cache[k];
-            };
-        };
+            }
+        }
     };
     
     if (isBrowser) {
@@ -75,20 +75,19 @@ exports.setup = function() {
                 var oldVal = process.env.LOG_LEVEL;
                 unload("log.js");
                 var logger = require("../lib/log.js");
-                logger.Logger.setLevel()
+                logger.Logger.setLevel();
                 process.env.LOG_LEVEL = oldVal;
                 unload("log.js");
                 test.done();
             }
 
         };
-    };
-
-}
+    }
+};
 
 if (module === require.main) {
     var test        = require("../contrib/nodeunit/test_reporter");
     
     var suite = exports.setup();
     test.run([{"Tests": suite}]);
-};
+}

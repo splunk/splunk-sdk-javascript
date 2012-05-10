@@ -1390,7 +1390,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 app.updateInfo(function(err, info, app) {
                     test.ok(err);
                     test.done();
-                })
+                });
             }
         },
         
@@ -1585,7 +1585,12 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#configurations init": function(test) {
-                test.throws(function() {new splunkjs.Service.Configurations(this.service, {owner: "-", app: "-", sharing: "system"});});
+                test.throws(function() {
+                    var confs = new splunkjs.Service.Configurations(
+                        this.service, 
+                        {owner: "-", app: "-", sharing: "system"}
+                    );
+                });
                 test.done();
             },
                    
@@ -1840,7 +1845,9 @@ exports.setup = function(svc, loggedOutSvc) {
 
             "Callback#remove throws an error": function(test) {
                 var index = this.service.indexes().item("_internal");
-                test.throws(function() {index.remove});
+                test.throws(function() {
+                    index.remove();
+                });
                 test.done();
             },
 
@@ -2278,8 +2285,12 @@ exports.setup = function(svc, loggedOutSvc) {
 
             "Throws on null arguments to init": function(test) {
                 var service = this.service;
-                test.throws(function() {new splunkjs.Service.Endpoint(null, "a/b"); });
-                test.throws(function() {new splunkjs.Service.Endpoint(service, null); });
+                test.throws(function() {
+                    var endpoint = new splunkjs.Service.Endpoint(null, "a/b"); 
+                });
+                test.throws(function() {
+                    var endpoint = new splunkjs.Service.Endpoint(service, null); 
+                });
                 test.done();
             },
 
@@ -2437,15 +2448,17 @@ exports.setup = function(svc, loggedOutSvc) {
                 var coll = new splunkjs.Service.Collection(
                     this.service,
                     "/data/indexes",
-                    {owner: "admin",
-                     app: "search",
-                     sharing: "app"}
+                    {
+                        owner: "admin",
+                        app: "search",
+                        sharing: "app"
+                    }
                 );
                 test.throws(function() { coll.item(null);});
                 test.done();
             }
-       }
-    }
+        }
+    };
 };
 
 if (module === require.main) {

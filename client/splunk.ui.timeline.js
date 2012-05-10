@@ -11342,7 +11342,7 @@ require.define("/utils.js", function (require, module, exports, __dirname, __fil
             if (obj.hasOwnProperty(k) && obj[k] === val) {
                 return k;
             }
-        };
+        }
         return undefined;
     };
 
