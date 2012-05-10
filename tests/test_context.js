@@ -17,14 +17,14 @@ exports.setup = function(svc) {
     var splunkjs    = require('../index');
 
     splunkjs.Logger.setLevel("ALL");
-    var isBrowser = typeof "window" !== "undefined";
+    var isBrowser = typeof window !== "undefined";
     
     return {
         setUp: function(done) {
             this.service = svc;
             done();
         },
-            
+
         "Service exists": function(test) {
             test.ok(this.service);
             test.done();
@@ -55,14 +55,13 @@ exports.setup = function(svc) {
                 password: svc.password + "wrong_password",
                 version: svc.version
             });
-
             if (!isBrowser) {
                 newService.login(function(err, success) {
                     test.ok(err);
                     test.ok(!success);
                     test.done();
                 });
-            }
+            } 
             else {
                 test.done();
             }
@@ -656,6 +655,26 @@ exports.setup = function(svc) {
             });
             
             req.abort();
+        },
+
+        "fullpath gets its owner/app from the right places": function(test) {
+            var ctx = new splunkjs.Context();
+            
+            // Absolute paths are unchanged
+            test.strictEqual(ctx.fullpath("/a/b/c"), "/a/b/c");
+            // Fall through to /services if there is no app
+            test.strictEqual(ctx.fullpath("meep"), "/services/meep");
+            // Are username and app set properly?
+            var ctx2 = new splunkjs.Context({owner: "alpha", app: "beta"});
+            test.strictEqual(ctx2.fullpath("meep"), "/servicesNS/alpha/beta/meep");
+            test.strictEqual(ctx2.fullpath("meep", {owner: "boris"}), "/servicesNS/boris/beta/meep");
+            test.strictEqual(ctx2.fullpath("meep", {app: "factory"}), "/servicesNS/alpha/factory/meep");
+            test.strictEqual(ctx2.fullpath("meep", {owner: "boris", app: "factory"}), "/servicesNS/boris/factory/meep");
+            // Sharing settings
+            test.strictEqual(ctx2.fullpath("meep", {sharing: "app"}), "/servicesNS/nobody/beta/meep");
+            test.strictEqual(ctx2.fullpath("meep", {sharing: "global"}), "/servicesNS/nobody/beta/meep");
+            test.strictEqual(ctx2.fullpath("meep", {sharing: "system"}), "/servicesNS/nobody/system/meep");
+            test.done();
         }
     };
 };

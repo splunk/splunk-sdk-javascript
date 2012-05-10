@@ -131,6 +131,7 @@ def from_feed(content, timings={}, messages=[]):
     if content:
         # Parse XML
         time_start = time.time()
+
         root = et.fromstring(content)
         time_end = time.time()
         timings["xml_parse"] = time_end - time_start
@@ -282,9 +283,8 @@ def from_job_results(root, format=ResultFormat.ROW, timings={}):
         # When we have a oneshot search with no results,
         # we get back an invalid XML string. We simply
         # replace it with an empty results tag
-        if root.strip() == XML_HEADER:
+        if root.strip() == XML_HEADER or root.strip() == '':
             root = "<results preview='0'/>"
-            
         time_start = time.time()
         root = et.fromstring(root)
         time_end = time.time()
@@ -682,9 +682,8 @@ def from_propertizes_stanza(root):
         root = et.parse(root).getroot()
         
     collection = {}
-    
+
     collection['entry'] = parse_stanza(root)
-    
     collection['id'] = root.findall('{%s}id' % (ATOM_NS))[0].text
     collection['name'] = root.findall('{%s}title' % (ATOM_NS))[0].text
     

@@ -10953,7 +10953,8 @@ require.define("/utils.js", function (require, module, exports, __dirname, __fil
     var root = exports || this;
 
     /**
-     * Various utility functions for the Splunk SDK
+     * Various utility functions for the Splunk SDK. These are mostly
+     * modeled after underscore (http://documentcloud.github.com/underscore/).
      *
      * @module splunkjs.Utils
      */
@@ -11247,13 +11248,15 @@ require.define("/utils.js", function (require, module, exports, __dirname, __fil
         }
         if (Array.prototype.forEach && obj.forEach === Array.prototype.forEach) {
             obj.forEach(iterator, context);
-        } else if (obj.length === +obj.length) {
+        } 
+        else if (obj.length === +obj.length) {
             for (var i = 0, l = obj.length; i < l; i++) {
                 if (i in obj && iterator.call(context, obj[i], i, obj) === {}) {
                     return;
                 }
             }
-        } else {
+        } 
+        else {
             for (var key in obj) {
                 if (obj.hasOwnProperty(key)) {
                     if (iterator.call(context, obj[key], key, obj) === {}) {
@@ -11325,7 +11328,24 @@ require.define("/utils.js", function (require, module, exports, __dirname, __fil
             sharing: props.acl.sharing
         };
     };  
-    
+
+    /**
+      * Test if a value appears in a given object.
+      *
+      * @param {Anything} val The value to search for.
+      * @param {Object} obj The object to search in
+      *
+      * @function splunkjs.Utils
+      */
+    root.keyOf = function(val, obj) {
+        for (var k in obj) {
+            if (obj.hasOwnProperty(k) && obj[k] === val) {
+                return k;
+            }
+        }
+        return undefined;
+    };
+
     /**
      * Given a version and a dictionary, find the value in the map corresponding
      * to that version
