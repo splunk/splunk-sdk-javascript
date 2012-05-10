@@ -6437,6 +6437,12 @@ require.define("/lib/platform/client/proxy_http.js", function (require, module, 
             return JSON.parse(json);
         }
     });
+
+    root.SplunkWebHttp = root.ProxyHttp.extend({
+        init: function() {
+            this._super("/en-US/splunkd/__raw");
+        }
+    });
 })();
 });
 
@@ -6553,13 +6559,16 @@ require.define("/browser.entry.js", function (require, module, exports, __dirnam
 (function(exportName) {
     var previousSplunk = window[exportName];
     
-    var ourSplunk = require('../../index');
-    var ourXDM    = require('../../lib/platform/client/easyxdm_http').XdmHttp;
-    var proxyHttp = require('../../lib/platform/client/proxy_http').ProxyHttp;
+    var ourSplunk     = require('../../index');
+    var ourXDM        = require('../../lib/platform/client/easyxdm_http').XdmHttp;
+    var proxyHttps    = require('../../lib/platform/client/proxy_http');
+    var proxyHttp     = proxyHttps.ProxyHttp;
+    var splunkwebHttp = proxyHttps.SplunkWebHttp;
     
-    window[exportName] = ourSplunk;
-    window[exportName].XdmHttp = ourXDM;
-    window[exportName].ProxyHttp = proxyHttp;
+    window[exportName]               = ourSplunk;
+    window[exportName].XdmHttp       = ourXDM;
+    window[exportName].ProxyHttp     = proxyHttp;
+    window[exportName].SplunkWebHttp = splunkwebHttp;
     
     // Add no conflict capabilities
     window[exportName].noConflict = function(name) {
