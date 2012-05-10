@@ -656,7 +656,11 @@ exports.setup = function(svc, loggedOutSvc) {
                                 done);
                         },
                         function(job, done) {
-                            job.summary({}, done);
+                            // Let's sleep for 2 second so
+                            // we let the server catch up
+                            Async.sleep(2000, function() {
+                                job.summary({}, done);
+                            });
                         },
                         function(summary, job, done) {
                             test.ok(job);
@@ -755,14 +759,12 @@ exports.setup = function(svc, loggedOutSvc) {
                 var originalSearch = "search index=_internal | head 1";
             
                 var jobs = this.service.jobs();
-                test.ok(jobs instanceof splunkjs.Service.Jobs);
                 test.throws(function() {jobs.create({search: originalSearch, name: name, exec_mode: "oneshot"}, function() {});});
                 test.done();
             },
 
             "Callback#Create fails with no search string": function(test) {
                 var jobs = this.service.jobs();
-                test.ok(jobs instanceof splunkjs.Service.Jobs);
                 jobs.create(
                     "", {},
                     function(err) { 
@@ -821,9 +823,6 @@ exports.setup = function(svc, loggedOutSvc) {
                         }
                     ],
                     function(err) {
-                        if (err) {
-                            console.log(err.data.messages);
-                        };
                         test.ok(!err);
                         test.done();
                     }
@@ -1342,7 +1341,7 @@ exports.setup = function(svc, loggedOutSvc) {
             "Callback#delete test saved searches": function(test) {
                 var searches = this.service.savedSearches({owner: this.service.username, app: "xml2json"});
                 searches.fetch(function(err, searches) {
-                    var searchList = searches.list();            
+                    var searchList = searches.list();
                     Async.parallelEach(
                         searchList,
                         function(search, idx, callback) {
@@ -1504,9 +1503,6 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 ],
                 function(err) {
-                    if (err) {
-                        console.log(err.data.messages);
-                    };
                     test.ok(!err);
                     test.done();
                 });
@@ -1631,9 +1627,6 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 ],
                 function(err) {
-                    if (err) {
-                        console.log(err.data.messages);
-                    };
                     test.ok(!err);
                     test.done();
                 });
@@ -2366,20 +2359,43 @@ exports.setup = function(svc, loggedOutSvc) {
             "Does reload work?": function(test) {
                 var idx = new splunkjs.Service.Index(
                     this.service,
-                    "data/indexes/_internal",
-                    {owner: "admin", 
-                     app: "search", 
-                     sharing: "app"}
+                    "data/indexes/sdk-test",
+                    {
+                        owner: "admin", 
+                        app: "search", 
+                        sharing: "app"
+                    }
                 );
-                idx.reload(function(err) {
-                    test.ok(!err);
-                });
-
-                var idx2 = new splunkjs.Service.Index(this.loggedOutService, "", {});
-                idx2.reload(function(err) { test.ok(err); });
-                test.done();
+                var name = "jssdk_testapp_" + getNextId();
+                var apps = this.service.apps();
+                
+                var that = this;
+                Async.chain(
+                    function(done) {
+                        apps.create({name: name}, done);
+                    },
+                    function(app, done) {
+                        app.reload(function(err) {
+                            test.ok(!err);
+                            done(null, app);
+                        });
+                    },
+                    function(app, done) {
+                        var app2 = new splunkjs.Service.Application(that.loggedOutService, app.name);
+                        app2.reload(function(err) { 
+                            test.ok(err); 
+                            done(null, app);
+                        });
+                    },
+                    function(app, done) {
+                        app.remove(done);
+                    },
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
             }
-
         },
         
         "Collections": {
@@ -2428,7 +2444,6 @@ exports.setup = function(svc, loggedOutSvc) {
                 test.throws(function() { coll.item(null);});
                 test.done();
             }
-
        }
     }
 };

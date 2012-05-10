@@ -420,47 +420,49 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
         "ERROR": 1,
         "NONE": 0
     };
-    
-    var exists = function(key) {
-        return typeof(process.env[key]) !== "undefined";
-    };
-    
-    if (exists("LOG_LEVEL")) {
-        // If it isn't set, then we default to only errors
-        process.env.LOG_LEVEL = levels["ERROR"];
-    }
-    else if (utils.isString(process.env.LOG_LEVEL)) {
-        // If it is a string, try and convert it, but default
-        // to error output if we can't convert it.
-        if (levels.hasOwnProperty(process.env.LOG_LEVEL)) {
-            process.env.LOG_LEVEL = levels[process.env.LOG_LEVEL];
-        }
+
+    // Normalize the value of the environment variable $LOG_LEVEL to
+    // an integer (look up named levels like "ERROR" in levels above),
+    // and default to "ERROR" if there is no value or an invalid value
+    // set.
+    var setLevel = function(level) {    
+        if (utils.isString(level) && levels.hasOwnProperty(level)) {
+            process.env.LOG_LEVEL = levels[level];
+        } 
+        else if (!isNaN(parseInt(level, 10)) &&
+                   utils.keyOf(parseInt(level, 10), levels)) {
+            process.env.LOG_LEVEL = level;
+        } 
         else {
-            process.env.LOG_LEVEL = levels["ERROR"];
-        }
-    }
-    else if (!utils.isNumber(process.env.LOG_LEVEL)) {
-        // If it is anything other than a string or number,
-        // set it to only error output.
+            process.env.LOG_LEVEL = levels["ERROR"];                
+        };
+    };
+
+    if (process.env.LOG_LEVEL) {
+        setLevel(process.env.LOG_LEVEL);
+    } 
+    else {
         process.env.LOG_LEVEL = levels["ERROR"];
     }
 
     // Set the actual output functions
+    // This section is not covered by unit tests, since there's no
+    // straightforward way to control what the console object will be.
     var _log, _warn, _error, _info;
     _log = _warn = _error = _info = function() {};
     if (typeof(console) !== "undefined") {
-        _log   = (console.log   ?
-            function(str) { try { console.log.apply(console, arguments);   } catch (ex) { console.log(str);   } }   :
-            _log);
-        _error = (console.error ?
-            function(str) { try { console.error.apply(console, arguments); } catch (ex) { console.error(str); } } :
-            _error);
-        _warn  = (console.warn  ?
-            function(str) { try { console.warn.apply(console, arguments);  } catch (ex) { console.warn(str);  } } :
-            _warn);
-        _info  = (console.info  ?
-            function(str) { try { console.info.apply(console, arguments);  } catch (ex) { console.info(str);  } } :
-            _info);
+
+        var logAs = function(level) {
+            return function(str) {
+                try { console[level].apply(console, arguments) }
+                catch (ex) { console[level](str);};
+            }
+        };
+
+        if (console.log) { _log = logAs("log"); };
+        if (console.error) { _error = logAs("error"); };
+        if (console.warn) { _warn = logAs("warn"); };
+        if (console.info) { _info = logAs("info"); };
     }
 
     /**
@@ -560,27 +562,13 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
          *
          * @function splunkjs.Logger
          */
-        setLevel: function(level) {    
-            if (utils.isString(level)) {
-                if (levels.hasOwnProperty(level)) {
-                    process.env.LOG_LEVEL = levels[level];
-                }
-                else {
-                    process.env.LOG_LEVEL = levels["ERROR"];
-                }
-            }
-            else if (utils.isNumber(level)) {
-                process.env.LOG_LEVEL = level;
-            }
-            else {
-                process.env.LOG_LEVEL = levels["ERROR"];
-            }
-        },
+        setLevel: setLevel,
         
         /*!*/
         levels: levels
     };
 })();
+
 });
 
 require.define("/lib/utils.js", function (require, module, exports, __dirname, __filename) {
@@ -605,7 +593,8 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     var root = exports || this;
 
     /**
-     * Various utility functions for the Splunk SDK
+     * Various utility functions for the Splunk SDK. These are mostly
+     * modeled after underscore (http://documentcloud.github.com/underscore/).
      *
      * @module splunkjs.Utils
      */
@@ -899,13 +888,15 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
         }
         if (Array.prototype.forEach && obj.forEach === Array.prototype.forEach) {
             obj.forEach(iterator, context);
-        } else if (obj.length === +obj.length) {
+        } 
+        else if (obj.length === +obj.length) {
             for (var i = 0, l = obj.length; i < l; i++) {
                 if (i in obj && iterator.call(context, obj[i], i, obj) === {}) {
                     return;
                 }
             }
-        } else {
+        } 
+        else {
             for (var key in obj) {
                 if (obj.hasOwnProperty(key)) {
                     if (iterator.call(context, obj[key], key, obj) === {}) {
@@ -977,7 +968,24 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
             sharing: props.acl.sharing
         };
     };  
-    
+
+    /**
+      * Test if a value appears in a given object.
+      *
+      * @param {Anything} val The value to search for.
+      * @param {Object} obj The object to search in
+      *
+      * @function splunkjs.Utils
+      */
+    root.keyOf = function(val, obj) {
+        for (var k in obj) {
+            if (obj.hasOwnProperty(k) && obj[k] === val) {
+                return k;
+            }
+        };
+        return undefined;
+    };
+
     /**
      * Given a version and a dictionary, find the value in the map corresponding
      * to that version
@@ -3452,7 +3460,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         create: function(params, callback) {
             callback = callback || function() {};
-            
             var that = this;
             var req = this.post("", params, function(err, response) {
                 if (err) {
@@ -5222,6 +5229,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         }
     });
 })();
+
 });
 
 require.define("/lib/async.js", function (require, module, exports, __dirname, __filename) {

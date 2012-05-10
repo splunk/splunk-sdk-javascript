@@ -403,7 +403,189 @@ exports.setup = function() {
                 test.ok(!two);
                 test.done();
             });
+        },
+
+        "keyOf works": function(test) {
+            test.ok(splunkjs.Utils.keyOf(3, {a: 3, b: 5}));
+            test.ok(!splunkjs.Utils.keyOf(3, {a: 12, b: 6}));
+            test.done();
+        },
+
+        "bind": function(test) {
+            var f;
+            (function() { f = function(a) { this.a = a; };})();
+            var q = {};
+            g = splunkjs.Utils.bind(q, f);
+            g(12);
+            test.strictEqual(q.a, 12);
+            test.done();
+        },
+        
+        "trim": function(test) {
+            test.strictEqual(splunkjs.Utils.trim("  test of something  \n\r  \t"), "test of something");
+
+            var realTrim = String.prototype.trim;
+            String.prototype.trim = null;
+            test.strictEqual(splunkjs.Utils.trim("  test of something  \n\r  \t"), "test of something");
+            String.prototype.trim = realTrim;
+
+            test.done();
+        },
+
+        "indexOf": function(test) {
+            test.strictEqual(splunkjs.Utils.indexOf([1,2,3,4,5], 3), 2);
+            test.strictEqual(splunkjs.Utils.indexOf([1,2,3,4,3], 3), 2);
+            test.strictEqual(splunkjs.Utils.indexOf([1,2,3,4,5], 12), -1);
+            test.done();
+        },
+
+        "contains": function(test) {
+            test.ok(splunkjs.Utils.contains([1,2,3,4,5], 3));
+            test.ok(splunkjs.Utils.contains([1,2,3,4,3], 3));
+            test.ok(!splunkjs.Utils.contains([1,2,3,4,5], 12));
+            test.done();
+        },
+
+        "startsWith": function(test) {
+            test.ok(splunkjs.Utils.startsWith("abcdefg", "abc"));
+            test.ok(!splunkjs.Utils.startsWith("bcdefg", "abc"));
+            test.done();
+        },
+
+        "endsWith": function(test) {
+            test.ok(splunkjs.Utils.endsWith("abcdef", "def"));
+            test.ok(!splunkjs.Utils.endsWith("abcdef", "bcd"));
+            test.done();
+        },
+
+        "toArray": function(test) {
+            (function() {
+                var found = splunkjs.Utils.toArray(arguments);
+                var expected = [1,2,3,4,5];
+                for (var i = 0; i < found.length; i++) {
+                    test.strictEqual(found[i], expected[i]);
+                }
+            })(1,2,3,4,5);
+            test.done();
+        },
+
+        "isArray": function(test) {
+            var a = [1,2,3,4,5];
+            test.ok(splunkjs.Utils.isArray(a));
+            test.done();
+        },
+
+        "isFunction": function(test) {
+            test.ok(splunkjs.Utils.isFunction(function() {}));
+            test.ok(!splunkjs.Utils.isFunction(3));
+            test.ok(!splunkjs.Utils.isFunction("abc"));
+            test.ok(!splunkjs.Utils.isFunction({}));
+            test.done();
+        },
+
+        "isNumber": function(test) {
+            test.ok(splunkjs.Utils.isNumber(3));
+            test.ok(splunkjs.Utils.isNumber(-2.55113e12));
+            test.ok(!splunkjs.Utils.isNumber("3"));
+            test.ok(!splunkjs.Utils.isNumber({3: 5}));
+            test.done();
+        },
+
+        "isObject": function(test) {
+            test.ok(splunkjs.Utils.isObject({}));
+            test.ok(!splunkjs.Utils.isObject(3));
+            test.ok(!splunkjs.Utils.isObject("3"));
+            test.done();
+        },
+
+        "isEmpty": function(test) {
+            test.ok(splunkjs.Utils.isEmpty({}));
+            test.ok(splunkjs.Utils.isEmpty([]));
+            test.ok(splunkjs.Utils.isEmpty(""));
+            test.ok(!splunkjs.Utils.isEmpty({a: 3}));
+            test.ok(!splunkjs.Utils.isEmpty([1,2]));
+            test.ok(!splunkjs.Utils.isEmpty("abc"));
+            test.done();
+        },
+
+        "forEach": function(test) {
+            var a = [1,2,3,4,5];
+            splunkjs.Utils.forEach(
+                a,
+                function(elem, index, list) {
+                    test.strictEqual(a[index], elem)
+                }
+            );
+            var b = {1: 2, 2: 4, 3: 6};
+            splunkjs.Utils.forEach(
+                b,
+                function(elem, key, obj) {
+                    test.strictEqual(b[key], elem);
+                }
+            );
+            splunkjs.Utils.forEach(null, function(elem, key, obj) {});
+            var c = {length: 5, 1: 12, 2: 15, 3: 8};
+            splunkjs.Utils.forEach(
+                c,
+                function(elem, key, obj) {
+                    test.strictEqual(c[key], elem);
+                }
+            );
+            test.done();
+        },
+
+        "extend": function(test) {
+            var found = splunkjs.Utils.extend({}, {a: 1, b: 2}, {c: 3, b: 4});
+            var expected = {a: 1, b: 4, c:3};
+            for (k in found) {
+                if (found.hasOwnProperty(k)) {
+                    test.strictEqual(found[k], expected[k]);
+                };
+            };
+            test.done()
+        },
+
+        "clone": function(test) {
+            var a = {a: 1, b: 2, c: {p: 5, q: 6}};
+            var b = splunkjs.Utils.clone(a);
+            splunkjs.Utils.forEach(a, function(val, key, obj) { test.strictEqual(val, b[key]); });
+            a.a = 5;
+            test.strictEqual(b.a, 1);
+            a.c.p = 4;
+            test.strictEqual(b.c.p, 4);
+            test.done();
+            test.strictEqual(splunkjs.Utils.clone(3), 3);
+            test.strictEqual(splunkjs.Utils.clone("asdf"), "asdf");
+            var p = [1,2,[3,4],3];
+            var q = splunkjs.Utils.clone(p);
+            splunkjs.Utils.forEach(p, function(val, index, arr) { test.strictEqual(p[index], q[index]); });
+            p[0] = 3;
+            test.strictEqual(q[0], 1);
+            p[2][0] = 7;
+            test.strictEqual(q[2][0], 7);
+        },
+
+        "namespaceFromProperties": function(test) {
+            test.throws(function() { splunkjs.Utils.namespaceFromProperties({}); });
+            var a = splunkjs.Utils.namespaceFromProperties(
+                {acl: {owner: "boris",
+                       app: "factory",
+                       sharing: "system",
+                       other: 3},
+                 more: 12}
+            );
+            splunkjs.Utils.forEach(
+                a,
+                function(val, key, obj) {
+                    test.ok((key === "owner" && val === "boris") ||
+                            (key === "app" && val === "factory") ||
+                            (key === "sharing" && val === "system"));
+                }
+            );
+            test.done();
+            
         }
+        
     };
 };
 
@@ -413,6 +595,7 @@ if (module === require.main) {
     var suite = exports.setup();
     test.run([{"Tests": suite}]);
 }
+
 });
 
 require.define("/package.json", function (require, module, exports, __dirname, __filename) {
@@ -490,47 +673,49 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
         "ERROR": 1,
         "NONE": 0
     };
-    
-    var exists = function(key) {
-        return typeof(process.env[key]) !== "undefined";
-    };
-    
-    if (exists("LOG_LEVEL")) {
-        // If it isn't set, then we default to only errors
-        process.env.LOG_LEVEL = levels["ERROR"];
-    }
-    else if (utils.isString(process.env.LOG_LEVEL)) {
-        // If it is a string, try and convert it, but default
-        // to error output if we can't convert it.
-        if (levels.hasOwnProperty(process.env.LOG_LEVEL)) {
-            process.env.LOG_LEVEL = levels[process.env.LOG_LEVEL];
-        }
+
+    // Normalize the value of the environment variable $LOG_LEVEL to
+    // an integer (look up named levels like "ERROR" in levels above),
+    // and default to "ERROR" if there is no value or an invalid value
+    // set.
+    var setLevel = function(level) {    
+        if (utils.isString(level) && levels.hasOwnProperty(level)) {
+            process.env.LOG_LEVEL = levels[level];
+        } 
+        else if (!isNaN(parseInt(level, 10)) &&
+                   utils.keyOf(parseInt(level, 10), levels)) {
+            process.env.LOG_LEVEL = level;
+        } 
         else {
-            process.env.LOG_LEVEL = levels["ERROR"];
-        }
-    }
-    else if (!utils.isNumber(process.env.LOG_LEVEL)) {
-        // If it is anything other than a string or number,
-        // set it to only error output.
+            process.env.LOG_LEVEL = levels["ERROR"];                
+        };
+    };
+
+    if (process.env.LOG_LEVEL) {
+        setLevel(process.env.LOG_LEVEL);
+    } 
+    else {
         process.env.LOG_LEVEL = levels["ERROR"];
     }
 
     // Set the actual output functions
+    // This section is not covered by unit tests, since there's no
+    // straightforward way to control what the console object will be.
     var _log, _warn, _error, _info;
     _log = _warn = _error = _info = function() {};
     if (typeof(console) !== "undefined") {
-        _log   = (console.log   ?
-            function(str) { try { console.log.apply(console, arguments);   } catch (ex) { console.log(str);   } }   :
-            _log);
-        _error = (console.error ?
-            function(str) { try { console.error.apply(console, arguments); } catch (ex) { console.error(str); } } :
-            _error);
-        _warn  = (console.warn  ?
-            function(str) { try { console.warn.apply(console, arguments);  } catch (ex) { console.warn(str);  } } :
-            _warn);
-        _info  = (console.info  ?
-            function(str) { try { console.info.apply(console, arguments);  } catch (ex) { console.info(str);  } } :
-            _info);
+
+        var logAs = function(level) {
+            return function(str) {
+                try { console[level].apply(console, arguments) }
+                catch (ex) { console[level](str);};
+            }
+        };
+
+        if (console.log) { _log = logAs("log"); };
+        if (console.error) { _error = logAs("error"); };
+        if (console.warn) { _warn = logAs("warn"); };
+        if (console.info) { _info = logAs("info"); };
     }
 
     /**
@@ -630,27 +815,13 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
          *
          * @function splunkjs.Logger
          */
-        setLevel: function(level) {    
-            if (utils.isString(level)) {
-                if (levels.hasOwnProperty(level)) {
-                    process.env.LOG_LEVEL = levels[level];
-                }
-                else {
-                    process.env.LOG_LEVEL = levels["ERROR"];
-                }
-            }
-            else if (utils.isNumber(level)) {
-                process.env.LOG_LEVEL = level;
-            }
-            else {
-                process.env.LOG_LEVEL = levels["ERROR"];
-            }
-        },
+        setLevel: setLevel,
         
         /*!*/
         levels: levels
     };
 })();
+
 });
 
 require.define("/lib/utils.js", function (require, module, exports, __dirname, __filename) {
@@ -675,7 +846,8 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     var root = exports || this;
 
     /**
-     * Various utility functions for the Splunk SDK
+     * Various utility functions for the Splunk SDK. These are mostly
+     * modeled after underscore (http://documentcloud.github.com/underscore/).
      *
      * @module splunkjs.Utils
      */
@@ -969,13 +1141,15 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
         }
         if (Array.prototype.forEach && obj.forEach === Array.prototype.forEach) {
             obj.forEach(iterator, context);
-        } else if (obj.length === +obj.length) {
+        } 
+        else if (obj.length === +obj.length) {
             for (var i = 0, l = obj.length; i < l; i++) {
                 if (i in obj && iterator.call(context, obj[i], i, obj) === {}) {
                     return;
                 }
             }
-        } else {
+        } 
+        else {
             for (var key in obj) {
                 if (obj.hasOwnProperty(key)) {
                     if (iterator.call(context, obj[key], key, obj) === {}) {
@@ -1047,7 +1221,24 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
             sharing: props.acl.sharing
         };
     };  
-    
+
+    /**
+      * Test if a value appears in a given object.
+      *
+      * @param {Anything} val The value to search for.
+      * @param {Object} obj The object to search in
+      *
+      * @function splunkjs.Utils
+      */
+    root.keyOf = function(val, obj) {
+        for (var k in obj) {
+            if (obj.hasOwnProperty(k) && obj[k] === val) {
+                return k;
+            }
+        };
+        return undefined;
+    };
+
     /**
      * Given a version and a dictionary, find the value in the map corresponding
      * to that version
@@ -3522,7 +3713,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         create: function(params, callback) {
             callback = callback || function() {};
-            
             var that = this;
             var req = this.post("", params, function(err, response) {
                 if (err) {
@@ -5292,6 +5482,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         }
     });
 })();
+
 });
 
 require.define("/lib/async.js", function (require, module, exports, __dirname, __filename) {
@@ -6377,7 +6568,7 @@ exports.setup = function() {
                 }
             );
         },
-        
+
         "While success deep": function(test) {
             var i = 0;
             Async.whilst(
@@ -6406,6 +6597,37 @@ exports.setup = function() {
                 }
             );
         },
+
+        "Whilst sans condition is never": function(test) {
+            var i = false;
+            Async.whilst(
+                undefined, 
+                function(done) { i = true; done();},
+                function(err) {
+                    test.strictEqual(i, false);
+                    test.done();
+                }
+            );
+        },
+
+        "Whilst with empty body does nothing": function(test) {
+            var i = true;
+            Async.whilst(
+                function() { 
+                    if (i) {
+                        i = false;
+                        return true;
+                    } 
+                    else {
+                        return i;
+                    }
+                },
+                undefined,
+                function (err) {
+                    test.done();
+                }
+            );
+        },
         
         "Parallel success": function(test) {
             Async.parallel([
@@ -6423,6 +6645,19 @@ exports.setup = function() {
                     test.done();
                 }
             );
+        },
+
+        "Parallel success - outside of arrays": function(test) {
+            Async.parallel(
+              function(done) { done(null, 1);},
+              function(done) { done(null, 2, 3); },
+              function(err, one, two) {
+                test.ok(!err);
+                test.strictEqual(one, 1);
+                test.strictEqual(two[0], 2);
+                test.strictEqual(two[1], 3);
+                test.done();
+              });
         },
         
         "Parallel success - no reordering": function(test) {
@@ -6483,6 +6718,24 @@ exports.setup = function() {
                 function(done) {
                     done(null, 2, 3);
                 }],
+                function(err, one, two) {
+                    test.ok(!err);
+                    test.strictEqual(one, 1);
+                    test.strictEqual(two[0], 2);
+                    test.strictEqual(two[1], 3);
+                    test.done();
+                }
+            );
+        },
+
+        "Series success - outside of array": function(test) {
+            Async.series(
+                function(done) {
+                    done(null, 1);
+                },
+                function(done) {
+                    done(null, 2, 3);
+                },
                 function(err, one, two) {
                     test.ok(!err);
                     test.strictEqual(one, 1);
@@ -6814,6 +7067,7 @@ if (module === require.main) {
     var suite = exports.setup();
     test.run([{"Tests": suite}]);
 }
+
 });
 
 require.define("/tests/test_http.js", function (require, module, exports, __dirname, __filename) {
@@ -6837,12 +7091,13 @@ exports.setup = function(http) {
 
     splunkjs.Logger.setLevel("ALL");
     return {
+
         "HTTP GET Tests": {
             setUp: function(done) {
                 this.http = http;
                 done();
             },
-            
+
             "Callback#abort simple": function(test) {
                 var req = this.http.get("https://www.httpbin.org/get", {}, {}, 0, function(err, res) {
                     test.ok(err);
@@ -6897,6 +7152,23 @@ exports.setup = function(http) {
                     test.strictEqual(res.data.url, "http://www.httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
                     test.done();
                 });
+            },
+
+            "Callback#args with objects": function(test) {
+                this.http.get(
+                    "http://www.httpbin.org/get", [],
+                    {a: 1, b: {c: "ab", d: 12}}, 0,
+                    function(err, res) {
+                        var args = res.data.args;
+                        test.strictEqual(args.a, "1");
+                        test.strictEqual(args.b, "ab");
+                        test.strictEqual(
+                            res.data.url,
+                            "http://www.httpbin.org/get?a=1&b=ab&b=12"
+                        );
+                        test.done();
+                    }
+                );
             },
             
             "Callback#headers": function(test) {
@@ -7083,7 +7355,22 @@ exports.setup = function(http) {
                     test.strictEqual(res.data.url, "http://www.httpbin.org/delete?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
                     test.done();
                 });
-            }
+            },
+
+            "Default arguments to Http work": function(test) {
+                var NodeHttp = splunkjs.NodeHttp;
+                var h = new NodeHttp();
+                test.ok(h);
+                test.done();
+            },
+
+            "Methods of Http base class that must be overrided": function(test) {
+                var h = new splunkjs.Http();
+                test.throws(function() { h.makeRequest("asdf", null, null); });
+                test.throws(function() { h.parseJson("{}"); });
+                test.done();
+            },
+
         }
     };
 };
@@ -7098,6 +7385,7 @@ if (module === require.main) {
     var suite = exports.setup(http);
     test.run([{"Tests": suite}]);
 }
+
 });
 
 require.define("/tests/test_context.js", function (require, module, exports, __dirname, __filename) {
@@ -7120,14 +7408,14 @@ exports.setup = function(svc) {
     var splunkjs    = require('../index');
 
     splunkjs.Logger.setLevel("ALL");
-    var isBrowser = typeof "window" !== "undefined";
+    var isBrowser = typeof window !== "undefined";
     
     return {
         setUp: function(done) {
             this.service = svc;
             done();
         },
-            
+
         "Service exists": function(test) {
             test.ok(this.service);
             test.done();
@@ -7158,14 +7446,13 @@ exports.setup = function(svc) {
                 password: svc.password + "wrong_password",
                 version: svc.version
             });
-
             if (!isBrowser) {
                 newService.login(function(err, success) {
                     test.ok(err);
                     test.ok(!success);
                     test.done();
                 });
-            }
+            } 
             else {
                 test.done();
             }
@@ -7759,6 +8046,26 @@ exports.setup = function(svc) {
             });
             
             req.abort();
+        },
+
+        "fullpath gets its owner/app from the right places": function(test) {
+            var ctx = new splunkjs.Context();
+            
+            // Absolute paths are unchanged
+            test.strictEqual(ctx.fullpath("/a/b/c"), "/a/b/c");
+            // Fall through to /services if there is no app
+            test.strictEqual(ctx.fullpath("meep"), "/services/meep")
+            // Are username and app set properly?
+            var ctx2 = new splunkjs.Context({owner: "alpha", app: "beta"});
+            test.strictEqual(ctx2.fullpath("meep"), "/servicesNS/alpha/beta/meep");
+            test.strictEqual(ctx2.fullpath("meep", {owner: "boris"}), "/servicesNS/boris/beta/meep");
+            test.strictEqual(ctx2.fullpath("meep", {app: "factory"}), "/servicesNS/alpha/factory/meep");
+            test.strictEqual(ctx2.fullpath("meep", {owner: "boris", app: "factory"}), "/servicesNS/boris/factory/meep");
+            // Sharing settings
+            test.strictEqual(ctx2.fullpath("meep", {sharing: "app"}), "/servicesNS/nobody/beta/meep");
+            test.strictEqual(ctx2.fullpath("meep", {sharing: "global"}), "/servicesNS/nobody/beta/meep");
+            test.strictEqual(ctx2.fullpath("meep", {sharing: "system"}), "/servicesNS/nobody/system/meep");
+            test.done();
         }
     };
 };
@@ -7794,6 +8101,7 @@ if (module === require.main) {
         test.run([{"Tests": suite}]);
     });
 }
+
 });
 
 require.define("/examples/node/cmdline.js", function (require, module, exports, __dirname, __filename) {
@@ -7928,7 +8236,7 @@ require.define("/tests/test_service.js", function (require, module, exports, __d
 // License for the specific language governing permissions and limitations
 // under the License.
 
-exports.setup = function(svc) {
+exports.setup = function(svc, loggedOutSvc) {
     var splunkjs    = require('../index');
     var utils       = splunkjs.Utils;
     var Async       = splunkjs.Async;
@@ -8025,7 +8333,6 @@ exports.setup = function(svc) {
                             
                             // Make sure the saved search doesn't exist in the 11 namespace
                             test.ok(!entity21);
-                            
                             done();
                         }
                     ],
@@ -8572,7 +8879,11 @@ exports.setup = function(svc) {
                                 done);
                         },
                         function(job, done) {
-                            job.summary({}, done);
+                            // Let's sleep for 2 second so
+                            // we let the server catch up
+                            Async.sleep(2000, function() {
+                                job.summary({}, done);
+                            });
                         },
                         function(summary, job, done) {
                             test.ok(job);
@@ -8664,6 +8975,26 @@ exports.setup = function(svc) {
                         test.done();
                     }
                 ); 
+            },
+
+            "Callback#Create failure": function(test) {
+                var name = "jssdk_savedsearch_" + getNextId();
+                var originalSearch = "search index=_internal | head 1";
+            
+                var jobs = this.service.jobs();
+                test.throws(function() {jobs.create({search: originalSearch, name: name, exec_mode: "oneshot"}, function() {});});
+                test.done();
+            },
+
+            "Callback#Create fails with no search string": function(test) {
+                var jobs = this.service.jobs();
+                jobs.create(
+                    "", {},
+                    function(err) { 
+                        test.ok(err);
+                        test.done();
+                    }
+                );
             },
 
             "Callback#Oneshot search": function(test) {
@@ -8892,6 +9223,7 @@ exports.setup = function(svc) {
         "Saved Search Tests": {        
             setUp: function(done) {
                 this.service = svc;
+                this.loggedOutService = loggedOutSvc;
                 done();
             },
                    
@@ -8918,7 +9250,7 @@ exports.setup = function(svc) {
                     test.done();
                 });
             },
-            
+
             "Callback#suppress": function(test) {
                 var searches = this.service.savedSearches();
                 searches.fetch(function(err, searches) {
@@ -9032,6 +9364,82 @@ exports.setup = function(svc) {
                 );
             },
             
+            "Callback#dispatch error": function(test) {
+                var name = "jssdk_savedsearch_" + getNextId();
+                var originalSearch = "search index=_internal | head 1";
+                var search = new splunkjs.Service.SavedSearch(
+                    this.loggedOutService, 
+                    name, 
+                    {owner: "nobody", app: "search"}
+                );
+                search.dispatch(function(err) {
+                    test.ok(err);
+                    test.done();
+                });
+            },
+
+            "Callback#dispatch omitting optional arguments": function(test) {
+                var name = "jssdk_savedsearch_" + getNextId();
+                var originalSearch = "search index=_internal | head 1";
+            
+                var searches = this.service.savedSearches({owner: this.service.username, app: "xml2json"});
+                
+                Async.chain(
+                    [function(done) {
+                        searches.create({search: originalSearch, name: name}, done);
+                    },
+                    function(search, done) {
+                        test.ok(search);
+                        
+                        test.strictEqual(search.name, name); 
+                        test.strictEqual(search.properties().search, originalSearch);
+                        test.ok(!search.properties().description);
+                        
+                        search.dispatch(done);
+                    },
+                    function(job, search, done) {
+                        test.ok(job);
+                        test.ok(search);
+                        test.done();
+                    }]
+                );
+            },
+
+            "Callback#history error": function(test) {
+                var name = "jssdk_savedsearch_" + getNextId();
+                var originalSearch = "search index=_internal | head 1";
+                var search = new splunkjs.Service.SavedSearch(
+                    this.loggedOutService, 
+                    name, 
+                    {owner: "nobody", app: "search", sharing: "system"}
+                );
+                search.history(function(err) {
+                    test.ok(err);
+                    test.done();
+                });
+            },
+
+            "Callback#Update error": function(test) {
+                var name = "jssdk_savedsearch_" + getNextId();
+                var originalSearch = "search index=_internal | head 1";
+                var search = new splunkjs.Service.SavedSearch(
+                    this.loggedOutService, 
+                    name, 
+                    {owner: "nobody", app: "search", sharing: "system"}
+                );
+                search.update(
+                    {},
+                    function(err) {
+                        test.ok(err);
+                        test.done();
+                    });
+            },
+
+            "Callback#oneshot requires search string": function(test) {
+                test.throws(function() { this.service.oneshotSearch({name: "jssdk_oneshot_" + getNextId()}, function(err) {});});
+                test.done();
+            },
+
             "Callback#Create + dispatch + history": function(test) {
                 var name = "jssdk_savedsearch_" + getNextId();
                 var originalSearch = "search index=_internal | head 1";
@@ -9104,11 +9512,59 @@ exports.setup = function(svc) {
                     }
                 );
             },
+
+            "Callback#job events fails": function(test) {
+                var job = new splunkjs.Service.Job(this.loggedOutService, "abc", {});
+                job.events({}, function (err) {
+                    test.ok(err);
+                    test.done();
+                });
+            },
+
+            "Callback#job preview fails": function(test) {
+                var job = new splunkjs.Service.Job(this.loggedOutService, "abc", {});
+                job.preview({}, function(err) {
+                    test.ok(err);
+                    test.done();
+                });
+            },
+
+            "Callback#job results fails": function(test) {
+                var job = new splunkjs.Service.Job(this.loggedOutService, "abc", {});
+                job.results({}, function(err) {
+                    test.ok(err);
+                    test.done();
+                });
+            },
+
+            "Callback#job searchlog fails": function(test) {
+                var job = new splunkjs.Service.Job(this.loggedOutService, "abc", {});
+                job.searchlog(function(err) {
+                    test.ok(err);
+                    test.done();
+                });
+            },
+
+            "Callback#job summary fails": function(test) {
+                var job = new splunkjs.Service.Job(this.loggedOutService, "abc", {});
+                job.summary({}, function(err) {
+                    test.ok(err);
+                    test.done();
+                });
+            },
+
+            "Callback#job timeline fails": function(test) {
+                var job = new splunkjs.Service.Job(this.loggedOutService, "abc", {});
+                job.timeline({}, function(err) {
+                    test.ok(err);
+                    test.done();
+                });
+            },
             
             "Callback#delete test saved searches": function(test) {
                 var searches = this.service.savedSearches({owner: this.service.username, app: "xml2json"});
                 searches.fetch(function(err, searches) {
-                    var searchList = searches.list();            
+                    var searchList = searches.list();
                     Async.parallelEach(
                         searchList,
                         function(search, idx, callback) {
@@ -9123,6 +9579,155 @@ exports.setup = function(svc) {
                             test.done();
                         }
                     );
+                });
+            },
+
+            "Callback#setupInfo fails": function(test) {
+                var searches = new splunkjs.Service.Application(this.loggedOutService, "search");
+                searches.setupInfo(function(err, content, that) {
+                    test.ok(err);
+                    test.done();
+                });
+            },
+
+            "Callback#setupInfo succeeds": function(test) {
+                var app = new splunkjs.Service.Application(this.service, "xml2json");
+                app.setupInfo(function(err, content, search) {
+                    test.ok(err.data.messages[0].text.match("Setup configuration file does not"));
+                    test.done();
+                });
+            },
+
+            "Callback#updateInfo": function(test) {
+                var app = new splunkjs.Service.Application(this.service, "search");
+                app.updateInfo(function(err, info, app) {
+                    test.ok(!err);
+                    test.ok(app);
+                    test.strictEqual(app.name, 'search');
+                    test.done();
+                });
+            },
+
+            "Callback#updateInfo failure": function(test) {
+                var app = new splunkjs.Service.Application(this.loggedOutService, "xml2json");
+                app.updateInfo(function(err, info, app) {
+                    test.ok(err);
+                    test.done();
+                })
+            }
+        },
+        
+        "Properties Tests": {        
+            setUp: function(done) {
+                this.service = svc;
+                done();
+            },
+                   
+            "Callback#list": function(test) {
+                var that = this;
+                var namespace = {owner: "admin", app: "search"};
+                
+                Async.chain([
+                    function(done) { that.service.configurations(namespace).fetch(done); },
+                    function(props, done) { 
+                        var files = props.list();
+                        test.ok(files.length > 0);
+                        done();
+                    }
+                ],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+                   
+            "Callback#item": function(test) {
+                var that = this;
+                var namespace = {owner: "admin", app: "search"};
+                
+                Async.chain([
+                    function(done) { that.service.configurations(namespace).fetch(done); },
+                    function(props, done) { 
+                        var file = props.item("web");
+                        test.ok(file);
+                        file.fetch(done);
+                    },
+                    function(file, done) {
+                        test.strictEqual(file.name, "web");
+                        done();
+                    }
+                ],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+                   
+            "Callback#contains stanza": function(test) {
+                var that = this;
+                var namespace = {owner: "admin", app: "search"};
+                
+                Async.chain([
+                    function(done) { that.service.configurations(namespace).fetch(done); },
+                    function(props, done) { 
+                        var file = props.item("web");
+                        test.ok(file);
+                        file.fetch(done);
+                    },
+                    function(file, done) {
+                        test.strictEqual(file.name, "web");                        
+                        var stanza = file.item("settings");
+                        test.ok(stanza);
+                        stanza.fetch(done);
+                    },
+                    function(stanza, done) {
+                        test.ok(stanza.properties().hasOwnProperty("httpport"));
+                        done();
+                    }
+                ],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+             
+            "Callback#create file + create stanza + update stanza": function(test) {
+                var that = this;
+                var fileName = "jssdk_file";
+                var value = "barfoo_" + getNextId();
+                var namespace = {owner: "admin", app: "search"};
+                
+                Async.chain([
+                    function(done) {
+                        var properties = that.service.configurations(namespace); 
+                        properties.fetch(done);
+                    },
+                    function(properties, done) {
+                        properties.create(fileName, done);
+                    },
+                    function(file, done) {
+                        file.create("stanza", done);
+                    },
+                    function(stanza, done) {
+                        stanza.update({"jssdk_foobar": value}, done);
+                    },
+                    function(stanza, done) {
+                        test.strictEqual(stanza.properties()["jssdk_foobar"], value);
+                        done();
+                    },
+                    function(done) {
+                        var file = new splunkjs.Service.ConfigurationFile(svc, fileName);
+                        file.fetch(done);
+                    },
+                    function(file, done) {
+                        var stanza = file.item("stanza");
+                        test.ok(stanza);
+                        stanza.remove(done);
+                    }
+                ],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
                 });
             }
         },
@@ -9201,6 +9806,11 @@ exports.setup = function(svc) {
                     test.done();
                 });
             },
+
+            "Callback#configurations init": function(test) {
+                test.throws(function() {new splunkjs.Service.Configurations(this.service, {owner: "-", app: "-", sharing: "system"});});
+                test.done();
+            },
                    
             "Callback#create file + create stanza + update stanza": function(test) {
                 var that = this;
@@ -9217,6 +9827,9 @@ exports.setup = function(svc) {
                         configs.create({__conf: fileName}, done);
                     },
                     function(file, done) {
+                        if (file.item("stanza")) {
+                            file.item("stanza").remove();
+                        }
                         file.create("stanza", done);
                     },
                     function(stanza, done) {
@@ -9246,6 +9859,7 @@ exports.setup = function(svc) {
         "Index Tests": {      
             setUp: function(done) {
                 this.service = svc;
+                this.loggedOutService = loggedOutSvc;
                 
                 // Create the index for everyone to use
                 var name = this.indexName = "sdk-tests";
@@ -9257,6 +9871,12 @@ exports.setup = function(svc) {
                     
                     done();
                 });
+            },
+
+            "Callback#remove index fails": function(test) {
+                var index = this.service.indexes().item(this.indexName);
+                test.throws(function() { index.remove();});
+                test.done();
             },
                          
             "Callback#list indexes": function(test) {
@@ -9396,6 +10016,102 @@ exports.setup = function(svc) {
                     }
                 );
             },
+
+            "Callback#Service submit event, omitting optional arguments": function(test) {
+                var message = "Hello World -- " + getNextId();
+                var sourcetype = "sdk-tests";
+                
+                var service = this.service;
+                var indexName = this.indexName;
+                Async.chain(
+                    function(done) {
+                        service.log(message, done);
+                    },
+                    function(eventInfo, done) {
+                        test.ok(eventInfo);
+                        test.strictEqual(eventInfo.bytes, message.length);
+                        
+                        // We could poll to make sure the index has eaten up the event,
+                        // but unfortunately this can take an unbounded amount of time.
+                        // As such, since we got a good response, we'll just be done with it.
+                        done();
+                    },
+                    function(err) {
+                        test.ok(!err);
+                        test.done(); 
+                    }
+                );
+            },
+
+            "Callback#Service submit event, failure": function(test) {
+                var message = "Hello World -- " + getNextId();
+                var sourcetype = "sdk-tests";
+                
+                var service = this.loggedOutService;
+                var indexName = this.indexName;
+                Async.chain(
+                    function(done) {
+                        test.ok(service);
+                        service.log(message, done);
+                    },
+                    function(err) {
+                        test.ok(err);
+                        test.done(); 
+                    }
+                );
+            },
+
+            "Callback#remove throws an error": function(test) {
+                var index = this.service.indexes().item("_internal");
+                test.throws(function() {index.remove});
+                test.done();
+            },
+
+            "Callback#create an index with alternate argument format": function(test) {
+                var indexes = this.service.indexes();
+                indexes.create(
+                    {name: "_internal"},
+                    function(err, newIndex) {
+                        test.ok(err.data.messages[0].text.match("Index name=_internal already exists"));
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#Index submit event with omitted optional arguments": function(test) {
+                var message = "Hello world -- " + getNextId();
+
+                var indexName = this.indexName;
+                var indexes = this.service.indexes();
+
+                Async.chain(
+                    [
+                        function(done) {
+                            indexes.fetch(done);     
+                        },
+                        function(indexes, done) {
+                            var index = indexes.item(indexName);
+                            test.ok(index);
+                            test.strictEqual(index.name, indexName);                            
+                            index.submitEvent(message, done);
+                        },
+                        function(eventInfo, index, done) {
+                            test.ok(eventInfo);
+                            test.strictEqual(eventInfo.bytes, message.length);
+                            test.strictEqual(eventInfo.index, indexName);
+                            
+                            // We could poll to make sure the index has eaten up the event,
+                            // but unfortunately this can take an unbounded amount of time.
+                            // As such, since we got a good response, we'll just be done with it.
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done(); 
+                    }
+                );
+            },
                    
             "Callback#Index submit event": function(test) {
                 var message = "Hello World -- " + getNextId();
@@ -9436,6 +10152,7 @@ exports.setup = function(svc) {
         "User Tests": {
             setUp: function(done) {
                 this.service = svc;
+                this.loggedOutService = loggedOutSvc;
                 done();
             },
             
@@ -9446,6 +10163,15 @@ exports.setup = function(svc) {
                     test.ok(!err);
                     test.ok(user);
                     test.strictEqual(user.name, service.username);
+                    test.done();
+                });
+            },
+
+            "Callback#Current user fails": function(test) {
+                var service = this.loggedOutService;
+
+                service.currentUser(function(err, user) {
+                    test.ok(err);
                     test.done();
                 });
             },
@@ -9462,6 +10188,16 @@ exports.setup = function(svc) {
                     test.ok(userList.length > 0);
                     test.done();
                 });
+            },
+
+            "Callback#create user failure": function(test) {
+                this.loggedOutService.users().create(
+                    {name: "jssdk_testuser", password: "abc", roles: "user"},
+                    function(err, response) {
+                        test.ok(err);
+                        test.done();
+                    }
+                );
             },
             
             "Callback#Create + update + delete user": function(test) {
@@ -9658,7 +10394,7 @@ exports.setup = function(svc) {
                     test.done();
                 });
             },
-            
+
             "Callback#Create + update + delete view": function(test) {
                 var service = this.service;
                 var name = "jssdk_testview";
@@ -9723,9 +10459,18 @@ exports.setup = function(svc) {
         "Typeahead Tests": {
             setUp: function(done) {
                 this.service = svc;
+                this.loggedOutService = loggedOutSvc;
                 done();
             },
             
+            "Callback#Typeahead failure": function(test) {
+                var service = this.loggedOutService;
+                service.typeahead("index=", 1, function(err, options) {
+                    test.ok(err);
+                    test.done();
+                });
+            },
+
             "Callback#Basic typeahead": function(test) {
                 var service = this.service;
                 
@@ -9736,9 +10481,194 @@ exports.setup = function(svc) {
                     test.ok(options[0]);
                     test.done();
                 });
+            },
+
+            "Typeahead with omitted optional arguments": function(test) {
+                var service = this.service;
+                service.typeahead("index=", function(err, options) {
+                    test.ok(!err);
+                    test.ok(options);
+                    test.done();
+                });
             }
-        }
-    };
+        },
+
+        "Endpoint Tests": {
+            setUp: function(done) {
+                this.service = svc;
+                done();
+            },
+
+            "Throws on null arguments to init": function(test) {
+                var service = this.service;
+                test.throws(function() {new splunkjs.Service.Endpoint(null, "a/b"); });
+                test.throws(function() {new splunkjs.Service.Endpoint(service, null); });
+                test.done();
+            },
+
+            "Endpoint delete on a relative path": function(test) {
+                var service = this.service;
+                var endpoint = new splunkjs.Service.Endpoint(service, "/search/jobs/12345");
+                endpoint.del("search/jobs/12345", {}, function() { test.done();});
+            },
+
+            "Methods of Resource to be overridden": function(test) {
+                var service = this.service;
+                var resource = new splunkjs.Service.Resource(service, "/search/jobs/12345");
+                test.throws(function() { resource.path(); });
+                test.throws(function() { resource.fetch(); });
+                test.ok(splunkjs.Utils.isEmpty(resource.state()));
+                test.done();
+            }
+        },
+
+        "Entity tests": {
+            setUp: function(done) {
+                this.service = svc;
+                this.loggedOutService = loggedOutSvc;
+                done();
+            },
+
+            "Accessors function properly": function(test) {
+                var entity = new splunkjs.Service.Entity(
+                    this.service, 
+                    "/search/jobs/12345", 
+                    {owner: "boris", app: "factory", sharing: "app"}
+                );
+                entity._load(
+                    {acl: {owner: "boris", app: "factory", sharing: "app"},
+                     links: {link1: 35},
+                     published: "meep",
+                     author: "Hilda"}
+                );
+                test.ok(entity.acl().owner === "boris");
+                test.ok(entity.acl().app === "factory");
+                test.ok(entity.acl().sharing === "app");
+                test.ok(entity.links().link1 === 35);
+                test.strictEqual(entity.author(), "Hilda");
+                test.strictEqual(entity.published(), "meep");
+                test.done();
+            },
+
+            "Refresh throws error correctly": function(test) {
+                var entity = new splunkjs.Service.Entity(this.loggedOutService, "/search/jobs/12345", {owner: "boris", app: "factory", sharing: "app"});
+                entity.fetch({}, function(err) { test.ok(err); test.done();});
+            },
+
+            "Cannot update name of entity": function(test) {
+                var entity = new splunkjs.Service.Entity(this.service, "/search/jobs/12345", {owner: "boris", app: "factory", sharing: "app"});
+                test.throws(function() { entity.update({name: "asdf"});});
+                test.done();
+            },
+
+            "Disable throws error correctly": function(test) {
+                var entity = new splunkjs.Service.Entity(
+                    this.loggedOutService, 
+                    "/search/jobs/12345", 
+                    {owner: "boris", app: "factory", sharing: "app"}
+                );
+                entity.disable(function(err) { test.ok(err); test.done();});
+            },
+            
+            "Enable throws error correctly": function(test) {
+                var entity = new splunkjs.Service.Entity(
+                    this.loggedOutService,
+                    "/search/jobs/12345", 
+                    {owner: "boris", app: "factory", sharing: "app"}
+                );
+                entity.enable(function(err) { test.ok(err); test.done();});
+            },
+
+            "Does reload work?": function(test) {
+                var idx = new splunkjs.Service.Index(
+                    this.service,
+                    "data/indexes/sdk-test",
+                    {
+                        owner: "admin", 
+                        app: "search", 
+                        sharing: "app"
+                    }
+                );
+                var name = "jssdk_testapp_" + getNextId();
+                var apps = this.service.apps();
+                
+                var that = this;
+                Async.chain(
+                    function(done) {
+                        apps.create({name: name}, done);
+                    },
+                    function(app, done) {
+                        app.reload(function(err) {
+                            test.ok(!err);
+                            done(null, app);
+                        });
+                    },
+                    function(app, done) {
+                        var app2 = new splunkjs.Service.Application(that.loggedOutService, app.name);
+                        app2.reload(function(err) { 
+                            test.ok(err); 
+                            done(null, app);
+                        });
+                    },
+                    function(app, done) {
+                        app.remove(done);
+                    },
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            }
+        },
+        
+        "Collections": {
+            setUp: function(done) {
+                this.service = svc;
+                this.loggedOutService = loggedOutSvc;
+                done();
+            },
+
+            "Methods to be overridden throw": function(test) {
+                var coll = new splunkjs.Service.Collection(
+                    this.service,
+                    "/data/indexes",
+                    {owner: "admin",
+                     app: "search",
+                     sharing: "app"}
+                );
+                test.throws(function() {
+                    coll.instantiateEntity({});
+                });
+                test.done();
+            },
+
+            "Accessors work": function(test) {
+                var coll = new splunkjs.Service.Collection(
+                    this.service,
+                    "/data/indexes",
+                    {owner: "admin",
+                     app: "search",
+                     sharing: "app"}
+                );
+                coll._load({links: "Hilda", updated: true});
+                test.strictEqual(coll.links(), "Hilda");
+                test.ok(coll.updated());
+                test.done();
+            },
+
+            "Contains throws without a good id": function(test) {
+                var coll = new splunkjs.Service.Collection(
+                    this.service,
+                    "/data/indexes",
+                    {owner: "admin",
+                     app: "search",
+                     sharing: "app"}
+                );
+                test.throws(function() { coll.item(null);});
+                test.done();
+            }
+       }
+    }
 };
 
 if (module === require.main) {
@@ -9762,8 +10692,17 @@ if (module === require.main) {
         password: cmdline.opts.password,
         version: cmdline.opts.version
     });
-    
-    var suite = exports.setup(svc);
+
+    var loggedOutSvc = new splunkjs.Service({ 
+        scheme: cmdline.opts.scheme,
+        host: cmdline.opts.host,
+        port: cmdline.opts.port,
+        username: cmdline.opts.username,
+        password: cmdline.opts.password + 'wrong',
+        version: cmdline.opts.version
+    });
+
+    var suite = exports.setup(svc, loggedOutSvc);
     
     svc.login(function(err, success) {
         if (err || !success) {
@@ -9772,6 +10711,7 @@ if (module === require.main) {
         test.run([{"Tests": suite}]);
     });
 }
+
 });
 
 require.define("/tests/utils.js", function (require, module, exports, __dirname, __filename) {
