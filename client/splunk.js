@@ -1489,7 +1489,7 @@ require.define("/lib/paths.js", function (require, module, exports, __dirname, _
         deploymentServers: "deployment/server",
         deploymentServerClasses: "deployment/serverclass",
         deploymentTenants: "deployment/tenants",
-        eventTypes: "saved/eventTypes",
+        eventTypes: "saved/eventtypes",
         indexes: "data/indexes",
         info: "/services/server/info",
         inputs: null,
@@ -1521,6 +1521,7 @@ require.define("/lib/paths.js", function (require, module, exports, __dirname, _
         }
     };
 })();
+
 });
 
 require.define("/lib/jquery.class.js", function (require, module, exports, __dirname, __filename) {
