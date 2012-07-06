@@ -385,6 +385,7 @@ require.define("/ui/charting.js", function (require, module, exports, __dirname,
     root.Chart = Class.extend({
         init: function(el, chartType, orientation, isSplitSeries) {
             this.el = $(el);
+            this.chartType = chartType;
             this.chart = JSCharting.createChart(this.el.eq(0)[0], {
                 chart: chartType,
                 "chart.orientation": orientation,
@@ -400,6 +401,10 @@ require.define("/ui/charting.js", function (require, module, exports, __dirname,
         setData: function(data, properties) {
             var fieldInfo = JSCharting.extractFieldInfo(data);
             var chartData = JSCharting.extractChartReadyData(data, fieldInfo);
+            
+            if (!properties.chart) {
+                properties.chart = this.chartType;
+            }
             
             this.chart.prepare(chartData, fieldInfo, properties);
         },
@@ -962,7 +967,7 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
     var locale_uses_day_before_month = i18n.locale_uses_day_before_month;
     
     exports.Splunk = Splunk;
-
+    
     ////////////////////////////////////////////////////////////////////////
     // Splunk.JSCharting
     //
@@ -1252,7 +1257,7 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
     Splunk.JSCharting.AbstractChart = $.klass(Splunk.JSCharting.AbstractVisualization, {
 
         axesAreInverted: false,
-        
+        HOVER_TIMER: 25,
         focusedElementOpacity: 1,
         fadedElementOpacity: 0.3,
         fadedElementColor: "rgba(150, 150, 150, 0.3)",
@@ -1353,6 +1358,15 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
             if(this.hcChart) {
                 this.destroy();
             }
+
+            // SPL-49962: have to make sure there are as many colors as series, or HighCharts will add random colors
+            if(this.hcConfig.series.length > this.hcConfig.colors.length) {
+                var numInitialColors = this.hcConfig.colors.length;
+                for(var i = numInitialColors; i < this.hcConfig.series.length; i++) {
+                    this.hcConfig.colors.push(this.hcConfig.colors[i % numInitialColors]);
+                }
+            }
+
             this.hcChart = new Highcharts.Chart(this.hcConfig, function(chart) {
                 if(this.chartIsStale) {
                     // if new data came in while the chart was rendering, re-draw immediately
@@ -1362,6 +1376,11 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
                 else {
                     if(!this.chartIsEmpty) {
                         this.onDrawFinished(chart, callback);
+                    }
+                    // SPL-48515 revealed that the callback was not firing when chartIsEmpty is true
+                    // only firing the callback in export mode to avoid breaking any existing code
+                    else if(this.exportMode) {
+                        callback(chart);
                     }
                 }
             }.bind(this));
@@ -1462,6 +1481,19 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
         onDrawFinished: function(chart, callback) {
             if(this.hcConfig.legend.enabled) {
                 this.addLegendHoverEffects(chart);
+
+                // SPL-47508: in export mode we have to do a little magic to make the legend symbols align and not overlap
+                if(this.exportMode && chart.options.chart.type !== 'scatter') {
+                    $(chart.series).each(function(i, loopSeries) {
+                        if(!loopSeries.legendSymbol) {
+                            return false;
+                        }
+                        loopSeries.legendSymbol.attr({
+                            height: 8,
+                            translateY: 4
+                        });
+                    });
+                }
             }
             if(this.testMode) {
                 this.addTestingMetadata(chart);
@@ -1569,7 +1601,7 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
                     break;
                 case 'seriesColors':
                     var hexArray = this.parseUtils.stringToHexArray(value);
-                    if(hexArray) {
+                    if(hexArray && hexArray.length > 0) {
                         this.colorPalette = new Splunk.JSCharting.ListColorPalette(hexArray);
                         this.setColorList(hexArray);
                     }
@@ -1641,19 +1673,20 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
                         enabled: true,
                         verticalAlign: 'middle',
                         align: name,
-                        layout: 'vertical'
+                        layout: 'vertical',
+                        x: 0
                     }
                 });
             }
             else if(name in {bottom: 1, top: 1}) {
-                var margin = (name == 'top') ? 30 : 15;
                 this.mapper.mapObject({
                     legend: {
                         enabled: true,
                         verticalAlign: name,
                         align: 'center',
                         layout: 'horizontal',
-                        margin: margin
+                        margin: 15,
+                        y: (name == 'bottom') ? -5 : 0
                     }
                 });
             }
@@ -1685,18 +1718,17 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
                 axisProperties = this.parseUtils.getXAxisProperties(properties),
                 orientation = (this.axesAreInverted) ? 'vertical' : 'horizontal',
                 colorScheme = this.getAxisColorScheme();
-            
+
             // add some extra info to the axisProperties as needed
             axisProperties.chartType = properties.chart;
             axisProperties.axisLength = $(this.renderTo).width();
             
             switch(axisType) {
-                
                 case 'category':
                     this.xAxis = new Splunk.JSCharting.CategoryAxis(axisProperties, data, orientation, colorScheme);
                     break;
                 case 'time':
-                    this.xAxis = new Splunk.JSCharting.TimeAxis(axisProperties, data, orientation, colorScheme);
+                    this.xAxis = new Splunk.JSCharting.TimeAxis(axisProperties, data, orientation, colorScheme, this.exportMode);
                     break;
                 default:
                     // assumes a numeric axis
@@ -1705,8 +1737,25 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
             
             }
             this.hcConfig.xAxis = this.xAxis.getConfig();
-            
-            if(this.hcConfig.xAxis.title.text === null) {
+            if(this.exportMode && (axisType === 'time')) {
+                var xAxisMargin,
+                    spanSeries = data._spanSeries,
+                    span = (spanSeries && spanSeries.length > 0) ? parseInt(spanSeries[0], 10) : 1,
+                    secsPerDay = 60 * 60 * 24,
+                    secsPerYear = secsPerDay * 365;
+
+                if(span >= secsPerYear) {
+                    xAxisMargin = 15;
+                }
+                else if(span >= secsPerDay) {
+                    xAxisMargin = 25;
+                }
+                else {
+                    xAxisMargin = 35;
+                }
+                this.hcConfig.xAxis.title.margin = xAxisMargin;
+            }
+            if(this.hcConfig.xAxis.title.text === null || this.hcConfig.xAxis.title.text === '') {
                 this.hcConfig.xAxis.title.text = this.processedData.xAxisKey;
             }
         },
@@ -1719,10 +1768,11 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
             // add some extra info to the axisProperties as needed
             axisProperties.chartType = properties.chart;
             axisProperties.axisLength = $(this.renderTo).height();
+            axisProperties.percentMode = (this.properties['chart.stackMode'] === 'stacked100');
             
             this.yAxis = new Splunk.JSCharting.NumericAxis(axisProperties, data, orientation, colorScheme);
             this.hcConfig.yAxis = this.yAxis.getConfig();
-            if(this.hcConfig.yAxis.title.text === null && this.processedData.fieldNames.length === 1) {
+            if((this.hcConfig.yAxis.title.text === null || this.hcConfig.yAxis.title.text === '') && this.processedData.fieldNames.length === 1) {
                 this.hcConfig.yAxis.title.text = this.processedData.fieldNames[0];
             }
         },
@@ -1879,10 +1929,23 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
                         point: {
                             events: {
                                 mouseOver: function() {
-                                    self.onPointMouseOver.call(self, this);
+                                    var point = this;
+                                    clearTimeout(self.hoverOverTime);
+                                    self.hoverOverTime = setTimeout(function() {
+                                        self.onPointMouseOver.call(self, point);
+                                        self.hoverOverTime = null;
+                                    }, self.HOVER_TIMER);
                                 },
                                 mouseOut: function() {
-                                    self.onPointMouseOut.call(self, this);
+                                    var point = this;
+                                    clearTimeout(self.hoverOverTime);
+                                    if(self.hoverOverTime === null){
+                                        self.onPointMouseOut.call(self, point);
+                                    } else {
+                                        clearTimeout(self.hoverOverTime);
+                                        self.hoverOverTime = null;
+                                        self.onPointMouseOut.call(self, point);
+                                    }     
                                 }
                             }
                         }
@@ -1892,7 +1955,7 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
         },
 
         onPointClick: function(point, domEvent) {
-            var xAxisKey = this.processedData.xAxisKey,
+            var xAxisKey = this.processedData.xAxisKey, 
                 xAxisType = this.processedData.xAxisType,
                 event = {
                     fields: [xAxisKey, point.series.name],
@@ -1908,6 +1971,21 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
             else {
                 event.data[xAxisKey] = (xAxisType == 'category') ? point.name : point.x;
             }
+
+            // determine the point's index in its series,
+            // this allows upstream handlers to add row context to drilldown events
+            var i,
+                series = point.series;
+
+            if(series && series.data && series.data.length > 0) {
+                for(i = 0; i < series.data.length; i++) {
+                    if(series.data[i] === point) {
+                        event.pointIndex = i;
+                        break;
+                    }
+                }
+            }
+
             this.dispatchEvent('chartClicked', event);
         },
 
@@ -1962,10 +2040,21 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
             $(chart.series).each(function(i, loopSeries) {
                 $(self.getSeriesLegendElements(loopSeries)).each(function(j, element) {
                     $(element).bind('mouseover.splunk_jscharting', function() {
-                        self.onLegendMouseOver(loopSeries);
+                        clearTimeout(self.legendHoverOverTime);
+                        self.legendHoverOverTime = setTimeout(function() {
+                            self.onLegendMouseOver(loopSeries);
+                            self.legendHoverOverTime = null;
+                        }, self.HOVER_TIMER);
                     });
                     $(element).bind('mouseout.splunk_jscharting', function() {
-                        self.onLegendMouseOut(loopSeries);
+                        clearTimeout(self.legendHoverOverTime);
+                        if(self.legendHoverOverTime === null){
+                            self.onLegendMouseOut(loopSeries);
+                        } else {
+                            clearTimeout(self.legendHoverOverTime);
+                            self.legendHoverOverTime = null;
+                            self.onLegendMouseOut(loopSeries);
+                        }  
                     });
                 });
             });
@@ -2022,7 +2111,6 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
             }
             var chart = series.chart,
                 index = series.index;
-            
             $(chart.series).each(function(i, loopSeries) {
                 if(i !== index) {
                     this.fadeSeries(loopSeries);
@@ -2149,7 +2237,7 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
         // helper methods for processing data
         
         addDataToConfig: function() {
-            var i, seriesObject,
+            var i, j, seriesObject, loopSeries, prevSeries, loopPoint, prevStackedTotal,
                 fieldNames = this.processedData.fieldNames,
                 series = this.processedData.series;
 
@@ -2161,7 +2249,7 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
             }
             // if the legend labels have been set by the user, honor them here
             if(this.legendLabels.length > 0) {
-                var label, loopSeries, name,
+                var label, name,
                     newSeriesList = [],
                     
                     // helper function for finding a series by its name
@@ -2198,6 +2286,33 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
                     }
                 }
                 this.hcConfig.series = newSeriesList;
+            }
+
+            // SPL-50950: to correctly handle stacked mode with log axes, we have to reduce each point's y value to
+            // the post-log difference between its value and the sum of the ones before it
+            if(this.logYAxis && (this.properties['chart.stackMode'] in { 'stacked': true, 'stacked100': true })) {
+                var numSeries = this.hcConfig.series.length,
+                    lastSeries = this.hcConfig.series[numSeries - 1];
+
+                // initialize the 'stackedTotal' of each point in the last (aka bottom) series to its pre-log y value
+                for(i = 0; i < lastSeries.data.length; i++) {
+                    lastSeries.data[i].stackedTotal = lastSeries.data[i].rawY;
+                }
+                // loop through the series list backward so that we traverse bottom to top, starting with the
+                // second from the bottom
+                for(i = numSeries - 2; i >= 0; i--) {
+                    loopSeries = this.hcConfig.series[i];
+                    prevSeries = this.hcConfig.series[i + 1];
+                    for(j = 0; j < loopSeries.data.length; j++) {
+                        loopPoint = loopSeries.data[j];
+                        prevStackedTotal = prevSeries.data[j].stackedTotal;
+                        // adjust the point's y value based on the previous point's stacked total
+                        loopPoint.y = this.mathUtils.absLogBaseTen(prevStackedTotal + loopPoint.rawY)
+                                            - this.mathUtils.absLogBaseTen(prevStackedTotal);
+                        // also update the points stacked total for the next point to use
+                        loopPoint.stackedTotal = prevStackedTotal + loopPoint.rawY;
+                    }
+                }
             }
         },
         
@@ -2405,7 +2520,10 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
         chart: {
             animation: false,
             showAxes: true,
-            reflow: true
+            reflow: true,
+            spacingTop: 0,
+            spacingBottom: 5,
+            spacingLeft: 0
         },
         plotOptions: {
             series: {
@@ -2465,6 +2583,28 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
             if(series && series.group) {
                 series.group.toFront();
             }
+        },
+
+        addHoverHandlers: function() {
+            var self = this;
+            $.extend(true, this.hcConfig, {
+                plotOptions: {
+                    series: {
+                        point: {
+                            events: {
+                                mouseOver: function() {
+                                    var point = this;
+                                    self.onPointMouseOver.call(self, point);
+                                },
+                                mouseOut: function() {
+                                    var point = this;
+                                    self.onPointMouseOut.call(self, point);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
         }
 
     });
@@ -2568,7 +2708,7 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
                                     point.firePointEvent('mouseOver');
                                     chart.tooltip.refresh(point);
                                     hoveredPoint = point;
-                                }
+                                }  
                             });
                         }
                     }
@@ -2712,6 +2852,10 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
                     break;
             
             }
+        },
+
+        mapStackMode: function(name, properties) {
+            // no-op, line charts ignore stack mode
         },
         
         fadeSeries: function($super, series) {
@@ -2920,7 +3064,8 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
             $super();
             $.extend(true, this.hcConfig, {
                 chart: {
-                    type: 'bar'
+                    type: 'bar',
+                    spacingBottom: 15
                 }
             });
         },
@@ -3131,7 +3276,7 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
             if(useTimeNames) {
                 var isoString = element.series.name,
                     span = element.point._span || 1;
-                return Splunk.JSCharting.TimeUtils.formatIsoStringAsTooltip(isoString, span);
+                return Splunk.JSCharting.TimeUtils.formatIsoStringAsTooltip(isoString, span) || _('Invalid timestamp');
             }
             return element.series.name;
         },
@@ -3154,7 +3299,7 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
             if(useTimeNames) {
                 var isoString = element.name,
                     span = this.processedData._spanSeries[0] || 1;
-                return Splunk.JSCharting.TimeUtils.formatIsoStringAsTooltip(isoString, span);
+                return Splunk.JSCharting.TimeUtils.formatIsoStringAsTooltip(isoString, span) || _('Invalid timestamp');
             }
             return element.name;
         },
@@ -3553,6 +3698,16 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
                 });
             }
         },
+
+        // override
+        onPointClick: function($super, point, domEvent) {
+            if(point.rawName) {
+                point = $.extend({}, point, {
+                    name: point.rawName
+                });
+            }
+            $super(point, domEvent);
+        },
         
         onPointMouseOver: function($super, point) {
             $super(point);
@@ -3610,7 +3765,7 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
         
         plotRenderHook: function(series) {
             var chart = series.chart;
-            series.options.size = Math.min(chart.plotHeight * 0.75, chart.plotWidth / 3);
+            series.options.size = Math.min(chart.plotHeight * 0.70, chart.plotWidth / 3);
         },
         
         labelXPositionHook: function(series, options, radius, isRightSide) {
@@ -3690,7 +3845,7 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
             }
             $.extend(true, options.dataLabels, {
                 style: {
-                    'font-size': adjusted.fontSize + 'px'
+                    fontSize: adjusted.fontSize + 'px'
                 },
                 y: adjusted.fontSize / 4
             });
@@ -3701,7 +3856,7 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
             if(useTimeNames) {
                 var isoString = element.point.name,
                     span = element.point._span || 1,
-                    formattedTime = Splunk.JSCharting.TimeUtils.formatIsoStringAsTooltip(isoString, span);
+                    formattedTime = Splunk.JSCharting.TimeUtils.formatIsoStringAsTooltip(isoString, span) || _('Invalid timestamp');
                 
                 return formattedTime || element.point.name;
             }
@@ -3719,6 +3874,17 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
                 tooltip: {
                     formatter: function() {
                         var seriesColorRgb = Splunk.JSCharting.ColorUtils.removeAlphaFromColor(this.point.color);
+
+                        // SPL-45604, if the series itself is percent, suppress the 'bonus' percent display
+                        if(this.series.name === 'percent') {
+                            return [
+                                '<span style="color:#cccccc">', (useTimeNames ? 'time: ' : xAxisKey + ': '), '</span>',
+                                '<span style="color:', seriesColorRgb, '">', resolveName(this, useTimeNames), '</span> <br/>',
+                                '<span style="color:#cccccc">', this.series.name, ': </span>',
+                                '<span style="color:#ffffff">', this.y, '</span>'
+                            ].join('');
+                        }
+
                         return [
                             '<span style="color:#cccccc">', (useTimeNames ? 'time: ' : xAxisKey + ': '), '</span>',
                             '<span style="color:', seriesColorRgb, '">', resolveName(this, useTimeNames), '</span> <br/>',
@@ -3737,7 +3903,7 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
             if(useTimeNames) {
                 var isoString = element.point.name,
                     span = element.point._span || 1;
-                    formattedTime = Splunk.JSCharting.TimeUtils.formatIsoStringAsTooltip(isoString, span);
+                    formattedTime = Splunk.JSCharting.TimeUtils.formatIsoStringAsTooltip(isoString, span) || _('Invalid timestamp');
                 
                 return formattedTime || element.point.name;
             }
@@ -4234,9 +4400,8 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
             chart = chart || this.hcChart;
             var i, loopHeight, loopTop,
                 totalHeight = chart.chartHeight - this.bottomSpacing,
-                unadjustedInnerHeight = ((totalHeight - (this.numSeries - 2) * this.interChartSpacing) / this.numSeries),
-                // using numSeries - 2 as a multiplier above because we are also adding an interChartSpacing below the chart
-                firstTop = chart.plotTop + totalHeight - unadjustedInnerHeight - this.interChartSpacing;
+                unadjustedInnerHeight = ((totalHeight - (this.numSeries - 1) * this.interChartSpacing) / this.numSeries),
+                firstTop = chart.plotTop + totalHeight - unadjustedInnerHeight;
             
             this.innerWidth = chart.plotWidth;
             this.innerLeft = chart.plotLeft;
@@ -4674,7 +4839,7 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
 
     Splunk.JSCharting.AbstractAxis.DEFAULT_HORIZ_CONFIG = {
         lineWidth: 1,
-        tickLength: 25,
+        tickLength: 20,
         tickWidth: 1,
         minorTickLength: 10,
         tickPlacement: 'between',
@@ -4690,7 +4855,7 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
         },
         title: {
             text: null,
-            margin: 20
+            margin: 15
         },
         min: null,
         max: null
@@ -4698,10 +4863,11 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
 
     Splunk.JSCharting.AbstractAxis.DEFAULT_VERT_CONFIG = {
         title: {
-            text: null
+            text: null,
+            margin: 15
         },
         tickWidth: 1,
-        tickLength: 25,
+        tickLength: 20,
         minorTickLength: 10,
         showFirstLabel: true,
         showLastLabel: true,
@@ -4728,6 +4894,7 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
         // override
         initialize: function($super, properties, data, orientation, colorScheme) {
             this.includeZero = (orientation === 'vertical' && properties.chartType !== 'scatter');
+            this.percentMode = (properties.percentMode === true);
             this.logScale = false;
             this.userMin = -Infinity;
             this.userMax = Infinity;
@@ -4741,6 +4908,10 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
                 minPadding: 0.01,
                 maxPadding: 0.01
             });
+
+            if(!this.isVertical) {
+                this.hcConfig.title.margin = 10;
+            }
         },
         
         // override
@@ -4749,6 +4920,10 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
             var floatVal;
             switch(key) {
                 case 'axis.minimumNumber':
+                    // in percent mode, ignore any user-defined min/max
+                    if(this.percentMode) {
+                        return;
+                    }
                     floatVal = parseFloat(value, 10);
                     if(!isNaN(floatVal)) {
                         this.userMin = floatVal;
@@ -4758,6 +4933,10 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
                     }
                     break;
                 case 'axis.maximumNumber':
+                    // in percent mode, ignore any user-defined min/max
+                    if(this.percentMode) {
+                        return;
+                    }
                     floatVal = parseFloat(value, 10);
                     if(!isNaN(floatVal)) {
                         this.userMax = floatVal;
@@ -4831,7 +5010,11 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
         
         // override
         formatLabel: function(element) {
-            if(this.logScale) {
+            if(this.percentMode && this.logScale) {
+                // SPL-50950, this is a hack to make the axis labels look correct in the case of log scale and 100% stacked
+                value = (element.value === 50) ? 10 : element.value;
+            }
+            else if(this.logScale) {
                 value = this.mathUtils.absPowerTen(element.value);
             }
             else {
@@ -4887,9 +5070,12 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
         formatLogAxes: function(options, extremes) {
             var firstTickValue = Math.ceil(extremes.min),
                 lastTickValue = (options.endOnTick) ? Math.ceil(extremes.max) : extremes.max;
-            
+
+            if(this.percentMode) {
+                options.tickInterval = 50;
+            }
             // if we can show two or more tick marks, we'll clip to a tickInterval of 1
-            if(Math.abs(lastTickValue - firstTickValue) >= 1) {
+            else if(Math.abs(lastTickValue - firstTickValue) >= 1) {
                 options.tickInterval = 1;
             }
             else {
@@ -4973,7 +5159,7 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
             $super(axis, formatter, chart);
             var fontSize = 11,
                 tickLabelPadding = 2;
-            
+
             if(this.isVertical) {
                 this.checkFirstLabelFit(axis, formatter, chart, fontSize);
             }
@@ -4981,7 +5167,7 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
                 this.checkLastLabelFit(axis, formatter, chart, fontSize);
             }
         },
-        
+
         checkLastLabelFit: function(axis, formatter, chart, fontSize) {
             var lastTick = this.getLastTick(axis.ticks);
             
@@ -5070,7 +5256,10 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
                     // pad the x-axis for line-based charts so there will be room for the last label
                     max: (this.chartIsLineBased) ? this.data.categories.length : null,
                     endOnTick: this.chartIsLineBased,
-                    showLastLabel: false
+                    showLastLabel: false,
+                    title: {
+                        margin: 10
+                    }
                 });
             }
         },
@@ -5126,7 +5315,7 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
             for(i = 0; i < adjusted.labels.length; i++) {
                 categories[i] = adjusted.labels[i];
             }
-            options.labels.style['font-size'] = adjusted.fontSize + 'px';
+            options.labels.style.fontSize = adjusted.fontSize + 'px';
             return adjusted.fontSize;
         }
         
@@ -5139,8 +5328,9 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
         type: 'time',
         
         // override
-        initialize: function($super, properties, data, orientation, colorScheme) {
+        initialize: function($super, properties, data, orientation, colorScheme, exportMode) {
             this.timeUtils = Splunk.JSCharting.TimeUtils;
+            this.exportMode = exportMode;
             $super(properties, data, orientation, colorScheme);
         },
         
@@ -5149,22 +5339,31 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
             var xSeries = this.data.xSeries,
                 _spanSeries = this.data._spanSeries,
                 categoryInfo = this.timeUtils.convertTimeToCategories(xSeries, _spanSeries, this.numLabelCutoff);
-            
+
             this.data.categories = categoryInfo.categories;
             this.rawLabels = categoryInfo.rawLabels;
+            this.granularity = categoryInfo.granularity;
             $super();
             this.mapper.mapObject({
                 hooks: {
                     tickPositionsSet: this.tickPositionsSetHook.bind(this)
                 }
             });
+
+            if(!this.isVertical) {
+                var spanSeries = this.data._spanSeries,
+                    span = (spanSeries && spanSeries.length > 0) ? spanSeries[0] : 1,
+                    secsPerYear = 60 * 60 * 24 * 365;
+
+                this.hcConfig.title.margin = (span >= secsPerYear) ? 10 : 5;
+            }
         },
         
         formatTooltipValue: function(element, valueKey) {
             var isoString = element.point.name,
                 span = parseInt(element.point._span, 10) || 1;
-            
-            return this.timeUtils.formatIsoStringAsTooltip(isoString, span);
+
+            return this.timeUtils.formatIsoStringAsTooltip(isoString, span) || _('Invalid timestamp');
         },
         
         tickLabelsRenderStartHook: function(options, categories, chart) {
@@ -5229,7 +5428,7 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
             
             this.resolveLabelCollisions(tickArray, this.rawLabels, formatter, chart);
             // if resolving label collisions did not hide the last tick, make sure its label fits
-            if(formatter.elementIsVisible(lastTick.mark)) {
+            if(lastTick && lastTick.mark && formatter.elementIsVisible(lastTick.mark)) {
                 if(!this.lastLabelFits(lastTick, axis, chart)) {
                     lastTick.label.hide();
                 }
@@ -5246,21 +5445,21 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
             var tickLabelPadding;
             if(this.isVertical) {
                 var availableHeight;
-                    
                 tickLabelPadding = 3;
-                availableHeight = (chart.plotTop + chart.plotHeight - lastTick.label.getBBox().y) - tickLabelPadding;
+                
+                availableHeight = (chart.plotTop + chart.plotHeight - lastTick.label.attr('y')) - tickLabelPadding;
                 if(lastTick.labelBBox.height > availableHeight) {
                     return false;
                 }
             }
             else {
                 var availableWidth;
-                    
                 tickLabelPadding = 5;
-                availableWidth = (chart.plotLeft + chart.plotWidth - lastTick.label.getBBox().x) - tickLabelPadding;
+                
+                availableWidth = (chart.plotLeft + chart.plotWidth - lastTick.label.attr('x')) - tickLabelPadding;
                 if(lastTick.labelBBox.width > availableWidth) {
                     return false;
-                }  
+                }
             }
             return true;
         },
@@ -5299,7 +5498,7 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
                     if(i % 2 === 0) {
                         bdTime = this.timeUtils.extractBdTime(rawLabels[i]);
                         prevBdTime = this.timeUtils.extractBdTime(rawLabels[i - 2]);
-                        formatter.setElementText(ticks[i].label, this.timeUtils.formatBdTimeAsLabel(bdTime, labelSpan, prevBdTime));
+                        formatter.setElementText(ticks[i].label, this.timeUtils.formatBdTimeAsLabel(bdTime, prevBdTime, this.granularity) || "");
                     }
                     else {
                         ticks[i].label.hide();
@@ -5314,7 +5513,7 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
                     if(i % 2 === 0) {
                         bdTime = this.timeUtils.extractBdTime(rawLabels[i]);
                         prevBdTime = this.timeUtils.extractBdTime(rawLabels[i - 1]);
-                        formatter.setElementText(ticks[i].label, this.timeUtils.formatBdTimeAsLabel(bdTime, labelSpan, prevBdTime));
+                        formatter.setElementText(ticks[i].label, this.timeUtils.formatBdTimeAsLabel(bdTime, prevBdTime, this.granularity) || "");
                     }
                     else {
                         ticks[i].label.show();
@@ -5718,11 +5917,11 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
             this.colorPalette = new Splunk.JSCharting.ListColorPalette(this.colors, true);
             this.propertiesAreStale = true;
         
-        // in export mode, hard-code a height and width for gauges
-        if(this.exportMode) {
-            this.chartWidth = 600;
-            this.chartHeight = 400;
-        }
+            // in export mode, hard-code a height and width for gauges
+            if(this.exportMode) {
+                this.chartWidth = 600;
+                this.chartHeight = 400;
+            }
         },
 
         draw: function(callback) {
@@ -5748,24 +5947,20 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
                 this.renderGauge();
                 this.nudgeChart();
                 this.gaugeIsRendered = true; 
-            $(this.renderTo).addClass('highcharts-container');
+                $(this.renderTo).addClass('highcharts-container');
                 // add this class and attribute on successful draw for UI testing
                 if(this.testMode) {
-                    $(this.renderTo).addClass(this.typeName);
-                    $(this.renderTo).attr('data-gauge-value', this.value);
-                    if(this.elements.valueDisplay) {
-                        this.addClassToElement(this.elements.valueDisplay.element, 'gauge-value');
-                    }
+                    this.addTestingMetadata();
                 }
             
-            // in export mode, need to make sure each circle element has cx and cy attributes
-            if(this.exportMode) {
-                $(this.renderTo).find('circle').each(function(i, elem) {
-                    var $elem = $(elem);
-                    $elem.attr('cx', $elem.attr('x'));
-                    $elem.attr('cy', $elem.attr('y'));
-                });
-            }
+                // in export mode, need to make sure each circle element has cx and cy attributes
+                if(this.exportMode) {
+                    $(this.renderTo).find('circle').each(function(i, elem) {
+                        var $elem = $(elem);
+                        $elem.attr('cx', $elem.attr('x'));
+                        $elem.attr('cy', $elem.attr('y'));
+                    });
+                }
                 this.propertiesAreStale = false;
             }
             if(callback) {
@@ -5793,6 +5988,9 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
             this.formatter = new Splunk.JSCharting.FormattingHelper(this.renderer);
             this.renderGauge();
             this.nudgeChart();
+            if(this.testMode) {
+                this.addTestingMetadata();
+            }
             this.gaugeIsRendered = true;
         },
 
@@ -5808,9 +6006,10 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
             this.elements = {};
             $(this.renderTo).empty();
             $(this.renderTo).css('backgroundColor', '');
+            $(this.renderTo).removeClass('highcharts-container');
             // remove the UI testing hooks
             if(this.testMode) {
-                $(this.renderTo).removeClass('highcharts-container').removeClass(this.typeName);
+                this.removeTestingMetadata();
             }
             this.gaugeIsRendered = false;
         },
@@ -6235,6 +6434,34 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
                 return max;
             }
             return roundVal;
+        },
+
+        //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        // code to add testing hooks for automated tests, no other code should rely on these classes!
+
+        addTestingMetadata: function() {
+            $(this.renderTo).addClass(this.typeName);
+            $(this.renderTo).attr('data-gauge-value', this.value);
+            if(this.elements.valueDisplay) {
+                this.addClassToElement(this.elements.valueDisplay.element, 'gauge-value');
+            }
+            for(key in this.elements) {
+                if(/^tickLabel_/.test(key)) {
+                    this.addClassToElement(this.elements[key].element, 'gauge-tick-label');
+                }
+            }
+
+            // this is bad OOP but I think it's better to keep all of this code in one method
+            if(this.elements.needle) {
+                this.addClassToElement(this.elements.needle.element, 'gauge-indicator');
+            }
+            if(this.elements.markerLine) {
+                this.addClassToElement(this.elements.markerLine.element, 'gauge-indicator');
+            }
+        },
+
+        removeTestingMetadata: function() {
+            $(this.renderTo).removeClass(this.typeName);
         }
 
     });
@@ -7941,275 +8168,476 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
     // Splunk.JSCharting.TimeUtils
 
     Splunk.JSCharting.TimeUtils = {
-            
-        secsPerMin: 60,
-        secsPerHour: 60 * 60,
-        secsPerDay: 24 * 60 * 60,
 
-        bdYear: 1,
-        bdMonth: 2,
-        bdDay: 3,
-        bdHour: 4,
-        bdMinute: 5,
-        bdSecond: 6,
-        
-        convertTimeToCategories: function(timeData, spanSeries, numLabelCutoff) {
-            var i, j, formatter, bdTime, label, monthIntervals,
-                prevBdTime = [0, 0, 0, 0, 0, 0],
-                
-                pointSpan = (spanSeries) ? spanSeries[0] : 1,
-                timeRange = pointSpan * timeData.length,
-                categories = [],
-                rawLabels = [],
+        BD_TIME_REGEX: /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})\.\d+[+-]{1}\d{2}:\d{2}$/,
 
-                getFormatterFromSeconds = function(intervals, multiplier, bdIndex) {
-                    for(i = intervals.length - 1; i >= 0; i--) {
-                        if((timeRange / (intervals[i] * multiplier)) >= (numLabelCutoff + 1)) {
-                            continue;
-                        }
-                        break;
-                    }
-                    // i is now equal to the index in intervals that we want for our step,
-                    // use it as a mod value to find the first label
-                    var startIndex = this.findClipIndex(timeData, bdIndex, {'mod': intervals[i]});
-                    return { start: startIndex, step: Math.floor((intervals[i] * multiplier) / pointSpan) };
-                }.bind(this),
-                
-                getFormatterFromSpans = function(intervals, bdIndex) {
-                    for(i = intervals.length - 1; i >= 0; i--) {
-                        if((timeData.length / intervals[i]) >= (numLabelCutoff + 1)) {
-                            continue;
-                        }
-                        break;
-                    }
-                    // i is now equal to the index in intervals that we want for our step,
-                    // if we need to, we clip the first label to the first of the month/year
-                    if(bdIndex === this.bdDay) {
-                        return { start: 0, step: intervals[i] };
-                    }
-                    else {
-                        testIndex = ((pointSpan * intervals[i]) < 12) ? this.bdDay : this.bdMonth;
-                        var startIndex = this.findClipIndex(timeData, testIndex, {value: /01/});
-                        return { start: startIndex, step: intervals[i]};
-                    }
-                }.bind(this);
-            
-            if(timeData.length <= numLabelCutoff) {
-                // set up the formatter to label every point
-                formatter = {
-                    start: 0,
-                    step: 1
-                };
-            }
-            else if(pointSpan < this.secsPerMin && timeRange < this.secsPerMin * numLabelCutoff) {
-                // we are in the second domain
-                var secIntervals = [60, 30, 15, 10, 5, 2, 1];
-                formatter = getFormatterFromSeconds(secIntervals, 1, this.bdSecond);
-            }
-            else if(pointSpan < this.secsPerHour && timeRange < this.secsPerHour * numLabelCutoff) {
-                // we are in the minute domain
-                var minIntervals = [60, 30, 15, 10, 5, 2, 1];
-                formatter = getFormatterFromSeconds(minIntervals, this.secsPerMin, this.bdMinute);
-            }
-            else if(pointSpan < 23 * this.secsPerHour && timeRange < this.secsPerDay * numLabelCutoff) {
-                // we are in the hour domain
-                var hourIntervals = [24, 12, 8, 6, 4, 2, 1];
-                formatter = getFormatterFromSeconds(hourIntervals, this.secsPerHour, this.bdHour);
-            }
-            else if(pointSpan < 27 * this.secsPerDay) {
-                // we are in the day domain
-                var dayIntervals = [14, 7, 4, 2, 1];
-                // work-around here for when the user has specified a small span for a large time range
-                if(pointSpan < 23 * this.secsPerHour) {
-                    if(timeRange < 14 * this.secsPerDay * numLabelCutoff) {
-                        return this.formatCategoriesByFiltering(dayIntervals, this.secsPerDay, this.bdDay, timeRange, timeData, numLabelCutoff);               
-                    }
-                    else {
-                        monthIntervals = [240, 120, 96, 72, 48, 24, 12, 6, 4, 2, 1];
-                        return this.formatCategoriesByFiltering(monthIntervals, 30 * this.secsPerDay, this.bdMonth, timeRange, timeData, numLabelCutoff);   
-                    }
-                }
-                formatter = getFormatterFromSpans(dayIntervals, this.bdDay);
+        BdTime: function(isoString) {
+            var bdPieces = Splunk.JSCharting.TimeUtils.BD_TIME_REGEX.exec(isoString);
+            if(!bdPieces) {
+                this.isInvalid = true;
             }
             else {
-                // we are in the month domain
-                monthIntervals = [240, 120, 96, 72, 48, 24, 12, 6, 4, 2, 1];
-                formatter = getFormatterFromSpans(monthIntervals, this.bdMonth);
+                this.year = parseInt(bdPieces[1], 10);
+                this.month = parseInt(bdPieces[2], 10);
+                this.day = parseInt(bdPieces[3], 10);
+                this.hour = parseInt(bdPieces[4], 10);
+                this.minute = parseInt(bdPieces[5], 10);
+                this.second = parseInt(bdPieces[6], 10);
             }
-            // ESCAPE HATCH
-            // make sure that the formatter settings have a reasonable start index (a user-defined span can throw this off)
-            // if not, force the start index to zero and don't worry about clipping
-            if(formatter.start > formatter.step) {
-                formatter.start = 0;
-                // also need to make sure the labelling will show times since we can no longer clip to days
-                if((formatter.step * pointSpan) >= (23 * this.secsPerHour)) {
-                    pointSpan = 60;
-                }
-            }
-            for(i = 0; i < timeData.length; i++) {
-                if(i >= formatter.start && (i - formatter.start) % formatter.step == 0) {
-                    bdTime = this.extractBdTime(timeData[i]);
-                    label = this.formatBdTimeAsLabel(bdTime, formatter.step * pointSpan, prevBdTime);
-                    categories.push(label);
-                    prevBdTime = bdTime;
-                    rawLabels.push(timeData[i]);
-                }
-                else {
-                    categories.push(" ");
-                }
-            }
-            return {
-                categories: categories,
-                rawLabels: rawLabels
-            };
         },
-        
-        // this method is a catch-all that needs to be able to handle all cases when a user has chosen a small bucket size for a large time range
-        // we do our best to clip the labels to whole time periods, but that might not always be possible
-        formatCategoriesByFiltering: function(intervals, multiplier, bdTestIndex, timeRange, timeData, numLabelCutoff) {
-            var i, j, k, testInterval, loopBdTime, 
-                prevBdValue = -1,
-                prevBdTime = [0, 0, 0, 0, 0, 0],
-                counter = -1, 
-                categories = [],
-                rawLabels = [], 
-                
-                // filter function used to test if a time point clips to a whole unit specified by the bdTestIndex variable
-                filterFn = function(bdTime) {
-                    for(k = bdTestIndex + 1; k < bdTime.length; k++) {
-                        if(k === 3) {
-                            if(bdTime[k] !== "01") {
-                                return false;
-                            }
-                        }
-                        else if(parseInt(bdTime[k], 10)) {
-                            return false;
-                        }
-                    }
-                    return true;
-                };
             
-            for(i = 0; i < intervals.length - 1; i++) {
-                testInterval = intervals[i + 1] * multiplier;
-                if(!((timeRange / testInterval) < numLabelCutoff)) {
+        SECS_PER_MIN: 60,
+        SECS_PER_HOUR: 60 * 60,
+
+        convertTimeToCategories: function(timeData, spanSeries, numLabelCutoff) {
+
+            //debugging
+            //console.log('[\n' + JSON.stringify(timeData).replace(/\[|\]/g, '').split(',').join(',\n') + '\n]');
+
+            var i, labelIndex, prettyLabelInfo, prettyLabels, prettyLabel,
+                // find the indexes (a list of numbers) where the labels should go
+                labelIndexes = this.findLabelIndexes(timeData, numLabelCutoff),
+                rawLabels = [],
+                categories = [];
+
+            // based on the label indexes, look up the raw labels from the original list
+            for(i = 0; i < labelIndexes.length; i++) {
+                labelIndex = labelIndexes[i];
+                rawLabels.push(timeData[labelIndex]);
+            }
+
+            prettyLabelInfo = this.getPrettyLabelInfo(rawLabels);
+            prettyLabels = prettyLabelInfo.prettyLabels;
+
+            // now assemble the full category list to return
+            // start with a list of all blanks
+            for(i = 0; i < timeData.length; i++) {
+                categories.push(' ');
+            }
+            // then put the pretty labels in the right places
+            for(i = 0; i < labelIndexes.length; i++) {
+                labelIndex = labelIndexes[i];
+                prettyLabel = prettyLabels[i];
+                categories[labelIndex] = prettyLabel;
+            }
+
+            return ({
+                categories: categories,
+                rawLabels: rawLabels,
+                granularity: prettyLabelInfo.granularity
+            });
+        },
+
+        findLabelIndexes: function(timeData, numLabelCutoff) {
+            var i, labelIndex, indexes = [];
+
+            // if there are less data points than the cutoff, should label all points
+            if(timeData.length <= numLabelCutoff) {
+                for(i = 0; i < timeData.length; i++) {
+                    indexes.push(i);
+                }
+                return indexes;
+            }
+
+            var pointSpan = this.getPointSpan(timeData),
+                totalSpan = this.getTotalSpan(timeData);
+
+            if(this.couldLabelFirstOfMonth(pointSpan, totalSpan)) {
+                var firstIndexes = this.findFirstOfMonthIndexes(timeData);
+                if(firstIndexes.length >= 3) {
+                    if(firstIndexes.length > numLabelCutoff) {
+                        var step = Math.ceil(firstIndexes.length / numLabelCutoff),
+                            newIndexes = [];
+
+                        for(i = 0; i < firstIndexes.length; i += step) {
+                            labelIndex = firstIndexes[i];
+                            newIndexes.push(labelIndex);
+                        }
+                        firstIndexes = newIndexes;
+                    }
+                    return firstIndexes;
+                }
+            }
+
+                // find major unit (in number of points, not time)
+            var majorUnit = this.findMajorUnit(timeData, numLabelCutoff, pointSpan, totalSpan),
+                firstMajorSlice = timeData.slice(0, majorUnit),
+                roundestIndex = this.getRoundestIndex(firstMajorSlice, majorUnit, pointSpan),
+                index = roundestIndex;
+
+            while(index < timeData.length) {
+                indexes.push(index);
+                index += majorUnit;
+            }
+            return indexes;
+        },
+
+        couldLabelFirstOfMonth: function(pointSpan, totalSpan) {
+            if(pointSpan > this.MAX_SECS_PER_DAY) {
+                return false;
+            }
+            if(pointSpan < this.SECS_PER_HOUR) {
+                return false;
+            }
+            // prevent a user-defined span like 4003 seconds from derailing things
+            if(pointSpan < this.MIN_SECS_PER_DAY && (24 * this.SECS_PER_HOUR) % pointSpan !== 0) {
+                return false;
+            }
+            if(totalSpan < 2 * this.MIN_SECS_PER_MONTH) {
+                return false;
+            }
+            return true;
+        },
+
+        findFirstOfMonthIndexes: function(timeData) {
+            var i, bdTime,
+                bdTimes = [],
+                firstIndexes = [];
+
+            for(i = 0; i < timeData.length; i++) {
+                bdTimes.push(new this.BdTime(timeData[i]));
+            }
+            for(i = 0; i < bdTimes.length; i++) {
+                bdTime = bdTimes[i];
+                if(bdTime.day === 1 && bdTime.hour === 0) {
+                    firstIndexes.push(i);
+                }
+            }
+            return firstIndexes;
+        },
+
+        getPointSpan: function(timeData) {
+            if(timeData.length < 2) {
+                return 1;
+            }
+            if(timeData.length < 4) {
+                return this.getSpanBetween(timeData[0], timeData[1]);
+            }
+            var firstSpan = this.getSpanBetween(timeData[0], timeData[1]),
+                secondSpan = this.getSpanBetween(timeData[1], timeData[2]),
+                thirdSpan = this.getSpanBetween(timeData[2], timeData[3]);
+
+            // sample the three spans to avoid the case where daylight savings might produce an erroneous result
+            if(firstSpan === secondSpan) {
+                return firstSpan;
+            }
+            if(secondSpan === thirdSpan) {
+                return secondSpan;
+            }
+            if(firstSpan === thirdSpan) {
+                return firstSpan;
+            }
+            return firstSpan;
+        },
+
+        getTotalSpan: function(timeData) {
+            var i, lastPoint;
+            for(i = timeData.length - 1; i >= 0; i--) {
+                lastPoint = timeData[i];
+                if(this.BD_TIME_REGEX.test(lastPoint)) {
                     break;
                 }
             }
-            // i is now equal to the index in intervals that we want for our step
-            for(j = 0; j < timeData.length; j++) {
-                loopBdTime = this.extractBdTime(timeData[j]);
-                
-                if(filterFn(loopBdTime)) {
-                    // this is a time point we might potentially label
-                    if(loopBdTime[bdTestIndex] !== prevBdValue) {
-                        // advance the counter if our time index of interest has changed
-                        if(counter > -1) {
-                            counter++;
-                        }
-                        prevBdValue = loopBdTime[bdTestIndex];
+            return this.getSpanBetween(timeData[0], lastPoint);
+        },
+
+        getSpanBetween: function(start, end) {
+            var startDate = new this.isoToDateObject(start),
+                endDate = new this.isoToDateObject(end),
+                millisDiff = endDate.getTime() - startDate.getTime();
+
+            return millisDiff / 1000;
+        },
+
+        isoToDateObject: function(isoString) {
+            var bdTime = Splunk.JSCharting.TimeUtils.extractBdTime(isoString);
+            return Splunk.JSCharting.TimeUtils.bdTimeToDateObject(bdTime);
+        },
+
+        // use a 23-hour day as a minimum to protect against daylight savings errors
+        MIN_SECS_PER_DAY: 23 * 60 * 60,
+        // use a 25-hour day as a maximum to protect against daylight savings errors
+        MAX_SECS_PER_DAY: 25 * 60 * 60,
+
+        MAJOR_UNITS_SECONDS: [
+            1,
+            2,
+            5,
+            10,
+            15,
+            30,
+            60,
+            2 * 60,
+            5 * 60,
+            10 * 60,
+            15 * 60,
+            30 * 60,
+            60 * 60,
+            2 * 60 * 60,
+            4 * 60 * 60,
+            6 * 60 * 60,
+            12 * 60 * 60,
+            24 * 60 * 60,
+            48 * 60 * 60,
+            96 * 60 * 60,
+            168 * 60 * 60
+        ],
+
+        MAJOR_UNIT_DAYS: [
+            1,
+            2,
+            4,
+            7,
+            14,
+            28,
+            56,
+            112,
+            224,
+            364,
+            476,
+            728
+        ],
+
+        // this is ok because daylight savings is never in February
+        MIN_SECS_PER_MONTH: 28 * 24 * 60 * 60,
+
+        MAJOR_UNIT_MONTHS: [
+            1,
+            2,
+            4,
+            6,
+            12,
+            24,
+            48,
+            96
+        ],
+
+        findMajorUnit: function(timeData, numLabelCutoff, pointSpan, totalSpan) {
+            var i, majorUnit, unitsPerSpan;
+            if(pointSpan < this.MIN_SECS_PER_DAY) {
+                for(i = 0; i < this.MAJOR_UNITS_SECONDS.length; i++) {
+                    majorUnit = this.MAJOR_UNITS_SECONDS[i];
+                    unitsPerSpan = totalSpan / majorUnit;
+                    if((unitsPerSpan >= 3) && (unitsPerSpan <= numLabelCutoff) && (majorUnit % pointSpan === 0)) {
+                        return majorUnit / pointSpan;
                     }
-                    if(counter === -1 || counter % intervals[i] === 0) {
-                        // either this is the first label-worthy point we've seen, or the counter has advanced far enough that it's time to label again
-                        label = this.formatBdTimeAsLabel(loopBdTime, multiplier * intervals[i], prevBdTime);
-                        categories.push(label);
-                        prevBdTime = loopBdTime;
-                        counter = 0;
-                        rawLabels.push(timeData[j]);
+                }
+            }
+            else if(pointSpan < this.MIN_SECS_PER_MONTH) {
+                var secsPerDay = 24 * 60 * 60,
+                    dayPointSpan = Math.round(pointSpan / secsPerDay),
+                    dayTotalSpan = Math.round(totalSpan / secsPerDay);
+
+                for(i = 0; i < this.MAJOR_UNIT_DAYS.length; i++) {
+                    majorUnit = this.MAJOR_UNIT_DAYS[i];
+                    unitsPerSpan = dayTotalSpan / majorUnit;
+                    if((unitsPerSpan >= 3) && (unitsPerSpan <= numLabelCutoff) && (majorUnit % dayPointSpan === 0)) {
+                        return majorUnit / dayPointSpan;
                     }
-                    else {
-                        categories.push(" ");
+                }
+            }
+            else {
+                var secsPerMonth = 30 * 24 * 60 * 60,
+                    monthPointSpan = Math.round(pointSpan / secsPerMonth),
+                    monthTotalSpan = Math.round(totalSpan / secsPerMonth);
+
+                for(i = 0; i < this.MAJOR_UNIT_MONTHS.length; i++) {
+                    majorUnit = this.MAJOR_UNIT_MONTHS[i];
+                    unitsPerSpan = monthTotalSpan / majorUnit;
+                    if((unitsPerSpan >= 3) && (unitsPerSpan <= numLabelCutoff) && (majorUnit % monthPointSpan === 0)) {
+                        return majorUnit / monthPointSpan;
                     }
+                }
+            }
+            // if we exit the loop without finding a major unit, we just punt and divide the points evenly
+            return Math.ceil(timeData.length / numLabelCutoff);
+        },
+
+        getRoundestIndex: function(timeData, majorUnit, pointSpan) {
+            var i, roundest, roundestIndex,
+                bdTimes = [],
+                secsMajorUnit = majorUnit * pointSpan;
+
+            for(i = 0; i < timeData.length; i++) {
+                bdTimes.push(new this.BdTime(timeData[i]));
+            }
+            roundest = bdTimes[0];
+            roundestIndex = 0;
+            for(i = 1; i < bdTimes.length; i++) {
+                if(this.isRounderThan(bdTimes[i], roundest, pointSpan) && this.bdTimeMatchesUnit(bdTimes[i], secsMajorUnit)) {
+                    roundest = bdTimes[i];
+                    roundestIndex = i;
+                }
+            }
+            return roundestIndex;
+        },
+
+        isRounderThan: function(first, second, pointSpan) {
+            // when comparing firsts-of-the-month only, January 1st is rounder
+            if(first.month === 1 && first.day === 1 && first.hour === 0
+                     && second.month !== 1 && second.day === 1 && second.hour === 0) {
+                return true;
+            }
+
+            if(first.hour === 0 && second.hour !== 0) {
+                return true;
+            }
+            if(first.hour % 12 === 0 && second.hour % 12 !== 0) {
+                return true;
+            }
+            if(first.hour % 6 === 0 && second.hour % 6 !== 0) {
+                return true;
+            }
+            if(first.hour % 4 === 0 && second.hour % 4 !== 0) {
+                return true;
+            }
+            if(first.hour % 2 === 0 && second.hour % 2 !== 0) {
+                return true;
+            }
+
+            if(first.minute === 0 && second.minute !== 0) {
+                return true;
+            }
+            if(first.minute % 30 === 0 && second.minute % 30 !== 0) {
+                return true;
+            }
+            if(first.minute % 15 === 0 && second.minute % 15 !== 0) {
+                return true;
+            }
+            if(first.minute % 10 === 0 && second.minute % 10 !== 0) {
+                return true;
+            }
+            if(first.minute % 5 === 0 && second.minute % 5 !== 0) {
+                return true;
+            }
+            if(first.minute % 2 === 0 && second.minute % 2 !== 0) {
+                return true;
+            }
+
+            if(first.second === 0 && second.second !== 0) {
+                return true;
+            }
+            if(first.second % 30 === 0 && second.second % 30 !== 0) {
+                return true;
+            }
+            if(first.second % 15 === 0 && second.second % 15 !== 0) {
+                return true;
+            }
+            if(first.second % 10 === 0 && second.second % 10 !== 0) {
+                return true;
+            }
+            if(first.second % 5 === 0 && second.second % 5 !== 0) {
+                return true;
+            }
+            if(first.second % 2 === 0 && second.second % 2 !== 0) {
+                return true;
+            }
+            return false;
+        },
+
+        bdTimeMatchesUnit: function(bdTime, secsMajor) {
+            if(secsMajor < 60) {
+                return (bdTime.second % secsMajor === 0);
+            }
+            if(secsMajor < 60 * 60) {
+                var minutes = Math.floor(secsMajor / 60);
+                return (bdTime.minute % minutes === 0);
+            }
+            else {
+                var hours = Math.floor(secsMajor / (60 * 60));
+                return (bdTime.hour % hours === 0);
+            }
+            return true;
+        },
+
+        getPrettyLabelInfo: function(rawLabels) {
+            var i, prettyLabel,
+                bdTimes = [],
+                prettyLabels = [];
+
+            for(i = 0; i < rawLabels.length; i++) {
+                bdTimes.push(new this.BdTime(rawLabels[i]));
+            }
+
+            var granularity = this.determineLabelGranularity(bdTimes);
+            for(i = 0; i < bdTimes.length; i++) {
+                if(i === 0) {
+                    prettyLabels.push(this.formatBdTimeAsLabel(bdTimes[i], null, granularity));
                 }
                 else {
-                    categories.push(" ");
+                    prettyLabels.push(this.formatBdTimeAsLabel(bdTimes[i], bdTimes[i - 1], granularity));
                 }
             }
-            if(rawLabels.length < 3) {
-                // ESCAPE HATCH: if we didn't label enough points above (meaning they couldn't be clipped to whole units)
-                // then simply go through with a uniform label step and enforce verbose labeling
-                rawLabels = [];
-                var labelStep = Math.floor(categories.length / numLabelCutoff) || 1,
-                    rawLabelSpan = (multiplier * intervals[i]),
-                    labelSpan = (rawLabelSpan >= (23 * this.secsPerHour)) ? 60 : rawLabelSpan;
-                
-                for(j = 0; j < categories.length; j += labelStep) {
-                    loopBdTime = this.extractBdTime(timeData[j]);
-                    label = this.formatBdTimeAsLabel(loopBdTime, labelSpan, prevBdTime);
-                    categories[j] = label;
-                    prevBdTime = loopBdTime;
-                    rawLabels.push(timeData[j]);
-                }
-            }
+
             return {
-                categories: categories,
-                rawLabels: rawLabels
+                prettyLabels: prettyLabels,
+                granularity: granularity
             };
         },
-        
-        // generic method for applying a set of filter contraints to a time data series and finding the
-        // first index where labels should start clipping
-        findClipIndex: function(data, bdIndex, filter) {
-            var i, isSatisfied, bdTimePoint,
-            
-                satisfiesMod = function(timePoint, index, mod) {
-                    var bdValue = parseInt(timePoint[index], 10);
-                    if((bdValue % mod) != 0) {
-                        return false;
-                    }
-                    for(var j = index + 1; j <= this.bdSecond; j++) {
-                        if(j == this.bdDay) {
-                            if(timePoint[j] !== "01") {
-                                return false;
-                            }
-                        }
-                        else if(parseInt(timePoint[j], 10) != 0) {
+
+        determineLabelGranularity: function(bdTimes) {
+            if(bdTimes.length === 1) {
+                return 'second';
+            }
+            var i, bdTime,
+                seconds = [],
+                hours = [],
+                days = [],
+                months = [],
+
+                allInListMatch = function(list, matchMe) {
+                    for(var i = 0; i < list.length; i++) {
+                        if(list[i] !== matchMe) {
                             return false;
                         }
                     }
                     return true;
-                }.bind(this),
-                
-                satisfiesValueMatch = function(timePoint, index, regex) {
-                    return regex.test(timePoint[index]);
                 };
-            
-            for(i = 0; i < data.length; i++) {
-                isSatisfied = false;
-                bdTimePoint = this.extractBdTime(data[i]);
-                if(filter.mod) {
-                    isSatisfied = satisfiesMod(bdTimePoint, bdIndex, filter.mod);
-                }
-                if(isSatisfied && filter.value) {
-                    isSatisfied = satisfiesValueMatch(bdTimePoint, bdIndex, filter.value);
-                }
-                if(isSatisfied) {
-                    return i;
-                }
+
+            for(i = 0; i < bdTimes.length; i++) {
+                bdTime = bdTimes[i];
+                seconds.push(bdTime.second);
+                hours.push(bdTime.hour);
+                days.push(bdTime.day);
+                months.push(bdTime.month);
             }
-            // if we end up here we were unable to find any points that satisfy the constraints, so punt and return zero
-            return 0;
+
+            if(!allInListMatch(seconds, 0)) {
+                return 'second';
+            }
+            if((!allInListMatch(hours, 0))) {
+                return 'hour';
+            }
+            if(!allInListMatch(days, 1)) {
+                return 'day';
+            }
+            if(!allInListMatch(months, 1)) {
+                return 'month';
+            }
+            return 'year';
         },
 
-        formatBdTimeAsLabel: function(bdTime, labelSpan, prevBdTime) {
+        formatBdTimeAsLabel: function(bdTime, prevBdTime, granularity) {
+            if(bdTime.isInvalid) {
+                return null;
+            }
             var i18n = Splunk.JSCharting.i18nUtils,
                 dateTime = this.bdTimeToDateObject(bdTime),
 
-                showDay = (labelSpan < 28 * this.secsPerDay),
-                showTimes = (labelSpan < (23 * this.secsPerHour) || 
-                        ((bdTime[this.bdHour] != "00" && bdTime[this.bdMinute] != "00") || 
-                         (prevBdTime[this.bdHour] != "00" && prevBdTime[this.bdMinute] != "00"))),
-                showSeconds = (labelSpan < 60),
+                showDay = (granularity in { 'second': true, 'hour': true, 'day': true }),
+                showTimes = (granularity in { 'second': true, 'hour': true}),
+                showSeconds = (granularity === 'second'),
 
                 timeFormat = (showSeconds) ? 'medium' : 'short',
                 dateFormat = (showDay) ? 'ccc MMM d' : 'MMMM';
 
-            if(labelSpan > 364 * this.secsPerDay) {
+            if(granularity === 'year') {
                 return i18n.format_date(dateTime, 'YYYY');
             }
-            if(bdTime[this.bdMonth] === prevBdTime[this.bdMonth] && bdTime[this.bdDay] === prevBdTime[this.bdDay]) {
+            if(prevBdTime && prevBdTime.year === bdTime.year && bdTime.month === prevBdTime.month && bdTime.day === prevBdTime.day) {
                 return format_time(dateTime, timeFormat);
             }
-            if(bdTime[this.bdYear] !== prevBdTime[this.bdYear]) {
+            if(!prevBdTime || bdTime.year !== prevBdTime.year) {
                 dateFormat += '<br/>YYYY';
             }
             return (showTimes) ?
@@ -8217,41 +8645,37 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
                 i18n.format_date(dateTime, dateFormat);
         },
         
-        // returns false if string cannot be parsed
+        // returns null if string cannot be parsed
         formatIsoStringAsTooltip: function(isoString, pointSpan) {
             var i18n = Splunk.JSCharting.i18nUtils,
                 bdTime = this.extractBdTime(isoString),
                 dateObject;
             
-            if(!bdTime) {
-                return false;
+            if(bdTime.isInvalid) {
+                return null;
             }
             dateObject = this.bdTimeToDateObject(bdTime);
-            
-            if (pointSpan >= 86400) { // day or larger
+
+            if (pointSpan >= this.MIN_SECS_PER_DAY) { // day or larger
                 return i18n.format_date(dateObject);
-            } 
-            else if (pointSpan >= 60) { // minute or longer
+            }
+            else if (pointSpan >= this.SECS_PER_MIN) { // minute or longer
                 return format_datetime(dateObject, 'medium', 'short');
             }
             return format_datetime(dateObject);
         },
 
         extractBdTime: function(timeString) {
-            // assume time comes in ISO format
-            if(!this.bdTimeRegex) {
-                this.bdTimeRegex = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})\.\d+[+-]{1}\d{2}:\d{2}$/;
-            }
-            return this.bdTimeRegex.exec(timeString);
+            return new this.BdTime(timeString);
         },
         
         bdTimeToDateObject: function(bdTime) {
-            var year = parseInt(bdTime[this.bdYear], 10),
-                month = parseInt(bdTime[this.bdMonth], 10) - 1,
-                day = parseInt(bdTime[this.bdDay], 10),
-                hour = parseInt(bdTime[this.bdHour], 10),
-                minute = parseInt(bdTime[this.bdMinute], 10),
-                second = parseInt(bdTime[this.bdSecond], 10);
+            var year = bdTime.year,
+                month = bdTime.month - 1,
+                day = bdTime.day,
+                hour = bdTime.hour,
+                minute = bdTime.minute,
+                second = bdTime.second;
             
             return new Date(year, month, day, hour, minute, second);
         }
