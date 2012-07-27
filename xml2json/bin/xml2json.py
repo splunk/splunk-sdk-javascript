@@ -627,7 +627,7 @@ def from_typeahead(root):
     elif isinstance(root, file):
         root = json.loads(root.read())
         
-    return root
+    return {"results": root}
     
 
 def from_search_parser(root):

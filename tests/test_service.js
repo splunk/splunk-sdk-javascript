@@ -620,7 +620,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 
                 Async.chain([
                         function(done) {
-                            that.service.jobs().search('search index=_internal | head 1', {id: sid}, done);
+                            that.service.jobs().search('search index=_internal | head 1', {id: sid, exec_mode: "blocking"}, done);
                         },
                         function(job, done) {
                             job.searchlog(done);
