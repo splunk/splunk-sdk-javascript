@@ -1,5 +1,42 @@
 # Splunk JavaScript SDK Changelog
 
+## v0.6.0
+
+### xml2json
+
+This version requires you to update the `xml2json` app.
+
+### Features
+
+#### Versioning of the SDK
+
+The SDK can now handle multiple versions of Splunk. When you create a
+`Service` instance, you can pass in an optional `version` parameter,
+which will change internal behavior of the SDK, but present a consistent
+state of the world to the developer. For example, passing `version: 5.0`
+will make the SDK use the native JSON support in the next version of
+Splunk.
+
+#### More extensive testing
+
+The SDK now has much higher test coverage.
+
+#### Bug fixes for Charting component
+
+Several bugs in the charting component have been fixed.
+
+### Breaking Changes
+
+#### Change to `search/typeahead` endpoint
+
+In the next version of Splunk, with native JSON support, the output for the 
+`search/typeahead` endpoint. Instead of a top level array with completions,
+it now returns a top-level object:
+
+  {
+    "results": [...]
+  }
+
 ## v0.5.0
 
 Version 0.5.0 of the JavaScript SDK presents a refined SDK with major changes,
