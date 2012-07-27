@@ -615,7 +615,8 @@
             "lib/utils.js",
             "lib/async.js",
             "lib/context.js",
-            "lib/service.js"
+            "lib/service.js",
+            "lib/storm.js"
         ];
         
         var comments = [];
