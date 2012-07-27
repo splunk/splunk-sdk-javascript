@@ -146,7 +146,7 @@ Submitting events to Splunk over HTTP is now easier, with a simple method
 on the `Service`:
 
     var service = new splunkjs.Service();
-    storm.log(
+    service.log(
         "MY AWESOME LOG MESSAGE", 
         {index: "MY_INDEX", sourcetype: "GO"},
         function(err, response) {
