@@ -4,7 +4,9 @@
 
 ### xml2json
 
-This version requires you to update the `xml2json` app.
+This version requires you to update the `xml2json` app. You can do this by
+copying the xml2json directory (/splunk-sdk-javascript/xml2json) to the 
+Splunk apps directory ($SPLUNK_HOME/etc/apps).
 
 ### Features
 
