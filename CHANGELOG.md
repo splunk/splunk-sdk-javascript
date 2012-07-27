@@ -30,7 +30,7 @@ Several bugs in the charting component have been fixed.
 #### Change to `search/typeahead` endpoint
 
 In the next version of Splunk, with native JSON support, the output for the 
-`search/typeahead` endpoint. Instead of a top level array with completions,
+`search/typeahead` endpoint has changed. Instead of a top level array with completions,
 it now returns a top-level object:
 
   {
