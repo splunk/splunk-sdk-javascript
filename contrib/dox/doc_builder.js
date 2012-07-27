@@ -293,14 +293,20 @@
         version: version
     }
     
-    var outputs = {};
-    modules.sort(function(a,b) {
+    var comparator = function(a,b) {
         return (a.name < b.name ? -1 : (a.name === b.name ? 0 : 1)); 
-    }).forEach(function(module) {
+    };
+    
+    var outputs = {};
+    modules.sort(comparator).forEach(function(module) {
         var moduleList = [];
         for(var i = 0; i < modules.length; i++) {
             if (modules[i] === module) {
                 moduleList.push(module);
+                
+                (module.methods || []).sort(comparator);
+                (module.inherited || []).sort(comparator);
+                (module.helpers || []).sort(comparator);
             }
             else {
                 moduleList.push({name: modules[i].name});
