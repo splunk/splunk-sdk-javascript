@@ -277,7 +277,9 @@
         var newMethods = getParentMethods(module);
         
         // If we have a parent, add those methods in
-        if (module.is_extends) {
+        // but only if it isn't StormService, which we special case for now
+        var isStormService = module.name === "splunkjs.StormService";
+        if (module.is_extends && !isStormService) {
             module.inherited = newMethods.filter(function(method) {
                 return (module.methods.indexOf(method) < 0);
             });
@@ -292,11 +294,13 @@
     }
     
     var outputs = {};
-    modules.forEach(function(module) {
+    modules.sort(function(a,b) {
+        return (a.name < b.name ? -1 : (a.name === b.name ? 0 : 1)); 
+    }).forEach(function(module) {
         var moduleList = [];
         for(var i = 0; i < modules.length; i++) {
             if (modules[i] === module) {
-                moduleList.unshift(module);
+                moduleList.push(module);
             }
             else {
                 moduleList.push({name: modules[i].name});
