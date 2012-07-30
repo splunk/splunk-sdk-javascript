@@ -389,9 +389,9 @@ of embedded libraries and their licenses:
 7. [staticresource]: [MIT][staticresource-license]
 8. [webapp2]: [Apache][webapp2-license]
 9. [commander]: [MIT][commander-license]
-10.[script.js]: [Apache][scriptjs-license]
-11.[base64.js]: [MIT][base64-license]
-12.[eventemitter.js]: [MIT][event-license]
+10. [script.js]: [Apache][scriptjs-license]
+11. [base64.js]: [MIT][base64-license]
+12. [eventemitter.js]: [MIT][event-license]
 
 
 [dox]:                      https://github.com/visionmedia/dox
