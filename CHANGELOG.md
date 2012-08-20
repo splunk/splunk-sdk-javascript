@@ -1,5 +1,9 @@
 # Splunk JavaScript SDK Changelog
 
+## v0.8.0 - Beta
+
+No changes.
+
 ## v0.6.0
 
 ### xml2json
