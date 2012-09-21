@@ -159,7 +159,8 @@
               "Async Tests": SplunkTest.Async.setup(svc),
               "Context Tests": SplunkTest.Context.setup(svc),
               "Service Tests": SplunkTest.Service.setup(svc, loggedOutSvc),
-              "Storm Tests": SplunkTest.Storm.setup(http),
+              // (Storm tests disabled because Storm APIs have been removed for the time being.)
+              //"Storm Tests": SplunkTest.Storm.setup(http),
               "Searcher Tests": SplunkTest.Searcher.setup(svc)
             }]);
           });
