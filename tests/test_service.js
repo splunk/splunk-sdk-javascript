@@ -25,7 +25,7 @@ exports.setup = function(svc, loggedOutSvc) {
         return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
     };
 
-    return {
+    var suite = {
         "Namespace Tests": {
             setUp: function(finished) {
                 this.service = svc;
@@ -1655,10 +1655,65 @@ exports.setup = function(svc, loggedOutSvc) {
                 });
             },
 
-            "Callback#remove index fails": function(test) {
+            "Callback#remove index fails on Splunk 4": function(test) {
+                var original_version = this.service.version;
+                this.service.version = "4.0";
+                
                 var index = this.service.indexes().item(this.indexName);
-                test.throws(function() { index.remove();});
+                test.throws(function() { index.remove(function(err) {}); });
+                this.service.version = original_version;
                 test.done();
+            },
+            
+            "Callback#remove index": function(test) {
+                var indexes = this.service.indexes();
+                
+                // Must generate a private index because an index cannot
+                // be recreated with the same name as a deleted index
+                // for a certain period of time after the deletion.
+                var salt = Math.floor(Math.random() * 65536)
+                var myIndexName = this.indexName + '-' + salt;
+                
+                if (!(parseInt(this.service.version) >= 5)) {
+                    test.ok(false, "Must be running Splunk 5+ for this test to work.");
+                    test.done();
+                    return;
+                }
+                
+                indexes.create(myIndexName, {}, function(err, index) {
+                    test.ok(!err);
+                    
+                    index.remove(function(err) {
+                        test.ok(!err);
+                        
+                        var numTriesLeft = 10;
+                        var delayPerTry = 100;  // ms
+                        
+                        var waitForIndexDeath = function() {
+                            indexes.fetch(function(err, indexes) {
+                                var index = indexes.item(myIndexName);
+                                if (index) {
+                                    // Not dead yet
+                                    if (numTriesLeft <= 0) {
+                                        test.ok(false, "Timed out waiting for index to be removed.");
+                                        test.done();
+                                    }
+                                    else {
+                                        // Try again
+                                        numTriesLeft--;
+                                        setTimeout(waitForIndexDeath, delayPerTry);
+                                    }
+                                }
+                                else {
+                                    // Dead. We're done.
+                                    test.done();
+                                }
+                            });
+                        };
+                        
+                        waitForIndexDeath();
+                    });
+                });
             },
                          
             "Callback#list indexes": function(test) {
@@ -2459,6 +2514,7 @@ exports.setup = function(svc, loggedOutSvc) {
             }
         }
     };
+    return suite;
 };
 
 if (module === require.main) {
