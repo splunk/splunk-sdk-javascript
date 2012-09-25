@@ -19,7 +19,7 @@ exports.setup = function(svc) {
     splunkjs.Logger.setLevel("ALL");
     var isBrowser = typeof window !== "undefined";
     
-    return {
+    var suite = {
         setUp: function(done) {
             this.service = svc;
             done();
@@ -675,8 +675,44 @@ exports.setup = function(svc) {
             test.strictEqual(ctx2.fullpath("meep", {sharing: "global"}), "/servicesNS/nobody/beta/meep");
             test.strictEqual(ctx2.fullpath("meep", {sharing: "system"}), "/servicesNS/nobody/system/meep");
             test.done();
+        },
+        
+        "version check": function(test) {
+            var ctx = new splunkjs.Context({ "version": "4.0" });
+            test.ok(ctx.version === "4.0");
+            
+            var ctx = new splunkjs.Context({ "version": "4.0" });
+            test.ok(ctx.versionCompare("5.0") === -1);
+            var ctx = new splunkjs.Context({ "version": "4" });
+            test.ok(ctx.versionCompare("5.0") === -1);
+            var ctx = new splunkjs.Context({ "version": "4.0" });
+            test.ok(ctx.versionCompare("5") === -1);
+            var ctx = new splunkjs.Context({ "version": "4.1" });
+            test.ok(ctx.versionCompare("4.9") === -1);
+            
+            var ctx = new splunkjs.Context({ "version": "4.0" });
+            test.ok(ctx.versionCompare("4.0") === 0);
+            var ctx = new splunkjs.Context({ "version": "4" });
+            test.ok(ctx.versionCompare("4.0") === 0);
+            var ctx = new splunkjs.Context({ "version": "4.0" });
+            test.ok(ctx.versionCompare("4") === 0);
+            
+            var ctx = new splunkjs.Context({ "version": "5.0" });
+            test.ok(ctx.versionCompare("4.0") === 1);
+            var ctx = new splunkjs.Context({ "version": "5.0" });
+            test.ok(ctx.versionCompare("4") === 1);
+            var ctx = new splunkjs.Context({ "version": "5" });
+            test.ok(ctx.versionCompare("4.0") === 1);
+            var ctx = new splunkjs.Context({ "version": "4.9" });
+            test.ok(ctx.versionCompare("4.1") === 1);
+            
+            var ctx = new splunkjs.Context();
+            test.ok(ctx.versionCompare("4.3") === 0);
+            
+            test.done();
         }
     };
+    return suite;
 };
 
 if (module === require.main) {

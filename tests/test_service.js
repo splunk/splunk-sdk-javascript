@@ -1675,7 +1675,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var salt = Math.floor(Math.random() * 65536)
                 var myIndexName = this.indexName + '-' + salt;
                 
-                if (!(parseInt(this.service.version) >= 5)) {
+                if (this.service.versionCompare("5.0") < 0) {
                     console.log("Must be running Splunk 5.0+ for this test to work.");
                     test.done();
                     return;
