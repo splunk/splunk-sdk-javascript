@@ -1655,12 +1655,13 @@ exports.setup = function(svc, loggedOutSvc) {
                 });
             },
 
-            "Callback#remove index fails on Splunk 4": function(test) {
+            "Callback#remove index fails on Splunk 4.x": function(test) {
                 var original_version = this.service.version;
                 this.service.version = "4.0";
                 
                 var index = this.service.indexes().item(this.indexName);
                 test.throws(function() { index.remove(function(err) {}); });
+                
                 this.service.version = original_version;
                 test.done();
             },
@@ -1675,45 +1676,54 @@ exports.setup = function(svc, loggedOutSvc) {
                 var myIndexName = this.indexName + '-' + salt;
                 
                 if (!(parseInt(this.service.version) >= 5)) {
-                    test.ok(false, "Must be running Splunk 5+ for this test to work.");
+                    console.log("Must be running Splunk 5.0+ for this test to work.");
                     test.done();
                     return;
                 }
                 
-                indexes.create(myIndexName, {}, function(err, index) {
-                    test.ok(!err);
-                    
-                    index.remove(function(err) {
-                        test.ok(!err);
-                        
-                        var numTriesLeft = 10;
-                        var delayPerTry = 100;  // ms
-                        
-                        var waitForIndexDeath = function() {
-                            indexes.fetch(function(err, indexes) {
-                                var index = indexes.item(myIndexName);
-                                if (index) {
-                                    // Not dead yet
-                                    if (numTriesLeft <= 0) {
-                                        test.ok(false, "Timed out waiting for index to be removed.");
-                                        test.done();
+                Async.chain([
+                        function(callback) {
+                            indexes.create(myIndexName, {}, callback);
+                        },
+                        function(index, callback) {
+                            index.remove(callback);
+                        },
+                        function(callback) {
+                            var numTriesLeft = 50;
+                            var delayPerTry = 100;  // ms
+                            
+                            var waitForIndexDeath = function() {
+                                indexes.fetch(function(err, indexes) {
+                                    test.ok(!err);
+                                    
+                                    var index = indexes.item(myIndexName);
+                                    if (index) {
+                                        // Not dead yet
+                                        if (numTriesLeft <= 0) {
+                                            test.ok(false, "Timed out waiting for index to be removed.");
+                                            callback();
+                                        }
+                                        else {
+                                            // Try again
+                                            numTriesLeft--;
+                                            Async.sleep(delayPerTry, waitForIndexDeath);
+                                        }
                                     }
                                     else {
-                                        // Try again
-                                        numTriesLeft--;
-                                        setTimeout(waitForIndexDeath, delayPerTry);
+                                        // Dead. We're done.
+                                        callback();
                                     }
-                                }
-                                else {
-                                    // Dead. We're done.
-                                    test.done();
-                                }
-                            });
-                        };
-                        
-                        waitForIndexDeath();
-                    });
-                });
+                                });
+                            };
+                            
+                            waitForIndexDeath();
+                        },
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
             },
                          
             "Callback#list indexes": function(test) {
@@ -1772,9 +1782,6 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual(originalSyncMeta, properties.syncMeta);
                             callback();
                         },
-                        function(callback) {
-                            callback();
-                        }
                     ],
                     function(err) {
                         test.ok(!err);
