@@ -25,7 +25,7 @@ exports.setup = function(svc, loggedOutSvc) {
         return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
     };
 
-    return {
+    var suite = {
         "Namespace Tests": {
             setUp: function(finished) {
                 this.service = svc;
@@ -894,6 +894,90 @@ exports.setup = function(svc, loggedOutSvc) {
                         test.done();
                     }
                 );
+            },
+            
+            "Callback#Wait until job done": function(test) {
+                this.service.search('search index=_internal | head 1000', {}, function(err, job) {
+                    test.ok(!err);
+                    
+                    var numReadyEvents = 0;
+                    var numProgressEvents = 0;
+                    job.track({ pollPeriod: 200 }, {
+                        ready: function(job) {
+                            test.ok(job);
+                            
+                            numReadyEvents++;
+                        },
+                        progress: function(job) {
+                            test.ok(job);
+                            
+                            numProgressEvents++;
+                        },
+                        done: function(job) {
+                            test.ok(job);
+                            
+                            test.ok(numReadyEvents == 1);       // all done jobs must have become ready
+                            test.ok(numProgressEvents >= 1);    // a job that becomes ready has progress
+                            test.done();
+                        },
+                        failed: function(job) {
+                            test.ok(job);
+                            
+                            test.ok(false, "Job failed unexpectedly.");
+                            test.done();
+                        },
+                        error: function(err) {
+                            test.ok(err);
+                            
+                            test.ok(false, "Error while tracking job.");
+                            test.done();
+                        }
+                    });
+                });
+            },
+            
+            "Callback#Wait until job failed": function(test) {
+                this.service.search('search index=_internal | head bogusarg', {}, function(err, job) {
+                    if (err) {
+                        test.ok(!err);
+                        test.done();
+                        return;
+                    }
+                    
+                    var numReadyEvents = 0;
+                    var numProgressEvents = 0;
+                    job.track({ pollPeriod: 200 }, {
+                        ready: function(job) {
+                            test.ok(job);
+                            
+                            numReadyEvents++;
+                        },
+                        progress: function(job) {
+                            test.ok(job);
+                            
+                            numProgressEvents++;
+                        },
+                        done: function(job) {
+                            test.ok(job);
+                            
+                            test.ok(false, "Job became done unexpectedly.");
+                            test.done();
+                        },
+                        failed: function(job) {
+                            test.ok(job);
+                            
+                            test.ok(numReadyEvents == 1);       // even failed jobs become ready
+                            test.ok(numProgressEvents >= 1);    // a job that becomes ready has progress
+                            test.done();
+                        },
+                        error: function(err) {
+                            test.ok(err);
+                            
+                            test.ok(false, "Error while tracking job.");
+                            test.done();
+                        }
+                    });
+                });
             }
         },
         
@@ -2459,6 +2543,7 @@ exports.setup = function(svc, loggedOutSvc) {
             }
         }
     };
+    return suite;
 };
 
 if (module === require.main) {
