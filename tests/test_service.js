@@ -465,6 +465,58 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
+            
+            "Callback#job results iterator": function(test) {
+                var that = this;
+                
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().search('search index=_internal | head 10', {}, done);
+                        },
+                        function(job, done) {
+                            tutils.pollUntil(
+                                job,
+                                function(j) {
+                                    return job.properties()["isDone"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            var iterator = job.resultsIterator({ pagesize: 4 });
+                            var hasMore = true;
+                            var numElements = 0;
+                            var pageSizes = [];
+                            Async.whilst(
+                                function() { return hasMore; },
+                                function(nextIteration) {
+                                    iterator.next(function(err, results, _hasMore) {
+                                        if (err) {
+                                            nextIteration(err);
+                                            return;
+                                        }
+                                        
+                                        hasMore = _hasMore;
+                                        if (hasMore) {
+                                            pageSizes.push(results.rows.length);
+                                        }
+                                        nextIteration();
+                                    });
+                                },
+                                function(err) {
+                                    test.deepEqual(pageSizes, [4,4,2])
+                                    done(err);
+                                }
+                            );
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
 
             "Callback#Enable + disable preview": function(test) {
                 var that = this;
