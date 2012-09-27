@@ -1692,31 +1692,20 @@ exports.setup = function(svc, loggedOutSvc) {
                             var numTriesLeft = 50;
                             var delayPerTry = 100;  // ms
                             
-                            var waitForIndexDeath = function() {
-                                indexes.fetch(function(err, indexes) {
-                                    test.ok(!err);
-                                    
-                                    var index = indexes.item(myIndexName);
-                                    if (index) {
-                                        // Not dead yet
-                                        if (numTriesLeft <= 0) {
-                                            test.ok(false, "Timed out waiting for index to be removed.");
-                                            callback();
-                                        }
-                                        else {
-                                            // Try again
-                                            numTriesLeft--;
-                                            Async.sleep(delayPerTry, waitForIndexDeath);
-                                        }
-                                    }
-                                    else {
-                                        // Dead. We're done.
-                                        callback();
-                                    }
-                                });
-                            };
-                            
-                            waitForIndexDeath();
+                            Async.whilst(
+                                 function() { return indexes.item(myIndexName) && ((numTriesLeft--) > 0) },
+                                 function(iterDone) {
+                                      Async.sleep(delayPerTry, function() { indexes.fetch(iterDone); });
+                                 },
+                                 function(err) {
+                                      if (err) {
+                                           callback(err);
+                                      }
+                                      else {
+                                           callback(numTriesLeft <= 0 ? "Timed out" : null);
+                                      }
+                                 }
+                            );
                         },
                     ],
                     function(err) {
