@@ -1672,7 +1672,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 // Must generate a private index because an index cannot
                 // be recreated with the same name as a deleted index
                 // for a certain period of time after the deletion.
-                var salt = Math.floor(Math.random() * 65536)
+                var salt = Math.floor(Math.random() * 65536);
                 var myIndexName = this.indexName + '-' + salt;
                 
                 if (this.service.versionCompare("5.0") < 0) {
@@ -1693,7 +1693,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             var delayPerTry = 100;  // ms
                             
                             Async.whilst(
-                                 function() { return indexes.item(myIndexName) && ((numTriesLeft--) > 0) },
+                                 function() { return indexes.item(myIndexName) && ((numTriesLeft--) > 0); },
                                  function(iterDone) {
                                       Async.sleep(delayPerTry, function() { indexes.fetch(iterDone); });
                                  },
@@ -1706,7 +1706,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                       }
                                  }
                             );
-                        },
+                        }
                     ],
                     function(err) {
                         test.ok(!err);
@@ -1770,7 +1770,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             
                             test.strictEqual(originalSyncMeta, properties.syncMeta);
                             callback();
-                        },
+                        }
                     ],
                     function(err) {
                         test.ok(!err);

@@ -678,35 +678,37 @@ exports.setup = function(svc) {
         },
         
         "version check": function(test) {
-            var ctx = new splunkjs.Context({ "version": "4.0" });
+            var ctx;
+            
+            ctx = new splunkjs.Context({ "version": "4.0" });
             test.ok(ctx.version === "4.0");
             
-            var ctx = new splunkjs.Context({ "version": "4.0" });
+            ctx = new splunkjs.Context({ "version": "4.0" });
             test.ok(ctx.versionCompare("5.0") === -1);
-            var ctx = new splunkjs.Context({ "version": "4" });
+            ctx = new splunkjs.Context({ "version": "4" });
             test.ok(ctx.versionCompare("5.0") === -1);
-            var ctx = new splunkjs.Context({ "version": "4.0" });
+            ctx = new splunkjs.Context({ "version": "4.0" });
             test.ok(ctx.versionCompare("5") === -1);
-            var ctx = new splunkjs.Context({ "version": "4.1" });
+            ctx = new splunkjs.Context({ "version": "4.1" });
             test.ok(ctx.versionCompare("4.9") === -1);
             
-            var ctx = new splunkjs.Context({ "version": "4.0" });
+            ctx = new splunkjs.Context({ "version": "4.0" });
             test.ok(ctx.versionCompare("4.0") === 0);
-            var ctx = new splunkjs.Context({ "version": "4" });
+            ctx = new splunkjs.Context({ "version": "4" });
             test.ok(ctx.versionCompare("4.0") === 0);
-            var ctx = new splunkjs.Context({ "version": "4.0" });
+            ctx = new splunkjs.Context({ "version": "4.0" });
             test.ok(ctx.versionCompare("4") === 0);
             
-            var ctx = new splunkjs.Context({ "version": "5.0" });
+            ctx = new splunkjs.Context({ "version": "5.0" });
             test.ok(ctx.versionCompare("4.0") === 1);
-            var ctx = new splunkjs.Context({ "version": "5.0" });
+            ctx = new splunkjs.Context({ "version": "5.0" });
             test.ok(ctx.versionCompare("4") === 1);
-            var ctx = new splunkjs.Context({ "version": "5" });
+            ctx = new splunkjs.Context({ "version": "5" });
             test.ok(ctx.versionCompare("4.0") === 1);
-            var ctx = new splunkjs.Context({ "version": "4.9" });
+            ctx = new splunkjs.Context({ "version": "4.9" });
             test.ok(ctx.versionCompare("4.1") === 1);
             
-            var ctx = new splunkjs.Context();
+            ctx = new splunkjs.Context();
             test.ok(ctx.versionCompare("4.3") === 0);
             
             test.done();
