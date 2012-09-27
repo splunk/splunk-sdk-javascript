@@ -902,7 +902,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     
                     var numReadyEvents = 0;
                     var numProgressEvents = 0;
-                    job.track({ pollPeriod: 200 }, {
+                    job.track({ period: 200 }, {
                         ready: function(job) {
                             test.ok(job);
                             
@@ -946,7 +946,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     
                     var numReadyEvents = 0;
                     var numProgressEvents = 0;
-                    job.track({ pollPeriod: 200 }, {
+                    job.track({ period: 200 }, {
                         ready: function(job) {
                             test.ok(job);
                             
