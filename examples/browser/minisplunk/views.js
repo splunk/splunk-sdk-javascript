@@ -776,7 +776,7 @@ var MapView = Backbone.View.extend({
     this.markers = {};
     
     var that = this;
-    var iterator = this.job.resultsIterator();
+    var iterator = this.job.iterator("results");
     
     var hasMore = true;
     splunkjs.Async.whilst(
