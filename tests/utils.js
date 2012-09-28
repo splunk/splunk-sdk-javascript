@@ -18,12 +18,6 @@
     
     var root = exports || this;
 
-    root.bind = function(me, fn) { 
-        return function() { 
-            return fn.apply(me, arguments); 
-        }; 
-    };
-
     root.pollUntil = function(obj, condition, iterations, callback) {
         callback = callback || function() {};
         
