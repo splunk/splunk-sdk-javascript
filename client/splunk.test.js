@@ -1705,6 +1705,38 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
             };
             
             return this._requestWrapper(request, callback);
+        },
+        
+        /**
+         * Compares the Splunk server's version to the specified version string.
+         * Returns -1 if (this.version <  otherVersion),
+         *          0 if (this.version == otherVersion),
+         *          1 if (this.version >  otherVersion).
+         * 
+         * @param {String} otherVersion The other version string (ex: "5.0").
+         * 
+         * @method splunkjs.Context
+         */
+        versionCompare: function(otherVersion) {
+            var thisVersion = this.version;
+            if (thisVersion === "default") {
+                thisVersion = "4.3";
+            }
+            
+            var components1 = thisVersion.split(".");
+            var components2 = otherVersion.split(".");
+            var numComponents = Math.max(components1.length, components2.length);
+            
+            for (var i = 0; i < numComponents; i++) {
+                var c1 = (i < components1.length) ? parseInt(components1[i], 10) : 0;
+                var c2 = (i < components2.length) ? parseInt(components2[i], 10) : 0;
+                if (c1 < c2) {
+                    return -1;
+                } else if (c1 > c2) {
+                    return 1;
+                }
+            }
+            return 0;
         }
     });
 
@@ -4469,8 +4501,13 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             });
         },
         
-        remove: function() {
-            throw new Error("Indexes cannot be removed");
+        remove: function(callback) {
+            if (this.service.versionCompare("5.0") < 0) {
+                throw new Error("Indexes cannot be removed in Splunk 4.x");
+            }
+            else {
+                return this._super(callback);
+            }
         }
     });
         
@@ -7364,7 +7401,7 @@ exports.setup = function(svc) {
     splunkjs.Logger.setLevel("ALL");
     var isBrowser = typeof window !== "undefined";
     
-    return {
+    var suite = {
         setUp: function(done) {
             this.service = svc;
             done();
@@ -8020,8 +8057,46 @@ exports.setup = function(svc) {
             test.strictEqual(ctx2.fullpath("meep", {sharing: "global"}), "/servicesNS/nobody/beta/meep");
             test.strictEqual(ctx2.fullpath("meep", {sharing: "system"}), "/servicesNS/nobody/system/meep");
             test.done();
+        },
+        
+        "version check": function(test) {
+            var ctx;
+            
+            ctx = new splunkjs.Context({ "version": "4.0" });
+            test.ok(ctx.version === "4.0");
+            
+            ctx = new splunkjs.Context({ "version": "4.0" });
+            test.ok(ctx.versionCompare("5.0") === -1);
+            ctx = new splunkjs.Context({ "version": "4" });
+            test.ok(ctx.versionCompare("5.0") === -1);
+            ctx = new splunkjs.Context({ "version": "4.0" });
+            test.ok(ctx.versionCompare("5") === -1);
+            ctx = new splunkjs.Context({ "version": "4.1" });
+            test.ok(ctx.versionCompare("4.9") === -1);
+            
+            ctx = new splunkjs.Context({ "version": "4.0" });
+            test.ok(ctx.versionCompare("4.0") === 0);
+            ctx = new splunkjs.Context({ "version": "4" });
+            test.ok(ctx.versionCompare("4.0") === 0);
+            ctx = new splunkjs.Context({ "version": "4.0" });
+            test.ok(ctx.versionCompare("4") === 0);
+            
+            ctx = new splunkjs.Context({ "version": "5.0" });
+            test.ok(ctx.versionCompare("4.0") === 1);
+            ctx = new splunkjs.Context({ "version": "5.0" });
+            test.ok(ctx.versionCompare("4") === 1);
+            ctx = new splunkjs.Context({ "version": "5" });
+            test.ok(ctx.versionCompare("4.0") === 1);
+            ctx = new splunkjs.Context({ "version": "4.9" });
+            test.ok(ctx.versionCompare("4.1") === 1);
+            
+            ctx = new splunkjs.Context();
+            test.ok(ctx.versionCompare("4.3") === 0);
+            
+            test.done();
         }
     };
+    return suite;
 };
 
 if (module === require.main) {
@@ -8202,7 +8277,7 @@ exports.setup = function(svc, loggedOutSvc) {
         return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
     };
 
-    return {
+    var suite = {
         "Namespace Tests": {
             setUp: function(finished) {
                 this.service = svc;
@@ -9832,10 +9907,64 @@ exports.setup = function(svc, loggedOutSvc) {
                 });
             },
 
-            "Callback#remove index fails": function(test) {
+            "Callback#remove index fails on Splunk 4.x": function(test) {
+                var original_version = this.service.version;
+                this.service.version = "4.0";
+                
                 var index = this.service.indexes().item(this.indexName);
-                test.throws(function() { index.remove();});
+                test.throws(function() { index.remove(function(err) {}); });
+                
+                this.service.version = original_version;
                 test.done();
+            },
+            
+            "Callback#remove index": function(test) {
+                var indexes = this.service.indexes();
+                
+                // Must generate a private index because an index cannot
+                // be recreated with the same name as a deleted index
+                // for a certain period of time after the deletion.
+                var salt = Math.floor(Math.random() * 65536);
+                var myIndexName = this.indexName + '-' + salt;
+                
+                if (this.service.versionCompare("5.0") < 0) {
+                    console.log("Must be running Splunk 5.0+ for this test to work.");
+                    test.done();
+                    return;
+                }
+                
+                Async.chain([
+                        function(callback) {
+                            indexes.create(myIndexName, {}, callback);
+                        },
+                        function(index, callback) {
+                            index.remove(callback);
+                        },
+                        function(callback) {
+                            var numTriesLeft = 50;
+                            var delayPerTry = 100;  // ms
+                            
+                            Async.whilst(
+                                 function() { return indexes.item(myIndexName) && ((numTriesLeft--) > 0); },
+                                 function(iterDone) {
+                                      Async.sleep(delayPerTry, function() { indexes.fetch(iterDone); });
+                                 },
+                                 function(err) {
+                                      if (err) {
+                                           callback(err);
+                                      }
+                                      else {
+                                           callback(numTriesLeft <= 0 ? "Timed out" : null);
+                                      }
+                                 }
+                            );
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
             },
                          
             "Callback#list indexes": function(test) {
@@ -9892,9 +10021,6 @@ exports.setup = function(svc, loggedOutSvc) {
                             var properties = index.properties();
                             
                             test.strictEqual(originalSyncMeta, properties.syncMeta);
-                            callback();
-                        },
-                        function(callback) {
                             callback();
                         }
                     ],
@@ -10636,6 +10762,7 @@ exports.setup = function(svc, loggedOutSvc) {
             }
         }
     };
+    return suite;
 };
 
 if (module === require.main) {

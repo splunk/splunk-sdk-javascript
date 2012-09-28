@@ -1448,6 +1448,38 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
             };
             
             return this._requestWrapper(request, callback);
+        },
+        
+        /**
+         * Compares the Splunk server's version to the specified version string.
+         * Returns -1 if (this.version <  otherVersion),
+         *          0 if (this.version == otherVersion),
+         *          1 if (this.version >  otherVersion).
+         * 
+         * @param {String} otherVersion The other version string (ex: "5.0").
+         * 
+         * @method splunkjs.Context
+         */
+        versionCompare: function(otherVersion) {
+            var thisVersion = this.version;
+            if (thisVersion === "default") {
+                thisVersion = "4.3";
+            }
+            
+            var components1 = thisVersion.split(".");
+            var components2 = otherVersion.split(".");
+            var numComponents = Math.max(components1.length, components2.length);
+            
+            for (var i = 0; i < numComponents; i++) {
+                var c1 = (i < components1.length) ? parseInt(components1[i], 10) : 0;
+                var c2 = (i < components2.length) ? parseInt(components2[i], 10) : 0;
+                if (c1 < c2) {
+                    return -1;
+                } else if (c1 > c2) {
+                    return 1;
+                }
+            }
+            return 0;
         }
     });
 
@@ -4212,8 +4244,13 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             });
         },
         
-        remove: function() {
-            throw new Error("Indexes cannot be removed");
+        remove: function(callback) {
+            if (this.service.versionCompare("5.0") < 0) {
+                throw new Error("Indexes cannot be removed in Splunk 4.x");
+            }
+            else {
+                return this._super(callback);
+            }
         }
     });
         
