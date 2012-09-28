@@ -29,7 +29,6 @@
         Async           : require('./lib/async'),
         Paths           : require('./lib/paths').Paths,
         Class           : require('./lib/jquery.class').Class,
-        JobManager      : require('./lib/searcher.js'),
         StormService    : require('./lib/storm.js')
     };
     

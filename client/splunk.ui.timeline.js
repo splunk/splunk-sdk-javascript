@@ -11197,6 +11197,7 @@ require.define("/utils.js", function (require, module, exports, __dirname, __fil
      * @function splunkjs.Utils
      */
     root.isObject = function(obj) {
+        /*jslint newcap:false */
         return obj === Object(obj);
     };
     

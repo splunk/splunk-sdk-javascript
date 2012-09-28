@@ -638,7 +638,6 @@ require.define("/index.js", function (require, module, exports, __dirname, __fil
         Async           : require('./lib/async'),
         Paths           : require('./lib/paths').Paths,
         Class           : require('./lib/jquery.class').Class,
-        JobManager      : require('./lib/searcher.js'),
         StormService    : require('./lib/storm.js')
     };
     
@@ -1104,6 +1103,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @function splunkjs.Utils
      */
     root.isObject = function(obj) {
+        /*jslint newcap:false */
         return obj === Object(obj);
     };
     
@@ -4997,6 +4997,21 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             return req;
         },
+        
+        /**
+         * Returns an iterator over this search job's events or results.
+         * 
+         * @param {String} One of {"events", "preview", "results"}.
+         * @param {Object} params A dictionary of optional parameters:
+         *      * `pagesize`: The number of items to return on each request. Defaults to as many as possible.
+         * @return {splunkjs.Service.PaginatedEndpointIterator}
+         * 
+         * @endpoint search/jobs/{search_id}/results
+         * @method splunkjs.Service.Job
+         */
+        iterator: function(type, params) {
+            return new root.PaginatedEndpointIterator(this[type], params);
+        },
 
         /**
          * Pauses a search job.
@@ -5258,6 +5273,86 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             return req;
         },
+        
+        /**
+         * Starts polling the status of this search job, and fires callbacks
+         * upon each status change.
+         * 
+         * @param {Object} options A dictionary of optional parameters:
+         *      * `period`: The number of milliseconds to wait between each poll.
+         *                  Defaults to 500.
+         * @param {Object|Function} A dictionary of optional callbacks:
+         *      * `ready`: A function `(job)` invoked when the job's properties first become available.
+         *      * `progress`: A function `(job)` invoked whenever new job properties are available.
+         *      * `done`: A function `(job)` invoked if the job completes successfully. No further polling is done.
+         *      * `failed`: A function `(job)` invoked if the job fails executing on the server. No further polling is done.
+         *      * `error`: A function `(err)` invoked if an error occurs while polling. No further polling is done.
+         * Or, if a function `(job)`, equivalent to passing it as a `done` callback.
+         *
+         * @method splunkjs.Service.Job
+         */
+        track: function(options, callbacks) {
+            var period = options.period || 500; // ms
+            
+            if (utils.isFunction(callbacks)) {
+                callbacks = {
+                    done: callbacks
+                };
+            }
+            
+            callbacks.ready = callbacks.ready || function() {};
+            callbacks.progress = callbacks.progress || function() {};
+            callbacks.done = callbacks.done || function() {};
+            callbacks.failed = callbacks.failed || function() {};
+            callbacks.error = callbacks.error || function() {};
+            
+            var that = this;
+            var emittedReady = false;
+            var doneLooping = false;
+            Async.whilst(
+                function() { return !doneLooping; },
+                function(nextIteration) {
+                    that.fetch(function(err, job) {
+                        if (err) {
+                            nextIteration(err);
+                            return;
+                        }
+                        
+                        if (!emittedReady) {
+                            callbacks.ready(job);
+                            emittedReady = true;
+                        }
+                        
+                        callbacks.progress(job);
+                        
+                        var props = job.properties();
+                        var dispatchState = props.dispatchState;
+                        
+                        if (dispatchState === "DONE" && props.isDone) {
+                            callbacks.done(job);
+                            
+                            doneLooping = true;
+                            nextIteration();
+                            return;
+                        }
+                        else if (dispatchState === "FAILED" && props.isFailed) {
+                            callbacks.failed(job);
+                            
+                            doneLooping = true;
+                            nextIteration();
+                            return;
+                        }
+                        
+                        Async.sleep(period, nextIteration);
+                    });
+                },
+                function(err) {
+                    if (err) {
+                        callbacks.error(err);
+                    }
+                }
+            );
+        },
 
         /**
          * Resumes a search job.
@@ -5464,6 +5559,47 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             );
             
             return req;
+        }
+    });
+    
+    /**
+     * Iterates over an endpoint's results.
+     *
+     * @class splunkjs.Service.PaginatedEndpointIterator
+     */
+    root.PaginatedEndpointIterator = Class.extend({
+        init: function(endpoint, params) {
+            params = params || {};
+            
+            this._endpoint = endpoint;
+            this._pagesize = params.pagesize || 0;
+            this._offset = 0;
+        },
+        
+        /**
+         * Fetches the next page from the endpoint.
+         * 
+         * @param callback {Function} A function to call with next page: `(err, results, hasMore)`.
+         */
+        next: function(callback) {
+            callback = callback || function() {};
+            
+            var that = this;
+            var params = {
+                count: this._pagesize,
+                offset: this._offset
+            };
+            return this._endpoint(params, function(err, results) {
+                if (err) {
+                    callback(err);
+                }
+                else {                    
+                    var numResults = (results.rows ? results.rows.length : 0);
+                    that._offset += numResults;
+                    
+                    callback(null, results, numResults > 0);
+                }
+            });
         }
     });
 })();
@@ -6013,166 +6149,6 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
         };
     };
 })();
-});
-
-require.define("/lib/searcher.js", function (require, module, exports, __dirname, __filename) {
-
-// Copyright 2012 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-(function() {
-    "use strict";
-    
-    var Service      = require('./service');
-    var Class        = require('./jquery.class').Class;
-    var utils        = require('./utils');
-    var Async        = require('./async');
-    var EventEmitter = require('../contrib/eventemitter').EventEmitter;
-    
-    var root = exports || this;
-    var JobManager = null;
-
-    // An endpoint is the basic handler. It is associated with an instance
-    // of a Service and a path (such as /search/jobs/{SID}/), and
-    // provides the relevant functionality.
-    module.exports = root = JobManager = Class.extend({
-        init: function(service, job, options) {
-            options = options || {};
-            
-            this.service = service;
-            this.job = job;
-            this.isJobDone = false;
-            this.events = new EventEmitter();
-            
-            this.sleep = options.hasOwnProperty("sleep") ? options.sleep : 1000;
-            
-            this.on              = utils.bind(this, this.on);
-            this._start          = utils.bind(this, this._start);
-            this.cancel          = utils.bind(this, this.cancel);
-            this.isDone          = utils.bind(this, this.isDone);
-            this.eventsIterator  = utils.bind(this, this.eventsIterator);
-            this.resultsIterator = utils.bind(this, this.resultsIterator);
-            this.previewIterator = utils.bind(this, this.previewIterator);
-            
-            this._start();
-        },
-        
-        _start: function() {                        
-            var that = this;
-            var job = this.job;
-            var properties = {};
-            var stopLooping = false;
-            Async.whilst(
-                function() { return !stopLooping; },
-                function(iterationDone) {
-                    job.fetch(function(err, job) {
-                        if (err) {
-                            iterationDone(err);
-                            return;
-                        }
-                        
-                        properties = job.state() || {};
-                        
-                        // Dispatch for progress
-                        that.events.emit("progress", properties);
-                        
-                        // Dispatch for failure if necessary
-                        if (properties.isFailed) {
-                            that.events.emit("fail", properties);
-                        }
-                        
-                        stopLooping = properties.content.isDone || that.isJobDone || properties.content.isFailed;
-                        Async.sleep(that.sleep, iterationDone);
-                    });
-                },
-                function(err) {
-                    that.isJobDone = true;
-                    that.events.emit("done", err, that);
-                }
-            );
-        },
-        
-        on: function(event, action) {
-            this.events.on(event, action);  
-        },
-        
-        cancel: function(callback) {
-            this.isJobDone = true;
-            this.job.cancel(callback);
-        },
-        
-        isDone: function() {
-            return this.isJobDone;
-        },
-        
-        eventsIterator: function(resultsPerPage) {
-            return new root.Iterator(this, this.job.events, resultsPerPage);  
-        },
-        
-        resultsIterator: function(resultsPerPage) {
-            return new root.Iterator(this, this.job.results, resultsPerPage);  
-        },
-        
-        previewIterator: function(resultsPerPage) {
-            return new root.Iterator(this, this.job.preview, resultsPerPage);  
-        }
-    });
-    
-    root.Iterator = Class.extend({
-        init: function(manager, endpoint, resultsPerPage) {
-            this.manager = manager;
-            this.endpoint = endpoint;
-            this.resultsPerPage = resultsPerPage || 0;
-            this.currentOffset = 0;
-        },
-        
-        next: function(callback) {
-            callback = callback || function() {};
-            var iterator = this;
-            var params = {
-                count: this.resultsPerPage,
-                offset: this.currentOffset
-            };
-            
-            return this.endpoint(params, function(err, results) {
-                if (err) {
-                    callback(err);
-                }
-                else {                    
-                    var numResults = (results.rows ? results.rows.length : 0);
-                    iterator.currentOffset += numResults;
-                    
-                    callback(null, numResults > 0, results);
-                }
-            });
-        },
-        
-        reset: function() {
-            this.currentOffset = 0;
-        }
-    });
-})();
-});
-
-require.define("/contrib/eventemitter.js", function (require, module, exports, __dirname, __filename) {
-/**
- * EventEmitter v3.1.4
- * https://github.com/Wolfy87/EventEmitter
- * 
- * Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
- * Oliver Caldwell (olivercaldwell.co.uk)
- */(function(a){function b(){this._events={},this._maxListeners=10}function c(a,b,c,d,e){this.type=a,this.listener=b,this.scope=c,this.once=d,this.instance=e}"use strict",c.prototype.fire=function(a){this.listener.apply(this.scope||this.instance,a);if(this.once)return this.instance.removeListener(this.type,this.listener,this.scope),!1},b.prototype.eachListener=function(a,b){var c=null,d=null,e=null;if(this._events.hasOwnProperty(a)){d=this._events[a];for(c=0;c<d.length;c+=1){e=b.call(this,d[c],c);if(e===!1)c-=1;else if(e===!0)break}}return this},b.prototype.addListener=function(a,b,d,e){return this._events.hasOwnProperty(a)||(this._events[a]=[]),this._events[a].push(new c(a,b,d,e,this)),this.emit("newListener",a,b,d,e),this._maxListeners&&!this._events[a].warned&&this._events[a].length>this._maxListeners&&(typeof console!="undefined"&&console.warn("Possible EventEmitter memory leak detected. "+this._events[a].length+" listeners added. Use emitter.setMaxListeners() to increase limit."),this._events[a].warned=!0),this},b.prototype.on=b.prototype.addListener,b.prototype.once=function(a,b,c){return this.addListener(a,b,c,!0)},b.prototype.removeListener=function(a,b,c){return this.eachListener(a,function(d,e){d.listener===b&&(!c||d.scope===c)&&this._events[a].splice(e,1)}),this._events[a]&&this._events[a].length===0&&delete this._events[a],this},b.prototype.off=b.prototype.removeListener,b.prototype.removeAllListeners=function(a){return a&&this._events.hasOwnProperty(a)?delete this._events[a]:a||(this._events={}),this},b.prototype.listeners=function(a){if(this._events.hasOwnProperty(a)){var b=[];return this.eachListener(a,function(a){b.push(a.listener)}),b}return[]},b.prototype.emit=function(a){var b=[],c=null;for(c=1;c<arguments.length;c+=1)b.push(arguments[c]);return this.eachListener(a,function(a){return a.fire(b)}),this},b.prototype.setMaxListeners=function(a){return this._maxListeners=a,this},typeof define=="function"&&define.amd?define(function(){return b}):a.EventEmitter=b})(this);
 });
 
 require.define("/lib/storm.js", function (require, module, exports, __dirname, __filename) {
@@ -8717,6 +8693,58 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
+            
+            "Callback#job results iterator": function(test) {
+                var that = this;
+                
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().search('search index=_internal | head 10', {}, done);
+                        },
+                        function(job, done) {
+                            tutils.pollUntil(
+                                job,
+                                function(j) {
+                                    return job.properties()["isDone"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            var iterator = job.iterator("results", { pagesize: 4 });
+                            var hasMore = true;
+                            var numElements = 0;
+                            var pageSizes = [];
+                            Async.whilst(
+                                function() { return hasMore; },
+                                function(nextIteration) {
+                                    iterator.next(function(err, results, _hasMore) {
+                                        if (err) {
+                                            nextIteration(err);
+                                            return;
+                                        }
+                                        
+                                        hasMore = _hasMore;
+                                        if (hasMore) {
+                                            pageSizes.push(results.rows.length);
+                                        }
+                                        nextIteration();
+                                    });
+                                },
+                                function(err) {
+                                    test.deepEqual(pageSizes, [4,4,2]);
+                                    done(err);
+                                }
+                            );
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
 
             "Callback#Enable + disable preview": function(test) {
                 var that = this;
@@ -9146,6 +9174,105 @@ exports.setup = function(svc, loggedOutSvc) {
                         test.done();
                     }
                 );
+            },
+            
+            "Callback#Wait until job done": function(test) {
+                this.service.search('search index=_internal | head 1000', {}, function(err, job) {
+                    test.ok(!err);
+                    
+                    var numReadyEvents = 0;
+                    var numProgressEvents = 0;
+                    job.track({ period: 200 }, {
+                        ready: function(job) {
+                            test.ok(job);
+                            
+                            numReadyEvents++;
+                        },
+                        progress: function(job) {
+                            test.ok(job);
+                            
+                            numProgressEvents++;
+                        },
+                        done: function(job) {
+                            test.ok(job);
+                            
+                            test.ok(numReadyEvents === 1);      // all done jobs must have become ready
+                            test.ok(numProgressEvents >= 1);    // a job that becomes ready has progress
+                            test.done();
+                        },
+                        failed: function(job) {
+                            test.ok(job);
+                            
+                            test.ok(false, "Job failed unexpectedly.");
+                            test.done();
+                        },
+                        error: function(err) {
+                            test.ok(err);
+                            
+                            test.ok(false, "Error while tracking job.");
+                            test.done();
+                        }
+                    });
+                });
+            },
+            
+            "Callback#Wait until job failed": function(test) {
+                this.service.search('search index=_internal | head bogusarg', {}, function(err, job) {
+                    if (err) {
+                        test.ok(!err);
+                        test.done();
+                        return;
+                    }
+                    
+                    var numReadyEvents = 0;
+                    var numProgressEvents = 0;
+                    job.track({ period: 200 }, {
+                        ready: function(job) {
+                            test.ok(job);
+                            
+                            numReadyEvents++;
+                        },
+                        progress: function(job) {
+                            test.ok(job);
+                            
+                            numProgressEvents++;
+                        },
+                        done: function(job) {
+                            test.ok(job);
+                            
+                            test.ok(false, "Job became done unexpectedly.");
+                            test.done();
+                        },
+                        failed: function(job) {
+                            test.ok(job);
+                            
+                            test.ok(numReadyEvents === 1);      // even failed jobs become ready
+                            test.ok(numProgressEvents >= 1);    // a job that becomes ready has progress
+                            test.done();
+                        },
+                        error: function(err) {
+                            test.ok(err);
+                            
+                            test.ok(false, "Error while tracking job.");
+                            test.done();
+                        }
+                    });
+                });
+            },
+            
+            "Callback#track() with default params and one function": function(test) {
+                this.service.search('search index=_internal | head 1', {}, function(err, job) {
+                    if (err) {
+                        test.ok(!err);
+                        test.done();
+                        return;
+                    }
+                    
+                    job.track({}, function(job) {
+                        test.ok(job);
+                        test.done();
+                    });
+                });
             }
         },
         
@@ -10839,7 +10966,6 @@ require.define("/tests/utils.js", function (require, module, exports, __dirname,
         callback = callback || function() {};
         
         var i = 0;
-        var keepGoing = true;
         Async.whilst(
             function() { return !condition(obj) && (i++ < iterations); },
             function(done) {
@@ -10959,225 +11085,6 @@ if (module === require.main) {
     var test        = require('../contrib/nodeunit/test_reporter');
     
     test.run([{"Tests": suite}]);
-}
-});
-
-require.define("/tests/test_searcher.js", function (require, module, exports, __dirname, __filename) {
-
-// Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-exports.setup = function(svc) {
-    var splunkjs    = require('../index');
-    var utils       = splunkjs.Utils;
-    var Async       = splunkjs.Async;
-    var JobManager  = splunkjs.JobManager;
-    
-    splunkjs.Logger.setLevel("ALL");
-    var idCounter = 0;
-    var getNextId = function() {
-        return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
-    };
-
-    return {
-        setUp: function(done) {
-            this.service = svc; 
-            done();
-        },
-
-        "Callback#Searcher + Results": function(test) {
-            var sid = getNextId();
-            var that = this;
-            Async.chain([
-                function(callback) {
-                    that.service.jobs().create('search index=_internal | head 10', {id: sid}, callback);
-                },
-                function(job, callback) {
-                    var searcher = new JobManager(test.service, job);
-                    searcher.on("done", callback);
-                },
-                function(searcher, callback) {
-                    var iterator = searcher.resultsIterator(2);
-                    
-                    var totalResultCount = 0;
-                    var iterationCount = 0;
-                    var hasMore = true;
-                    Async.whilst(
-                        function() { return hasMore; },
-                        function(done) {
-                            iterator.next(function(err, more, results) {
-                                hasMore = more;
-                                
-                                if (more) {
-                                    iterationCount++;
-                                    totalResultCount += results.rows.length;
-                                }
-                                
-                                done();
-                            });
-                        },
-                        function(err) {
-                            test.ok(!err);
-                            test.ok(iterationCount > 0);
-                            test.strictEqual(totalResultCount, 10);
-                            
-                            callback(null, searcher);
-                        }
-                    );
-                },
-                function(searcher, callback) {
-                    searcher.cancel(callback);
-                }
-            ],
-            function(err) {
-                test.ok(!err);
-                test.done();  
-            });
-        },
-
-        "Callback#Searcher + Events": function(test) {
-            var sid = getNextId();
-            var that = this;
-            Async.chain([
-                function(callback) {
-                    that.service.jobs().create('search index=_internal | head 10', {id: sid}, callback);
-                },
-                function(job, callback) {
-                    var searcher = new JobManager(test.service, job);
-                    searcher.on("done", callback);
-                },
-                function(searcher, callback) {
-                    var iterator = searcher.eventsIterator(2);
-                    
-                    var totalResultCount = 0;
-                    var iterationCount = 0;
-                    var hasMore = true;
-                    Async.whilst(
-                        function() { return hasMore; },
-                        function(done) {
-                            iterator.next(function(err, more, results) {
-                                hasMore = more;
-                                
-                                if (more) {
-                                    iterationCount++;
-                                    totalResultCount += results.rows.length;
-                                }
-                                
-                                done();
-                            });
-                        },
-                        function(err) {
-                            test.ok(!err);
-                            test.ok(iterationCount > 0);
-                            test.strictEqual(totalResultCount, 10);
-                            
-                            callback(null, searcher);
-                        }
-                    );
-                },
-                function(searcher, callback) {
-                    searcher.cancel(callback);
-                }
-            ],
-            function(err) {
-                test.ok(!err);
-                test.done();  
-            });
-        },
-
-        "Callback#Searcher + Preview": function(test) {
-            var sid = getNextId();
-            var that = this;
-            Async.chain([
-                function(callback) {
-                    that.service.jobs().create('search index=_internal | head 10', {id: sid}, callback);
-                },
-                function(job, callback) {
-                    var searcher = new JobManager(test.service, job);
-                    searcher.on("done", callback);
-                },
-                function(searcher, callback) {
-                    var iterator = searcher.previewIterator(2);
-                    
-                    var totalResultCount = 0;
-                    var iterationCount = 0;
-                    var hasMore = true;
-                    Async.whilst(
-                        function() { return hasMore; },
-                        function(done) {
-                            iterator.next(function(err, more, results) {
-                                hasMore = more;
-                                
-                                if (more) {
-                                    iterationCount++;
-                                    totalResultCount += results.rows.length;
-                                }
-                                
-                                done();
-                            });
-                        },
-                        function(err) {
-                            test.ok(!err);
-                            test.ok(iterationCount > 0);
-                            test.strictEqual(totalResultCount, 10);
-                            
-                            callback(null, searcher);
-                        }
-                    );
-                },
-                function(searcher, callback) {
-                    searcher.cancel(callback);
-                }
-            ],
-            function(err) {
-                test.ok(!err);
-                test.done();  
-            });
-        }
-    };
-};
-
-if (module === require.main) {
-    var splunkjs    = require('../index');
-    var options     = require('../examples/node/cmdline');
-    var test        = require('../contrib/nodeunit/test_reporter');
-    
-    var parser = options.create();
-    var cmdline = parser.parse(process.argv);
-        
-    // If there is no command line, we should return
-    if (!cmdline) {
-        throw new Error("Error in parsing command line parameters");
-    }
-    
-    var svc = new splunkjs.Service({ 
-        scheme: cmdline.opts.scheme,
-        host: cmdline.opts.host,
-        port: cmdline.opts.port,
-        username: cmdline.opts.username,
-        password: cmdline.opts.password,
-        version: cmdline.opts.version
-    });
-    
-    var suite = exports.setup(svc);
-    
-    svc.login(function(err, success) {
-        if (err || !success) {
-            throw new Error("Login failed - not running tests", err || "");
-        }
-        test.run([{"Tests": suite}]);
-    });
 }
 });
 
@@ -13729,7 +13636,6 @@ window.SplunkTest = {
     Context  : require('../../tests/test_context'),
     Service  : require('../../tests/test_service'),
     Storm    : require('../../tests/test_storm'),
-    Searcher : require('../../tests/test_searcher'),
     Examples : require('../../tests/test_examples')
 };
 });
