@@ -484,7 +484,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             );
                         },
                         function(job, done) {
-                            var iterator = job.resultsIterator({ pagesize: 4 });
+                            var iterator = job.iterator("results", { pagesize: 4 });
                             var hasMore = true;
                             var numElements = 0;
                             var pageSizes = [];
@@ -1030,7 +1030,22 @@ exports.setup = function(svc, loggedOutSvc) {
                         }
                     });
                 });
-            }
+            },
+            
+            "Callback#track() with default params and one function": function(test) {
+                this.service.search('search index=_internal | head 1', {}, function(err, job) {
+                    if (err) {
+                        test.ok(!err);
+                        test.done();
+                        return;
+                    }
+                    
+                    job.track({}, function(job) {
+                        test.ok(job);
+                        test.done();
+                    });
+                });
+            },
         },
         
         "App Tests": {      
