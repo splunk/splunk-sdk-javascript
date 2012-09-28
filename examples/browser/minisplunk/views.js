@@ -31,14 +31,12 @@ var templates = {
 
 var performSearch = function(svc, query, callback) {
   callback = callback || function() {};          
-  var job = null;
-  var searcher = null;
   
   if (!splunkjs.Utils.startsWith(splunkjs.Utils.trim(query), "search")) {
     query = "search " + query;
   }
   
-  svc.jobs().create(query, {rf: "*"}, function(err, createdJob) {
+  svc.jobs().create(query, {rf: "*"}, function(err, job) {
     if (err) {
       var response = args[0];
       var messages = {};
@@ -47,22 +45,18 @@ var performSearch = function(svc, query, callback) {
       App.events.trigger("search:failed", query, messages);
     }
     else {
-      App.events.trigger("search:new", createdJob);
-        
-      job = createdJob;
-      searcher = new splunkjs.JobManager(svc, job);
+      App.events.trigger("search:new", job);
       
-      searcher.on("progress", function(properties) {
-        App.events.trigger("search:stats", properties);
-      });
-      
-      searcher.on("done", function(err) {
-        if (err) {
-          callback(err)
-        }
-        else {
-          App.events.trigger("search:done", searcher);
+      job.track({}, {
+        progress: function(job) {
+          App.events.trigger("search:stats", job.state());
+        },
+        done: function(job) {
+          App.events.trigger("search:done", job);
           callback();
+        },
+        error: function(err) {
+          callback(err)
         }
       });
     }
@@ -772,8 +766,8 @@ var MapView = Backbone.View.extend({
     this.properties = properties;
   },
   
-  searchDone: function(searcher) {
-    this.searcher = searcher;
+  searchDone: function(job) {
+    this.job = job;
     
     this.getResults();
   },
@@ -782,15 +776,16 @@ var MapView = Backbone.View.extend({
     this.markers = {};
     
     var that = this;
-    var iterator = new this.searcher.resultsIterator();
+    var iterator = this.job.iterator("results");
     
     var hasMore = true;
     splunkjs.Async.whilst(
       function() { return hasMore; },
       function(iterationDone) {
-        iterator.next(function(err, more, results) {
+        iterator.next(function(err, results, more) {
           if (err) {
             iterationDone(err);
+            return;
           }
           
           hasMore = more;

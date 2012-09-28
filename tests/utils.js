@@ -28,7 +28,6 @@
         callback = callback || function() {};
         
         var i = 0;
-        var keepGoing = true;
         Async.whilst(
             function() { return !condition(obj) && (i++ < iterations); },
             function(done) {
