@@ -379,7 +379,6 @@ of embedded libraries and their licenses:
 9. [commander]: [MIT][commander-license]
 10. [script.js]: [Apache][scriptjs-license]
 11. [base64.js]: [MIT][base64-license]
-12. [eventemitter.js]: [MIT][event-license]
 
 
 [dox]:                      https://github.com/visionmedia/dox
@@ -393,7 +392,6 @@ of embedded libraries and their licenses:
 [commander]:                https://github.com/visionmedia/commander.js/
 [script.js]:                https://github.com/ded/script.js/
 [base64.js]:                http://code.google.com/p/javascriptbase64/
-[eventemitter.js]:          https://github.com/Wolfy87/EventEmitter
 [dox-license]:              https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-DOX
 [davis-license]:            https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-DAVIS
 [xdm-license]:              https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-EASYXDM
