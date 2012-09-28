@@ -505,7 +505,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                     });
                                 },
                                 function(err) {
-                                    test.deepEqual(pageSizes, [4,4,2])
+                                    test.deepEqual(pageSizes, [4,4,2]);
                                     done(err);
                                 }
                             );
@@ -968,7 +968,7 @@ exports.setup = function(svc, loggedOutSvc) {
                         done: function(job) {
                             test.ok(job);
                             
-                            test.ok(numReadyEvents == 1);       // all done jobs must have become ready
+                            test.ok(numReadyEvents === 1);      // all done jobs must have become ready
                             test.ok(numProgressEvents >= 1);    // a job that becomes ready has progress
                             test.done();
                         },
@@ -1018,7 +1018,7 @@ exports.setup = function(svc, loggedOutSvc) {
                         failed: function(job) {
                             test.ok(job);
                             
-                            test.ok(numReadyEvents == 1);       // even failed jobs become ready
+                            test.ok(numReadyEvents === 1);      // even failed jobs become ready
                             test.ok(numProgressEvents >= 1);    // a job that becomes ready has progress
                             test.done();
                         },
@@ -1045,7 +1045,7 @@ exports.setup = function(svc, loggedOutSvc) {
                         test.done();
                     });
                 });
-            },
+            }
         },
         
         "App Tests": {      
