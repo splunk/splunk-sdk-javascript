@@ -4816,7 +4816,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
 
         /**
          * Gets the results for a search job with given parameters.
-         *
+         * 
+         * The callback can get `undefined` for its `results` parameter if the
+         * job is not yet done. To avoid this, use the `Job.track()` method to
+         * wait until the job is complete prior to fetching the results with
+         * this method.
+         * 
          * @example
          *
          *      var job = service.jobs().item("mysid");

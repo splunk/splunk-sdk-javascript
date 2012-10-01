@@ -77,7 +77,10 @@ exports.setup = function(http) {
                 var didFail = false;
                 var message = "GO GO SDK -- " + getNextId();
                 this.service.log(message, {sourcetype: "sdk-test", project: project}, function(err, data) {
-                    test.ok(!err);
+                    if (err) {
+                        test.done(err);
+                        return;
+                    }
                     test.strictEqual(data.length, message.length);
                     test.done();
                 });
@@ -87,7 +90,10 @@ exports.setup = function(http) {
                 var didFail = false;
                 var message = { id: getNextId() };
                 this.service.log(message, {sourcetype: "json", project: project}, function(err, data) {
-                    test.ok(!err);
+                    if (err) {
+                        test.done(err);
+                        return;
+                    }
                     test.strictEqual(data.length, JSON.stringify(message).length);
                     test.done();
                 });

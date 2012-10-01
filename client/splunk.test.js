@@ -5073,7 +5073,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
 
         /**
          * Gets the results for a search job with given parameters.
-         *
+         * 
+         * The callback can get `undefined` for its `results` parameter if the
+         * job is not yet done. To avoid this, use the `Job.track()` method to
+         * wait until the job is complete prior to fetching the results with
+         * this method.
+         * 
          * @example
          *
          *      var job = service.jobs().item("mysid");
@@ -10956,12 +10961,6 @@ require.define("/tests/utils.js", function (require, module, exports, __dirname,
     
     var root = exports || this;
 
-    root.bind = function(me, fn) { 
-        return function() { 
-            return fn.apply(me, arguments); 
-        }; 
-    };
-
     root.pollUntil = function(obj, condition, iterations, callback) {
         callback = callback || function() {};
         
@@ -11061,7 +11060,10 @@ exports.setup = function(http) {
                 var didFail = false;
                 var message = "GO GO SDK -- " + getNextId();
                 this.service.log(message, {sourcetype: "sdk-test", project: project}, function(err, data) {
-                    test.ok(!err);
+                    if (err) {
+                        test.done(err);
+                        return;
+                    }
                     test.strictEqual(data.length, message.length);
                     test.done();
                 });
@@ -11071,7 +11073,10 @@ exports.setup = function(http) {
                 var didFail = false;
                 var message = { id: getNextId() };
                 this.service.log(message, {sourcetype: "json", project: project}, function(err, data) {
-                    test.ok(!err);
+                    if (err) {
+                        test.done(err);
+                        return;
+                    }
                     test.strictEqual(data.length, JSON.stringify(message).length);
                     test.done();
                 });
@@ -11253,7 +11258,7 @@ exports.setup = function(svc, opts) {
                 });
             },
             
-            "List job properties": function(test) {          
+            "List job properties": function(test) {
                 var create = {
                     search: "search index=_internal | head 1",
                     id: getNextId()
@@ -11272,7 +11277,7 @@ exports.setup = function(svc, opts) {
                 });
             },
             
-            "List job events": function(test) {      
+            "List job events": function(test) {
                 var create = {
                     search: "search index=_internal | head 1",
                     id: getNextId()
@@ -11282,6 +11287,63 @@ exports.setup = function(svc, opts) {
                 context.run("create", [], create, function(err) {
                     test.ok(!err);
                     context.run("events", [create.id], null, function(err) {
+                        test.ok(!err);
+                        context.run("cancel", [create.id], null, function(err) {
+                            test.ok(!err);
+                            test.done();
+                        });
+                    });
+                });
+            },
+            
+            "List job preview": function(test) {
+                var create = {
+                    search: "search index=_internal | head 1",
+                    id: getNextId()
+                };
+                  
+                var context = this;
+                context.run("create", [], create, function(err) {
+                    test.ok(!err);
+                    context.run("preview", [create.id], null, function(err) {
+                        test.ok(!err);
+                        context.run("cancel", [create.id], null, function(err) {
+                            test.ok(!err);
+                            test.done();
+                        });
+                    });
+                });
+            },
+            
+            "List job results": function(test) {
+                var create = {
+                    search: "search index=_internal | head 1",
+                    id: getNextId()
+                };
+                  
+                var context = this;
+                context.run("create", [], create, function(err) {
+                    test.ok(!err);
+                    context.run("results", [create.id], null, function(err) {
+                        test.ok(!err);
+                        context.run("cancel", [create.id], null, function(err) {
+                            test.ok(!err);
+                            test.done();
+                        });
+                    });
+                });
+            },
+            
+            "List job results, by column": function(test) {
+                var create = {
+                    search: "search index=_internal | head 1",
+                    id: getNextId()
+                };
+                  
+                var context = this;
+                context.run("create", [], create, function(err) {
+                    test.ok(!err);
+                    context.run("results", [create.id], {output_mode: "json_cols"}, function(err) {
                         test.ok(!err);
                         context.run("cancel", [create.id], null, function(err) {
                             test.ok(!err);
@@ -12500,7 +12562,7 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
                     }
                 }
                 
-                Async.parallelMap(jobs, fn, callback);
+                Async.parallelMap(jobsList, fn, callback);
             });
         },
 
@@ -12688,26 +12750,36 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
         results: function(sids, options, callback) {
             // For each of the passed in sids, get the relevant results
             this._foreach(sids, function(job, idx, done) {
-                job.results(options, function(err, data) {
-                    console.log("===== RESULTS @ " + job.sid + " ====="); 
-                    if (err) {
+                job.track({}, {
+                    'done': function(job) {
+                        job.results(options, function(err, data) {
+                            console.log("===== RESULTS @ " + job.sid + " ====="); 
+                            if (err) {
+                                done(err);
+                                return;
+                            }
+                            
+                            var output_mode = options.output_mode || "rows";
+                            if (output_mode === "json_rows") {
+                                printRows(data);
+                            }
+                            else if (output_mode === "json_cols") {
+                                console.log(data);
+                                printCols(data);
+                            }
+                            else {
+                                console.log(data);
+                            }
+        
+                            done(null, data);
+                        });
+                    },
+                    'failed': function(job) {
+                        done('failed');
+                    },
+                    'error': function(err) {
                         done(err);
-                        return;
                     }
-                    
-                    var output_mode = options.output_mode || "rows";
-                    if (output_mode === "json_rows") {
-                        printRows(data);
-                    }
-                    else if (output_mode === "json_cols") {
-                        console.log(data);
-                        printCols(data);
-                    }
-                    else {
-                        console.log(data);
-                    }
-
-                    done(null, data);
                 });
             }, callback);
         }
@@ -13505,17 +13577,6 @@ require.define("/examples/node/results.js", function (require, module, exports, 
     var utils           = splunkjs.Utils;
     var Async           = splunkjs.Async;
     var options         = require('./cmdline');
-    
-    var createService = function(options) {
-        return new splunkjs.Service({
-            scheme:     options.scheme,
-            host:       options.host,
-            port:       options.port,
-            username:   options.username,
-            password:   options.password,
-            version:    options.version
-        });
-    };
     
     // Print the result rows
     var printRows = function(results) {        

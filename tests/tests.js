@@ -54,8 +54,7 @@
     // Splunk-specific tests
     exports.Tests.Context  = require('./test_context').setup(svc);
     exports.Tests.Service  = require('./test_service').setup(svc, loggedOutSvc);
-    // (Storm tests disabled because Storm APIs have been removed for the time being.)
-    //exports.Tests.Storm    = require('./test_storm').setup();
+    exports.Tests.Storm    = require('./test_storm').setup();
     exports.Tests.Examples = require('./test_examples').setup(svc, cmdline.opts);
 
     splunkjs.Logger.setLevel("ALL");
