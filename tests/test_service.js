@@ -1045,6 +1045,59 @@ exports.setup = function(svc, loggedOutSvc) {
                         test.done();
                     });
                 });
+            },
+            
+            "Callback#track() should stop polling if only the ready callback is specified": function(test) {
+                this.service.search('search index=_internal | head 1', {}, function(err, job) {
+                    if (err) {
+                        test.ok(!err);
+                        test.done();
+                        return;
+                    }
+                    
+                    job.track({}, {
+                        ready: function(job) {
+                            test.ok(job);
+                        },
+                        
+                        _stoppedAfterReady: function(job) {
+                            test.done();
+                        }
+                    });
+                });
+            },
+            
+            "Callback#track() a job that is not immediately ready": function(test) {
+                /*jshint loopfunc:true */
+                var numJobs = 20;
+                var numJobsLeft = numJobs;
+                var gotJobNotImmediatelyReady = false;
+                for (var i = 0; i < numJobs; i++) {
+                    this.service.search('search index=_internal | head 10000', {}, function(err, job) {
+                        if (err) {
+                            test.ok(!err);
+                            test.done();
+                            return;
+                        }
+                        
+                        job.track({}, {
+                            _preready: function(job) {
+                                gotJobNotImmediatelyReady = true;
+                            },
+                            
+                            ready: function(job) {
+                                numJobsLeft--;
+                                
+                                if (numJobsLeft === 0) {
+                                    if (!gotJobNotImmediatelyReady) {
+                                        console.log("WARNING: Couldn't test code path in track() where job wasn't ready immediately.");
+                                    }
+                                    test.done();
+                                }
+                            }
+                        });
+                    });
+                }
             }
         },
         

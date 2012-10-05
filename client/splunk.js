@@ -5048,11 +5048,22 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 };
             }
             
+            var noCallbacksAfterReady = (
+                !callbacks.progress &&
+                !callbacks.done &&
+                !callbacks.failed &&
+                !callbacks.error
+            );
+            
             callbacks.ready = callbacks.ready || function() {};
             callbacks.progress = callbacks.progress || function() {};
             callbacks.done = callbacks.done || function() {};
             callbacks.failed = callbacks.failed || function() {};
             callbacks.error = callbacks.error || function() {};
+            
+            // For use by tests only
+            callbacks._preready = callbacks._preready || function() {};
+            callbacks._stoppedAfterReady = callbacks._stoppedAfterReady || function() {};
             
             var that = this;
             var emittedReady = false;
@@ -5066,29 +5077,45 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                             return;
                         }
                         
-                        if (!emittedReady) {
-                            callbacks.ready(job);
-                            emittedReady = true;
+                        var notReady = (job.properties().isDone === undefined);
+                        if (notReady) {
+                            callbacks._preready(job);
                         }
-                        
-                        callbacks.progress(job);
-                        
-                        var props = job.properties();
-                        var dispatchState = props.dispatchState;
-                        
-                        if (dispatchState === "DONE" && props.isDone) {
-                            callbacks.done(job);
+                        else {
+                            if (!emittedReady) {
+                                callbacks.ready(job);
+                                emittedReady = true;
+                                
+                                // Optimization: Don't keep polling the job if the
+                                // caller only cares about the `ready` event.
+                                if (noCallbacksAfterReady) {
+                                    callbacks._stoppedAfterReady(job);
+                                    
+                                    doneLooping = true;
+                                    nextIteration();
+                                    return;
+                                }
+                            }
                             
-                            doneLooping = true;
-                            nextIteration();
-                            return;
-                        }
-                        else if (dispatchState === "FAILED" && props.isFailed) {
-                            callbacks.failed(job);
+                            callbacks.progress(job);
                             
-                            doneLooping = true;
-                            nextIteration();
-                            return;
+                            var props = job.properties();
+                            var dispatchState = props.dispatchState;
+                            
+                            if (dispatchState === "DONE" && props.isDone) {
+                                callbacks.done(job);
+                                
+                                doneLooping = true;
+                                nextIteration();
+                                return;
+                            }
+                            else if (dispatchState === "FAILED" && props.isFailed) {
+                                callbacks.failed(job);
+                                
+                                doneLooping = true;
+                                nextIteration();
+                                return;
+                            }
                         }
                         
                         Async.sleep(period, nextIteration);

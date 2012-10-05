@@ -5305,11 +5305,22 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 };
             }
             
+            var noCallbacksAfterReady = (
+                !callbacks.progress &&
+                !callbacks.done &&
+                !callbacks.failed &&
+                !callbacks.error
+            );
+            
             callbacks.ready = callbacks.ready || function() {};
             callbacks.progress = callbacks.progress || function() {};
             callbacks.done = callbacks.done || function() {};
             callbacks.failed = callbacks.failed || function() {};
             callbacks.error = callbacks.error || function() {};
+            
+            // For use by tests only
+            callbacks._preready = callbacks._preready || function() {};
+            callbacks._stoppedAfterReady = callbacks._stoppedAfterReady || function() {};
             
             var that = this;
             var emittedReady = false;
@@ -5323,29 +5334,45 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                             return;
                         }
                         
-                        if (!emittedReady) {
-                            callbacks.ready(job);
-                            emittedReady = true;
+                        var notReady = (job.properties().isDone === undefined);
+                        if (notReady) {
+                            callbacks._preready(job);
                         }
-                        
-                        callbacks.progress(job);
-                        
-                        var props = job.properties();
-                        var dispatchState = props.dispatchState;
-                        
-                        if (dispatchState === "DONE" && props.isDone) {
-                            callbacks.done(job);
+                        else {
+                            if (!emittedReady) {
+                                callbacks.ready(job);
+                                emittedReady = true;
+                                
+                                // Optimization: Don't keep polling the job if the
+                                // caller only cares about the `ready` event.
+                                if (noCallbacksAfterReady) {
+                                    callbacks._stoppedAfterReady(job);
+                                    
+                                    doneLooping = true;
+                                    nextIteration();
+                                    return;
+                                }
+                            }
                             
-                            doneLooping = true;
-                            nextIteration();
-                            return;
-                        }
-                        else if (dispatchState === "FAILED" && props.isFailed) {
-                            callbacks.failed(job);
+                            callbacks.progress(job);
                             
-                            doneLooping = true;
-                            nextIteration();
-                            return;
+                            var props = job.properties();
+                            var dispatchState = props.dispatchState;
+                            
+                            if (dispatchState === "DONE" && props.isDone) {
+                                callbacks.done(job);
+                                
+                                doneLooping = true;
+                                nextIteration();
+                                return;
+                            }
+                            else if (dispatchState === "FAILED" && props.isFailed) {
+                                callbacks.failed(job);
+                                
+                                doneLooping = true;
+                                nextIteration();
+                                return;
+                            }
                         }
                         
                         Async.sleep(period, nextIteration);
@@ -9278,6 +9305,59 @@ exports.setup = function(svc, loggedOutSvc) {
                         test.done();
                     });
                 });
+            },
+            
+            "Callback#track() should stop polling if only the ready callback is specified": function(test) {
+                this.service.search('search index=_internal | head 1', {}, function(err, job) {
+                    if (err) {
+                        test.ok(!err);
+                        test.done();
+                        return;
+                    }
+                    
+                    job.track({}, {
+                        ready: function(job) {
+                            test.ok(job);
+                        },
+                        
+                        _stoppedAfterReady: function(job) {
+                            test.done();
+                        }
+                    });
+                });
+            },
+            
+            "Callback#track() a job that is not immediately ready": function(test) {
+                /*jshint loopfunc:true */
+                var numJobs = 20;
+                var numJobsLeft = numJobs;
+                var gotJobNotImmediatelyReady = false;
+                for (var i = 0; i < numJobs; i++) {
+                    this.service.search('search index=_internal | head 10000', {}, function(err, job) {
+                        if (err) {
+                            test.ok(!err);
+                            test.done();
+                            return;
+                        }
+                        
+                        job.track({}, {
+                            _preready: function(job) {
+                                gotJobNotImmediatelyReady = true;
+                            },
+                            
+                            ready: function(job) {
+                                numJobsLeft--;
+                                
+                                if (numJobsLeft === 0) {
+                                    if (!gotJobNotImmediatelyReady) {
+                                        console.log("WARNING: Couldn't test code path in track() where job wasn't ready immediately.");
+                                    }
+                                    test.done();
+                                }
+                            }
+                        });
+                    });
+                }
             }
         },
         
