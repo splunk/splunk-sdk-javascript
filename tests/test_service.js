@@ -1060,7 +1060,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.ok(job);
                         },
                         
-                        _stoppedafterready: function(job) {
+                        _stoppedAfterReady: function(job) {
                             test.done();
                         }
                     });
@@ -1068,6 +1068,7 @@ exports.setup = function(svc, loggedOutSvc) {
             },
             
             "Callback#track() a job that is not immediately ready": function(test) {
+                /*jshint loopfunc:true */
                 var numJobs = 20;
                 var numJobsLeft = numJobs;
                 var gotJobNotImmediatelyReady = false;
