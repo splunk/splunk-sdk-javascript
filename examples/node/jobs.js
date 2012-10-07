@@ -94,13 +94,15 @@
             this.service.jobs().fetch(function(err, jobs) {
                 var list = jobs.list() || [];
                 for(var i = 0; i < list.length; i++) {
+console.log('found sid ' + list[i].sid);
                     if (utils.contains(sids, list[i].sid)) {
+console.log('adding sid ' + list[i].sid);
                         var job = list[i];
                         jobsList.push(job);
                     }
                 }
                 
-                Async.parallelMap(jobs, fn, callback);
+                Async.parallelMap(jobsList, fn, callback);
             });
         },
 
