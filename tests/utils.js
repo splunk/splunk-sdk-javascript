@@ -34,4 +34,13 @@
             }
         );
     };
+    
+    // Minimal Http implementation that is designed to pass the tests
+    // done by Context.init(), but nothing more.
+    root.DummyHttp = {
+        // Required by Context.init()
+        _setSplunkVersion: function(version) {
+            // nothing
+        }
+    };
 })();
