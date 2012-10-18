@@ -25,6 +25,9 @@ You can get the SDK by [downloading it][zip] from GitHub, or by cloning it:
 To install the XML to JSON Splunk app, [`xml2json`][xml2json], copy it 
 to `$SPLUNK_HOME/etc/apps/`.
 
+This app is required if your Splunk version is < 5.0. It is also required if you
+wish to run the unit tests (on any Splunk version).
+
 ### Use the Splunk JavaScript SDK components on your web page
 
 To use the components from the Splunk JavaScript SDK on your web page, copy the 
@@ -126,6 +129,10 @@ with the following format:
     password=changeme
     # Access scheme (OPTIONAL)
     scheme=https
+    # Version of Splunk
+    version=5.0
+
+Please note that the `version` key is required for Splunk >= 5.0.
 
 Save the file as `.splunkrc` in the current user's home directory or in the root 
 directory of the Splunk JavaScript SDK.
