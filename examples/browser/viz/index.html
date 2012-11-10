@@ -270,15 +270,15 @@
       <section id="google">
        <div class="page-header">
           <h1>
-            Google Charts <small>Using Splunk data and Google Charts</small>
+            Google Charts <small>Using Splunk data with Google Charts</small>
           </h1>
        </div>
        <div class="row">
           <div class="span4">
             <h2>Description</h2>
               <p>
-                <p>Even though Splunk has advanced charting and visualization capabilities, sometimes you may want to use a 3rd-party charting and visualization to display your data. For example, you may already have a website setup with Google Charts, and you want to display your data using it.</p>
-                <p>This example performs a simple Splunk search (using <code>exec_mode=oneshot</code> for simplicity), and presents the results using Google Charts. The result format that Splunk gives is very similar to what Google Charts expects, so with a little bit of data massaging, you can have a chart up and running in no time.</p>
+                <p>Even though Splunk has advanced charting and visualization capabilities, sometimes you might want to use third-party tools to display your data. For example, you might set up a website with Google Charts.</p>
+                <p>This example performs a simple Splunk search (using <code>exec_mode=oneshot</code> for simplicity), and presents the results using Google Charts. The result format that Splunk provides is very similar to what Google Charts expects. So, with just a little data massaging, you can have a chart up and running in no time.</p>
               </p>
           </div>
          <div class="span12">
@@ -372,11 +372,11 @@ service.login(function(err, success) {
           <div class="span4">
             <h2>Description</h2>
             <p>
-              <p><a href="http://shutterstock.github.com/rickshaw/">Rickshaw</a> is a time series visualization library built by the excellent  folks over at Shutterstock. It is built on top of the immensely powerful <a href="http://mbostock.github.com/d3/">d3</a> library,  and exposes a lot of the raw power of d3 in a more user friendly way.</p>
-              <p>Much like the Google Charts example, this example shows how to create a simple line graph given a Splunk search. This graph shows the HTTP status codes broken down by minute as observed by splunkd.</p>
-              <p>It might look like a lot of code, but most of it is just setting up the Rickshaw graph - so have no fear!</p>
+              <p><a href="http://shutterstock.github.com/rickshaw/">Rickshaw</a> is a time-series visualization library built by the excellent folks over at Shutterstock. This library is built on the immensely powerful <a href="http://mbostock.github.com/d3/">d3</a> library,  and exposes a lot of the raw power of d3 in a user-friendly way.</p>
+              <p>Much like the Google Charts example, this example shows how to create a simple line graph from a Splunk search. This graph shows the HTTP status codes broken down by minute, as observed by splunkd.</p>
+              <p>This might look like a lot of code, but most of it is for setting up the Rickshaw graph--so have no fear!</p>
               <p>
-                <strong>Note:</strong> this example will not work in &lt= IE9 due to browser limitations.
+                <strong>Note:</strong> This example doesn't work in Internet Explorer 9 or earlier, due to browser limitations.
               </p>
             </p>
           </div>
