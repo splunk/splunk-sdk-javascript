@@ -25,7 +25,7 @@ exports.setup = function(svc, loggedOutSvc) {
         return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
     };
 
-    return {
+    var suite = {
         "Namespace Tests": {
             setUp: function(finished) {
                 this.service = svc;
@@ -465,6 +465,58 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
+            
+            "Callback#job results iterator": function(test) {
+                var that = this;
+                
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().search('search index=_internal | head 10', {}, done);
+                        },
+                        function(job, done) {
+                            tutils.pollUntil(
+                                job,
+                                function(j) {
+                                    return job.properties()["isDone"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            var iterator = job.iterator("results", { pagesize: 4 });
+                            var hasMore = true;
+                            var numElements = 0;
+                            var pageSizes = [];
+                            Async.whilst(
+                                function() { return hasMore; },
+                                function(nextIteration) {
+                                    iterator.next(function(err, results, _hasMore) {
+                                        if (err) {
+                                            nextIteration(err);
+                                            return;
+                                        }
+                                        
+                                        hasMore = _hasMore;
+                                        if (hasMore) {
+                                            pageSizes.push(results.rows.length);
+                                        }
+                                        nextIteration();
+                                    });
+                                },
+                                function(err) {
+                                    test.deepEqual(pageSizes, [4,4,2]);
+                                    done(err);
+                                }
+                            );
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
 
             "Callback#Enable + disable preview": function(test) {
                 var that = this;
@@ -894,6 +946,158 @@ exports.setup = function(svc, loggedOutSvc) {
                         test.done();
                     }
                 );
+            },
+            
+            "Callback#Wait until job done": function(test) {
+                this.service.search('search index=_internal | head 1000', {}, function(err, job) {
+                    test.ok(!err);
+                    
+                    var numReadyEvents = 0;
+                    var numProgressEvents = 0;
+                    job.track({ period: 200 }, {
+                        ready: function(job) {
+                            test.ok(job);
+                            
+                            numReadyEvents++;
+                        },
+                        progress: function(job) {
+                            test.ok(job);
+                            
+                            numProgressEvents++;
+                        },
+                        done: function(job) {
+                            test.ok(job);
+                            
+                            test.ok(numReadyEvents === 1);      // all done jobs must have become ready
+                            test.ok(numProgressEvents >= 1);    // a job that becomes ready has progress
+                            test.done();
+                        },
+                        failed: function(job) {
+                            test.ok(job);
+                            
+                            test.ok(false, "Job failed unexpectedly.");
+                            test.done();
+                        },
+                        error: function(err) {
+                            test.ok(err);
+                            
+                            test.ok(false, "Error while tracking job.");
+                            test.done();
+                        }
+                    });
+                });
+            },
+            
+            "Callback#Wait until job failed": function(test) {
+                this.service.search('search index=_internal | head bogusarg', {}, function(err, job) {
+                    if (err) {
+                        test.ok(!err);
+                        test.done();
+                        return;
+                    }
+                    
+                    var numReadyEvents = 0;
+                    var numProgressEvents = 0;
+                    job.track({ period: 200 }, {
+                        ready: function(job) {
+                            test.ok(job);
+                            
+                            numReadyEvents++;
+                        },
+                        progress: function(job) {
+                            test.ok(job);
+                            
+                            numProgressEvents++;
+                        },
+                        done: function(job) {
+                            test.ok(job);
+                            
+                            test.ok(false, "Job became done unexpectedly.");
+                            test.done();
+                        },
+                        failed: function(job) {
+                            test.ok(job);
+                            
+                            test.ok(numReadyEvents === 1);      // even failed jobs become ready
+                            test.ok(numProgressEvents >= 1);    // a job that becomes ready has progress
+                            test.done();
+                        },
+                        error: function(err) {
+                            test.ok(err);
+                            
+                            test.ok(false, "Error while tracking job.");
+                            test.done();
+                        }
+                    });
+                });
+            },
+            
+            "Callback#track() with default params and one function": function(test) {
+                this.service.search('search index=_internal | head 1', {}, function(err, job) {
+                    if (err) {
+                        test.ok(!err);
+                        test.done();
+                        return;
+                    }
+                    
+                    job.track({}, function(job) {
+                        test.ok(job);
+                        test.done();
+                    });
+                });
+            },
+            
+            "Callback#track() should stop polling if only the ready callback is specified": function(test) {
+                this.service.search('search index=_internal | head 1', {}, function(err, job) {
+                    if (err) {
+                        test.ok(!err);
+                        test.done();
+                        return;
+                    }
+                    
+                    job.track({}, {
+                        ready: function(job) {
+                            test.ok(job);
+                        },
+                        
+                        _stoppedAfterReady: function(job) {
+                            test.done();
+                        }
+                    });
+                });
+            },
+            
+            "Callback#track() a job that is not immediately ready": function(test) {
+                /*jshint loopfunc:true */
+                var numJobs = 20;
+                var numJobsLeft = numJobs;
+                var gotJobNotImmediatelyReady = false;
+                for (var i = 0; i < numJobs; i++) {
+                    this.service.search('search index=_internal | head 10000', {}, function(err, job) {
+                        if (err) {
+                            test.ok(!err);
+                            test.done();
+                            return;
+                        }
+                        
+                        job.track({}, {
+                            _preready: function(job) {
+                                gotJobNotImmediatelyReady = true;
+                            },
+                            
+                            ready: function(job) {
+                                numJobsLeft--;
+                                
+                                if (numJobsLeft === 0) {
+                                    if (!gotJobNotImmediatelyReady) {
+                                        console.log("WARNING: Couldn't test code path in track() where job wasn't ready immediately.");
+                                    }
+                                    test.done();
+                                }
+                            }
+                        });
+                    });
+                }
             }
         },
         
@@ -1655,10 +1859,64 @@ exports.setup = function(svc, loggedOutSvc) {
                 });
             },
 
-            "Callback#remove index fails": function(test) {
+            "Callback#remove index fails on Splunk 4.x": function(test) {
+                var original_version = this.service.version;
+                this.service.version = "4.0";
+                
                 var index = this.service.indexes().item(this.indexName);
-                test.throws(function() { index.remove();});
+                test.throws(function() { index.remove(function(err) {}); });
+                
+                this.service.version = original_version;
                 test.done();
+            },
+            
+            "Callback#remove index": function(test) {
+                var indexes = this.service.indexes();
+                
+                // Must generate a private index because an index cannot
+                // be recreated with the same name as a deleted index
+                // for a certain period of time after the deletion.
+                var salt = Math.floor(Math.random() * 65536);
+                var myIndexName = this.indexName + '-' + salt;
+                
+                if (this.service.versionCompare("5.0") < 0) {
+                    console.log("Must be running Splunk 5.0+ for this test to work.");
+                    test.done();
+                    return;
+                }
+                
+                Async.chain([
+                        function(callback) {
+                            indexes.create(myIndexName, {}, callback);
+                        },
+                        function(index, callback) {
+                            index.remove(callback);
+                        },
+                        function(callback) {
+                            var numTriesLeft = 50;
+                            var delayPerTry = 100;  // ms
+                            
+                            Async.whilst(
+                                 function() { return indexes.item(myIndexName) && ((numTriesLeft--) > 0); },
+                                 function(iterDone) {
+                                      Async.sleep(delayPerTry, function() { indexes.fetch(iterDone); });
+                                 },
+                                 function(err) {
+                                      if (err) {
+                                           callback(err);
+                                      }
+                                      else {
+                                           callback(numTriesLeft <= 0 ? "Timed out" : null);
+                                      }
+                                 }
+                            );
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
             },
                          
             "Callback#list indexes": function(test) {
@@ -1715,9 +1973,6 @@ exports.setup = function(svc, loggedOutSvc) {
                             var properties = index.properties();
                             
                             test.strictEqual(originalSyncMeta, properties.syncMeta);
-                            callback();
-                        },
-                        function(callback) {
                             callback();
                         }
                     ],
@@ -2459,6 +2714,7 @@ exports.setup = function(svc, loggedOutSvc) {
             }
         }
     };
+    return suite;
 };
 
 if (module === require.main) {

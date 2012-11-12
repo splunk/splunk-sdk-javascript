@@ -286,21 +286,27 @@ Async.chain([
   },
   // Loop until the job is "done"
   function(job, callback) {
-    var searcher = new splunkjs.JobManager(job.service, job);
-    
-    // Queue up timeline displays while we are querying the job
-    searcher.on("progress", function(properties) {
-      job.timeline({}, function(err, data) { 
-        if (!err) updateTimeline(data);
-      });
+    job.track({}, {
+      // Queue up timeline displays while we are querying the job
+      progress: function(job) {
+        job.timeline({}, function(err, data) { 
+          if (!err) updateTimeline(data);
+        });
+      },
+      
+      // Move forward once the search is done
+      done: function(job) {
+        callback(null, job);
+      },
+      
+      error: function(err) {
+        callback(err);
+      }
     });
-    
-    // Move forward once the search is done
-    searcher.on("done", callback);
   },
   // Get the final timeline data
-  function(searcher, callback) {
-    searcher.job.timeline({}, callback);
+  function(job, callback) {
+    job.timeline({}, callback);
   },
   // Update the timeline control
   function(timelineData, job, callback) {
@@ -370,14 +376,20 @@ Async.chain([
   },
   // Loop until the job is "done"
   function(job, callback) {
-    var searcher = new splunkjs.JobManager(job.service, job);
-    
     // Move forward once the search is done
-    searcher.on("done", callback);
+    job.track({}, {
+      done: function(job) {
+        callback(null, job);
+      },
+      
+      error: function(err) {
+        callback(err);
+      }
+    });
   },
   // Get the final results data
-  function(searcher, callback) {
-    searcher.job.results({output_mode: "json_cols"}, callback);
+  function(job, callback) {
+    job.results({output_mode: "json_cols"}, callback);
   },
   // Update the chart
   function(results, job, callback) { 

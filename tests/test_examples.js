@@ -162,7 +162,7 @@ exports.setup = function(svc, opts) {
                 });
             },
             
-            "List job properties": function(test) {          
+            "List job properties": function(test) {
                 var create = {
                     search: "search index=_internal | head 1",
                     id: getNextId()
@@ -181,7 +181,7 @@ exports.setup = function(svc, opts) {
                 });
             },
             
-            "List job events": function(test) {      
+            "List job events": function(test) {
                 var create = {
                     search: "search index=_internal | head 1",
                     id: getNextId()
@@ -191,6 +191,63 @@ exports.setup = function(svc, opts) {
                 context.run("create", [], create, function(err) {
                     test.ok(!err);
                     context.run("events", [create.id], null, function(err) {
+                        test.ok(!err);
+                        context.run("cancel", [create.id], null, function(err) {
+                            test.ok(!err);
+                            test.done();
+                        });
+                    });
+                });
+            },
+            
+            "List job preview": function(test) {
+                var create = {
+                    search: "search index=_internal | head 1",
+                    id: getNextId()
+                };
+                  
+                var context = this;
+                context.run("create", [], create, function(err) {
+                    test.ok(!err);
+                    context.run("preview", [create.id], null, function(err) {
+                        test.ok(!err);
+                        context.run("cancel", [create.id], null, function(err) {
+                            test.ok(!err);
+                            test.done();
+                        });
+                    });
+                });
+            },
+            
+            "List job results": function(test) {
+                var create = {
+                    search: "search index=_internal | head 1",
+                    id: getNextId()
+                };
+                  
+                var context = this;
+                context.run("create", [], create, function(err) {
+                    test.ok(!err);
+                    context.run("results", [create.id], null, function(err) {
+                        test.ok(!err);
+                        context.run("cancel", [create.id], null, function(err) {
+                            test.ok(!err);
+                            test.done();
+                        });
+                    });
+                });
+            },
+            
+            "List job results, by column": function(test) {
+                var create = {
+                    search: "search index=_internal | head 1",
+                    id: getNextId()
+                };
+                  
+                var context = this;
+                context.run("create", [], create, function(err) {
+                    test.ok(!err);
+                    context.run("results", [create.id], {output_mode: "json_cols"}, function(err) {
                         test.ok(!err);
                         context.run("cancel", [create.id], null, function(err) {
                             test.ok(!err);

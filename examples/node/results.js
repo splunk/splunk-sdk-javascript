@@ -20,17 +20,6 @@
     var Async           = splunkjs.Async;
     var options         = require('./cmdline');
     
-    var createService = function(options) {
-        return new splunkjs.Service({
-            scheme:     options.scheme,
-            host:       options.host,
-            port:       options.port,
-            username:   options.username,
-            password:   options.password,
-            version:    options.version
-        });
-    };
-    
     // Print the result rows
     var printRows = function(results) {        
         for(var i = 0; i < results.rows.length; i++) {

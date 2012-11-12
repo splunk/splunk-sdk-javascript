@@ -15,11 +15,12 @@
 
 exports.setup = function(svc) {
     var splunkjs    = require('../index');
+    var tutils      = require('./utils');
 
     splunkjs.Logger.setLevel("ALL");
     var isBrowser = typeof window !== "undefined";
     
-    return {
+    var suite = {
         setUp: function(done) {
             this.service = svc;
             done();
@@ -658,14 +659,15 @@ exports.setup = function(svc) {
         },
 
         "fullpath gets its owner/app from the right places": function(test) {
-            var ctx = new splunkjs.Context();
+            var http = tutils.DummyHttp;
+            var ctx = new splunkjs.Context(http, { /*nothing*/ });
             
             // Absolute paths are unchanged
             test.strictEqual(ctx.fullpath("/a/b/c"), "/a/b/c");
             // Fall through to /services if there is no app
             test.strictEqual(ctx.fullpath("meep"), "/services/meep");
             // Are username and app set properly?
-            var ctx2 = new splunkjs.Context({owner: "alpha", app: "beta"});
+            var ctx2 = new splunkjs.Context(http, {owner: "alpha", app: "beta"});
             test.strictEqual(ctx2.fullpath("meep"), "/servicesNS/alpha/beta/meep");
             test.strictEqual(ctx2.fullpath("meep", {owner: "boris"}), "/servicesNS/boris/beta/meep");
             test.strictEqual(ctx2.fullpath("meep", {app: "factory"}), "/servicesNS/alpha/factory/meep");
@@ -675,8 +677,47 @@ exports.setup = function(svc) {
             test.strictEqual(ctx2.fullpath("meep", {sharing: "global"}), "/servicesNS/nobody/beta/meep");
             test.strictEqual(ctx2.fullpath("meep", {sharing: "system"}), "/servicesNS/nobody/system/meep");
             test.done();
+        },
+        
+        "version check": function(test) {
+            var http = tutils.DummyHttp;
+            var ctx;
+            
+            ctx = new splunkjs.Context(http, { "version": "4.0" });
+            test.ok(ctx.version === "4.0");
+            
+            ctx = new splunkjs.Context(http, { "version": "4.0" });
+            test.ok(ctx.versionCompare("5.0") === -1);
+            ctx = new splunkjs.Context(http, { "version": "4" });
+            test.ok(ctx.versionCompare("5.0") === -1);
+            ctx = new splunkjs.Context(http, { "version": "4.0" });
+            test.ok(ctx.versionCompare("5") === -1);
+            ctx = new splunkjs.Context(http, { "version": "4.1" });
+            test.ok(ctx.versionCompare("4.9") === -1);
+            
+            ctx = new splunkjs.Context(http, { "version": "4.0" });
+            test.ok(ctx.versionCompare("4.0") === 0);
+            ctx = new splunkjs.Context(http, { "version": "4" });
+            test.ok(ctx.versionCompare("4.0") === 0);
+            ctx = new splunkjs.Context(http, { "version": "4.0" });
+            test.ok(ctx.versionCompare("4") === 0);
+            
+            ctx = new splunkjs.Context(http, { "version": "5.0" });
+            test.ok(ctx.versionCompare("4.0") === 1);
+            ctx = new splunkjs.Context(http, { "version": "5.0" });
+            test.ok(ctx.versionCompare("4") === 1);
+            ctx = new splunkjs.Context(http, { "version": "5" });
+            test.ok(ctx.versionCompare("4.0") === 1);
+            ctx = new splunkjs.Context(http, { "version": "4.9" });
+            test.ok(ctx.versionCompare("4.1") === 1);
+            
+            ctx = new splunkjs.Context(http, { /*nothing*/ });
+            test.ok(ctx.versionCompare("4.3") === 0);
+            
+            test.done();
         }
     };
+    return suite;
 };
 
 if (module === require.main) {

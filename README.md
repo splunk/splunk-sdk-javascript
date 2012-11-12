@@ -25,6 +25,9 @@ You can get the SDK by [downloading it][zip] from GitHub, or by cloning it:
 To install the XML to JSON Splunk app, [`xml2json`][xml2json], copy it 
 to `$SPLUNK_HOME/etc/apps/`.
 
+This app is required if your Splunk version is < 5.0. It is also required if you
+wish to run the unit tests (on any Splunk version).
+
 ### Use the Splunk JavaScript SDK components on your web page
 
 To use the components from the Splunk JavaScript SDK on your web page, copy the 
@@ -126,6 +129,10 @@ with the following format:
     password=changeme
     # Access scheme (OPTIONAL)
     scheme=https
+    # Version of Splunk
+    version=5.0
+
+Please note that the `version` key is required for Splunk >= 5.0.
 
 Save the file as `.splunkrc` in the current user's home directory or in the root 
 directory of the Splunk JavaScript SDK.
@@ -368,23 +375,20 @@ License 2.0. Details can be found in the LICENSE file.
 The embedded third-party libraries may have different licenses. Here is a list
 of embedded libraries and their licenses:
 
-1. [dox]: [MIT][dox-license]
-2. [davis.js Documentation Generator][davis.js]: [MIT][davis-license]
-3. [easyXDM]: [MIT][xdm-license]
-4. [jquery.class.js]: [MIT][jquery.class-license]
-5. [nodeunit]: [MIT][nodeunit-license]
-6. [showdown.js]: [BSD][showdown-license]
-7. [staticresource]: [MIT][staticresource-license]
-8. [webapp2]: [Apache][webapp2-license]
-9. [commander]: [MIT][commander-license]
-10. [script.js]: [Apache][scriptjs-license]
-11. [base64.js]: [MIT][base64-license]
-12. [eventemitter.js]: [MIT][event-license]
+* [dox]: [MIT][dox-license]
+* [davis.js Documentation Generator][davis.js]: [MIT][davis-license]
+* [jquery.class.js]: [MIT][jquery.class-license]
+* [nodeunit]: [MIT][nodeunit-license]
+* [showdown.js]: [BSD][showdown-license]
+* [staticresource]: [MIT][staticresource-license]
+* [webapp2]: [Apache][webapp2-license]
+* [commander]: [MIT][commander-license]
+* [script.js]: [Apache][scriptjs-license]
+* [base64.js]: [MIT][base64-license]
 
 
 [dox]:                      https://github.com/visionmedia/dox
 [davis.js]:                 https://github.com/olivernn/davis.js
-[easyXDM]:                  http://easyxdm.net
 [jquery.class.js]:          http://ejohn.org/blog/simple-javascript-inheritance/
 [nodeunit]:                 https://github.com/caolan/nodeunit/
 [showdown.js]:              https://github.com/coreyti/showdown/
@@ -393,10 +397,8 @@ of embedded libraries and their licenses:
 [commander]:                https://github.com/visionmedia/commander.js/
 [script.js]:                https://github.com/ded/script.js/
 [base64.js]:                http://code.google.com/p/javascriptbase64/
-[eventemitter.js]:          https://github.com/Wolfy87/EventEmitter
 [dox-license]:              https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-DOX
 [davis-license]:            https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-DAVIS
-[xdm-license]:              https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-EASYXDM
 [jquery.class-license]:     https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-JQUERYCLASS
 [nodeunit-license]:         https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-NODEUNIT
 [showdown-license]:         https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-SHOWDOWN

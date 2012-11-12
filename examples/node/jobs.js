@@ -100,7 +100,7 @@
                     }
                 }
                 
-                Async.parallelMap(jobs, fn, callback);
+                Async.parallelMap(jobsList, fn, callback);
             });
         },
 
@@ -288,26 +288,36 @@
         results: function(sids, options, callback) {
             // For each of the passed in sids, get the relevant results
             this._foreach(sids, function(job, idx, done) {
-                job.results(options, function(err, data) {
-                    console.log("===== RESULTS @ " + job.sid + " ====="); 
-                    if (err) {
+                job.track({}, {
+                    'done': function(job) {
+                        job.results(options, function(err, data) {
+                            console.log("===== RESULTS @ " + job.sid + " ====="); 
+                            if (err) {
+                                done(err);
+                                return;
+                            }
+                            
+                            var output_mode = options.output_mode || "rows";
+                            if (output_mode === "json_rows") {
+                                printRows(data);
+                            }
+                            else if (output_mode === "json_cols") {
+                                console.log(data);
+                                printCols(data);
+                            }
+                            else {
+                                console.log(data);
+                            }
+        
+                            done(null, data);
+                        });
+                    },
+                    'failed': function(job) {
+                        done('failed');
+                    },
+                    'error': function(err) {
                         done(err);
-                        return;
                     }
-                    
-                    var output_mode = options.output_mode || "rows";
-                    if (output_mode === "json_rows") {
-                        printRows(data);
-                    }
-                    else if (output_mode === "json_cols") {
-                        console.log(data);
-                        printCols(data);
-                    }
-                    else {
-                        console.log(data);
-                    }
-
-                    done(null, data);
                 });
             }, callback);
         }

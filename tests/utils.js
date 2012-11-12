@@ -18,17 +18,10 @@
     
     var root = exports || this;
 
-    root.bind = function(me, fn) { 
-        return function() { 
-            return fn.apply(me, arguments); 
-        }; 
-    };
-
     root.pollUntil = function(obj, condition, iterations, callback) {
         callback = callback || function() {};
         
         var i = 0;
-        var keepGoing = true;
         Async.whilst(
             function() { return !condition(obj) && (i++ < iterations); },
             function(done) {
@@ -40,5 +33,14 @@
                 callback(err, obj);
             }
         );
+    };
+    
+    // Minimal Http implementation that is designed to pass the tests
+    // done by Context.init(), but nothing more.
+    root.DummyHttp = {
+        // Required by Context.init()
+        _setSplunkVersion: function(version) {
+            // nothing
+        }
     };
 })();

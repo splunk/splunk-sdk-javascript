@@ -637,9 +637,7 @@ require.define("/index.js", function (require, module, exports, __dirname, __fil
         Utils           : require('./lib/utils'),
         Async           : require('./lib/async'),
         Paths           : require('./lib/paths').Paths,
-        Class           : require('./lib/jquery.class').Class,
-        JobManager      : require('./lib/searcher.js'),
-        StormService    : require('./lib/storm.js')
+        Class           : require('./lib/jquery.class').Class
     };
     
     if (typeof(window) === 'undefined') {
@@ -1104,6 +1102,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @function splunkjs.Utils
      */
     root.isObject = function(obj) {
+        /*jslint newcap:false */
         return obj === Object(obj);
     };
     
@@ -1378,11 +1377,10 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
             
             if (!http) {
                 // If there is no HTTP implementation set, we check what platform
-                // we're running on. If we're running in the browser, then we instantiate
-                // XdmHttp, else, we instantiate NodeHttp.
+                // we're running on. If we're running in the browser, then complain,
+                // else, we instantiate NodeHttp.
                 if (typeof(window) !== 'undefined') {
-                    var XdmHttp  = require('./platform/client/easyxdm_http').XdmHttp;
-                    http = new XdmHttp(this.scheme + "://" + this.host + ":" + this.port);
+                    throw new Error("Http instance required when creating a Context within a browser.");
                 }
                 else {
                     var NodeHttp = require('./platform/node/node_http').NodeHttp;
@@ -1705,6 +1703,38 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
             };
             
             return this._requestWrapper(request, callback);
+        },
+        
+        /**
+         * Compares the Splunk server's version to the specified version string.
+         * Returns -1 if (this.version <  otherVersion),
+         *          0 if (this.version == otherVersion),
+         *          1 if (this.version >  otherVersion).
+         * 
+         * @param {String} otherVersion The other version string (ex: "5.0").
+         * 
+         * @method splunkjs.Context
+         */
+        versionCompare: function(otherVersion) {
+            var thisVersion = this.version;
+            if (thisVersion === "default") {
+                thisVersion = "4.3";
+            }
+            
+            var components1 = thisVersion.split(".");
+            var components2 = otherVersion.split(".");
+            var numComponents = Math.max(components1.length, components2.length);
+            
+            for (var i = 0; i < numComponents; i++) {
+                var c1 = (i < components1.length) ? parseInt(components1[i], 10) : 0;
+                var c2 = (i < components2.length) ? parseInt(components2[i], 10) : 0;
+                if (c1 < c2) {
+                    return -1;
+                } else if (c1 > c2) {
+                    return 1;
+                }
+            }
+            return 0;
         }
     });
 
@@ -1773,11 +1803,7 @@ require.define("/lib/paths.js", function (require, module, exports, __dirname, _
         views: "data/ui/views",
         
         currentUser: "/services/authentication/current-context",
-        submitEvent: "receivers/simple",
-        
-        storm: {
-            submitEvent: "/inputs/http"
-        }
+        submitEvent: "receivers/simple"
     };
 })();
 
@@ -2185,183 +2211,6 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
 })();
 });
 
-require.define("/lib/platform/client/easyxdm_http.js", function (require, module, exports, __dirname, __filename) {
-
-// Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-(function() {
-    var Http    = require('../../http');
-    var utils   = require('../../utils');
-    
-    // Include it so it gets put in splunk.js
-    require('../../../contrib/easyXDM/easyXDM.min');
-
-    var root = exports || this;
-    
-    var NAMESPACE_PREFIX = "SPLUNK_XDM_";
-    var namespaceCounter = 0;
-    var namespace = NAMESPACE_PREFIX + (++namespaceCounter);
-
-    var getHeaders = function(headersString) {
-        var headers = {};
-        var headerLines = headersString.split("\n");
-        for(var i = 0; i < headerLines.length; i++) {
-            if (utils.trim(headerLines[i]) !== "") {
-                var headerParts = headerLines[i].split(": ");
-                headers[headerParts[0]] = headerParts[1];
-            }
-        }
-
-        return headers;
-    };
-    
-    var getNamespace = function() {
-        return NAMESPACE_PREFIX + (++namespaceCounter);
-    };
-    
-    // Store a copy of the easyXDM library we just imported
-    var xdmLocal = easyXDM;
-
-    root.XdmHttp = Http.extend({
-        init: function(remoteServer) {
-            this._super();
-            
-            // Get a no conflict version of easyXDM
-            var xdm = xdmLocal.noConflict(getNamespace());
-       
-            this.xhr = new xdm.Rpc(
-                {
-                    local: "name.html",
-                    swf: remoteServer + "/static/xdm/easyxdm.swf",
-                    remote: remoteServer + "/static/xdm/cors/index.html",
-                    remoteHelper: remoteServer + "/static/xdm/name.html"
-                }, 
-                {
-                    remote: {
-                        request: {}
-                    }
-                }
-            );
-        },
-
-        makeRequest: function(url, message, callback) {
-            var params = {
-                url: url,
-                method: message.method,
-                headers: message.headers,
-                data: message.body
-            };
-            
-            var that = this;
-            var req = {
-                abort: function() {
-                    // Note that we were aborted
-                    req.wasAborted = true;
-                    
-                    var res = { headers: {}, statusCode: "abort" };
-                    var data = "{}";
-                    var complete_response = that._buildResponse("abort", res, data);
-                    
-                    callback(complete_response);
-                }
-            };
-
-            var success = utils.bind(this, function(res) {
-                // If we already aborted this request, then do nothing
-                if (req.wasAborted) {
-                    return;
-                }
-                
-                var data = res.data;
-                var status = res.status;
-                var headers = res.headers;
-                
-                var response = {
-                    statusCode: status,
-                    headers: headers,
-                    request: {
-                        headers: params.headers
-                    }
-                };
-                
-                var complete_response = this._buildResponse(null, response, data);
-                callback(complete_response);
-            });
-            
-            var error = utils.bind(this, function(res) {
-                // If we already aborted this request, then do nothing
-                if (req.wasAborted) {
-                    return;
-                }
-                
-                var data = res.data.data;
-                var status = res.data.status;
-                var message = res.message;
-                var headers = res.data.headers;
-                
-                var response = {
-                    statusCode: status,
-                    headers: headers,
-                    request: {
-                        headers: params.headers
-                    }
-                };
-                
-                var complete_response = this._buildResponse(message, response, data);
-                callback(complete_response);
-            });
-            
-            this.xhr.request(params, success, error);
-            
-            return req;
-        },
-
-        parseJson: function(json) {
-            return JSON.parse(json);
-        }
-    });
-})();
-});
-
-require.define("/contrib/easyXDM/easyXDM.min.js", function (require, module, exports, __dirname, __filename) {
-/**
- * easyXDM
- * http://easyxdm.net/
- * Copyright(c) 2009-2011, Øyvind Sean Kinsey, oyvind@kinsey.no.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
-(function(N,d,p,K,k,H){var b=this;var n=Math.floor(Math.random()*10000);var q=Function.prototype;var Q=/^((http.?:)\/\/([^:\/\s]+)(:\d+)*)/;var R=/[\-\w]+\/\.\.\//;var F=/([^:])\/\//g;var I="";var o={};var M=N.easyXDM;var U="easyXDM_";var E;var y=false;var i;var h;function C(X,Z){var Y=typeof X[Z];return Y=="function"||(!!(Y=="object"&&X[Z]))||Y=="unknown"}function u(X,Y){return !!(typeof(X[Y])=="object"&&X[Y])}function r(X){return Object.prototype.toString.call(X)==="[object Array]"}function c(){try{var X=new ActiveXObject("ShockwaveFlash.ShockwaveFlash");i=Array.prototype.slice.call(X.GetVariable("$version").match(/(\d+),(\d+),(\d+),(\d+)/),1);h=parseInt(i[0],10)>9&&parseInt(i[1],10)>0;X=null;return true}catch(Y){return false}}var v,x;if(C(N,"addEventListener")){v=function(Z,X,Y){Z.addEventListener(X,Y,false)};x=function(Z,X,Y){Z.removeEventListener(X,Y,false)}}else{if(C(N,"attachEvent")){v=function(X,Z,Y){X.attachEvent("on"+Z,Y)};x=function(X,Z,Y){X.detachEvent("on"+Z,Y)}}else{throw new Error("Browser not supported")}}var W=false,J=[],L;if("readyState" in d){L=d.readyState;W=L=="complete"||(~navigator.userAgent.indexOf("AppleWebKit/")&&(L=="loaded"||L=="interactive"))}else{W=!!d.body}function s(){if(W){return}W=true;for(var X=0;X<J.length;X++){J[X]()}J.length=0}if(!W){if(C(N,"addEventListener")){v(d,"DOMContentLoaded",s)}else{v(d,"readystatechange",function(){if(d.readyState=="complete"){s()}});if(d.documentElement.doScroll&&N===top){var g=function(){if(W){return}try{d.documentElement.doScroll("left")}catch(X){K(g,1);return}s()};g()}}v(N,"load",s)}function G(Y,X){if(W){Y.call(X);return}J.push(function(){Y.call(X)})}function m(){var Z=parent;if(I!==""){for(var X=0,Y=I.split(".");X<Y.length;X++){Z=Z[Y[X]]}}return Z.easyXDM}function e(X){N.easyXDM=M;I=X;if(I){U="easyXDM_"+I.replace(".","_")+"_"}return o}function z(X){return X.match(Q)[3]}function f(X){return X.match(Q)[4]||""}function j(Z){var X=Z.toLowerCase().match(Q);var aa=X[2],ab=X[3],Y=X[4]||"";if((aa=="http:"&&Y==":80")||(aa=="https:"&&Y==":443")){Y=""}return aa+"//"+ab+Y}function B(X){X=X.replace(F,"$1/");if(!X.match(/^(http||https):\/\//)){var Y=(X.substring(0,1)==="/")?"":p.pathname;if(Y.substring(Y.length-1)!=="/"){Y=Y.substring(0,Y.lastIndexOf("/")+1)}X=p.protocol+"//"+p.host+Y+X}while(R.test(X)){X=X.replace(R,"")}return X}function P(X,aa){var ac="",Z=X.indexOf("#");if(Z!==-1){ac=X.substring(Z);X=X.substring(0,Z)}var ab=[];for(var Y in aa){if(aa.hasOwnProperty(Y)){ab.push(Y+"="+H(aa[Y]))}}return X+(y?"#":(X.indexOf("?")==-1?"?":"&"))+ab.join("&")+ac}var S=(function(X){X=X.substring(1).split("&");var Z={},aa,Y=X.length;while(Y--){aa=X[Y].split("=");Z[aa[0]]=k(aa[1])}return Z}(/xdm_e=/.test(p.search)?p.search:p.hash));function t(X){return typeof X==="undefined"}var O=function(){var Y={};var Z={a:[1,2,3]},X='{"a":[1,2,3]}';if(typeof JSON!="undefined"&&typeof JSON.stringify==="function"&&JSON.stringify(Z).replace((/\s/g),"")===X){return JSON}if(Object.toJSON){if(Object.toJSON(Z).replace((/\s/g),"")===X){Y.stringify=Object.toJSON}}if(typeof String.prototype.evalJSON==="function"){Z=X.evalJSON();if(Z.a&&Z.a.length===3&&Z.a[2]===3){Y.parse=function(aa){return aa.evalJSON()}}}if(Y.stringify&&Y.parse){O=function(){return Y};return Y}return null};function T(X,Y,Z){var ab;for(var aa in Y){if(Y.hasOwnProperty(aa)){if(aa in X){ab=Y[aa];if(typeof ab==="object"){T(X[aa],ab,Z)}else{if(!Z){X[aa]=Y[aa]}}}else{X[aa]=Y[aa]}}}return X}function a(){var Y=d.body.appendChild(d.createElement("form")),X=Y.appendChild(d.createElement("input"));X.name=U+"TEST"+n;E=X!==Y.elements[X.name];d.body.removeChild(Y)}function A(X){if(t(E)){a()}var Z;if(E){Z=d.createElement('<iframe name="'+X.props.name+'"/>')}else{Z=d.createElement("IFRAME");Z.name=X.props.name}Z.id=Z.name=X.props.name;delete X.props.name;if(X.onLoad){v(Z,"load",X.onLoad)}if(typeof X.container=="string"){X.container=d.getElementById(X.container)}if(!X.container){T(Z.style,{position:"absolute",top:"-2000px"});X.container=d.body}var Y=X.props.src;delete X.props.src;T(Z,X.props);Z.border=Z.frameBorder=0;Z.allowTransparency=true;X.container.appendChild(Z);Z.src=Y;X.props.src=Y;return Z}function V(aa,Z){if(typeof aa=="string"){aa=[aa]}var Y,X=aa.length;while(X--){Y=aa[X];Y=new RegExp(Y.substr(0,1)=="^"?Y:("^"+Y.replace(/(\*)/g,".$1").replace(/\?/g,".")+"$"));if(Y.test(Z)){return true}}return false}function l(Z){var ae=Z.protocol,Y;Z.isHost=Z.isHost||t(S.xdm_p);y=Z.hash||false;if(!Z.props){Z.props={}}if(!Z.isHost){Z.channel=S.xdm_c;Z.secret=S.xdm_s;Z.remote=S.xdm_e;ae=S.xdm_p;if(Z.acl&&!V(Z.acl,Z.remote)){throw new Error("Access denied for "+Z.remote)}}else{Z.remote=B(Z.remote);Z.channel=Z.channel||"default"+n++;Z.secret=Math.random().toString(16).substring(2);if(t(ae)){if(j(p.href)==j(Z.remote)){ae="4"}else{if(C(N,"postMessage")||C(d,"postMessage")){ae="1"}else{if(Z.swf&&C(N,"ActiveXObject")&&c()){ae="6"}else{if(navigator.product==="Gecko"&&"frameElement" in N&&navigator.userAgent.indexOf("WebKit")==-1){ae="5"}else{if(Z.remoteHelper){Z.remoteHelper=B(Z.remoteHelper);ae="2"}else{ae="0"}}}}}}}Z.protocol=ae;switch(ae){case"0":T(Z,{interval:100,delay:2000,useResize:true,useParent:false,usePolling:false},true);if(Z.isHost){if(!Z.local){var ac=p.protocol+"//"+p.host,X=d.body.getElementsByTagName("img"),ad;var aa=X.length;while(aa--){ad=X[aa];if(ad.src.substring(0,ac.length)===ac){Z.local=ad.src;break}}if(!Z.local){Z.local=N}}var ab={xdm_c:Z.channel,xdm_p:0};if(Z.local===N){Z.usePolling=true;Z.useParent=true;Z.local=p.protocol+"//"+p.host+p.pathname+p.search;ab.xdm_e=Z.local;ab.xdm_pa=1}else{ab.xdm_e=B(Z.local)}if(Z.container){Z.useResize=false;ab.xdm_po=1}Z.remote=P(Z.remote,ab)}else{T(Z,{channel:S.xdm_c,remote:S.xdm_e,useParent:!t(S.xdm_pa),usePolling:!t(S.xdm_po),useResize:Z.useParent?false:Z.useResize})}Y=[new o.stack.HashTransport(Z),new o.stack.ReliableBehavior({}),new o.stack.QueueBehavior({encode:true,maxLength:4000-Z.remote.length}),new o.stack.VerifyBehavior({initiate:Z.isHost})];break;case"1":Y=[new o.stack.PostMessageTransport(Z)];break;case"2":Y=[new o.stack.NameTransport(Z),new o.stack.QueueBehavior(),new o.stack.VerifyBehavior({initiate:Z.isHost})];break;case"3":Y=[new o.stack.NixTransport(Z)];break;case"4":Y=[new o.stack.SameOriginTransport(Z)];break;case"5":Y=[new o.stack.FrameElementTransport(Z)];break;case"6":if(!i){c()}Y=[new o.stack.FlashTransport(Z)];break}Y.push(new o.stack.QueueBehavior({lazy:Z.lazy,remove:true}));return Y}function D(aa){var ab,Z={incoming:function(ad,ac){this.up.incoming(ad,ac)},outgoing:function(ac,ad){this.down.outgoing(ac,ad)},callback:function(ac){this.up.callback(ac)},init:function(){this.down.init()},destroy:function(){this.down.destroy()}};for(var Y=0,X=aa.length;Y<X;Y++){ab=aa[Y];T(ab,Z,true);if(Y!==0){ab.down=aa[Y-1]}if(Y!==X-1){ab.up=aa[Y+1]}}return ab}function w(X){X.up.down=X.down;X.down.up=X.up;X.up=X.down=null}T(o,{version:"2.4.15.118",query:S,stack:{},apply:T,getJSONObject:O,whenReady:G,noConflict:e});o.DomHelper={on:v,un:x,requiresJSON:function(X){if(!u(N,"JSON")){d.write('<script type="text/javascript" src="'+X+'"><\/script>')}}};(function(){var X={};o.Fn={set:function(Y,Z){X[Y]=Z},get:function(Z,Y){var aa=X[Z];if(Y){delete X[Z]}return aa}}}());o.Socket=function(Y){var X=D(l(Y).concat([{incoming:function(ab,aa){Y.onMessage(ab,aa)},callback:function(aa){if(Y.onReady){Y.onReady(aa)}}}])),Z=j(Y.remote);this.origin=j(Y.remote);this.destroy=function(){X.destroy()};this.postMessage=function(aa){X.outgoing(aa,Z)};X.init()};o.Rpc=function(Z,Y){if(Y.local){for(var ab in Y.local){if(Y.local.hasOwnProperty(ab)){var aa=Y.local[ab];if(typeof aa==="function"){Y.local[ab]={method:aa}}}}}var X=D(l(Z).concat([new o.stack.RpcBehavior(this,Y),{callback:function(ac){if(Z.onReady){Z.onReady(ac)}}}]));this.origin=j(Z.remote);this.destroy=function(){X.destroy()};X.init()};o.stack.SameOriginTransport=function(Y){var Z,ab,aa,X;return(Z={outgoing:function(ad,ae,ac){aa(ad);if(ac){ac()}},destroy:function(){if(ab){ab.parentNode.removeChild(ab);ab=null}},onDOMReady:function(){X=j(Y.remote);if(Y.isHost){T(Y.props,{src:P(Y.remote,{xdm_e:p.protocol+"//"+p.host+p.pathname,xdm_c:Y.channel,xdm_p:4}),name:U+Y.channel+"_provider"});ab=A(Y);o.Fn.set(Y.channel,function(ac){aa=ac;K(function(){Z.up.callback(true)},0);return function(ad){Z.up.incoming(ad,X)}})}else{aa=m().Fn.get(Y.channel,true)(function(ac){Z.up.incoming(ac,X)});K(function(){Z.up.callback(true)},0)}},init:function(){G(Z.onDOMReady,Z)}})};o.stack.FlashTransport=function(aa){var ac,X,ab,ad,Y,ae;function af(ah,ag){K(function(){ac.up.incoming(ah,ad)},0)}function Z(ah){var ag=aa.swf+"?host="+aa.isHost;var aj="easyXDM_swf_"+Math.floor(Math.random()*10000);o.Fn.set("flash_loaded"+ah.replace(/[\-.]/g,"_"),function(){o.stack.FlashTransport[ah].swf=Y=ae.firstChild;var ak=o.stack.FlashTransport[ah].queue;for(var al=0;al<ak.length;al++){ak[al]()}ak.length=0});if(aa.swfContainer){ae=(typeof aa.swfContainer=="string")?d.getElementById(aa.swfContainer):aa.swfContainer}else{ae=d.createElement("div");T(ae.style,h&&aa.swfNoThrottle?{height:"20px",width:"20px",position:"fixed",right:0,top:0}:{height:"1px",width:"1px",position:"absolute",overflow:"hidden",right:0,top:0});d.body.appendChild(ae)}var ai="callback=flash_loaded"+ah.replace(/[\-.]/g,"_")+"&proto="+b.location.protocol+"&domain="+z(b.location.href)+"&port="+f(b.location.href)+"&ns="+I;ae.innerHTML="<object height='20' width='20' type='application/x-shockwave-flash' id='"+aj+"' data='"+ag+"'><param name='allowScriptAccess' value='always'></param><param name='wmode' value='transparent'><param name='movie' value='"+ag+"'></param><param name='flashvars' value='"+ai+"'></param><embed type='application/x-shockwave-flash' FlashVars='"+ai+"' allowScriptAccess='always' wmode='transparent' src='"+ag+"' height='1' width='1'></embed></object>"}return(ac={outgoing:function(ah,ai,ag){Y.postMessage(aa.channel,ah.toString());if(ag){ag()}},destroy:function(){try{Y.destroyChannel(aa.channel)}catch(ag){}Y=null;if(X){X.parentNode.removeChild(X);X=null}},onDOMReady:function(){ad=aa.remote;o.Fn.set("flash_"+aa.channel+"_init",function(){K(function(){ac.up.callback(true)})});o.Fn.set("flash_"+aa.channel+"_onMessage",af);aa.swf=B(aa.swf);var ah=z(aa.swf);var ag=function(){o.stack.FlashTransport[ah].init=true;Y=o.stack.FlashTransport[ah].swf;Y.createChannel(aa.channel,aa.secret,j(aa.remote),aa.isHost);if(aa.isHost){if(h&&aa.swfNoThrottle){T(aa.props,{position:"fixed",right:0,top:0,height:"20px",width:"20px"})}T(aa.props,{src:P(aa.remote,{xdm_e:j(p.href),xdm_c:aa.channel,xdm_p:6,xdm_s:aa.secret}),name:U+aa.channel+"_provider"});X=A(aa)}};if(o.stack.FlashTransport[ah]&&o.stack.FlashTransport[ah].init){ag()}else{if(!o.stack.FlashTransport[ah]){o.stack.FlashTransport[ah]={queue:[ag]};Z(ah)}else{o.stack.FlashTransport[ah].queue.push(ag)}}},init:function(){G(ac.onDOMReady,ac)}})};o.stack.PostMessageTransport=function(aa){var ac,ad,Y,Z;function X(ae){if(ae.origin){return j(ae.origin)}if(ae.uri){return j(ae.uri)}if(ae.domain){return p.protocol+"//"+ae.domain}throw"Unable to retrieve the origin of the event"}function ab(af){var ae=X(af);if(ae==Z&&af.data.substring(0,aa.channel.length+1)==aa.channel+" "){ac.up.incoming(af.data.substring(aa.channel.length+1),ae)}}return(ac={outgoing:function(af,ag,ae){Y.postMessage(aa.channel+" "+af,ag||Z);if(ae){ae()}},destroy:function(){x(N,"message",ab);if(ad){Y=null;ad.parentNode.removeChild(ad);ad=null}},onDOMReady:function(){Z=j(aa.remote);if(aa.isHost){var ae=function(af){if(af.data==aa.channel+"-ready"){Y=("postMessage" in ad.contentWindow)?ad.contentWindow:ad.contentWindow.document;x(N,"message",ae);v(N,"message",ab);K(function(){ac.up.callback(true)},0)}};v(N,"message",ae);T(aa.props,{src:P(aa.remote,{xdm_e:j(p.href),xdm_c:aa.channel,xdm_p:1}),name:U+aa.channel+"_provider"});ad=A(aa)}else{v(N,"message",ab);Y=("postMessage" in N.parent)?N.parent:N.parent.document;Y.postMessage(aa.channel+"-ready",Z);K(function(){ac.up.callback(true)},0)}},init:function(){G(ac.onDOMReady,ac)}})};o.stack.FrameElementTransport=function(Y){var Z,ab,aa,X;return(Z={outgoing:function(ad,ae,ac){aa.call(this,ad);if(ac){ac()}},destroy:function(){if(ab){ab.parentNode.removeChild(ab);ab=null}},onDOMReady:function(){X=j(Y.remote);if(Y.isHost){T(Y.props,{src:P(Y.remote,{xdm_e:j(p.href),xdm_c:Y.channel,xdm_p:5}),name:U+Y.channel+"_provider"});ab=A(Y);ab.fn=function(ac){delete ab.fn;aa=ac;K(function(){Z.up.callback(true)},0);return function(ad){Z.up.incoming(ad,X)}}}else{if(d.referrer&&j(d.referrer)!=S.xdm_e){N.top.location=S.xdm_e}aa=N.frameElement.fn(function(ac){Z.up.incoming(ac,X)});Z.up.callback(true)}},init:function(){G(Z.onDOMReady,Z)}})};o.stack.NameTransport=function(ab){var ac;var ae,ai,aa,ag,ah,Y,X;function af(al){var ak=ab.remoteHelper+(ae?"#_3":"#_2")+ab.channel;ai.contentWindow.sendMessage(al,ak)}function ad(){if(ae){if(++ag===2||!ae){ac.up.callback(true)}}else{af("ready");ac.up.callback(true)}}function aj(ak){ac.up.incoming(ak,Y)}function Z(){if(ah){K(function(){ah(true)},0)}}return(ac={outgoing:function(al,am,ak){ah=ak;af(al)},destroy:function(){ai.parentNode.removeChild(ai);ai=null;if(ae){aa.parentNode.removeChild(aa);aa=null}},onDOMReady:function(){ae=ab.isHost;ag=0;Y=j(ab.remote);ab.local=B(ab.local);if(ae){o.Fn.set(ab.channel,function(al){if(ae&&al==="ready"){o.Fn.set(ab.channel,aj);ad()}});X=P(ab.remote,{xdm_e:ab.local,xdm_c:ab.channel,xdm_p:2});T(ab.props,{src:X+"#"+ab.channel,name:U+ab.channel+"_provider"});aa=A(ab)}else{ab.remoteHelper=ab.remote;o.Fn.set(ab.channel,aj)}ai=A({props:{src:ab.local+"#_4"+ab.channel},onLoad:function ak(){var al=ai||this;x(al,"load",ak);o.Fn.set(ab.channel+"_load",Z);(function am(){if(typeof al.contentWindow.sendMessage=="function"){ad()}else{K(am,50)}}())}})},init:function(){G(ac.onDOMReady,ac)}})};o.stack.HashTransport=function(Z){var ac;var ah=this,af,aa,X,ad,am,ab,al;var ag,Y;function ak(ao){if(!al){return}var an=Z.remote+"#"+(am++)+"_"+ao;((af||!ag)?al.contentWindow:al).location=an}function ae(an){ad=an;ac.up.incoming(ad.substring(ad.indexOf("_")+1),Y)}function aj(){if(!ab){return}var an=ab.location.href,ap="",ao=an.indexOf("#");if(ao!=-1){ap=an.substring(ao)}if(ap&&ap!=ad){ae(ap)}}function ai(){aa=setInterval(aj,X)}return(ac={outgoing:function(an,ao){ak(an)},destroy:function(){N.clearInterval(aa);if(af||!ag){al.parentNode.removeChild(al)}al=null},onDOMReady:function(){af=Z.isHost;X=Z.interval;ad="#"+Z.channel;am=0;ag=Z.useParent;Y=j(Z.remote);if(af){Z.props={src:Z.remote,name:U+Z.channel+"_provider"};if(ag){Z.onLoad=function(){ab=N;ai();ac.up.callback(true)}}else{var ap=0,an=Z.delay/50;(function ao(){if(++ap>an){throw new Error("Unable to reference listenerwindow")}try{ab=al.contentWindow.frames[U+Z.channel+"_consumer"]}catch(aq){}if(ab){ai();ac.up.callback(true)}else{K(ao,50)}}())}al=A(Z)}else{ab=N;ai();if(ag){al=parent;ac.up.callback(true)}else{T(Z,{props:{src:Z.remote+"#"+Z.channel+new Date(),name:U+Z.channel+"_consumer"},onLoad:function(){ac.up.callback(true)}});al=A(Z)}}},init:function(){G(ac.onDOMReady,ac)}})};o.stack.ReliableBehavior=function(Y){var aa,ac;var ab=0,X=0,Z="";return(aa={incoming:function(af,ad){var ae=af.indexOf("_"),ag=af.substring(0,ae).split(",");af=af.substring(ae+1);if(ag[0]==ab){Z="";if(ac){ac(true)}}if(af.length>0){aa.down.outgoing(ag[1]+","+ab+"_"+Z,ad);if(X!=ag[1]){X=ag[1];aa.up.incoming(af,ad)}}},outgoing:function(af,ad,ae){Z=af;ac=ae;aa.down.outgoing(X+","+(++ab)+"_"+af,ad)}})};o.stack.QueueBehavior=function(Z){var ac,ad=[],ag=true,aa="",af,X=0,Y=false,ab=false;function ae(){if(Z.remove&&ad.length===0){w(ac);return}if(ag||ad.length===0||af){return}ag=true;var ah=ad.shift();ac.down.outgoing(ah.data,ah.origin,function(ai){ag=false;if(ah.callback){K(function(){ah.callback(ai)},0)}ae()})}return(ac={init:function(){if(t(Z)){Z={}}if(Z.maxLength){X=Z.maxLength;ab=true}if(Z.lazy){Y=true}else{ac.down.init()}},callback:function(ai){ag=false;var ah=ac.up;ae();ah.callback(ai)},incoming:function(ak,ai){if(ab){var aj=ak.indexOf("_"),ah=parseInt(ak.substring(0,aj),10);aa+=ak.substring(aj+1);if(ah===0){if(Z.encode){aa=k(aa)}ac.up.incoming(aa,ai);aa=""}}else{ac.up.incoming(ak,ai)}},outgoing:function(al,ai,ak){if(Z.encode){al=H(al)}var ah=[],aj;if(ab){while(al.length!==0){aj=al.substring(0,X);al=al.substring(aj.length);ah.push(aj)}while((aj=ah.shift())){ad.push({data:ah.length+"_"+aj,origin:ai,callback:ah.length===0?ak:null})}}else{ad.push({data:al,origin:ai,callback:ak})}if(Y){ac.down.init()}else{ae()}},destroy:function(){af=true;ac.down.destroy()}})};o.stack.VerifyBehavior=function(ab){var ac,aa,Y,Z=false;function X(){aa=Math.random().toString(16).substring(2);ac.down.outgoing(aa)}return(ac={incoming:function(af,ad){var ae=af.indexOf("_");if(ae===-1){if(af===aa){ac.up.callback(true)}else{if(!Y){Y=af;if(!ab.initiate){X()}ac.down.outgoing(af)}}}else{if(af.substring(0,ae)===Y){ac.up.incoming(af.substring(ae+1),ad)}}},outgoing:function(af,ad,ae){ac.down.outgoing(aa+"_"+af,ad,ae)},callback:function(ad){if(ab.initiate){X()}}})};o.stack.RpcBehavior=function(ad,Y){var aa,af=Y.serializer||O();var ae=0,ac={};function X(ag){ag.jsonrpc="2.0";aa.down.outgoing(af.stringify(ag))}function ab(ag,ai){var ah=Array.prototype.slice;return function(){var aj=arguments.length,al,ak={method:ai};if(aj>0&&typeof arguments[aj-1]==="function"){if(aj>1&&typeof arguments[aj-2]==="function"){al={success:arguments[aj-2],error:arguments[aj-1]};ak.params=ah.call(arguments,0,aj-2)}else{al={success:arguments[aj-1]};ak.params=ah.call(arguments,0,aj-1)}ac[""+(++ae)]=al;ak.id=ae}else{ak.params=ah.call(arguments,0)}if(ag.namedParams&&ak.params.length===1){ak.params=ak.params[0]}X(ak)}}function Z(an,am,ai,al){if(!ai){if(am){X({id:am,error:{code:-32601,message:"Procedure not found."}})}return}var ak,ah;if(am){ak=function(ao){ak=q;X({id:am,result:ao})};ah=function(ao,ap){ah=q;var aq={id:am,error:{code:-32099,message:ao}};if(ap){aq.error.data=ap}X(aq)}}else{ak=ah=q}if(!r(al)){al=[al]}try{var ag=ai.method.apply(ai.scope,al.concat([ak,ah]));if(!t(ag)){ak(ag)}}catch(aj){ah(aj.message)}}return(aa={incoming:function(ah,ag){var ai=af.parse(ah);if(ai.method){if(Y.handle){Y.handle(ai,X)}else{Z(ai.method,ai.id,Y.local[ai.method],ai.params)}}else{var aj=ac[ai.id];if(ai.error){if(aj.error){aj.error(ai.error)}}else{if(aj.success){aj.success(ai.result)}}delete ac[ai.id]}},init:function(){if(Y.remote){for(var ag in Y.remote){if(Y.remote.hasOwnProperty(ag)){ad[ag]=ab(Y.remote[ag],ag)}}}aa.down.init()},destroy:function(){for(var ag in Y.remote){if(Y.remote.hasOwnProperty(ag)&&ad.hasOwnProperty(ag)){delete ad[ag]}}aa.down.destroy()}})};b.easyXDM=o})(window,document,location,window.setTimeout,decodeURIComponent,encodeURIComponent);
-});
-
 require.define("/lib/service.js", function (require, module, exports, __dirname, __filename) {
 /*!*/
 // Copyright 2012 Splunk, Inc.
@@ -2390,6 +2239,20 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     
     var root = exports || this;
     var Service = null;
+    
+    /**
+     * Contains functionality common to Splunk Enterprise and Splunk Storm.
+     * 
+     * This class is an implementation detail and is therefore SDK-private.
+     * 
+     * @class splunkjs.private.BaseService
+     * @extends splunkjs.Context
+     */
+    var BaseService = Context.extend({
+        init: function() {
+            this._super.apply(this, arguments);
+        }
+    });
 
     /**
      * Provides a root access point to the Splunk REST API with typed access to 
@@ -2397,9 +2260,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      * methods to authenticate and create specialized instances of the service.
      *
      * @class splunkjs.Service
-     * @extends splunkjs.Context
+     * @extends splunkjs.private.BaseService
      */
-    module.exports = root = Service = Context.extend({
+    module.exports = root = Service = BaseService.extend({
         /**
          * Constructor for `splunkjs.Service`.
          *
@@ -3811,12 +3674,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @example
          *
          *      var savedSearch = service.savedSearches().item("MySavedSearch");
-         *      savedSearch.dispatch({force:dispatch: false}, function(err, job) {
+         *      savedSearch.dispatch({force_dispatch: false}, function(err, job, savedSearch) {
          *          console.log("Job SID: ", job.sid);
          *      });
          *
          * @param {Object} options The options for dispatching this saved search. For details, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#POST_saved.2Fsearches.2F.7Bname.7D.2Fdispatch" target="_blank">POST saved/searches/{name}/dispatch</a> endpoint in the REST API documentation.
-         * @param {Function} callback A function to call when the saved search is dispatched: `(err, job)`.
+         * @param {Function} callback A function to call when the saved search is dispatched: `(err, job, savedSearch)`.
          *
          * @endpoint saved/searches/{name}/dispatch
          * @method splunkjs.Service.SavedSearch
@@ -3875,7 +3738,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 }
                 
                 var jobs = [];
-                var data = response.data.entry;
+                var data = response.data.entry || [];
                 for(var i = 0; i < data.length; i++) {
                     var jobData = response.data.entry[i];
                     var namespace = utils.namespaceFromProperties(jobData);
@@ -4469,8 +4332,13 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             });
         },
         
-        remove: function() {
-            throw new Error("Indexes cannot be removed");
+        remove: function(callback) {
+            if (this.service.versionCompare("5.0") < 0) {
+                throw new Error("Indexes cannot be removed in Splunk 4.x");
+            }
+            else {
+                return this._super(callback);
+            }
         }
     });
         
@@ -4960,6 +4828,21 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             return req;
         },
+        
+        /**
+         * Returns an iterator over this search job's events or results.
+         * 
+         * @param {String} One of {"events", "preview", "results"}.
+         * @param {Object} params A dictionary of optional parameters:
+         *      * `pagesize`: The number of items to return on each request. Defaults to as many as possible.
+         * @return {splunkjs.Service.PaginatedEndpointIterator}
+         * 
+         * @endpoint search/jobs/{search_id}/results
+         * @method splunkjs.Service.Job
+         */
+        iterator: function(type, params) {
+            return new root.PaginatedEndpointIterator(this[type], params);
+        },
 
         /**
          * Pauses a search job.
@@ -5021,7 +4904,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
 
         /**
          * Gets the results for a search job with given parameters.
-         *
+         * 
+         * The callback can get `undefined` for its `results` parameter if the
+         * job is not yet done. To avoid this, use the `Job.track()` method to
+         * wait until the job is complete prior to fetching the results with
+         * this method.
+         * 
          * @example
          *
          *      var job = service.jobs().item("mysid");
@@ -5220,6 +5108,113 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             });
             
             return req;
+        },
+        
+        /**
+         * Starts polling the status of this search job, and fires callbacks
+         * upon each status change.
+         * 
+         * @param {Object} options A dictionary of optional parameters:
+         *      * `period`: The number of milliseconds to wait between each poll.
+         *                  Defaults to 500.
+         * @param {Object|Function} A dictionary of optional callbacks:
+         *      * `ready`: A function `(job)` invoked when the job's properties first become available.
+         *      * `progress`: A function `(job)` invoked whenever new job properties are available.
+         *      * `done`: A function `(job)` invoked if the job completes successfully. No further polling is done.
+         *      * `failed`: A function `(job)` invoked if the job fails executing on the server. No further polling is done.
+         *      * `error`: A function `(err)` invoked if an error occurs while polling. No further polling is done.
+         * Or, if a function `(job)`, equivalent to passing it as a `done` callback.
+         *
+         * @method splunkjs.Service.Job
+         */
+        track: function(options, callbacks) {
+            var period = options.period || 500; // ms
+            
+            if (utils.isFunction(callbacks)) {
+                callbacks = {
+                    done: callbacks
+                };
+            }
+            
+            var noCallbacksAfterReady = (
+                !callbacks.progress &&
+                !callbacks.done &&
+                !callbacks.failed &&
+                !callbacks.error
+            );
+            
+            callbacks.ready = callbacks.ready || function() {};
+            callbacks.progress = callbacks.progress || function() {};
+            callbacks.done = callbacks.done || function() {};
+            callbacks.failed = callbacks.failed || function() {};
+            callbacks.error = callbacks.error || function() {};
+            
+            // For use by tests only
+            callbacks._preready = callbacks._preready || function() {};
+            callbacks._stoppedAfterReady = callbacks._stoppedAfterReady || function() {};
+            
+            var that = this;
+            var emittedReady = false;
+            var doneLooping = false;
+            Async.whilst(
+                function() { return !doneLooping; },
+                function(nextIteration) {
+                    that.fetch(function(err, job) {
+                        if (err) {
+                            nextIteration(err);
+                            return;
+                        }
+                        
+                        var notReady = (job.properties().isDone === undefined);
+                        if (notReady) {
+                            callbacks._preready(job);
+                        }
+                        else {
+                            if (!emittedReady) {
+                                callbacks.ready(job);
+                                emittedReady = true;
+                                
+                                // Optimization: Don't keep polling the job if the
+                                // caller only cares about the `ready` event.
+                                if (noCallbacksAfterReady) {
+                                    callbacks._stoppedAfterReady(job);
+                                    
+                                    doneLooping = true;
+                                    nextIteration();
+                                    return;
+                                }
+                            }
+                            
+                            callbacks.progress(job);
+                            
+                            var props = job.properties();
+                            var dispatchState = props.dispatchState;
+                            
+                            if (dispatchState === "DONE" && props.isDone) {
+                                callbacks.done(job);
+                                
+                                doneLooping = true;
+                                nextIteration();
+                                return;
+                            }
+                            else if (dispatchState === "FAILED" && props.isFailed) {
+                                callbacks.failed(job);
+                                
+                                doneLooping = true;
+                                nextIteration();
+                                return;
+                            }
+                        }
+                        
+                        Async.sleep(period, nextIteration);
+                    });
+                },
+                function(err) {
+                    if (err) {
+                        callbacks.error(err);
+                    }
+                }
+            );
         },
 
         /**
@@ -5427,6 +5422,47 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             );
             
             return req;
+        }
+    });
+    
+    /**
+     * Iterates over an endpoint's results.
+     *
+     * @class splunkjs.Service.PaginatedEndpointIterator
+     */
+    root.PaginatedEndpointIterator = Class.extend({
+        init: function(endpoint, params) {
+            params = params || {};
+            
+            this._endpoint = endpoint;
+            this._pagesize = params.pagesize || 0;
+            this._offset = 0;
+        },
+        
+        /**
+         * Fetches the next page from the endpoint.
+         * 
+         * @param callback {Function} A function to call with next page: `(err, results, hasMore)`.
+         */
+        next: function(callback) {
+            callback = callback || function() {};
+            
+            var that = this;
+            var params = {
+                count: this._pagesize,
+                offset: this._offset
+            };
+            return this._endpoint(params, function(err, results) {
+                if (err) {
+                    callback(err);
+                }
+                else {                    
+                    var numResults = (results.rows ? results.rows.length : 0);
+                    that._offset += numResults;
+                    
+                    callback(null, results, numResults > 0);
+                }
+            });
         }
     });
 })();
@@ -5974,514 +6010,6 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
             
             callback.apply(null, augmentedArgs);
         };
-    };
-})();
-});
-
-require.define("/lib/searcher.js", function (require, module, exports, __dirname, __filename) {
-
-// Copyright 2012 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-(function() {
-    "use strict";
-    
-    var Service      = require('./service');
-    var Class        = require('./jquery.class').Class;
-    var utils        = require('./utils');
-    var Async        = require('./async');
-    var EventEmitter = require('../contrib/eventemitter').EventEmitter;
-    
-    var root = exports || this;
-    var JobManager = null;
-
-    // An endpoint is the basic handler. It is associated with an instance
-    // of a Service and a path (such as /search/jobs/{SID}/), and
-    // provides the relevant functionality.
-    module.exports = root = JobManager = Class.extend({
-        init: function(service, job, options) {
-            options = options || {};
-            
-            this.service = service;
-            this.job = job;
-            this.isJobDone = false;
-            this.events = new EventEmitter();
-            
-            this.sleep = options.hasOwnProperty("sleep") ? options.sleep : 1000;
-            
-            this.on              = utils.bind(this, this.on);
-            this._start          = utils.bind(this, this._start);
-            this.cancel          = utils.bind(this, this.cancel);
-            this.isDone          = utils.bind(this, this.isDone);
-            this.eventsIterator  = utils.bind(this, this.eventsIterator);
-            this.resultsIterator = utils.bind(this, this.resultsIterator);
-            this.previewIterator = utils.bind(this, this.previewIterator);
-            
-            this._start();
-        },
-        
-        _start: function() {                        
-            var that = this;
-            var job = this.job;
-            var properties = {};
-            var stopLooping = false;
-            Async.whilst(
-                function() { return !stopLooping; },
-                function(iterationDone) {
-                    job.fetch(function(err, job) {
-                        if (err) {
-                            iterationDone(err);
-                            return;
-                        }
-                        
-                        properties = job.state() || {};
-                        
-                        // Dispatch for progress
-                        that.events.emit("progress", properties);
-                        
-                        // Dispatch for failure if necessary
-                        if (properties.isFailed) {
-                            that.events.emit("fail", properties);
-                        }
-                        
-                        stopLooping = properties.content.isDone || that.isJobDone || properties.content.isFailed;
-                        Async.sleep(that.sleep, iterationDone);
-                    });
-                },
-                function(err) {
-                    that.isJobDone = true;
-                    that.events.emit("done", err, that);
-                }
-            );
-        },
-        
-        on: function(event, action) {
-            this.events.on(event, action);  
-        },
-        
-        cancel: function(callback) {
-            this.isJobDone = true;
-            this.job.cancel(callback);
-        },
-        
-        isDone: function() {
-            return this.isJobDone;
-        },
-        
-        eventsIterator: function(resultsPerPage) {
-            return new root.Iterator(this, this.job.events, resultsPerPage);  
-        },
-        
-        resultsIterator: function(resultsPerPage) {
-            return new root.Iterator(this, this.job.results, resultsPerPage);  
-        },
-        
-        previewIterator: function(resultsPerPage) {
-            return new root.Iterator(this, this.job.preview, resultsPerPage);  
-        }
-    });
-    
-    root.Iterator = Class.extend({
-        init: function(manager, endpoint, resultsPerPage) {
-            this.manager = manager;
-            this.endpoint = endpoint;
-            this.resultsPerPage = resultsPerPage || 0;
-            this.currentOffset = 0;
-        },
-        
-        next: function(callback) {
-            callback = callback || function() {};
-            var iterator = this;
-            var params = {
-                count: this.resultsPerPage,
-                offset: this.currentOffset
-            };
-            
-            return this.endpoint(params, function(err, results) {
-                if (err) {
-                    callback(err);
-                }
-                else {                    
-                    var numResults = (results.rows ? results.rows.length : 0);
-                    iterator.currentOffset += numResults;
-                    
-                    callback(null, numResults > 0, results);
-                }
-            });
-        },
-        
-        reset: function() {
-            this.currentOffset = 0;
-        }
-    });
-})();
-});
-
-require.define("/contrib/eventemitter.js", function (require, module, exports, __dirname, __filename) {
-/**
- * EventEmitter v3.1.4
- * https://github.com/Wolfy87/EventEmitter
- * 
- * Licensed under the MIT license: http://www.opensource.org/licenses/mit-license.php
- * Oliver Caldwell (olivercaldwell.co.uk)
- */(function(a){function b(){this._events={},this._maxListeners=10}function c(a,b,c,d,e){this.type=a,this.listener=b,this.scope=c,this.once=d,this.instance=e}"use strict",c.prototype.fire=function(a){this.listener.apply(this.scope||this.instance,a);if(this.once)return this.instance.removeListener(this.type,this.listener,this.scope),!1},b.prototype.eachListener=function(a,b){var c=null,d=null,e=null;if(this._events.hasOwnProperty(a)){d=this._events[a];for(c=0;c<d.length;c+=1){e=b.call(this,d[c],c);if(e===!1)c-=1;else if(e===!0)break}}return this},b.prototype.addListener=function(a,b,d,e){return this._events.hasOwnProperty(a)||(this._events[a]=[]),this._events[a].push(new c(a,b,d,e,this)),this.emit("newListener",a,b,d,e),this._maxListeners&&!this._events[a].warned&&this._events[a].length>this._maxListeners&&(typeof console!="undefined"&&console.warn("Possible EventEmitter memory leak detected. "+this._events[a].length+" listeners added. Use emitter.setMaxListeners() to increase limit."),this._events[a].warned=!0),this},b.prototype.on=b.prototype.addListener,b.prototype.once=function(a,b,c){return this.addListener(a,b,c,!0)},b.prototype.removeListener=function(a,b,c){return this.eachListener(a,function(d,e){d.listener===b&&(!c||d.scope===c)&&this._events[a].splice(e,1)}),this._events[a]&&this._events[a].length===0&&delete this._events[a],this},b.prototype.off=b.prototype.removeListener,b.prototype.removeAllListeners=function(a){return a&&this._events.hasOwnProperty(a)?delete this._events[a]:a||(this._events={}),this},b.prototype.listeners=function(a){if(this._events.hasOwnProperty(a)){var b=[];return this.eachListener(a,function(a){b.push(a.listener)}),b}return[]},b.prototype.emit=function(a){var b=[],c=null;for(c=1;c<arguments.length;c+=1)b.push(arguments[c]);return this.eachListener(a,function(a){return a.fire(b)}),this},b.prototype.setMaxListeners=function(a){return this._maxListeners=a,this},typeof define=="function"&&define.amd?define(function(){return b}):a.EventEmitter=b})(this);
-});
-
-require.define("/lib/storm.js", function (require, module, exports, __dirname, __filename) {
-/*!*/
-// Copyright 2012 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-(function() {
-    "use strict";
-    
-    var Service         = require('./service');
-    var Http            = require('./http');
-    var Paths           = require('./paths').Paths;
-    var utils           = require('./utils');
-    var base64          = require('../contrib/base64');
-
-    var root = exports || this;
-    var StormService = null;
-    
-    /**
-     * Provides a root access point to the Splunk Storm REST API.
-     *
-     * @class splunkjs.StormService
-     * @extends splunkjs.Service
-     */
-    module.exports = root = StormService = Service.extend({
-        /**
-         * Constructor for `splunkjs.StormService`.
-         *
-         * @constructor
-         * @param {splunkjs.Http} http An instance of a `splunkjs.Http` class.
-         * @param {Object} params A dictionary of parameters: 
-         *      * `token`: The API token for Storm.
-         * @return {splunkjs.StormService} A new `splunkjs.StormService` instance.
-         *
-         * @method splunkjs.StormService
-         */
-        init: function(http, params) {
-            if (!(http instanceof Http) && !params) {
-                // Move over the params
-                params = http;
-                http = null;
-            }
-            
-            params = params || {};
-            
-            var username = params.token || params.username || null;
-            var password = "x";
-            
-            // Set up the parameters
-            params.paths         = Paths.storm;
-            params.scheme        = "https";
-            params.host          = "api.splunkstorm.com";
-            params.port          = 443;
-            params.sessionKey    = base64.encode(username + ":x");
-            params.authorization = "Basic";
-            
-            // Initialize
-            this._super.call(this, http, params);
-            
-            // Override computed parameters
-            this.prefix = this.scheme + "://" + this.host + ":" + this.port + "/1";
-        },
-        
-        /**
-         * Logs an event to Splunk Storm. 
-         *
-         * @example
-         *
-         *     storm.log(
-         *         "MY AWESOME LOG MESSAGE", 
-         *         {project: "XYZ123", sourcetype: "GO"},
-         *         function(err, response) {
-         *             console.log("DATA IS IN STORM!");         
-         *         }
-         *     );
-         *
-         * @param {String|Object} event The text for this event or an object that will be converted to JSON.
-         * @param {Object} params A dictionary of parameters for indexing: 
-         *      * `project`: The project to send events from this input to (use your project token).
-         *      * `host`: The value to populate in the host field for events from this data input. 
-         *      * `source`: The source value to fill in the metadata for this input's events.
-         *      * `sourcetype`: The sourcetype to apply to events from this input.
-         *      * `TZ`: The timezone to apply to events.
-         * @param {Function} callback A function to call when the event is submitted: `(err, result)`.
-         *
-         * @endpoint inputs/http
-         * @method splunkjs.StormService
-         */
-        log: function(event, params, callback) {
-            if (!callback && utils.isFunction(params)) {
-                callback = params;
-                params = {};
-            }
-            
-            callback = callback || function() {};
-            params = params || {};
-            
-            if (!params.project && !params.index) {
-                throw new Error("Cannot submit events to Storm without specifying a project");
-            }
-            
-            if (params.project) {
-                params.index = params.project;
-                delete params["project"];
-            }
-            
-            if (utils.isObject(event)) {
-                event = JSON.stringify(event);
-            }
-            
-            return this._super(event, params, callback);
-        }
-    });  
-})();
-});
-
-require.define("/contrib/base64.js", function (require, module, exports, __dirname, __filename) {
-/*
-Copyright (c) 2008 Fred Palmer fred.palmer_at_gmail.com
-
-Permission is hereby granted, free of charge, to any person
-obtaining a copy of this software and associated documentation
-files (the "Software"), to deal in the Software without
-restriction, including without limitation the rights to use,
-copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the
-Software is furnished to do so, subject to the following
-conditions:
-
-The above copyright notice and this permission notice shall be
-included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-OTHER DEALINGS IN THE SOFTWARE.
-*/
-
-(function() {
-    function StringBuffer()
-    { 
-        this.buffer = []; 
-    } 
-    
-    StringBuffer.prototype.append = function append(string)
-    { 
-        this.buffer.push(string); 
-        return this; 
-    }; 
-    
-    StringBuffer.prototype.toString = function toString()
-    { 
-        return this.buffer.join(""); 
-    }; 
-    
-    var Base64 = module.exports = 
-    {
-        codex : "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
-    
-        encode : function (input)
-        {
-            var output = new StringBuffer();
-    
-            var enumerator = new Utf8EncodeEnumerator(input);
-            while (enumerator.moveNext())
-            {
-                var chr1 = enumerator.current;
-    
-                enumerator.moveNext();
-                var chr2 = enumerator.current;
-    
-                enumerator.moveNext();
-                var chr3 = enumerator.current;
-    
-                var enc1 = chr1 >> 2;
-                var enc2 = ((chr1 & 3) << 4) | (chr2 >> 4);
-                var enc3 = ((chr2 & 15) << 2) | (chr3 >> 6);
-                var enc4 = chr3 & 63;
-    
-                if (isNaN(chr2))
-                {
-                    enc3 = enc4 = 64;
-                }
-                else if (isNaN(chr3))
-                {
-                    enc4 = 64;
-                }
-    
-                output.append(this.codex.charAt(enc1) + this.codex.charAt(enc2) + this.codex.charAt(enc3) + this.codex.charAt(enc4));
-            }
-    
-            return output.toString();
-        },
-    
-        decode : function (input)
-        {
-            var output = new StringBuffer();
-    
-            var enumerator = new Base64DecodeEnumerator(input);
-            while (enumerator.moveNext())
-            {
-                var charCode = enumerator.current;
-    
-                if (charCode < 128)
-                    output.append(String.fromCharCode(charCode));
-                else if ((charCode > 191) && (charCode < 224))
-                {
-                    enumerator.moveNext();
-                    var charCode2 = enumerator.current;
-    
-                    output.append(String.fromCharCode(((charCode & 31) << 6) | (charCode2 & 63)));
-                }
-                else
-                {
-                    enumerator.moveNext();
-                    var charCode2 = enumerator.current;
-    
-                    enumerator.moveNext();
-                    var charCode3 = enumerator.current;
-    
-                    output.append(String.fromCharCode(((charCode & 15) << 12) | ((charCode2 & 63) << 6) | (charCode3 & 63)));
-                }
-            }
-    
-            return output.toString();
-        }
-    }
-    
-    
-    function Utf8EncodeEnumerator(input)
-    {
-        this._input = input;
-        this._index = -1;
-        this._buffer = [];
-    }
-    
-    Utf8EncodeEnumerator.prototype =
-    {
-        current: Number.NaN,
-    
-        moveNext: function()
-        {
-            if (this._buffer.length > 0)
-            {
-                this.current = this._buffer.shift();
-                return true;
-            }
-            else if (this._index >= (this._input.length - 1))
-            {
-                this.current = Number.NaN;
-                return false;
-            }
-            else
-            {
-                var charCode = this._input.charCodeAt(++this._index);
-    
-                // "\r\n" -> "\n"
-                //
-                if ((charCode == 13) && (this._input.charCodeAt(this._index + 1) == 10))
-                {
-                    charCode = 10;
-                    this._index += 2;
-                }
-    
-                if (charCode < 128)
-                {
-                    this.current = charCode;
-                }
-                else if ((charCode > 127) && (charCode < 2048))
-                {
-                    this.current = (charCode >> 6) | 192;
-                    this._buffer.push((charCode & 63) | 128);
-                }
-                else
-                {
-                    this.current = (charCode >> 12) | 224;
-                    this._buffer.push(((charCode >> 6) & 63) | 128);
-                    this._buffer.push((charCode & 63) | 128);
-                }
-    
-                return true;
-            }
-        }
-    }
-    
-    function Base64DecodeEnumerator(input)
-    {
-        this._input = input;
-        this._index = -1;
-        this._buffer = [];
-    }
-    
-    Base64DecodeEnumerator.prototype =
-    {
-        current: 64,
-    
-        moveNext: function()
-        {
-            if (this._buffer.length > 0)
-            {
-                this.current = this._buffer.shift();
-                return true;
-            }
-            else if (this._index >= (this._input.length - 1))
-            {
-                this.current = 64;
-                return false;
-            }
-            else
-            {
-                var enc1 = Base64.codex.indexOf(this._input.charAt(++this._index));
-                var enc2 = Base64.codex.indexOf(this._input.charAt(++this._index));
-                var enc3 = Base64.codex.indexOf(this._input.charAt(++this._index));
-                var enc4 = Base64.codex.indexOf(this._input.charAt(++this._index));
-    
-                var chr1 = (enc1 << 2) | (enc2 >> 4);
-                var chr2 = ((enc2 & 15) << 4) | (enc3 >> 2);
-                var chr3 = ((enc3 & 3) << 6) | enc4;
-    
-                this.current = chr1;
-    
-                if (enc3 != 64)
-                    this._buffer.push(chr2);
-    
-                if (enc4 != 64)
-                    this._buffer.push(chr3);
-    
-                return true;
-            }
-        }
     };
 })();
 });
@@ -7360,11 +6888,12 @@ require.define("/tests/test_context.js", function (require, module, exports, __d
 
 exports.setup = function(svc) {
     var splunkjs    = require('../index');
+    var tutils      = require('./utils');
 
     splunkjs.Logger.setLevel("ALL");
     var isBrowser = typeof window !== "undefined";
     
-    return {
+    var suite = {
         setUp: function(done) {
             this.service = svc;
             done();
@@ -8003,14 +7532,15 @@ exports.setup = function(svc) {
         },
 
         "fullpath gets its owner/app from the right places": function(test) {
-            var ctx = new splunkjs.Context();
+            var http = tutils.DummyHttp;
+            var ctx = new splunkjs.Context(http, { /*nothing*/ });
             
             // Absolute paths are unchanged
             test.strictEqual(ctx.fullpath("/a/b/c"), "/a/b/c");
             // Fall through to /services if there is no app
             test.strictEqual(ctx.fullpath("meep"), "/services/meep");
             // Are username and app set properly?
-            var ctx2 = new splunkjs.Context({owner: "alpha", app: "beta"});
+            var ctx2 = new splunkjs.Context(http, {owner: "alpha", app: "beta"});
             test.strictEqual(ctx2.fullpath("meep"), "/servicesNS/alpha/beta/meep");
             test.strictEqual(ctx2.fullpath("meep", {owner: "boris"}), "/servicesNS/boris/beta/meep");
             test.strictEqual(ctx2.fullpath("meep", {app: "factory"}), "/servicesNS/alpha/factory/meep");
@@ -8020,8 +7550,47 @@ exports.setup = function(svc) {
             test.strictEqual(ctx2.fullpath("meep", {sharing: "global"}), "/servicesNS/nobody/beta/meep");
             test.strictEqual(ctx2.fullpath("meep", {sharing: "system"}), "/servicesNS/nobody/system/meep");
             test.done();
+        },
+        
+        "version check": function(test) {
+            var http = tutils.DummyHttp;
+            var ctx;
+            
+            ctx = new splunkjs.Context(http, { "version": "4.0" });
+            test.ok(ctx.version === "4.0");
+            
+            ctx = new splunkjs.Context(http, { "version": "4.0" });
+            test.ok(ctx.versionCompare("5.0") === -1);
+            ctx = new splunkjs.Context(http, { "version": "4" });
+            test.ok(ctx.versionCompare("5.0") === -1);
+            ctx = new splunkjs.Context(http, { "version": "4.0" });
+            test.ok(ctx.versionCompare("5") === -1);
+            ctx = new splunkjs.Context(http, { "version": "4.1" });
+            test.ok(ctx.versionCompare("4.9") === -1);
+            
+            ctx = new splunkjs.Context(http, { "version": "4.0" });
+            test.ok(ctx.versionCompare("4.0") === 0);
+            ctx = new splunkjs.Context(http, { "version": "4" });
+            test.ok(ctx.versionCompare("4.0") === 0);
+            ctx = new splunkjs.Context(http, { "version": "4.0" });
+            test.ok(ctx.versionCompare("4") === 0);
+            
+            ctx = new splunkjs.Context(http, { "version": "5.0" });
+            test.ok(ctx.versionCompare("4.0") === 1);
+            ctx = new splunkjs.Context(http, { "version": "5.0" });
+            test.ok(ctx.versionCompare("4") === 1);
+            ctx = new splunkjs.Context(http, { "version": "5" });
+            test.ok(ctx.versionCompare("4.0") === 1);
+            ctx = new splunkjs.Context(http, { "version": "4.9" });
+            test.ok(ctx.versionCompare("4.1") === 1);
+            
+            ctx = new splunkjs.Context(http, { /*nothing*/ });
+            test.ok(ctx.versionCompare("4.3") === 0);
+            
+            test.done();
         }
     };
+    return suite;
 };
 
 if (module === require.main) {
@@ -8056,6 +7625,55 @@ if (module === require.main) {
     });
 }
 
+});
+
+require.define("/tests/utils.js", function (require, module, exports, __dirname, __filename) {
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+(function() {
+    "use strict";
+    var Async = require('../lib/async');
+    
+    var root = exports || this;
+
+    root.pollUntil = function(obj, condition, iterations, callback) {
+        callback = callback || function() {};
+        
+        var i = 0;
+        Async.whilst(
+            function() { return !condition(obj) && (i++ < iterations); },
+            function(done) {
+                Async.sleep(500, function() {
+                    obj.fetch(done); 
+                });
+            },
+            function(err) {
+                callback(err, obj);
+            }
+        );
+    };
+    
+    // Minimal Http implementation that is designed to pass the tests
+    // done by Context.init(), but nothing more.
+    root.DummyHttp = {
+        // Required by Context.init()
+        _setSplunkVersion: function(version) {
+            // nothing
+        }
+    };
+})();
 });
 
 require.define("/examples/node/cmdline.js", function (require, module, exports, __dirname, __filename) {
@@ -8202,7 +7820,7 @@ exports.setup = function(svc, loggedOutSvc) {
         return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
     };
 
-    return {
+    var suite = {
         "Namespace Tests": {
             setUp: function(finished) {
                 this.service = svc;
@@ -8642,6 +8260,58 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
+            
+            "Callback#job results iterator": function(test) {
+                var that = this;
+                
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().search('search index=_internal | head 10', {}, done);
+                        },
+                        function(job, done) {
+                            tutils.pollUntil(
+                                job,
+                                function(j) {
+                                    return job.properties()["isDone"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            var iterator = job.iterator("results", { pagesize: 4 });
+                            var hasMore = true;
+                            var numElements = 0;
+                            var pageSizes = [];
+                            Async.whilst(
+                                function() { return hasMore; },
+                                function(nextIteration) {
+                                    iterator.next(function(err, results, _hasMore) {
+                                        if (err) {
+                                            nextIteration(err);
+                                            return;
+                                        }
+                                        
+                                        hasMore = _hasMore;
+                                        if (hasMore) {
+                                            pageSizes.push(results.rows.length);
+                                        }
+                                        nextIteration();
+                                    });
+                                },
+                                function(err) {
+                                    test.deepEqual(pageSizes, [4,4,2]);
+                                    done(err);
+                                }
+                            );
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
 
             "Callback#Enable + disable preview": function(test) {
                 var that = this;
@@ -9071,6 +8741,158 @@ exports.setup = function(svc, loggedOutSvc) {
                         test.done();
                     }
                 );
+            },
+            
+            "Callback#Wait until job done": function(test) {
+                this.service.search('search index=_internal | head 1000', {}, function(err, job) {
+                    test.ok(!err);
+                    
+                    var numReadyEvents = 0;
+                    var numProgressEvents = 0;
+                    job.track({ period: 200 }, {
+                        ready: function(job) {
+                            test.ok(job);
+                            
+                            numReadyEvents++;
+                        },
+                        progress: function(job) {
+                            test.ok(job);
+                            
+                            numProgressEvents++;
+                        },
+                        done: function(job) {
+                            test.ok(job);
+                            
+                            test.ok(numReadyEvents === 1);      // all done jobs must have become ready
+                            test.ok(numProgressEvents >= 1);    // a job that becomes ready has progress
+                            test.done();
+                        },
+                        failed: function(job) {
+                            test.ok(job);
+                            
+                            test.ok(false, "Job failed unexpectedly.");
+                            test.done();
+                        },
+                        error: function(err) {
+                            test.ok(err);
+                            
+                            test.ok(false, "Error while tracking job.");
+                            test.done();
+                        }
+                    });
+                });
+            },
+            
+            "Callback#Wait until job failed": function(test) {
+                this.service.search('search index=_internal | head bogusarg', {}, function(err, job) {
+                    if (err) {
+                        test.ok(!err);
+                        test.done();
+                        return;
+                    }
+                    
+                    var numReadyEvents = 0;
+                    var numProgressEvents = 0;
+                    job.track({ period: 200 }, {
+                        ready: function(job) {
+                            test.ok(job);
+                            
+                            numReadyEvents++;
+                        },
+                        progress: function(job) {
+                            test.ok(job);
+                            
+                            numProgressEvents++;
+                        },
+                        done: function(job) {
+                            test.ok(job);
+                            
+                            test.ok(false, "Job became done unexpectedly.");
+                            test.done();
+                        },
+                        failed: function(job) {
+                            test.ok(job);
+                            
+                            test.ok(numReadyEvents === 1);      // even failed jobs become ready
+                            test.ok(numProgressEvents >= 1);    // a job that becomes ready has progress
+                            test.done();
+                        },
+                        error: function(err) {
+                            test.ok(err);
+                            
+                            test.ok(false, "Error while tracking job.");
+                            test.done();
+                        }
+                    });
+                });
+            },
+            
+            "Callback#track() with default params and one function": function(test) {
+                this.service.search('search index=_internal | head 1', {}, function(err, job) {
+                    if (err) {
+                        test.ok(!err);
+                        test.done();
+                        return;
+                    }
+                    
+                    job.track({}, function(job) {
+                        test.ok(job);
+                        test.done();
+                    });
+                });
+            },
+            
+            "Callback#track() should stop polling if only the ready callback is specified": function(test) {
+                this.service.search('search index=_internal | head 1', {}, function(err, job) {
+                    if (err) {
+                        test.ok(!err);
+                        test.done();
+                        return;
+                    }
+                    
+                    job.track({}, {
+                        ready: function(job) {
+                            test.ok(job);
+                        },
+                        
+                        _stoppedAfterReady: function(job) {
+                            test.done();
+                        }
+                    });
+                });
+            },
+            
+            "Callback#track() a job that is not immediately ready": function(test) {
+                /*jshint loopfunc:true */
+                var numJobs = 20;
+                var numJobsLeft = numJobs;
+                var gotJobNotImmediatelyReady = false;
+                for (var i = 0; i < numJobs; i++) {
+                    this.service.search('search index=_internal | head 10000', {}, function(err, job) {
+                        if (err) {
+                            test.ok(!err);
+                            test.done();
+                            return;
+                        }
+                        
+                        job.track({}, {
+                            _preready: function(job) {
+                                gotJobNotImmediatelyReady = true;
+                            },
+                            
+                            ready: function(job) {
+                                numJobsLeft--;
+                                
+                                if (numJobsLeft === 0) {
+                                    if (!gotJobNotImmediatelyReady) {
+                                        console.log("WARNING: Couldn't test code path in track() where job wasn't ready immediately.");
+                                    }
+                                    test.done();
+                                }
+                            }
+                        });
+                    });
+                }
             }
         },
         
@@ -9832,10 +9654,64 @@ exports.setup = function(svc, loggedOutSvc) {
                 });
             },
 
-            "Callback#remove index fails": function(test) {
+            "Callback#remove index fails on Splunk 4.x": function(test) {
+                var original_version = this.service.version;
+                this.service.version = "4.0";
+                
                 var index = this.service.indexes().item(this.indexName);
-                test.throws(function() { index.remove();});
+                test.throws(function() { index.remove(function(err) {}); });
+                
+                this.service.version = original_version;
                 test.done();
+            },
+            
+            "Callback#remove index": function(test) {
+                var indexes = this.service.indexes();
+                
+                // Must generate a private index because an index cannot
+                // be recreated with the same name as a deleted index
+                // for a certain period of time after the deletion.
+                var salt = Math.floor(Math.random() * 65536);
+                var myIndexName = this.indexName + '-' + salt;
+                
+                if (this.service.versionCompare("5.0") < 0) {
+                    console.log("Must be running Splunk 5.0+ for this test to work.");
+                    test.done();
+                    return;
+                }
+                
+                Async.chain([
+                        function(callback) {
+                            indexes.create(myIndexName, {}, callback);
+                        },
+                        function(index, callback) {
+                            index.remove(callback);
+                        },
+                        function(callback) {
+                            var numTriesLeft = 50;
+                            var delayPerTry = 100;  // ms
+                            
+                            Async.whilst(
+                                 function() { return indexes.item(myIndexName) && ((numTriesLeft--) > 0); },
+                                 function(iterDone) {
+                                      Async.sleep(delayPerTry, function() { indexes.fetch(iterDone); });
+                                 },
+                                 function(err) {
+                                      if (err) {
+                                           callback(err);
+                                      }
+                                      else {
+                                           callback(numTriesLeft <= 0 ? "Timed out" : null);
+                                      }
+                                 }
+                            );
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
             },
                          
             "Callback#list indexes": function(test) {
@@ -9892,9 +9768,6 @@ exports.setup = function(svc, loggedOutSvc) {
                             var properties = index.properties();
                             
                             test.strictEqual(originalSyncMeta, properties.syncMeta);
-                            callback();
-                        },
-                        function(callback) {
                             callback();
                         }
                     ],
@@ -10636,6 +10509,7 @@ exports.setup = function(svc, loggedOutSvc) {
             }
         }
     };
+    return suite;
 };
 
 if (module === require.main) {
@@ -10679,379 +10553,6 @@ if (module === require.main) {
     });
 }
 
-});
-
-require.define("/tests/utils.js", function (require, module, exports, __dirname, __filename) {
-// Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-(function() {
-    "use strict";
-    var Async = require('../lib/async');
-    
-    var root = exports || this;
-
-    root.bind = function(me, fn) { 
-        return function() { 
-            return fn.apply(me, arguments); 
-        }; 
-    };
-
-    root.pollUntil = function(obj, condition, iterations, callback) {
-        callback = callback || function() {};
-        
-        var i = 0;
-        var keepGoing = true;
-        Async.whilst(
-            function() { return !condition(obj) && (i++ < iterations); },
-            function(done) {
-                Async.sleep(500, function() {
-                    obj.fetch(done); 
-                });
-            },
-            function(err) {
-                callback(err, obj);
-            }
-        );
-    };
-})();
-});
-
-require.define("/tests/test_storm.js", function (require, module, exports, __dirname, __filename) {
-
-// Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-exports.setup = function(http) {
-    var splunkjs    = require('../index');
-    var utils       = splunkjs.Utils;
-    var Async       = splunkjs.Async;
-    var tutils      = require('./utils');
-
-    splunkjs.Logger.setLevel("ALL");
-    var idCounter = 0;
-    var getNextId = function() {
-        return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
-    };
-    
-    var token = "p-n8SwuWEqPlyOXdDU4PjxavFdAn1CnJea9LirgTvzmIhMEBys6w7UJUCtxp_7g7Q9XopR5dW0w=";
-    var project = "0e8a2df0834211e1a6fe123139335741";
-    var svc = null;
-    
-    if (http) {
-        svc = new splunkjs.StormService(http, {token: token});
-    }
-    else {
-        svc = new splunkjs.StormService({token: token});
-    }
-
-    return {
-        "Storm Input Tests": {
-            setUp: function(finished) {
-                this.service = svc;
-                finished();
-            },
-            
-            "Callback#Submit event no index error 1": function(test) {
-                var didFail = false;
-                try {
-                    this.service.log("SHOULDNT WORK", {sourcetype: "sdk-test"}, function(err) {
-                        test.ok(false);
-                    });
-                }
-                catch(ex) {
-                    didFail = true;
-                }
-                
-                test.ok(didFail);
-                test.done();
-            },
-            
-            "Callback#Submit event no index error 2": function(test) {
-                var didFail = false;
-                try {
-                    this.service.log("SHOULDNT WORK", function(err) {
-                        test.ok(false);
-                    });
-                } 
-                catch(ex) {
-                    didFail = true;
-                }
-                
-                test.ok(didFail);
-                test.done();
-            },
-            
-            "Callback#Submit event text": function(test) {
-                var didFail = false;
-                var message = "GO GO SDK -- " + getNextId();
-                this.service.log(message, {sourcetype: "sdk-test", project: project}, function(err, data) {
-                    test.ok(!err);
-                    test.strictEqual(data.length, message.length);
-                    test.done();
-                });
-            },
-            
-            "Callback#Submit event json": function(test) {
-                var didFail = false;
-                var message = { id: getNextId() };
-                this.service.log(message, {sourcetype: "json", project: project}, function(err, data) {
-                    test.ok(!err);
-                    test.strictEqual(data.length, JSON.stringify(message).length);
-                    test.done();
-                });
-            }
-        }
-    };
-};
-
-if (module === require.main) {
-    var suite       = exports.setup();
-    var test        = require('../contrib/nodeunit/test_reporter');
-    
-    test.run([{"Tests": suite}]);
-}
-});
-
-require.define("/tests/test_searcher.js", function (require, module, exports, __dirname, __filename) {
-
-// Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-exports.setup = function(svc) {
-    var splunkjs    = require('../index');
-    var utils       = splunkjs.Utils;
-    var Async       = splunkjs.Async;
-    var JobManager  = splunkjs.JobManager;
-    
-    splunkjs.Logger.setLevel("ALL");
-    var idCounter = 0;
-    var getNextId = function() {
-        return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
-    };
-
-    return {
-        setUp: function(done) {
-            this.service = svc; 
-            done();
-        },
-
-        "Callback#Searcher + Results": function(test) {
-            var sid = getNextId();
-            var that = this;
-            Async.chain([
-                function(callback) {
-                    that.service.jobs().create('search index=_internal | head 10', {id: sid}, callback);
-                },
-                function(job, callback) {
-                    var searcher = new JobManager(test.service, job);
-                    searcher.on("done", callback);
-                },
-                function(searcher, callback) {
-                    var iterator = searcher.resultsIterator(2);
-                    
-                    var totalResultCount = 0;
-                    var iterationCount = 0;
-                    var hasMore = true;
-                    Async.whilst(
-                        function() { return hasMore; },
-                        function(done) {
-                            iterator.next(function(err, more, results) {
-                                hasMore = more;
-                                
-                                if (more) {
-                                    iterationCount++;
-                                    totalResultCount += results.rows.length;
-                                }
-                                
-                                done();
-                            });
-                        },
-                        function(err) {
-                            test.ok(!err);
-                            test.ok(iterationCount > 0);
-                            test.strictEqual(totalResultCount, 10);
-                            
-                            callback(null, searcher);
-                        }
-                    );
-                },
-                function(searcher, callback) {
-                    searcher.cancel(callback);
-                }
-            ],
-            function(err) {
-                test.ok(!err);
-                test.done();  
-            });
-        },
-
-        "Callback#Searcher + Events": function(test) {
-            var sid = getNextId();
-            var that = this;
-            Async.chain([
-                function(callback) {
-                    that.service.jobs().create('search index=_internal | head 10', {id: sid}, callback);
-                },
-                function(job, callback) {
-                    var searcher = new JobManager(test.service, job);
-                    searcher.on("done", callback);
-                },
-                function(searcher, callback) {
-                    var iterator = searcher.eventsIterator(2);
-                    
-                    var totalResultCount = 0;
-                    var iterationCount = 0;
-                    var hasMore = true;
-                    Async.whilst(
-                        function() { return hasMore; },
-                        function(done) {
-                            iterator.next(function(err, more, results) {
-                                hasMore = more;
-                                
-                                if (more) {
-                                    iterationCount++;
-                                    totalResultCount += results.rows.length;
-                                }
-                                
-                                done();
-                            });
-                        },
-                        function(err) {
-                            test.ok(!err);
-                            test.ok(iterationCount > 0);
-                            test.strictEqual(totalResultCount, 10);
-                            
-                            callback(null, searcher);
-                        }
-                    );
-                },
-                function(searcher, callback) {
-                    searcher.cancel(callback);
-                }
-            ],
-            function(err) {
-                test.ok(!err);
-                test.done();  
-            });
-        },
-
-        "Callback#Searcher + Preview": function(test) {
-            var sid = getNextId();
-            var that = this;
-            Async.chain([
-                function(callback) {
-                    that.service.jobs().create('search index=_internal | head 10', {id: sid}, callback);
-                },
-                function(job, callback) {
-                    var searcher = new JobManager(test.service, job);
-                    searcher.on("done", callback);
-                },
-                function(searcher, callback) {
-                    var iterator = searcher.previewIterator(2);
-                    
-                    var totalResultCount = 0;
-                    var iterationCount = 0;
-                    var hasMore = true;
-                    Async.whilst(
-                        function() { return hasMore; },
-                        function(done) {
-                            iterator.next(function(err, more, results) {
-                                hasMore = more;
-                                
-                                if (more) {
-                                    iterationCount++;
-                                    totalResultCount += results.rows.length;
-                                }
-                                
-                                done();
-                            });
-                        },
-                        function(err) {
-                            test.ok(!err);
-                            test.ok(iterationCount > 0);
-                            test.strictEqual(totalResultCount, 10);
-                            
-                            callback(null, searcher);
-                        }
-                    );
-                },
-                function(searcher, callback) {
-                    searcher.cancel(callback);
-                }
-            ],
-            function(err) {
-                test.ok(!err);
-                test.done();  
-            });
-        }
-    };
-};
-
-if (module === require.main) {
-    var splunkjs    = require('../index');
-    var options     = require('../examples/node/cmdline');
-    var test        = require('../contrib/nodeunit/test_reporter');
-    
-    var parser = options.create();
-    var cmdline = parser.parse(process.argv);
-        
-    // If there is no command line, we should return
-    if (!cmdline) {
-        throw new Error("Error in parsing command line parameters");
-    }
-    
-    var svc = new splunkjs.Service({ 
-        scheme: cmdline.opts.scheme,
-        host: cmdline.opts.host,
-        port: cmdline.opts.port,
-        username: cmdline.opts.username,
-        password: cmdline.opts.password,
-        version: cmdline.opts.version
-    });
-    
-    var suite = exports.setup(svc);
-    
-    svc.login(function(err, success) {
-        if (err || !success) {
-            throw new Error("Login failed - not running tests", err || "");
-        }
-        test.run([{"Tests": suite}]);
-    });
-}
 });
 
 require.define("/tests/test_examples.js", function (require, module, exports, __dirname, __filename) {
@@ -11219,7 +10720,7 @@ exports.setup = function(svc, opts) {
                 });
             },
             
-            "List job properties": function(test) {          
+            "List job properties": function(test) {
                 var create = {
                     search: "search index=_internal | head 1",
                     id: getNextId()
@@ -11238,7 +10739,7 @@ exports.setup = function(svc, opts) {
                 });
             },
             
-            "List job events": function(test) {      
+            "List job events": function(test) {
                 var create = {
                     search: "search index=_internal | head 1",
                     id: getNextId()
@@ -11248,6 +10749,63 @@ exports.setup = function(svc, opts) {
                 context.run("create", [], create, function(err) {
                     test.ok(!err);
                     context.run("events", [create.id], null, function(err) {
+                        test.ok(!err);
+                        context.run("cancel", [create.id], null, function(err) {
+                            test.ok(!err);
+                            test.done();
+                        });
+                    });
+                });
+            },
+            
+            "List job preview": function(test) {
+                var create = {
+                    search: "search index=_internal | head 1",
+                    id: getNextId()
+                };
+                  
+                var context = this;
+                context.run("create", [], create, function(err) {
+                    test.ok(!err);
+                    context.run("preview", [create.id], null, function(err) {
+                        test.ok(!err);
+                        context.run("cancel", [create.id], null, function(err) {
+                            test.ok(!err);
+                            test.done();
+                        });
+                    });
+                });
+            },
+            
+            "List job results": function(test) {
+                var create = {
+                    search: "search index=_internal | head 1",
+                    id: getNextId()
+                };
+                  
+                var context = this;
+                context.run("create", [], create, function(err) {
+                    test.ok(!err);
+                    context.run("results", [create.id], null, function(err) {
+                        test.ok(!err);
+                        context.run("cancel", [create.id], null, function(err) {
+                            test.ok(!err);
+                            test.done();
+                        });
+                    });
+                });
+            },
+            
+            "List job results, by column": function(test) {
+                var create = {
+                    search: "search index=_internal | head 1",
+                    id: getNextId()
+                };
+                  
+                var context = this;
+                context.run("create", [], create, function(err) {
+                    test.ok(!err);
+                    context.run("results", [create.id], {output_mode: "json_cols"}, function(err) {
                         test.ok(!err);
                         context.run("cancel", [create.id], null, function(err) {
                             test.ok(!err);
@@ -12466,7 +12024,7 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
                     }
                 }
                 
-                Async.parallelMap(jobs, fn, callback);
+                Async.parallelMap(jobsList, fn, callback);
             });
         },
 
@@ -12654,26 +12212,36 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
         results: function(sids, options, callback) {
             // For each of the passed in sids, get the relevant results
             this._foreach(sids, function(job, idx, done) {
-                job.results(options, function(err, data) {
-                    console.log("===== RESULTS @ " + job.sid + " ====="); 
-                    if (err) {
+                job.track({}, {
+                    'done': function(job) {
+                        job.results(options, function(err, data) {
+                            console.log("===== RESULTS @ " + job.sid + " ====="); 
+                            if (err) {
+                                done(err);
+                                return;
+                            }
+                            
+                            var output_mode = options.output_mode || "rows";
+                            if (output_mode === "json_rows") {
+                                printRows(data);
+                            }
+                            else if (output_mode === "json_cols") {
+                                console.log(data);
+                                printCols(data);
+                            }
+                            else {
+                                console.log(data);
+                            }
+        
+                            done(null, data);
+                        });
+                    },
+                    'failed': function(job) {
+                        done('failed');
+                    },
+                    'error': function(err) {
                         done(err);
-                        return;
                     }
-                    
-                    var output_mode = options.output_mode || "rows";
-                    if (output_mode === "json_rows") {
-                        printRows(data);
-                    }
-                    else if (output_mode === "json_cols") {
-                        console.log(data);
-                        printCols(data);
-                    }
-                    else {
-                        console.log(data);
-                    }
-
-                    done(null, data);
                 });
             }, callback);
         }
@@ -13472,17 +13040,6 @@ require.define("/examples/node/results.js", function (require, module, exports, 
     var Async           = splunkjs.Async;
     var options         = require('./cmdline');
     
-    var createService = function(options) {
-        return new splunkjs.Service({
-            scheme:     options.scheme,
-            host:       options.host,
-            port:       options.port,
-            username:   options.username,
-            password:   options.password,
-            version:    options.version
-        });
-    };
-    
     // Print the result rows
     var printRows = function(results) {        
         for(var i = 0; i < results.rows.length; i++) {
@@ -13601,8 +13158,6 @@ window.SplunkTest = {
     Http     : require('../../tests/test_http'),
     Context  : require('../../tests/test_context'),
     Service  : require('../../tests/test_service'),
-    Storm    : require('../../tests/test_storm'),
-    Searcher : require('../../tests/test_searcher'),
     Examples : require('../../tests/test_examples')
 };
 });

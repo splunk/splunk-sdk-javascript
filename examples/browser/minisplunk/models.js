@@ -22,20 +22,20 @@ var Events = Backbone.Collection.extend({
   resultsPerPage: 100,
   
   initialize: function() {
-    _.bindAll(this, "getResults", "setSearcher");
+    _.bindAll(this, "getResults", "setJob");
   
-    App.events.bind("search:done", this.setSearcher);
+    App.events.bind("search:done", this.setJob);
     
     this.pages = {};
   },
   
-  setSearcher: function(searcher) {
-    if (this.searcher) {
-      this.searcher.cancel();
+  setJob: function(job) {
+    if (this.job) {
+      this.job.cancel();
     }
     
     this.pages = {};
-    this.searcher = searcher;
+    this.job = job;
   },
   
   getResults: function(page, callback) {
@@ -50,7 +50,7 @@ var Events = Backbone.Collection.extend({
     var that = this;
     splunkjs.Async.chain([
       function(done) {
-        that.searcher.job.results({
+        that.job.results({
           count: that.resultsPerPage, 
           offset: (page * that.resultsPerPage),
           show_empty_fields: true
