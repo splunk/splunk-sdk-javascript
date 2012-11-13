@@ -18,7 +18,7 @@ You can get the SDK by [downloading it][zip] from GitHub, or by cloning it:
     git clone https://github.com/splunk/splunk-sdk-javascript.git
 
 ### Install the XML to JSON Splunk app
-The XML to JSON Splunk app (_xml2json_) converts XML output to JSON, and is required if:
+The XML to JSON Splunk app (<i>xml2json</i>) converts XML output to JSON, and is required if:
 
 * You are using Splunk 4.2.x or 4.3.x. 
 * You want to run the unit tests (with any Splunk version). 
@@ -182,7 +182,7 @@ install Node.js. You can read more about how to set up your environment
 on the [Splunk Developer Portal][requirements].
 
 
-All development activities are managed by a helper script called _sdkdo_. For a
+All development activities are managed by a helper script called *sdkdo*. For a
 list of possible commands and options, open a command prompt in the
 **splunk-sdk-javascript** directory and enter:
 
