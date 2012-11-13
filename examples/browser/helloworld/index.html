@@ -296,19 +296,18 @@
       <section id="apps">
        <div class="page-header">
           <h1>
-            App Listing <small>list installed applications</small>
+            Apps <small>List installed Splunk apps</small>
           </h1>
        </div>
        <div class="row">
           <div class="span5">
             <h2>Description</h2>
               <p>
-                This sample demonstrates working with the <code>splunkjs.Service.Applications</code> collection
-                and <code>splunkjs.Service.Application</code> entity. It will list all the apps, and for each
-                one print its name.
+                This example demonstrates working with the apps collection (<code>splunkjs.Service.Applications</code>)
+                and individual apps (<code>splunkjs.Service.Application</code>). This example displays the name of each app in the collection.</p>
 
-                The only difference between the two files is that the latter uses the built-in
-                <code>splunkjs.Async</code> module to make asynchronous control-flow easier.
+                <p>The only difference between the two code files, Regular and splunkjs.Async, is that the latter uses the built-in
+                <code>splunkjs.Async</code> module to simplify asynchronous control flow.
               </p>
             
           </div>
@@ -416,19 +415,19 @@ Async.chain([
       <section id="savedsearches">
        <div class="page-header">
           <h1>
-            Saved Searches <small>list saved searches and their queries</small>
+            Saved searches <small>List saved searches and their queries</small>
           </h1>
        </div>
        <div class="row">
           <div class="span5">
             <h2>Description</h2>
               <p>              
-                This sample demonstrates working with the <code>splunkjs.Service.SavedSearches</code> collection
-                and <code>splunkjs.Service.SavedSearch</code> entity. It will list all the saved searches, and 
-                for each one print its name and the search query associated with it.
+                This sample demonstrates working with the saved search collection (<code>splunkjs.Service.SavedSearches</code>)
+                and individual saved searches (<code>splunkjs.Service.SavedSearch</code>). This example displays the name and 
+                search query for each saved search in the collection.</p>
 
-                The only difference between the two files is that the latter uses the built-in
-                <code>splunkjs.Async</code> module to make asynchronous control-flow easier.
+                <p>The only difference between the two code files, Regular and splunkjs.Async, is that the latter uses the built-in
+                <code>splunkjs.Async</code> module to simplify asynchronous control flow.
               </p>
             
           </div>
@@ -633,19 +632,21 @@ service.login(function(err, success) {
       <section id="search">
        <div class="page-header">
           <h1>
-            Searching <small>perform normal, blocking and oneshot searches in Splunk</small>
+            Searching <small>Perform normal, blocking, and oneshot searches in Splunk</small>
           </h1>
        </div>
        <div class="row">
           <div class="span5">
             <h2>Description</h2>
               <p>                              
-                <p>This example demonstrates running searches on Splunk using the SDK. It will run the search, print out progress (if available), search statistics (if available), and finally, print out the search results (including some key-value fields).</p>
-                <p>This example goes over the possible search types:</p>
+                <p>This example demonstrates using the SDK to run searches in Splunk. This example runs the search, displays progress and search statistics (if available), and finally, displays the search results (including some key-value fields).</p>
+                <p>This example shows different types of searches:</p>
                 <ul>
-                <li><p>normal: execute a search with <code>exec_mode=normal</code>, wait until the job is done, and then print out job statistics and the search results.</p></li>
-                <li><p>blocking: execute a search with <code>exec_mode=blocking</code>, which will not return from the REST call until the job is done. Once it is done, it will print out job statistics and the search results.</p></li>
-                <li><p>oneshot: execute a search with <code>exec_mode=oneshot</code>, which will not return the REST call until the job is done, and then it will simply return the search results, rather than the search job ID. Once it is done, we print out the results.</p></li>
+                <li><p><b>normal</b>: Runs a search with <code>exec_mode=normal</code>, waits until the job is done, and then displays job statistics and search results.</p></li>
+                <li><p><b>blocking</b>: Runs a search with <code>exec_mode=blocking</code>, which does not return until the job is done. Once the job is done, this example displays
+                job statistics and search results.</p></li>
+                <li><p><b>oneshot</b>: Runs a search with <code>exec_mode=oneshot</code>, which does not return until the job is done, and then returns the search results 
+                (rather than the search ID). Once the job is done, this example displays the search results.</p></li>
                 </ul>
               </p>
           </div>
@@ -871,16 +872,16 @@ Async.chain([
       <section id="search-realtime">
        <div class="page-header">
           <h1>
-            Real-Time Searches <small>perform real time searches and retrieve results</small>
+            Real-time searches <small>Perform real-time searches and retrieve results</small>
           </h1>
        </div>
        <div class="row">
           <div class="span5">
             <h2>Description</h2>
               <p>              
-                <p>This example shows how to work with realtime searches. It will execute a realtime search that will collect statistics about all events from “now” to infinity (as noted by the use of <code>earliest_time=rt</code> and <code>latest_time=rt</code>).</p>
-                <p>Once the job is created, it will poll the results every second, and print them out.</p>
-                <p>Since a realtime search is never “done”, we only iterate for 5 times before we terminate the loop.</p>
+                <p>This example shows how to work with real-time searches. This example runs a real-time search that collects statistics about all events from “now” to infinity (using <code>earliest_time=rt</code> and <code>latest_time=rt</code>).</p>
+                <p>Once the job is created, this example polls the results every second and displays them.</p>
+                <p>Because a real-time search is never completed, this example just iterates five times before terminating the loop.</p>
               </p>
             
           </div>
