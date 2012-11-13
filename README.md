@@ -23,8 +23,8 @@ The XML to JSON Splunk app (_xml2json_) converts XML output to JSON, and is requ
 * You are using Splunk 4.2.x or 4.3.x. 
 * You want to run the unit tests (with any Splunk version). 
 
-To install the XML to JSON app, copy the xml2json app directory (**/splunk-sdk-javascript/xml2json**)
-to the Splunk apps directory (**$SPLUNK_HOME/etc/apps**), then restart Splunk.
+To install the XML to JSON app, copy the xml2json app directory (<b>/splunk-sdk-javascript/xml2json</b>)
+to the Splunk apps directory (<b>$SPLUNK_HOME/etc/apps</b>), then restart Splunk.
 
 ### Use the Splunk JavaScript SDK components on your web page
 
@@ -41,8 +41,8 @@ Or:
     <script type="text/javascript" src="/yourpath/splunk.min.js"></script>
 
 You can also include the UI components, such as the Timeline and Charting controls. 
-These UI component files (**splunk.ui.timeline** and **splunk.ui.charting**) 
-are also in the **/splunk-sdk-javascript/client** directory.
+These UI component files (<b>splunk.ui.timeline</b> and <b>splunk.ui.charting</b>) 
+are also in the <b>/splunk-sdk-javascript/client</b> directory.
 
 ### Install the Splunk JavaScript SDK for Node.js
 
@@ -355,12 +355,12 @@ If you would like to contribute to the SDK, go here for more information:
    can find help through the broader community at:
 
    <ul>
-   <li><a href="http://splunk-base.splunk.com/answers/">Splunk Answers</a> (use the 
-   **sdk**, **java**, **python**, and **javascript** tags to identify your questions)</li>
+   <li><a href='http://splunk-base.splunk.com/answers/'>Splunk Answers</a> (use the <b>sdk</b>, <b>java</b>, 
+   <b>python</b>, and <b>javascript</b> tags to identify your questions)</li>
    <li><a href="http://groups.google.com/group/splunkdev">Splunkdev Google Group</a></li>
    </ul>
 3. Splunk will NOT provide support for SDKs if the core library (the 
-   code in the **/lib** directory) has been modified. If you modify an SDK and 
+   code in the <b>/lib</b> directory) has been modified. If you modify an SDK and 
    want support, you can find help through the broader community and Splunk 
    answers (see above). We would also like to know why you modified the core 
    library&mdash;please send feedback to _devinfo@splunk.com_.
