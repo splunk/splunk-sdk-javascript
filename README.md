@@ -120,18 +120,21 @@ use the values from the **.splunkrc** file when you don't specify them.
 To use this convenience file, create a text file with the following format and save it 
 as **.splunkrc** in the current user's home directory:
     
-    # Host at which Splunk is reachable (OPTIONAL)
+    # Splunk host (default: localhost)
     host=localhost
-    # Port at which Splunk is reachable (OPTIONAL)
-    # Use the admin port, which is 8089 by default.
+    # Splunk port (default: the admin port, 8089)
     port=8089
     # Splunk username
     username=admin
     # Splunk password
     password=changeme
-    # Access scheme (OPTIONAL)
+    # Access scheme
     scheme=https
-    # Version of Splunk
+    # Application context
+    app=search
+    # Owner context
+    owner=admin
+    # Your version of Splunk (default: 5.0)
     version=5.0
 
 **Note**: The `version` key is required for Splunk 5.0 and later.
