@@ -36,5 +36,5 @@
         "url" : "http://dev.splunk.com"
     },
     "license" : "Apache 2.0",
-    "engine" : { "node" : ">=0.4.9" }
+    "engine" : { "node" : ">=0.6.14" }
 }
