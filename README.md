@@ -1,4 +1,4 @@
-# The Splunk JavaScript Software Development Kit 1.0
+# The Splunk JavaScript Software Development Kit 1.1
 
 The Splunk JavaScript Software Development Kit (SDK) contains library code and examples
 designed to enable developers to build applications using Splunk and JavaScript. This SDK

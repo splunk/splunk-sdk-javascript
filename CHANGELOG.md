@@ -1,5 +1,9 @@
 # Splunk JavaScript SDK Changelog
 
+## v1.1.0
+
+TODO
+
 ## v1.0.0
 
 No changes.
