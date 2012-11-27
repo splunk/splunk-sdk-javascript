@@ -1,5 +1,9 @@
 # Splunk JavaScript SDK Changelog
 
+## v1.0.0
+
+No changes.
+
 ## v0.8.0 - Beta
 
 No changes.
@@ -9,7 +13,7 @@ No changes.
 ### xml2json
 
 This version requires you to update the `xml2json` app. You can do this by
-copying the xml2json directory (/splunk-sdk-javascript/xml2json) to the 
+copying the xml2json directory (/splunk-sdk-javascript/xml2json) to the
 Splunk apps directory ($SPLUNK_HOME/etc/apps).
 
 ### Features
@@ -35,7 +39,7 @@ Several bugs in the charting component have been fixed.
 
 #### Change to `search/typeahead` endpoint
 
-In the next version of Splunk, with native JSON support, the output for the 
+In the next version of Splunk, with native JSON support, the output for the
 `search/typeahead` endpoint has changed. Instead of a top level array with completions,
 it now returns a top-level object:
 
@@ -52,7 +56,7 @@ some of which will break existing applications.
 
 #### Improved naming
 
-The root namespace of the SDK has switched from `Splunk` to `splunkjs`. 
+The root namespace of the SDK has switched from `Splunk` to `splunkjs`.
 Furthermore, `Client` has been renamed to `Service`. Before you had:
 
     new Splunk.Client.Service(...);
@@ -65,16 +69,16 @@ Now you have:
 
 #### Improvement to state management
 
-In previous versions, the SDK kept a notion of whether an entity or 
+In previous versions, the SDK kept a notion of whether an entity or
 collection was in a "valid" state. This notion has been taken out, and these
 resources now only contain a local cache which can be refreshed at will
 by calling `fetch()` on that resource. For example:
 
     job.fetch(function(err, job) {
-        // the local cache is now refreshed 
+        // the local cache is now refreshed
     });
-    
-`fetch()` is now the only method of refreshing a resource. When `fetch()` is 
+
+`fetch()` is now the only method of refreshing a resource. When `fetch()` is
 called, the returned state from the server will be cached locally, and is
 accessible to you. For instances of `Entity` (e.g. `Job`, `SavedSearch`, etc),
 the following methods are available:
@@ -87,7 +91,7 @@ the following methods are available:
   - `author`: the author field for this entity
   - `updated`: the updated time for this entity
   - `published`: the published time for this entity
-    
+
 And for instances of `Collection` (e.g. `Jobs`, `SavedSearches`):
 
   - `state()`: the entire state for this collection (everything contained below)
@@ -98,15 +102,15 @@ And for instances of `Collection` (e.g. `Jobs`, `SavedSearches`):
 
 #### Improvement to asynchronous state management functions
 
-In previous versions of the SDK, nearly all functions that interacted with a 
+In previous versions of the SDK, nearly all functions that interacted with a
 given resource (e.g. a `Job` entity) where asynchronous. Now, only three core
 functions are asynchronous: `fetch()`, `update()` and `create()`. Both `list()`
 and `item()` are now completely synchronous.
 
 #### Proper support for Splunk namespaces (i.e. `owner/app`).
 
-In previous versons of the SDK, the only way to specify which namespace you 
-wanted a particular resource fetched from was to create a new `Service` 
+In previous versons of the SDK, the only way to specify which namespace you
+wanted a particular resource fetched from was to create a new `Service`
 instance. In this version, you can now specify it when the resource is
 fetched. For example:
 
@@ -122,8 +126,8 @@ saved searches starting from the 2nd offset:
     searches.fetch({count: 2, offset: 2}, function(err, searches) {
         console.log(searches.list().length); // is 2
     });
-    
-The full list of options is: `count`, `offset`, `search`, `sort_dir`, 
+
+The full list of options is: `count`, `offset`, `search`, `sort_dir`,
 `sort_key`, `sort_mode`.
 
 #### You can now abort asynchronous HTTP requests.
@@ -146,17 +150,17 @@ if any request returns a `401` error, the SDK will attempt to log you back in
 once.
 
 What was once:
-    
+
     var service = new splunkjs.Service(...);
     service.login(function(err) {
-        service.search(...); 
+        service.search(...);
     });
 
 is now simply:
 
     var service = new splunkjs.Service(...);
     service.search(...);
-    
+
 #### Storm support
 
 Splunk Storm is an exciting new offering providing you with the Splunk you know,
@@ -166,15 +170,15 @@ simply create a `StormService` rather than a `Service`:
 
     var storm = new splunkjs.StormService({token: "ABC"});
     storm.log(
-        "MY AWESOME LOG MESSAGE", 
+        "MY AWESOME LOG MESSAGE",
         {project: "XYZ123", sourcetype: "GO"},
         function(err, response) {
-            console.log("DATA IS IN STORM!");         
+            console.log("DATA IS IN STORM!");
         }
     );
 
 #### Several new entities and collections have been implemented:
-    
+
 We now have support for more of the Splunk REST API, specifically:
 
   - `Users` and `User`, and the ability to get the current user.
@@ -182,7 +186,7 @@ We now have support for more of the Splunk REST API, specifically:
   - `Service.parse()`.
   - `Service.typeahead()`.
   - `Service.serverInfo()`.
-    
+
 #### Streamlining of submitting events to Splunk
 
 Submitting events to Splunk over HTTP is now easier, with a simple method
@@ -190,23 +194,23 @@ on the `Service`:
 
     var service = new splunkjs.Service();
     service.log(
-        "MY AWESOME LOG MESSAGE", 
+        "MY AWESOME LOG MESSAGE",
         {index: "MY_INDEX", sourcetype: "GO"},
         function(err, response) {
-            console.log("DATA IS IN SPLUNK!");         
+            console.log("DATA IS IN SPLUNK!");
         }
     );
 
 #### `SavedSearch.history` returns actual `Job` instances
 
-Previously, when calling `SavedSearch.history()`, the SDK returned a simple 
+Previously, when calling `SavedSearch.history()`, the SDK returned a simple
 object containing the information corresponding to that dispatch of the saved
-search. The SDK will now create real `Job` instances when you call 
+search. The SDK will now create real `Job` instances when you call
 `SavedSearch.history`:
 
     var savedSearch = ...;
     savedSearch.history(function(err, jobs) {
-        // jobs is an array of splunkjs.Service.Job instances 
+        // jobs is an array of splunkjs.Service.Job instances
     });
 
 #### Improved JSON format
@@ -216,7 +220,7 @@ known as `new_english`, translation app) has been improved. It is now much
 closer to the JSON format that will be available in core Splunk in a future
 version.
 
-#### More unit tests 
+#### More unit tests
 
 #### Improved documentation
 
@@ -225,7 +229,7 @@ version.
 #### Namespace naming changes
 
 The `Splunk` namespace is now `splunkjs`. `Client` has been renamed to `Service`
-and all classes are now rooted there (e.g. `splunkjs.Service.Job`). This will 
+and all classes are now rooted there (e.g. `splunkjs.Service.Job`). This will
 make it easier to include the SDK in a Splunk app.
 
 #### Method changes
@@ -233,7 +237,7 @@ make it easier to include the SDK in a Splunk app.
 * The `read()` and `refresh()` methods have been removed, and replaced with
 `fetch()`, which will always fetch a copy from the server.
 * `contains()` has been removed.
-* `item()` is now a synchronous method, operating on the local cache of a 
+* `item()` is now a synchronous method, operating on the local cache of a
 collection.
 * `list()` is now a synchronous method, returning the local cache of a
 collection.
@@ -242,9 +246,9 @@ the `<content>`/`content` object).
 
 #### `xml2json`
 
-The XML to JSON translation app previously known as `new_english` has been 
+The XML to JSON translation app previously known as `new_english` has been
 renamed to `xml2json`, as well as vastly improved. You will need to delete
-your old copy of `new_english` and instead copy `xml2json` to 
+your old copy of `new_english` and instead copy `xml2json` to
 `$SPLUNK_HOME/etc/apps`.
 
 #### `Properties`, `PropertyFile` and `PropertyStanza` have been removed
