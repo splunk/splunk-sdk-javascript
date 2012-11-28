@@ -210,11 +210,6 @@
                 <ul class="nav nav-list">
                 </ul>
               </li>
-                          <li class="nav-header"><a href="splunkjs.Service.PaginatedEndpointIterator.html">splunkjs.Service.PaginatedEndpointIterator</a></li>
-              <li>
-                <ul class="nav nav-list">
-                </ul>
-              </li>
                           <li class="nav-header"><a href="splunkjs.Service.Resource.html">splunkjs.Service.Resource</a></li>
               <li>
                 <ul class="nav nav-list">
@@ -465,6 +460,8 @@
             </section>
             
             <section class="syntax">
+                          <h4>Syntax</h4>
+              <span>setLevel: function(level)</span>
             </section>
             
             <section class="params">
@@ -503,7 +500,7 @@
               <h4 class="code-link">Source (<a target="_blank" href="https://github.com/splunk/splunk-sdk-javascript/blob/master/lib/log.js#L181">lib/log.js:181</a>)</h4>  
               <a class="btn btn-mini code-toggle"><i class="icon-plus"></i></a>
               
-              <pre class="hidden" class="linenums pre-scrollable"><code>setLevel: setLevel,</code></pre>
+              <pre class="hidden" class="linenums pre-scrollable"><code>setLevel: function(level) { setLevel.apply(this, arguments) },</code></pre>
             </section>
           </section>
                   <section class="method well" id="splunkjs.Logger+warn">
@@ -544,7 +541,6 @@
 },</code></pre>
             </section>
           </section>
-                
                 
                 
                 
