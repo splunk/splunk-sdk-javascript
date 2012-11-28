@@ -42,7 +42,7 @@
         var defaults = {};
         for(var i = 0; i < DEFAULTS_PATHS.length; i++) {
             var defaultsPath = path.join(DEFAULTS_PATHS[i], ".splunkrc");
-            if (path.existsSync(defaultsPath)) {
+            if (fs.existsSync(defaultsPath)) {
                 readDefaultsFile(defaultsPath, defaults);
             }
         }
