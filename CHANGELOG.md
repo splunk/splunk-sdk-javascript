@@ -1,5 +1,75 @@
 # Splunk JavaScript SDK Changelog
 
+## v1.1.0
+
+### New Features and APIs
+
+* `Job.track` is a new method to allow you to track the progress of a job. It
+  allows you to get notifications when a job is 'ready', 'done', 'failed', 'error' 
+  as well as a progress event while a job is still running. You can ask for any 
+  one or combination of the above events. Here is a sample usage to know when a 
+  job is done:
+  
+  ```
+  job.track({ period: 200 }, {
+      done: function(job) {
+          console.log("Job is done!")
+      }
+  });
+  ```
+
+  You can read more about this feature in the [documentation](http://docs.splunk.com/Documentation/JavaScriptSDK), 
+  or see a sample usage in the Timeline UI example.
+
+  This feature replaces the old `splunkjs.JobManager` class.
+
+* `Job.iterator` is a new method that allows you to get an iterator over the
+  results, events, or "results preview" of a search job. For example, you can
+  iterate over all the results as follows:
+  
+  ```
+  var iterator = job.iterator("results", { pagesize: 4 });
+  var shouldContinue = true;
+  Async.whilst(
+      function() { return hasMore; },
+      function(done) {
+          iterator.next(function(err, results, hasMore) {
+              if (err) {
+                  done(err);
+              }
+              else {
+                  console.log(results);
+                  shouldContinue = hasMore;
+                  done();
+              }
+          });
+      },
+      function(err) {
+          console.log("We are done iterating!");
+      }
+  );
+  ```
+
+  This feature replaces the old `splunkjs.JobManager.{events|results|preview}Iterator`
+  methods.
+
+### Breaking Changes
+
+* The easyXDM library is no longer included "in-the-box". This library was not
+being used, and could not work with a Splunk instance that had a self-signed
+SSL certificate.
+
+* The default Splunk version is now 5.0 instead of 4.3. If you were previously
+connecting to a Splunk 4.3 instance, you need to specify a `version: "4.3"` when
+you construct your `splunkjs.Service` instance or in your `.splunkrc`.
+
+* The `splunkjs.JobManager` has been removed, and it's functionality has been
+replaced by two functions: `Job.track` and `Job.iterator`. Read more about them
+in the `New features and APIs` section.
+
+* Support for Splunk Storm has been removed, and will be added back once the
+Storm API is reactivated and stable.
+
 ## v1.0.0
 
 No changes.

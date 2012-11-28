@@ -133,7 +133,7 @@
         <div class="container">
           <h1>Splunk JavaScript SDK</h1>
           <p class="lead">
-            The Splunk JavaScript SDK allows you to easily build complex applications and visualizations using splunkjs. This page is your launchpad to the browser-side examples included in the SDK.
+            The Splunk JavaScript SDK allows you to build complex applications and visualizations.<br>This page is your launchpad to the browser-side examples included in the Splunk JavaScript SDK.
           </p>
         </div>
       </div>
@@ -144,7 +144,7 @@
       <section>
         <div class="page-header">
           <h1>
-            Examples <small>... so that you know what to do</small>
+            Examples <small>... to show you the way</small>
           </h1>
         </div>
         <div class="row">
@@ -153,40 +153,33 @@
           </div>
           <div class="span14">
             <p>
-              We believe examples are one of the key ways to increase understanding and expertise of our SDKs. This page provides
-              a gateway to all the browser-side examples (the server-wide ones can be launched from the console at 
-              <code>examples/node</code>). The examples will take you from the beginning (listing apps and creating searches) to
-              more complicated use cases such as integrating with 3rd-party visualization tools, and finally to MiniSplunk, a
-              clone of the some of the core Splunk features using the SDK.
+              We believe examples are key to increasing understanding and expertise of our SDKs. This page provides
+              a gateway to all of the browser-side examples, which take you from the simple stuff (listing apps and creating searches) to
+              more complicated use cases (integrating with third-party visualization tools), and finally to MiniSplunk, an example that
+              clones some of Splunk's core features. 
             </p>
             <p>
-              There are a couple of notes that apply to most of the examples:
+              A few notes:
               
               <ul>
                 <li>
                   <p>
-                    All the examples (with the exception of MiniSplunk) provide you with a code snippet (or several), and the
-                    ability to run that code. It will execute against your own install of Splunk, as specified by you at the top
-                    of that page. Please do run the examples!
+                    All of the examples (except MiniSplunk) provide you with code snippets and the
+                    ability to run that code. They run against your own installation of Splunk (log in at the top
+                    of the page). Don't just scan the code, go ahead and run the examples!
                   </p>
                 </li>
                 <li>
                   <p>
-                    As noted in our documentation, the SDK needs to communicate with Splunkd, which does not leave on the same host
-                    as the web server that is serving your page. Due to the browser's Single Origin Policy, we can't talk to it directly.
-                    The method that we use for the examples is to provide all the parameters to the example webserver, which will
-                    then proxy it to Splunkd. This is what those <code>ProxyHttp</code> lines are all about.
-                  </p>
-                  
-                  <p>
-                    However, another option is to use the bundled <code>XdmHttp</code> client (using easyXDM). The examples don't use it
-                    as it can run into issues with unsigned SSL certificates due to browser security policies. Don't worry though - the
-                    change from using <code>ProxyHttp</code> to <code>XdmHttp</code> is less than 2 lines!
+                    The JavaScript SDK communicates with splunkd, but it's not on the same host
+                    as the web server that is serving your page. Due to the browser's Single Origin Policy, we can't communicate with it directly.
+                    So, the examples provide all of the parameters to the example web server, which then proxies it to splunkd 
+                    (that's what those <code>ProxyHttp</code> lines are all about).
                   </p>
                 </li>
                 <li>
                   <p>
-                    We highly recommend you open up the developer console while the examples are running to see what requests the SDK
+                    We highly recommend you open up the developer console while running the examples to see which requests the SDK
                     is making. It can be quite educational.
                   </p>
                 </li>
@@ -204,17 +197,17 @@
             </a>
           </div>
           <div class="span12">
-            <a href="helloworld/index.html"><h3>Simple Examples ("Hello World"-style)</h3></a>
+            <a href="helloworld/index.html"><h3>Simple examples ("Hello, world"-style)</h3></a>
             <p>
-              These examples are meant to show off single, simple aspects of the SDK. They have nearly no configuration,
-              and are mirror images of the respective server-side examples. Here, you'll see how to list all applications,
-              list saved searches and their queries, and create various types of searches and get their results (even for
-              real-time searches!).
+              These examples are meant to show off single, simple aspects of the SDK. These examples have nearly no configuration,
+              and are mirror images of the respective server-side examples. Here, you'll see how to list applications,
+              list saved searches and their queries, and create various types of searches (including real-time searches) and 
+              display the results.
             </p>
             <p>
-              Every one of the above examples is runnable in your browser, and you'll see the output in a dedicated output
-              pane. Note that some examples have several versions - for example, the application listing example shows you
-              the same code with and without the `splunkjs.Async` library.
+              You can run each of these examples in your browser, and you'll see the output in a dedicated output
+              pane. Some examples have multiple versions&mdash;for example, some provide code with and without the
+              `splunkjs.Async` library.
             </p>
           </div>
         </div>
@@ -227,22 +220,22 @@
             </a>
           </div>
           <div class="span12">
-            <a href="ui/index.html"><h3>UI Examples (who doesn't like pretty pictures?)</h3></a>
+            <a href="ui/index.html"><h3>UI examples (with pretty pictures)</h3></a>
             <p>
-              Splunk has always had very strong visualization capabilities, both for giving you an overview of your event
-              timeline, as well as being able to chart your queries in meaningful ways. We're excited to be able to give
-              you access to the Splunk Timeline control and the Splunk charting control. These are the 
-              same controls that ship with Splunk 4.3 (no flash!). We didn't exclude or limit them in any way, and we hope 
+              Splunk has always had very strong visualization capabilities, both for displaying an overview of your event
+              timeline, as well as charting your queries in meaningful ways. We're excited to be able to give
+              you access to the Splunk Timeline control and the Splunk Charting control, which are the 
+              same controls that are included with Splunk 4.3+ (no Flash!). We didn't exclude or limit them in any way, and we hope 
               that you find them useful to better visualize your data.
             </p>
             <p>
-              These examples show how to use both the Timeline and Charting control with the SDK. They will execute a simple
-              search on Splunk, and visualize the data as it is available.
+              These examples show how to use the Timeline and Charting controls with the SDK. They run a simple
+              search on Splunk and visualize the data as it becomes available.
             </p>
             <p>      
-              <em>Note:</em> while the controls work bestwith the SDK (as it provides data in the formats they expect), the 
-              SDK itself is not required. There is a minimal module (<code>splunk.ui.{min}.js</code>) that contains just the 
-              asynchronous script loader to bring up the UI controls you desire.
+              <strong>Note:</strong> While the controls work best with the SDK (because it provides data in the expected formats), the 
+              SDK itself is not required. You can use the minimal module (<code>splunk.ui.{min}.js</code>), which contains just the 
+              asynchronous script loader to bring up the UI controls you want.
             </p>
           </div>
         </div>
@@ -255,29 +248,29 @@
             </a>
           </div>
           <div class="span12">
-            <a href="viz/index.html"><h3>Integration with 3rd Party Visualization Tools (you might have other friends)</h3></a>
+            <a href="viz/index.html"><h3>Integration with third-party visualization tools (you might have other friends)</h3></a>
             <p>
-              As noted above, Splunk has extremely strong visualization tools. However, we simply can't think (or even 
-              implement) every type of visualization out there. Now, with the JavaScript SDK, visualizing your Splunk
+              As we said, Splunk has extremely strong visualization tools. However, we simply can't think of (or 
+              implement) every type of visualization out there. But now, with the JavaScript SDK, visualizing your Splunk
               data in new and exciting ways has never been easier.
             </p>
             <p>
-              These examples show how to integrate Splunk search results with two 3rd-party visualization libraries:
+              These examples show how to integrate Splunk search results with a couple of visualization libraries:
               <ul>
                 <li>
                   <p>
-                    <a href="http://code.google.com/apis/chart/"><strong>Google Charts</strong></a> - a simple, yet powerful
+                    <a href="http://code.google.com/apis/chart/" target="_blank"><strong>Google Charts</strong></a>&mdash;a simple, yet powerful
                     charting library provided by Google.
                   </p>
                 </li>
                 <li>
                   <p>
-                    <a href="http://shutterstock.github.com/rickshaw/"><strong>Rickshaw</strong></a> - a newly released
-                    time series visualization library. Based on the extremely powerful <a href="http://mbostock.github.com/d3/">
+                    <a href="http://shutterstock.github.com/rickshaw/" target="_blank"><strong>Rickshaw</strong></a>&mdash;a
+                    time-series visualization library, based on the extremely powerful <a href="http://mbostock.github.com/d3/" target="_blank">
                     d3</a> library.
                   </p>
                   <p>
-                    <strong>Note:</strong> the Rickshaw example will not work in &lt= IE9 due to browser limitations.
+                    <strong>Note:</strong> Due to browser limitations, the Rickshaw example doesn't work in Internet Explorer 9 or earlier.
                   </p>
               </ul>
             </p>
@@ -292,17 +285,16 @@
             </a>
           </div>
           <div class="span12">
-            <a href="minisplunk/index.html"><h3>MiniSplunk (the whole shebang!)</h3></a>
+            <a href="minisplunk/index.html"><h3>MiniSplunk (the whole shebang)</h3></a>
             <p>
-              As you can imagine, the Splunk Web UI (Splunkweb) is the most complex Splunk application in the world, and also
-              the largest user of the REST API. Given that premise, it was important to show that the JavaScript SDK can
-              build a similar application - and so MiniSplunk was born.
+              As you can imagine, Splunk Web is the most complex Splunk application and biggest user of the REST API. 
+              Given that premise, we thought it was important to show that our JavaScript SDK can
+              build a similar application&mdash;and so MiniSplunk was born.
             </p>
             <p>
-              MiniSplunk was the first example we wrote, and also the most complex one. It shows how to build a full
-              application using the SDK - you can search, manage jobs, and even see your search results mapped (if they
-              have geodata in them). We will keep updating the example to also include timeline and charting capabilities,
-              as well as other advanced features as time progresses.
+              MiniSplunk is the first example we wrote, and also the most complex. It shows how to build a full
+              application using the JavaScript SDK. You can search, manage jobs, and even map your search results (if they
+              include geodata). We will keep updating the example with additional advanced features as time goes on.
             </p>
           </div>
         </div>

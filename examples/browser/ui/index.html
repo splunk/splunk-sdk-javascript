@@ -86,7 +86,7 @@
       scheme   = "https";
       host     = "localhost";
       port     = "8089";
-      version  = "4.3";
+      version  = "5.0";
       
       Async = splunkjs.Async;
       utils = splunkjs.Utils;
@@ -97,7 +97,7 @@
         scheme   = utils.trim($("#id_scheme").pVal())   || "https";
         host     = utils.trim($("#id_host").pVal())     || "localhost";
         port     = utils.trim($("#id_port").pVal())     || "8089";
-        version  = utils.trim($("#id_version").pVal())  || "4.3";
+        version  = utils.trim($("#id_version").pVal())  || "5.0";
         
         var connectionString = username + " : ****** @ " + scheme + "://" + host + ":" + port;
         $("#signin-dropdown").text(connectionString);
@@ -213,7 +213,7 @@
                     <input type="text" name="port" id="id_port" placeholder="port: 8089"/>
                   </li>
                   <li>
-                    <input type="text" name="port" id="id_version" placeholder="version: 4.3"/>
+                    <input type="text" name="port" id="id_version" placeholder="version: 5.0"/>
                   </li>
               </ul>
             </li>
@@ -227,15 +227,15 @@
       <section id="timeline">
        <div class="page-header">
           <h1>
-            Timeline <small>Loading, creating and updating a timeline</small>
+            Timeline <small>Loading, creating, and updating a timeline</small>
           </h1>
        </div>
        <div class="row">
           <div class="span4">
             <h2>Description</h2>
               <p>
-                <p>This samples shows how to asynchronously load the Splunk Timeline control, and perform operations on it. It will create a simple search, and as timeline data is available, will keep updating the timeline. Once the search is done, the job will be cancelled.</p>
-                <p><strong>Note</strong>: Due to requiring <code>&lt;canvas&gt;</code>, it only works in IE9+, Firefox 2+, Chrome 4+ and Safari 3.1+.</p>
+                <p>This example shows how to asynchronously load the Splunk Timeline control and perform different operations. This example creates a simple search, and updates the timeline as data becomes available. Once the search is done, the job is cancelled.</p>
+                <p><strong>Note</strong>: Due to requiring <code>&lt;canvas&gt;</code>, this example only works in Internet Explorer 9+, Firefox 2+, Chrome 4+, and Safari 3.1+.</p>
               </p>
           </div>
          <div class="span12">
@@ -286,21 +286,27 @@ Async.chain([
   },
   // Loop until the job is "done"
   function(job, callback) {
-    var searcher = new splunkjs.JobManager(job.service, job);
-    
-    // Queue up timeline displays while we are querying the job
-    searcher.on("progress", function(properties) {
-      job.timeline({}, function(err, data) { 
-        if (!err) updateTimeline(data);
-      });
+    job.track({}, {
+      // Queue up timeline displays while we are querying the job
+      progress: function(job) {
+        job.timeline({}, function(err, data) { 
+          if (!err) updateTimeline(data);
+        });
+      },
+      
+      // Move forward once the search is done
+      done: function(job) {
+        callback(null, job);
+      },
+      
+      error: function(err) {
+        callback(err);
+      }
     });
-    
-    // Move forward once the search is done
-    searcher.on("done", callback);
   },
   // Get the final timeline data
-  function(searcher, callback) {
-    searcher.job.timeline({}, callback);
+  function(job, callback) {
+    job.timeline({}, callback);
   },
   // Update the timeline control
   function(timelineData, job, callback) {
@@ -328,14 +334,14 @@ function(err, job) {
       <section id="chart">
        <div class="page-header">
           <h1>
-            Charting <small>Loading, creating and updating a chart</small>
+            Charting <small>Loading, creating, and updating a chart</small>
           </h1>
        </div>
        <div class="row">
           <div class="span4">
             <h2>Description</h2>
               <p>
-                <p>This sample shows how to asynchronously load the Splunk Charting control, and perform operations on it. It will create a simple search, and when the search is done, will fetch results and display them in the chart.</p>
+                <p>This example shows how to asynchronously load the Splunk Charting control and perform different operations. This example creates a simple search, fetches the results when the search is done, and displays them in the chart.</p>
               </p>
           </div>
          <div class="span12">
@@ -370,14 +376,20 @@ Async.chain([
   },
   // Loop until the job is "done"
   function(job, callback) {
-    var searcher = new splunkjs.JobManager(job.service, job);
-    
     // Move forward once the search is done
-    searcher.on("done", callback);
+    job.track({}, {
+      done: function(job) {
+        callback(null, job);
+      },
+      
+      error: function(err) {
+        callback(err);
+      }
+    });
   },
   // Get the final results data
-  function(searcher, callback) {
-    searcher.job.results({output_mode: "json_cols"}, callback);
+  function(job, callback) {
+    job.results({output_mode: "json_cols"}, callback);
   },
   // Update the chart
   function(results, job, callback) { 
