@@ -120,13 +120,13 @@ as **.splunkrc** in the current user's home directory:
     
     # Splunk host (default: localhost)
     host=localhost
-    # Splunk port (default: the admin port, 8089)
+    # Splunk admin port (default: 8089)
     port=8089
     # Splunk username
     username=admin
     # Splunk password
     password=changeme
-    # Access scheme
+    # Access scheme (default: https)
     scheme=https
     # Application context
     app=search
