@@ -10966,7 +10966,7 @@ require.define("/utils.js", function (require, module, exports, __dirname, __fil
      *      
      *      var obj = {a: 1, b: function() { console.log(a); }};
      *      var bound = splunkjs.Utils.bind(obj, obj.b);
-     *      bound(); // should print 1
+     *      bound(); // prints 1
      *
      * @param {Object} me The object to bind to.
      * @param {Function} fn The function to bind.
@@ -11035,7 +11035,7 @@ require.define("/utils.js", function (require, module, exports, __dirname, __fil
      *      
      *      var a = {a: 3};
      *      var b = [{}, {c: 1}, {b: 1}, a];
-     *      var contained = splunkjs.Utils.contains(b, a); // should be true
+     *      var contained = splunkjs.Utils.contains(b, a); // true
      *
      * @param {Array} arr The array to search in.
      * @param {Anything} obj The object to search for.
@@ -11096,7 +11096,7 @@ require.define("/utils.js", function (require, module, exports, __dirname, __fil
      *          var arr = console.log(splunkjs.Utils.toArray(arguments) instanceof Array); // true
      *      }
      *
-     * @param {Arguments} iterable Iterable to convert.
+     * @param {Arguments} iterable The iterable to convert.
      * @return {Array} The converted array.
      *
      * @function splunkjs.Utils
@@ -11239,7 +11239,7 @@ require.define("/utils.js", function (require, module, exports, __dirname, __fil
      *
      * @param {Object|Array} obj An object or array.
      * @param {Function} iterator The function to apply to each element: `(element, list, index)`.
-     * @param {Object} context A context to apply the function on (optional).
+     * @param {Object} context A context to apply to the function (optional).
      *
      * @function splunkjs.Utils
      */
@@ -11349,7 +11349,7 @@ require.define("/utils.js", function (require, module, exports, __dirname, __fil
     };
 
     /**
-     * Finds a version in a map that corresponds to a dictionary.
+     * Finds a version in a dictionary.
      *
      * @param {String} version The version to search for.
      * @param {Object} map The dictionary to search.

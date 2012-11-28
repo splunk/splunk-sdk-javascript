@@ -566,11 +566,11 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
          *      splunkjs.Logger.setLevel("WARN");
          *      splunkjs.Logger.setLevel(0); // equivalent to NONE
          *
-         * @param {String|Number} level A string or number (`ALL` = 4 | `INFO` = 3 | `WARN` = 2 | `ERROR` = 1 | `NONE` = 0) indicating the logging level.
+         * @param {String|Number} level A string or number ("ALL" = 4 | "INFO" = 3 | "WARN" = 2 | "ERROR" = 1 | "NONE" = 0) indicating the logging level.
          *
          * @function splunkjs.Logger
          */
-        setLevel: setLevel,
+        setLevel: function(level) { setLevel.apply(this, arguments) },
         
         /*!*/
         levels: levels
@@ -614,7 +614,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      *      
      *      var obj = {a: 1, b: function() { console.log(a); }};
      *      var bound = splunkjs.Utils.bind(obj, obj.b);
-     *      bound(); // should print 1
+     *      bound(); // prints 1
      *
      * @param {Object} me The object to bind to.
      * @param {Function} fn The function to bind.
@@ -683,7 +683,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      *      
      *      var a = {a: 3};
      *      var b = [{}, {c: 1}, {b: 1}, a];
-     *      var contained = splunkjs.Utils.contains(b, a); // should be true
+     *      var contained = splunkjs.Utils.contains(b, a); // true
      *
      * @param {Array} arr The array to search in.
      * @param {Anything} obj The object to search for.
@@ -744,7 +744,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      *          var arr = console.log(splunkjs.Utils.toArray(arguments) instanceof Array); // true
      *      }
      *
-     * @param {Arguments} iterable Iterable to convert.
+     * @param {Arguments} iterable The iterable to convert.
      * @return {Array} The converted array.
      *
      * @function splunkjs.Utils
@@ -887,7 +887,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      *
      * @param {Object|Array} obj An object or array.
      * @param {Function} iterator The function to apply to each element: `(element, list, index)`.
-     * @param {Object} context A context to apply the function on (optional).
+     * @param {Object} context A context to apply to the function (optional).
      *
      * @function splunkjs.Utils
      */
@@ -997,7 +997,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     };
 
     /**
-     * Finds a version in a map that corresponds to a dictionary.
+     * Finds a version in a dictionary.
      *
      * @param {String} version The version to search for.
      * @param {Object} map The dictionary to search.
@@ -1043,7 +1043,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
 
 (function() {
     "use strict";
-    
+
     var Paths    = require('./paths').Paths;
     var Class    = require('./jquery.class').Class;
     var Http     = require('./http');
@@ -1054,38 +1054,38 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
     var prefixMap = {
         "5": "",
         "4.3": "/services/json/v2",
-        "default": "/services/json/v2"
+        "default": ""
     };
 
     /**
      * An abstraction over the Splunk HTTP-wire protocol that provides the basic
      * functionality for communicating with a Splunk instance over HTTP, handles
-     * authentication and authorization, and formats HTTP requests (GET, POST, 
+     * authentication and authorization, and formats HTTP requests (GET, POST,
      * and DELETE) in the format that Splunk expects.
      *
      * @class splunkjs.Context
      */
     module.exports = root = Class.extend({
-        
+
         /**
          * Constructor for `splunkjs.Context`.
          *
          * @constructor
          * @param {splunkjs.Http} http An instance of a `splunkjs.Http` class.
-         * @param {Object} params A dictionary of optional parameters: 
-         *      * `scheme`: The scheme (`http` or `https`) for accessing Splunk.
-         *      * `host`: The host name (the default is _localhost_).
-         *      * `port`: The port number (the default is _8089_).
-         *      * `username`: The Splunk account username, which is used to authenticate the Splunk instance.
-         *      * `password`: The password, which is used to authenticate the Splunk instance.
-         *      * `owner`: The owner (username) component of the namespace context.
-         *      * `app`: The app component of the namespace context.
-         *      * `sessionKey`: The current session token.
-         *      * `autologin`: Enable or disable autologin functionaly (enabled by default).
-         *      * `version`: Version string for Splunk (e.g. 4.3, 4.3.2, 5.0) - defaults to 4.3.
+         * @param {Object} params A dictionary of optional parameters:
+         *    - `scheme` (_string_): The scheme ("http" or "https") for accessing Splunk.
+         *    - `host` (_string_): The host name (the default is "localhost").
+         *    - `port` (_integer_): The port number (the default is 8089).
+         *    - `username` (_string_): The Splunk account username, which is used to authenticate the Splunk instance.
+         *    - `password` (_string_): The password, which is used to authenticate the Splunk instance.
+         *    - `owner` (_string_): The owner (username) component of the namespace.
+         *    - `app` (_string_): The app component of the namespace.
+         *    - `sessionKey` (_string_): The current session token.
+         *    - `autologin` (_boolean_): `true` to automatically try to log in again if the session terminates, `false` if not (`true` by default).
+         *    - `version` (_string_): The version string for Splunk, for example "4.3.2" (the default is "5.0").
          * @return {splunkjs.Context} A new `splunkjs.Context` instance.
          *
-         * @method splunkjs.Context 
+         * @method splunkjs.Context
          */
         init: function(http, params) {
             if (!(http instanceof Http) && !params) {
@@ -1093,22 +1093,22 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
                 params = http;
                 http = null;
             }
-            
+
             params = params || {};
-            
+
             this.scheme        = params.scheme || "https";
             this.host          = params.host || "localhost";
             this.port          = params.port || 8089;
-            this.username      = params.username || null;  
-            this.password      = params.password || null;  
-            this.owner         = params.owner;  
-            this.app           = params.app;  
+            this.username      = params.username || null;
+            this.password      = params.password || null;
+            this.owner         = params.owner;
+            this.app           = params.app;
             this.sessionKey    = params.sessionKey || "";
             this.authorization = params.authorization || "Splunk";
             this.paths         = params.paths || Paths;
-            this.version       = params.version || "default"; 
+            this.version       = params.version || "default";
             this.autologin     = true;
-            
+
             // Initialize autologin
             // The reason we explicitly check to see if 'autologin'
             // is actually set is because we need to distinguish the
@@ -1117,7 +1117,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
             if (params.hasOwnProperty("autologin")) {
                 this.autologin = params.autologin;
             }
-            
+
             if (!http) {
                 // If there is no HTTP implementation set, we check what platform
                 // we're running on. If we're running in the browser, then complain,
@@ -1130,17 +1130,17 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
                     http = new NodeHttp();
                 }
             }
-            
+
             // Store the HTTP implementation
             this.http = http;
             this.http._setSplunkVersion(this.version);
-            
+
             // Store our full prefix, which is just combining together
             // the scheme with the host
             var versionPrefix = utils.getWithVersion(this.version, prefixMap);
             this.prefix = this.scheme + "://" + this.host + ":" + this.port + versionPrefix;
 
-            // We perform the bindings so that every function works 
+            // We perform the bindings so that every function works
             // properly when it is passed as a callback.
             this._headers         = utils.bind(this, this._headers);
             this.fullpath         = utils.bind(this, this.fullpath);
@@ -1152,22 +1152,22 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
             this._shouldAutoLogin = utils.bind(this, this._shouldAutoLogin);
             this._requestWrapper  = utils.bind(this, this._requestWrapper);
         },
-        
+
         /**
          * Appends Splunk-specific headers.
          *
          * @param {Object} headers A dictionary of headers (optional).
          * @return {Object} An augmented dictionary of headers.
          *
-         * @method splunkjs.Context 
+         * @method splunkjs.Context
          * @private
          */
         _headers: function (headers) {
             headers = headers || {};
             headers["Authorization"] = this.authorization + " " + this.sessionKey;
             return headers;
-        },   
-        
+        },
+
         /*!*/
         _shouldAutoLogin: function() {
             return this.username && this.password && this.autologin;
@@ -1177,18 +1177,18 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
         /**
          * This internal function aids with the autologin feature.
          * It takes two parameters: `task`, which is a function describing an
-         * HTTP request, and `callback`, to be invoked when all is said 
+         * HTTP request, and `callback`, to be invoked when all is said
          * and done.
-         *  
+         *
          * @param  {Function} task A function taking a single argument: `(callback)`.
          * @param  {Function} callback The function to call when the request is complete: `(err, response)`.
          */
         _requestWrapper: function(task, callback) {
             callback = callback || function() {};
-            
+
             var that = this;
             var req = null;
-            
+
             // This is the callback that will be invoked
             // if we are currently logged in but our session key
             // expired (i.e. we get a 401 response from the server).
@@ -1198,7 +1198,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
                 if (req.wasAborted) {
                     return;
                 }
-                
+
                 if (err && err.status === 401 && that._shouldAutoLogin()) {
                     // If we had an authorization error, we'll try and login
                     // again, but only once
@@ -1209,12 +1209,12 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
                         if (req.wasAborted) {
                             return;
                         }
-                        
+
                         if (err) {
                             // If there was an error logging in, send it through
                             callback(err);
                         }
-                        else { 
+                        else {
                             // Relogging in was successful, so we execute
                             // our task again.
                             task(callback);
@@ -1225,14 +1225,14 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
                     callback.apply(null, arguments);
                 }
             };
-            
+
             if (!this._shouldAutoLogin() || this.sessionKey) {
                 // Since we are not auto-logging in, just execute our task,
                 // but intercept any 401s so we can login then
                 req = task(reloginIfNecessary);
                 return req;
             }
-            
+
             // OK, so we know that we should try and autologin,
             // so we try and login, and if we succeed, execute
             // the original task
@@ -1242,34 +1242,34 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
                 if (req.wasAborted) {
                     return;
                 }
-                
+
                 if (err) {
                     // If there was an error logging in, send it through
                     callback(err);
-                } 
+                }
                 else {
                     // Logging in was successful, so we execute
-                    // our task. 
+                    // our task.
                     task(callback);
                 }
             });
-            
+
             return req;
         },
 
         /**
-         * Converts a partial path to a fully-qualified path, and if necessary
-         * includes the owner and app prefixes.
+         * Converts a partial path to a fully-qualified path to a REST endpoint,
+         * and if necessary includes the namespace owner and app.
          *
-         * @param {String} path Partial path
-         * @param {String} namespace The namespace context, as '_owner/app_'. 
-         * @return {String} Fully qualified path
+         * @param {String} path The partial path.
+         * @param {String} namespace The namespace, in the format "_owner_/_app_".
+         * @return {String} The fully-qualified path.
          *
-         * @method splunkjs.Context 
-         */ 
+         * @method splunkjs.Context
+         */
         fullpath: function(path, namespace) {
             namespace = namespace || {};
-            
+
             if (utils.startsWith(path, "/")) {
                 return path;
             }
@@ -1283,9 +1283,9 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
             // finally defaulting to wild cards
             var owner = namespace.owner || this.owner || "-";
             var app   = namespace.app || this.app || "-";
-            
+
             namespace.sharing = (namespace.sharing || "").toLowerCase();
-            
+
             // Modify the owner and app appropriately based on the sharing parameter
             if (namespace.sharing === root.Sharing.APP || namespace.sharing === root.Sharing.GLOBAL) {
                 owner = "nobody";
@@ -1295,7 +1295,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
                 app = "system";
             }
 
-            return utils.trim("/servicesNS/" + owner + "/" + app + "/" + path); 
+            return utils.trim("/servicesNS/" + owner + "/" + app + "/" + path);
         },
 
         /**
@@ -1304,7 +1304,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
          * @param {String} path The partial path.
          * @return {String} The fully-qualified URL.
          *
-         * @method splunkjs.Context 
+         * @method splunkjs.Context
          * @private
          */
         urlify: function(path) {
@@ -1312,12 +1312,12 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
         },
 
         /**
-         * Authenticates and logs in to a Splunk instance, then stores the 
+         * Authenticates and logs in to a Splunk instance, then stores the
          * resulting session key.
          *
-         * @param {Function} callback The function to call when the login has completed: `(err, wasSuccessful)`.
+         * @param {Function} callback The function to call when login has finished: `(err, wasSuccessful)`.
          *
-         * @method splunkjs.Context 
+         * @method splunkjs.Context
          * @private
          */
         login: function(callback) {
@@ -1327,32 +1327,36 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
 
             callback = callback || function() {};
             var wrappedCallback = function(err, response) {
-                if (err) {
-                    callback(err, false);
+                // Let's make sure that not only did the request succeed, but
+                // we actually got a non-empty session key back.
+                var hasSessionKey = !!(!err && response.data && response.data.sessionKey);
+
+                if (err || !hasSessionKey) {
+                    callback(err || "No session key available", false);
                 }
                 else {
                     that.sessionKey = response.data.sessionKey;
                     callback(null, true);
                 }
             };
-            
+
             return this.http.post(
                 this.urlify(url),
                 this._headers(),
                 params,
                 0,
                 wrappedCallback
-            ); 
+            );
         },
 
         /**
          * Performs a GET request.
          *
-         * @param {String} path The path of the GET request.
-         * @param {Object} params The query parameters for this request.
+         * @param {String} path The REST endpoint path of the GET request.
+         * @param {Object} params The entity-specific parameters for this request.
          * @param {Function} callback The function to call when the request is complete: `(err, response)`.
          *
-         * @method splunkjs.Context 
+         * @method splunkjs.Context
          */
         get: function(path, params, callback) {
             var that = this;
@@ -1365,20 +1369,20 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
                     callback
                 );
             };
-            
+
             return this._requestWrapper(request, callback);
         },
 
         /**
          * Performs a DELETE request.
          *
-         * @param {String} path The path of the DELETE request.
-         * @param {Object} params The query parameters for this request.
+         * @param {String} path The REST endpoint path of the DELETE request.
+         * @param {Object} params The entity-specific parameters for this request.
          * @param {Function} callback The function to call when the request is complete: `(err, response)`.
          *
-         * @method splunkjs.Context 
+         * @method splunkjs.Context
          */
-        del: function(path, params, callback) {            
+        del: function(path, params, callback) {
             var that = this;
             var request = function(callback) {
                 return that.http.del(
@@ -1387,20 +1391,20 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
                     params,
                     0,
                     callback
-                );  
+                );
             };
-            
+
             return this._requestWrapper(request, callback);
         },
 
         /**
          * Performs a POST request.
          *
-         * @param {String} path The path of the POST request.
-         * @param {Object} params The query parameters for this request.
+         * @param {String} path The REST endpoint path of the POST request.
+         * @param {Object} params The entity-specific parameters for this request.
          * @param {Function} callback The function to call when the request is complete: `(err, response)`.
          *
-         * @method splunkjs.Context 
+         * @method splunkjs.Context
          */
         post: function(path, params, callback) {
             var that = this;
@@ -1411,28 +1415,30 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
                     params,
                     0,
                     callback
-                );  
+                );
             };
-            
+
             return this._requestWrapper(request, callback);
         },
 
         /**
-         * Performs a request.
+         * Issues an arbitrary HTTP request to the REST endpoint path segment.
          *
-         * @param {String} path The request URL (with any query parameters already appended and encoded).
+         * @param {String} path The REST endpoint path segment (with any query parameters already appended and encoded).
          * @param {String} method The HTTP method (can be `GET`, `POST`, or `DELETE`).
-         * @param {Object} headers An object of headers for this request.
-         * @param {Object} body The body parameters for this request.
+         * @param {Object} query The entity-specific parameters for this request.
+         * @param {Object} post A dictionary of POST argument that will get form encoded.
+         * @param {Object} body The body of the request, mutually exclusive with `post`.
+         * @param {Object} headers Headers for this request.
          * @param {Function} callback The function to call when the request is complete: `(err, response)`.
          *
-         * @method splunkjs.Context 
+         * @method splunkjs.Context
          */
         request: function(path, method, query, post, body, headers, callback) {
             var that = this;
             var request = function(callback) {
                 return that.http.request(
-                    that.urlify(path),    
+                    that.urlify(path),
                     {
                         method: method,
                         headers: that._headers(headers),
@@ -1442,32 +1448,32 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
                         timeout: 0
                     },
                     callback
-                );  
+                );
             };
-            
+
             return this._requestWrapper(request, callback);
         },
-        
+
         /**
          * Compares the Splunk server's version to the specified version string.
          * Returns -1 if (this.version <  otherVersion),
          *          0 if (this.version == otherVersion),
          *          1 if (this.version >  otherVersion).
-         * 
-         * @param {String} otherVersion The other version string (ex: "5.0").
-         * 
+         *
+         * @param {String} otherVersion The other version string, for example "5.0".
+         *
          * @method splunkjs.Context
          */
         versionCompare: function(otherVersion) {
             var thisVersion = this.version;
             if (thisVersion === "default") {
-                thisVersion = "4.3";
+                thisVersion = "5.0";
             }
-            
+
             var components1 = thisVersion.split(".");
             var components2 = otherVersion.split(".");
             var numComponents = Math.max(components1.length, components2.length);
-            
+
             for (var i = 0; i < numComponents; i++) {
                 var c1 = (i < components1.length) ? parseInt(components1[i], 10) : 0;
                 var c2 = (i < components2.length) ? parseInt(components2[i], 10) : 0;
@@ -1486,7 +1492,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
         USER: "user",
         APP: "app",
         GLOBAL: "global",
-        SYSTEM: "system"  
+        SYSTEM: "system"
     };
 })();
 });
@@ -1639,45 +1645,45 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
 
 (function() {
     "use strict";
-    
+
     var Class           = require('./jquery.class').Class;
     var logger          = require('./log').Logger;
     var utils           = require('./utils');
 
     var root = exports || this;
     var Http = null;
-    
+
     var queryBuilderMap = {
-        "5": function(message) {      
+        "5": function(message) {
             var query = message.query || {};
-            var post = message.post || {};      
+            var post = message.post || {};
             var outputMode = query.output_mode || post.output_mode || "json";
-            
+
             // If the output mode doesn't start with "json" (e.g. "csv" or
             // "xml"), we change it to "json".
             if (!utils.startsWith(outputMode, "json")) {
                 outputMode = "json";
             }
-            
+
             query.output_mode = outputMode;
-            
+
             return query;
         },
         "4": function(message) {
             return message.query || {};
         },
         "default": function(message) {
-            return message.query || {};
+            return queryBuilderMap["5"](message);
         },
         "none": function(message) {
             return message.query || {};
         }
-    }; 
-    
-     
+    };
+
+
     /**
-     * A base class for HTTP abstraction that provides the basic functionality 
-     * for performing GET, POST, DELETE, and REQUEST operations, and provides 
+     * A base class for HTTP abstraction that provides the basic functionality
+     * for performing GET, POST, DELETE, and REQUEST operations, and provides
      * utilities to construct uniform responses.
      *
      * Base classes should only override `makeRequest` and `parseJSON`.
@@ -1691,22 +1697,22 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
          * @constructor
          * @return {splunkjs.Http} A new `splunkjs.Http` instance.
          *
-         * @method splunkjs.Http 
+         * @method splunkjs.Http
          */
         init: function() {
 
-            // We perform the bindings so that every function works 
+            // We perform the bindings so that every function works
             // properly when it is passed as a callback.
             this.get                = utils.bind(this, this.get);
             this.del                = utils.bind(this, this.del);
             this.post               = utils.bind(this, this.post);
             this.request            = utils.bind(this, this.request);
             this._buildResponse     = utils.bind(this, this._buildResponse);
-            
+
             // Set our default version to "none"
             this._setSplunkVersion("none");
         },
-        
+
         /*!*/
         _setSplunkVersion: function(version) {
             this.version = version;
@@ -1721,7 +1727,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
          * @param {Number} timeout A timeout period. This parameter is not used.
          * @param {Function} callback The function to call when the request is complete: `(err, response)`.
          *
-         * @method splunkjs.Http 
+         * @method splunkjs.Http
          */
         get: function(url, headers, params, timeout, callback) {
             var message = {
@@ -1743,7 +1749,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
          * @param {Number} timeout A timeout period. This parameter is not used.
          * @param {Function} callback The function to call when the request is complete: `(err, response)`.
          *
-         * @method splunkjs.Http 
+         * @method splunkjs.Http
          */
         post: function(url, headers, params, timeout, callback) {
             headers["Content-Type"] = "application/x-www-form-urlencoded";
@@ -1766,7 +1772,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
          * @param {Number} timeout A timeout period. This parameter is not used.
          * @param {Function} callback The function to call when the request is complete: `(err, response)`.
          *
-         * @method splunkjs.Http 
+         * @method splunkjs.Http
          */
         del: function(url, headers, params, timeout, callback) {
             var message = {
@@ -1782,14 +1788,14 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
         /**
          * Performs a request.
          *
-         * This function sets up how to handle a response from a request, but 
+         * This function sets up how to handle a response from a request, but
          * delegates calling the request to the `makeRequest` subclass.
          *
          * @param {String} url The encoded URL of the request.
          * @param {Object} message An object with values for method, headers, timeout, and encoded body.
          * @param {Function} callback The function to call when the request is complete: `(err, response)`.
          *
-         * @method splunkjs.Http 
+         * @method splunkjs.Http
          * @see makeRequest
          */
         request: function(url, message, callback) {
@@ -1803,13 +1809,13 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
                     callback(response);
                 }
             };
-            
+
             var query = utils.getWithVersion(this.version, queryBuilderMap)(message);
             var post = message.post || {};
-            
+
             var encodedUrl = url + "?" + Http.encode(query);
             var body = message.body ? message.body : Http.encode(post);
-            
+
             var options = {
                 method: message.method,
                 headers: message.headers,
@@ -1830,10 +1836,10 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
          * @param {Object} message An object with values for method, headers, timeout, and encoded body.
          * @param {Function} callback The function to call when the request is complete: `(err, response)`.
          *
-         * @method splunkjs.Http 
+         * @method splunkjs.Http
          */
         makeRequest: function(url, message, callback) {
-            throw new Error("UNDEFINED FUNCTION - OVERRIDE REQUIRED"); 
+            throw new Error("UNDEFINED FUNCTION - OVERRIDE REQUIRED");
         },
 
         /**
@@ -1842,7 +1848,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
          * @param {String} json The JSON response to parse.
          * @return {Object} The parsed JSON.
          *
-         * @method splunkjs.Http 
+         * @method splunkjs.Http
          */
         parseJson: function(json) {
             throw new Error("UNDEFINED FUNCTION - OVERRIDE REQUIRED");
@@ -1856,9 +1862,9 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
          * @param {Object} data The response data.
          * @return {Object} A unified response object.
          *
-         * @method splunkjs.Http 
+         * @method splunkjs.Http
          */
-        _buildResponse: function(error, response, data) {            
+        _buildResponse: function(error, response, data) {
             var complete_response, json = {};
 
             var contentType = null;
@@ -1880,9 +1886,9 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
             }
 
             if (json) {
-                logger.printMessages(json.messages);                
+                logger.printMessages(json.messages);
             }
-            
+
             complete_response = {
                 response: response,
                 status: (response ? response.statusCode : 0),
@@ -1898,11 +1904,11 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
      * Encodes a dictionary of values into a URL-encoded format.
      *
      * @example
-     *      
+     *
      *      // should be a=1&b=2&b=3&b=4
      *      encode({a: 1, b: [2,3,4]})
      *
-     * @param {Object} params The parameters to URL-encode.
+     * @param {Object} params The parameters to URL encode.
      * @return {String} The URL-encoded string.
      *
      * @function splunkjs.Http
@@ -1919,7 +1925,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
                 if (encodedStr && encodedStr[encodedStr.length - 1] !== "&") {
                     encodedStr = encodedStr + "&";
                 }
-                
+
                 // Get the value
                 var value = params[key];
 
@@ -1998,8 +2004,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
 
     /**
-     * Provides a root access point to the Splunk REST API with typed access to 
-     * Splunk features such as searches, indexes, apps, and more. Provides
+     * Provides a root access point to Splunk functionality with typed access to 
+     * Splunk resources such as searches, indexes, inputs, and more. Provides
      * methods to authenticate and create specialized instances of the service.
      *
      * @class splunkjs.Service
@@ -2012,16 +2018,16 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @constructor
          * @param {splunkjs.Http} http An instance of a `splunkjs.Http` class.
          * @param {Object} params A dictionary of optional parameters: 
-         *      * `scheme`: The scheme (`http` or `https`) for accessing Splunk.
-         *      * `host`: The host name (the default is _localhost_).
-         *      * `port`: The port number (the default is _8089_).
-         *      * `username`: The Splunk account username, which is used to authenticate the Splunk instance.
-         *      * `password`: The password, which is used to authenticate the Splunk instance.
-         *      * `owner`: The owner (username) component of the namespace context.
-         *      * `app`: The app component of the namespace context.
-         *      * `sessionKey`: The current session token.
-         *      * `autologin`: Enable or disable autologin functionaly (enabled by default).
-         *      * `version`: Version string for Splunk (e.g. 4.3, 4.3.2, 5.0) - defaults to 4.3.
+         *    - `scheme` (_string_): The scheme ("http" or "https") for accessing Splunk.
+         *    - `host` (_string_): The host name (the default is "localhost").
+         *    - `port` (_integer_): The port number (the default is 8089).
+         *    - `username` (_string_): The Splunk account username, which is used to authenticate the Splunk instance.
+         *    - `password` (_string_): The password, which is used to authenticate the Splunk instance.
+         *    - `owner` (_string_): The owner (username) component of the namespace.
+         *    - `app` (_string_): The app component of the namespace.
+         *    - `sessionKey` (_string_): The current session token.
+         *    - `autologin` (_boolean_): `true` to automatically try to log in again if the session terminates, `false` if not (`true` by default).
+         *    - `version` (_string_): The version string for Splunk, for example "4.3.2" (the default is "5.0").
          * @return {splunkjs.Service} A new `splunkjs.Service` instance.
          *
          * @method splunkjs.Service
@@ -2044,15 +2050,15 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         
         /**
          * Creates a specialized version of the current `Service` instance for
-         * a specific owner and app. 
+         * a specific namespace context. 
          *
          * @example
          *
          *      var svc = ...;
          *      var newService = svc.specialize("myuser", "unix");
          *
-         * @param {String} owner The owner of the specialized service.
-         * @param {String} app The app of the specialized service.
+         * @param {String} owner The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         * @param {String} app The app context for this resource (such as "search"). The "-" wildcard means all apps.
          * @return {splunkjs.Service} The specialized `Service` instance.
          *
          * @method splunkjs.Service
@@ -2072,7 +2078,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Gets an instance of the `Applications` collection, which allows you to 
+         * Gets the `Applications` collection, which allows you to 
          * list installed apps and retrieve information about them.
          *
          * @example
@@ -2092,8 +2098,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Gets an instance of the `Configurations` collection, which lets you 
-         * create, list, and retrieve configuration (CONF) files.
+         * Gets the `Configurations` collection, which lets you 
+         * create, list, and retrieve configuration (.conf) files.
          *
          * @example
          *
@@ -2105,7 +2111,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *          });
          *      });
          *
-         * @param {Object} namespace Namespace information (_owner_, _app_, _sharing_).
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
          * @return {splunkjs.Service.Configurations} The `Configurations` collection.
          *
          * @endpoint configs
@@ -2117,7 +2126,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Gets an instance of the `Indexes` collection, which lets you create, 
+         * Gets the `Indexes` collection, which lets you create, 
          * list, and update indexes. 
          *
          * @example
@@ -2130,7 +2139,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *          // `index` is an Index object.
          *      });
          *
-         * @param {Object} namespace Namespace information (_owner_, _app_, _sharing_).
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
          * @return {splunkjs.Service.Indexes} The `Indexes` collection.
          *
          * @endpoint data/indexes
@@ -2142,7 +2154,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Gets an instance of the `SavedSearches` collection, which lets you
+         * Gets the `SavedSearches` collection, which lets you
          * create, list, and update saved searches. 
          *
          * @example
@@ -2153,7 +2165,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *          console.log("# Of Saved Searches: " + savedSearches.list().length);
          *      });
          *
-         * @param {Object} namespace Namespace information (_owner_, _app_, _sharing_).
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
          * @return {splunkjs.Service.SavedSearches} The `SavedSearches` collection.
          *
          * @endpoint saved/searches
@@ -2165,7 +2180,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Gets an instance of the `Jobs` collection, which lets you create, list, 
+         * Gets the `Jobs` collection, which lets you create, list, 
          * and retrieve search jobs. 
          *
          * @example
@@ -2179,7 +2194,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *          }
          *      });
          *
-         * @param {Object} namespace Namespace information (_owner_, _app_, _sharing_).
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
          * @return {splunkjs.Service.Jobs} The `Jobs` collection.
          *
          * @endpoint search/jobs
@@ -2191,7 +2209,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Gets an instance of the `Users` collection, which lets you create, 
+         * Gets the `Users` collection, which lets you create, 
          * list, and retrieve users. 
          *
          * @example
@@ -2216,7 +2234,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Gets an instance of the `Views` collection, which lets you create,
+         * Gets the `Views` collection, which lets you create,
          * list, and retrieve views (custom UIs built in Splunk's app framework). 
          *
          * @example
@@ -2230,7 +2248,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *          }
          *      });
          *
-         * @param {Object} namespace Namespace information (_owner_, _app_, _sharing_).
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
          * @return {splunkjs.Service.Views} The `Views` collection.
          *
          * @endpoint data/ui/views
@@ -2242,7 +2263,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Creates an asyncronous search job with a given search query and parameters.
+         * Creates a search job with a given search query and optional parameters, including `exec_mode` to specify the type of search:
+         *
+         *    - Use `exec_mode=normal` to return a search job ID immediately (default).
+         *      Poll for completion to find out when you can retrieve search results. 
+         *
+         *    - Use `exec_mode=blocking` to return the search job ID when the search has finished.
+         * 
+         * To run a oneshot search, which does not create a job but rather returns the search results, use `Service.oneshotSearch`.
          *
          * @example
          *
@@ -2251,8 +2279,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      });
          *
          * @param {String} query The search query.
-         * @param {Object} params A dictionary of properties for the job. For details, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#POST_search.2Fjobs" target="_blank">POST search/jobs</a> endpoint in the REST API documentation.
-         * @param {Object} namespace Namespace information (_owner_, _app_, _sharing_).
+         * @param {Object} params A dictionary of properties for the job. For a list of available parameters, see <a href=" http://dev.splunk.com/view/SP-CAAAEFA#searchjobparams" target="_blank">Search job parameters</a> on Splunk Developer Portal.
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
          * @param {Function} callback A function to call with the created job: `(err, createdJob)`.
          *
          * @endpoint search/jobs
@@ -2269,7 +2300,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Creates a oneshot search job from a given search query and parameters.
+         * Creates a oneshot search from a given search query and optional parameters.
          *
          * @example
          *
@@ -2278,9 +2309,16 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      });
          *
          * @param {String} query The search query.
-         * @param {Object} params A dictionary of properties for the job. For details, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#POST_search.2Fjobs" target="_blank">POST search/jobs</a> endpoint in the REST API documentation.
-         * @param {Object} namespace Namespace information (_owner_, _app_, _sharing_).
-         * @param {Function} callback A function to call with the results of the job: `(err, results)`.
+         * @param {Object} params A dictionary of properties for the search:
+         *    - `output_mode` (_string_): Specifies the output format of the results (XML, JSON, or CSV).
+         *    - `earliest_time` (_string_): Specifies the earliest time in the time range to search. The time string can be a UTC time (with fractional seconds), a relative time specifier (to now), or a formatted time string.
+         *    - `latest_time` (_string_): Specifies the latest time in the time range to search. The time string can be a UTC time (with fractional seconds), a relative time specifier (to now), or a formatted time string.
+         *    - `rf` (_string_): Specifies one or more fields to add to the search.
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
+         * @param {Function} callback A function to call with the results of the search: `(err, results)`.
          *
          * @endpoint search/jobs
          * @method splunkjs.Service
@@ -2305,6 +2343,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      });
          *
          * @param {Function} callback A function to call with the user instance: `(err, user)`.
+         * @return {splunkjs.Service.currentUser} The `User`.
          *
          * @endpoint authorization/current-context
          * @method splunkjs.Service
@@ -2365,7 +2404,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      });
          *
          * @param {String} query The search query to parse.
-         * @param {Object} params An object of options for the parser. For details, see the <a href="http://docs.splunk.com/Documentation/Splunk/4.3.2/RESTAPI/RESTsearch#GET_search.2Fparser" target="_blank">GET search/parser</a> endpoint in the REST API documentation.
+         * @param {Object} params An object of options for the parser:
+         *    - `enable_lookups` (_boolean_): If `true`, performs reverse lookups to expand the search expression.
+         *    - `output_mode` (_string_): The output format (XML or JSON).
+         *    - `parse_only` (_boolean_): If `true`, disables the expansion of search due to evaluation of subsearches, time term expansion, lookups, tags, eventtypes, and sourcetype alias.
+         *    - `reload_macros` (_boolean_): If `true`, reloads macro definitions from macros.conf.
          * @param {Function} callback A function to call with the parse info: `(err, parse)`.
          *
          * @endpoint search/parser
@@ -2442,11 +2485,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @param {String} event The text for this event.
          * @param {Object} params A dictionary of parameters for indexing: 
-         *      * `index`: The index to send events from this input to.
-         *      * `host`: The value to populate in the host field for events from this data input. 
-         *      * `host_regex`: A regular expression used to extract the host value from each event. 
-         *      * `source`: The source value to fill in the metadata for this input's events.
-         *      * `sourcetype`: The sourcetype to apply to events from this input.
+         *    - `index` (_string_): The index to send events from this input to.
+         *    - `host` (_string_): The value to populate in the Host field for events from this data input. 
+         *    - `host_regex` (_string_): A regular expression used to extract the host value from each event. 
+         *    - `source` (_string_): The value to populate in the Source field for events from this data input.
+         *    - `sourcetype` (_string_): The value to populate in the Sourcetype field for events from this data input.
          * @param {Function} callback A function to call when the event is submitted: `(err, result)`.
          *
          * @endpoint receivers/simple
@@ -2503,7 +2546,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @constructor
          * @param {splunkjs.Service} service A `Service` instance.
-         * @param {String} qualifiedPath A fully-qualified relative endpoint path (for example, '/services/search/jobs').
+         * @param {String} qualifiedPath A fully-qualified relative endpoint path (for example, "/services/search/jobs").
          * @return {splunkjs.Service.Endpoint} A new `splunkjs.Service.Endpoint` instance.
          *
          * @method splunkjs.Service.Endpoint
@@ -2537,8 +2580,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      var endpoint = new splunkjs.Service.Endpoint(service, "search/jobs/12345");
          *      endpoint.get("results", {offset: 1}, function() { console.log("DONE"))});
          *
-         * @param {String} relpath A relative path to append to the path.
-         * @param {Object} params A dictionary of parameters to add to the query string.
+         * @param {String} relpath A relative path to append to the endpoint path.
+         * @param {Object} params A dictionary of entity-specific parameters to add to the query string.
          * @param {Function} callback A function to call when the request is complete: `(err, response)`.
          *
          * @method splunkjs.Service.Endpoint
@@ -2569,8 +2612,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      var endpoint = new splunkjs.Service.Endpoint(service, "search/jobs/12345");
          *      endpoint.post("control", {action: "cancel"}, function() { console.log("CANCELLED"))});
          *
-         * @param {String} relpath A relative path to append to the path.
-         * @param {Object} params A dictionary of parameters to add to the body.
+         * @param {String} relpath A relative path to append to the endpoint path.
+         * @param {Object} params A dictionary of entity-specific parameters to add to the body.
          * @param {Function} callback A function to call when the request is complete: `(err, response)`.
          *
          * @method splunkjs.Service.Endpoint
@@ -2601,8 +2644,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      var endpoint = new splunkjs.Service.Endpoint(service, "search/jobs/12345");
          *      endpoint.delete("", {}, function() { console.log("DELETED"))});
          *
-         * @param {String} relpath A relative path to append to the path.
-         * @param {Object} params A dictionary of parameters to add to the query string.
+         * @param {String} relpath A relative path to append to the endpoint path.
+         * @param {Object} params A dictionary of entity-specific parameters to add to the query string.
          * @param {Function} callback A function to call when the request is complete: `(err, response)`.
          *
          * @method splunkjs.Service.Endpoint
@@ -2625,9 +2668,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
     
     /**
-     * Provides a base definition for a Splunk resource (for example, an index, 
-     * search job, or app). Provides basic methods for handling Splunk resources,
-     * such as validation and accessing properties. 
+     * Provides a base definition for a Splunk resource (for example, an entity 
+     * such as an index or search job, or a collection of entities). Provides 
+     * basic methods for handling Splunk resources, such as validation and 
+     * accessing properties. 
      *
      * This class should not be used directly because most methods are meant to be overridden.
      *
@@ -2640,8 +2684,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @constructor
          * @param {splunkjs.Service} service A `Service` instance.
-         * @param {String} path A relative endpoint path (for example, 'search/jobs').
-         * @param {Object} namespace Namespace information (_owner_, _app_, _sharing_).
+         * @param {String} path A relative endpoint path (for example, "search/jobs").
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
          * @return {splunkjs.Service.Resource} A new `splunkjs.Service.Resource` instance.
          *
          * @method splunkjs.Service.Resource
@@ -2701,7 +2748,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Retrieves the current properties for this resource.
          *
-         * @return {Object} The properties for this resource.
+         * @return {Object} The properties.
          *
          * @method splunkjs.Service.Resource
          */
@@ -2710,7 +2757,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Retrieves the current full state of this resource.
+         * Retrieves the current full state (properties and metadata) of this resource.
          *
          * @return {Object} The current full state of this resource.
          *
@@ -2723,7 +2770,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     
     /**
      * Defines a base class for a Splunk entity, which is a well-defined construct
-     * with certain operations (such as "properties", "update", and "delete").
+     * with certain operations (such as "properties", "update", and "delete"). 
+     * Entities include search jobs, indexes, inputs, apps, and more. 
      *
      * Provides basic methods for working with Splunk entities, such as fetching and
      * updating them.
@@ -2733,9 +2781,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      */
     root.Entity = root.Resource.extend({
         /**
-         * Indicates whether to call `fetch` after an update to get the updated 
-         * item. By default, the entity is not fetched because the endpoint returns
-         * (echoes) the updated entity.
+         * A static property that indicates whether to call `fetch` after an 
+         * update to get the updated entity. By default, the entity is not 
+         * fetched because the endpoint returns (echoes) the updated entity.
          *
          * @method splunkjs.Service.Entity
          */
@@ -2746,8 +2794,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @constructor
          * @param {splunkjs.Service} service A `Service` instance.
-         * @param {String} path A relative endpoint path (for example, 'search/jobs').
-         * @param {Object} namespace Namespace information (_owner_, _app_, _sharing_).
+         * @param {String} path A relative endpoint path (for example, "search/jobs").
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
          * @return {splunkjs.Service.Entity} A new `splunkjs.Service.Entity` instance.
          *
          * @method splunkjs.Service.Entity
@@ -2779,9 +2830,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Loads the resource and stores the properties.
+         * Loads the entity and stores the properties.
          *
-         * @param {Object} properties The properties for this resource.
+         * @param {Object} properties The properties for this entity.
          *
          * @method splunkjs.Service.Entity
          * @protected
@@ -2824,7 +2875,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         
         /**
          * Retrieves the access control list (ACL) information for this entity,
-         * which contains the permissions for accessing the resource.
+         * which contains the permissions for accessing the entity.
          *
          * @return {Object} The ACL.
          *
@@ -2836,7 +2887,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         
         /**
          * Retrieves the links information for this entity, which is the URI of
-         * the resource relative to the management port of a Splunk instance.
+         * the entity relative to the management port of a Splunk instance.
          *
          * @return {Object} The links information.
          *
@@ -2880,10 +2931,16 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Refreshes the resource by fetching the object from the server and 
+         * Refreshes the entity by fetching the object from the server and 
          * loading it.
          *
-         * @param {Object} options An optional dictionary of collection filtering and pagination options.
+         * @param {Object} options An optional dictionary of collection filtering and pagination options:
+         *    - `count` (_integer_): The maximum number of items to return.
+         *    - `offset` (_integer_): The offset of the first item to return.
+         *    - `search` (_string_): The search query to filter responses.
+         *    - `sort_dir` (_string_): The direction to sort returned items: “asc” or “desc”.
+         *    - `sort_key` (_string_): The field to use for sorting (optional).
+         *    - `sort_mode` (_string_): The collating sequence for sorting returned items: “auto”, “alpha”, “alpha_case”, or “num”.
          * @param {Function} callback A function to call when the object is retrieved: `(err, resource)`.
          *
          * @method splunkjs.Service.Entity
@@ -3043,9 +3100,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      */
     root.Collection = root.Resource.extend({
         /**
-         * Indicates whether to call `fetch` after an entity has been created.
-         * By default, the entity is not fetched because the endpoint returns
-         * (echoes) the new entity.
+         * A static property that indicates whether to call `fetch` after an 
+         * entity has been created. By default, the entity is not fetched 
+         * because the endpoint returns (echoes) the new entity.
 
          * @method splunkjs.Service.Collection
          */
@@ -3056,8 +3113,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @constructor
          * @param {splunkjs.Service} service A `Service` instance.
-         * @param {String} path A relative endpoint path (for example, 'search/jobs').
-         * @param {Object} namespace Namespace information (_owner_, _app_, _sharing_).
+         * @param {String} path A relative endpoint path (for example, "search/jobs").
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
          * @return {splunkjs.Service.Collection} A new `splunkjs.Service.Collection` instance.
          *
          * @method splunkjs.Service.Collection
@@ -3095,10 +3155,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Loads the resource and properties, and creates a map of entity
+         * Loads the collection and properties, and creates a map of entity
          * names to entity IDs (for retrieval purposes).
          *
-         * @param {Object} properties The properties for this resource.
+         * @param {Object} properties The properties for this collection.
          *
          * @method splunkjs.Service.Collection
          * @private
@@ -3167,7 +3227,13 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * Refreshes the resource by fetching the object from the server and 
          * loading it.
          *
-         * @param {Object} options A dictionary of collection filtering and pagination options.
+         * @param {Object} options A dictionary of collection filtering and pagination options:
+         *    - `count` (_integer_): The maximum number of items to return.
+         *    - `offset` (_integer_): The offset of the first item to return.
+         *    - `search` (_string_): The search query to filter responses.
+         *    - `sort_dir` (_string_): The direction to sort returned items: “asc” or “desc”.
+         *    - `sort_key` (_string_): The field to use for sorting (optional).
+         *    - `sort_mode` (_string_): The collating sequence for sorting returned items: “auto”, “alpha”, “alpha_case”, or “num”.
          * @param {Function} callback A function to call when the object is retrieved: `(err, resource)`.
          *
          * @method splunkjs.Service.Collection
@@ -3211,7 +3277,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      });
          *
          * @param {String} id The name of the entity to retrieve.
-         * @param {Object} namespace Namespace information (_owner_, _app_, _sharing_).
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
          * @returns {splunkjs.Service.Entity} The entity, or `null` if one is not found.
          *
          * @method splunkjs.Service.Collection
@@ -3282,7 +3351,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *          console.log("CREATED");
          *      });
          *
-         * @param {Object} params A dictionary of properties to create the entity with.
+         * @param {Object} params A dictionary of entity-specific properties.
+         * @param {Function} callback The function to call when the request is complete: `(err, response)`.
          * @returns {Array} An array of `splunkjs.Service.Entity` objects.
          *
          * @method splunkjs.Service.Collection
@@ -3345,8 +3415,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
     
     /**
-     * Represents a specific saved search, which you can then update, remove, and
-     * perform other operations on.
+     * Represents a specific saved search, which you can then view, modify, and
+     * remove.
      *
      * @endpoint saved/searches/{name}
      * @class splunkjs.Service.SavedSearch
@@ -3368,7 +3438,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @constructor
          * @param {splunkjs.Service} service A `Service` instance.
          * @param {String} name The name for the new saved search.
-         * @param {Object} namespace Namespace information (_owner_, _app_, _sharing_).
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
          * @return {splunkjs.Service.SavedSearch} A new `splunkjs.Service.SavedSearch` instance.
          *
          * @method splunkjs.Service.SavedSearch
@@ -3421,7 +3494,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *          console.log("Job SID: ", job.sid);
          *      });
          *
-         * @param {Object} options The options for dispatching this saved search. For details, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#POST_saved.2Fsearches.2F.7Bname.7D.2Fdispatch" target="_blank">POST saved/searches/{name}/dispatch</a> endpoint in the REST API documentation.
+         * @param {Object} options The options for dispatching this saved search:
+         *    - `dispatch.now` (_string_): The time that is used to dispatch the search as though the specified time were the current time.
+         *    - `dispatch.*` (_string_): Overwrites the value of the search field specified in *.
+         *    - `trigger_actions` (_boolean_): Indicates whether to trigger alert actions.
+         *    - `force_dispatch` (_boolean_): Indicates whether to start a new search if another instance of this search is already running.
          * @param {Function} callback A function to call when the saved search is dispatched: `(err, job, savedSearch)`.
          *
          * @endpoint saved/searches/{name}/dispatch
@@ -3526,7 +3603,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * If you don't provide it, this method will fetch the search string from
          * the server or from the local cache. 
          *
-         * @param {Object} props The properties to update the saved search with. For details, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#POST_saved.2Fsearches.2F.7Bname.7D" target="_blank">POST saved/searches/{name}</a> endpoint in the REST API documentation. 
+         * @param {Object} props The properties to update the saved search with. For a list of available parameters, see <a href="http://dev.splunk.com/view/SP-CAAAEFA#savedsearchparams" target="_blank">Saved search parameters</a> on Splunk Developer Portal.
          * @param {Function} callback A function to call when the object is updated: `(err, entity)`.
          *
          * @method splunkjs.Service.SavedSearch
@@ -3581,9 +3658,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Creates a local instance of an entity.
+         * Creates a local instance of a saved search.
          *
-         * @param {Object} props The properties for this entity. For details, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#POST_saved.2Fsearches" target="_blank">POST saved/searches</a> endpoint in the REST API documentation.
+         * @param {Object} props The properties for the new saved search. For a list of available parameters, see <a href="http://dev.splunk.com/view/SP-CAAAEFA#savedsearchparams" target="_blank">Saved search parameters</a> on Splunk Developer Portal.
          * @return {splunkjs.Service.SavedSearch} A new `splunkjs.Service.SavedSearch` instance.
          *
          * @method splunkjs.Service.SavedSearches
@@ -3598,7 +3675,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @constructor
          * @param {splunkjs.Service} service A `Service` instance.
-         * @param {Object} namespace Namespace information (_owner_, _app_, _sharing_).
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
          * @return {splunkjs.Service.SavedSearches} A new `splunkjs.Service.SavedSearches` instance.
          *
          * @method splunkjs.Service.SavedSearches
@@ -3609,8 +3689,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
     
     /**
-     * Represents a specific Splunk app that you can update, remove, and
-     * perform other operations on.
+     * Represents a specific Splunk app that you can view, modify, and
+     * remove.
      *
      * @endpoint apps/local/{name}
      * @class splunkjs.Service.Application
@@ -3739,9 +3819,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Creates a local instance of an entity.
+         * Creates a local instance of an app.
          *
-         * @param {Object} props The properties for this entity. For details, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTapps#POST_apps.2Flocal" target="_blank">POST apps/local</a> endpoint in the REST API documentation.
+         * @param {Object} props The properties for the new app. For details, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTapps#POST_apps.2Flocal" target="_blank">POST apps/local</a> endpoint in the REST API documentation.
          * @return {splunkjs.Service.Application} A new `splunkjs.Service.Application` instance.
          *
          * @method splunkjs.Service.Applications
@@ -3797,8 +3877,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
     
     /**
-     * Represents a specific Splunk user, which you can update, remove, and
-     * perform other operations on.
+     * Represents a specific Splunk user, which you can view, modify, and
+     * remove.
      *
      * @endpoint authentication/users/{name}
      * @class splunkjs.Service.User
@@ -3858,9 +3938,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Creates a local instance of an entity.
+         * Creates a local instance of a user.
          *
-         * @param {Object} props The properties for this entity. For details, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTaccess#POST_authentication.2Fusers" target="_blank">POST authentication/users</a> endpoint in the REST API documentation.
+         * @param {Object} props The properties for this new user. For a list of available parameters, see <a href="http://dev.splunk.com/view/SP-CAAAEJ8#userauthparams" target="_blank">User authentication parameters</a> on Splunk Developer Portal.
          * @return {splunkjs.Service.User} A new `splunkjs.Service.User` instance.
          *
          * @method splunkjs.Service.Users
@@ -3871,7 +3951,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         
         /**
          * Constructor for `splunkjs.Service.Users`. 
-         *
+         * 
          * @constructor
          * @param {splunkjs.Service} service A `Service` instance.
          * @return {splunkjs.Service.Users} A new `splunkjs.Service.Users` instance.
@@ -3887,7 +3967,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * **Note:** This endpoint requires a special implementation.
          *
-         * @param {Object} params A dictionary of properties to create the entity with.
+         * @param {Object} params A dictionary of properties. For a list of available parameters, see <a href="http://dev.splunk.com/view/SP-CAAAEJ8#userauthparams" target="_blank">User authentication parameters</a> on Splunk Developer Portal.
          * @param {Function} callback A function to call with the new entity: `(err, createdEntity)`.
          *
          * @method splunkjs.Service.Users
@@ -3921,8 +4001,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
     
     /**
-     * Represents a specific Splunk view, which you can update, remove, and
-     * perform other operations on.
+     * Represents a specific Splunk view, which you can view, modify, and
+     * remove.
      *
      * @endpoint data/ui/views/{name}
      * @class splunkjs.Service.View
@@ -3944,7 +4024,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @constructor
          * @param {splunkjs.Service} service A `Service` instance.
          * @param {String} name The name of the view.
-         * @param {Object} namespace Namespace information (_owner_, _app_, _sharing_).
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
          * @return {splunkjs.Service.View} A new `splunkjs.Service.View` instance.
          *
          * @method splunkjs.Service.View
@@ -3974,9 +4057,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Creates a local instance of an entity.
+         * Creates a local instance of a view.
          *
-         * @param {Object} props The properties for this entity.
+         * @param {Object} props The properties for the new view. For a list of available parameters, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#POST_scheduled.2Fviews.2F.7Bname.7D" target="_blank">POST scheduled/views/{name}</a> endpoint in the REST API documentation.
          * @return {splunkjs.Service.View} A new `splunkjs.Service.View` instance.
          *
          * @method splunkjs.Service.Views
@@ -3991,7 +4074,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @constructor
          * @param {splunkjs.Service} service A `Service` instance.
-         * @param {Object} namespace Namespace information (_owner_, _app_, _sharing_).
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
          * @return {splunkjs.Service.Views} A new `splunkjs.Service.Views` instance.
          *
          * @method splunkjs.Service.Views
@@ -4024,7 +4110,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @constructor
          * @param {splunkjs.Service} service A `Service` instance.
          * @param {String} name The name of the index.
-         * @param {Object} namespace Namespace information (_owner_, _app_, _sharing_).
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
          * @return {splunkjs.Service.Index} A new `splunkjs.Service.Index` instance.
          *
          * @method splunkjs.Service.Index
@@ -4048,10 +4137,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @param {String} event The text for this event.
          * @param {Object} params A dictionary of parameters for indexing: 
-         *      * `host`: The value to populate in the host field for events from this data input. 
-         *      * `host_regex`: A regular expression used to extract the host value from each event. 
-         *      * `source`: The source value to fill in the metadata for this input's events.
-         *      * `sourcetype`: The sourcetype to apply to events from this input.
+         *    - `host` (_string_): The value to populate in the host field for events from this data input. 
+         *    - `host_regex` (_string_): A regular expression used to extract the host value from each event. 
+         *    - `source` (_string_): The source value to fill in the metadata for this input's events.
+         *    - `sourcetype` (_string_): The sourcetype to apply to events from this input.
          * @param {Function} callback A function to call when the event is submitted: `(err, result, index)`.
          *
          * @endpoint receivers/simple?index={name}
@@ -4104,9 +4193,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Creates a local instance of an entity.
+         * Creates a local instance of an index.
          *
-         * @param {Object} props The properties for this entity. For details, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTindex#POST_data.2Findexes" target="_blank">POST data/indexes</a> endpoint in the REST API documentation.
+         * @param {Object} props The properties for the new index. For a list of available parameters, see <a href="http://dev.splunk.com/view/SP-CAAAEJ3#indexparams" target="_blank">Index parameters</a> on Splunk Developer Portal.
          * @return {splunkjs.Service.Index} A new `splunkjs.Service.Index` instance.
          *
          * @method splunkjs.Service.Indexes
@@ -4121,7 +4210,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @constructor
          * @param {splunkjs.Service} service A `Service` instance.
-         * @param {Object} namespace Namespace information (_owner_, _app_, _sharing_).
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
          * @return {splunkjs.Service.Indexes} A new `splunkjs.Service.Indexes` instance.
          *
          * @method splunkjs.Service.Indexes
@@ -4141,8 +4233,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      });
          *
          * @param {String} name A name for this index.
-         * @param {Object} params A dictionary of properties to create the entity with. For details, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTindex#POST_data.2Findexes" target="_blank">POST data/indexes</a> endpoint in the REST API documentation.
-         * @param {Function} callback A function to call with the new entity: `(err, createdIndex)`.
+         * @param {Object} params A dictionary of properties. For a list of available parameters, see <a href="http://dev.splunk.com/view/SP-CAAAEJ3#indexparams" target="_blank">Index parameters</a> on Splunk Developer Portal.
+         * @param {Function} callback A function to call with the new index: `(err, createdIndex)`.
          *
          * @endpoint data/indexes
          * @method splunkjs.Service.Indexes
@@ -4186,8 +4278,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @constructor
          * @param {splunkjs.Service} service A `Service` instance.
-         * @param {String} name The name of the stanza.
-         * @param {Object} namespace Namespace information (_owner_, _app_, _sharing_).
+         * @param {String} file The name of the configuration file.
+         * @param {String} name The name of the new stanza.
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
          * @return {splunkjs.Service.ConfigurationStanza} A new `splunkjs.Service.ConfigurationStanza` instance.
          *
          * @method splunkjs.Service.ConfigurationStanza
@@ -4219,9 +4315,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Creates a local instance of an entity.
+         * Creates a local instance of a stanza in a configuration file.
          *
-         * @param {Object} props The key-value properties for this entity. 
+         * @param {Object} props The key-value properties for the new stanza. 
          * @return {splunkjs.Service.ConfigurationStanza} A new `splunkjs.Service.ConfigurationStanza` instance.
          *
          * @method splunkjs.Service.ConfigurationFile
@@ -4236,7 +4332,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @constructor
          * @param {splunkjs.Service} service A `Service` instance.
-         * @param {Object} namespace Namespace information (_owner_, _app_, _sharing_).
+         * @param {String} name The name of the configuration file.
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
          * @return {splunkjs.Service.ConfigurationFile} A new `splunkjs.Service.ConfigurationFile` instance.
          *
          * @method splunkjs.Service.ConfigurationFile
@@ -4312,9 +4412,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Creates a local instance of an entity.
+         * Creates a local instance of a configuration file.
          *
-         * @param {Object} props The properties for this entity.
+         * @param {Object} props The properties for this configuration file.
          * @return {splunkjs.Service.ConfigurationFile} A new `splunkjs.Service.ConfigurationFile` instance.
          *
          * @method splunkjs.Service.Configurations
@@ -4328,7 +4428,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @constructor
          * @param {splunkjs.Service} service A `Service` instance.
-         * @param {Object} namespace Namespace information (_owner_, _app_, _sharing_).
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
          * @return {splunkjs.Service.Configurations} A new `splunkjs.Service.Configurations` instance.
          *
          * @method splunkjs.Service.Configurations
@@ -4412,7 +4515,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @constructor
          * @param {splunkjs.Service} service A `Service` instance.
          * @param {String} sid The search ID for this search job.
-         * @param {Object} namespace Namespace information (_owner_, _app_, _sharing_).
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
          * @return {splunkjs.Service.Job} A new `splunkjs.Service.Job` instance.
          *
          * @method splunkjs.Service.Job
@@ -4524,7 +4630,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *          console.log("Fields: ", events.fields);
          *      });
          *
-         * @param {Object} params The parameters for retrieving events. For details, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#GET_search.2Fjobs.2F.7Bsearch_id.7D.2Fevents" target="_blank">GET search/jobs/{search_id}/events</a> endpoint in the REST API documentation.
+         * @param {Object} params The parameters for retrieving events. For a list of available parameters, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#GET_search.2Fjobs.2F.7Bsearch_id.7D.2Fevents" target="_blank">GET search/jobs/{search_id}/events</a> endpoint in the REST API documentation.
          * @param {Function} callback A function to call when the events are retrieved: `(err, events, job)`.
          *
          * @endpoint search/jobs/{search_id}/events
@@ -4574,11 +4680,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         
         /**
          * Returns an iterator over this search job's events or results.
-         * 
-         * @param {String} One of {"events", "preview", "results"}.
+         *
+         * @param {String} type One of {"events", "preview", "results"}.
          * @param {Object} params A dictionary of optional parameters:
-         *      * `pagesize`: The number of items to return on each request. Defaults to as many as possible.
-         * @return {splunkjs.Service.PaginatedEndpointIterator}
+         *    - `pagesize` (_integer_): The number of items to return on each request. Defaults to as many as possible.
+         * @return {Object} An iterator object with a `next(callback)` method, where `callback` is of the form `(err, results, hasMoreResults)`.
          * 
          * @endpoint search/jobs/{search_id}/results
          * @method splunkjs.Service.Job
@@ -4623,7 +4729,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *          console.log("Fields: ", results.fields);
          *      });
          *
-         * @param {Object} params The parameters for retrieving preview results. For details, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#GET_search.2Fjobs.2F.7Bsearch_id.7D.2Fresults_preview" target="_blank">GET search/jobs/{search_id}/results_preview</a> endpoint in the REST API documentation.
+         * @param {Object} params The parameters for retrieving preview results. For a list of available parameters, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#GET_search.2Fjobs.2F.7Bsearch_id.7D.2Fresults_preview" target="_blank">GET search/jobs/{search_id}/results_preview</a> endpoint in the REST API documentation.
          * @param {Function} callback A function to call when the preview results are retrieved : `(err, results, job)`.
          *
          * @endpoint search/jobs/{search_id}/results_preview
@@ -4660,7 +4766,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *          console.log("Fields: ", results.results);
          *      });
          *
-         * @param {Object} params The parameters for retrieving search results. For details, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#GET_search.2Fjobs.2F.7Bsearch_id.7D.2Fresults" target="_blank">GET search/jobs/{search_id}/results</a> endpoint in the REST API documentation.
+         * @param {Object} params The parameters for retrieving search results. For a list of available parameters, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#GET_search.2Fjobs.2F.7Bsearch_id.7D.2Fresults" target="_blank">GET search/jobs/{search_id}/results</a> endpoint in the REST API documentation.
          * @param {Function} callback A function to call when the results are retrieved: `(err, results, job)`.
          *
          * @endpoint search/jobs/{search_id}/results
@@ -4776,7 +4882,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *          console.log("Summary: ", summary);
          *      });
          *
-         * @param {Object} params The parameters for retrieving the summary. For details, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#GET_search.2Fjobs.2F.7Bsearch_id.7D.2Fsummary" target="_blank">GET search/jobs/{search_id}/summary</a> endpoint in the REST API documentation.
+         * @param {Object} params The parameters for retrieving the summary. For a list of available parameters, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#GET_search.2Fjobs.2F.7Bsearch_id.7D.2Fsummary" target="_blank">GET search/jobs/{search_id}/summary</a> endpoint in the REST API documentation.
          * @param {Function} callback A function to call with the summary and search job: `(err, summary, job)`.
          *
          * @endpoint search/jobs/{search_id}/summmary
@@ -4806,7 +4912,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *          console.log("Timeline: ", timeline);
          *      });
          *
-         * @param {Object} params The parameters for retrieving the timeline. For details, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#GET_search.2Fjobs.2F.7Bsearch_id.7D.2Ftimeline" target="_blank">GET search/jobs/{search_id}/timeline </a> endpoint in the REST API documentation.
+         * @param {Object} params The parameters for retrieving the timeline. For a list of available parameters, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#GET_search.2Fjobs.2F.7Bsearch_id.7D.2Ftimeline" target="_blank">GET search/jobs/{search_id}/timeline </a> endpoint in the REST API documentation.
          * @param {Function} callback A function to call with the timeline and search job: `(err, timeline, job)`.
          *
          * @endpoint search/jobs/{search_id}/timeline
@@ -4858,14 +4964,13 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * upon each status change.
          * 
          * @param {Object} options A dictionary of optional parameters:
-         *      * `period`: The number of milliseconds to wait between each poll.
-         *                  Defaults to 500.
-         * @param {Object|Function} A dictionary of optional callbacks:
-         *      * `ready`: A function `(job)` invoked when the job's properties first become available.
-         *      * `progress`: A function `(job)` invoked whenever new job properties are available.
-         *      * `done`: A function `(job)` invoked if the job completes successfully. No further polling is done.
-         *      * `failed`: A function `(job)` invoked if the job fails executing on the server. No further polling is done.
-         *      * `error`: A function `(err)` invoked if an error occurs while polling. No further polling is done.
+         *    - `period` (_integer_): The number of milliseconds to wait between each poll. Defaults to 500.
+         * @param {Object|Function} callbacks A dictionary of optional callbacks:
+         *    - `ready`: A function `(job)` invoked when the job's properties first become available.
+         *    - `progress`: A function `(job)` invoked whenever new job properties are available.
+         *    - `done`: A function `(job)` invoked if the job completes successfully. No further polling is done.
+         *    - `failed`: A function `(job)` invoked if the job fails executing on the server. No further polling is done.
+         *    - `error`: A function `(err)` invoked if an error occurs while polling. No further polling is done.
          * Or, if a function `(job)`, equivalent to passing it as a `done` callback.
          *
          * @method splunkjs.Service.Job
@@ -5006,9 +5111,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Creates a local instance of an entity.
+         * Creates a local instance of a job.
          *
-         * @param {Object} props The properties for this entity. For details, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#POST_search.2Fjobs" target="_blank">POST search/jobs</a> endpoint in the REST API documentation.
+         * @param {Object} props The properties for this new job. For a list of available parameters, see <a href="http://dev.splunk.com/view/SP-CAAAEFA#searchjobparams" target="_blank">Search job parameters</a> on Splunk Developer Portal.
          * @return {splunkjs.Service.Job} A new `splunkjs.Service.Job` instance.
          *
          * @method splunkjs.Service.Jobs
@@ -5024,7 +5129,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @constructor
          * @param {splunkjs.Service} service A `Service` instance.
-         * @param {Object} namespace Namespace information (_owner_, _app_, _sharing_).
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
          * @return {splunkjs.Service.Jobs} A new `splunkjs.Service.Jobs` instance.
          *
          * @method splunkjs.Service.Jobs
@@ -5038,10 +5146,17 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
 
         /**
-         * Creates an asyncronous search job.
+         * Creates a search job with a given search query and optional parameters, including `exec_mode` to specify the type of search:
+         *
+         *    - Use `exec_mode=normal` to return a search job ID immediately (default).
+         *      Poll for completion to find out when you can retrieve search results. 
+         *
+         *    - Use `exec_mode=blocking` to return the search job ID when the search has finished.
+         * 
+         * To run a oneshot search, which does not create a job but rather returns the search results, use `Service.Jobs.oneshotSearch`.
          *
          * @param {String} query The search query.
-         * @param {Object} params A dictionary of properties for the search job. For details, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#POST_search.2Fjobs" target="_blank">POST search/jobs</a> endpoint in the REST API documentation.
+         * @param {Object} params A dictionary of properties for the search job. For a list of available parameters, see <a href="http://dev.splunk.com/view/SP-CAAAEFA#searchjobparams" target="_blank">Search job parameters</a> on Splunk Developer Portal.
          * @param {Function} callback A function to call with the created job: `(err, createdJob)`.
          *
          * @endpoint search/jobs
@@ -5082,7 +5197,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
                 
         /**
-         * Creates an asyncronous search job with a given search query and parameters.
+         * Creates a search job with a given search query and optional parameters, including `exec_mode` to specify the type of search:
+         *
+         *    - Use `exec_mode=normal` to return a search job ID immediately (default).
+         *      Poll for completion to find out when you can retrieve search results. 
+         *
+         *    - Use `exec_mode=blocking` to return the search job ID when the search has finished.
+         * 
+         * To run a oneshot search, which does not create a job but rather returns the search results, use `Service.Jobs.oneshotSearch`.
          *
          * @example
          *
@@ -5092,7 +5214,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      });
          *
          * @param {String} query The search query.
-         * @param {Object} params A dictionary of properties for the search job. For details, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#POST_search.2Fjobs" target="_blank">POST search/jobs</a> endpoint in the REST API documentation.
+         * @param {Object} params A dictionary of properties for the search job. For a list of available parameters, see <a href="http://dev.splunk.com/view/SP-CAAAEFA#searchjobparams" target="_blank">Search job parameters</a> on Splunk Developer Portal.
          *        **Note:** This method throws an error if the `exec_mode=oneshot` parameter is passed in with the properties dictionary.
          * @param {Function} callback A function to call with the new search job: `(err, createdJob)`.
          *
@@ -5104,7 +5226,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
                 
         /**
-         * Creates a oneshot search job from a given search query and parameters.
+         * Creates a oneshot search from a given search query and parameters.
          *
          * @example
          *
@@ -5114,8 +5236,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      });
          *
          * @param {String} query The search query. 
-         * @param {Object} params A dictionary of properties for the search job. For details, see the <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTsearch#POST_search.2Fjobs" target="_blank">POST search/jobs</a> endpoint in the REST API documentation.
-         * @param {Function} callback A function to call with the results of the search job: `(err, results)`.
+         * @param {Object} params A dictionary of properties for the search:
+         *    - `output_mode` (_string_): Specifies the output format of the results (XML, JSON, or CSV).
+         *    - `earliest_time` (_string_): Specifies the earliest time in the time range to search. The time string can be a UTC time (with fractional seconds), a relative time specifier (to now), or a formatted time string.
+         *    - `latest_time` (_string_): Specifies the latest time in the time range to search. The time string can be a UTC time (with fractional seconds), a relative time specifier (to now), or a formatted time string.
+         *    - `rf` (_string_): Specifies one or more fields to add to the search.
+         * @param {Function} callback A function to call with the results of the search: `(err, results)`.
          *
          * @endpoint search/jobs
          * @method splunkjs.Service.Jobs
@@ -5168,11 +5294,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         }
     });
     
-    /**
-     * Iterates over an endpoint's results.
-     *
-     * @class splunkjs.Service.PaginatedEndpointIterator
-     */
+    /*!*/
+    // Iterates over an endpoint's results.
     root.PaginatedEndpointIterator = Class.extend({
         init: function(endpoint, params) {
             params = params || {};
@@ -5182,11 +5305,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this._offset = 0;
         },
         
-        /**
-         * Fetches the next page from the endpoint.
-         * 
-         * @param callback {Function} A function to call with next page: `(err, results, hasMore)`.
-         */
+        // Fetches the next page from the endpoint.
         next: function(callback) {
             callback = callback || function() {};
             
@@ -5256,7 +5375,7 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      *          }
      *      );
      *
-     * @param {Function} condition A function that returns a `Boolean` indicating whether the condition has been met.
+     * @param {Function} condition A function that returns a _boolean_ indicating whether the condition has been met.
      * @param {Function} body A function that runs the body of the loop: `(done)`.
      * @param {Function} callback The function to call when the loop is complete: `(err)`.
      *
@@ -5290,7 +5409,7 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      * When all tasks have been completed or if an error occurs, the callback 
      * function is called with the combined results of all tasks. 
      *
-     * Note: Tasks might not be run in the same order as they appear in the array,
+     * **Note**: Tasks might not be run in the same order as they appear in the array,
      * but the results will be returned in that order. 
      *
      * @example
