@@ -4,6 +4,13 @@
 
 ### New Features and APIs
 
+* `Service.log` will now auto-encode any JSON objects passed to it, so the 
+following is now valid:
+
+  ```
+  service.log({hello: "world"});
+  ```
+
 * `Job.track` is a new method to allow you to track the progress of a job. It
   allows you to get notifications when a job is 'ready', 'done', 'failed', 'error' 
   as well as a progress event while a job is still running. You can ask for any 
@@ -52,6 +59,9 @@
 
   This feature replaces the old `splunkjs.JobManager.{events|results|preview}Iterator`
   methods.
+
+* There is a new "hello-world"-style sample, `log.js`, which shows how to use
+  the SDK to do simple application logging.
 
 ### Breaking Changes
 

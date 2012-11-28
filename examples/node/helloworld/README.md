@@ -58,6 +58,14 @@ out.
 Since a realtime search is never "done", we only iterate for 5 times before
 we terminate the loop.
 
+### Files: [`log.js`]
+
+This example shows how you can send data to Splunk over HTTP from within your 
+application by using the `Service.log` method in the JavaScript SDK.
+
+We create a utility `Logger` class that encapsulates various logging levels,
+and we can then simply call `logger.log`, `logger.error`, etc.
+
 [`apps.js`]:                https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/apps.js
 [`apps_async.js`]:          https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/apps_async.js
 [`savedsearches.js`]:       https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/savedsearches.js

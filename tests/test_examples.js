@@ -81,6 +81,11 @@ exports.setup = function(svc, opts) {
             "Search#realtime": function(test) {
                 var main = require("../examples/node/helloworld/search_realtime").main;
                 main(opts, test.done);
+            },
+                        
+            "Logging": function(test) {
+                var main = require("../examples/node/helloworld/log").main;
+                main(opts, test.done);
             }
         },
         
