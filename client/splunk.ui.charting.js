@@ -1744,7 +1744,7 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
             // add some extra info to the axisProperties as needed
             axisProperties.chartType = properties.chart;
             axisProperties.axisLength = $(this.renderTo).width();
-            if(axisProperties.hasOwnProperty('axisTitle.text')){
+            if(axisProperties['axisTitle.text']){
                 axisProperties['axisTitle.text'] = Splunk.JSCharting.ParsingUtils.escapeHtml(axisProperties['axisTitle.text']);
             }
 
@@ -1780,7 +1780,7 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
                 }
                 this.hcConfig.xAxis.title.margin = xAxisMargin;
             }
-            if(this.hcConfig.xAxis.title.text === null || this.hcConfig.xAxis.title.text === '') {
+            if(typeof this.hcConfig.xAxis.title.text === 'undefined') {
                 this.hcConfig.xAxis.title.text = this.processedData.xAxisKey;
             }
         },
@@ -1789,8 +1789,9 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
             var axisProperties = this.parseUtils.getYAxisProperties(properties),
                 orientation = (this.axesAreInverted) ? 'horizontal' : 'vertical',
                 colorScheme = this.getAxisColorScheme();
+
             // add some extra info to the axisProperties as needed
-            if(axisProperties.hasOwnProperty('axisTitle.text')){
+            if(axisProperties['axisTitle.text']){
                 axisProperties['axisTitle.text'] = Splunk.JSCharting.ParsingUtils.escapeHtml(axisProperties['axisTitle.text']);
             }
             axisProperties.chartType = properties.chart;
@@ -1799,7 +1800,7 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
 
             this.yAxis = new Splunk.JSCharting.NumericAxis(axisProperties, data, orientation, colorScheme);
             this.hcConfig.yAxis = this.yAxis.getConfig();
-            if((this.hcConfig.yAxis.title.text === null || this.hcConfig.yAxis.title.text === '') && this.processedData.fieldNames.length === 1) {
+            if((typeof this.hcConfig.yAxis.title.text === 'undefined') && this.processedData.fieldNames.length === 1) {
                 this.hcConfig.yAxis.title.text = this.processedData.fieldNames[0];
             }
         },
@@ -4819,9 +4820,11 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
 
         applyPropertyByName: function(key, value) {
             switch(key) {
-
                 case 'axisTitle.text':
-                    this.mapper.mapValue(((value || value === '') ? value : null), ["title", "text"]);
+                    if(typeof value === 'string') {
+                        value = $.trim(value);
+                    }
+                    this.mapper.mapValue(value, ["title", "text"]);
                     break;
                 case 'axisLabels.axisVisibility':
                     this.mapper.mapValue(((value === 'hide') ? 0 : 1), ["lineWidth"]);
@@ -4946,7 +4949,6 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
             x: 3
         },
         title: {
-            text: null,
             margin: 15
         },
         min: null,
@@ -4955,7 +4957,6 @@ require.define("/ui/charting/js_charting.js", function (require, module, exports
 
     Splunk.JSCharting.AbstractAxis.DEFAULT_VERT_CONFIG = {
         title: {
-            text: null,
             margin: 15
         },
         tickWidth: 1,
