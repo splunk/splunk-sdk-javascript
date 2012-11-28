@@ -82,7 +82,7 @@
       scheme   = "https";
       host     = "localhost";
       port     = "8089";
-      version  = "4.3";
+      version  = "5.0";
       
       Async = splunkjs.Async;
       utils = splunkjs.Utils;
@@ -93,7 +93,7 @@
         scheme   = utils.trim($("#id_scheme").pVal())   || "https";
         host     = utils.trim($("#id_host").pVal())     || "localhost";
         port     = utils.trim($("#id_port").pVal())     || "8089";
-        version  = utils.trim($("#id_version").pVal())  || "4.3";
+        version  = utils.trim($("#id_version").pVal())  || "5.0";
         
         var connectionString = username + " : ****** @ " + scheme + "://" + host + ":" + port;
         $("#signin-dropdown").text(connectionString);
@@ -282,7 +282,7 @@
                     <input type="text" name="port" id="id_port" placeholder="port: 8089"/>
                   </li>
                   <li>
-                    <input type="text" name="port" id="id_version" placeholder="version: 4.3"/>
+                    <input type="text" name="port" id="id_version" placeholder="version: 5.0"/>
                   </li>
               </ul>
             </li>

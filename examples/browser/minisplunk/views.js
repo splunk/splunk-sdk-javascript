@@ -946,7 +946,7 @@ var SigninView = BootstrapModalView.extend({
     var host     = this.$("#id_host").val() || "localhost";
     var port     = this.$("#id_port").val() || "8089";
     var app      = this.$("#id_app").val() || "search";
-    var version  = this.$("#id_version").val() || "4.3";
+    var version  = this.$("#id_version").val() || "5.0";
     
     var base = scheme + "://" + host + ":" + port;
     
