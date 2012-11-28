@@ -2483,7 +2483,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *          console.log("Submitted event: ", result);
          *      });
          *
-         * @param {String} event The text for this event.
+         * @param {String|Object} event The text for this event, or a JSON object.
          * @param {Object} params A dictionary of parameters for indexing: 
          *    - `index` (_string_): The index to send events from this input to.
          *    - `host` (_string_): The value to populate in the Host field for events from this data input. 
@@ -2503,6 +2503,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             callback = callback || function() {};
             params = params || {};
+            
+            // If the event is a JSON object, convert it to a string.
+            if (utils.isObject(event)) {
+                event = JSON.stringify(event);
+            }
             
             var path = this.paths.submitEvent;
             var method = "POST";
