@@ -2,20 +2,20 @@
 
 ## v1.1.0
 
-### New Features and APIs
+### New features and APIs
 
-* `Service.log` will now auto-encode any JSON objects passed to it, so the 
-following is now valid:
+* The `Service.log` method now auto-encodes any JSON objects passed to it. For 
+  example, the following code is now valid:
 
   ```
   service.log({hello: "world"});
   ```
 
-* `Job.track` is a new method to allow you to track the progress of a job. It
-  allows you to get notifications when a job is 'ready', 'done', 'failed', 'error' 
-  as well as a progress event while a job is still running. You can ask for any 
-  one or combination of the above events. Here is a sample usage to know when a 
-  job is done:
+* The new `Job.track` function allows you to track the progress of a job by 
+  receiving notifications about the job status, such as 'ready', 'done', 
+  'failed', and 'error', as well as a progress event while the job is still 
+  running. You can request one or more of these events. For example, this code 
+  sample shows how to determine when a job is done: 
   
   ```
   job.track({ period: 200 }, {
@@ -25,13 +25,17 @@ following is now valid:
   });
   ```
 
-  You can read more about this feature in the [documentation](http://docs.splunk.com/Documentation/JavaScriptSDK), 
-  or see a sample usage in the Timeline UI example.
+  For more about this function, see the 
+  [**splunkjs.Service.Job.track** function](http://docs.splunk.com/DocumentationStatic/JavaScriptSDK/1.0/splunkjs.Service.Job.html#splunkjs.Service.Job-track),
+  see code examples on the 
+  [How to search your data](http://dev.splunk.com/view/SP-CAAAEFA) 
+  page on the Developer Portal, or see the Timeline UI example in the 
+  **/splunk-sdk-javascript/examples/browser/ui** directory.
 
   This feature replaces the old `splunkjs.JobManager` class.
 
-* `Job.iterator` is a new method that allows you to get an iterator over the
-  results, events, or "results preview" of a search job. For example, you can
+* The new `Job.iterator` function allows you to get an iterator over the
+  results, events, and preview results of a search job. For example, you can
   iterate over all the results as follows:
   
   ```
@@ -60,22 +64,25 @@ following is now valid:
   This feature replaces the old `splunkjs.JobManager.{events|results|preview}Iterator`
   methods.
 
-* There is a new "hello-world"-style sample, `log.js`, which shows how to use
-  the SDK to do simple application logging.
+* A new "hello-world"-style code example, `log.js`, has been added to show how 
+  to do simple application logging using the Splunk JavaScript SDK.
 
-### Breaking Changes
+### Breaking changes
 
-* The easyXDM library is no longer included "in-the-box". This library was not
-being used, and could not work with a Splunk instance that had a self-signed
-SSL certificate.
+* The easyXDM library is no longer included with the Splunk JavaScript SDK 
+  because this library was not being used, and could not work with a Splunk 
+  instance that had a self-signed SSL certificate.
 
-* The default Splunk version is now 5.0 instead of 4.3. If you were previously
-connecting to a Splunk 4.3 instance, you need to specify a `version: "4.3"` when
-you construct your `splunkjs.Service` instance or in your `.splunkrc`.
+* The default Splunk version is now 5.0 instead of 4.3. If you previously
+  connected to a Splunk 4.3 instance, you must specify `version: "4.3"` when
+  you construct your `splunkjs.Service` instance. If you are using the 
+  **.splunkrc** file with the code examples, include `"version=5.0"`. For more 
+  about the **.splunkrc** file, see the 
+  [Utilities](http://dev.splunk.com/view/SP-CAAAEFM) page on the Developer Portal. 
 
-* The `splunkjs.JobManager` has been removed, and it's functionality has been
-replaced by two functions: `Job.track` and `Job.iterator`. Read more about them
-in the `New features and APIs` section.
+* The `splunkjs.JobManager` class has been removed, and its functionality has 
+  been replaced by two functions: `Job.track` and `Job.iterator` (see "New 
+  features and APIs" above).
 
 * Support for Splunk Storm has been removed, and will be added back once the
 Storm API is reactivated and stable.
@@ -115,7 +122,7 @@ The SDK now has much higher test coverage.
 
 Several bugs in the charting component have been fixed.
 
-### Breaking Changes
+### Breaking changes
 
 #### Change to `search/typeahead` endpoint
 
@@ -304,7 +311,7 @@ version.
 
 #### Improved documentation
 
-### Breaking Changes
+### Breaking changes
 
 #### Namespace naming changes
 
