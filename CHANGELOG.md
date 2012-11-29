@@ -4,15 +4,18 @@
 
 ### New features and APIs
 
-* The `Service.log` method now auto-encodes any JSON objects passed to it. For example, the 
-following code is now valid:
+* The `Service.log` method now auto-encodes any JSON objects passed to it. For 
+  example, the following code is now valid:
 
   ```
   service.log({hello: "world"});
   ```
 
-* The new `Job.track` function allows you to track the progress of a job by receiving notifications about the job status, such as 'ready', 'done', 'failed', and 'error',
-  as well as a progress event while the job is still running. You can request one or more of these events. For example, this code sample shows how to determine when a job is done: 
+* The new `Job.track` function allows you to track the progress of a job by 
+  receiving notifications about the job status, such as 'ready', 'done', 
+  'failed', and 'error', as well as a progress event while the job is still 
+  running. You can request one or more of these events. For example, this code 
+  sample shows how to determine when a job is done: 
   
   ```
   job.track({ period: 200 }, {
@@ -22,7 +25,12 @@ following code is now valid:
   });
   ```
 
-  For more about this function, see the [**splunkjs.Service.Job.track** function](http://docs.splunk.com/DocumentationStatic/JavaScriptSDK/1.0/splunkjs.Service.Job.html#splunkjs.Service.Job-track), see code examples on the [How to search your data](http://dev.splunk.com/view/SP-CAAAEFA) page on the Developer Portal, or see the Timeline UI example in the **/splunk-sdk-javascript/examples/browser/ui** directory.
+  For more about this function, see the 
+  [**splunkjs.Service.Job.track** function](http://docs.splunk.com/DocumentationStatic/JavaScriptSDK/1.0/splunkjs.Service.Job.html#splunkjs.Service.Job-track),
+  see code examples on the 
+  [How to search your data](http://dev.splunk.com/view/SP-CAAAEFA) 
+  page on the Developer Portal, or see the Timeline UI example in the 
+  **/splunk-sdk-javascript/examples/browser/ui** directory.
 
   This feature replaces the old `splunkjs.JobManager` class.
 
@@ -56,19 +64,25 @@ following code is now valid:
   This feature replaces the old `splunkjs.JobManager.{events|results|preview}Iterator`
   methods.
 
-* A new "hello-world"-style code example, `log.js`, has been added to show how to do simple application logging using the Splunk JavaScript SDK.
+* A new "hello-world"-style code example, `log.js`, has been added to show how 
+  to do simple application logging using the Splunk JavaScript SDK.
 
 ### Breaking changes
 
-* The easyXDM library is no longer included with the Splunk JavaScript SDK because this library was not being used, and could not work with a Splunk instance that had a self-signed
-SSL certificate.
+* The easyXDM library is no longer included with the Splunk JavaScript SDK 
+  because this library was not being used, and could not work with a Splunk 
+  instance that had a self-signed SSL certificate.
 
 * The default Splunk version is now 5.0 instead of 4.3. If you previously
-connected to a Splunk 4.3 instance, you must specify `version: "4.3"` when
-you construct your `splunkjs.Service` instance. If you are using the **.splunkrc** file with the code examples, include `"version=5.0"`. For more about the **.splunkrc** file, see the [Utilities](http://dev.splunk.com/view/SP-CAAAEFM) page on the Developer Portal. 
+  connected to a Splunk 4.3 instance, you must specify `version: "4.3"` when
+  you construct your `splunkjs.Service` instance. If you are using the 
+  **.splunkrc** file with the code examples, include `"version=5.0"`. For more 
+  about the **.splunkrc** file, see the 
+  [Utilities](http://dev.splunk.com/view/SP-CAAAEFM) page on the Developer Portal. 
 
-* The `splunkjs.JobManager` class has been removed, and its functionality has been
-replaced by two functions: `Job.track` and `Job.iterator` (see "New features and APIs" above).
+* The `splunkjs.JobManager` class has been removed, and its functionality has 
+  been replaced by two functions: `Job.track` and `Job.iterator` (see "New 
+  features and APIs" above).
 
 * Support for Splunk Storm has been removed, and will be added back once the
 Storm API is reactivated and stable.
