@@ -2965,7 +2965,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                 } 
                 else {
-                    that._load(response.data.entry);
+                    that._load(response.data ? response.data.entry : null);
                     callback(null, that);
                 }
             });
