@@ -12758,7 +12758,6 @@ require.define("/examples/node/search.js", function (require, module, exports, _
         
         cmdline.parse(argv);
         
-        console.log(cmdline.opts);
         var service = createService(cmdline.opts);
         service.login(function(err, success) {
             if (err || !success) {
