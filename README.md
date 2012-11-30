@@ -126,6 +126,8 @@ as **.splunkrc** in the current user's home directory:
     username=admin
     # Splunk password
     password=changeme
+    # Access scheme (default: https)
+    scheme=https
     # Your version of Splunk (default: 5.0)
     version=5.0
 
