@@ -61,6 +61,7 @@ The following examples show you how to list search jobs using client-side and se
 This HTML example uses the Splunk JavaScript SDK to list all jobs:
 
     <script type="text/javascript" src="splunk.js"></script>
+    <script type="text/javascript" src="jquery.min.js"></script>
 
     <script type="text/javascript" charset="utf-8">
     
@@ -150,13 +151,7 @@ the **/splunk-sdk-javascript/examples/node** directory. These
 examples run with Node.js and use the command-line arguments from the 
 **.splunkrc** file, if you set this up with your login credentials. 
 
-Before you can run the server-side examples, you'll need to install the development dependencies. 
-At the command line, go to the **/splunk-sdk-javascript** directory and enter this command 
-(and just ignore the "prefer global" warning):
-
-    npm install
-
-Then, to run the **jobs.js** example, open a command prompt in the **splunk-sdk-javascript** 
+For example, to run the **jobs.js** example, open a command prompt in the **splunk-sdk-javascript** 
 directory and enter: 
 
     node jobs.js list
