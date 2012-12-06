@@ -61,8 +61,8 @@
   );
   ```
 
-  This feature replaces the old `splunkjs.JobManager.{events|results|preview}Iterator`
-  methods.
+  This feature replaces the old 
+  `splunkjs.JobManager.{events|results|preview}Iterator` methods.
 
 * A new "hello-world"-style code example, `log.js`, has been added to show how 
   to do simple application logging using the Splunk JavaScript SDK.
@@ -78,7 +78,8 @@
   you construct your `splunkjs.Service` instance. If you are using the 
   **.splunkrc** file with the code examples, include `"version=5.0"`. For more 
   about the **.splunkrc** file, see the 
-  [Utilities](http://dev.splunk.com/view/SP-CAAAEFM) page on the Developer Portal. 
+  [Utilities](http://dev.splunk.com/view/SP-CAAAEFM) page on the Developer 
+  Portal. 
 
 * The `splunkjs.JobManager` class has been removed, and its functionality has 
   been replaced by two functions: `Job.track` and `Job.iterator` (see "New 
@@ -127,8 +128,8 @@ Several bugs in the charting component have been fixed.
 #### Change to `search/typeahead` endpoint
 
 In the next version of Splunk, with native JSON support, the output for the
-`search/typeahead` endpoint has changed. Instead of a top level array with completions,
-it now returns a top-level object:
+`search/typeahead` endpoint has changed. Instead of a top level array with 
+completions, it now returns a top-level object:
 
   {
     "results": [...]
