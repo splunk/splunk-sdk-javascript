@@ -1,0 +1,14 @@
+# Exclude generated (but checked in) files from diffs
+# These lines only work once you run the following command locally:
+#   git config diff.nodiff.command true
+client/* diff=nodiff
+node_modules/* diff=nodiff
+node_modules/*/* diff=nodiff
+node_modules/*/*/* diff=nodiff
+node_modules/*/*/*/* diff=nodiff
+node_modules/*/*/*/*/* diff=nodiff
+node_modules/*/*/*/*/*/* diff=nodiff
+node_modules/*/*/*/*/*/*/* diff=nodiff
+node_modules/*/*/*/*/*/*/*/* diff=nodiff
+node_modules/*/*/*/*/*/*/*/*/* diff=nodiff
+node_modules/*/*/*/*/*/*/*/*/*/* diff=nodiff
