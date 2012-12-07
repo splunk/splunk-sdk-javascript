@@ -142,7 +142,7 @@ save it as **.splunkrc** in the current user's home directory:
     # Your version of Splunk (default: 5.0)
     version=5.0
 
-**Note**: The `version` key is required for Splunk 5.0 and later.
+**Note**: The `version` key is required if using Splunk 4.3.
 
 ### Client-side examples
 
