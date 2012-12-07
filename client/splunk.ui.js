@@ -403,15 +403,15 @@ require.define("/browser.ui.entry.js", function (require, module, exports, __dir
     };
     
     UI.loadTimeline = function(path, callback) {
-        var token = 'timeline' + (token++);
-        loadComponent(path, token, callback);
-        return token;
+        var timelineToken = 'timeline' + (token++);
+        loadComponent(path, timelineToken, callback);
+        return timelineToken;
     };
     
     UI.loadCharting = function(path, callback) {
-        var token = 'charting' + (token++);
-        loadComponent(path, token, callback);
-        return token;
+        var chartToken = 'charting' + (token++);
+        loadComponent(path, chartToken, callback);
+        return chartToken;
     };
     
     UI.load = function(paths, callback) {
