@@ -17,6 +17,7 @@ You can get the SDK by [downloading it][zip] from GitHub, or by cloning it:
     git clone https://github.com/splunk/splunk-sdk-javascript.git
 
 ### Install the XML to JSON Splunk app
+
 The XML to JSON Splunk app (<i>xml2json</i>) converts XML output to JSON, and is
 required if:
 
@@ -60,6 +61,7 @@ code:
     var splunkjs = require('splunk-sdk');
 
 ## Usage
+
 The following examples show you how to list search jobs using client-side and 
 server-side code.
 
