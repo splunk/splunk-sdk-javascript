@@ -234,6 +234,10 @@
     });
     
     var getParentMethods = function(module) {
+        if (!module) {
+            return [];
+        }
+        
         var newMethods = module.methods.slice();
         var methodNames = {};
         module.methods.forEach(function(method) {
