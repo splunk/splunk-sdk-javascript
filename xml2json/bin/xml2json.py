@@ -131,6 +131,7 @@ def from_feed(content, timings={}, messages=[]):
     if content:
         # Parse XML
         time_start = time.time()
+
         root = et.fromstring(content)
         time_end = time.time()
         timings["xml_parse"] = time_end - time_start
@@ -282,9 +283,8 @@ def from_job_results(root, format=ResultFormat.ROW, timings={}):
         # When we have a oneshot search with no results,
         # we get back an invalid XML string. We simply
         # replace it with an empty results tag
-        if root.strip() == XML_HEADER:
+        if root.strip() == XML_HEADER or root.strip() == '':
             root = "<results preview='0'/>"
-            
         time_start = time.time()
         root = et.fromstring(root)
         time_end = time.time()
@@ -513,7 +513,6 @@ def from_search_summary(root, timings={}):
     time_start = time.time()
     for node in root.findall('field'):
         field = {
-            'name': node.get('k'),
             'count': int(node.get('c', 0)),
             'nc': int(node.get('nc', 0)),
             'distinct_count': int(node.get('dc', 0)),
@@ -605,8 +604,11 @@ def from_http_simple_input(root):
     entry = {}
     
     for field in root.findall("results/result/field"):
-        entry[field.get("k")] = field.findtext("value/text")
-        
+        field_name = field.get("k")
+        if field_name == "_index":
+            field_name = "index";
+        entry[field_name] = field.findtext("value/text")
+    
     messages = []
     try:
         extracted_messages = extract_messages(root)
@@ -625,7 +627,7 @@ def from_typeahead(root):
     elif isinstance(root, file):
         root = json.loads(root.read())
         
-    return root
+    return {"results": root}
     
 
 def from_search_parser(root):
@@ -680,9 +682,8 @@ def from_propertizes_stanza(root):
         root = et.parse(root).getroot()
         
     collection = {}
-    
+
     collection['entry'] = parse_stanza(root)
-    
     collection['id'] = root.findall('{%s}id' % (ATOM_NS))[0].text
     collection['name'] = root.findall('{%s}title' % (ATOM_NS))[0].text
     

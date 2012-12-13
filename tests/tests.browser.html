@@ -121,16 +121,27 @@
           var port     = $("#server-port").val() || "8089";
           var username = $("#server-username").val() || "admin";
           var password = $("#server-password").val() || "changeme";
+          var version  = $("#server-version").val() || "5.0";
           
           var options = {
             scheme: scheme,
             host: host,
             port: port,
             username: username,
-            password: password
+            password: password,
+            version: version
           };
-          
           var http = new splunkjs.ProxyHttp("/proxy");
+
+          var loggedOutSvc = new splunkjs.Service(http, { 
+              scheme:   options.scheme,
+              host:     options.host,
+              port:     options.port,
+              username: options.username,
+              password: options.password + 'wrong',
+              version:  options.version
+          });
+          
           var svc = new splunkjs.Service(http, options);
           svc.login(function(err, success) {
             if (err || !success) {
@@ -147,9 +158,7 @@
               "Utils Tests": SplunkTest.Utils.setup(svc),
               "Async Tests": SplunkTest.Async.setup(svc),
               "Context Tests": SplunkTest.Context.setup(svc),
-              "Service Tests": SplunkTest.Service.setup(svc),
-              "Storm Tests": SplunkTest.Storm.setup(http),
-              "Searcher Tests": SplunkTest.Searcher.setup(svc)
+              "Service Tests": SplunkTest.Service.setup(svc, loggedOutSvc)
             }]);
           });
         });
@@ -179,6 +188,10 @@
         <div class="server-info-field">
             <h3>Password</h3> 
             <input type="password" id="server-password" value="changeme"/>
+        </div>
+        <div class="server-info-field">
+            <h3>Version</h3> 
+            <input type="text" id="server-version" value="5.0"/>
         </div>
         <div class="server-info-field">
             <h3>&nbsp;</h3> 

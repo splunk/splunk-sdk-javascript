@@ -163,7 +163,7 @@ exports.parseTag = function(str) {
       break;
     case 'return':
       tag.types = exports.parseTagTypes(parts.shift());
-      tag.description = parts.join(' ');
+      tag.description = markdown(parts.join(' '));
       break;
     case 'see':
       if (~str.indexOf('http')) {

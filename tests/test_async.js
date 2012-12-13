@@ -34,7 +34,7 @@ exports.setup = function() {
                 }
             );
         },
-        
+
         "While success deep": function(test) {
             var i = 0;
             Async.whilst(
@@ -63,6 +63,37 @@ exports.setup = function() {
                 }
             );
         },
+
+        "Whilst sans condition is never": function(test) {
+            var i = false;
+            Async.whilst(
+                undefined, 
+                function(done) { i = true; done();},
+                function(err) {
+                    test.strictEqual(i, false);
+                    test.done();
+                }
+            );
+        },
+
+        "Whilst with empty body does nothing": function(test) {
+            var i = true;
+            Async.whilst(
+                function() { 
+                    if (i) {
+                        i = false;
+                        return true;
+                    } 
+                    else {
+                        return i;
+                    }
+                },
+                undefined,
+                function (err) {
+                    test.done();
+                }
+            );
+        },
         
         "Parallel success": function(test) {
             Async.parallel([
@@ -80,6 +111,19 @@ exports.setup = function() {
                     test.done();
                 }
             );
+        },
+
+        "Parallel success - outside of arrays": function(test) {
+            Async.parallel(
+              function(done) { done(null, 1);},
+              function(done) { done(null, 2, 3); },
+              function(err, one, two) {
+                test.ok(!err);
+                test.strictEqual(one, 1);
+                test.strictEqual(two[0], 2);
+                test.strictEqual(two[1], 3);
+                test.done();
+              });
         },
         
         "Parallel success - no reordering": function(test) {
@@ -140,6 +184,24 @@ exports.setup = function() {
                 function(done) {
                     done(null, 2, 3);
                 }],
+                function(err, one, two) {
+                    test.ok(!err);
+                    test.strictEqual(one, 1);
+                    test.strictEqual(two[0], 2);
+                    test.strictEqual(two[1], 3);
+                    test.done();
+                }
+            );
+        },
+
+        "Series success - outside of array": function(test) {
+            Async.series(
+                function(done) {
+                    done(null, 1);
+                },
+                function(done) {
+                    done(null, 2, 3);
+                },
                 function(err, one, two) {
                     test.ok(!err);
                     test.strictEqual(one, 1);

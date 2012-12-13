@@ -36,7 +36,8 @@
             host:       options.host,
             port:       options.port,
             username:   options.username,
-            password:   options.password
+            password:   options.password,
+            version:    options.version
         });
     };
     
@@ -186,6 +187,7 @@
             delete cmdline.host;
             delete cmdline.port;
             delete cmdline.namespace;
+            delete cmdline.version;
             
             if (cmdline.opts.exec_mode === "oneshot") {
                 oneshotSearch(service, cmdline.opts, callback);

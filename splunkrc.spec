@@ -1,14 +1,12 @@
-# Host at which Splunk is reachable (default: localhost)
+# Splunk host (default: localhost)
 host=localhost
-
-# Port at which Splunk is reachable (default: 8089)
+# Splunk admin port (default: 8089)
 port=8089
-
-# Username to use when logging in
+# Splunk username
 username=admin
-
-# Password to use when logging in
+# Splunk password
 password=changeme
-
 # Access scheme (default: https)
 scheme=https
+# Your version of Splunk (default: 5.0)
+version=5.0

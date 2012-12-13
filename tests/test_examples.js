@@ -81,6 +81,11 @@ exports.setup = function(svc, opts) {
             "Search#realtime": function(test) {
                 var main = require("../examples/node/helloworld/search_realtime").main;
                 main(opts, test.done);
+            },
+                        
+            "Logging": function(test) {
+                var main = require("../examples/node/helloworld/log").main;
+                main(opts, test.done);
             }
         },
         
@@ -162,7 +167,7 @@ exports.setup = function(svc, opts) {
                 });
             },
             
-            "List job properties": function(test) {          
+            "List job properties": function(test) {
                 var create = {
                     search: "search index=_internal | head 1",
                     id: getNextId()
@@ -181,7 +186,7 @@ exports.setup = function(svc, opts) {
                 });
             },
             
-            "List job events": function(test) {      
+            "List job events": function(test) {
                 var create = {
                     search: "search index=_internal | head 1",
                     id: getNextId()
@@ -191,6 +196,63 @@ exports.setup = function(svc, opts) {
                 context.run("create", [], create, function(err) {
                     test.ok(!err);
                     context.run("events", [create.id], null, function(err) {
+                        test.ok(!err);
+                        context.run("cancel", [create.id], null, function(err) {
+                            test.ok(!err);
+                            test.done();
+                        });
+                    });
+                });
+            },
+            
+            "List job preview": function(test) {
+                var create = {
+                    search: "search index=_internal | head 1",
+                    id: getNextId()
+                };
+                  
+                var context = this;
+                context.run("create", [], create, function(err) {
+                    test.ok(!err);
+                    context.run("preview", [create.id], null, function(err) {
+                        test.ok(!err);
+                        context.run("cancel", [create.id], null, function(err) {
+                            test.ok(!err);
+                            test.done();
+                        });
+                    });
+                });
+            },
+            
+            "List job results": function(test) {
+                var create = {
+                    search: "search index=_internal | head 1",
+                    id: getNextId()
+                };
+                  
+                var context = this;
+                context.run("create", [], create, function(err) {
+                    test.ok(!err);
+                    context.run("results", [create.id], null, function(err) {
+                        test.ok(!err);
+                        context.run("cancel", [create.id], null, function(err) {
+                            test.ok(!err);
+                            test.done();
+                        });
+                    });
+                });
+            },
+            
+            "List job results, by column": function(test) {
+                var create = {
+                    search: "search index=_internal | head 1",
+                    id: getNextId()
+                };
+                  
+                var context = this;
+                context.run("create", [], create, function(err) {
+                    test.ok(!err);
+                    context.run("results", [create.id], {output_mode: "json_cols"}, function(err) {
                         test.ok(!err);
                         context.run("cancel", [create.id], null, function(err) {
                             test.ok(!err);
@@ -328,7 +390,7 @@ exports.setup = function(svc, opts) {
                     {exec_mode: "blocking"}, 
                     function(err, job) {
                         test.ok(!err);
-                        job.results({output_mode: "rows"}, function(err, results) {
+                        job.results({output_mode: "json_rows"}, function(err, results) {
                             test.ok(!err);
                             process.stdin.emit("data", JSON.stringify(results));
                             process.stdin.emit("end");
@@ -390,7 +452,8 @@ if (module === require.main) {
         host: cmdline.opts.host,
         port: cmdline.opts.port,
         username: cmdline.opts.username,
-        password: cmdline.opts.password
+        password: cmdline.opts.password,
+        version: cmdline.opts.version
     });
     
     var suite = exports.setup(svc, cmdline.opts);

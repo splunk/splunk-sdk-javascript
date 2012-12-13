@@ -29,8 +29,19 @@
         host: cmdline.opts.host,
         port: cmdline.opts.port,
         username: cmdline.opts.username,
-        password: cmdline.opts.password
+        password: cmdline.opts.password,
+        version: cmdline.opts.version
     });
+
+    var loggedOutSvc = new splunkjs.Service({ 
+        scheme: cmdline.opts.scheme,
+        host: cmdline.opts.host,
+        port: cmdline.opts.port,
+        username: cmdline.opts.username,
+        password: cmdline.opts.password + 'wrong',
+        version: cmdline.opts.version
+    });
+
 
     exports.Tests = {};
 
@@ -38,12 +49,11 @@
     exports.Tests.Utils = require('./test_utils').setup();
     exports.Tests.Async = require('./test_async').setup();
     exports.Tests.Http  = require('./test_http').setup(nonSplunkHttp);
+    exports.Tests.Log   = require('./test_log').setup();
     
     // Splunk-specific tests
     exports.Tests.Context  = require('./test_context').setup(svc);
-    exports.Tests.Service  = require('./test_service').setup(svc);
-    exports.Tests.Storm    = require('./test_storm').setup();
-    exports.Tests.Searcher = require('./test_searcher').setup(svc);
+    exports.Tests.Service  = require('./test_service').setup(svc, loggedOutSvc);
     exports.Tests.Examples = require('./test_examples').setup(svc, cmdline.opts);
 
     splunkjs.Logger.setLevel("ALL");
