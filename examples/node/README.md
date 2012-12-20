@@ -1,6 +1,6 @@
 ## Node.js Examples
 
-This directory contains several examples of the Splunk JavaScript SDK running
+This directory contains several examples of the Splunk SDK for JavaScript running
 on Node.js. The examples vary in complexity and utility, but they aim to illustrate
 specific portions of the SDK.
 
