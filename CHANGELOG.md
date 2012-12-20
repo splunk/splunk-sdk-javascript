@@ -1,4 +1,4 @@
-# Splunk JavaScript SDK Changelog
+# Splunk SDK for JavaScript Changelog
 
 ## v1.1.0
 
@@ -65,11 +65,11 @@
   `splunkjs.JobManager.{events|results|preview}Iterator` methods.
 
 * A new "hello-world"-style code example, `log.js`, has been added to show how 
-  to do simple application logging using the Splunk JavaScript SDK.
+  to do simple application logging using the Splunk SDK for JavaScript.
 
 ### Breaking changes
 
-* The easyXDM library is no longer included with the Splunk JavaScript SDK 
+* The easyXDM library is no longer included with the Splunk SDK for JavaScript 
   because this library was not being used, and could not work with a Splunk 
   instance that had a self-signed SSL certificate.
 
