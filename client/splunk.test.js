@@ -1801,7 +1801,7 @@ require.define("/lib/paths.js", function (require, module, exports, __dirname, _
         passwords: "admin/passwords",
         parser: "search/parser",
         properties: "properties",
-        roles: "authentication/roles",
+        roles: "authorization/roles",
         savedSearches: "saved/searches",
         settings: "server/settings",
         users: "/services/authentication/users",
@@ -2246,14 +2246,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     var root = exports || this;
     var Service = null;
     
-    /**
-     * Contains functionality common to Splunk Enterprise and Splunk Storm.
-     * 
-     * This class is an implementation detail and is therefore SDK-private.
-     * 
-     * @class splunkjs.private.BaseService
-     * @extends splunkjs.Context
-     */
+    // /**
+    //  * Contains functionality common to Splunk Enterprise and Splunk Storm.
+    //  * 
+    //  * This class is an implementation detail and is therefore SDK-private.
+    //  * 
+    //  * @class splunkjs.private.BaseService
+    //  * @extends splunkjs.Context
+    //  */
     var BaseService = Context.extend({
         init: function() {
             this._super.apply(this, arguments);
