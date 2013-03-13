@@ -456,4 +456,4 @@ of embedded libraries and their licenses:
 [indivcontrib]:             http://dev.splunk.com/goto/individualcontributions
 [companycontrib]:           http://dev.splunk.com/view/companycontributions/SP-CAAAEDR
 [githubjsissues]:           https://github.com/splunk/splunk-sdk-javascript/issues
-[SDKdownload]:              https://github.com/splunk/splunk-sdk-javascript/archive/master.zip        
+[SDKdownload]:              http://dev.splunk.com/view/SP-CAAAECM        
