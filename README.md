@@ -12,9 +12,7 @@ For more detailed instructions and requirements, see the
 
 ### Get the Splunk SDK for JavaScript
 
-You can get the SDK by [downloading it][zip] from GitHub, or by cloning it:
-
-    git clone https://github.com/splunk/splunk-sdk-javascript.git
+Get the Splunk SDK for JavaScript&mdash;[download the SDK as a ZIP][SDKdownload] and extract the files. Or, if you want to contribute to the SDK, clone the repository from [GitHub](https://github.com/splunk/splunk-sdk-javascript).
 
 ### Install the XML to JSON Splunk app
 
@@ -458,3 +456,4 @@ of embedded libraries and their licenses:
 [indivcontrib]:             http://dev.splunk.com/goto/individualcontributions
 [companycontrib]:           http://dev.splunk.com/view/companycontributions/SP-CAAAEDR
 [githubjsissues]:           https://github.com/splunk/splunk-sdk-javascript/issues
+[SDKdownload]:              https://github.com/splunk/splunk-sdk-javascript/archive/master.zip        
