@@ -1,13 +1,13 @@
 # The Splunk JavaScript Software Development Kit 1.1
 
-The Splunk JavaScript Software Development Kit (SDK) contains library code and 
-examples designed to enable developers to build applications using Splunk and 
+The Splunk JavaScript Software Development Kit (SDK) contains library code and
+examples designed to enable developers to build applications using Splunk and
 JavaScript. This SDK supports both server- and client-side JavaScript.
 
 ## Installation
 
 This section describes the basic steps for installing the Splunk JavaScript SDK.
-For more detailed instructions and requirements, see the 
+For more detailed instructions and requirements, see the
 [Splunk Developer Portal][install].
 
 ### Get the Splunk JavaScript SDK
@@ -21,19 +21,19 @@ You can get the SDK by [downloading it][zip] from GitHub, or by cloning it:
 The XML to JSON Splunk app (<i>xml2json</i>) converts XML output to JSON, and is
 required if:
 
-* You are using Splunk 4.2.x or 4.3.x. 
-* You want to run the unit tests (with any Splunk version). 
+* You are using Splunk 4.2.x or 4.3.x.
+* You want to run the unit tests (with any Splunk version).
 
-To install the XML to JSON app, copy the xml2json app directory 
-(<b>/splunk-sdk-javascript/xml2json</b>) to the Splunk apps directory 
+To install the XML to JSON app, copy the xml2json app directory
+(<b>/splunk-sdk-javascript/xml2json</b>) to the Splunk apps directory
 (<b>$SPLUNK_HOME/etc/apps</b>), then restart Splunk.
 
 ### Use the Splunk JavaScript SDK components on your web page
 
-To use the components from the Splunk JavaScript SDK on your web page, copy the 
-**/splunk-sdk-javascript/client** directory to your web server. 
+To use the components from the Splunk JavaScript SDK on your web page, copy the
+**/splunk-sdk-javascript/client** directory to your web server.
 Then, include the **splunk.js** or **splunk.min.js** file from this directory in
-your code. 
+your code.
 
 For example, include one of the following tags in your code:
 
@@ -43,9 +43,9 @@ Or:
 
     <script type="text/javascript" src="/yourpath/splunk.min.js"></script>
 
-You can also include the UI components, such as the Timeline and Charting 
-controls. These UI component files (<b>splunk.ui.timeline</b> and 
-<b>splunk.ui.charting</b>) are also in the <b>/splunk-sdk-javascript/client</b> 
+You can also include the UI components, such as the Timeline and Charting
+controls. These UI component files (<b>splunk.ui.timeline</b> and
+<b>splunk.ui.charting</b>) are also in the <b>/splunk-sdk-javascript/client</b>
 directory.
 
 ### Install the Splunk JavaScript SDK for Node.js
@@ -55,14 +55,14 @@ the SDK by running `npm` in *your* project's directory as follows:
 
     npm install splunk-sdk
 
-Then, to include the Splunk JavaScript SDK, use the `require` function in your 
+Then, to include the Splunk JavaScript SDK, use the `require` function in your
 code:
 
     var splunkjs = require('splunk-sdk');
 
 ## Usage
 
-The following examples show you how to list search jobs using client-side and 
+The following examples show you how to list search jobs using client-side and
 server-side code.
 
 ### Client-side code example
@@ -73,7 +73,7 @@ This HTML example uses the Splunk JavaScript SDK to list all jobs:
     <script type="text/javascript" src="jquery.min.js"></script>
 
     <script type="text/javascript" charset="utf-8">
-    
+
         var service = new splunkjs.Service({username: "admin", password: "changeme"});
         service.login(function(err, success) {
             if (err) {
@@ -88,7 +88,7 @@ This HTML example uses the Splunk JavaScript SDK to list all jobs:
                 }
             });
         });
-        
+
     </script>
 
 ### Node.js code example
@@ -116,7 +116,7 @@ jobs:
 ## SDK examples
 
 The Splunk JavaScript SDK contains several server- and client-based examples.
-For detailed instructions about getting them running, see the 
+For detailed instructions about getting them running, see the
 [Splunk Developer Portal][examples].
 
 ### Set up the .splunkrc file
@@ -124,13 +124,13 @@ For detailed instructions about getting them running, see the
 To connect to Splunk, many of the SDK examples and unit tests take command-line
 arguments that specify values for the host, port, and login credentials for
 Splunk. For convenience during development, you can store these arguments as
-key-value pairs in a text file named **.splunkrc**. Then, the SDK examples and 
-unit tests use the values from the **.splunkrc** file when you don't specify 
+key-value pairs in a text file named **.splunkrc**. Then, the SDK examples and
+unit tests use the values from the **.splunkrc** file when you don't specify
 them.
 
-To use this convenience file, create a text file with the following format and 
+To use this convenience file, create a text file with the following format and
 save it as **.splunkrc** in the current user's home directory:
-    
+
     # Splunk host (default: localhost)
     host=localhost
     # Splunk admin port (default: 8089)
@@ -149,7 +149,7 @@ save it as **.splunkrc** in the current user's home directory:
 ### Client-side examples
 
 The Splunk JavaScript SDK includes several browser-based examples, which you can
-run from the Examples web page. 
+run from the Examples web page.
 
 To start a simple web server and open the Examples page in a
 web browser, enter:
@@ -158,18 +158,18 @@ web browser, enter:
 
 ### Node.js examples
 
-The Splunk JavaScript SDK includes several command-line examples, which are 
+The Splunk JavaScript SDK includes several command-line examples, which are
 located in the **/splunk-sdk-javascript/examples/node** directory. These
-examples run with Node.js and use the command-line arguments from the 
-**.splunkrc** file, if you set this up with your login credentials. 
+examples run with Node.js and use the command-line arguments from the
+**.splunkrc** file, if you set this up with your login credentials.
 
-For example, to run the **jobs.js** example, open a command prompt in the 
-**splunk-sdk-javascript** directory and enter: 
+For example, to run the **jobs.js** example, open a command prompt in the
+**splunk-sdk-javascript** directory and enter:
 
     node jobs.js list
 
-If you aren't storing your login credentials in **.splunkrc**, enter the 
-following command, providing your own values: 
+If you aren't storing your login credentials in **.splunkrc**, enter the
+following command, providing your own values:
 
     node jobs.js --username yourusername --password yourpassword list
 
@@ -207,15 +207,15 @@ To rebuild and minify the browser files, open a command prompt in the
 
 ### Run unit tests
 
-The Splunk JavaScript SDK includes several unit tests for each component. You 
-can run individual test modules or run all tests. Before you run them, some 
-searches need to be running in your splunkd instance. You can start some 
+The Splunk JavaScript SDK includes several unit tests for each component. You
+can run individual test modules or run all tests. Before you run them, some
+searches need to be running in your splunkd instance. You can start some
 searches by logging into Splunk Web and opening the Search app, which will run a
 few searches to populate its dashboard.
 
 **Note**: The xml2json app is required for running unit tests.
 
-To run the unit tests, open a command prompt in the **splunk-sdk-javascript** 
+To run the unit tests, open a command prompt in the **splunk-sdk-javascript**
 directory. To run all tests, enter:
 
     node sdkdo tests
@@ -287,35 +287,35 @@ To run the browser tests, enter:
 ### Changelog
 
 The **CHANGELOG.md** file in the root of the repository contains a description
-of changes for each version of the SDK. You can also find the 
-[Splunk JavaScript SDK Changelog](changelog) online.
+of changes for each version of the SDK. You can also find the
+[Splunk JavaScript SDK Changelog][changelog] online.
 
 ### Branches
 
-The **master** branch always represents a stable and released version of the 
-SDK. You can read more about the 
-[JavaScript SDK Branching Model](branchingmodel) on our wiki.
+The **master** branch always represents a stable and released version of the
+SDK. You can read more about the
+[JavaScript SDK Branching Model][branchingmodel] on our wiki.
 
 ## Documentation and resources
 
-If you need to know more: 
+If you need to know more:
 
-* For all things developer with Splunk, your main resource is the 
-  [Splunk Developer Portal](devportal).
+* For all things developer with Splunk, your main resource is the
+  [Splunk Developer Portal][devportal].
 
-* For conceptual and how-to documentation, see the 
-  [Overview of the Splunk JavaScript SDK](jsoverview).
+* For conceptual and how-to documentation, see the
+  [Overview of the Splunk JavaScript SDK][jsoverview].
 
-* For API reference documentation, see the 
-  [Splunk JavaScript SDK Reference](jsapiref).
+* For API reference documentation, see the
+  [Splunk JavaScript SDK Reference][jsapiref].
 
-* For more about the Splunk REST API, see the 
-  [REST API Reference](restapiref).
+* For more about the Splunk REST API, see the
+  [REST API Reference][restapiref].
 
-* For more about about Splunk in general, see [Splunk>Docs](splunkdocs).
+* For more about about Splunk in general, see [Splunk>Docs][splunkdocs].
 
 
-* For more about this SDK's repository, see our [GitHub Wiki](jsgithubwiki).
+* For more about this SDK's repository, see our [GitHub Wiki][jsgithubwiki].
 
 ## Community
 
@@ -354,36 +354,36 @@ Stay connected with other developers building on Splunk.
 
 If you would like to contribute to the SDK, go here for more information:
 
-* [Splunk and open source](contributions)
+* [Splunk and open source][contributions]
 
-* [Individual contributions](indivcontrib)
+* [Individual contributions][indivcontrib]
 
-* [Company contributions](companycontrib)
+* [Company contributions][companycontrib]
 
 
 ### Support
 
-1. You will be granted support if you or your company are already covered 
-   under an existing maintenance/support agreement. Send an email to 
-   _support@splunk.com_ and include "Splunk JavaScript SDK" in the 
-   subject line. 
+1. You will be granted support if you or your company are already covered
+   under an existing maintenance/support agreement. Send an email to
+   _support@splunk.com_ and include "Splunk JavaScript SDK" in the
+   subject line.
 
-2. If you are not covered under an existing maintenance/support agreement, you 
+2. If you are not covered under an existing maintenance/support agreement, you
    can find help through the broader community at:
 
    <ul>
-   <li><a href='http://splunk-base.splunk.com/answers/'>Splunk Answers</a> (use 
-    the <b>sdk</b>, <b>java</b>, <b>python</b>, and <b>javascript</b> tags to 
+   <li><a href='http://splunk-base.splunk.com/answers/'>Splunk Answers</a> (use
+    the <b>sdk</b>, <b>java</b>, <b>python</b>, and <b>javascript</b> tags to
     identify your questions)</li>
-   <li><a href="http://groups.google.com/group/splunkdev">Splunkdev Google 
+   <li><a href="http://groups.google.com/group/splunkdev">Splunkdev Google
     Group</a></li>
    </ul>
-3. Splunk will NOT provide support for SDKs if the core library (the 
+3. Splunk will NOT provide support for SDKs if the core library (the
    code in the <b>/lib</b> directory) has been modified. If you modify an SDK
-   and want support, you can find help through the broader community and Splunk 
-   answers (see above). We would also like to know why you modified the core 
+   and want support, you can find help through the broader community and Splunk
+   answers (see above). We would also like to know why you modified the core
    library&mdash;please send feedback to _devinfo@splunk.com_.
-4. File any issues on [GitHub](githubjsissues).
+4. File any issues on [GitHub][githubjsissues].
 
 ### Contact us
 
