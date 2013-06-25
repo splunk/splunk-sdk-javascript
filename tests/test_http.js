@@ -26,7 +26,7 @@ exports.setup = function(http) {
             },
 
             "Callback#abort simple": function(test) {
-                var req = this.http.get("https://www.httpbin.org/get", {}, {}, 0, function(err, res) {
+                var req = this.http.get("https://httpbin.org/get", {}, {}, 0, function(err, res) {
                     test.ok(err);
                     test.strictEqual(err.error, "abort");
                     test.done();
