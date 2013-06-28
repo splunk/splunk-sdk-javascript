@@ -31,6 +31,14 @@ exports.setup = function(svc) {
             test.done();
         },
 
+        "Create test search": function(test) {
+            var searchID = "DELETEME_JSSDK_UNITTEST";
+            this.service.post("search/jobs", {search: "search index=_internal | head 1", id: searchID}, function(err, res) {
+                test.ok(res.data.sid);
+                test.done();
+            });
+        },
+
         "Callback#login": function(test) {
             var newService = new splunkjs.Service(svc.http, {
                 scheme: svc.scheme,
@@ -69,13 +77,41 @@ exports.setup = function(svc) {
         },
 
         "Callback#get": function(test) {
-            this.service.get("search/jobs", {count: 2}, function(err, res) {
-                test.strictEqual(res.data.paging.offset, 0);
-                test.ok(res.data.entry.length <= res.data.paging.total);
-                test.strictEqual(res.data.entry.length, 2);
-                test.ok(res.data.entry[0].content.sid);
-                test.done();
-            });
+            var service = this.service;
+            root.whilst = function(condition, body, callback) {
+                condition = condition || function() { 
+                    if(received)
+                        test.ok(recieved);
+                    return recieved; 
+                };
+                body = body || function(done) { done(); };
+                callback = callback || function() {};
+
+                var recieved = false;
+                var iterationDone = function(err) {
+                    if (err) {
+                        callback(err);
+                    }
+                    else {
+                        service.get("search/jobs", {count: 1}, function(err, res) {
+                            recieved = (res.data.entry.length != 0);
+                            test.strictEqual(res.data.paging.offset, 0);
+                            test.ok(res.data.entry.length <= res.data.paging.total);
+                            test.strictEqual(res.data.entry.length, 1);
+                            test.ok(res.data.entry[0].content.sid);
+                        });
+                        root.whilst(condition, body, callback);                    
+                    }
+                };
+
+                if (condition()) {
+                    body(iterationDone);
+                }
+                else {
+                    callback();
+                }
+            };
+            test.done();
         },
 
         "Callback#get error": function(test) {
@@ -98,14 +134,41 @@ exports.setup = function(svc) {
                     version: svc.version
                 }
             );
+            var thisService = this.service;
+            root.whilst = function(condition, body, callback) {
+                condition = condition || function() { 
+                    if(received)
+                        test.ok(recieved);
+                    return recieved; 
+                };
+                body = body || function(done) { done(); };
+                callback = callback || function() {};
 
-            service.get("search/jobs", {count: 2}, function(err, res) {
-                test.strictEqual(res.data.paging.offset, 0);
-                test.ok(res.data.entry.length <= res.data.paging.total);
-                test.strictEqual(res.data.entry.length, 2);
-                test.ok(res.data.entry[0].content.sid);
-                test.done();
-            });
+                var recieved = false;
+                var iterationDone = function(err) {
+                    if (err) {
+                        callback(err);
+                    }
+                    else {
+                        thisService.get("search/jobs", {count: 1}, function(err, res) {
+                            recieved = (res.data.entry.length != 0);
+                            test.strictEqual(res.data.paging.offset, 0);
+                            test.ok(res.data.entry.length <= res.data.paging.total);
+                            test.strictEqual(res.data.entry.length, 1);
+                            test.ok(res.data.entry[0].content.sid);
+                        });
+                        root.whilst(condition, body, callback);                    
+                    }
+                };
+
+                if (condition()) {
+                    body(iterationDone);
+                }
+                else {
+                    callback();
+                }
+            };
+            test.done();
         },
 
         "Callback#get autologin - error": function(test) {
@@ -150,27 +213,41 @@ exports.setup = function(svc) {
         },
 
         "Callback#get relogin - success": function(test) {
-            var service = new splunkjs.Service(
-                this.service.http,
-                {
-                    scheme: this.service.scheme,
-                    host: this.service.host,
-                    port: this.service.port,
-                    username: this.service.username,
-                    password: this.service.password,
-                    sessionKey: "ABCDEF-not-real",
-                    version: svc.version
-                }
-            );
+            root.whilst = function(condition, body, callback) {
+                condition = condition || function() { 
+                    if(received)
+                        test.ok(recieved);
+                    return recieved; 
+                };
+                body = body || function(done) { done(); };
+                callback = callback || function() {};
 
-            service.get("search/jobs", {count: 2}, function(err, res) {
-                test.ok(!err);
-                test.strictEqual(res.data.paging.offset, 0);
-                test.ok(res.data.entry.length <= res.data.paging.total);
-                test.strictEqual(res.data.entry.length, 2);
-                test.ok(res.data.entry[0].content.sid);
-                test.done();
-            });
+                var recieved = false;
+                var iterationDone = function(err) {
+                    if (err) {
+                        callback(err);
+                    }
+                    else {
+                        this.service.get("search/jobs", {count: 1}, function(err, res) {
+                            recieved = (res.data.entry.length != 0);
+                            test.ok(!err);
+                            test.strictEqual(res.data.paging.offset, 0);
+                            test.ok(res.data.entry.length <= res.data.paging.total);
+                            test.strictEqual(res.data.entry.length, 1);
+                            test.ok(res.data.entry[0].content.sid);
+                        });
+                        root.whilst(condition, body, callback);                    
+                    }
+                };
+
+                if (condition()) {
+                    body(iterationDone);
+                }
+                else {
+                    callback();
+                }
+            };
+            test.done();
         },
 
         "Callback#get relogin - error": function(test) {
@@ -467,21 +544,47 @@ exports.setup = function(svc) {
         },
 
         "Callback#request get": function(test) {
-            var get = {count: 2};
+            var get = {count: 1};
             var post = null;
             var body = null;
-            this.service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
-                test.strictEqual(res.data.paging.offset, 0);
-                test.ok(res.data.entry.length <= res.data.paging.total);
-                test.strictEqual(res.data.entry.length, 2);
-                test.ok(res.data.entry[0].content.sid);
+            var service = this.service;
+            root.whilst = function(condition, body, callback) {
+                condition = condition || function() { 
+                    if(received)
+                        test.ok(recieved);
+                    return recieved; 
+                };
+                body = body || function(done) { done(); };
+                callback = callback || function() {};
 
-                if (res.response.request) {
-                    test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
+                var recieved = false;
+                var iterationDone = function(err) {
+                    if (err) {
+                        callback(err);
+                    }
+                    else {
+                        service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
+                            recieved = (res.data.entry.length != 0);
+                            test.strictEqual(res.data.paging.offset, 0);
+                            test.ok(res.data.entry.length <= res.data.paging.total);
+                            test.strictEqual(res.data.entry.length, 1);
+                            test.ok(res.data.entry[0].content.sid);
+
+                            if (res.response.request) {
+                                test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
+                            }
+                        });
+                        root.whilst(condition, body, callback);                    
+                    }
+                };
+                if (condition()) {
+                    body(iterationDone);
                 }
-
-                test.done();
-            });
+                else {
+                    callback();
+                }
+            };
+            test.done();
         },
 
         "Callback#request post": function(test) {
@@ -515,33 +618,59 @@ exports.setup = function(svc) {
         },
 
         "Callback#request autologin - success": function(test) {
+            var get = {count: 1};
+            var post = null;
+            var body = null;
+            var thisService = this.service;
             var service = new splunkjs.Service(
-                this.service.http,
+                thisService.http,
                 {
-                    scheme: this.service.scheme,
-                    host: this.service.host,
-                    port: this.service.port,
-                    username: this.service.username,
-                    password: this.service.password,
+                    scheme: thisService.scheme,
+                    host: thisService.host,
+                    port: thisService.port,
+                    username: thisService.username,
+                    password: thisService.password,
                     version: svc.version
                 }
             );
+            root.whilst = function(condition, body, callback) {
+                condition = condition || function() { 
+                    if(received)
+                        test.ok(recieved);
+                    return recieved; 
+                };
+                body = body || function(done) { done(); };
+                callback = callback || function() {};
 
-            var get = {count: 2};
-            var post = null;
-            var body = null;
-            service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
-                test.strictEqual(res.data.paging.offset, 0);
-                test.ok(res.data.entry.length <= res.data.paging.total);
-                test.strictEqual(res.data.entry.length, 2);
-                test.ok(res.data.entry[0].content.sid);
+                var recieved = false;
+                var iterationDone = function(err) {
+                    if (err) {
+                        callback(err);
+                    }
+                    else {
+                        thisService.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
+                            recieved = (res.data.entry.length != 0);
+                            test.strictEqual(res.data.paging.offset, 0);
+                            test.ok(res.data.entry.length <= res.data.paging.total);
+                            test.strictEqual(res.data.entry.length, 1);
+                            test.ok(res.data.entry[0].content.sid);
 
-                if (res.response.request) {
-                    test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
+                            if (res.response.request) {
+                                test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
+                            }
+                        });
+                        root.whilst(condition, body, callback);                    
+                    }
+                };
+
+                if (condition()) {
+                    body(iterationDone);
                 }
-
-                test.done();
-            });
+                else {
+                    callback();
+                }
+            };
+            test.done();
         },
 
         "Callback#request autologin - error": function(test) {
@@ -592,34 +721,60 @@ exports.setup = function(svc) {
         },
 
         "Callback#request relogin - success": function(test) {
+            var thisService = this.service;
+            var get = {count: 2};
+            var post = null;
+            var body = null;
             var service = new splunkjs.Service(
-                this.service.http,
+                thisService.http,
                 {
-                    scheme: this.service.scheme,
-                    host: this.service.host,
-                    port: this.service.port,
-                    username: this.service.username,
-                    password: this.service.password,
+                    scheme: thisService.scheme,
+                    host: thisService.host,
+                    port: thisService.port,
+                    username: thisService.username,
+                    password: thisService.password,
                     sessionKey: "ABCDEF-not-real",
                     version: svc.version
                 }
             );
+            root.whilst = function(condition, body, callback) {
+                condition = condition || function() { 
+                    if(received)    
+                        test.ok(recieved);
+                    return recieved; 
+                };
+                body = body || function(done) { done(); };
+                callback = callback || function() {};
 
-            var get = {count: 2};
-            var post = null;
-            var body = null;
-            service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
-                test.strictEqual(res.data.paging.offset, 0);
-                test.ok(res.data.entry.length <= res.data.paging.total);
-                test.strictEqual(res.data.entry.length, 2);
-                test.ok(res.data.entry[0].content.sid);
+                var recieved = false;
+                var iterationDone = function(err) {
+                    if (err) {
+                        callback(err);
+                    }
+                    else {
+                        service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
+                            recieved = (res.data.entry.length != 0);
+                            test.strictEqual(res.data.paging.offset, 0);
+                            test.ok(res.data.entry.length <= res.data.paging.total);
+                            test.strictEqual(res.data.entry.length, 2);
+                            test.ok(res.data.entry[0].content.sid);
 
-                if (res.response.request) {
-                    test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
+                            if (res.response.request) {
+                                test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
+                            }
+                        });
+                        root.whilst(condition, body, callback);                    
+                    }
+                };
+
+                if (condition()) {
+                    body(iterationDone);
                 }
-
-                test.done();
-            });
+                else {
+                    callback();
+                }
+            };
+            test.done();
         },
 
         "Callback#request relogin - error": function(test) {
@@ -656,6 +811,13 @@ exports.setup = function(svc) {
             });
 
             req.abort();
+        },
+
+        "Cancel test search": function(test) {
+            var endpoint = "search/jobs/DELETEME_JSSDK_UNITTEST/control";
+            this.service.post(endpoint, {action: "cancel"}, function(err, res) {
+                test.done();
+            });
         },
 
         "fullpath gets its owner/app from the right places": function(test) {
