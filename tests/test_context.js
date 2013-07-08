@@ -33,11 +33,9 @@ exports.setup = function(svc) {
 
         "Create test search": function(test) {
             var searchID = "DELETEME_JSSDK_UNITTEST";
-            this.service.post("search/jobs", {search: "search index=_internal | head 1", id: searchID}, function(err, res) {
+            this.service.post("search/jobs", {search: "search index=_internal | head 1", exec_mode: "blocking", id: searchID}, function(err, res) {
                 test.ok(res.data.sid);
-                setTimeout(function(){
-                    test.done();
-                }, 500);
+                test.done();
             });
         },
 
@@ -80,7 +78,6 @@ exports.setup = function(svc) {
 
         "Callback#get": function(test) {
             this.service.get("search/jobs", {count: 1}, function(err, res) {
-                received = (res.data.entry.length != 0);
                 test.strictEqual(res.data.paging.offset, 0);
                 test.ok(res.data.entry.length <= res.data.paging.total);
                 test.strictEqual(res.data.entry.length, 1);
@@ -111,7 +108,6 @@ exports.setup = function(svc) {
             );
             
             service.get("search/jobs", {count: 1}, function(err, res) {
-                recieved = (res.data.entry.length != 0);
                 test.strictEqual(res.data.paging.offset, 0);
                 test.ok(res.data.entry.length <= res.data.paging.total);
                 test.strictEqual(res.data.entry.length, 1);
@@ -483,7 +479,6 @@ exports.setup = function(svc) {
             var post = null;
             var body = null;
             this.service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
-                recieved = (res.data.entry.length != 0);
                 test.strictEqual(res.data.paging.offset, 0);
                 test.ok(res.data.entry.length <= res.data.paging.total);
                 test.strictEqual(res.data.entry.length, 1);
