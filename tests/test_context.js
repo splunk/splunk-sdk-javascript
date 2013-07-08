@@ -16,6 +16,7 @@
 exports.setup = function(svc) {
     var splunkjs    = require('../index');
     var tutils      = require('./utils');
+    var Async       = splunkjs.Async;
 
     splunkjs.Logger.setLevel("ALL");
     var isBrowser = typeof window !== "undefined";
@@ -78,39 +79,28 @@ exports.setup = function(svc) {
 
         "Callback#get": function(test) {
             var service = this.service;
-            root.whilst = function(condition, body, callback) {
-                condition = condition || function() { 
+
+            var received = false;
+            Async.whilst(
+                function() { 
                     if(received)
-                        test.ok(recieved);
-                    return recieved; 
-                };
-                body = body || function(done) { done(); };
-                callback = callback || function() {};
-
-                var recieved = false;
-                var iterationDone = function(err) {
-                    if (err) {
-                        callback(err);
-                    }
-                    else {
-                        service.get("search/jobs", {count: 1}, function(err, res) {
-                            recieved = (res.data.entry.length != 0);
-                            test.strictEqual(res.data.paging.offset, 0);
-                            test.ok(res.data.entry.length <= res.data.paging.total);
-                            test.strictEqual(res.data.entry.length, 1);
-                            test.ok(res.data.entry[0].content.sid);
-                        });
-                        root.whilst(condition, body, callback);                    
-                    }
-                };
-
-                if (condition()) {
-                    body(iterationDone);
+                        test.ok(received);
+                    return received;
+                },
+                function(done) {
+                    Async.sleep(0, function() { done(); });
+                },
+                function(err) {
+                    service.get("search/jobs", {count: 1}, function(err, res) {
+                        received = (res.data.entry.length != 0);
+                        test.strictEqual(res.data.paging.offset, 0);
+                        test.ok(res.data.entry.length <= res.data.paging.total);
+                        test.strictEqual(res.data.entry.length, 1);
+                        test.ok(res.data.entry[0].content.sid);
+                    });
                 }
-                else {
-                    callback();
-                }
-            };
+            );
+
             test.done();
         },
 
@@ -134,40 +124,29 @@ exports.setup = function(svc) {
                     version: svc.version
                 }
             );
+
             var thisService = this.service;
-            root.whilst = function(condition, body, callback) {
-                condition = condition || function() { 
+            var received = false;
+            Async.whilst(
+                function() { 
                     if(received)
-                        test.ok(recieved);
-                    return recieved; 
-                };
-                body = body || function(done) { done(); };
-                callback = callback || function() {};
-
-                var recieved = false;
-                var iterationDone = function(err) {
-                    if (err) {
-                        callback(err);
-                    }
-                    else {
-                        thisService.get("search/jobs", {count: 1}, function(err, res) {
-                            recieved = (res.data.entry.length != 0);
-                            test.strictEqual(res.data.paging.offset, 0);
-                            test.ok(res.data.entry.length <= res.data.paging.total);
-                            test.strictEqual(res.data.entry.length, 1);
-                            test.ok(res.data.entry[0].content.sid);
-                        });
-                        root.whilst(condition, body, callback);                    
-                    }
-                };
-
-                if (condition()) {
-                    body(iterationDone);
+                        test.ok(received);
+                    return received;
+                },
+                function(done) {
+                    Async.sleep(0, function() { done(); });
+                },
+                function(err) {
+                    thisService.get("search/jobs", {count: 1}, function(err, res) {
+                        recieved = (res.data.entry.length != 0);
+                        test.strictEqual(res.data.paging.offset, 0);
+                        test.ok(res.data.entry.length <= res.data.paging.total);
+                        test.strictEqual(res.data.entry.length, 1);
+                        test.ok(res.data.entry[0].content.sid);
+                    });
                 }
-                else {
-                    callback();
-                }
-            };
+            );
+
             test.done();
         },
 
@@ -213,40 +192,28 @@ exports.setup = function(svc) {
         },
 
         "Callback#get relogin - success": function(test) {
-            root.whilst = function(condition, body, callback) {
-                condition = condition || function() { 
+            var thisService = this.service;
+            var received = false;
+            Async.whilst(
+                function() { 
                     if(received)
-                        test.ok(recieved);
-                    return recieved; 
-                };
-                body = body || function(done) { done(); };
-                callback = callback || function() {};
-
-                var recieved = false;
-                var iterationDone = function(err) {
-                    if (err) {
-                        callback(err);
-                    }
-                    else {
-                        this.service.get("search/jobs", {count: 1}, function(err, res) {
-                            recieved = (res.data.entry.length != 0);
-                            test.ok(!err);
-                            test.strictEqual(res.data.paging.offset, 0);
-                            test.ok(res.data.entry.length <= res.data.paging.total);
-                            test.strictEqual(res.data.entry.length, 1);
-                            test.ok(res.data.entry[0].content.sid);
-                        });
-                        root.whilst(condition, body, callback);                    
-                    }
-                };
-
-                if (condition()) {
-                    body(iterationDone);
+                        test.ok(received);
+                    return received;
+                },
+                function(done) {
+                    Async.sleep(0, function() { done(); });
+                },
+                function(err) {
+                    thisService.get("search/jobs", {count: 1}, function(err, res) {
+                        recieved = (res.data.entry.length != 0);
+                        test.ok(!err);
+                        test.strictEqual(res.data.paging.offset, 0);
+                        test.ok(res.data.entry.length <= res.data.paging.total);
+                        test.strictEqual(res.data.entry.length, 1);
+                        test.ok(res.data.entry[0].content.sid);
+                    });
                 }
-                else {
-                    callback();
-                }
-            };
+            );
             test.done();
         },
 
@@ -548,42 +515,31 @@ exports.setup = function(svc) {
             var post = null;
             var body = null;
             var service = this.service;
-            root.whilst = function(condition, body, callback) {
-                condition = condition || function() { 
+
+            var received = false;
+            Async.whilst(
+                function() { 
                     if(received)
-                        test.ok(recieved);
-                    return recieved; 
-                };
-                body = body || function(done) { done(); };
-                callback = callback || function() {};
+                        test.ok(received);
+                    return received;
+                },
+                function(done) {
+                    Async.sleep(0, function() { done(); });
+                },
+                function(err) {
+                    service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
+                        recieved = (res.data.entry.length != 0);
+                        test.strictEqual(res.data.paging.offset, 0);
+                        test.ok(res.data.entry.length <= res.data.paging.total);
+                        test.strictEqual(res.data.entry.length, 1);
+                        test.ok(res.data.entry[0].content.sid);
 
-                var recieved = false;
-                var iterationDone = function(err) {
-                    if (err) {
-                        callback(err);
-                    }
-                    else {
-                        service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
-                            recieved = (res.data.entry.length != 0);
-                            test.strictEqual(res.data.paging.offset, 0);
-                            test.ok(res.data.entry.length <= res.data.paging.total);
-                            test.strictEqual(res.data.entry.length, 1);
-                            test.ok(res.data.entry[0].content.sid);
-
-                            if (res.response.request) {
-                                test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
-                            }
-                        });
-                        root.whilst(condition, body, callback);                    
-                    }
-                };
-                if (condition()) {
-                    body(iterationDone);
+                        if (res.response.request) {
+                            test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
+                        }
+                    });
                 }
-                else {
-                    callback();
-                }
-            };
+            );
             test.done();
         },
 
@@ -633,43 +589,31 @@ exports.setup = function(svc) {
                     version: svc.version
                 }
             );
-            root.whilst = function(condition, body, callback) {
-                condition = condition || function() { 
+
+            var received = false;
+            Async.whilst(
+                function() { 
                     if(received)
-                        test.ok(recieved);
-                    return recieved; 
-                };
-                body = body || function(done) { done(); };
-                callback = callback || function() {};
+                        test.ok(received);
+                    return received;
+                },
+                function(done) {
+                    Async.sleep(0, function() { done(); });
+                },
+                function(err) {
+                    thisService.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
+                        recieved = (res.data.entry.length != 0);
+                        test.strictEqual(res.data.paging.offset, 0);
+                        test.ok(res.data.entry.length <= res.data.paging.total);
+                        test.strictEqual(res.data.entry.length, 1);
+                        test.ok(res.data.entry[0].content.sid);
 
-                var recieved = false;
-                var iterationDone = function(err) {
-                    if (err) {
-                        callback(err);
-                    }
-                    else {
-                        thisService.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
-                            recieved = (res.data.entry.length != 0);
-                            test.strictEqual(res.data.paging.offset, 0);
-                            test.ok(res.data.entry.length <= res.data.paging.total);
-                            test.strictEqual(res.data.entry.length, 1);
-                            test.ok(res.data.entry[0].content.sid);
-
-                            if (res.response.request) {
-                                test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
-                            }
-                        });
-                        root.whilst(condition, body, callback);                    
-                    }
-                };
-
-                if (condition()) {
-                    body(iterationDone);
+                        if (res.response.request) {
+                            test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
+                        }
+                    });
                 }
-                else {
-                    callback();
-                }
-            };
+            );           
             test.done();
         },
 
@@ -737,43 +681,31 @@ exports.setup = function(svc) {
                     version: svc.version
                 }
             );
-            root.whilst = function(condition, body, callback) {
-                condition = condition || function() { 
-                    if(received)    
-                        test.ok(recieved);
-                    return recieved; 
-                };
-                body = body || function(done) { done(); };
-                callback = callback || function() {};
 
-                var recieved = false;
-                var iterationDone = function(err) {
-                    if (err) {
-                        callback(err);
+            var received = false;
+            Async.whilst(
+                function() { 
+                    if(received)
+                        test.ok(received);
+                    return received;
+                },
+                function(done) {
+                    Async.sleep(0, function() { done(); });
+                },
+                function(err) {
+                    service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
+                    recieved = (res.data.entry.length != 0);
+                    test.strictEqual(res.data.paging.offset, 0);
+                    test.ok(res.data.entry.length <= res.data.paging.total);
+                    test.strictEqual(res.data.entry.length, 2);
+                    test.ok(res.data.entry[0].content.sid);
+
+                    if (res.response.request) {
+                        test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
                     }
-                    else {
-                        service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
-                            recieved = (res.data.entry.length != 0);
-                            test.strictEqual(res.data.paging.offset, 0);
-                            test.ok(res.data.entry.length <= res.data.paging.total);
-                            test.strictEqual(res.data.entry.length, 2);
-                            test.ok(res.data.entry[0].content.sid);
-
-                            if (res.response.request) {
-                                test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
-                            }
-                        });
-                        root.whilst(condition, body, callback);                    
-                    }
-                };
-
-                if (condition()) {
-                    body(iterationDone);
+                });
                 }
-                else {
-                    callback();
-                }
-            };
+            );
             test.done();
         },
 
