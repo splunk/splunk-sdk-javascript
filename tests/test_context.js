@@ -16,7 +16,6 @@
 exports.setup = function(svc) {
     var splunkjs    = require('../index');
     var tutils      = require('./utils');
-    var Async       = splunkjs.Async;
 
     splunkjs.Logger.setLevel("ALL");
     var isBrowser = typeof window !== "undefined";
@@ -36,7 +35,9 @@ exports.setup = function(svc) {
             var searchID = "DELETEME_JSSDK_UNITTEST";
             this.service.post("search/jobs", {search: "search index=_internal | head 1", id: searchID}, function(err, res) {
                 test.ok(res.data.sid);
-                test.done();
+                setTimeout(function(){
+                    test.done();
+                }, 500);
             });
         },
 
@@ -78,30 +79,14 @@ exports.setup = function(svc) {
         },
 
         "Callback#get": function(test) {
-            var service = this.service;
-
-            var received = false;
-            Async.whilst(
-                function() { 
-                    if(received)
-                        test.ok(received);
-                    return received;
-                },
-                function(done) {
-                    Async.sleep(0, function() { done(); });
-                },
-                function(err) {
-                    service.get("search/jobs", {count: 1}, function(err, res) {
-                        received = (res.data.entry.length != 0);
-                        test.strictEqual(res.data.paging.offset, 0);
-                        test.ok(res.data.entry.length <= res.data.paging.total);
-                        test.strictEqual(res.data.entry.length, 1);
-                        test.ok(res.data.entry[0].content.sid);
-                    });
-                }
-            );
-
-            test.done();
+            this.service.get("search/jobs", {count: 1}, function(err, res) {
+                received = (res.data.entry.length != 0);
+                test.strictEqual(res.data.paging.offset, 0);
+                test.ok(res.data.entry.length <= res.data.paging.total);
+                test.strictEqual(res.data.entry.length, 1);
+                test.ok(res.data.entry[0].content.sid);
+                test.done();
+            });
         },
 
         "Callback#get error": function(test) {
@@ -124,30 +109,15 @@ exports.setup = function(svc) {
                     version: svc.version
                 }
             );
-
-            var thisService = this.service;
-            var received = false;
-            Async.whilst(
-                function() { 
-                    if(received)
-                        test.ok(received);
-                    return received;
-                },
-                function(done) {
-                    Async.sleep(0, function() { done(); });
-                },
-                function(err) {
-                    thisService.get("search/jobs", {count: 1}, function(err, res) {
-                        recieved = (res.data.entry.length != 0);
-                        test.strictEqual(res.data.paging.offset, 0);
-                        test.ok(res.data.entry.length <= res.data.paging.total);
-                        test.strictEqual(res.data.entry.length, 1);
-                        test.ok(res.data.entry[0].content.sid);
-                    });
-                }
-            );
-
-            test.done();
+            
+            service.get("search/jobs", {count: 1}, function(err, res) {
+                recieved = (res.data.entry.length != 0);
+                test.strictEqual(res.data.paging.offset, 0);
+                test.ok(res.data.entry.length <= res.data.paging.total);
+                test.strictEqual(res.data.entry.length, 1);
+                test.ok(res.data.entry[0].content.sid);
+                test.done();
+            });
         },
 
         "Callback#get autologin - error": function(test) {
@@ -192,29 +162,27 @@ exports.setup = function(svc) {
         },
 
         "Callback#get relogin - success": function(test) {
-            var thisService = this.service;
-            var received = false;
-            Async.whilst(
-                function() { 
-                    if(received)
-                        test.ok(received);
-                    return received;
-                },
-                function(done) {
-                    Async.sleep(0, function() { done(); });
-                },
-                function(err) {
-                    thisService.get("search/jobs", {count: 1}, function(err, res) {
-                        recieved = (res.data.entry.length != 0);
-                        test.ok(!err);
-                        test.strictEqual(res.data.paging.offset, 0);
-                        test.ok(res.data.entry.length <= res.data.paging.total);
-                        test.strictEqual(res.data.entry.length, 1);
-                        test.ok(res.data.entry[0].content.sid);
-                    });
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    sessionKey: "ABCDEF-not-real",
+                    version: svc.version
                 }
             );
-            test.done();
+
+            service.get("search/jobs", {count: 1}, function(err, res) {
+                test.ok(!err);
+                test.strictEqual(res.data.paging.offset, 0);
+                test.ok(res.data.entry.length <= res.data.paging.total);
+                test.strictEqual(res.data.entry.length, 1);
+                test.ok(res.data.entry[0].content.sid);
+                test.done();
+            });
         },
 
         "Callback#get relogin - error": function(test) {
@@ -231,7 +199,7 @@ exports.setup = function(svc) {
                 }
             );
 
-            service.get("search/jobs", {count: 2}, function(err, res) {
+            service.get("search/jobs", {count: 1}, function(err, res) {
                 test.ok(err);
                 test.strictEqual(err.status, 401);
                 test.done();
@@ -514,33 +482,19 @@ exports.setup = function(svc) {
             var get = {count: 1};
             var post = null;
             var body = null;
-            var service = this.service;
+            this.service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
+                recieved = (res.data.entry.length != 0);
+                test.strictEqual(res.data.paging.offset, 0);
+                test.ok(res.data.entry.length <= res.data.paging.total);
+                test.strictEqual(res.data.entry.length, 1);
+                test.ok(res.data.entry[0].content.sid);
 
-            var received = false;
-            Async.whilst(
-                function() { 
-                    if(received)
-                        test.ok(received);
-                    return received;
-                },
-                function(done) {
-                    Async.sleep(0, function() { done(); });
-                },
-                function(err) {
-                    service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
-                        recieved = (res.data.entry.length != 0);
-                        test.strictEqual(res.data.paging.offset, 0);
-                        test.ok(res.data.entry.length <= res.data.paging.total);
-                        test.strictEqual(res.data.entry.length, 1);
-                        test.ok(res.data.entry[0].content.sid);
-
-                        if (res.response.request) {
-                            test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
-                        }
-                    });
+                if (res.response.request) {
+                    test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
                 }
-            );
-            test.done();
+
+                test.done();
+            });
         },
 
         "Callback#request post": function(test) {
@@ -574,47 +528,33 @@ exports.setup = function(svc) {
         },
 
         "Callback#request autologin - success": function(test) {
-            var get = {count: 1};
-            var post = null;
-            var body = null;
-            var thisService = this.service;
             var service = new splunkjs.Service(
-                thisService.http,
+                this.service.http,
                 {
-                    scheme: thisService.scheme,
-                    host: thisService.host,
-                    port: thisService.port,
-                    username: thisService.username,
-                    password: thisService.password,
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
                     version: svc.version
                 }
             );
 
-            var received = false;
-            Async.whilst(
-                function() { 
-                    if(received)
-                        test.ok(received);
-                    return received;
-                },
-                function(done) {
-                    Async.sleep(0, function() { done(); });
-                },
-                function(err) {
-                    thisService.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
-                        recieved = (res.data.entry.length != 0);
-                        test.strictEqual(res.data.paging.offset, 0);
-                        test.ok(res.data.entry.length <= res.data.paging.total);
-                        test.strictEqual(res.data.entry.length, 1);
-                        test.ok(res.data.entry[0].content.sid);
+            var get = {count: 1};
+            var post = null;
+            var body = null;
+            service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
+                test.strictEqual(res.data.paging.offset, 0);
+                test.ok(res.data.entry.length <= res.data.paging.total);
+                test.strictEqual(res.data.entry.length, 1);
+                test.ok(res.data.entry[0].content.sid);
 
-                        if (res.response.request) {
-                            test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
-                        }
-                    });
+                if (res.response.request) {
+                    test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
                 }
-            );           
-            test.done();
+
+                test.done();
+            });
         },
 
         "Callback#request autologin - error": function(test) {
@@ -665,48 +605,34 @@ exports.setup = function(svc) {
         },
 
         "Callback#request relogin - success": function(test) {
-            var thisService = this.service;
-            var get = {count: 2};
-            var post = null;
-            var body = null;
             var service = new splunkjs.Service(
-                thisService.http,
+                this.service.http,
                 {
-                    scheme: thisService.scheme,
-                    host: thisService.host,
-                    port: thisService.port,
-                    username: thisService.username,
-                    password: thisService.password,
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
                     sessionKey: "ABCDEF-not-real",
                     version: svc.version
                 }
             );
 
-            var received = false;
-            Async.whilst(
-                function() { 
-                    if(received)
-                        test.ok(received);
-                    return received;
-                },
-                function(done) {
-                    Async.sleep(0, function() { done(); });
-                },
-                function(err) {
-                    service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
-                    recieved = (res.data.entry.length != 0);
-                    test.strictEqual(res.data.paging.offset, 0);
-                    test.ok(res.data.entry.length <= res.data.paging.total);
-                    test.strictEqual(res.data.entry.length, 2);
-                    test.ok(res.data.entry[0].content.sid);
+            var get = {count: 1};
+            var post = null;
+            var body = null;
+            service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
+                test.strictEqual(res.data.paging.offset, 0);
+                test.ok(res.data.entry.length <= res.data.paging.total);
+                test.strictEqual(res.data.entry.length, 1);
+                test.ok(res.data.entry[0].content.sid);
 
-                    if (res.response.request) {
-                        test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
-                    }
-                });
+                if (res.response.request) {
+                    test.strictEqual(res.response.request.headers["X-TestHeader"], 1);
                 }
-            );
-            test.done();
+
+                test.done();
+            });
         },
 
         "Callback#request relogin - error": function(test) {
