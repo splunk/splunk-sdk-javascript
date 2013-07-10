@@ -32,6 +32,7 @@ exports.setup = function(svc) {
         },
 
         "Create test search": function(test) {
+            // The search created here is used by several of the following tests, specifically those using get()
             var searchID = "DELETEME_JSSDK_UNITTEST";
             this.service.post("search/jobs", {search: "search index=_internal | head 1", exec_mode: "blocking", id: searchID}, function(err, res) {
                 test.ok(res.data.sid);
@@ -667,6 +668,7 @@ exports.setup = function(svc) {
         },
 
         "Cancel test search": function(test) {
+            // Here, the search created for several of the previous tests is terminated, it is no longer necessary
             var endpoint = "search/jobs/DELETEME_JSSDK_UNITTEST/control";
             this.service.post(endpoint, {action: "cancel"}, function(err, res) {
                 test.done();
