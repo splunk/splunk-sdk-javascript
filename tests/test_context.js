@@ -39,7 +39,7 @@ exports.setup = function(svc) {
                 test.done();
             });
         },
-
+        
         "Callback#login": function(test) {
             var newService = new splunkjs.Service(svc.http, {
                 scheme: svc.scheme,
@@ -116,7 +116,7 @@ exports.setup = function(svc) {
                 test.done();
             });
         },
-
+        
         "Callback#get autologin - error": function(test) {
             var service = new splunkjs.Service(
                 this.service.http,
@@ -130,12 +130,14 @@ exports.setup = function(svc) {
                 }
             );
 
-            service.get("search/jobs", {count: 2}, function(err, res) {
+            service.get("search/jobs", {count: 1}, function(err, res) {
+                console.log(err);
                 test.ok(err);
                 test.strictEqual(err.status, 401);
                 test.done();
             });
         },
+        
 
         "Callback#get autologin - disabled": function(test) {
             var service = new splunkjs.Service(
@@ -151,7 +153,8 @@ exports.setup = function(svc) {
                 }
             );
 
-            service.get("search/jobs", {count: 2}, function(err, res) {
+            service.get("search/jobs", {count: 1}, function(err, res) {
+                console.log(err);
                 test.ok(err);
                 test.strictEqual(err.status, 401);
                 test.done();
@@ -566,7 +569,7 @@ exports.setup = function(svc) {
                 }
             );
 
-            var get = {count: 2};
+            var get = {count: 1};
             var post = null;
             var body = null;
             service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
@@ -590,7 +593,7 @@ exports.setup = function(svc) {
                 }
             );
 
-            var get = {count: 2};
+            var get = {count: 1};
             var post = null;
             var body = null;
             service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
@@ -645,7 +648,7 @@ exports.setup = function(svc) {
                 }
             );
 
-            var get = {count: 2};
+            var get = {count: 1};
             var post = null;
             var body = null;
             service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
@@ -656,7 +659,7 @@ exports.setup = function(svc) {
         },
 
         "Callback#abort": function(test) {
-            var req = this.service.get("search/jobs", {count: 2}, function(err, res) {
+            var req = this.service.get("search/jobs", {count: 1}, function(err, res) {
                 test.ok(!res);
                 test.ok(err);
                 test.strictEqual(err.error, "abort");
