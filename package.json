@@ -21,7 +21,7 @@
         "javascript"
     ],
     "dependencies" : {
-        "request" : "2.9.152"
+        "request" : "2.21.1"
     },
     "devDependencies" : {
         "browserify" : "https://github.com/itay/node-browserify/tarball/master",
@@ -36,5 +36,5 @@
         "url" : "http://dev.splunk.com"
     },
     "license" : "Apache 2.0",
-    "engine" : { "node" : ">=0.6.14" }
+    "engine" : { "node" : ">=0.8.0" }
 }

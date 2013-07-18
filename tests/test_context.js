@@ -31,6 +31,15 @@ exports.setup = function(svc) {
             test.done();
         },
 
+        "Create test search": function(test) {
+            // The search created here is used by several of the following tests, specifically those using get()
+            var searchID = "DELETEME_JSSDK_UNITTEST";
+            this.service.post("search/jobs", {search: "search index=_internal | head 1", exec_mode: "blocking", id: searchID}, function(err, res) {
+                test.ok(res.data.sid);
+                test.done();
+            });
+        },
+        
         "Callback#login": function(test) {
             var newService = new splunkjs.Service(svc.http, {
                 scheme: svc.scheme,
@@ -69,10 +78,10 @@ exports.setup = function(svc) {
         },
 
         "Callback#get": function(test) {
-            this.service.get("search/jobs", {count: 2}, function(err, res) {
+            this.service.get("search/jobs", {count: 1}, function(err, res) {
                 test.strictEqual(res.data.paging.offset, 0);
                 test.ok(res.data.entry.length <= res.data.paging.total);
-                test.strictEqual(res.data.entry.length, 2);
+                test.strictEqual(res.data.entry.length, 1);
                 test.ok(res.data.entry[0].content.sid);
                 test.done();
             });
@@ -98,16 +107,16 @@ exports.setup = function(svc) {
                     version: svc.version
                 }
             );
-
-            service.get("search/jobs", {count: 2}, function(err, res) {
+            
+            service.get("search/jobs", {count: 1}, function(err, res) {
                 test.strictEqual(res.data.paging.offset, 0);
                 test.ok(res.data.entry.length <= res.data.paging.total);
-                test.strictEqual(res.data.entry.length, 2);
+                test.strictEqual(res.data.entry.length, 1);
                 test.ok(res.data.entry[0].content.sid);
                 test.done();
             });
         },
-
+        
         "Callback#get autologin - error": function(test) {
             var service = new splunkjs.Service(
                 this.service.http,
@@ -121,12 +130,14 @@ exports.setup = function(svc) {
                 }
             );
 
-            service.get("search/jobs", {count: 2}, function(err, res) {
+            service.get("search/jobs", {count: 1}, function(err, res) {
+                console.log(err);
                 test.ok(err);
                 test.strictEqual(err.status, 401);
                 test.done();
             });
         },
+        
 
         "Callback#get autologin - disabled": function(test) {
             var service = new splunkjs.Service(
@@ -142,7 +153,8 @@ exports.setup = function(svc) {
                 }
             );
 
-            service.get("search/jobs", {count: 2}, function(err, res) {
+            service.get("search/jobs", {count: 1}, function(err, res) {
+                console.log(err);
                 test.ok(err);
                 test.strictEqual(err.status, 401);
                 test.done();
@@ -163,11 +175,11 @@ exports.setup = function(svc) {
                 }
             );
 
-            service.get("search/jobs", {count: 2}, function(err, res) {
+            service.get("search/jobs", {count: 1}, function(err, res) {
                 test.ok(!err);
                 test.strictEqual(res.data.paging.offset, 0);
                 test.ok(res.data.entry.length <= res.data.paging.total);
-                test.strictEqual(res.data.entry.length, 2);
+                test.strictEqual(res.data.entry.length, 1);
                 test.ok(res.data.entry[0].content.sid);
                 test.done();
             });
@@ -187,7 +199,7 @@ exports.setup = function(svc) {
                 }
             );
 
-            service.get("search/jobs", {count: 2}, function(err, res) {
+            service.get("search/jobs", {count: 1}, function(err, res) {
                 test.ok(err);
                 test.strictEqual(err.status, 401);
                 test.done();
@@ -467,13 +479,13 @@ exports.setup = function(svc) {
         },
 
         "Callback#request get": function(test) {
-            var get = {count: 2};
+            var get = {count: 1};
             var post = null;
             var body = null;
             this.service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
                 test.strictEqual(res.data.paging.offset, 0);
                 test.ok(res.data.entry.length <= res.data.paging.total);
-                test.strictEqual(res.data.entry.length, 2);
+                test.strictEqual(res.data.entry.length, 1);
                 test.ok(res.data.entry[0].content.sid);
 
                 if (res.response.request) {
@@ -527,13 +539,13 @@ exports.setup = function(svc) {
                 }
             );
 
-            var get = {count: 2};
+            var get = {count: 1};
             var post = null;
             var body = null;
             service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
                 test.strictEqual(res.data.paging.offset, 0);
                 test.ok(res.data.entry.length <= res.data.paging.total);
-                test.strictEqual(res.data.entry.length, 2);
+                test.strictEqual(res.data.entry.length, 1);
                 test.ok(res.data.entry[0].content.sid);
 
                 if (res.response.request) {
@@ -557,7 +569,7 @@ exports.setup = function(svc) {
                 }
             );
 
-            var get = {count: 2};
+            var get = {count: 1};
             var post = null;
             var body = null;
             service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
@@ -581,7 +593,7 @@ exports.setup = function(svc) {
                 }
             );
 
-            var get = {count: 2};
+            var get = {count: 1};
             var post = null;
             var body = null;
             service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
@@ -605,13 +617,13 @@ exports.setup = function(svc) {
                 }
             );
 
-            var get = {count: 2};
+            var get = {count: 1};
             var post = null;
             var body = null;
             service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
                 test.strictEqual(res.data.paging.offset, 0);
                 test.ok(res.data.entry.length <= res.data.paging.total);
-                test.strictEqual(res.data.entry.length, 2);
+                test.strictEqual(res.data.entry.length, 1);
                 test.ok(res.data.entry[0].content.sid);
 
                 if (res.response.request) {
@@ -636,7 +648,7 @@ exports.setup = function(svc) {
                 }
             );
 
-            var get = {count: 2};
+            var get = {count: 1};
             var post = null;
             var body = null;
             service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
@@ -647,7 +659,7 @@ exports.setup = function(svc) {
         },
 
         "Callback#abort": function(test) {
-            var req = this.service.get("search/jobs", {count: 2}, function(err, res) {
+            var req = this.service.get("search/jobs", {count: 1}, function(err, res) {
                 test.ok(!res);
                 test.ok(err);
                 test.strictEqual(err.error, "abort");
@@ -656,6 +668,14 @@ exports.setup = function(svc) {
             });
 
             req.abort();
+        },
+
+        "Cancel test search": function(test) {
+            // Here, the search created for several of the previous tests is terminated, it is no longer necessary
+            var endpoint = "search/jobs/DELETEME_JSSDK_UNITTEST/control";
+            this.service.post(endpoint, {action: "cancel"}, function(err, res) {
+                test.done();
+            });
         },
 
         "fullpath gets its owner/app from the right places": function(test) {
