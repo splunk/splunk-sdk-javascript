@@ -131,7 +131,6 @@ exports.setup = function(svc) {
             );
 
             service.get("search/jobs", {count: 1}, function(err, res) {
-                console.log(err);
                 test.ok(err);
                 test.strictEqual(err.status, 401);
                 test.done();
@@ -154,7 +153,6 @@ exports.setup = function(svc) {
             );
 
             service.get("search/jobs", {count: 1}, function(err, res) {
-                console.log(err);
                 test.ok(err);
                 test.strictEqual(err.status, 401);
                 test.done();
