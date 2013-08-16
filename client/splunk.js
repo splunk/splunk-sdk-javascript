@@ -570,7 +570,7 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
          *
          * @function splunkjs.Logger
          */
-        setLevel: function(level) { setLevel.apply(this, arguments) },
+        setLevel: function(level) { setLevel.apply(this, arguments); },
         
         /*!*/
         levels: levels
@@ -1552,7 +1552,7 @@ require.define("/lib/paths.js", function (require, module, exports, __dirname, _
         views: "data/ui/views",
         
         currentUser: "/services/authentication/current-context",
-        submitEvent: "receivers/simple"
+        submitEvent: "/services/receivers/simple"
     };
 })();
 
@@ -5881,6 +5881,91 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
 })();
 });
 
+require.define("/lib/platform/client/jquery_http.js", function (require, module, exports, __dirname, __filename) {
+
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+(function() {
+    var Http    = require('../../http');
+    var utils   = require('../../utils');
+
+    var root = exports || this;
+
+    var getHeaders = function(headersString) {
+        var headers = {};
+        var headerLines = headersString.split("\n");
+        for(var i = 0; i < headerLines.length; i++) {
+            if (utils.trim(headerLines[i]) !== "") {
+                var headerParts = headerLines[i].split(": ");
+                headers[headerParts[0]] = headerParts[1];
+            }
+        }
+
+        return headers;
+    };
+
+    root.JQueryHttp = Http.extend({
+        init: function(isSplunk) {
+            this._super(isSplunk);
+        },
+
+        makeRequest: function(url, message, callback) {
+            var that = this;
+            var params = {
+                url: url,
+                type: message.method,
+                headers: message.headers,
+                data: message.body || "",
+                dataType: "json",
+                success: utils.bind(this, function(data, error, res) {
+                    var response = {
+                        statusCode: res.status,
+                        headers: getHeaders(res.getAllResponseHeaders())
+                    };
+
+                    var complete_response = this._buildResponse(error, response, data);
+                    callback(complete_response);
+                }),
+                error: function(res, data, error) {
+                    var response = {
+                        statusCode: res.status,
+                        headers: getHeaders(res.getAllResponseHeaders())
+                    };
+
+                    if (data === "abort") {
+                        response.statusCode = "abort";
+                        res.responseText = "{}";
+                    }
+                    var json = JSON.parse(res.responseText);
+
+                    var complete_response = that._buildResponse(error, response, json);
+                    callback(complete_response);
+                }
+            };
+            
+            return $.ajax(params);
+        },
+
+        parseJson: function(json) {
+            // JQuery does this for us
+            return json;
+        }
+    });
+})();
+});
+
 require.define("/lib/platform/client/proxy_http.js", function (require, module, exports, __dirname, __filename) {
 
 // Copyright 2011 Splunk, Inc.
@@ -6163,12 +6248,14 @@ require.define("/browser.entry.js", function (require, module, exports, __dirnam
     var previousSplunk = window[exportName];
     
     var ourSplunk     = require('../../index');
+    var jqueryHttp    = require('../../lib/platform/client/jquery_http').JQueryHttp; 
     var proxyHttps    = require('../../lib/platform/client/proxy_http');
     var proxyHttp     = proxyHttps.ProxyHttp;
     var splunkwebHttp = proxyHttps.SplunkWebHttp;
     
     window[exportName]               = ourSplunk;
     window[exportName].ProxyHttp     = proxyHttp;
+    window[exportName].JQueryHttp    = jqueryHttp;
     window[exportName].SplunkWebHttp = splunkwebHttp;
     
     // Add no conflict capabilities
