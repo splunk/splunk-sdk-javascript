@@ -105,7 +105,8 @@
                     },
                     followAllRedirects: true,
                     body: body,
-                    jar: false
+                    jar: false,
+                    strictSSL: false
                 };
                 
                 try {
