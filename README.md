@@ -206,7 +206,7 @@ list of possible commands and options, open a command prompt in the
 To rebuild and minify the browser files, open a command prompt in the
 **splunk-sdk-javascript** directory and enter:
 
-    node compile
+    node sdkdo compile
 
 ### Run unit tests
 
