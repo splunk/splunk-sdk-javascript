@@ -1,5 +1,21 @@
 # Splunk SDK for JavaScript Changelog
 
+## v1.2.0
+
+### New features and APIs
+
+* The Splunk SDK for JavaScript now supports Node.js v0.8.x and v0.10.x
+
+* Add back general JQuery HTTP implementation.
+
+* General improvements to unit tests.
+
+### Breaking changes
+
+* The Splunk SDK for JavaScript no longer supports Node.js v0.6.x
+
+* Updated the Node.js request module dependency to v2.21.1
+
 ## v1.1.0
 
 ### New features and APIs
