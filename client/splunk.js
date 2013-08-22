@@ -570,7 +570,7 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
          *
          * @function splunkjs.Logger
          */
-        setLevel: function(level) { setLevel.apply(this, arguments) },
+        setLevel: function(level) { setLevel.apply(this, arguments); },
         
         /*!*/
         levels: levels
@@ -1544,7 +1544,7 @@ require.define("/lib/paths.js", function (require, module, exports, __dirname, _
         passwords: "admin/passwords",
         parser: "search/parser",
         properties: "properties",
-        roles: "authentication/roles",
+        roles: "authorization/roles",
         savedSearches: "saved/searches",
         settings: "server/settings",
         users: "/services/authentication/users",
@@ -1552,7 +1552,7 @@ require.define("/lib/paths.js", function (require, module, exports, __dirname, _
         views: "data/ui/views",
         
         currentUser: "/services/authentication/current-context",
-        submitEvent: "receivers/simple"
+        submitEvent: "/services/receivers/simple"
     };
 })();
 
@@ -1989,14 +1989,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     var root = exports || this;
     var Service = null;
     
-    /**
-     * Contains functionality common to Splunk Enterprise and Splunk Storm.
-     * 
-     * This class is an implementation detail and is therefore SDK-private.
-     * 
-     * @class splunkjs.private.BaseService
-     * @extends splunkjs.Context
-     */
+    // /**
+    //  * Contains functionality common to Splunk Enterprise and Splunk Storm.
+    //  * 
+    //  * This class is an implementation detail and is therefore SDK-private.
+    //  * 
+    //  * @class splunkjs.private.BaseService
+    //  * @extends splunkjs.Context
+    //  */
     var BaseService = Context.extend({
         init: function() {
             this._super.apply(this, arguments);
@@ -5881,6 +5881,91 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
 })();
 });
 
+require.define("/lib/platform/client/jquery_http.js", function (require, module, exports, __dirname, __filename) {
+
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+(function() {
+    var Http    = require('../../http');
+    var utils   = require('../../utils');
+
+    var root = exports || this;
+
+    var getHeaders = function(headersString) {
+        var headers = {};
+        var headerLines = headersString.split("\n");
+        for(var i = 0; i < headerLines.length; i++) {
+            if (utils.trim(headerLines[i]) !== "") {
+                var headerParts = headerLines[i].split(": ");
+                headers[headerParts[0]] = headerParts[1];
+            }
+        }
+
+        return headers;
+    };
+
+    root.JQueryHttp = Http.extend({
+        init: function(isSplunk) {
+            this._super(isSplunk);
+        },
+
+        makeRequest: function(url, message, callback) {
+            var that = this;
+            var params = {
+                url: url,
+                type: message.method,
+                headers: message.headers,
+                data: message.body || "",
+                dataType: "json",
+                success: utils.bind(this, function(data, error, res) {
+                    var response = {
+                        statusCode: res.status,
+                        headers: getHeaders(res.getAllResponseHeaders())
+                    };
+
+                    var complete_response = this._buildResponse(error, response, data);
+                    callback(complete_response);
+                }),
+                error: function(res, data, error) {
+                    var response = {
+                        statusCode: res.status,
+                        headers: getHeaders(res.getAllResponseHeaders())
+                    };
+
+                    if (data === "abort") {
+                        response.statusCode = "abort";
+                        res.responseText = "{}";
+                    }
+                    var json = JSON.parse(res.responseText);
+
+                    var complete_response = that._buildResponse(error, response, json);
+                    callback(complete_response);
+                }
+            };
+            
+            return $.ajax(params);
+        },
+
+        parseJson: function(json) {
+            // JQuery does this for us
+            return json;
+        }
+    });
+})();
+});
+
 require.define("/lib/platform/client/proxy_http.js", function (require, module, exports, __dirname, __filename) {
 
 // Copyright 2011 Splunk, Inc.
@@ -6132,7 +6217,11 @@ require.define("/contrib/script.js", function (require, module, exports, __dirna
   * (c) Dustin Diaz, Jacob Thornton 2011
   * License: MIT
   */
-!function(a,b){typeof define=="function"?define(b):typeof module!="undefined"?module.exports=b():this[a]=b()}("$script",function(){function s(a,b,c){for(c=0,j=a.length;c<j;++c)if(!b(a[c]))return m;return 1}function t(a,b){s(a,function(a){return!b(a)})}function u(a,b,c){function o(a){return a.call?a():f[a]}function p(){if(!--m){f[l]=1,j&&j();for(var a in h)s(a.split("|"),o)&&!t(h[a],o)&&(h[a]=[])}}a=a[n]?a:[a];var e=b&&b.call,j=e?b:c,l=e?a.join(""):b,m=a.length;return setTimeout(function(){t(a,function(a){if(k[a])return l&&(g[l]=1),k[a]==2&&p();k[a]=1,l&&(g[l]=1),v(!d.test(a)&&i?i+a+".js":a,p)})},0),u}function v(a,d){var e=b.createElement("script"),f=m;e.onload=e.onerror=e[r]=function(){if(e[p]&&!/^c|loade/.test(e[p])||f)return;e.onload=e[r]=null,f=1,k[a]=2,d()},e.async=1,e.src=a,c.insertBefore(e,c.firstChild)}var a=this,b=document,c=b.getElementsByTagName("head")[0],d=/^https?:\/\//,e=a.$script,f={},g={},h={},i,k={},l="string",m=!1,n="push",o="DOMContentLoaded",p="readyState",q="addEventListener",r="onreadystatechange";return!b[p]&&b[q]&&(b[q](o,function w(){b.removeEventListener(o,w,m),b[p]="complete"},m),b[p]="loading"),u.get=v,u.order=function(a,b,c){(function d(e){e=a.shift(),a.length?u(e,d):u(e,b,c)})()},u.path=function(a){i=a},u.ready=function(a,b,c){a=a[n]?a:[a];var d=[];return!t(a,function(a){f[a]||d[n](a)})&&s(a,function(a){return f[a]})?b():!function(a){h[a]=h[a]||[],h[a][n](b),c&&c(d)}(a.join("|")),u},u.noConflict=function(){return a.$script=e,this},u})
+  /*
+  * Modified by Splunk, Inc to remove AMD/requirejs support support
+  * Removed: 'typeof define=="function"?define(b):'
+  */
+!function(a,b){typeof module!="undefined"?module.exports=b():this[a]=b()}("$script",function(){function s(a,b,c){for(c=0,j=a.length;c<j;++c)if(!b(a[c]))return m;return 1}function t(a,b){s(a,function(a){return!b(a)})}function u(a,b,c){function o(a){return a.call?a():f[a]}function p(){if(!--m){f[l]=1,j&&j();for(var a in h)s(a.split("|"),o)&&!t(h[a],o)&&(h[a]=[])}}a=a[n]?a:[a];var e=b&&b.call,j=e?b:c,l=e?a.join(""):b,m=a.length;return setTimeout(function(){t(a,function(a){if(k[a])return l&&(g[l]=1),k[a]==2&&p();k[a]=1,l&&(g[l]=1),v(!d.test(a)&&i?i+a+".js":a,p)})},0),u}function v(a,d){var e=b.createElement("script"),f=m;e.onload=e.onerror=e[r]=function(){if(e[p]&&!/^c|loade/.test(e[p])||f)return;e.onload=e[r]=null,f=1,k[a]=2,d()},e.async=1,e.src=a,c.insertBefore(e,c.firstChild)}var a=this,b=document,c=b.getElementsByTagName("head")[0],d=/^https?:\/\//,e=a.$script,f={},g={},h={},i,k={},l="string",m=!1,n="push",o="DOMContentLoaded",p="readyState",q="addEventListener",r="onreadystatechange";return!b[p]&&b[q]&&(b[q](o,function w(){b.removeEventListener(o,w,m),b[p]="complete"},m),b[p]="loading"),u.get=v,u.order=function(a,b,c){(function d(e){e=a.shift(),a.length?u(e,d):u(e,b,c)})()},u.path=function(a){i=a},u.ready=function(a,b,c){a=a[n]?a:[a];var d=[];return!t(a,function(a){f[a]||d[n](a)})&&s(a,function(a){return f[a]})?b():!function(a){h[a]=h[a]||[],h[a][n](b),c&&c(d)}(a.join("|")),u},u.noConflict=function(){return a.$script=e,this},u})
 });
 
 require.define("/browser.entry.js", function (require, module, exports, __dirname, __filename) {
@@ -6159,12 +6248,14 @@ require.define("/browser.entry.js", function (require, module, exports, __dirnam
     var previousSplunk = window[exportName];
     
     var ourSplunk     = require('../../index');
+    var jqueryHttp    = require('../../lib/platform/client/jquery_http').JQueryHttp; 
     var proxyHttps    = require('../../lib/platform/client/proxy_http');
     var proxyHttp     = proxyHttps.ProxyHttp;
     var splunkwebHttp = proxyHttps.SplunkWebHttp;
     
     window[exportName]               = ourSplunk;
     window[exportName].ProxyHttp     = proxyHttp;
+    window[exportName].JQueryHttp    = jqueryHttp;
     window[exportName].SplunkWebHttp = splunkwebHttp;
     
     // Add no conflict capabilities

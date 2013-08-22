@@ -1674,7 +1674,7 @@ exports.setup = function(svc, loggedOutSvc) {
              
             "Callback#create file + create stanza + update stanza": function(test) {
                 var that = this;
-                var fileName = "jssdk_file";
+                var fileName = "jssdk_file_" + getNextId();
                 var value = "barfoo_" + getNextId();
                 var namespace = {owner: "admin", app: "search"};
                 
@@ -1801,7 +1801,7 @@ exports.setup = function(svc, loggedOutSvc) {
             "Callback#create file + create stanza + update stanza": function(test) {
                 var that = this;
                 var namespace = {owner: "nobody", app: "system"};
-                var fileName = "jssdk_file";
+                var fileName = "jssdk_file_" + getNextId();
                 var value = "barfoo_" + getNextId();
                 
                 Async.chain([

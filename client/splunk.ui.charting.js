@@ -410,7 +410,7 @@ require.define("/ui/charting.js", function (require, module, exports, __dirname,
         },
         
         draw: function() {
-            this.chart.draw();
+            this.chart.draw(function(){});
         }
     });
 })();
