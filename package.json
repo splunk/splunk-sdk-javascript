@@ -1,6 +1,6 @@
 {
     "name" : "splunk-sdk",
-    "version" : "1.2.0",
+    "version" : "1.2.1",
     "description" : "SDK for usage with the Splunk REST API",
     "homepage": "http://dev.splunk.com",
     "main" : "index.js",
@@ -21,7 +21,7 @@
         "javascript"
     ],
     "dependencies" : {
-        "request" : "2.21.1"
+        "request" : "2.21.x"
     },
     "devDependencies" : {
         "browserify" : "https://github.com/itay/node-browserify/tarball/master",
