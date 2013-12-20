@@ -291,34 +291,34 @@ To run the browser tests, enter:
 
 The **CHANGELOG.md** file in the root of the repository contains a description
 of changes for each version of the SDK. You can also find the 
-[Splunk SDK for JavaScript Changelog](changelog) online.
+[Splunk SDK for JavaScript Changelog][changelog] online.
 
 ### Branches
 
 The **master** branch always represents a stable and released version of the 
 SDK. You can read more about the 
-[JavaScript SDK Branching Model](branchingmodel) on our wiki.
+[JavaScript SDK Branching Model][branchingmodel] on our wiki.
 
 ## Documentation and resources
 
 If you need to know more: 
 
 * For all things developer with Splunk, your main resource is the 
-  [Splunk Developer Portal](devportal).
+  [Splunk Developer Portal][devportal].
 
 * For conceptual and how-to documentation, see the 
-  [Overview of the Splunk SDK for JavaScript](jsoverview).
+  [Overview of the Splunk SDK for JavaScript][jsoverview].
 
 * For API reference documentation, see the 
-  [Splunk SDK for JavaScript Reference](jsapiref).
+  [Splunk SDK for JavaScript Reference][jsapiref].
 
 * For more about the Splunk REST API, see the 
-  [REST API Reference](restapiref).
+  [REST API Reference][restapiref].
 
-* For more about about Splunk in general, see [Splunk>Docs](splunkdocs).
+* For more about about Splunk in general, see [Splunk>Docs][splunkdocs].
 
 
-* For more about this SDK's repository, see our [GitHub Wiki](jsgithubwiki).
+* For more about this SDK's repository, see our [GitHub Wiki][jsgithubwiki].
 
 ## Community
 
@@ -357,11 +357,11 @@ Stay connected with other developers building on Splunk.
 
 If you would like to contribute to the SDK, go here for more information:
 
-* [Splunk and open source](contributions)
+* [Splunk and open source][contributions]
 
-* [Individual contributions](indivcontrib)
+* [Individual contributions][indivcontrib]
 
-* [Company contributions](companycontrib)
+* [Company contributions][companycontrib]
 
 
 ### Support
