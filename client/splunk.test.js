@@ -5275,7 +5275,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                             return;
                         }
                         
-                        var notReady = (job.properties().isDone === undefined);
+                        var dispatchState = job.properties().dispatchState;
+                        var notReady = dispatchState === "QUEUED" || dispatchState === "PARSING";
                         if (notReady) {
                             callbacks._preready(job);
                         }
@@ -5298,7 +5299,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                             callbacks.progress(job);
                             
                             var props = job.properties();
-                            var dispatchState = props.dispatchState;
                             
                             if (dispatchState === "DONE" && props.isDone) {
                                 callbacks.done(job);
@@ -8582,7 +8582,11 @@ exports.setup = function(svc, loggedOutSvc) {
                             service.jobs().search('search index=_internal | head 1 | sleep 5', {id: sid}, done);
                         },
                         function(job, done) {
-                            job.fetch(done);
+                            job.track({}, {
+                                ready: function(job) {
+                                    done(null, job);       
+                                }
+                            });
                         },
                         function(job, done) {
                             var priority = job.properties()["priority"];

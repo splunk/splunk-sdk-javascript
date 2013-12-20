@@ -5018,7 +5018,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                             return;
                         }
                         
-                        var notReady = (job.properties().isDone === undefined);
+                        var dispatchState = job.properties().dispatchState;
+                        var notReady = dispatchState === "QUEUED" || dispatchState === "PARSING";
                         if (notReady) {
                             callbacks._preready(job);
                         }
@@ -5041,7 +5042,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                             callbacks.progress(job);
                             
                             var props = job.properties();
-                            var dispatchState = props.dispatchState;
                             
                             if (dispatchState === "DONE" && props.isDone) {
                                 callbacks.done(job);
