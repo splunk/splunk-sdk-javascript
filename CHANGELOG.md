@@ -1,5 +1,10 @@
 # Splunk SDK for JavaScript Changelog
 
+## v1.2.3
+
+* `Job.track` now properly uses the `dispatchState` property to work consistently
+across all versions of Splunk.
+
 ## v1.2.2
 
 * Fixed a bug in the examples that prevented them from running on Splunk 6.0.0 

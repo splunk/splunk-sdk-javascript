@@ -645,7 +645,11 @@ exports.setup = function(svc, loggedOutSvc) {
                             service.jobs().search('search index=_internal | head 1 | sleep 5', {id: sid}, done);
                         },
                         function(job, done) {
-                            job.fetch(done);
+                            job.track({}, {
+                                ready: function(job) {
+                                    done(null, job);       
+                                }
+                            });
                         },
                         function(job, done) {
                             var priority = job.properties()["priority"];
