@@ -1528,6 +1528,7 @@ require.define("/lib/paths.js", function (require, module, exports, __dirname, _
         deploymentServerClasses: "deployment/serverclass",
         deploymentTenants: "deployment/tenants",
         eventTypes: "saved/eventtypes",
+        firedAlerts: "alerts/fired_alerts",
         indexes: "data/indexes",
         info: "/services/server/info",
         inputs: null,
