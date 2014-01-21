@@ -1105,7 +1105,7 @@ exports.setup = function(svc, loggedOutSvc) {
             }
         },
         
-        "App Tests": {      
+        "App Tests": {
             setUp: function(done) {
                 this.service = svc;
                 done();
@@ -1205,7 +1205,7 @@ exports.setup = function(svc, loggedOutSvc) {
             }
         },
         
-        "Saved Search Tests": {        
+        "Saved Search Tests": {
             setUp: function(done) {
                 this.service = svc;
                 this.loggedOutService = loggedOutSvc;
@@ -1602,7 +1602,7 @@ exports.setup = function(svc, loggedOutSvc) {
             }
         },
         
-        "Properties Tests": {        
+        "Properties Tests": {
             setUp: function(done) {
                 this.service = svc;
                 done();
@@ -1660,7 +1660,7 @@ exports.setup = function(svc, loggedOutSvc) {
                         file.fetch(done);
                     },
                     function(file, done) {
-                        test.strictEqual(file.name, "web");                        
+                        test.strictEqual(file.name, "web");
                         var stanza = file.item("settings");
                         test.ok(stanza);
                         stanza.fetch(done);
@@ -1684,7 +1684,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 
                 Async.chain([
                     function(done) {
-                        var properties = that.service.configurations(namespace); 
+                        var properties = that.service.configurations(namespace);
                         properties.fetch(done);
                     },
                     function(properties, done) {
@@ -1717,7 +1717,7 @@ exports.setup = function(svc, loggedOutSvc) {
             }
         },
         
-        "Configuration Tests": {        
+        "Configuration Tests": {
             setUp: function(done) {
                 this.service = svc;
                 done();
@@ -1846,7 +1846,7 @@ exports.setup = function(svc, loggedOutSvc) {
             }
         },
         
-        "Index Tests": {      
+        "Index Tests": {
             setUp: function(done) {
                 this.service = svc;
                 this.loggedOutService = loggedOutSvc;
