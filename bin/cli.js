@@ -99,7 +99,7 @@
                     url: destination,
                     method: req.method,
                     headers: {
-                        "Content-Length": req.headers["content-length"],
+                        "Content-Length": req.headers["content-length"] || 0,
                         "Content-Type": req.headers["content-type"],
                         "Authorization": req.headers["authorization"]
                     },
