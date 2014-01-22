@@ -34,7 +34,7 @@
         }
     };
     
-    // Instead of trying to print the column-major format, we just 
+    // Instead of trying to print the column-major format, we just
     // transpose it
     var transpose = function(results) {
         var rows = [];
