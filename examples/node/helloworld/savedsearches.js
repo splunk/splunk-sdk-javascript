@@ -46,7 +46,7 @@ exports.main = function(opts, done) {
             console.log("Error in logging in");
             done(err || "Login failed");
             return;
-        } 
+        }
         
         // Now that we're logged in, let's get a listing of all the saved searches.
         service.savedSearches().fetch(function(err, searches) {
