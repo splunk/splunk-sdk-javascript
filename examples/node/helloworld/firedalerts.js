@@ -23,7 +23,7 @@ exports.main = function(opts, done) {
     opts = opts || {};
     
     var username = opts.username    || "admin";
-    var password = opts.password    || "1";
+    var password = opts.password    || "1"; //TODO: revert to "changeme"
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
@@ -49,27 +49,22 @@ exports.main = function(opts, done) {
         } 
         
         // Now that we're logged in, let's get a listing of all the fired alerts.
-        service.firedAlerts().fetch(function(err, alerts) {
+        service.firedAlerts().fetch(function(err, firedAlerts) {
             if (err) {
                 console.log("ERROR", err);
                 done(err);
                 return;
             }
 
-            var alertList = alerts.list();
+            var alertGroups = firedAlerts.list();
             console.log("Fired alerts:");
-            for(var i = 0; i < alertList.length; i++) {
-                var alert = alertList[i];
-                console.log(alert.name, "(Count:", alert.properties().triggered_alert_count, ")");
-
-                //TODO: validate this part with some alerts
-                for(var j = 0; j < alert.alerts; j++) {
-                    console.log("Something", alert.alerts[j]);
-                }
+            for(var i = 0; i < alertGroups.length; i++) {
+                var alert = alertGroups[i];
+                console.log(alert.name, "(Count:", alert.count(), ")");
+                console.log(alert.list());
             }
             done();
         });
-
     });
 };
 
