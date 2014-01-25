@@ -56,13 +56,24 @@ exports.main = function(opts, done) {
                 return;
             }
 
+            // Get the list of all alert, including the all group (represented by "-")
             var alertGroups = firedAlerts.list();
             console.log("Fired alerts:");
-            for(var i = 0; i < alertGroups.length; i++) {
-                var alert = alertGroups[i];
-                console.log(alert.name, "(Count:", alert.count(), ")");
-                console.log(alert.list());
-            }
+
+            alertGroups.forEach(function(alert){
+                alert.list(function(err, jobs, search) {
+                    // How many jobs fired this alert?
+                    console.log(alert.name, "(Count:", alert.count(), ")");
+                    // Print the properties for each job that fired this alert (default of 30 per alert)
+                    for(var i = 0; i < jobs.length; i++) {
+                        for (var key in jobs[i].properties()) {
+                            console.log(key + ":", jobs[i].properties()[key]);
+                        }
+                        console.log();
+                    }
+                    console.log("======================================");
+               });
+            });
             done();
         });
     });
