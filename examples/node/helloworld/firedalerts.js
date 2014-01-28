@@ -61,7 +61,7 @@ exports.main = function(opts, done) {
             console.log("Fired alerts:");
 
             alertGroups.forEach(function(alert){
-                alert.list(function(err, jobs, search) {
+                alert.list(function(err, jobs, alertGroup) {
                     // How many jobs fired this alert?
                     console.log(alert.name, "(Count:", alert.count(), ")");
                     // Print the properties for each job that fired this alert (default of 30 per alert)
