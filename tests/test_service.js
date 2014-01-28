@@ -1602,6 +1602,14 @@ exports.setup = function(svc, loggedOutSvc) {
             }
         },
         
+        "Fired Alerts Tests": {
+            setUp: function(done) {
+                this.service = svc;
+                this.loggedOutService = loggedOutSvc;
+                done();
+            },
+        },
+
         "Properties Tests": {
             setUp: function(done) {
                 this.service = svc;
