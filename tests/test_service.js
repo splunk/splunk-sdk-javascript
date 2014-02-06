@@ -26,6 +26,7 @@ exports.setup = function(svc, loggedOutSvc) {
     };
 
     var suite = {
+        /*
         "Namespace Tests": {
             setUp: function(finished) {
                 this.service = svc;
@@ -273,7 +274,8 @@ exports.setup = function(svc, loggedOutSvc) {
                 });
             }
         },
-        
+        */
+        /*
         "Job Tests": {
             setUp: function(done) {
                 this.service = svc;
@@ -1072,7 +1074,7 @@ exports.setup = function(svc, loggedOutSvc) {
             },
             
             "Callback#track() a job that is not immediately ready": function(test) {
-                /*jshint loopfunc:true */
+                *//*jshint loopfunc:true *//*   //TODO: remove the first and last 2 chars.
                 var numJobs = 20;
                 var numJobsLeft = numJobs;
                 var gotJobNotImmediatelyReady = false;
@@ -1104,7 +1106,8 @@ exports.setup = function(svc, loggedOutSvc) {
                 }
             }
         },
-        
+        */
+        /*
         "App Tests": {
             setUp: function(done) {
                 this.service = svc;
@@ -1601,15 +1604,76 @@ exports.setup = function(svc, loggedOutSvc) {
                 });
             }
         },
-        
+        */
         "Fired Alerts Tests": {
             setUp: function(done) {
                 this.service = svc;
                 this.loggedOutService = loggedOutSvc;
                 done();
             },
-        },
 
+            "Callback#verify emptiness + delete new search": function(test) {
+                var searches = this.service.savedSearches({owner: this.service.username});
+
+                var name = "jssdk_savedsearch_alert_" + getNextId();
+                var searchConfig = {
+                    "name": name,
+                    "search": "index=_internal | head 1",
+                    "alert_type": "always",
+                    "alert.severity": "2",
+                    "alert.suppress": "0",
+                    "alert.track": "1",
+                    "dispatch.earliest_time": "-1h",
+                    "dispatch.latest_time": "now",
+                    "is_scheduled": "1",
+                    "cron_schedule": "* * * * *"
+                };
+                
+                Async.chain([
+                        function(done) {
+                            searches.create(searchConfig, done);
+                        },
+                        function(search, done) {
+                            test.ok(search);
+                            test.strictEqual(search.alertCount(), 0);
+                            /*
+                            //TODO: test .firedAlerts().count()
+                            searches.fetch(function(err, savedSearches){
+                                var s = savedSearches.item("jssdk_savedsearch_alert_id0_1391658475250");
+                                //console.log(s.alertCount());
+                                //console.log(s.history());
+                                s.history(function(err, jobs, search){
+                                    console.log(jobs.length);
+                                });
+                            });
+                            */
+                            search.history(done);
+                        },
+                        function(jobs, search, done) {
+                            test.strictEqual(jobs.length, 0);
+                            test.strictEqual(search.firedAlerts().count(), 0);
+                            searches.service.firedAlerts().fetch( Async.augment(done, search) );
+                        },
+                        function(firedAlerts, originalSearch, done) {
+                            test.ok(firedAlerts.list().indexOf(originalSearch.name) == -1);
+                            done(null, originalSearch);
+                        },
+                        function(originalSearch, done) {
+                            originalSearch.remove(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#alert is triggered": function(test) {
+                test.done();
+            }
+        },
+        /*
         "Properties Tests": {
             setUp: function(done) {
                 this.service = svc;
@@ -2725,6 +2789,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 test.done();
             }
         }
+        */
     };
     return suite;
 };
