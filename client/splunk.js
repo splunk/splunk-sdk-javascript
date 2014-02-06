@@ -2047,6 +2047,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.users          = utils.bind(this, this.users);
             this.currentUser    = utils.bind(this, this.currentUser);
             this.views          = utils.bind(this, this.views);
+            this.firedAlerts    = utils.bind(this, this.firedAlerts);
         },
         
         /**
@@ -2181,7 +2182,34 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Gets the `Jobs` collection, which lets you create, list, 
+         * Gets the `FiredAlerts` collection, which lets you
+         * list alert groups.
+         * 
+         * @example
+         *      
+         *      // List saved searches
+         *      var firedAlerts = svc.firedAlerts();
+         *      firedAlerts.fetch(function(err, firedAlerts) {
+         *          console.log("# of alert groups: " + firedAlerts.list().length);
+         *      });
+         *
+         *
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
+         * @return {splunkjs.Service.FiredAlerts} The `FiredAlerts` collection.
+         *
+         * @endpoint saved/searches
+         * @method splunkjs.Service
+         * @see splunkjs.Service.FiredAlerts
+         */
+        firedAlerts: function(namespace) {
+            return new root.FiredAlerts(this, namespace);
+        },
+
+        /**
+         * Gets the `Jobs` collection, which lets you create, list,
          * and retrieve search jobs. 
          *
          * @example
@@ -3134,7 +3162,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
             this._load             = utils.bind(this, this._load);
-            this.fetch           = utils.bind(this, this.fetch);
+            this.fetch             = utils.bind(this, this.fetch);
             this.create            = utils.bind(this, this.create);
             this.list              = utils.bind(this, this.list);
             this.item              = utils.bind(this, this.item);
@@ -3462,6 +3490,29 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.suppressInfo = utils.bind(this, this.suppressInfo);
         },
         
+        /** TODO: move and alphabetize; cleanup docs
+         * Gets the alertGroup for firedAlerts associated with this saved search
+         *
+         * @return {splunkjs.Service.AlertGroup} An AlertGroup object with the
+         * same name as this SavedSearch object.
+         *
+         * @method splunkjs.Service.SavedSearch
+         */
+         firedAlerts: function() {
+            return new root.AlertGroup(this.service, this.name);
+         },
+
+         /** Gets the count of triggered alerts for this savedSearch,
+          * defaulting to 0.
+          *
+          * @return {Number} The count of triggered alerts.
+          *
+          * @method splunkjs.Service.SavedSearch
+          */
+        alertCount: function() {
+            return parseInt(this.properties().triggered_alert_count) || 0;
+        },
+
         /**
          * Acknowledges the suppression of the alerts from a saved search and
          * resumes alerting.
@@ -3470,7 +3521,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      var savedSearch = service.savedSearches().item("MySavedSearch");
          *      savedSearch.acknowledge(function(err, search) {
-         *          console.log("ACKNOWLEDGED);
+         *          console.log("ACKNOWLEDGED");
          *      });
          *
          * @param {Function} callback A function to call when the saved search is acknowledged: `(err, savedSearch)`.
@@ -3533,7 +3584,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             });
             
             return req;
-        },
+        },        
         
         /**
          * Retrieves the job history for a saved search, which is a list of 
@@ -3693,6 +3744,152 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this._super(service, this.path(), namespace);
         }
     });
+
+    /**
+     * Represents a specific alert, which you can then view and
+     * remove.
+     *
+     * @endpoint alerts/fired_alerts/{name}
+     * @class splunkjs.Service.AlertGroup
+     * @extends splunkjs.Service.Collection
+     */
+    root.AlertGroup = root.Entity.extend({
+        /**
+         * Retrieves the REST endpoint path for this resource (with no namespace).
+         *
+         * @method splunkjs.Service.AlertGroup
+         */
+        path: function() {
+            return Paths.firedAlerts + "/" + encodeURIComponent(this.name);
+        },
+
+        /**
+         * Returns the `triggered_alert_count` property, the count
+         * of triggered alerts.
+         *
+         * @return {Number} the count of triggered alerts
+         *
+         * @method splunkjs.Service.AlertGroup
+         */
+        count: function() {
+            return parseInt(this._properties.triggered_alert_count) || 0;
+        },
+
+        /**
+         * Returns fired instances of this alert, which is
+         * a list of `splunkjs.Service.Job` instances.
+         *
+         * @example
+         *
+         *      var alertGroup = service.firedAlerts().item("MyAlert");
+         *      alertGroup.list(function(err, jobs, alert) {
+         *          for(var i = 0; i < jobs.length; i++) {
+         *              console.log("Job " + i + ": ", jobs[i].sid);
+         *          }
+         *      });
+         *
+         * @param {Function} callback A function to call when the history is retrieved: `(err, job, alertGroup)`.
+         *
+         * @method splunkjs.Service.AlertGroup
+         */
+        list: function(callback) {
+            callback = callback || function() {};
+            
+            var that = this;
+            return this.get("", {}, function(err, response) {
+                if (err) {
+                    callback(err);
+                    return;
+                }
+                
+                var jobs = [];
+                var data = response.data.entry || [];
+                for(var i = 0; i < data.length; i++) {
+                    var jobData = response.data.entry[i];
+                    var namespace = utils.namespaceFromProperties(jobData);
+                    var job = new root.Job(that.service, jobData.name, namespace);
+                    job._load(jobData);
+                    jobs.push(job);
+                }
+                
+                callback(null, jobs, that);
+            });
+        },
+
+        /**
+         * Constructor for `splunkjs.Service.AlertGroup`.
+         *
+         * @constructor
+         * @param {splunkjs.Service} service A `Service` instance.
+         * @param {String} name The name for the new alert group.
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
+         * @return {splunkjs.Service.AlertGroup} A new `splunkjs.Service.AlertGroup` instance.
+         *
+         * @method splunkjs.Service.AlertGroup
+         */     
+        init: function(service, name, namespace) {
+            this.name = name;
+            this._super(service, this.path(), namespace);
+
+            this.list = utils.bind(this, this.list);
+        }
+    });
+
+    /**
+     * Represents a collection of fired alerts for a saved search. You can
+     * create and list saved searches using this collection container, or
+     * get a specific alert group. 
+     *
+     *
+     * @endpoint alerts/fired_alerts
+     * @class splunkjs.Service.FiredAlerts
+     * @extends splunkjs.Service.Collection
+     */
+    root.FiredAlerts = root.Collection.extend({
+        /**
+         * Retrieves the REST endpoint path for this resource (with no namespace).
+         *
+         * @method splunkjs.Service.FiredAlerts
+         */
+        path: function() {
+            return Paths.firedAlerts;
+        },
+        
+        /**
+         * Creates a local instance of an alert group.
+         *
+         * @param {Object} props The properties for the alert group.
+         * @return {splunkjs.Service.AlertGroup} A new `splunkjs.Service.AlertGroup` instance.
+         *
+         * @method splunkjs.Service.FiredAlerts
+         */
+        instantiateEntity: function(props) {
+            var entityNamespace = utils.namespaceFromProperties(props);
+            return new root.AlertGroup(this.service, props.name, entityNamespace);
+        },
+        
+        /**
+         * Constructor for `splunkjs.Service.FiredAlerts`. 
+         *
+         * @constructor
+         * @param {splunkjs.Service} service A `Service` instance.
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
+         * @return {splunkjs.Service.FiredAlerts} A new `splunkjs.Service.FiredAlerts` instance.
+         *
+         * @method splunkjs.Service.FiredAlerts
+         */     
+        init: function(service, namespace) {
+            this._super(service, this.path(), namespace);
+
+            this.instantiateEntity = utils.bind(this, this.instantiateEntity);
+        }
+    });
     
     /**
      * Represents a specific Splunk app that you can view, modify, and
@@ -3705,7 +3902,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     root.Application = root.Entity.extend({
         /**
          * Indicates whether to call `fetch` after an update to get the updated 
-         * item. 
+         * item.
          *
          * @method splunkjs.Service.Application
          */
@@ -3721,7 +3918,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Constructor for `splunkjs.Service.Application`. 
+         * Constructor for `splunkjs.Service.Application`.
          *
          * @constructor
          * @param {splunkjs.Service} service A `Service` instance.
@@ -4648,12 +4845,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             params.output_mode = params.output_mode || "json_rows"; 
             
             var that = this;
-            return this.get("events", params, function(err, response) { 
+            return this.get("events", params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
                 else {
-                    callback(null, response.data, that); 
+                    callback(null, response.data, that);
                 }
             });
         },
@@ -4781,7 +4978,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         results: function(params, callback) {
             callback = callback || function() {};
             params = params || {};
-            params.output_mode = params.output_mode || "json_rows";            
+            params.output_mode = params.output_mode || "json_rows";
             
             var that = this;
             return this.get("results", params, function(err, response) {
