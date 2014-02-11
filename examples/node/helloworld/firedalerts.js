@@ -14,7 +14,7 @@
 // under the License.
 
 // This example will login to Splunk, and then retrieve the list of fired alerts,
-// printing each saved search's name and search query.
+// printing each alert's name and properties.
 
 var splunkjs = require('../../../index');
 
@@ -48,7 +48,7 @@ exports.main = function(opts, done) {
             return;
         } 
         
-        // Now that we're logged in, let's get a listing of all the fired alerts.
+        // Now that we're logged in, let's get a listing of all the fired alert groups
         service.firedAlerts().fetch(function(err, firedAlerts) {
             if (err) {
                 console.log("ERROR", err);
@@ -60,20 +60,23 @@ exports.main = function(opts, done) {
             var alertGroups = firedAlerts.list();
             console.log("Fired alerts:");
 
-            alertGroups.forEach(function(alert){
-                alert.list(function(err, jobs, alertGroup) {
-                    // How many jobs fired this alert?
-                    console.log(alert.name, "(Count:", alert.count(), ")");
+            for(var a in alertGroups) {
+                var group = alertGroups[a];
+                group.list(function(err, jobs, alertGroup){
+                    // How many search jobs fired this alert?
+                    console.log(group.name, "(Count:", group.count(), ")");
                     // Print the properties for each job that fired this alert (default of 30 per alert)
                     for(var i = 0; i < jobs.length; i++) {
-                        for (var key in jobs[i].properties()) {
-                            console.log(key + ":", jobs[i].properties()[key]);
+                        var job = jobs[i];
+                        for (var key in job.properties()) {
+                            console.log(key + ":", job.properties()[key]);
                         }
                         console.log();
                     }
                     console.log("======================================");
-               });
-            });
+                });
+            }
+
             done();
         });
     });
