@@ -1780,12 +1780,16 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual(index.properties().totalEventCount, eventCount+1);
 
                             originalSearch.fetch(Async.augment(done, index));
+                            //TODO: try dispatching the savedSearch 
+                                //: also maybe see if you can poll the search every 1 second, etc
+                                //: or try doing a realtime search, making sure to delete it.
                         },
                         function(originalSearch, done) {
                             //Was an alert triggered? TODO: this function isn't working
                                 //I think the fetch isn't working actually.
                             //test.strictEqual(originalSearch.alertCount(), 1);
-                            Async.sleep(62000, Async.augment(done, originalSearch) );
+                            //Async.sleep(62000, Async.augment(done, originalSearch) );
+                            originalSearch.dispatch({"dispatch.now": true}, done);
                         },
                         function(originalSearch, done) {
                             //Was an alert triggered? TODO: this function isn't working
