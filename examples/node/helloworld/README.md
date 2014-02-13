@@ -16,6 +16,15 @@ one print its name.
 The only difference between the two files is that the latter uses the built-in
 `splunkjs.Async` module to make asynchronous control-flow easier.
 
+### Files: [`firedalert.js`] and [`firedalerts_async.js`]
+
+These files demonstrate working with the `splunkjs.Service.FiredAlerts` collection
+and `splunkjs.Service.AlertGroup` entity. It will list all the alert groups, and 
+for each one print its name and the search query associated with it.
+
+The only difference between the two files is that the latter uses the built-in
+`splunkjs.Async` module to make asynchronous control-flow easier.
+
 ### Files: [`savedsearches.js`] and [`savedsearches_async.js`]
 
 These files demonstrate working with the `splunkjs.Service.SavedSearches` collection
@@ -68,6 +77,8 @@ and we can then simply call `logger.log`, `logger.error`, etc.
 
 [`apps.js`]:                https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/apps.js
 [`apps_async.js`]:          https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/apps_async.js
+[`firedalerts.js`]:         https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/firedalerts.js
+[`firedalerts_async.js`]:   https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/firedalerts_async.js
 [`savedsearches.js`]:       https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/savedsearches.js
 [`savedsearches_async.js`]: https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/savedsearches_async.js
 [`search_normal.js`]:       https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/search_normal.js

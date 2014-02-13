@@ -42,6 +42,11 @@ exports.setup = function(svc, opts) {
                 var main = require("../examples/node/helloworld/firedalerts").main;
                 main(opts, test.done);
             },
+
+            "Fired Alerts": function(test) {
+                var main = require("../examples/node/helloworld/firedalerts_async").main;
+                main(opts, test.done);
+            },
             
             "Saved Searches": function(test) {
                 var main = require("../examples/node/helloworld/savedsearches").main;
