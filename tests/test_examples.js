@@ -43,7 +43,7 @@ exports.setup = function(svc, opts) {
                 main(opts, test.done);
             },
 
-            "Fired Alerts": function(test) {
+            "Fired Alerts#Async": function(test) {
                 var main = require("../examples/node/helloworld/firedalerts_async").main;
                 main(opts, test.done);
             },
