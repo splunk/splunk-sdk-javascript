@@ -26,7 +26,6 @@ exports.setup = function(svc, loggedOutSvc) {
     };
 
     var suite = {
-        /*
         "Namespace Tests": {
             setUp: function(finished) {
                 this.service = svc;
@@ -274,8 +273,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 });
             }
         },
-        */
-        /*
+        
         "Job Tests": {
             setUp: function(done) {
                 this.service = svc;
@@ -1074,7 +1072,7 @@ exports.setup = function(svc, loggedOutSvc) {
             },
             
             "Callback#track() a job that is not immediately ready": function(test) {
-                *//*jshint loopfunc:true *//*   //TODO: remove the first and last 2 chars.
+                /*jshint loopfunc:true */
                 var numJobs = 20;
                 var numJobsLeft = numJobs;
                 var gotJobNotImmediatelyReady = false;
@@ -1106,8 +1104,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 }
             }
         },
-        */
-        /*
+        
         "App Tests": {
             setUp: function(done) {
                 this.service = svc;
@@ -1604,14 +1601,13 @@ exports.setup = function(svc, loggedOutSvc) {
                 });
             }
         },
-        */
         
         "Fired Alerts Tests": {
             setUp: function(done) {
                 this.service = svc;
                 this.loggedOutService = loggedOutSvc;
 
-                var indexes = this.service.indexes(); //TODO: maybe move this
+                var indexes = this.service.indexes();
                 done();
             },
 
@@ -1728,7 +1724,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             index.submitEvent(
                                 "JS SDK: testing alerts",
                                 {
-                                    sourcetype: "sdk-tests"
+                                    sourcetype: "sdk-tests-alerts"
                                 },
                                 Async.augment(done, originalSearch, eventCount)
                             );
@@ -1751,7 +1747,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                 function() {
                                     //When this returns false, it hits the final function in the chain
                                     console.log("\tFetch attempt", attemptNum, "alertCount", originalSearch.alertCount());
-                                    if(originalSearch.alertCount() != 0) {
+                                    if(originalSearch.alertCount() !== 0) {
                                         return false;
                                     }
                                     else {
@@ -1765,7 +1761,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                     });
                                 },
                                 function(err) {
-                                    console.log("Attempted fetching", attemptNum, "of", maxAttempts, "result is", originalSearch.alertCount()!=0);
+                                    console.log("Attempted fetching", attemptNum, "of", maxAttempts, "result is", originalSearch.alertCount() !== 0);
                                     originalSearch.fetch(Async.augment(done, index));
                                 }
                             );
@@ -1812,7 +1808,6 @@ exports.setup = function(svc, loggedOutSvc) {
             }
         },
 
-        /*
         "Properties Tests": {
             setUp: function(done) {
                 this.service = svc;
@@ -2928,7 +2923,6 @@ exports.setup = function(svc, loggedOutSvc) {
                 test.done();
             }
         }
-        */
     };
     return suite;
 };
