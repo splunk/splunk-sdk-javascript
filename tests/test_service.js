@@ -1668,12 +1668,12 @@ exports.setup = function(svc, loggedOutSvc) {
                 // Real-time search config
                 var searchConfig = {
                     "name": name,
-                    "search": "index="+indexName+" | head 1",
+                    "search": "index="+indexName+" sourcetype=sdk-tests-alerts | head 1",
                     "alert_type": "always",
                     "alert.severity": "2",
                     "alert.suppress": "0",
                     "alert.track": "1",
-                    "dispatch.earliest_time": "rt-1m",
+                    "dispatch.earliest_time": "rt-1s",
                     "dispatch.latest_time": "rt",
                     "is_scheduled": "1",
                     "cron_schedule": "* * * * *"
