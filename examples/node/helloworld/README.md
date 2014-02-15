@@ -16,11 +16,19 @@ one print its name.
 The only difference between the two files is that the latter uses the built-in
 `splunkjs.Async` module to make asynchronous control-flow easier.
 
-### Files: [`firedalert.js`] and [`firedalerts_async.js`]
+### Files: [`firedalerts.js`] and [`firedalerts_async.js`]
 
 These files demonstrate working with the `splunkjs.Service.FiredAlerts` collection
 and `splunkjs.Service.AlertGroup` entity. It will list all the alert groups, and 
 for each one print its name and the search query associated with it.
+
+The only difference between the two files is that the latter uses the built-in
+`splunkjs.Async` module to make asynchronous control-flow easier.
+
+### Files: [`firedalerts_create.js`] and [`firedalerts_delete.js`]
+
+These files demonstrate how to create and delete `splunkjs.Service.AlertGroup`
+entities.
 
 The only difference between the two files is that the latter uses the built-in
 `splunkjs.Async` module to make asynchronous control-flow easier.
@@ -33,6 +41,11 @@ for each one print its name and the search query associated with it.
 
 The only difference between the two files is that the latter uses the built-in
 `splunkjs.Async` module to make asynchronous control-flow easier.
+
+### Files: [`savedsearches_create.js`] and [`savedsearches_delete.js`]
+
+These files demonstrate how to create and delete `splunkjs.Service.SavedSearch`
+entities.
 
 ### Files: [`search_normal.js`], [`search_blocking.js`] and [`search_oneshot.js`]
 
@@ -75,13 +88,17 @@ application by using the `Service.log` method in the JavaScript SDK.
 We create a utility `Logger` class that encapsulates various logging levels,
 and we can then simply call `logger.log`, `logger.error`, etc.
 
-[`apps.js`]:                https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/apps.js
-[`apps_async.js`]:          https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/apps_async.js
-[`firedalerts.js`]:         https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/firedalerts.js
-[`firedalerts_async.js`]:   https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/firedalerts_async.js
-[`savedsearches.js`]:       https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/savedsearches.js
-[`savedsearches_async.js`]: https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/savedsearches_async.js
-[`search_normal.js`]:       https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/search_normal.js
-[`search_blocking.js`]:     https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/search_blocking.js
-[`search_oneshot.js`]:      https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/search_oneshot.js
-[`search_realtime.js`]:     https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/search_realtime.js
+[`apps.js`]:                  https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/apps.js
+[`apps_async.js`]:            https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/apps_async.js
+[`firedalerts.js`]:           https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/firedalerts.js
+[`firedalerts_async.js`]:     https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/firedalerts_async.js
+[`firedalerts_create.js`]:    https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/firedalerts_create.js
+[`firedalerts_delete.js`]:    https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/firedalerts_delete.js
+[`savedsearches.js`]:         https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/savedsearches.js
+[`savedsearches_async.js`]:   https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/savedsearches_async.js
+[`savedsearches_create.js`]:  https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/savedsearches_create.js
+[`savedsearches_delete.js`]:  https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/savedsearches_delete.js
+[`search_normal.js`]:         https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/search_normal.js
+[`search_blocking.js`]:       https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/search_blocking.js
+[`search_oneshot.js`]:        https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/search_oneshot.js
+[`search_realtime.js`]:       https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/search_realtime.js
