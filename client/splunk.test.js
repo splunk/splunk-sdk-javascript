@@ -3746,26 +3746,19 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.history      = utils.bind(this, this.history);
             this.suppressInfo = utils.bind(this, this.suppressInfo);
         },
-        
-        /** TODO: move and alphabetize; cleanup docs
-         * Gets the alertGroup for firedAlerts associated with this saved search
+
+        /** Gets the count of triggered alerts for this savedSearch,
+         * defaulting to 0 when undefined.
          *
-         * @return {splunkjs.Service.AlertGroup} An AlertGroup object with the
-         * same name as this SavedSearch object.
+         * @example
+         *
+         *      var savedSearch = service.savedSearches().item("MySavedSearch");
+         *      var alertCount = savedSearch.alertCount();
+         * 
+         * @return {Number} The count of triggered alerts.
          *
          * @method splunkjs.Service.SavedSearch
          */
-         firedAlerts: function() {
-            return new root.AlertGroup(this.service, this.name);
-         },
-
-         /** Gets the count of triggered alerts for this savedSearch,
-          * defaulting to 0.
-          *
-          * @return {Number} The count of triggered alerts.
-          *
-          * @method splunkjs.Service.SavedSearch
-          */
         alertCount: function() {
             return parseInt(this.properties().triggered_alert_count) || 0;
         },
@@ -3841,8 +3834,23 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             });
             
             return req;
-        },        
-        
+        },
+
+        /** Gets the alertGroup for firedAlerts associated with this saved search.
+         *
+         * @example
+         *
+         *      var alerts = service.firedAlerts().item("MySavedSearch");
+         *
+         * @return {splunkjs.Service.AlertGroup} An AlertGroup object with the
+         * same name as this SavedSearch object.
+         *
+         * @method splunkjs.Service.SavedSearch
+         */
+        firedAlerts: function() {
+            return new root.AlertGroup(this.service, this.name);
+        },
+
         /**
          * Retrieves the job history for a saved search, which is a list of 
          * `splunkjs.Service.Job` instances.
@@ -4127,6 +4135,15 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var entityNamespace = utils.namespaceFromProperties(props);
             return new root.AlertGroup(this.service, props.name, entityNamespace);
         },
+
+        /**
+         * Suppress removing alerts via the fired alerts endpoint.
+         *
+         * @method splunkjs.Service.FiredAlerts
+         */
+        remove: function() {
+            throw new Error("To remove an alert, remove the saved search with the same name.");
+        },
         
         /**
          * Constructor for `splunkjs.Service.FiredAlerts`. 
@@ -4145,6 +4162,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this._super(service, this.path(), namespace);
 
             this.instantiateEntity = utils.bind(this, this.instantiateEntity);
+            this.remove = utils.bind(this, this.remove);
         }
     });
     
@@ -8161,7 +8179,6 @@ exports.setup = function(svc, loggedOutSvc) {
     };
 
     var suite = {
-        /*
         "Namespace Tests": {
             setUp: function(finished) {
                 this.service = svc;
@@ -8409,8 +8426,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 });
             }
         },
-        */
-        /*
+        
         "Job Tests": {
             setUp: function(done) {
                 this.service = svc;
@@ -9209,7 +9225,7 @@ exports.setup = function(svc, loggedOutSvc) {
             },
             
             "Callback#track() a job that is not immediately ready": function(test) {
-                *//*jshint loopfunc:true *//*   //TODO: remove the first and last 2 chars.
+                /*jshint loopfunc:true */
                 var numJobs = 20;
                 var numJobsLeft = numJobs;
                 var gotJobNotImmediatelyReady = false;
@@ -9241,8 +9257,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 }
             }
         },
-        */
-        /*
+        
         "App Tests": {
             setUp: function(done) {
                 this.service = svc;
@@ -9739,15 +9754,17 @@ exports.setup = function(svc, loggedOutSvc) {
                 });
             }
         },
-        */
+        
         "Fired Alerts Tests": {
             setUp: function(done) {
                 this.service = svc;
                 this.loggedOutService = loggedOutSvc;
+
+                var indexes = this.service.indexes();
                 done();
             },
 
-            "Callback#verify emptiness + delete new search": function(test) {
+            "Callback#create + verify emptiness + delete new search": function(test) {
                 var searches = this.service.savedSearches({owner: this.service.username});
 
                 var name = "jssdk_savedsearch_alert_" + getNextId();
@@ -9771,17 +9788,6 @@ exports.setup = function(svc, loggedOutSvc) {
                         function(search, done) {
                             test.ok(search);
                             test.strictEqual(search.alertCount(), 0);
-                            /*
-                            //TODO: test .firedAlerts().count()
-                            searches.fetch(function(err, savedSearches){
-                                var s = savedSearches.item("jssdk_savedsearch_alert_id0_1391658475250");
-                                //console.log(s.alertCount());
-                                //console.log(s.history());
-                                s.history(function(err, jobs, search){
-                                    console.log(jobs.length);
-                                });
-                            });
-                            */
                             search.history(done);
                         },
                         function(jobs, search, done) {
@@ -9790,7 +9796,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             searches.service.firedAlerts().fetch( Async.augment(done, search) );
                         },
                         function(firedAlerts, originalSearch, done) {
-                            test.ok(firedAlerts.list().indexOf(originalSearch.name) == -1);
+                            test.strictEqual(firedAlerts.list().indexOf(originalSearch.name), -1);
                             done(null, originalSearch);
                         },
                         function(originalSearch, done) {
@@ -9798,6 +9804,9 @@ exports.setup = function(svc, loggedOutSvc) {
                         }
                     ],
                     function(err) {
+                        if (err) {
+                            console.log(err);
+                        }
                         test.ok(!err);
                         test.done();
                     }
@@ -9805,10 +9814,155 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#alert is triggered": function(test) {
-                test.done();
+                var searches = this.service.savedSearches({owner: this.service.username});
+                var indexName = "sdk-tests-alerts";
+                var name = "jssdk_savedsearch_alert_" + getNextId();
+
+                // Real-time search config
+                var searchConfig = {
+                    "name": name,
+                    "search": "index="+indexName+" sourcetype=sdk-tests-alerts | head 1",
+                    "alert_type": "always",
+                    "alert.severity": "2",
+                    "alert.suppress": "0",
+                    "alert.track": "1",
+                    "dispatch.earliest_time": "rt-1s",
+                    "dispatch.latest_time": "rt",
+                    "is_scheduled": "1",
+                    "cron_schedule": "* * * * *"
+                };
+
+                Async.chain([
+                        function(done) {
+                            searches.create(searchConfig, done);
+                        },
+                        function(search, done) {
+                            test.ok(search);
+                            test.strictEqual(search.alertCount(), 0);
+                            test.strictEqual(search.firedAlerts().count(), 0);
+
+                            var indexes = search.service.indexes();
+                            indexes.create(indexName, {}, function(err, index) {
+                               if (err && err.status !== 409) {
+                                   throw new Error("Index creation failed for an unknown reason");
+                               }
+                               done(null, search);
+                            });
+                        },
+                        function(originalSearch, done) {
+                            var indexes = originalSearch.service.indexes();
+                            indexes.fetch(function(err, indexes) {
+                                var index = indexes.item(indexName);
+                                test.ok(index);
+                                index.enable(Async.augment(done, originalSearch));
+                            });
+                        },
+                        function(index, originalSearch, done) {
+                            //Is the index enabled?
+                            test.ok(!index.properties().disabled);
+                            //refresh the index
+                            index.fetch(Async.augment(done, originalSearch));
+                        },
+                        function(index, originalSearch, done) {
+                            //Store the current event count for a later comparison 
+                            var eventCount = index.properties().totalEventCount;
+
+                            test.strictEqual(index.properties().sync, 0);
+                            test.ok(!index.properties().disabled);
+
+                            index.fetch(Async.augment(done, originalSearch, eventCount));
+                        },
+                        function(index, originalSearch, eventCount, done) {
+                            // submit an event
+                            index.submitEvent(
+                                "JS SDK: testing alerts",
+                                {
+                                    sourcetype: "sdk-tests-alerts"
+                                },
+                                Async.augment(done, originalSearch, eventCount)
+                            );
+                        },
+                        function(result, index, originalSearch, eventCount, done) {
+                            //refresh the search
+                            index.fetch(Async.augment(done, originalSearch, eventCount));
+                        },
+                        function(index, originalSearch, eventCount, done) {
+                            // Did the event get submitted
+                            test.strictEqual(index.properties().totalEventCount, eventCount+1);                            
+                            // Refresh the search
+                            originalSearch.fetch(Async.augment(done, index));
+                        },
+                        function(originalSearch, index, done) {
+                            console.log("\tAlert count pre-fetch", originalSearch.alertCount());
+                            var attemptNum = 1;
+                            var maxAttempts = 20;
+                            Async.whilst(
+                                function() {
+                                    //When this returns false, it hits the final function in the chain
+                                    console.log("\tFetch attempt", attemptNum, "alertCount", originalSearch.alertCount());
+                                    if(originalSearch.alertCount() !== 0) {
+                                        return false;
+                                    }
+                                    else {
+                                        attemptNum++;
+                                        return attemptNum < maxAttempts;
+                                    }
+                                },
+                                function(callback) {
+                                    Async.sleep(500, function() { 
+                                        originalSearch.fetch(callback);
+                                    });
+                                },
+                                function(err) {
+                                    console.log("Attempted fetching", attemptNum, "of", maxAttempts, "result is", originalSearch.alertCount() !== 0);
+                                    originalSearch.fetch(Async.augment(done, index));
+                                }
+                            );
+                        },
+                        function(originalSearch, index, done) {
+                            // Make sure the event count has incremented, as expected
+                            test.strictEqual(originalSearch.alertCount(), 1);
+                            // Remove the search, especially because it's a real-time search
+                            originalSearch.remove(Async.augment(done, index));
+                        },
+                        function(index, done) {
+                            Async.sleep(500, function() { 
+                                index.remove(done);
+                            });
+                        }
+                    ],
+                    function(err) {
+                        if (err) {
+                            console.log(err);
+                        }
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            
+            "Callback#delete all alerts": function(test) {
+                var namePrefix = "jssdk_savedsearch_alert_";
+                var alertList = this.service.savedSearches().list();
+
+                Async.parallelEach(
+                    alertList,
+                    function(alert, idx, callback) {
+                        if (utils.startsWith(alert.name, namePrefix)) {
+                            console.log(alert.name);
+                            alert.remove(callback);
+                        }
+                        else {
+                            callback();
+                        }
+                    }, function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
             }
         },
-        /*
+
         "Properties Tests": {
             setUp: function(done) {
                 this.service = svc;
@@ -10924,7 +11078,6 @@ exports.setup = function(svc, loggedOutSvc) {
                 test.done();
             }
         }
-        */
     };
     return suite;
 };
@@ -11014,6 +11167,21 @@ exports.setup = function(svc, opts) {
 
             "Fired Alerts": function(test) {
                 var main = require("../examples/node/helloworld/firedalerts").main;
+                main(opts, test.done);
+            },
+
+            "Fired Alerts#Async": function(test) {
+                var main = require("../examples/node/helloworld/firedalerts_async").main;
+                main(opts, test.done);
+            },
+
+            "Fired Alerts#Create": function(test) {
+                var main = require("../examples/node/helloworld/firedalerts_create").main;
+                main(opts, test.done);
+            },
+
+            "Fired Alerts#Delete": function(test) {
+                var main = require("../examples/node/helloworld/firedalerts_delete").main;
                 main(opts, test.done);
             },
             
@@ -11617,7 +11785,7 @@ require.define("/examples/node/helloworld/firedalerts.js", function (require, mo
 // under the License.
 
 // This example will login to Splunk, and then retrieve the list of fired alerts,
-// printing each saved search's name and search query.
+// printing each alert's name and properties.
 
 var splunkjs = require('../../../index');
 
@@ -11651,7 +11819,7 @@ exports.main = function(opts, done) {
             return;
         } 
         
-        // Now that we're logged in, let's get a listing of all the fired alerts.
+        // Now that we're logged in, let's get a listing of all the fired alert groups
         service.firedAlerts().fetch(function(err, firedAlerts) {
             if (err) {
                 console.log("ERROR", err);
@@ -11663,21 +11831,289 @@ exports.main = function(opts, done) {
             var alertGroups = firedAlerts.list();
             console.log("Fired alerts:");
 
-            alertGroups.forEach(function(alert){
-                alert.list(function(err, jobs, alertGroup) {
-                    // How many jobs fired this alert?
-                    console.log(alert.name, "(Count:", alert.count(), ")");
+            for(var a in alertGroups) {
+                var group = alertGroups[a];
+                group.list(function(err, jobs, alertGroup){
+                    // How many search jobs fired this alert?
+                    console.log(group.name, "(Count:", group.count(), ")");
                     // Print the properties for each job that fired this alert (default of 30 per alert)
                     for(var i = 0; i < jobs.length; i++) {
-                        for (var key in jobs[i].properties()) {
-                            console.log(key + ":", jobs[i].properties()[key]);
+                        var job = jobs[i];
+                        for (var key in job.properties()) {
+                            console.log(key + ":", job.properties()[key]);
                         }
                         console.log();
                     }
                     console.log("======================================");
-               });
-            });
+                });
+            }
+
             done();
+        });
+    });
+};
+
+if (module === require.main) {
+    exports.main({}, function() {});
+}
+});
+
+require.define("/examples/node/helloworld/firedalerts_async.js", function (require, module, exports, __dirname, __filename) {
+
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+// This example will login to Splunk, and then retrieve the list of fired alerts,
+// printing each alert's name and properties. It is the same as firedalerts.js, 
+// except that it uses the Async library
+
+var splunkjs = require('../../../index');
+var Async  = splunkjs.Async;
+
+exports.main = function(opts, callback) {
+    // This is just for testing - ignore it
+    opts = opts || {};
+    
+    var username = opts.username    || "admin";
+    var password = opts.password    || "1"; //TODO: revert to "changeme"
+    var scheme   = opts.scheme      || "https";
+    var host     = opts.host        || "localhost";
+    var port     = opts.port        || "8089";
+    var version  = opts.version     || "default";
+    
+    var service = new splunkjs.Service({
+        username: username,
+        password: password,
+        scheme: scheme,
+        host: host,
+        port: port,
+        version: version
+    });
+
+    Async.chain([
+            // First, we log in
+            function(done) {
+                service.login(done);
+            },
+            
+            function(success, done) {
+                if (!success) {
+                    done("Error logging in");
+                }
+
+                // Now that we're logged in, let's get a listing of all the fired alert groups
+                service.firedAlerts().fetch(done);
+            },
+            // Print them out
+            function(firedAlerts, done) {
+                // Get the list of all alert, including the all group (represented by "-")
+                var alertGroups = firedAlerts.list();
+
+                console.log("Fired alerts:");
+                Async.seriesEach(
+                    alertGroups,
+                    function(group, index, callback) {
+                        group.list(function(err, jobs, alertGroup){
+                            // How many search jobs fired this alert?
+                            console.log(group.name, "(Count:", group.count(), ")");
+                            // Print the properties for each job that fired this alert (default of 30 per alert)
+                            for(var i = 0; i < jobs.length; i++) {
+                                var job = jobs[i];
+                                for (var key in job.properties()) {
+                                    console.log(key + ":", job.properties()[key]);
+                                }
+                                console.log();
+                            }
+                            console.log("======================================");
+                        });
+                        callback();
+                    },
+                    function(err) {
+                        done();
+                    }
+                );
+            }
+        ],
+        function(err) {
+            callback(err);        
+        }
+    );
+};
+
+if (module === require.main) {
+    exports.main({}, function() {});
+}
+});
+
+require.define("/examples/node/helloworld/firedalerts_create.js", function (require, module, exports, __dirname, __filename) {
+
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+// This example will login to Splunk, and then create an alert.
+
+var splunkjs = require('../../../index');
+
+exports.main = function(opts, done) {
+    // This is just for testing - ignore it
+    opts = opts || {};
+    
+    var username = opts.username    || "admin";
+    var password = opts.password    || "1"; //TODO: revert to changeme
+    var scheme   = opts.scheme      || "https";
+    var host     = opts.host        || "localhost";
+    var port     = opts.port        || "8089";
+    var version  = opts.version     || "default";
+    
+    var service = new splunkjs.Service({
+        username: username,
+        password: password,
+        scheme: scheme,
+        host: host,
+        port: port,
+        version: version
+    });
+
+    // First, we log in
+    service.login(function(err, success) {
+        // We check for both errors in the connection as well
+        // as if the login itself failed.
+        if (err || !success) {
+            console.log("Error in logging in");
+            done(err || "Login failed");
+            return;
+        } 
+        
+        var alertOptions = {
+            name: "My Awesome Alert",
+            search: "index=_internal error sourcetype=splunkd* | head 10",
+            "alert_type": "always",
+            "alert.severity": "2",
+            "alert.suppress": "0",
+            "alert.track": "1",
+            "dispatch.earliest_time": "-1h",
+            "dispatch.latest_time": "now",
+            "is_scheduled": "1",
+            "cron_schedule": "* * * * *"
+        };
+        
+        // Now that we're logged in, Let's create a saved search
+        service.savedSearches().create(alertOptions, function(err, alert) {
+            if (err && err.status === 409) {
+                console.error("ERROR: A saved search with the name '" + alertOptions.name + "' already exists");
+                done();
+                return;
+            }
+            else if (err) {
+                console.error("There was an error creating the saved search:", err);
+                done(err);
+                return;
+            }
+            
+            console.log("Created saved search as alert: " + alert.name);            
+            done();
+        });
+    });
+};
+
+if (module === require.main) {
+    exports.main({}, function() {});
+}
+});
+
+require.define("/examples/node/helloworld/firedalerts_delete.js", function (require, module, exports, __dirname, __filename) {
+
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+// This example will login to Splunk, and then try to delete the alert
+// that was created in savedsearches_create.js
+
+var splunkjs = require('../../../index');
+
+exports.main = function(opts, done) {
+    // This is just for testing - ignore it
+    opts = opts || {};
+    
+    var username = opts.username    || "admin";
+    var password = opts.password    || "1"; //TODO: revert to changeme
+    var scheme   = opts.scheme      || "https";
+    var host     = opts.host        || "localhost";
+    var port     = opts.port        || "8089";
+    var version  = opts.version     || "default";
+    
+    var service = new splunkjs.Service({
+        username: username,
+        password: password,
+        scheme: scheme,
+        host: host,
+        port: port,
+        version: version
+    });
+
+    // First, we log in
+    service.login(function(err, success) {
+        // We check for both errors in the connection as well
+        // as if the login itself failed.
+        if (err || !success) {
+            console.log("Error in logging in");
+            done(err || "Login failed");
+            return;
+        } 
+        
+        var name = "My Awesome Alert";
+        
+        // Now that we're logged in, let's delete the alert
+        service.savedSearches().fetch(function(err, firedAlerts) {
+            if (err) {
+                console.log("There was an error in fetching the alerts");
+                done(err);
+                return;
+            }
+
+            var alertToDelete = firedAlerts.item(name);
+            if (!alertToDelete) {
+                console.log("Can't delete '" + name + "' because it doesn't exist!");
+                done();
+            }
+            else {
+                alertToDelete.remove();
+                console.log("Deleted alert: " + name + "");
+                done();
+            }
         });
     });
 };
@@ -11860,8 +12296,8 @@ require.define("/examples/node/helloworld/savedsearches_delete.js", function (re
 // License for the specific language governing permissions and limitations
 // under the License.
 
-// This example will login to Splunk, and then retrieve the list of saved searchs,
-// printing each saved search's name and search query.
+// This example will login to Splunk, and then try to delete the 
+// saved search that was created in savedsearches_create.js
 
 var splunkjs = require('../../../index');
 
@@ -11940,8 +12376,7 @@ require.define("/examples/node/helloworld/savedsearches_create.js", function (re
 // License for the specific language governing permissions and limitations
 // under the License.
 
-// This example will login to Splunk, and then retrieve the list of saved searchs,
-// printing each saved search's name and search query.
+// This example will login to Splunk, and create a saved search.
 
 var splunkjs = require('../../../index');
 

@@ -3489,26 +3489,19 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.history      = utils.bind(this, this.history);
             this.suppressInfo = utils.bind(this, this.suppressInfo);
         },
-        
-        /** TODO: move and alphabetize; cleanup docs
-         * Gets the alertGroup for firedAlerts associated with this saved search
+
+        /** Gets the count of triggered alerts for this savedSearch,
+         * defaulting to 0 when undefined.
          *
-         * @return {splunkjs.Service.AlertGroup} An AlertGroup object with the
-         * same name as this SavedSearch object.
+         * @example
+         *
+         *      var savedSearch = service.savedSearches().item("MySavedSearch");
+         *      var alertCount = savedSearch.alertCount();
+         * 
+         * @return {Number} The count of triggered alerts.
          *
          * @method splunkjs.Service.SavedSearch
          */
-         firedAlerts: function() {
-            return new root.AlertGroup(this.service, this.name);
-         },
-
-         /** Gets the count of triggered alerts for this savedSearch,
-          * defaulting to 0.
-          *
-          * @return {Number} The count of triggered alerts.
-          *
-          * @method splunkjs.Service.SavedSearch
-          */
         alertCount: function() {
             return parseInt(this.properties().triggered_alert_count) || 0;
         },
@@ -3584,8 +3577,23 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             });
             
             return req;
-        },        
-        
+        },
+
+        /** Gets the alertGroup for firedAlerts associated with this saved search.
+         *
+         * @example
+         *
+         *      var alerts = service.firedAlerts().item("MySavedSearch");
+         *
+         * @return {splunkjs.Service.AlertGroup} An AlertGroup object with the
+         * same name as this SavedSearch object.
+         *
+         * @method splunkjs.Service.SavedSearch
+         */
+        firedAlerts: function() {
+            return new root.AlertGroup(this.service, this.name);
+        },
+
         /**
          * Retrieves the job history for a saved search, which is a list of 
          * `splunkjs.Service.Job` instances.
@@ -3870,6 +3878,15 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var entityNamespace = utils.namespaceFromProperties(props);
             return new root.AlertGroup(this.service, props.name, entityNamespace);
         },
+
+        /**
+         * Suppress removing alerts via the fired alerts endpoint.
+         *
+         * @method splunkjs.Service.FiredAlerts
+         */
+        remove: function() {
+            throw new Error("To remove an alert, remove the saved search with the same name.");
+        },
         
         /**
          * Constructor for `splunkjs.Service.FiredAlerts`. 
@@ -3888,6 +3905,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this._super(service, this.path(), namespace);
 
             this.instantiateEntity = utils.bind(this, this.instantiateEntity);
+            this.remove = utils.bind(this, this.remove);
         }
     });
     
