@@ -13,8 +13,7 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-// This example will login to Splunk, and then retrieve the list of saved searchs,
-// printing each saved search's name and search query.
+// This example will login to Splunk, and create a saved search.
 
 var splunkjs = require('../../../index');
 
