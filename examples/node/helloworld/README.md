@@ -94,6 +94,7 @@ and we can then simply call `logger.log`, `logger.error`, etc.
 [`firedalerts_async.js`]:     https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/firedalerts_async.js
 [`firedalerts_create.js`]:    https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/firedalerts_create.js
 [`firedalerts_delete.js`]:    https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/firedalerts_delete.js
+[`log.js`]:                   https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/log.js
 [`savedsearches.js`]:         https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/savedsearches.js
 [`savedsearches_async.js`]:   https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/savedsearches_async.js
 [`savedsearches_create.js`]:  https://github.com/splunk/splunk-sdk-javascript/tree/master/examples/node/helloworld/savedsearches_create.js
