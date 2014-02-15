@@ -1773,7 +1773,9 @@ exports.setup = function(svc, loggedOutSvc) {
                             originalSearch.remove(Async.augment(done, index));
                         },
                         function(index, done) {
-                            index.remove(done);
+                            Async.sleep(500, function() { 
+                                index.remove(done);
+                            });
                         }
                     ],
                     function(err) {
