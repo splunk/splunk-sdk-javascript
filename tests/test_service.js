@@ -1690,10 +1690,10 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             var indexes = search.service.indexes();
                             indexes.create(indexName, {}, function(err, index) {
-                               if (err && err.status !== 409) {
-                                   throw new Error("Index creation failed for an unknown reason");
-                               }
-                               done(null, search);
+                                if (err && err.status !== 409) {
+                                    throw new Error("Index creation failed for an unknown reason");
+                                }
+                                done(null, search);
                             });
                         },
                         function(originalSearch, done) {
@@ -1745,9 +1745,9 @@ exports.setup = function(svc, loggedOutSvc) {
                             var maxAttempts = 20;
                             Async.whilst(
                                 function() {
-                                    //When this returns false, it hits the final function in the chain
+                                    // When this returns false, it hits the final function in the chain
                                     console.log("\tFetch attempt", attemptNum, "alertCount", originalSearch.alertCount());
-                                    if(originalSearch.alertCount() !== 0) {
+                                    if (originalSearch.alertCount() !== 0) {
                                         return false;
                                     }
                                     else {
