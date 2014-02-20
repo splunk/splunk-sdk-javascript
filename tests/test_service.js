@@ -1640,7 +1640,7 @@ exports.setup = function(svc, loggedOutSvc) {
                         function(jobs, search, done) {
                             test.strictEqual(jobs.length, 0);
                             test.strictEqual(search.firedAlerts().count(), 0);
-                            searches.service.firedAlerts().fetch( Async.augment(done, search) );
+                            searches.service.firedAlertGroups().fetch( Async.augment(done, search) );
                         },
                         function(firedAlerts, originalSearch, done) {
                             test.strictEqual(firedAlerts.list().indexOf(originalSearch.name), -1);

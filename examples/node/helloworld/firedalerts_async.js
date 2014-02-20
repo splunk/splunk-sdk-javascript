@@ -52,7 +52,7 @@ exports.main = function(opts, callback) {
                 }
 
                 // Now that we're logged in, let's get a listing of all the fired alert groups
-                service.firedAlerts().fetch(done);
+                service.firedAlertGroups().fetch(done);
             },
             // Print them out
             function(firedAlerts, done) {
@@ -62,7 +62,7 @@ exports.main = function(opts, callback) {
                 console.log("Fired alerts:");
                 Async.seriesEach(
                     alertGroups,
-                    function(group, index, callback) {
+                    function(group, index, seriescallback) {
                         group.list(function(err, jobs, alertGroup){
                             // How many search jobs fired this alert?
                             console.log(group.name, "(Count:", group.count(), ")");
@@ -76,16 +76,22 @@ exports.main = function(opts, callback) {
                             }
                             console.log("======================================");
                         });
-                        callback();
+                        seriescallback();
                     },
                     function(err) {
+                        if (err) {
+                            done(err);
+                        }
                         done();
                     }
                 );
             }
         ],
         function(err) {
-            callback(err);        
+            if (err) {
+                callback(err);
+            }
+            callback(err);
         }
     );
 };

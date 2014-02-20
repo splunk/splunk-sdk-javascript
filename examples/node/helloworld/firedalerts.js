@@ -49,7 +49,7 @@ exports.main = function(opts, done) {
         } 
         
         // Now that we're logged in, let's get a listing of all the fired alert groups
-        service.firedAlerts().fetch(function(err, firedAlerts) {
+        service.firedAlertGroups().fetch(function(err, firedAlerts) {
             if (err) {
                 console.log("ERROR", err);
                 done(err);
