@@ -49,7 +49,7 @@ exports.main = function(opts, done) {
         } 
         
         // Now that we're logged in, let's get a listing of all the fired alert groups
-        service.firedAlertGroups().fetch(function(err, firedAlerts) {
+        service.firedAlertGroups().fetch(function(err, firedAlertGroups) {
             if (err) {
                 console.log("ERROR", err);
                 done(err);
@@ -57,8 +57,8 @@ exports.main = function(opts, done) {
             }
 
             // Get the list of all alert, including the all group (represented by "-")
-            var alertGroups = firedAlerts.list();
-            console.log("Fired alerts:");
+            var alertGroups = firedAlertGroups.list();
+            console.log("Fired alert groups:");
 
             for(var a in alertGroups) {
                 if (alertGroups.hasOwnProperty(a)) {

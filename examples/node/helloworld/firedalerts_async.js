@@ -55,11 +55,11 @@ exports.main = function(opts, callback) {
                 service.firedAlertGroups().fetch(done);
             },
             // Print them out
-            function(firedAlerts, done) {
+            function(firedAlertGroups, done) {
                 // Get the list of all alert, including the all group (represented by "-")
-                var alertGroups = firedAlerts.list();
+                var alertGroups = firedAlertGroups.list();
 
-                console.log("Fired alerts:");
+                console.log("Fired alert groups:");
                 Async.seriesEach(
                     alertGroups,
                     function(group, index, seriescallback) {
@@ -89,6 +89,7 @@ exports.main = function(opts, callback) {
         ],
         function(err) {
             if (err) {
+                console.log("ERROR", err);
                 callback(err);
             }
             callback(err);
