@@ -1691,7 +1691,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             var indexes = search.service.indexes();
                             indexes.create(indexName, {}, function(err, index) {
                                 if (err && err.status !== 409) {
-                                    throw new Error("Index creation failed for an unknown reason");
+                                    done(new Error("Index creation failed for an unknown reason"));
                                 }
                                 done(null, search);
                             });
@@ -1699,9 +1699,14 @@ exports.setup = function(svc, loggedOutSvc) {
                         function(originalSearch, done) {
                             var indexes = originalSearch.service.indexes();
                             indexes.fetch(function(err, indexes) {
-                                var index = indexes.item(indexName);
-                                test.ok(index);
-                                index.enable(Async.augment(done, originalSearch));
+                                if (err) {
+                                    done(err);
+                                }
+                                else {
+                                    var index = indexes.item(indexName);
+                                    test.ok(index);
+                                    index.enable(Async.augment(done, originalSearch));
+                                }
                             });
                         },
                         function(index, originalSearch, done) {
