@@ -61,20 +61,22 @@ exports.main = function(opts, done) {
             console.log("Fired alerts:");
 
             for(var a in alertGroups) {
-                var group = alertGroups[a];
-                group.list(function(err, jobs, alertGroup){
-                    // How many search jobs fired this alert?
-                    console.log(group.name, "(Count:", group.count(), ")");
-                    // Print the properties for each job that fired this alert (default of 30 per alert)
-                    for(var i = 0; i < jobs.length; i++) {
-                        var job = jobs[i];
-                        for (var key in job.properties()) {
-                            console.log(key + ":", job.properties()[key]);
+                if (alertGroups.hasOwnProperty(a)) {
+                    var group = alertGroups[a];
+                    group.list(function(err, jobs, alertGroup){
+                        // How many search jobs fired this alert?
+                        console.log(group.name, "(Count:", group.count(), ")");
+                        // Print the properties for each job that fired this alert (default of 30 per alert)
+                        for(var i = 0; i < jobs.length; i++) {
+                            var job = jobs[i];
+                            for(var key in job.properties()) {
+                                console.log(key + ":", job.properties()[key]);
+                            }
+                            console.log();
                         }
-                        console.log();
-                    }
-                    console.log("======================================");
-                });
+                        console.log("======================================");
+                    });
+                }
             }
 
             done();
