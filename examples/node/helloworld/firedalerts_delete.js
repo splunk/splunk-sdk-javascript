@@ -51,14 +51,14 @@ exports.main = function(opts, done) {
         var name = "My Awesome Alert";
         
         // Now that we're logged in, let's delete the alert
-        service.savedSearches().fetch(function(err, firedAlerts) {
+        service.savedSearches().fetch(function(err, firedAlertGroup) {
             if (err) {
                 console.log("There was an error in fetching the alerts");
                 done(err);
                 return;
             }
 
-            var alertToDelete = firedAlerts.item(name);
+            var alertToDelete = firedAlertGroup.item(name);
             if (!alertToDelete) {
                 console.log("Can't delete '" + name + "' because it doesn't exist!");
                 done();
