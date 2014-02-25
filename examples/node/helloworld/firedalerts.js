@@ -23,7 +23,7 @@ exports.main = function(opts, done) {
     opts = opts || {};
     
     var username = opts.username    || "admin";
-    var password = opts.password    || "changeme";
+    var password = opts.password    || "1";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
@@ -47,7 +47,7 @@ exports.main = function(opts, done) {
             done(err || "Login failed");
             return;
         } 
-        
+
         // Now that we're logged in, let's get a listing of all the fired alert groups
         service.firedAlertGroups().fetch(function(err, firedAlertGroups) {
             if (err) {
@@ -56,21 +56,23 @@ exports.main = function(opts, done) {
                 return;
             }
 
-            // Get the list of all alert, including the all group (represented by "-")
-            var alertGroups = firedAlertGroups.list();
+            // Get the list of all fired alert groups, including the all group (represented by "-")
+            var firedAlertGroups = firedAlertGroups.list();
             console.log("Fired alert groups:");
 
-            for(var a in alertGroups) {
-                if (alertGroups.hasOwnProperty(a)) {
-                    var group = alertGroups[a];
-                    group.list(function(err, jobs, alertGroup){
-                        // How many search jobs fired this alert?
-                        console.log(group.name, "(Count:", group.count(), ")");
-                        // Print the properties for each job that fired this alert (default of 30 per alert)
-                        for(var i = 0; i < jobs.length; i++) {
-                            var job = jobs[i];
-                            for(var key in job.properties()) {
-                                console.log(key + ":", job.properties()[key]);
+            for(var a in firedAlertGroups) {
+                if (firedAlertGroups.hasOwnProperty(a)) {
+                    var firedAlertGroup = firedAlertGroups[a];
+                    firedAlertGroup.list(function(err, firedAlerts, firedAlertGroup) {
+                        // How many times was this alert fired?
+                        console.log(firedAlertGroup.name, "(Count:", firedAlertGroup.count(), ")");
+                        // Print the properties for each fired alert (default of 30 per alert group)
+                        for(var i = 0; i < firedAlerts.length; i++) {
+                            var firedAlert = firedAlerts[i];
+                            for(var key in firedAlert.properties()) {
+                                if (firedAlert.properties().hasOwnProperty(key)) {
+                                   console.log("\t", key, ":", firedAlert.properties()[key]);
+                                }
                             }
                             console.log();
                         }

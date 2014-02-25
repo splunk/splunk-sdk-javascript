@@ -1639,7 +1639,7 @@ exports.setup = function(svc, loggedOutSvc) {
                         },
                         function(jobs, search, done) {
                             test.strictEqual(jobs.length, 0);
-                            test.strictEqual(search.firedAlerts().count(), 0);
+                            test.strictEqual(search.firedAlertGroup().count(), 0);
                             searches.service.firedAlertGroups().fetch( Async.augment(done, search) );
                         },
                         function(firedAlerts, originalSearch, done) {
@@ -1686,7 +1686,7 @@ exports.setup = function(svc, loggedOutSvc) {
                         function(search, done) {
                             test.ok(search);
                             test.strictEqual(search.alertCount(), 0);
-                            test.strictEqual(search.firedAlerts().count(), 0);
+                            test.strictEqual(search.firedAlertGroup().count(), 0);
 
                             var indexes = search.service.indexes();
                             indexes.create(indexName, {}, function(err, index) {

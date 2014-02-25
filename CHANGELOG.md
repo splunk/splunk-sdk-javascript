@@ -4,8 +4,8 @@
 
 ### New features and APIs
 
-* Added support for Splunk alerts through the `service.FiredAlerts` collection
-and the `service.AlertGroup` entities.
+* Added support for Splunk alerts through the `service.FiredAlertGroupCollection` collection, 
+the `service.FiredAlertGroup`, and the `service.FiredAlert` entities.
 
 ### Minor changes
 
