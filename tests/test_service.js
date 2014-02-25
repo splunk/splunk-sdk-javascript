@@ -1611,7 +1611,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 done();
             },
 
-            "Callback#create + verify emptiness + delete new search": function(test) {
+            "Callback#create + verify emptiness + delete new alert group": function(test) {
                 var searches = this.service.savedSearches({owner: this.service.username});
 
                 var name = "jssdk_savedsearch_alert_" + getNextId();
@@ -1642,8 +1642,8 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual(search.firedAlertGroup().count(), 0);
                             searches.service.firedAlertGroups().fetch( Async.augment(done, search) );
                         },
-                        function(firedAlerts, originalSearch, done) {
-                            test.strictEqual(firedAlerts.list().indexOf(originalSearch.name), -1);
+                        function(firedAlertGroups, originalSearch, done) {
+                            test.strictEqual(firedAlertGroups.list().indexOf(originalSearch.name), -1);
                             done(null, originalSearch);
                         },
                         function(originalSearch, done) {
@@ -1660,7 +1660,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 );
             },
 
-            "Callback#alert is triggered": function(test) {
+            "Callback#alert is triggered + test firedAlert entity": function(test) {
                 var searches = this.service.savedSearches({owner: this.service.username});
                 var indexName = "sdk-tests-alerts";
                 var name = "jssdk_savedsearch_alert_" + getNextId();
@@ -1776,6 +1776,53 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual(originalSearch.alertCount(), 1);
                             // Remove the search, especially because it's a real-time search
                             originalSearch.remove(Async.augment(done, index));
+                        },
+                        function(index, done) {
+                            svc.firedAlertGroups({username: svc.username}).fetch(Async.augment(done, index));
+                        },
+                        function(firedAlertGroups, index, done) {
+                            var firedAlertGroups = firedAlertGroups.list();
+
+                            //console.log("Fired alert groups:");
+                            Async.seriesEach(
+                                firedAlertGroups,
+                                function(firedAlertGroup, innerIndex, seriescallback) {
+                                    firedAlertGroup.list(function(err, firedalerts, alertGroup){
+                                        // How many times was this alert fired?
+                                        //console.log(firedAlertGroup.name, "(Count:", firedAlertGroup.count(), ")");
+                                        // Print the properties for each fired alert (default of 30 per alert group)
+                                        for(var i = 0; i < firedalerts.length; i++) {
+                                            var firedAlert = firedalerts[i];
+                                            /*
+                                            for (var key in firedAlert.properties()) {
+                                                if (firedAlert.properties().hasOwnProperty(key)) {
+
+                                                    //console.log("\t", key, ":", firedAlert.properties()[key]);
+                                                }
+                                            }*/
+                                            assert.ok(firedAlert.actions());
+                                            assert.ok(firedAlert.alertType());
+                                            assert.strictEqual(typeof(firedAlert.isDigestMode()), "boolean");
+                                            assert.ok(firedAlert.expirationTime());
+                                            assert.ok(firedAlert.savedSearchName());
+                                            assert.strictEqual(typeof(firedAlert.severity()), "number");
+                                            assert.ok(firedAlert.sid);
+                                            assert.ok(firedAlert.triggerTime());
+                                            assert.ok(firedAlert.triggerTimeRendered());
+                                            assert.ok(typeof(firedAlert.triggeredAlertCount()), "number");
+                                            //console.log();
+                                        }
+                                        //console.log("======================================");
+                                    });
+                                    seriescallback();
+                                },
+                                function(err) {
+                                    if (err) {
+                                        done(err, index);
+                                    }
+                                    done(null, index);
+                                }
+                            );
                         },
                         function(index, done) {
                             Async.sleep(500, function() { 
