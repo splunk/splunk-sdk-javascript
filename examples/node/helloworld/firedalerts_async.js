@@ -63,12 +63,12 @@ exports.main = function(opts, callback) {
                 Async.seriesEach(
                     firedAlertGroups,
                     function(firedAlertGroup, index, seriescallback) {
-                        firedAlertGroup.list(function(err, firedalerts, firedAlertGroup){
+                        firedAlertGroup.list(function(err, firedAlerts, firedAlertGroup){
                             // How many times was this alert fired?
                             console.log(firedAlertGroup.name, "(Count:", firedAlertGroup.count(), ")");
                             // Print the properties for each fired alert (default of 30 per alert group)
-                            for(var i = 0; i < firedalerts.length; i++) {
-                                var firedAlert = firedalerts[i];
+                            for(var i = 0; i < firedAlerts.length; i++) {
+                                var firedAlert = firedAlerts[i];
                                 for (var key in firedAlert.properties()) {
                                     if (firedAlert.properties().hasOwnProperty(key)) {
                                         console.log("\t", key, ":", firedAlert.properties()[key]);
