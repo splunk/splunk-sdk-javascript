@@ -1751,7 +1751,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             Async.whilst(
                                 function() {
                                     // When this returns false, it hits the final function in the chain
-                                    console.log("\tFetch attempt", attemptNum, "alertCount", originalSearch.alertCount());
+                                    console.log("\tFetch attempt", attemptNum, "of", maxAttempts, "alertCount", originalSearch.alertCount());
                                     if (originalSearch.alertCount() !== 0) {
                                         return false;
                                     }
@@ -1772,57 +1772,53 @@ exports.setup = function(svc, loggedOutSvc) {
                             );
                         },
                         function(originalSearch, index, done) {
+                            console.log("about to fetch");
+                            console.log("SavedSearch name was", originalSearch.name);
+                            svc.firedAlertGroups({username: svc.username}).fetch(Async.augment(done, index, originalSearch));
+                        },
+                        function(firedAlertGroups, index, originalSearch, done) {
+                            //var firedAlertGroups = firedAlertGroups.list();
+                            Async.seriesEach(
+                                firedAlertGroups.list(),
+                                function(firedAlertGroup, innerIndex, seriescallback) {
+                                    Async.chain([
+                                            function(insideChainCallback) {
+                                                firedAlertGroup.list(insideChainCallback);
+                                            },
+                                            function(firedAlerts, firedAlertGroup, insideChainCallback) {
+                                                for(var i = 0; i < firedAlerts.length; i++) {
+                                                    var firedAlert = firedAlerts[i];
+                                                    for (var key in firedAlert.properties()) {
+                                                        if (firedAlert.properties().hasOwnProperty(key)) {
+                                                            console.log("\t", key, ":", firedAlert.properties()[key]);
+                                                        }
+                                                    }
+                                                    console.log();
+                                                }
+                                                insideChainCallback(null);
+                                            }
+                                        ],
+                                        function(err) {
+                                            if (err) {
+                                                seriescallback(err);
+                                            }
+                                                seriescallback(null);
+                                        }
+                                    );
+                                },
+                                function(err) {
+                                    if (err) {
+                                        done(err, originalSearch, index);
+                                    }
+                                    done(null, originalSearch, index);
+                                }
+                            );
+                        },
+                        function(originalSearch, index, done) {
                             // Make sure the event count has incremented, as expected
                             test.strictEqual(originalSearch.alertCount(), 1);
                             // Remove the search, especially because it's a real-time search
                             originalSearch.remove(Async.augment(done, index));
-                        },
-                        function(index, done) {
-                            svc.firedAlertGroups({username: svc.username}).fetch(Async.augment(done, index));
-                        },
-                        function(firedAlertGroups, index, done) {
-                            var firedAlertGroups = firedAlertGroups.list();
-
-                            //console.log("Fired alert groups:");
-                            Async.seriesEach(
-                                firedAlertGroups,
-                                function(firedAlertGroup, innerIndex, seriescallback) {
-                                    firedAlertGroup.list(function(err, firedalerts, alertGroup){
-                                        // How many times was this alert fired?
-                                        //console.log(firedAlertGroup.name, "(Count:", firedAlertGroup.count(), ")");
-                                        // Print the properties for each fired alert (default of 30 per alert group)
-                                        for(var i = 0; i < firedalerts.length; i++) {
-                                            var firedAlert = firedalerts[i];
-                                            /*
-                                            for (var key in firedAlert.properties()) {
-                                                if (firedAlert.properties().hasOwnProperty(key)) {
-
-                                                    //console.log("\t", key, ":", firedAlert.properties()[key]);
-                                                }
-                                            }*/
-                                            assert.ok(firedAlert.actions());
-                                            assert.ok(firedAlert.alertType());
-                                            assert.strictEqual(typeof(firedAlert.isDigestMode()), "boolean");
-                                            assert.ok(firedAlert.expirationTime());
-                                            assert.ok(firedAlert.savedSearchName());
-                                            assert.strictEqual(typeof(firedAlert.severity()), "number");
-                                            assert.ok(firedAlert.sid);
-                                            assert.ok(firedAlert.triggerTime());
-                                            assert.ok(firedAlert.triggerTimeRendered());
-                                            assert.ok(typeof(firedAlert.triggeredAlertCount()), "number");
-                                            //console.log();
-                                        }
-                                        //console.log("======================================");
-                                    });
-                                    seriescallback();
-                                },
-                                function(err) {
-                                    if (err) {
-                                        done(err, index);
-                                    }
-                                    done(null, index);
-                                }
-                            );
                         },
                         function(index, done) {
                             Async.sleep(500, function() { 
