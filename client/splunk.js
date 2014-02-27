@@ -2047,7 +2047,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.users          = utils.bind(this, this.users);
             this.currentUser    = utils.bind(this, this.currentUser);
             this.views          = utils.bind(this, this.views);
-            this.firedAlerts    = utils.bind(this, this.firedAlerts);
+            this.firedAlertGroups    = utils.bind(this, this.firedAlertGroups);
         },
         
         /**
@@ -2182,15 +2182,15 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Gets the `FiredAlerts` collection, which lets you
+         * Gets the `FiredAlertGroupCollection` collection, which lets you
          * list alert groups.
          * 
          * @example
          *      
-         *      // List saved searches
-         *      var firedAlerts = svc.firedAlerts();
-         *      firedAlerts.fetch(function(err, firedAlerts) {
-         *          console.log("# of alert groups: " + firedAlerts.list().length);
+         *      // List all # of fired alert groups
+         *      var firedAlertGroups = svc.firedAlertGroups();
+         *      firedAlertGroups.fetch(function(err, firedAlertGroups) {
+         *          console.log("# of alert groups: " + firedAlertGroups.list().length);
          *      });
          *
          *
@@ -2198,14 +2198,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
          *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
          *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
-         * @return {splunkjs.Service.FiredAlerts} The `FiredAlerts` collection.
+         * @return {splunkjs.Service.FiredAlertGroupCollection} The `FiredAlertGroupCollection` collection.
          *
          * @endpoint saved/searches
          * @method splunkjs.Service
-         * @see splunkjs.Service.FiredAlerts
+         * @see splunkjs.Service.FiredAlertGroupCollection
          */
-        firedAlerts: function(namespace) {
-            return new root.FiredAlerts(this, namespace);
+        firedAlertGroups: function(namespace) {
+            return new root.FiredAlertGroupCollection(this, namespace);
         },
 
         /**
@@ -3490,7 +3490,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.suppressInfo = utils.bind(this, this.suppressInfo);
         },
 
-        /** Gets the count of triggered alerts for this savedSearch,
+        /** 
+         * Gets the count of triggered alerts for this savedSearch,
          * defaulting to 0 when undefined.
          *
          * @example
@@ -3579,19 +3580,20 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             return req;
         },
 
-        /** Gets the alertGroup for firedAlerts associated with this saved search.
+        /** 
+         * Gets the `splunkjs.Service.FiredAlertGroup` for firedAlerts associated with this saved search.
          *
          * @example
          *
-         *      var alerts = service.firedAlerts().item("MySavedSearch");
+         *      var alerts = service.firedAlertGroups().item("MySavedSearch");
          *
-         * @return {splunkjs.Service.AlertGroup} An AlertGroup object with the
+         * @return {splunkjs.Service.FiredAlertGroup} An AlertGroup object with the
          * same name as this SavedSearch object.
          *
          * @method splunkjs.Service.SavedSearch
          */
-        firedAlerts: function() {
-            return new root.AlertGroup(this.service, this.name);
+        firedAlertGroup: function() {
+            return new root.FiredAlertGroup(this.service, this.name);
         },
 
         /**
@@ -3603,7 +3605,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      var savedSearch = service.savedSearches().item("MySavedSearch");
          *      savedSearch.history(function(err, jobs, search) {
          *          for(var i = 0; i < jobs.length; i++) {
-         *              console.log("Job " + i + ": ", jobs[i].sid);
+         *              console.log("Fired alerts", i, ":", jobs[i].sid);
          *          }
          *      });
          *
@@ -3752,20 +3754,173 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this._super(service, this.path(), namespace);
         }
     });
-
+    
     /**
-     * Represents a specific alert, which you can then view and
-     * remove.
+     * Represents a fired alert. 
+     * You can retrieve several of the fired alert's properties by
+     * the corresponding functionn name.
      *
      * @endpoint alerts/fired_alerts/{name}
-     * @class splunkjs.Service.AlertGroup
-     * @extends splunkjs.Service.Collection
+     * @class splunkjs.Service.FiredAlert
+     * @extends splunkjs.Service.Entity
      */
-    root.AlertGroup = root.Entity.extend({
+    root.FiredAlert = root.Entity.extend({
         /**
          * Retrieves the REST endpoint path for this resource (with no namespace).
          *
-         * @method splunkjs.Service.AlertGroup
+         * @method splunkjs.Service.FiredAlert
+         */
+        path: function() {
+            return Paths.firedAlerts + "/" + encodeURIComponent(this.name);
+        },
+
+        /**
+         * Returns this alert's actions (such as notifying by email, running a 
+         * script, adding to RSS, tracking in Alert Manager, and enabling 
+         * summary indexing). 
+         *
+         * @return {Array} of actions, or {null} if there are no actions
+         * @method splunkjs.Service.FiredAlert
+         */
+        actions: function() {
+            return this.properties().actions || null;
+        },
+
+        /**
+         * Returns this alert's type.
+         *
+         * @return {String} the alert's type.
+         * @method splunkjs.Service.FiredAlert
+         */
+        alertType: function() {
+            return this.properties().alert_type || null;
+        },
+
+        /**
+         * Indicates whether the result is a set of events (digest) or a single
+         * event (per result).
+         *
+         * This method is available in Splunk 4.3 and later.
+         *
+         * @return {Boolean} true if the result is a digest, false if per result
+         * @method splunkjs.Service.FiredAlert
+         */
+        isDigestMode: function() {
+            // Convert this property to a Boolean
+            return !!this.properties().digest_mode;
+        },
+
+        /**
+         * Returns the rendered expiration time for this alert.
+         *
+         * This method is available in Splunk 4.3 and later.
+         *
+         * @return {String}
+         * @method splunkjs.Service.FiredAlert
+         */
+        expirationTime: function() {
+            return this.properties().expiration_time_rendered || null;
+        },
+
+        /**
+         * Returns the saved search for this alert.
+         *
+         * @return {String} The saved search name, or {null} if not available.
+         * @method splunkjs.Service.FiredAlert
+         */
+        savedSearchName: function() {
+            return this.properties().savedsearch_name || null;
+        },
+
+        /**
+         * Returns this alert's severity on a scale of 1 to 10, with 1 being the
+         * highest severity.
+         *
+         * @return {Number} this alert's severity, -1 if not specified
+         * @method splunkjs.Service.FiredAlert
+         */
+        severity: function() {
+            return parseInt(this.properties().severity) || -1;
+        },
+
+        /**
+         * Returns this alert's search ID (SID).
+         *
+         * @return {String} This alert's SID, or {null} if not available.
+         * @method splunkjs.Service.FiredAlert
+         */
+        sid: function() {
+            return this.properties().sid || null;
+        },
+
+        /**
+         * Returns the time this alert was triggered.
+         *
+         * @return {Number} This alert's trigger time, or {null} if not available.
+         * @method splunkjs.Service.FiredAlert
+         */
+        triggerTime: function() {
+            return this.properties().trigger_time || null;
+        },
+
+        /**
+         * Returns this alert's rendered trigger time.
+         *
+         * This method is available in Splunk 4.3 and later.
+         *
+         * @return {String} This alert's rendered trigger time, or {null} if not available.
+         * @method splunkjs.Service.FiredAlert
+         */
+        triggerTimeRendered: function() {
+            return this.properties().trigger_time_rendered || null;
+        },
+
+        /**
+         * Returns the count of triggered alerts.
+         *
+         * This method is available in Splunk 4.3 and later.
+         *
+         * @return {Number} The number of triggered alerts, or -1 if not specified.
+         * @method splunkjs.Service.FiredAlert
+         */
+        triggeredAlertCount: function() {
+            return parseInt(this.properties().triggered_alerts) || -1;
+        },
+
+        /**
+         * Constructor for `splunkjs.Service.FiredAlert`.
+         *
+         * @constructor
+         * @param {splunkjs.Service} service A `Service` instance.
+         * @param {String} name The name for the new alert group.
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
+         * @return {splunkjs.Service.FiredAlert} A new `splunkjs.Service.FiredAlert` instance.
+         *
+         * @method splunkjs.Service.FiredAlert
+         */     
+        init: function(service, name, namespace) {
+            this.name = name;
+            this._super(service, this.path(), namespace);
+        }
+    });
+
+
+    /**
+     * Represents a specific alert group, which you can then view and
+     * remove.
+     *
+     * @endpoint alerts/fired_alerts/{name}
+     * @class splunkjs.Service.FiredAlertGroup
+     * @extends splunkjs.Service.Collection
+     */
+    root.FiredAlertGroup = root.Entity.extend({
+        /**
+         * Retrieves the REST endpoint path for this resource (with no namespace).
+         *
+         * @method splunkjs.Service.FiredAlertGroup
          */
         path: function() {
             return Paths.firedAlerts + "/" + encodeURIComponent(this.name);
@@ -3777,7 +3932,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @return {Number} the count of triggered alerts
          *
-         * @method splunkjs.Service.AlertGroup
+         * @method splunkjs.Service.FiredAlertGroup
          */
         count: function() {
             return parseInt(this._properties.triggered_alert_count) || 0;
@@ -3789,16 +3944,16 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @example
          *
-         *      var alertGroup = service.firedAlerts().item("MyAlert");
-         *      alertGroup.list(function(err, jobs, alert) {
-         *          for(var i = 0; i < jobs.length; i++) {
-         *              console.log("Job " + i + ": ", jobs[i].sid);
+         *      var alertGroup = service.firedAlertGroups().item("MyAlert");
+         *      alertGroup.list(function(err, firedAlerts, alert) {
+         *          for(var i = 0; i < firedAlerts.length; i++) {
+         *              console.log("Fired alert", i, ":", firedAlerts[i].sid);
          *          }
          *      });
          *
-         * @param {Function} callback A function to call when the history is retrieved: `(err, job, alertGroup)`.
+         * @param {Function} callback A function to call when the history is retrieved: `(err, firedAlerts, alertGroup)`.
          *
-         * @method splunkjs.Service.AlertGroup
+         * @method splunkjs.Service.FiredAlertGroup
          */
         list: function(callback) {
             callback = callback || function() {};
@@ -3810,22 +3965,22 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     return;
                 }
                 
-                var jobs = [];
+                var firedAlerts = [];
                 var data = response.data.entry || [];
                 for(var i = 0; i < data.length; i++) {
-                    var jobData = response.data.entry[i];
-                    var namespace = utils.namespaceFromProperties(jobData);
-                    var job = new root.Job(that.service, jobData.name, namespace);
-                    job._load(jobData);
-                    jobs.push(job);
+                    var firedAlertData = response.data.entry[i];
+                    var namespace = utils.namespaceFromProperties(firedAlertData);
+                    var firedAlert = new root.FiredAlert(that.service, firedAlertData.name, namespace);
+                    firedAlert._load(firedAlertData);
+                    firedAlerts.push(firedAlert);
                 }
                 
-                callback(null, jobs, that);
+                callback(null, firedAlerts, that);
             });
         },
 
         /**
-         * Constructor for `splunkjs.Service.AlertGroup`.
+         * Constructor for `splunkjs.Service.FiredAlertGroup`.
          *
          * @constructor
          * @param {splunkjs.Service} service A `Service` instance.
@@ -3834,10 +3989,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
          *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
          *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
-         * @return {splunkjs.Service.AlertGroup} A new `splunkjs.Service.AlertGroup` instance.
+         * @return {splunkjs.Service.FiredAlertGroup} A new `splunkjs.Service.FiredAlertGroup` instance.
          *
-         * @method splunkjs.Service.AlertGroup
-         */     
+         * @method splunkjs.Service.FiredAlertGroup
+         */
         init: function(service, name, namespace) {
             this.name = name;
             this._super(service, this.path(), namespace);
@@ -3853,14 +4008,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      *
      *
      * @endpoint alerts/fired_alerts
-     * @class splunkjs.Service.FiredAlerts
+     * @class splunkjs.Service.FiredAlertGroupCollection
      * @extends splunkjs.Service.Collection
      */
-    root.FiredAlerts = root.Collection.extend({
+    root.FiredAlertGroupCollection = root.Collection.extend({
         /**
          * Retrieves the REST endpoint path for this resource (with no namespace).
          *
-         * @method splunkjs.Service.FiredAlerts
+         * @method splunkjs.Service.FiredAlertGroupCollection
          */
         path: function() {
             return Paths.firedAlerts;
@@ -3870,26 +4025,26 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * Creates a local instance of an alert group.
          *
          * @param {Object} props The properties for the alert group.
-         * @return {splunkjs.Service.AlertGroup} A new `splunkjs.Service.AlertGroup` instance.
+         * @return {splunkjs.Service.FiredAlertGroup} A new `splunkjs.Service.FiredAlertGroup` instance.
          *
-         * @method splunkjs.Service.FiredAlerts
+         * @method splunkjs.Service.FiredAlertGroupCollection
          */
         instantiateEntity: function(props) {
             var entityNamespace = utils.namespaceFromProperties(props);
-            return new root.AlertGroup(this.service, props.name, entityNamespace);
+            return new root.FiredAlertGroup(this.service, props.name, entityNamespace);
         },
 
         /**
          * Suppress removing alerts via the fired alerts endpoint.
          *
-         * @method splunkjs.Service.FiredAlerts
+         * @method splunkjs.Service.FiredAlertGroupCollection
          */
         remove: function() {
             throw new Error("To remove an alert, remove the saved search with the same name.");
         },
         
         /**
-         * Constructor for `splunkjs.Service.FiredAlerts`. 
+         * Constructor for `splunkjs.Service.FiredAlertGroupCollection`. 
          *
          * @constructor
          * @param {splunkjs.Service} service A `Service` instance.
@@ -3897,9 +4052,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
          *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
          *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
-         * @return {splunkjs.Service.FiredAlerts} A new `splunkjs.Service.FiredAlerts` instance.
+         * @return {splunkjs.Service.FiredAlertGroupCollection} A new `splunkjs.Service.FiredAlertGroupCollection` instance.
          *
-         * @method splunkjs.Service.FiredAlerts
+         * @method splunkjs.Service.FiredAlertGroupCollection
          */     
         init: function(service, namespace) {
             this._super(service, this.path(), namespace);
