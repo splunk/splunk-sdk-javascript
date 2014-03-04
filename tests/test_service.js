@@ -1788,11 +1788,16 @@ exports.setup = function(svc, loggedOutSvc) {
                                             function(firedAlerts, firedAlertGroup, insideChainCallback) {
                                                 for(var i = 0; i < firedAlerts.length; i++) {
                                                     var firedAlert = firedAlerts[i];
-                                                    for (var key in firedAlert.properties()) {
-                                                        if (firedAlert.properties().hasOwnProperty(key)) {
-                                                            console.log("\t", key, ":", firedAlert.properties()[key]);
-                                                        }
-                                                    }
+                                                    firedAlert.actions();
+                                                    firedAlert.alertType();
+                                                    firedAlert.isDigestMode();
+                                                    firedAlert.expirationTime();
+                                                    firedAlert.savedSearchName();
+                                                    firedAlert.severity();
+                                                    firedAlert.sid();
+                                                    firedAlert.triggerTime();
+                                                    firedAlert.triggerTimeRendered();
+                                                    firedAlert.triggeredAlertCount();
                                                     console.log();
                                                 }
                                                 insideChainCallback(null);
