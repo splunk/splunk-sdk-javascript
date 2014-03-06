@@ -687,10 +687,6 @@ exports.setup = function(svc) {
             // Are username and app set properly?
             var ctx2 = new splunkjs.Context(http, {owner: "alpha", app: "beta"});
             test.strictEqual(ctx2.fullpath("meep"), "/servicesNS/alpha/beta/meep");
-            // Do special characters get encoded?
-            var ctx3 = new splunkjs.Context(http, {owner: "alpha@beta.com", app: "beta"});
-            test.strictEqual(ctx3.fullpath("meep"), "/servicesNS/alpha%40beta.com/beta/meep");
-
             test.strictEqual(ctx2.fullpath("meep", {owner: "boris"}), "/servicesNS/boris/beta/meep");
             test.strictEqual(ctx2.fullpath("meep", {app: "factory"}), "/servicesNS/alpha/factory/meep");
             test.strictEqual(ctx2.fullpath("meep", {owner: "boris", app: "factory"}), "/servicesNS/boris/factory/meep");
@@ -698,6 +694,9 @@ exports.setup = function(svc) {
             test.strictEqual(ctx2.fullpath("meep", {sharing: "app"}), "/servicesNS/nobody/beta/meep");
             test.strictEqual(ctx2.fullpath("meep", {sharing: "global"}), "/servicesNS/nobody/beta/meep");
             test.strictEqual(ctx2.fullpath("meep", {sharing: "system"}), "/servicesNS/nobody/system/meep");
+            // Do special characters get encoded?
+            var ctx3 = new splunkjs.Context(http, {owner: "alpha@beta.com", app: "beta"});
+            test.strictEqual(ctx3.fullpath("meep"), "/servicesNS/alpha%40beta.com/beta/meep");
             test.done();
         },
 
