@@ -2295,16 +2295,16 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
 
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
-            this.specialize     = utils.bind(this, this.specialize);
-            this.apps           = utils.bind(this, this.apps);
-            this.configurations = utils.bind(this, this.configurations);
-            this.indexes        = utils.bind(this, this.indexes);
-            this.savedSearches  = utils.bind(this, this.savedSearches);
-            this.jobs           = utils.bind(this, this.jobs);
-            this.users          = utils.bind(this, this.users);
-            this.currentUser    = utils.bind(this, this.currentUser);
-            this.views          = utils.bind(this, this.views);
-            this.firedAlertGroups    = utils.bind(this, this.firedAlertGroups);
+            this.specialize         = utils.bind(this, this.specialize);
+            this.apps               = utils.bind(this, this.apps);
+            this.configurations     = utils.bind(this, this.configurations);
+            this.indexes            = utils.bind(this, this.indexes);
+            this.savedSearches      = utils.bind(this, this.savedSearches);
+            this.jobs               = utils.bind(this, this.jobs);
+            this.users              = utils.bind(this, this.users);
+            this.currentUser        = utils.bind(this, this.currentUser);
+            this.views              = utils.bind(this, this.views);
+            this.firedAlertGroups   = utils.bind(this, this.firedAlertGroups);
         },
         
         /**
@@ -3862,7 +3862,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      var savedSearch = service.savedSearches().item("MySavedSearch");
          *      savedSearch.history(function(err, jobs, search) {
          *          for(var i = 0; i < jobs.length; i++) {
-         *              console.log("Fired alerts", i, ":", jobs[i].sid);
+         *              console.log("Job", i, ":", jobs[i].sid);
          *          }
          *      });
          *
@@ -4036,11 +4036,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * script, adding to RSS, tracking in Alert Manager, and enabling 
          * summary indexing). 
          *
-         * @return {Array} of actions, or {null} if there are no actions
+         * @return {Array} of actions, an empty {Array} if no actions
          * @method splunkjs.Service.FiredAlert
          */
         actions: function() {
-            return this.properties().actions || null;
+            return this.properties().actions || [];
         },
 
         /**
@@ -4192,7 +4192,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @method splunkjs.Service.FiredAlertGroup
          */
         count: function() {
-            return parseInt(this._properties.triggered_alert_count) || 0;
+            return parseInt(this.properties().triggered_alert_count) || 0;
         },
 
         /**
@@ -10096,11 +10096,16 @@ exports.setup = function(svc, loggedOutSvc) {
                                             function(firedAlerts, firedAlertGroup, insideChainCallback) {
                                                 for(var i = 0; i < firedAlerts.length; i++) {
                                                     var firedAlert = firedAlerts[i];
-                                                    for (var key in firedAlert.properties()) {
-                                                        if (firedAlert.properties().hasOwnProperty(key)) {
-                                                            console.log("\t", key, ":", firedAlert.properties()[key]);
-                                                        }
-                                                    }
+                                                    firedAlert.actions();
+                                                    firedAlert.alertType();
+                                                    firedAlert.isDigestMode();
+                                                    firedAlert.expirationTime();
+                                                    firedAlert.savedSearchName();
+                                                    firedAlert.severity();
+                                                    firedAlert.sid();
+                                                    firedAlert.triggerTime();
+                                                    firedAlert.triggerTimeRendered();
+                                                    firedAlert.triggeredAlertCount();
                                                     console.log();
                                                 }
                                                 insideChainCallback(null);
