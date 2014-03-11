@@ -5,11 +5,11 @@
 ### New features and APIs
 
 * Added support for Splunk alerts through the `service.FiredAlertGroupCollection` collection, 
-the `service.FiredAlertGroup`, and the `service.FiredAlert` entities.
+and the `service.FiredAlertGroup` and `service.FiredAlert` entities.
 
 * Added test to verify that URL encoding of serviceNS/ URLs works.
 
-### Bug fixes
+### Breaking Changes
 
 * Added URL encoding of owner and app in servicesNS/ URLs.
 
