@@ -7,6 +7,12 @@
 * Added support for Splunk alerts through the `service.FiredAlertGroupCollection` collection, 
 the `service.FiredAlertGroup`, and the `service.FiredAlert` entities.
 
+* Added test to verify that URL encoding of serviceNS/ URLs works.
+
+### Bug fixes
+
+* Added URL encoding of owner and app in servicesNS/ URLs.
+
 ### Minor changes
 
 * Updated the node.js `helloworld` example with example uses of the new alerts
