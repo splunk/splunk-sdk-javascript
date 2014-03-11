@@ -13,8 +13,8 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-// This example will login to Splunk, and then retrieve the list of saved searchs,
-// printing each saved search's name and search query.
+// This example will login to Splunk, and then try to delete the alert
+// that was created in savedsearches_create.js
 
 var splunkjs = require('../../../index');
 
@@ -46,25 +46,28 @@ exports.main = function(opts, done) {
             console.log("Error in logging in");
             done(err || "Login failed");
             return;
-        }
+        } 
         
-        // Now that we're logged in, let's get a listing of all the saved searches.
-        service.savedSearches().fetch(function(err, searches) {
+        var name = "My Awesome Alert";
+        
+        // Now that we're logged in, let's delete the alert
+        service.savedSearches().fetch(function(err, firedAlertGroup) {
             if (err) {
-                console.log("There was an error retrieving the list of saved searches:", err);
+                console.log("There was an error in fetching the alerts");
                 done(err);
                 return;
             }
-            
-            var searchList = searches.list();
-            console.log("Saved searches:");
-            for(var i = 0; i < searchList.length; i++) {
-                var search = searchList[i];
-                console.log("  Search " + i + ": " + search.name);
-                console.log("    " + search.properties().search);
-            } 
-            
-            done();
+
+            var alertToDelete = firedAlertGroup.item(name);
+            if (!alertToDelete) {
+                console.log("Can't delete '" + name + "' because it doesn't exist!");
+                done();
+            }
+            else {
+                alertToDelete.remove();
+                console.log("Deleted alert: " + name + "");
+                done();
+            }
         });
     });
 };

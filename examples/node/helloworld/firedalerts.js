@@ -13,8 +13,8 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-// This example will login to Splunk, and then retrieve the list of saved searchs,
-// printing each saved search's name and search query.
+// This example will login to Splunk, and then retrieve the list of fired alerts,
+// printing each alert's name and properties.
 
 var splunkjs = require('../../../index');
 
@@ -46,24 +46,41 @@ exports.main = function(opts, done) {
             console.log("Error in logging in");
             done(err || "Login failed");
             return;
-        }
-        
-        // Now that we're logged in, let's get a listing of all the saved searches.
-        service.savedSearches().fetch(function(err, searches) {
+        } 
+
+        // Now that we're logged in, let's get a listing of all the fired alert groups
+        service.firedAlertGroups().fetch(function(err, firedAlertGroups) {
             if (err) {
-                console.log("There was an error retrieving the list of saved searches:", err);
+                console.log("ERROR", err);
                 done(err);
                 return;
             }
-            
-            var searchList = searches.list();
-            console.log("Saved searches:");
-            for(var i = 0; i < searchList.length; i++) {
-                var search = searchList[i];
-                console.log("  Search " + i + ": " + search.name);
-                console.log("    " + search.properties().search);
-            } 
-            
+
+            // Get the list of all fired alert groups, including the all group (represented by "-")
+            var firedAlertGroups = firedAlertGroups.list();
+            console.log("Fired alert groups:");
+
+            for(var a in firedAlertGroups) {
+                if (firedAlertGroups.hasOwnProperty(a)) {
+                    var firedAlertGroup = firedAlertGroups[a];
+                    firedAlertGroup.list(function(err, firedAlerts, firedAlertGroup) {
+                        // How many times was this alert fired?
+                        console.log(firedAlertGroup.name, "(Count:", firedAlertGroup.count(), ")");
+                        // Print the properties for each fired alert (default of 30 per alert group)
+                        for(var i = 0; i < firedAlerts.length; i++) {
+                            var firedAlert = firedAlerts[i];
+                            for(var key in firedAlert.properties()) {
+                                if (firedAlert.properties().hasOwnProperty(key)) {
+                                   console.log("\t", key, ":", firedAlert.properties()[key]);
+                                }
+                            }
+                            console.log();
+                        }
+                        console.log("======================================");
+                    });
+                }
+            }
+
             done();
         });
     });

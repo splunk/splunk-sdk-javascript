@@ -34,7 +34,7 @@
         }
     };
     
-    // Instead of trying to print the column-major format, we just 
+    // Instead of trying to print the column-major format, we just
     // transpose it
     var transpose = function(results) {
         var rows = [];
@@ -67,13 +67,13 @@
         }
     };
 
-    exports.main = function(argv, callback) {     
+    exports.main = function(argv, callback) {
         splunkjs.Logger.setLevel("NONE");
         
         // Read data from stdin
         var incomingResults = "";
         var onData = function(data) {
-            incomingResults += data.toString("utf-8"); 
+            incomingResults += data.toString("utf-8");
         };
         
         // When there is no more data, parse it and pretty
@@ -96,7 +96,7 @@
             process.stdin.removeListener("error", onError);
             process.stdin.pause();
             
-            originalCallback.apply(null, arguments);  
+            originalCallback.apply(null, arguments);
         };
         
         process.stdin.on("data", onData);

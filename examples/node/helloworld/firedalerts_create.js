@@ -13,8 +13,7 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-// This example will login to Splunk, and then retrieve the list of saved searchs,
-// printing each saved search's name and search query.
+// This example will login to Splunk, and then create an alert.
 
 var splunkjs = require('../../../index');
 
@@ -46,24 +45,35 @@ exports.main = function(opts, done) {
             console.log("Error in logging in");
             done(err || "Login failed");
             return;
-        }
+        } 
         
-        // Now that we're logged in, let's get a listing of all the saved searches.
-        service.savedSearches().fetch(function(err, searches) {
-            if (err) {
-                console.log("There was an error retrieving the list of saved searches:", err);
+        var alertOptions = {
+            name: "My Awesome Alert",
+            search: "index=_internal error sourcetype=splunkd* | head 10",
+            "alert_type": "always",
+            "alert.severity": "2",
+            "alert.suppress": "0",
+            "alert.track": "1",
+            "dispatch.earliest_time": "-1h",
+            "dispatch.latest_time": "now",
+            "is_scheduled": "1",
+            "cron_schedule": "* * * * *"
+        };
+        
+        // Now that we're logged in, Let's create a saved search
+        service.savedSearches().create(alertOptions, function(err, alert) {
+            if (err && err.status === 409) {
+                console.error("ERROR: A saved search with the name '" + alertOptions.name + "' already exists");
+                done();
+                return;
+            }
+            else if (err) {
+                console.error("There was an error creating the saved search:", err);
                 done(err);
                 return;
             }
             
-            var searchList = searches.list();
-            console.log("Saved searches:");
-            for(var i = 0; i < searchList.length; i++) {
-                var search = searchList[i];
-                console.log("  Search " + i + ": " + search.name);
-                console.log("    " + search.properties().search);
-            } 
-            
+            console.log("Created saved search as alert: " + alert.name);            
             done();
         });
     });
