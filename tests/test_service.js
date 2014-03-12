@@ -1735,8 +1735,10 @@ exports.setup = function(svc, loggedOutSvc) {
                             );
                         },
                         function(result, index, originalSearch, eventCount, done) {
-                            //refresh the search
-                            index.fetch(Async.augment(done, originalSearch, eventCount));
+                            Async.sleep(1000, function(){
+                                //refresh the search
+                                index.fetch(Async.augment(done, originalSearch, eventCount));
+                            });
                         },
                         function(index, originalSearch, eventCount, done) {
                             // Did the event get submitted
