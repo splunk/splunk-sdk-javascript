@@ -1777,7 +1777,6 @@ exports.setup = function(svc, loggedOutSvc) {
                             svc.firedAlertGroups({username: svc.username}).fetch(Async.augment(done, index, originalSearch));
                         },
                         function(firedAlertGroups, index, originalSearch, done) {
-                            //var firedAlertGroups = firedAlertGroups.list();
                             Async.seriesEach(
                                 firedAlertGroups.list(),
                                 function(firedAlertGroup, innerIndex, seriescallback) {
