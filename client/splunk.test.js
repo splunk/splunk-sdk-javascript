@@ -1552,7 +1552,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
                 app = "system";
             }
 
-            return utils.trim("/servicesNS/" + owner + "/" + app + "/" + path);
+            return utils.trim("/servicesNS/" + encodeURIComponent(owner) + "/" + encodeURIComponent(app) + "/" + path);
         },
 
         /**
@@ -8062,6 +8062,9 @@ exports.setup = function(svc) {
             test.strictEqual(ctx2.fullpath("meep", {sharing: "app"}), "/servicesNS/nobody/beta/meep");
             test.strictEqual(ctx2.fullpath("meep", {sharing: "global"}), "/servicesNS/nobody/beta/meep");
             test.strictEqual(ctx2.fullpath("meep", {sharing: "system"}), "/servicesNS/nobody/system/meep");
+            // Do special characters get encoded?
+            var ctx3 = new splunkjs.Context(http, {owner: "alpha@beta.com", app: "beta"});
+            test.strictEqual(ctx3.fullpath("meep"), "/servicesNS/alpha%40beta.com/beta/meep");
             test.done();
         },
 
@@ -10043,8 +10046,10 @@ exports.setup = function(svc, loggedOutSvc) {
                             );
                         },
                         function(result, index, originalSearch, eventCount, done) {
-                            //refresh the search
-                            index.fetch(Async.augment(done, originalSearch, eventCount));
+                            Async.sleep(1000, function(){
+                                //refresh the search
+                                index.fetch(Async.augment(done, originalSearch, eventCount));
+                            });
                         },
                         function(index, originalSearch, eventCount, done) {
                             // Did the event get submitted
@@ -10085,7 +10090,6 @@ exports.setup = function(svc, loggedOutSvc) {
                             svc.firedAlertGroups({username: svc.username}).fetch(Async.augment(done, index, originalSearch));
                         },
                         function(firedAlertGroups, index, originalSearch, done) {
-                            //var firedAlertGroups = firedAlertGroups.list();
                             Async.seriesEach(
                                 firedAlertGroups.list(),
                                 function(firedAlertGroup, innerIndex, seriescallback) {
@@ -12042,7 +12046,7 @@ exports.main = function(opts, done) {
             for(var a in firedAlertGroups) {
                 if (firedAlertGroups.hasOwnProperty(a)) {
                     var firedAlertGroup = firedAlertGroups[a];
-                    firedAlertGroup.list(function(err, firedAlerts, firedAlertGroup) {
+                    firedAlertGroup.list(function(err, firedAlerts) {
                         // How many times was this alert fired?
                         console.log(firedAlertGroup.name, "(Count:", firedAlertGroup.count(), ")");
                         // Print the properties for each fired alert (default of 30 per alert group)
@@ -12136,7 +12140,7 @@ exports.main = function(opts, callback) {
                 Async.seriesEach(
                     firedAlertGroups,
                     function(firedAlertGroup, index, seriescallback) {
-                        firedAlertGroup.list(function(err, firedAlerts, firedAlertGroup){
+                        firedAlertGroup.list(function(err, firedAlerts){
                             // How many times was this alert fired?
                             console.log(firedAlertGroup.name, "(Count:", firedAlertGroup.count(), ")");
                             // Print the properties for each fired alert (default of 30 per alert group)
@@ -12318,14 +12322,14 @@ exports.main = function(opts, done) {
         var name = "My Awesome Alert";
         
         // Now that we're logged in, let's delete the alert
-        service.savedSearches().fetch(function(err, firedAlertGroup) {
+        service.savedSearches().fetch(function(err, firedAlertGroups) {
             if (err) {
                 console.log("There was an error in fetching the alerts");
                 done(err);
                 return;
             }
 
-            var alertToDelete = firedAlertGroup.item(name);
+            var alertToDelete = firedAlertGroups.item(name);
             if (!alertToDelete) {
                 console.log("Can't delete '" + name + "' because it doesn't exist!");
                 done();
