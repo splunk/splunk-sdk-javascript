@@ -51,7 +51,7 @@ controls. These UI component files (<b>splunk.ui.timeline</b> and
 directory.
 
 ### Install the Splunk SDK for JavaScript for Node.js
-> **Note:** The Splunk SDK for JavaScript v1.2.3 requires Node.js version 0.8.x or 0.10.x.
+> **Note:** The Splunk SDK for JavaScript v1.3.0 requires Node.js version 0.8.x or 0.10.x.
 
 If you want to use the Splunk SDK for JavaScript with your Node.js programs, install
 the SDK by running `npm` in *your* project's directory as follows:
