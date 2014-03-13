@@ -63,7 +63,7 @@ exports.main = function(opts, done) {
             for(var a in firedAlertGroups) {
                 if (firedAlertGroups.hasOwnProperty(a)) {
                     var firedAlertGroup = firedAlertGroups[a];
-                    firedAlertGroup.list(function(err, firedAlerts, firedAlertGroup) {
+                    firedAlertGroup.list(function(err, firedAlerts) {
                         // How many times was this alert fired?
                         console.log(firedAlertGroup.name, "(Count:", firedAlertGroup.count(), ")");
                         // Print the properties for each fired alert (default of 30 per alert group)
