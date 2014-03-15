@@ -1295,7 +1295,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
                 app = "system";
             }
 
-            return utils.trim("/servicesNS/" + owner + "/" + app + "/" + path);
+            return utils.trim("/servicesNS/" + encodeURIComponent(owner) + "/" + encodeURIComponent(app) + "/" + path);
         },
 
         /**
@@ -3940,7 +3940,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
 
         /**
          * Returns fired instances of this alert, which is
-         * a list of `splunkjs.Service.Job` instances.
+         * a list of `splunkjs.Service.FiredAlert` instances.
          *
          * @example
          *
@@ -3951,15 +3951,21 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *          }
          *      });
          *
-         * @param {Function} callback A function to call when the history is retrieved: `(err, firedAlerts, alertGroup)`.
+         * @param {Function} callback A function to call when the fired alerts are retrieved: `(err, firedAlerts, alertGroup)`.
          *
          * @method splunkjs.Service.FiredAlertGroup
          */
-        list: function(callback) {
+        list: function(options, callback) {
+            if (!callback && utils.isFunction(options)) {
+                callback = options;
+                options = {};
+            }
+
             callback = callback || function() {};
-            
+            options = options || {};
+
             var that = this;
-            return this.get("", {}, function(err, response) {
+            return this.get("", options, function(err, response) {
                 if (err) {
                     callback(err);
                     return;
