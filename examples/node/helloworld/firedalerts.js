@@ -1,5 +1,4 @@
-
-// Copyright 2011 Splunk, Inc.
+// Copyright 2014 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
 // not use this file except in compliance with the License. You may obtain
@@ -38,7 +37,7 @@ exports.main = function(opts, done) {
         version: version
     });
 
-    // First, we log in
+    // First, we log in.
     service.login(function(err, success) {
         // We check for both errors in the connection as well
         // as if the login itself failed.
