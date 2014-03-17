@@ -57,27 +57,29 @@ exports.main = function(opts, done) {
             }
 
             // Get the list of all fired alert groups, including the all group (represented by "-")
-            var firedAlertGroups = firedAlertGroups.list();
+            var groups = firedAlertGroups.list();
             console.log("Fired alert groups:");
 
-            for(var a in firedAlertGroups) {
-                if (firedAlertGroups.hasOwnProperty(a)) {
-                    var firedAlertGroup = firedAlertGroups[a];
-                    firedAlertGroup.list(function(err, firedAlerts) {
-                        // How many times was this alert fired?
-                        console.log(firedAlertGroup.name, "(Count:", firedAlertGroup.count(), ")");
-                        // Print the properties for each fired alert (default of 30 per alert group)
-                        for(var i = 0; i < firedAlerts.length; i++) {
-                            var firedAlert = firedAlerts[i];
-                            for(var key in firedAlert.properties()) {
-                                if (firedAlert.properties().hasOwnProperty(key)) {
-                                   console.log("\t", key, ":", firedAlert.properties()[key]);
-                                }
-                            }
-                            console.log();
+            var listGroupCallback = function(err, firedAlerts, firedAlertGroup) {
+                // How many times was this alert fired?
+                console.log(firedAlertGroup.name, "(Count:", firedAlertGroup.count(), ")");
+                // Print the properties for each fired alert (default of 30 per alert group)
+                for(var i = 0; i < firedAlerts.length; i++) {
+                    var firedAlert = firedAlerts[i];
+                    for(var key in firedAlert.properties()) {
+                        if (firedAlert.properties().hasOwnProperty(key)) {
+                           console.log("\t", key, ":", firedAlert.properties()[key]);
                         }
-                        console.log("======================================");
-                    });
+                    }
+                    console.log();
+                }
+                console.log("======================================");
+            };
+
+            for(var a in groups) {
+                if (groups.hasOwnProperty(a)) {
+                    var firedAlertGroup = groups[a];
+                    firedAlertGroup.list(listGroupCallback);
                 }
             }
 

@@ -57,11 +57,11 @@ exports.main = function(opts, callback) {
             // Print them out
             function(firedAlertGroups, done) {
                 // Get the list of all fired alert groups, including the all group (represented by "-")
-                var firedAlertGroups = firedAlertGroups.list();
+                var groups = firedAlertGroups.list();
 
                 console.log("Fired alert groups:");
                 Async.seriesEach(
-                    firedAlertGroups,
+                    groups,
                     function(firedAlertGroup, index, seriescallback) {
                         firedAlertGroup.list(function(err, firedAlerts){
                             // How many times was this alert fired?
