@@ -1,5 +1,4 @@
-
-// Copyright 2011 Splunk, Inc.
+// Copyright 2014 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
 // not use this file except in compliance with the License. You may obtain
@@ -21,7 +20,7 @@ var splunkjs = require('../../../index');
 var Async  = splunkjs.Async;
 
 exports.main = function(opts, callback) {
-    // This is just for testing - ignore it
+    // This is just for testing - ignore it.
     opts = opts || {};
     
     var username = opts.username    || "admin";
@@ -41,7 +40,7 @@ exports.main = function(opts, callback) {
     });
 
     Async.chain([
-            // First, we log in
+            // First, we log in.
             function(done) {
                 service.login(done);
             },
@@ -51,12 +50,12 @@ exports.main = function(opts, callback) {
                     done("Error logging in");
                 }
 
-                // Now that we're logged in, let's get a listing of all the fired alert groups
+                // Now that we're logged in, let's get a listing of all the fired alert groups.
                 service.firedAlertGroups().fetch(done);
             },
-            // Print them out
+            // Print them out.
             function(firedAlertGroups, done) {
-                // Get the list of all fired alert groups, including the all group (represented by "-")
+                // Get the list of all fired alert groups, including the all group (represented by "-").
                 var groups = firedAlertGroups.list();
 
                 console.log("Fired alert groups:");
@@ -66,7 +65,7 @@ exports.main = function(opts, callback) {
                         firedAlertGroup.list(function(err, firedAlerts){
                             // How many times was this alert fired?
                             console.log(firedAlertGroup.name, "(Count:", firedAlertGroup.count(), ")");
-                            // Print the properties for each fired alert (default of 30 per alert group)
+                            // Print the properties for each fired alert (default of 30 per alert group).
                             for(var i = 0; i < firedAlerts.length; i++) {
                                 var firedAlert = firedAlerts[i];
                                 for (var key in firedAlert.properties()) {
