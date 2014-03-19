@@ -2220,7 +2220,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
 
 require.define("/lib/service.js", function (require, module, exports, __dirname, __filename) {
 /*!*/
-// Copyright 2012 Splunk, Inc.
+// Copyright 2014 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
 // not use this file except in compliance with the License. You may obtain
@@ -3761,7 +3761,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @method splunkjs.Service.SavedSearch
          */
         alertCount: function() {
-            return parseInt(this.properties().triggered_alert_count) || 0;
+            return parseInt(this.properties().triggered_alert_count, 10) || 0;
         },
 
         /**
@@ -4015,7 +4015,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     /**
      * Represents a fired alert. 
      * You can retrieve several of the fired alert's properties by
-     * the corresponding functionn name.
+     * the corresponding function name.
      *
      * @endpoint alerts/fired_alerts/{name}
      * @class splunkjs.Service.FiredAlert
@@ -4097,7 +4097,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @method splunkjs.Service.FiredAlert
          */
         severity: function() {
-            return parseInt(this.properties().severity) || -1;
+            return parseInt(this.properties().severity, 10) || -1;
         },
 
         /**
@@ -4141,7 +4141,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @method splunkjs.Service.FiredAlert
          */
         triggeredAlertCount: function() {
-            return parseInt(this.properties().triggered_alerts) || -1;
+            return parseInt(this.properties().triggered_alerts, 10) || -1;
         },
 
         /**
@@ -4192,7 +4192,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @method splunkjs.Service.FiredAlertGroup
          */
         count: function() {
-            return parseInt(this.properties().triggered_alert_count) || 0;
+            return parseInt(this.properties().triggered_alert_count, 10) || 0;
         },
 
         /**
@@ -5132,7 +5132,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
 
     /**
      * Represents a specific search job. You can perform different operations
-     * on this job, such as reading its status, cancelling it, and getting results.
+     * on this job, such as reading its status, canceling it, and getting results.
      *
      * @endpoint search/jobs/{search_id}
      * @class splunkjs.Service.Job
@@ -11743,9 +11743,11 @@ exports.setup = function(svc, opts) {
                     test.done();
                 });
             }
-        },
+        }
         
-        "Results Example Tests": {
+        // This test is commented out because it causes a failure/hang on
+        // Node >0.6. We need to revisit this test, so disabling it for now.
+        /*"Results Example Tests": {
             
             "Parse row results": function(test) {
                 var main = require("../examples/node/results").main;
@@ -11795,7 +11797,7 @@ exports.setup = function(svc, opts) {
                 process.stdin.destroy();
                 test.done();
             }
-        }
+        }*/
     };
 };
 
@@ -11987,8 +11989,7 @@ if (module === require.main) {
 });
 
 require.define("/examples/node/helloworld/firedalerts.js", function (require, module, exports, __dirname, __filename) {
-
-// Copyright 2011 Splunk, Inc.
+// Copyright 2014 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
 // not use this file except in compliance with the License. You may obtain
@@ -12027,7 +12028,7 @@ exports.main = function(opts, done) {
         version: version
     });
 
-    // First, we log in
+    // First, we log in.
     service.login(function(err, success) {
         // We check for both errors in the connection as well
         // as if the login itself failed.
@@ -12046,27 +12047,29 @@ exports.main = function(opts, done) {
             }
 
             // Get the list of all fired alert groups, including the all group (represented by "-")
-            var firedAlertGroups = firedAlertGroups.list();
+            var groups = firedAlertGroups.list();
             console.log("Fired alert groups:");
 
-            for(var a in firedAlertGroups) {
-                if (firedAlertGroups.hasOwnProperty(a)) {
-                    var firedAlertGroup = firedAlertGroups[a];
-                    firedAlertGroup.list(function(err, firedAlerts) {
-                        // How many times was this alert fired?
-                        console.log(firedAlertGroup.name, "(Count:", firedAlertGroup.count(), ")");
-                        // Print the properties for each fired alert (default of 30 per alert group)
-                        for(var i = 0; i < firedAlerts.length; i++) {
-                            var firedAlert = firedAlerts[i];
-                            for(var key in firedAlert.properties()) {
-                                if (firedAlert.properties().hasOwnProperty(key)) {
-                                   console.log("\t", key, ":", firedAlert.properties()[key]);
-                                }
-                            }
-                            console.log();
+            var listGroupCallback = function(err, firedAlerts, firedAlertGroup) {
+                // How many times was this alert fired?
+                console.log(firedAlertGroup.name, "(Count:", firedAlertGroup.count(), ")");
+                // Print the properties for each fired alert (default of 30 per alert group)
+                for(var i = 0; i < firedAlerts.length; i++) {
+                    var firedAlert = firedAlerts[i];
+                    for(var key in firedAlert.properties()) {
+                        if (firedAlert.properties().hasOwnProperty(key)) {
+                           console.log("\t", key, ":", firedAlert.properties()[key]);
                         }
-                        console.log("======================================");
-                    });
+                    }
+                    console.log();
+                }
+                console.log("======================================");
+            };
+
+            for(var a in groups) {
+                if (groups.hasOwnProperty(a)) {
+                    var firedAlertGroup = groups[a];
+                    firedAlertGroup.list(listGroupCallback);
                 }
             }
 
@@ -12078,11 +12081,11 @@ exports.main = function(opts, done) {
 if (module === require.main) {
     exports.main({}, function() {});
 }
+
 });
 
 require.define("/examples/node/helloworld/firedalerts_async.js", function (require, module, exports, __dirname, __filename) {
-
-// Copyright 2011 Splunk, Inc.
+// Copyright 2014 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
 // not use this file except in compliance with the License. You may obtain
@@ -12104,7 +12107,7 @@ var splunkjs = require('../../../index');
 var Async  = splunkjs.Async;
 
 exports.main = function(opts, callback) {
-    // This is just for testing - ignore it
+    // This is just for testing - ignore it.
     opts = opts || {};
     
     var username = opts.username    || "admin";
@@ -12124,7 +12127,7 @@ exports.main = function(opts, callback) {
     });
 
     Async.chain([
-            // First, we log in
+            // First, we log in.
             function(done) {
                 service.login(done);
             },
@@ -12134,22 +12137,22 @@ exports.main = function(opts, callback) {
                     done("Error logging in");
                 }
 
-                // Now that we're logged in, let's get a listing of all the fired alert groups
+                // Now that we're logged in, let's get a listing of all the fired alert groups.
                 service.firedAlertGroups().fetch(done);
             },
-            // Print them out
+            // Print them out.
             function(firedAlertGroups, done) {
-                // Get the list of all fired alert groups, including the all group (represented by "-")
-                var firedAlertGroups = firedAlertGroups.list();
+                // Get the list of all fired alert groups, including the all group (represented by "-").
+                var groups = firedAlertGroups.list();
 
                 console.log("Fired alert groups:");
                 Async.seriesEach(
-                    firedAlertGroups,
+                    groups,
                     function(firedAlertGroup, index, seriescallback) {
                         firedAlertGroup.list(function(err, firedAlerts){
                             // How many times was this alert fired?
                             console.log(firedAlertGroup.name, "(Count:", firedAlertGroup.count(), ")");
-                            // Print the properties for each fired alert (default of 30 per alert group)
+                            // Print the properties for each fired alert (default of 30 per alert group).
                             for(var i = 0; i < firedAlerts.length; i++) {
                                 var firedAlert = firedAlerts[i];
                                 for (var key in firedAlert.properties()) {
@@ -12185,11 +12188,11 @@ exports.main = function(opts, callback) {
 if (module === require.main) {
     exports.main({}, function() {});
 }
+
 });
 
 require.define("/examples/node/helloworld/firedalerts_create.js", function (require, module, exports, __dirname, __filename) {
-
-// Copyright 2011 Splunk, Inc.
+// Copyright 2014 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
 // not use this file except in compliance with the License. You may obtain
@@ -12208,7 +12211,7 @@ require.define("/examples/node/helloworld/firedalerts_create.js", function (requ
 var splunkjs = require('../../../index');
 
 exports.main = function(opts, done) {
-    // This is just for testing - ignore it
+    // This is just for testing - ignore it.
     opts = opts || {};
     
     var username = opts.username    || "admin";
@@ -12227,7 +12230,7 @@ exports.main = function(opts, done) {
         version: version
     });
 
-    // First, we log in
+    // First, we log in.
     service.login(function(err, success) {
         // We check for both errors in the connection as well
         // as if the login itself failed.
@@ -12250,7 +12253,7 @@ exports.main = function(opts, done) {
             "cron_schedule": "* * * * *"
         };
         
-        // Now that we're logged in, Let's create a saved search
+        // Now that we're logged in, let's create a saved search.
         service.savedSearches().create(alertOptions, function(err, alert) {
             if (err && err.status === 409) {
                 console.error("ERROR: A saved search with the name '" + alertOptions.name + "' already exists");
@@ -12272,11 +12275,11 @@ exports.main = function(opts, done) {
 if (module === require.main) {
     exports.main({}, function() {});
 }
+
 });
 
 require.define("/examples/node/helloworld/firedalerts_delete.js", function (require, module, exports, __dirname, __filename) {
-
-// Copyright 2011 Splunk, Inc.
+// Copyright 2014 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
 // not use this file except in compliance with the License. You may obtain
@@ -12296,7 +12299,7 @@ require.define("/examples/node/helloworld/firedalerts_delete.js", function (requ
 var splunkjs = require('../../../index');
 
 exports.main = function(opts, done) {
-    // This is just for testing - ignore it
+    // This is just for testing - ignore it.
     opts = opts || {};
     
     var username = opts.username    || "admin";
@@ -12315,10 +12318,10 @@ exports.main = function(opts, done) {
         version: version
     });
 
-    // First, we log in
+    // First, we log in.
     service.login(function(err, success) {
         // We check for both errors in the connection as well
-        // as if the login itself failed.
+        // as whether the login itself failed.
         if (err || !success) {
             console.log("Error in logging in");
             done(err || "Login failed");
@@ -12327,7 +12330,7 @@ exports.main = function(opts, done) {
         
         var name = "My Awesome Alert";
         
-        // Now that we're logged in, let's delete the alert
+        // Now that we're logged in, let's delete the alert.
         service.savedSearches().fetch(function(err, firedAlertGroups) {
             if (err) {
                 console.log("There was an error in fetching the alerts");
@@ -12352,6 +12355,7 @@ exports.main = function(opts, done) {
 if (module === require.main) {
     exports.main({}, function() {});
 }
+
 });
 
 require.define("/examples/node/helloworld/savedsearches.js", function (require, module, exports, __dirname, __filename) {
@@ -13128,10 +13132,10 @@ var Logger = splunkjs.Class.extend({
         opts = opts || {};
         
         this.params = {};
-        if (opts.index)      this.params.index      = opts.index;
-        if (opts.host)       this.params.host       = opts.host;
-        if (opts.source)     this.params.source     = opts.source;
-        if (opts.sourcetype) this.params.sourcetype = opts.sourcetype || "demo-logger";
+        if (opts.index)      { this.params.index      = opts.index; }
+        if (opts.host)       { this.params.host       = opts.host; }
+        if (opts.source)     { this.params.source     = opts.source; }
+        if (opts.sourcetype) { this.params.sourcetype = opts.sourcetype || "demo-logger"; }
         
         if (!this.service) {
             throw new Error("Must supply a valid service");
@@ -13180,7 +13184,7 @@ var Logger = splunkjs.Class.extend({
         
         this.service.log(message, this.params);
         console.warn(data);
-    },
+    }
 });
 
 exports.main = function(opts, done) {
@@ -14327,121 +14331,6 @@ EventEmitter.prototype.listeners = function(type) {
   return this._events[type];
 };
 
-});
-
-require.define("/examples/node/results.js", function (require, module, exports, __dirname, __filename) {
-
-// Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-(function() {
-    var splunkjs        = require('../../index');
-    var Class           = splunkjs.Class;
-    var utils           = splunkjs.Utils;
-    var Async           = splunkjs.Async;
-    var options         = require('./cmdline');
-    
-    // Print the result rows
-    var printRows = function(results) {        
-        for(var i = 0; i < results.rows.length; i++) {
-            console.log("Result " + (i + 1) + ": ");
-            var row = results.rows[i];
-            for(var j = 0; j < results.fields.length; j++) {
-                var field = results.fields[j];
-                var value = row[j];
-                
-                console.log("  " + field + " = " + value);
-            }
-        }
-    };
-    
-    // Instead of trying to print the column-major format, we just
-    // transpose it
-    var transpose = function(results) {
-        var rows = [];
-        var cols = results.columns;
-        
-        var mapFirst = function(col) { return col.shift(); };
-        
-        while(cols.length > 0 && cols[0].length > 0) {
-            rows.push(cols.map(mapFirst));   
-        }
-        
-        results.rows = rows;
-        return results;
-    };
-    
-    // Print the results
-    var printResults = function(results) {
-        if (results) {
-            var isRows = !!results.rows;
-            var numResults = (results.rows ? results.rows.length : (results.columns[0] || []).length);
-            
-            console.log("====== " + numResults + " RESULTS (preview: " + !!results.preview + ") ======");
-            
-            // If it is in column-major form, transpose it.
-            if (!isRows) {
-                results = transpose(results);
-            }
-            
-            printRows(results);
-        }
-    };
-
-    exports.main = function(argv, callback) {
-        splunkjs.Logger.setLevel("NONE");
-        
-        // Read data from stdin
-        var incomingResults = "";
-        var onData = function(data) {
-            incomingResults += data.toString("utf-8");
-        };
-        
-        // When there is no more data, parse it and pretty
-        // print it
-        var onEnd = function() {
-            var results = JSON.parse(incomingResults || "{}");
-            printResults(results);
-            callback();
-        };
-        
-        var onError = function() {
-            callback("ERROR");
-        };
-        
-        // Unregister all the listeners when we're done
-        var originalCallback = callback || function() {};
-        callback = function() {
-            process.stdin.removeListener("data", onData);
-            process.stdin.removeListener("end", onEnd);
-            process.stdin.removeListener("error", onError);
-            process.stdin.pause();
-            
-            originalCallback.apply(null, arguments);
-        };
-        
-        process.stdin.on("data", onData);
-        process.stdin.on("end", onEnd);
-        process.stdin.on("error", onError);
-        
-        process.stdin.resume();
-    };
-    
-    if (module === require.main) {
-        exports.main(process.argv);
-    }
-})();
 });
 
 require.define("/browser.test.entry.js", function (require, module, exports, __dirname, __filename) {

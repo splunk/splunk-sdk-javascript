@@ -1963,7 +1963,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
 
 require.define("/lib/service.js", function (require, module, exports, __dirname, __filename) {
 /*!*/
-// Copyright 2012 Splunk, Inc.
+// Copyright 2014 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
 // not use this file except in compliance with the License. You may obtain
@@ -3504,7 +3504,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @method splunkjs.Service.SavedSearch
          */
         alertCount: function() {
-            return parseInt(this.properties().triggered_alert_count) || 0;
+            return parseInt(this.properties().triggered_alert_count, 10) || 0;
         },
 
         /**
@@ -3758,7 +3758,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     /**
      * Represents a fired alert. 
      * You can retrieve several of the fired alert's properties by
-     * the corresponding functionn name.
+     * the corresponding function name.
      *
      * @endpoint alerts/fired_alerts/{name}
      * @class splunkjs.Service.FiredAlert
@@ -3840,7 +3840,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @method splunkjs.Service.FiredAlert
          */
         severity: function() {
-            return parseInt(this.properties().severity) || -1;
+            return parseInt(this.properties().severity, 10) || -1;
         },
 
         /**
@@ -3884,7 +3884,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @method splunkjs.Service.FiredAlert
          */
         triggeredAlertCount: function() {
-            return parseInt(this.properties().triggered_alerts) || -1;
+            return parseInt(this.properties().triggered_alerts, 10) || -1;
         },
 
         /**
@@ -3935,7 +3935,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @method splunkjs.Service.FiredAlertGroup
          */
         count: function() {
-            return parseInt(this.properties().triggered_alert_count) || 0;
+            return parseInt(this.properties().triggered_alert_count, 10) || 0;
         },
 
         /**
@@ -4875,7 +4875,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
 
     /**
      * Represents a specific search job. You can perform different operations
-     * on this job, such as reading its status, cancelling it, and getting results.
+     * on this job, such as reading its status, canceling it, and getting results.
      *
      * @endpoint search/jobs/{search_id}
      * @class splunkjs.Service.Job
