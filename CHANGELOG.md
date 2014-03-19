@@ -1,5 +1,24 @@
 # Splunk SDK for JavaScript Changelog
 
+## v1.3.0
+
+### New features and APIs
+
+* Added support for Splunk alerts through the `service.FiredAlertGroupCollection` collection, 
+and the `service.FiredAlertGroup` and `service.FiredAlert` entities.
+
+* Added test to verify that URL encoding of serviceNS/ URLs works.
+
+### Breaking Changes
+
+* Added URL encoding of owner and app in servicesNS/ URLs.
+
+### Minor changes
+
+* Updated the node.js `helloworld` example with example uses of the new alerts
+functionality, and more accurate descriptions for `savedsearches_create.js`
+and `savedsearches_delete.js`
+
 ## v1.2.3
 
 * `Job.track` now properly uses the `dispatchState` property to work consistently

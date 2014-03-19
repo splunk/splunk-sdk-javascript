@@ -1,5 +1,4 @@
-
-// Copyright 2011 Splunk, Inc.
+// Copyright 2014 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
 // not use this file except in compliance with the License. You may obtain
@@ -13,13 +12,13 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-// This example will login to Splunk, and then retrieve the list of saved searchs,
-// printing each saved search's name and search query.
+// This example will login to Splunk, and then try to delete the alert
+// that was created in savedsearches_create.js
 
 var splunkjs = require('../../../index');
 
 exports.main = function(opts, done) {
-    // This is just for testing - ignore it
+    // This is just for testing - ignore it.
     opts = opts || {};
     
     var username = opts.username    || "admin";
@@ -38,33 +37,36 @@ exports.main = function(opts, done) {
         version: version
     });
 
-    // First, we log in
+    // First, we log in.
     service.login(function(err, success) {
         // We check for both errors in the connection as well
-        // as if the login itself failed.
+        // as whether the login itself failed.
         if (err || !success) {
             console.log("Error in logging in");
             done(err || "Login failed");
             return;
-        }
+        } 
         
-        // Now that we're logged in, let's get a listing of all the saved searches.
-        service.savedSearches().fetch(function(err, searches) {
+        var name = "My Awesome Alert";
+        
+        // Now that we're logged in, let's delete the alert.
+        service.savedSearches().fetch(function(err, firedAlertGroups) {
             if (err) {
-                console.log("There was an error retrieving the list of saved searches:", err);
+                console.log("There was an error in fetching the alerts");
                 done(err);
                 return;
             }
-            
-            var searchList = searches.list();
-            console.log("Saved searches:");
-            for(var i = 0; i < searchList.length; i++) {
-                var search = searchList[i];
-                console.log("  Search " + i + ": " + search.name);
-                console.log("    " + search.properties().search);
-            } 
-            
-            done();
+
+            var alertToDelete = firedAlertGroups.item(name);
+            if (!alertToDelete) {
+                console.log("Can't delete '" + name + "' because it doesn't exist!");
+                done();
+            }
+            else {
+                alertToDelete.remove();
+                console.log("Deleted alert: " + name + "");
+                done();
+            }
         });
     });
 };

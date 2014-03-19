@@ -1552,7 +1552,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
                 app = "system";
             }
 
-            return utils.trim("/servicesNS/" + owner + "/" + app + "/" + path);
+            return utils.trim("/servicesNS/" + encodeURIComponent(owner) + "/" + encodeURIComponent(app) + "/" + path);
         },
 
         /**
@@ -1785,6 +1785,7 @@ require.define("/lib/paths.js", function (require, module, exports, __dirname, _
         deploymentServerClasses: "deployment/serverclass",
         deploymentTenants: "deployment/tenants",
         eventTypes: "saved/eventtypes",
+        firedAlerts: "alerts/fired_alerts",
         indexes: "data/indexes",
         info: "/services/server/info",
         inputs: null,
@@ -2219,7 +2220,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
 
 require.define("/lib/service.js", function (require, module, exports, __dirname, __filename) {
 /*!*/
-// Copyright 2012 Splunk, Inc.
+// Copyright 2014 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
 // not use this file except in compliance with the License. You may obtain
@@ -2294,15 +2295,16 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
 
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
-            this.specialize     = utils.bind(this, this.specialize);
-            this.apps           = utils.bind(this, this.apps);
-            this.configurations = utils.bind(this, this.configurations);
-            this.indexes        = utils.bind(this, this.indexes);
-            this.savedSearches  = utils.bind(this, this.savedSearches);
-            this.jobs           = utils.bind(this, this.jobs);
-            this.users          = utils.bind(this, this.users);
-            this.currentUser    = utils.bind(this, this.currentUser);
-            this.views          = utils.bind(this, this.views);
+            this.specialize         = utils.bind(this, this.specialize);
+            this.apps               = utils.bind(this, this.apps);
+            this.configurations     = utils.bind(this, this.configurations);
+            this.indexes            = utils.bind(this, this.indexes);
+            this.savedSearches      = utils.bind(this, this.savedSearches);
+            this.jobs               = utils.bind(this, this.jobs);
+            this.users              = utils.bind(this, this.users);
+            this.currentUser        = utils.bind(this, this.currentUser);
+            this.views              = utils.bind(this, this.views);
+            this.firedAlertGroups   = utils.bind(this, this.firedAlertGroups);
         },
         
         /**
@@ -2437,7 +2439,34 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Gets the `Jobs` collection, which lets you create, list, 
+         * Gets the `FiredAlertGroupCollection` collection, which lets you
+         * list alert groups.
+         * 
+         * @example
+         *      
+         *      // List all # of fired alert groups
+         *      var firedAlertGroups = svc.firedAlertGroups();
+         *      firedAlertGroups.fetch(function(err, firedAlertGroups) {
+         *          console.log("# of alert groups: " + firedAlertGroups.list().length);
+         *      });
+         *
+         *
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
+         * @return {splunkjs.Service.FiredAlertGroupCollection} The `FiredAlertGroupCollection` collection.
+         *
+         * @endpoint saved/searches
+         * @method splunkjs.Service
+         * @see splunkjs.Service.FiredAlertGroupCollection
+         */
+        firedAlertGroups: function(namespace) {
+            return new root.FiredAlertGroupCollection(this, namespace);
+        },
+
+        /**
+         * Gets the `Jobs` collection, which lets you create, list,
          * and retrieve search jobs. 
          *
          * @example
@@ -3390,7 +3419,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
             this._load             = utils.bind(this, this._load);
-            this.fetch           = utils.bind(this, this.fetch);
+            this.fetch             = utils.bind(this, this.fetch);
             this.create            = utils.bind(this, this.create);
             this.list              = utils.bind(this, this.list);
             this.item              = utils.bind(this, this.item);
@@ -3717,7 +3746,24 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.history      = utils.bind(this, this.history);
             this.suppressInfo = utils.bind(this, this.suppressInfo);
         },
-        
+
+        /** 
+         * Gets the count of triggered alerts for this savedSearch,
+         * defaulting to 0 when undefined.
+         *
+         * @example
+         *
+         *      var savedSearch = service.savedSearches().item("MySavedSearch");
+         *      var alertCount = savedSearch.alertCount();
+         * 
+         * @return {Number} The count of triggered alerts.
+         *
+         * @method splunkjs.Service.SavedSearch
+         */
+        alertCount: function() {
+            return parseInt(this.properties().triggered_alert_count, 10) || 0;
+        },
+
         /**
          * Acknowledges the suppression of the alerts from a saved search and
          * resumes alerting.
@@ -3726,7 +3772,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      var savedSearch = service.savedSearches().item("MySavedSearch");
          *      savedSearch.acknowledge(function(err, search) {
-         *          console.log("ACKNOWLEDGED);
+         *          console.log("ACKNOWLEDGED");
          *      });
          *
          * @param {Function} callback A function to call when the saved search is acknowledged: `(err, savedSearch)`.
@@ -3790,7 +3836,23 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             return req;
         },
-        
+
+        /** 
+         * Gets the `splunkjs.Service.FiredAlertGroup` for firedAlerts associated with this saved search.
+         *
+         * @example
+         *
+         *      var alerts = service.firedAlertGroups().item("MySavedSearch");
+         *
+         * @return {splunkjs.Service.FiredAlertGroup} An AlertGroup object with the
+         * same name as this SavedSearch object.
+         *
+         * @method splunkjs.Service.SavedSearch
+         */
+        firedAlertGroup: function() {
+            return new root.FiredAlertGroup(this.service, this.name);
+        },
+
         /**
          * Retrieves the job history for a saved search, which is a list of 
          * `splunkjs.Service.Job` instances.
@@ -3800,7 +3862,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      var savedSearch = service.savedSearches().item("MySavedSearch");
          *      savedSearch.history(function(err, jobs, search) {
          *          for(var i = 0; i < jobs.length; i++) {
-         *              console.log("Job " + i + ": ", jobs[i].sid);
+         *              console.log("Job", i, ":", jobs[i].sid);
          *          }
          *      });
          *
@@ -3951,6 +4013,321 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
     
     /**
+     * Represents a fired alert. 
+     * You can retrieve several of the fired alert's properties by
+     * the corresponding function name.
+     *
+     * @endpoint alerts/fired_alerts/{name}
+     * @class splunkjs.Service.FiredAlert
+     * @extends splunkjs.Service.Entity
+     */
+    root.FiredAlert = root.Entity.extend({
+        /**
+         * Retrieves the REST endpoint path for this resource (with no namespace).
+         *
+         * @method splunkjs.Service.FiredAlert
+         */
+        path: function() {
+            return Paths.firedAlerts + "/" + encodeURIComponent(this.name);
+        },
+
+        /**
+         * Returns this alert's actions (such as notifying by email, running a 
+         * script, adding to RSS, tracking in Alert Manager, and enabling 
+         * summary indexing). 
+         *
+         * @return {Array} of actions, an empty {Array} if no actions
+         * @method splunkjs.Service.FiredAlert
+         */
+        actions: function() {
+            return this.properties().actions || [];
+        },
+
+        /**
+         * Returns this alert's type.
+         *
+         * @return {String} the alert's type.
+         * @method splunkjs.Service.FiredAlert
+         */
+        alertType: function() {
+            return this.properties().alert_type || null;
+        },
+
+        /**
+         * Indicates whether the result is a set of events (digest) or a single
+         * event (per result).
+         *
+         * This method is available in Splunk 4.3 and later.
+         *
+         * @return {Boolean} true if the result is a digest, false if per result
+         * @method splunkjs.Service.FiredAlert
+         */
+        isDigestMode: function() {
+            // Convert this property to a Boolean
+            return !!this.properties().digest_mode;
+        },
+
+        /**
+         * Returns the rendered expiration time for this alert.
+         *
+         * This method is available in Splunk 4.3 and later.
+         *
+         * @return {String}
+         * @method splunkjs.Service.FiredAlert
+         */
+        expirationTime: function() {
+            return this.properties().expiration_time_rendered || null;
+        },
+
+        /**
+         * Returns the saved search for this alert.
+         *
+         * @return {String} The saved search name, or {null} if not available.
+         * @method splunkjs.Service.FiredAlert
+         */
+        savedSearchName: function() {
+            return this.properties().savedsearch_name || null;
+        },
+
+        /**
+         * Returns this alert's severity on a scale of 1 to 10, with 1 being the
+         * highest severity.
+         *
+         * @return {Number} this alert's severity, -1 if not specified
+         * @method splunkjs.Service.FiredAlert
+         */
+        severity: function() {
+            return parseInt(this.properties().severity, 10) || -1;
+        },
+
+        /**
+         * Returns this alert's search ID (SID).
+         *
+         * @return {String} This alert's SID, or {null} if not available.
+         * @method splunkjs.Service.FiredAlert
+         */
+        sid: function() {
+            return this.properties().sid || null;
+        },
+
+        /**
+         * Returns the time this alert was triggered.
+         *
+         * @return {Number} This alert's trigger time, or {null} if not available.
+         * @method splunkjs.Service.FiredAlert
+         */
+        triggerTime: function() {
+            return this.properties().trigger_time || null;
+        },
+
+        /**
+         * Returns this alert's rendered trigger time.
+         *
+         * This method is available in Splunk 4.3 and later.
+         *
+         * @return {String} This alert's rendered trigger time, or {null} if not available.
+         * @method splunkjs.Service.FiredAlert
+         */
+        triggerTimeRendered: function() {
+            return this.properties().trigger_time_rendered || null;
+        },
+
+        /**
+         * Returns the count of triggered alerts.
+         *
+         * This method is available in Splunk 4.3 and later.
+         *
+         * @return {Number} The number of triggered alerts, or -1 if not specified.
+         * @method splunkjs.Service.FiredAlert
+         */
+        triggeredAlertCount: function() {
+            return parseInt(this.properties().triggered_alerts, 10) || -1;
+        },
+
+        /**
+         * Constructor for `splunkjs.Service.FiredAlert`.
+         *
+         * @constructor
+         * @param {splunkjs.Service} service A `Service` instance.
+         * @param {String} name The name for the new alert group.
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
+         * @return {splunkjs.Service.FiredAlert} A new `splunkjs.Service.FiredAlert` instance.
+         *
+         * @method splunkjs.Service.FiredAlert
+         */     
+        init: function(service, name, namespace) {
+            this.name = name;
+            this._super(service, this.path(), namespace);
+        }
+    });
+
+
+    /**
+     * Represents a specific alert group, which you can then view and
+     * remove.
+     *
+     * @endpoint alerts/fired_alerts/{name}
+     * @class splunkjs.Service.FiredAlertGroup
+     * @extends splunkjs.Service.Collection
+     */
+    root.FiredAlertGroup = root.Entity.extend({
+        /**
+         * Retrieves the REST endpoint path for this resource (with no namespace).
+         *
+         * @method splunkjs.Service.FiredAlertGroup
+         */
+        path: function() {
+            return Paths.firedAlerts + "/" + encodeURIComponent(this.name);
+        },
+
+        /**
+         * Returns the `triggered_alert_count` property, the count
+         * of triggered alerts.
+         *
+         * @return {Number} the count of triggered alerts
+         *
+         * @method splunkjs.Service.FiredAlertGroup
+         */
+        count: function() {
+            return parseInt(this.properties().triggered_alert_count, 10) || 0;
+        },
+
+        /**
+         * Returns fired instances of this alert, which is
+         * a list of `splunkjs.Service.FiredAlert` instances.
+         *
+         * @example
+         *
+         *      var alertGroup = service.firedAlertGroups().item("MyAlert");
+         *      alertGroup.list(function(err, firedAlerts, alert) {
+         *          for(var i = 0; i < firedAlerts.length; i++) {
+         *              console.log("Fired alert", i, ":", firedAlerts[i].sid);
+         *          }
+         *      });
+         *
+         * @param {Function} callback A function to call when the fired alerts are retrieved: `(err, firedAlerts, alertGroup)`.
+         *
+         * @method splunkjs.Service.FiredAlertGroup
+         */
+        list: function(options, callback) {
+            if (!callback && utils.isFunction(options)) {
+                callback = options;
+                options = {};
+            }
+
+            callback = callback || function() {};
+            options = options || {};
+
+            var that = this;
+            return this.get("", options, function(err, response) {
+                if (err) {
+                    callback(err);
+                    return;
+                }
+                
+                var firedAlerts = [];
+                var data = response.data.entry || [];
+                for(var i = 0; i < data.length; i++) {
+                    var firedAlertData = response.data.entry[i];
+                    var namespace = utils.namespaceFromProperties(firedAlertData);
+                    var firedAlert = new root.FiredAlert(that.service, firedAlertData.name, namespace);
+                    firedAlert._load(firedAlertData);
+                    firedAlerts.push(firedAlert);
+                }
+                
+                callback(null, firedAlerts, that);
+            });
+        },
+
+        /**
+         * Constructor for `splunkjs.Service.FiredAlertGroup`.
+         *
+         * @constructor
+         * @param {splunkjs.Service} service A `Service` instance.
+         * @param {String} name The name for the new alert group.
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
+         * @return {splunkjs.Service.FiredAlertGroup} A new `splunkjs.Service.FiredAlertGroup` instance.
+         *
+         * @method splunkjs.Service.FiredAlertGroup
+         */
+        init: function(service, name, namespace) {
+            this.name = name;
+            this._super(service, this.path(), namespace);
+
+            this.list = utils.bind(this, this.list);
+        }
+    });
+
+    /**
+     * Represents a collection of fired alerts for a saved search. You can
+     * create and list saved searches using this collection container, or
+     * get a specific alert group. 
+     *
+     *
+     * @endpoint alerts/fired_alerts
+     * @class splunkjs.Service.FiredAlertGroupCollection
+     * @extends splunkjs.Service.Collection
+     */
+    root.FiredAlertGroupCollection = root.Collection.extend({
+        /**
+         * Retrieves the REST endpoint path for this resource (with no namespace).
+         *
+         * @method splunkjs.Service.FiredAlertGroupCollection
+         */
+        path: function() {
+            return Paths.firedAlerts;
+        },
+        
+        /**
+         * Creates a local instance of an alert group.
+         *
+         * @param {Object} props The properties for the alert group.
+         * @return {splunkjs.Service.FiredAlertGroup} A new `splunkjs.Service.FiredAlertGroup` instance.
+         *
+         * @method splunkjs.Service.FiredAlertGroupCollection
+         */
+        instantiateEntity: function(props) {
+            var entityNamespace = utils.namespaceFromProperties(props);
+            return new root.FiredAlertGroup(this.service, props.name, entityNamespace);
+        },
+
+        /**
+         * Suppress removing alerts via the fired alerts endpoint.
+         *
+         * @method splunkjs.Service.FiredAlertGroupCollection
+         */
+        remove: function() {
+            throw new Error("To remove an alert, remove the saved search with the same name.");
+        },
+        
+        /**
+         * Constructor for `splunkjs.Service.FiredAlertGroupCollection`. 
+         *
+         * @constructor
+         * @param {splunkjs.Service} service A `Service` instance.
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
+         * @return {splunkjs.Service.FiredAlertGroupCollection} A new `splunkjs.Service.FiredAlertGroupCollection` instance.
+         *
+         * @method splunkjs.Service.FiredAlertGroupCollection
+         */     
+        init: function(service, namespace) {
+            this._super(service, this.path(), namespace);
+
+            this.instantiateEntity = utils.bind(this, this.instantiateEntity);
+            this.remove = utils.bind(this, this.remove);
+        }
+    });
+    
+    /**
      * Represents a specific Splunk app that you can view, modify, and
      * remove.
      *
@@ -3961,7 +4338,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     root.Application = root.Entity.extend({
         /**
          * Indicates whether to call `fetch` after an update to get the updated 
-         * item. 
+         * item.
          *
          * @method splunkjs.Service.Application
          */
@@ -3977,7 +4354,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
-         * Constructor for `splunkjs.Service.Application`. 
+         * Constructor for `splunkjs.Service.Application`.
          *
          * @constructor
          * @param {splunkjs.Service} service A `Service` instance.
@@ -4755,7 +5132,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
 
     /**
      * Represents a specific search job. You can perform different operations
-     * on this job, such as reading its status, cancelling it, and getting results.
+     * on this job, such as reading its status, canceling it, and getting results.
      *
      * @endpoint search/jobs/{search_id}
      * @class splunkjs.Service.Job
@@ -4904,12 +5281,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             params.output_mode = params.output_mode || "json_rows"; 
             
             var that = this;
-            return this.get("events", params, function(err, response) { 
+            return this.get("events", params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
                 else {
-                    callback(null, response.data, that); 
+                    callback(null, response.data, that);
                 }
             });
         },
@@ -5037,7 +5414,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         results: function(params, callback) {
             callback = callback || function() {};
             params = params || {};
-            params.output_mode = params.output_mode || "json_rows";            
+            params.output_mode = params.output_mode || "json_rows";
             
             var that = this;
             return this.get("results", params, function(err, response) {
@@ -7691,6 +8068,9 @@ exports.setup = function(svc) {
             test.strictEqual(ctx2.fullpath("meep", {sharing: "app"}), "/servicesNS/nobody/beta/meep");
             test.strictEqual(ctx2.fullpath("meep", {sharing: "global"}), "/servicesNS/nobody/beta/meep");
             test.strictEqual(ctx2.fullpath("meep", {sharing: "system"}), "/servicesNS/nobody/system/meep");
+            // Do special characters get encoded?
+            var ctx3 = new splunkjs.Context(http, {owner: "alpha@beta.com", app: "beta"});
+            test.strictEqual(ctx3.fullpath("meep"), "/servicesNS/alpha%40beta.com/beta/meep");
             test.done();
         },
 
@@ -9042,7 +9422,7 @@ exports.setup = function(svc, loggedOutSvc) {
             }
         },
         
-        "App Tests": {      
+        "App Tests": {
             setUp: function(done) {
                 this.service = svc;
                 done();
@@ -9142,7 +9522,7 @@ exports.setup = function(svc, loggedOutSvc) {
             }
         },
         
-        "Saved Search Tests": {        
+        "Saved Search Tests": {
             setUp: function(done) {
                 this.service = svc;
                 this.loggedOutService = loggedOutSvc;
@@ -9539,7 +9919,269 @@ exports.setup = function(svc, loggedOutSvc) {
             }
         },
         
-        "Properties Tests": {        
+        "Fired Alerts Tests": {
+            setUp: function(done) {
+                this.service = svc;
+                this.loggedOutService = loggedOutSvc;
+
+                var indexes = this.service.indexes();
+                done();
+            },
+
+            "Callback#create + verify emptiness + delete new alert group": function(test) {
+                var searches = this.service.savedSearches({owner: this.service.username});
+
+                var name = "jssdk_savedsearch_alert_" + getNextId();
+                var searchConfig = {
+                    "name": name,
+                    "search": "index=_internal | head 1",
+                    "alert_type": "always",
+                    "alert.severity": "2",
+                    "alert.suppress": "0",
+                    "alert.track": "1",
+                    "dispatch.earliest_time": "-1h",
+                    "dispatch.latest_time": "now",
+                    "is_scheduled": "1",
+                    "cron_schedule": "* * * * *"
+                };
+                
+                Async.chain([
+                        function(done) {
+                            searches.create(searchConfig, done);
+                        },
+                        function(search, done) {
+                            test.ok(search);
+                            test.strictEqual(search.alertCount(), 0);
+                            search.history(done);
+                        },
+                        function(jobs, search, done) {
+                            test.strictEqual(jobs.length, 0);
+                            test.strictEqual(search.firedAlertGroup().count(), 0);
+                            searches.service.firedAlertGroups().fetch( Async.augment(done, search) );
+                        },
+                        function(firedAlertGroups, originalSearch, done) {
+                            test.strictEqual(firedAlertGroups.list().indexOf(originalSearch.name), -1);
+                            done(null, originalSearch);
+                        },
+                        function(originalSearch, done) {
+                            originalSearch.remove(done);
+                        }
+                    ],
+                    function(err) {
+                        if (err) {
+                            console.log(err);
+                        }
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#alert is triggered + test firedAlert entity": function(test) {
+                var searches = this.service.savedSearches({owner: this.service.username});
+                var indexName = "sdk-tests-alerts";
+                var name = "jssdk_savedsearch_alert_" + getNextId();
+
+                // Real-time search config
+                var searchConfig = {
+                    "name": name,
+                    "search": "index="+indexName+" sourcetype=sdk-tests-alerts | head 1",
+                    "alert_type": "always",
+                    "alert.severity": "2",
+                    "alert.suppress": "0",
+                    "alert.track": "1",
+                    "dispatch.earliest_time": "rt-1s",
+                    "dispatch.latest_time": "rt",
+                    "is_scheduled": "1",
+                    "cron_schedule": "* * * * *"
+                };
+
+                Async.chain([
+                        function(done) {
+                            searches.create(searchConfig, done);
+                        },
+                        function(search, done) {
+                            test.ok(search);
+                            test.strictEqual(search.alertCount(), 0);
+                            test.strictEqual(search.firedAlertGroup().count(), 0);
+
+                            var indexes = search.service.indexes();
+                            indexes.create(indexName, {}, function(err, index) {
+                                if (err && err.status !== 409) {
+                                    done(new Error("Index creation failed for an unknown reason"));
+                                }
+                                done(null, search);
+                            });
+                        },
+                        function(originalSearch, done) {
+                            var indexes = originalSearch.service.indexes();
+                            indexes.fetch(function(err, indexes) {
+                                if (err) {
+                                    done(err);
+                                }
+                                else {
+                                    var index = indexes.item(indexName);
+                                    test.ok(index);
+                                    index.enable(Async.augment(done, originalSearch));
+                                }
+                            });
+                        },
+                        function(index, originalSearch, done) {
+                            //Is the index enabled?
+                            test.ok(!index.properties().disabled);
+                            //refresh the index
+                            index.fetch(Async.augment(done, originalSearch));
+                        },
+                        function(index, originalSearch, done) {
+                            //Store the current event count for a later comparison 
+                            var eventCount = index.properties().totalEventCount;
+
+                            test.strictEqual(index.properties().sync, 0);
+                            test.ok(!index.properties().disabled);
+
+                            index.fetch(Async.augment(done, originalSearch, eventCount));
+                        },
+                        function(index, originalSearch, eventCount, done) {
+                            // submit an event
+                            index.submitEvent(
+                                "JS SDK: testing alerts",
+                                {
+                                    sourcetype: "sdk-tests-alerts"
+                                },
+                                Async.augment(done, originalSearch, eventCount)
+                            );
+                        },
+                        function(result, index, originalSearch, eventCount, done) {
+                            Async.sleep(1000, function(){
+                                //refresh the search
+                                index.fetch(Async.augment(done, originalSearch, eventCount));
+                            });
+                        },
+                        function(index, originalSearch, eventCount, done) {
+                            // Did the event get submitted
+                            test.strictEqual(index.properties().totalEventCount, eventCount+1);                            
+                            // Refresh the search
+                            originalSearch.fetch(Async.augment(done, index));
+                        },
+                        function(originalSearch, index, done) {
+                            console.log("\tAlert count pre-fetch", originalSearch.alertCount());
+                            var attemptNum = 1;
+                            var maxAttempts = 20;
+                            Async.whilst(
+                                function() {
+                                    // When this returns false, it hits the final function in the chain
+                                    console.log("\tFetch attempt", attemptNum, "of", maxAttempts, "alertCount", originalSearch.alertCount());
+                                    if (originalSearch.alertCount() !== 0) {
+                                        return false;
+                                    }
+                                    else {
+                                        attemptNum++;
+                                        return attemptNum < maxAttempts;
+                                    }
+                                },
+                                function(callback) {
+                                    Async.sleep(500, function() { 
+                                        originalSearch.fetch(callback);
+                                    });
+                                },
+                                function(err) {
+                                    console.log("Attempted fetching", attemptNum, "of", maxAttempts, "result is", originalSearch.alertCount() !== 0);
+                                    originalSearch.fetch(Async.augment(done, index));
+                                }
+                            );
+                        },
+                        function(originalSearch, index, done) {
+                            console.log("about to fetch");
+                            console.log("SavedSearch name was", originalSearch.name);
+                            svc.firedAlertGroups({username: svc.username}).fetch(Async.augment(done, index, originalSearch));
+                        },
+                        function(firedAlertGroups, index, originalSearch, done) {
+                            Async.seriesEach(
+                                firedAlertGroups.list(),
+                                function(firedAlertGroup, innerIndex, seriescallback) {
+                                    Async.chain([
+                                            function(insideChainCallback) {
+                                                firedAlertGroup.list(insideChainCallback);
+                                            },
+                                            function(firedAlerts, firedAlertGroup, insideChainCallback) {
+                                                for(var i = 0; i < firedAlerts.length; i++) {
+                                                    var firedAlert = firedAlerts[i];
+                                                    firedAlert.actions();
+                                                    firedAlert.alertType();
+                                                    firedAlert.isDigestMode();
+                                                    firedAlert.expirationTime();
+                                                    firedAlert.savedSearchName();
+                                                    firedAlert.severity();
+                                                    firedAlert.sid();
+                                                    firedAlert.triggerTime();
+                                                    firedAlert.triggerTimeRendered();
+                                                    firedAlert.triggeredAlertCount();
+                                                    console.log();
+                                                }
+                                                insideChainCallback(null);
+                                            }
+                                        ],
+                                        function(err) {
+                                            if (err) {
+                                                seriescallback(err);
+                                            }
+                                                seriescallback(null);
+                                        }
+                                    );
+                                },
+                                function(err) {
+                                    if (err) {
+                                        done(err, originalSearch, index);
+                                    }
+                                    done(null, originalSearch, index);
+                                }
+                            );
+                        },
+                        function(originalSearch, index, done) {
+                            // Make sure the event count has incremented, as expected
+                            test.strictEqual(originalSearch.alertCount(), 1);
+                            // Remove the search, especially because it's a real-time search
+                            originalSearch.remove(Async.augment(done, index));
+                        },
+                        function(index, done) {
+                            Async.sleep(500, function() { 
+                                index.remove(done);
+                            });
+                        }
+                    ],
+                    function(err) {
+                        if (err) {
+                            console.log(err);
+                        }
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            
+            "Callback#delete all alerts": function(test) {
+                var namePrefix = "jssdk_savedsearch_alert_";
+                var alertList = this.service.savedSearches().list();
+
+                Async.parallelEach(
+                    alertList,
+                    function(alert, idx, callback) {
+                        if (utils.startsWith(alert.name, namePrefix)) {
+                            console.log(alert.name);
+                            alert.remove(callback);
+                        }
+                        else {
+                            callback();
+                        }
+                    }, function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            }
+        },
+
+        "Properties Tests": {
             setUp: function(done) {
                 this.service = svc;
                 done();
@@ -9597,7 +10239,7 @@ exports.setup = function(svc, loggedOutSvc) {
                         file.fetch(done);
                     },
                     function(file, done) {
-                        test.strictEqual(file.name, "web");                        
+                        test.strictEqual(file.name, "web");
                         var stanza = file.item("settings");
                         test.ok(stanza);
                         stanza.fetch(done);
@@ -9621,7 +10263,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 
                 Async.chain([
                     function(done) {
-                        var properties = that.service.configurations(namespace); 
+                        var properties = that.service.configurations(namespace);
                         properties.fetch(done);
                     },
                     function(properties, done) {
@@ -9654,7 +10296,7 @@ exports.setup = function(svc, loggedOutSvc) {
             }
         },
         
-        "Configuration Tests": {        
+        "Configuration Tests": {
             setUp: function(done) {
                 this.service = svc;
                 done();
@@ -9783,7 +10425,7 @@ exports.setup = function(svc, loggedOutSvc) {
             }
         },
         
-        "Index Tests": {      
+        "Index Tests": {
             setUp: function(done) {
                 this.service = svc;
                 this.loggedOutService = loggedOutSvc;
@@ -10698,7 +11340,6 @@ if (module === require.main) {
         test.run([{"Tests": suite}]);
     });
 }
-
 });
 
 require.define("/tests/test_examples.js", function (require, module, exports, __dirname, __filename) {
@@ -10739,6 +11380,26 @@ exports.setup = function(svc, opts) {
             
             "Apps#Async": function(test) {
                 var main = require("../examples/node/helloworld/apps_async").main;
+                main(opts, test.done);
+            },
+
+            "Fired Alerts": function(test) {
+                var main = require("../examples/node/helloworld/firedalerts").main;
+                main(opts, test.done);
+            },
+
+            "Fired Alerts#Async": function(test) {
+                var main = require("../examples/node/helloworld/firedalerts_async").main;
+                main(opts, test.done);
+            },
+
+            "Fired Alerts#Create": function(test) {
+                var main = require("../examples/node/helloworld/firedalerts_create").main;
+                main(opts, test.done);
+            },
+
+            "Fired Alerts#Delete": function(test) {
+                var main = require("../examples/node/helloworld/firedalerts_delete").main;
                 main(opts, test.done);
             },
             
@@ -11082,9 +11743,11 @@ exports.setup = function(svc, opts) {
                     test.done();
                 });
             }
-        },
+        }
         
-        "Results Example Tests": {
+        // This test is commented out because it causes a failure/hang on
+        // Node >0.6. We need to revisit this test, so disabling it for now.
+        /*"Results Example Tests": {
             
             "Parse row results": function(test) {
                 var main = require("../examples/node/results").main;
@@ -11134,7 +11797,7 @@ exports.setup = function(svc, opts) {
                 process.stdin.destroy();
                 test.done();
             }
-        }
+        }*/
     };
 };
 
@@ -11325,6 +11988,376 @@ if (module === require.main) {
 }
 });
 
+require.define("/examples/node/helloworld/firedalerts.js", function (require, module, exports, __dirname, __filename) {
+// Copyright 2014 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+// This example will login to Splunk, and then retrieve the list of fired alerts,
+// printing each alert's name and properties.
+
+var splunkjs = require('../../../index');
+
+exports.main = function(opts, done) {
+    // This is just for testing - ignore it
+    opts = opts || {};
+    
+    var username = opts.username    || "admin";
+    var password = opts.password    || "changeme";
+    var scheme   = opts.scheme      || "https";
+    var host     = opts.host        || "localhost";
+    var port     = opts.port        || "8089";
+    var version  = opts.version     || "default";
+    
+    var service = new splunkjs.Service({
+        username: username,
+        password: password,
+        scheme: scheme,
+        host: host,
+        port: port,
+        version: version
+    });
+
+    // First, we log in.
+    service.login(function(err, success) {
+        // We check for both errors in the connection as well
+        // as if the login itself failed.
+        if (err || !success) {
+            console.log("Error in logging in");
+            done(err || "Login failed");
+            return;
+        } 
+
+        // Now that we're logged in, let's get a listing of all the fired alert groups
+        service.firedAlertGroups().fetch(function(err, firedAlertGroups) {
+            if (err) {
+                console.log("ERROR", err);
+                done(err);
+                return;
+            }
+
+            // Get the list of all fired alert groups, including the all group (represented by "-")
+            var groups = firedAlertGroups.list();
+            console.log("Fired alert groups:");
+
+            var listGroupCallback = function(err, firedAlerts, firedAlertGroup) {
+                // How many times was this alert fired?
+                console.log(firedAlertGroup.name, "(Count:", firedAlertGroup.count(), ")");
+                // Print the properties for each fired alert (default of 30 per alert group)
+                for(var i = 0; i < firedAlerts.length; i++) {
+                    var firedAlert = firedAlerts[i];
+                    for(var key in firedAlert.properties()) {
+                        if (firedAlert.properties().hasOwnProperty(key)) {
+                           console.log("\t", key, ":", firedAlert.properties()[key]);
+                        }
+                    }
+                    console.log();
+                }
+                console.log("======================================");
+            };
+
+            for(var a in groups) {
+                if (groups.hasOwnProperty(a)) {
+                    var firedAlertGroup = groups[a];
+                    firedAlertGroup.list(listGroupCallback);
+                }
+            }
+
+            done();
+        });
+    });
+};
+
+if (module === require.main) {
+    exports.main({}, function() {});
+}
+
+});
+
+require.define("/examples/node/helloworld/firedalerts_async.js", function (require, module, exports, __dirname, __filename) {
+// Copyright 2014 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+// This example will login to Splunk, and then retrieve the list of fired alerts,
+// printing each alert's name and properties. It is the same as firedalerts.js, 
+// except that it uses the Async library
+
+var splunkjs = require('../../../index');
+var Async  = splunkjs.Async;
+
+exports.main = function(opts, callback) {
+    // This is just for testing - ignore it.
+    opts = opts || {};
+    
+    var username = opts.username    || "admin";
+    var password = opts.password    || "changeme";
+    var scheme   = opts.scheme      || "https";
+    var host     = opts.host        || "localhost";
+    var port     = opts.port        || "8089";
+    var version  = opts.version     || "default";
+    
+    var service = new splunkjs.Service({
+        username: username,
+        password: password,
+        scheme: scheme,
+        host: host,
+        port: port,
+        version: version
+    });
+
+    Async.chain([
+            // First, we log in.
+            function(done) {
+                service.login(done);
+            },
+            
+            function(success, done) {
+                if (!success) {
+                    done("Error logging in");
+                }
+
+                // Now that we're logged in, let's get a listing of all the fired alert groups.
+                service.firedAlertGroups().fetch(done);
+            },
+            // Print them out.
+            function(firedAlertGroups, done) {
+                // Get the list of all fired alert groups, including the all group (represented by "-").
+                var groups = firedAlertGroups.list();
+
+                console.log("Fired alert groups:");
+                Async.seriesEach(
+                    groups,
+                    function(firedAlertGroup, index, seriescallback) {
+                        firedAlertGroup.list(function(err, firedAlerts){
+                            // How many times was this alert fired?
+                            console.log(firedAlertGroup.name, "(Count:", firedAlertGroup.count(), ")");
+                            // Print the properties for each fired alert (default of 30 per alert group).
+                            for(var i = 0; i < firedAlerts.length; i++) {
+                                var firedAlert = firedAlerts[i];
+                                for (var key in firedAlert.properties()) {
+                                    if (firedAlert.properties().hasOwnProperty(key)) {
+                                        console.log("\t", key, ":", firedAlert.properties()[key]);
+                                    }
+                                }
+                                console.log();
+                            }
+                            console.log("======================================");
+                        });
+                        seriescallback();
+                    },
+                    function(err) {
+                        if (err) {
+                            done(err);
+                        }
+                        done();
+                    }
+                );
+            }
+        ],
+        function(err) {
+            if (err) {
+                console.log("ERROR", err);
+                callback(err);
+            }
+            callback(err);
+        }
+    );
+};
+
+if (module === require.main) {
+    exports.main({}, function() {});
+}
+
+});
+
+require.define("/examples/node/helloworld/firedalerts_create.js", function (require, module, exports, __dirname, __filename) {
+// Copyright 2014 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+// This example will login to Splunk, and then create an alert.
+
+var splunkjs = require('../../../index');
+
+exports.main = function(opts, done) {
+    // This is just for testing - ignore it.
+    opts = opts || {};
+    
+    var username = opts.username    || "admin";
+    var password = opts.password    || "changeme";
+    var scheme   = opts.scheme      || "https";
+    var host     = opts.host        || "localhost";
+    var port     = opts.port        || "8089";
+    var version  = opts.version     || "default";
+    
+    var service = new splunkjs.Service({
+        username: username,
+        password: password,
+        scheme: scheme,
+        host: host,
+        port: port,
+        version: version
+    });
+
+    // First, we log in.
+    service.login(function(err, success) {
+        // We check for both errors in the connection as well
+        // as if the login itself failed.
+        if (err || !success) {
+            console.log("Error in logging in");
+            done(err || "Login failed");
+            return;
+        } 
+        
+        var alertOptions = {
+            name: "My Awesome Alert",
+            search: "index=_internal error sourcetype=splunkd* | head 10",
+            "alert_type": "always",
+            "alert.severity": "2",
+            "alert.suppress": "0",
+            "alert.track": "1",
+            "dispatch.earliest_time": "-1h",
+            "dispatch.latest_time": "now",
+            "is_scheduled": "1",
+            "cron_schedule": "* * * * *"
+        };
+        
+        // Now that we're logged in, let's create a saved search.
+        service.savedSearches().create(alertOptions, function(err, alert) {
+            if (err && err.status === 409) {
+                console.error("ERROR: A saved search with the name '" + alertOptions.name + "' already exists");
+                done();
+                return;
+            }
+            else if (err) {
+                console.error("There was an error creating the saved search:", err);
+                done(err);
+                return;
+            }
+            
+            console.log("Created saved search as alert: " + alert.name);            
+            done();
+        });
+    });
+};
+
+if (module === require.main) {
+    exports.main({}, function() {});
+}
+
+});
+
+require.define("/examples/node/helloworld/firedalerts_delete.js", function (require, module, exports, __dirname, __filename) {
+// Copyright 2014 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+// This example will login to Splunk, and then try to delete the alert
+// that was created in savedsearches_create.js
+
+var splunkjs = require('../../../index');
+
+exports.main = function(opts, done) {
+    // This is just for testing - ignore it.
+    opts = opts || {};
+    
+    var username = opts.username    || "admin";
+    var password = opts.password    || "changeme";
+    var scheme   = opts.scheme      || "https";
+    var host     = opts.host        || "localhost";
+    var port     = opts.port        || "8089";
+    var version  = opts.version     || "default";
+    
+    var service = new splunkjs.Service({
+        username: username,
+        password: password,
+        scheme: scheme,
+        host: host,
+        port: port,
+        version: version
+    });
+
+    // First, we log in.
+    service.login(function(err, success) {
+        // We check for both errors in the connection as well
+        // as whether the login itself failed.
+        if (err || !success) {
+            console.log("Error in logging in");
+            done(err || "Login failed");
+            return;
+        } 
+        
+        var name = "My Awesome Alert";
+        
+        // Now that we're logged in, let's delete the alert.
+        service.savedSearches().fetch(function(err, firedAlertGroups) {
+            if (err) {
+                console.log("There was an error in fetching the alerts");
+                done(err);
+                return;
+            }
+
+            var alertToDelete = firedAlertGroups.item(name);
+            if (!alertToDelete) {
+                console.log("Can't delete '" + name + "' because it doesn't exist!");
+                done();
+            }
+            else {
+                alertToDelete.remove();
+                console.log("Deleted alert: " + name + "");
+                done();
+            }
+        });
+    });
+};
+
+if (module === require.main) {
+    exports.main({}, function() {});
+}
+
+});
+
 require.define("/examples/node/helloworld/savedsearches.js", function (require, module, exports, __dirname, __filename) {
 
 // Copyright 2011 Splunk, Inc.
@@ -11374,7 +12407,7 @@ exports.main = function(opts, done) {
             console.log("Error in logging in");
             done(err || "Login failed");
             return;
-        } 
+        }
         
         // Now that we're logged in, let's get a listing of all the saved searches.
         service.savedSearches().fetch(function(err, searches) {
@@ -11498,8 +12531,8 @@ require.define("/examples/node/helloworld/savedsearches_delete.js", function (re
 // License for the specific language governing permissions and limitations
 // under the License.
 
-// This example will login to Splunk, and then retrieve the list of saved searchs,
-// printing each saved search's name and search query.
+// This example will login to Splunk, and then try to delete the 
+// saved search that was created in savedsearches_create.js
 
 var splunkjs = require('../../../index');
 
@@ -11578,8 +12611,7 @@ require.define("/examples/node/helloworld/savedsearches_create.js", function (re
 // License for the specific language governing permissions and limitations
 // under the License.
 
-// This example will login to Splunk, and then retrieve the list of saved searchs,
-// printing each saved search's name and search query.
+// This example will login to Splunk, and create a saved search.
 
 var splunkjs = require('../../../index');
 
@@ -12100,10 +13132,10 @@ var Logger = splunkjs.Class.extend({
         opts = opts || {};
         
         this.params = {};
-        if (opts.index)      this.params.index      = opts.index;
-        if (opts.host)       this.params.host       = opts.host;
-        if (opts.source)     this.params.source     = opts.source;
-        if (opts.sourcetype) this.params.sourcetype = opts.sourcetype || "demo-logger";
+        if (opts.index)      { this.params.index      = opts.index; }
+        if (opts.host)       { this.params.host       = opts.host; }
+        if (opts.source)     { this.params.source     = opts.source; }
+        if (opts.sourcetype) { this.params.sourcetype = opts.sourcetype || "demo-logger"; }
         
         if (!this.service) {
             throw new Error("Must supply a valid service");
@@ -12152,7 +13184,7 @@ var Logger = splunkjs.Class.extend({
         
         this.service.log(message, this.params);
         console.warn(data);
-    },
+    }
 });
 
 exports.main = function(opts, done) {
@@ -13299,121 +14331,6 @@ EventEmitter.prototype.listeners = function(type) {
   return this._events[type];
 };
 
-});
-
-require.define("/examples/node/results.js", function (require, module, exports, __dirname, __filename) {
-
-// Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-(function() {
-    var splunkjs        = require('../../index');
-    var Class           = splunkjs.Class;
-    var utils           = splunkjs.Utils;
-    var Async           = splunkjs.Async;
-    var options         = require('./cmdline');
-    
-    // Print the result rows
-    var printRows = function(results) {        
-        for(var i = 0; i < results.rows.length; i++) {
-            console.log("Result " + (i + 1) + ": ");
-            var row = results.rows[i];
-            for(var j = 0; j < results.fields.length; j++) {
-                var field = results.fields[j];
-                var value = row[j];
-                
-                console.log("  " + field + " = " + value);
-            }
-        }
-    };
-    
-    // Instead of trying to print the column-major format, we just 
-    // transpose it
-    var transpose = function(results) {
-        var rows = [];
-        var cols = results.columns;
-        
-        var mapFirst = function(col) { return col.shift(); };
-        
-        while(cols.length > 0 && cols[0].length > 0) {
-            rows.push(cols.map(mapFirst));   
-        }
-        
-        results.rows = rows;
-        return results;
-    };
-    
-    // Print the results
-    var printResults = function(results) {
-        if (results) {
-            var isRows = !!results.rows;
-            var numResults = (results.rows ? results.rows.length : (results.columns[0] || []).length);
-            
-            console.log("====== " + numResults + " RESULTS (preview: " + !!results.preview + ") ======");
-            
-            // If it is in column-major form, transpose it.
-            if (!isRows) {
-                results = transpose(results);
-            }
-            
-            printRows(results);
-        }
-    };
-
-    exports.main = function(argv, callback) {     
-        splunkjs.Logger.setLevel("NONE");
-        
-        // Read data from stdin
-        var incomingResults = "";
-        var onData = function(data) {
-            incomingResults += data.toString("utf-8"); 
-        };
-        
-        // When there is no more data, parse it and pretty
-        // print it
-        var onEnd = function() {
-            var results = JSON.parse(incomingResults || "{}");
-            printResults(results);
-            callback();
-        };
-        
-        var onError = function() {
-            callback("ERROR");
-        };
-        
-        // Unregister all the listeners when we're done
-        var originalCallback = callback || function() {};
-        callback = function() {
-            process.stdin.removeListener("data", onData);
-            process.stdin.removeListener("end", onEnd);
-            process.stdin.removeListener("error", onError);
-            process.stdin.pause();
-            
-            originalCallback.apply(null, arguments);  
-        };
-        
-        process.stdin.on("data", onData);
-        process.stdin.on("end", onEnd);
-        process.stdin.on("error", onError);
-        
-        process.stdin.resume();
-    };
-    
-    if (module === require.main) {
-        exports.main(process.argv);
-    }
-})();
 });
 
 require.define("/browser.test.entry.js", function (require, module, exports, __dirname, __filename) {
