@@ -13,8 +13,18 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-module.exports = {
-    utls: require('./utils'),
-    ValidationDefinition: require('./validationdefinition'),
-    InputDefinition: require('./inputdefinition')
-};
+(function() {
+    var fs          = require('fs');
+    var test        = require('../../contrib/nodeunit/test_reporter');
+    var splunkjs    = require('../../index');
+
+    exports.Tests = {};
+
+    // Modular input tests
+    exports.Tests.InputDefinition = require('./test_input_definition').setup();
+    exports.Tests.ValidationDefinition = require('./test_validation_definition').setup();
+
+    splunkjs.Logger.setLevel("ALL");
+    
+    test.run([exports]);
+})();
