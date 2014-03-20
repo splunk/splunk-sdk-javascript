@@ -23,12 +23,12 @@ exports.setup = function() {
     splunkjs.Logger.setLevel("ALL");
     return {
 
-        "Moular Input tests": {
+        "Validation Defintion tests": {
             setUp: function(done) {
                 done();
             },
 
-            "Validation Defintion#Parse produces expected result": function(test) {
+            "Parse produces expected result": function(test) {
                 var expected = {
                     metadata: {
                         "server_host": "tiny",
