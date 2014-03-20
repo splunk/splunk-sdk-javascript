@@ -57,11 +57,8 @@ exports.setup = function() {
 
 if (module === require.main) {
     var splunkjs    = require('../../index');
-    var NodeHttp    = splunkjs.NodeHttp;
     var test        = require('../../contrib/nodeunit/test_reporter');
 
-    var http = new NodeHttp();
-    
-    var suite = exports.setup(http);
+    var suite = exports.setup();
     test.run([{"Tests": suite}]);
 }

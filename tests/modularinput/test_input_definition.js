@@ -70,6 +70,12 @@ exports.setup = function() {
                 found.parse(fs.readFileSync("data/conf_with_2_inputs.xml"));
                 test.ok(found.equals(expected));
                 test.done();
+            },
+
+            "Parse throws an error with malformed input definition": function(test) {
+                var found = new InputDefinition();
+                test.throws(function() { found.parse(fs.readFileSync("data/conf_with_invalid_inputs.xml")); });
+                test.done();
             }
         }
     };
@@ -77,11 +83,8 @@ exports.setup = function() {
 
 if (module === require.main) {
     var splunkjs    = require('../../index');
-    var NodeHttp    = splunkjs.NodeHttp;
     var test        = require('../../contrib/nodeunit/test_reporter');
-
-    var http = new NodeHttp();
     
-    var suite = exports.setup(http);
+    var suite = exports.setup();
     test.run([{"Tests": suite}]);
 }
