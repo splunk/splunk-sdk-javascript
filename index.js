@@ -28,7 +28,8 @@
         Utils           : require('./lib/utils'),
         Async           : require('./lib/async'),
         Paths           : require('./lib/paths').Paths,
-        Class           : require('./lib/jquery.class').Class
+        Class           : require('./lib/jquery.class').Class,
+        ModularInput    : require('./lib/modularinput')
     };
     
     if (typeof(window) === 'undefined') {
