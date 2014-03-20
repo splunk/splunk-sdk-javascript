@@ -1,5 +1,4 @@
-
-// Copyright 2011 Splunk, Inc.
+// Copyright 2014 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
 // not use this file except in compliance with the License. You may obtain
@@ -19,7 +18,7 @@
 var splunkjs = require('../../../index');
 
 exports.main = function(opts, done) {
-    // This is just for testing - ignore it
+    // This is just for testing - ignore it.
     opts = opts || {};
     
     var username = opts.username    || "admin";
@@ -38,10 +37,10 @@ exports.main = function(opts, done) {
         version: version
     });
 
-    // First, we log in
+    // First, we log in.
     service.login(function(err, success) {
         // We check for both errors in the connection as well
-        // as if the login itself failed.
+        // as whether the login itself failed.
         if (err || !success) {
             console.log("Error in logging in");
             done(err || "Login failed");
@@ -50,15 +49,15 @@ exports.main = function(opts, done) {
         
         var name = "My Awesome Alert";
         
-        // Now that we're logged in, let's delete the alert
-        service.savedSearches().fetch(function(err, firedAlertGroup) {
+        // Now that we're logged in, let's delete the alert.
+        service.savedSearches().fetch(function(err, firedAlertGroups) {
             if (err) {
                 console.log("There was an error in fetching the alerts");
                 done(err);
                 return;
             }
 
-            var alertToDelete = firedAlertGroup.item(name);
+            var alertToDelete = firedAlertGroups.item(name);
             if (!alertToDelete) {
                 console.log("Can't delete '" + name + "' because it doesn't exist!");
                 done();
