@@ -18,6 +18,7 @@ exports.setup = function() {
     var splunkjs                = require('../../index');
     var modularinput            = splunkjs.ModularInput;
     var ValidationDefinition    = modularinput.ValidationDefinition;
+    var utils                   = modularinput.utils;
     var fs                      = require("fs");
     var path                    = require("path");
 
@@ -48,7 +49,7 @@ exports.setup = function() {
                 };
 
                 var found = ValidationDefinition.parse(fs.readFileSync(path.resolve(__filename, "../data/validation.xml")));
-                test.ok(found.equals(expected));
+                test.ok(utils.deepEquals(found, expected));
                 test.done();
             }
         }

@@ -15,11 +15,12 @@
 
 exports.setup = function() {
 
-    var splunkjs           = require('../../index');
-    var modularinput       = splunkjs.ModularInput;
-    var InputDefinition    = modularinput.InputDefinition;
-    var fs                 = require("fs");
-    var path               = require("path");
+    var splunkjs            = require('../../index');
+    var modularinput        = splunkjs.ModularInput;
+    var InputDefinition     = modularinput.InputDefinition;
+    var utils               = modularinput.utils;
+    var fs                  = require("fs");
+    var path                = require("path");
 
     splunkjs.Logger.setLevel("ALL");
     return {
@@ -39,7 +40,7 @@ exports.setup = function() {
                 };
 
                 var found = InputDefinition.parse(fs.readFileSync(path.resolve(__filename, "../data/conf_with_0_inputs.xml")));
-                test.ok(found.equals(expected));
+                test.ok(utils.deepEquals(found, expected));
                 test.done();
             },
 
@@ -67,7 +68,7 @@ exports.setup = function() {
                 };
 
                 var found = InputDefinition.parse(fs.readFileSync(path.resolve(__filename, "../data/conf_with_2_inputs.xml")));
-                test.ok(found.equals(expected));
+                test.ok(utils.deepEquals(found, expected));
                 test.done();
             },
 
