@@ -76,6 +76,7 @@ exports.setup = function() {
             },
 
             "Parse throws an error with malformed input definition": function(test) {
+                // TODO: verify that this test follows convention
                 test.throws(function() { InputDefinition.parse(fs.readFileSync(path.resolve(__filename, "../data/conf_with_invalid_inputs.xml"))); });
                 test.done();
             }
