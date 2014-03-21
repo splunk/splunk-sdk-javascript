@@ -30,26 +30,27 @@ exports.setup = function() {
             },
 
             "Parse produces expected result": function(test) {
-                var expected = new ValidationDefinition();
-                expected.metadata =  {
-                    "server_host": "tiny",
-                    "server_uri": "https://127.0.0.1:8089",
-                    "checkpoint_dir": "/opt/splunk/var/lib/splunk/modinputs",
-                    "session_key": "123102983109283019283",
-                    "name": "aaa"
-                };
-                expected.parameters = {
-                    "param1": "value1",
-                    "param2": "value2",
-                    "disabled": "0",
-                    "index": "default",
-                    "multiValue": ["value1", "value2"],
-                    "multiValue2": ["value3", "value4"]
-                };
-
-                var found = ValidationDefinition.parse(fs.readFileSync(path.resolve(__filename, "../data/validation.xml")));
-                test.ok(found.equals(expected));
-                test.done();
+                ValidationDefinition.parse(fs.readFileSync(path.resolve(__filename, "../data/validation.xml")), function(err, found) {
+                    var expected = new ValidationDefinition();
+                    expected.metadata =  {
+                        "server_host": "tiny",
+                        "server_uri": "https://127.0.0.1:8089",
+                        "checkpoint_dir": "/opt/splunk/var/lib/splunk/modinputs",
+                        "session_key": "123102983109283019283",
+                        "name": "aaa"
+                    };
+                    expected.parameters = {
+                        "param1": "value1",
+                        "param2": "value2",
+                        "disabled": "0",
+                        "index": "default",
+                        "multiValue": ["value1", "value2"],
+                        "multiValue2": ["value3", "value4"]
+                    };
+                    test.ok(!err);
+                    test.ok(found.equals(expected));
+                    test.done();
+                });
             }
         }
     };

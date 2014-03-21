@@ -38,9 +38,11 @@ exports.setup = function() {
                     "session_key": "123102983109283019283"
                 };
 
-                var found = InputDefinition.parse(fs.readFileSync(path.resolve(__filename, "../data/conf_with_0_inputs.xml")));
-                test.ok(found.equals(expected));
-                test.done();
+                InputDefinition.parse(fs.readFileSync(path.resolve(__filename, "../data/conf_with_0_inputs.xml")), function(err, found) {
+                    test.ok(!err);
+                    test.ok(found.equals(expected));
+                    test.done();
+                });
             },
 
             "Parse produces expected result - 2 inputs": function(test) {
@@ -66,9 +68,11 @@ exports.setup = function() {
                     "multiValue2": ["value3", "value4"]
                 };
 
-                var found = InputDefinition.parse(fs.readFileSync(path.resolve(__filename, "../data/conf_with_2_inputs.xml")));
-                test.ok(found.equals(expected));
-                test.done();
+                InputDefinition.parse(fs.readFileSync(path.resolve(__filename, "../data/conf_with_2_inputs.xml")), function (err, found) {
+                    test.ok(!err);
+                    test.ok(found.equals(expected));
+                    test.done();
+                });
             },
 
             "Parse throws an error with malformed input definition": function(test) {

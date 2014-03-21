@@ -21,9 +21,9 @@
     exports.Tests = {};
 
     // Modular input tests
-    exports.Tests.InputDefinition = require('./test_input_definition').setup();
     exports.Tests.ValidationDefinition = require('./test_validation_definition').setup();
-
+    exports.Tests.InputDefinition = require('./test_input_definition').setup();
+    
     splunkjs.Logger.setLevel("ALL");
     
     test.run([exports]);
