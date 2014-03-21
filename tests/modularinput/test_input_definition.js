@@ -37,7 +37,7 @@ exports.setup = function() {
                     "session_key": "123102983109283019283"
                 };
 
-                var found = InputDefinition.parse(fs.readFileSync("data/conf_with_0_inputs.xml"));
+                var found = InputDefinition.parse(fs.readFileSync("./data/conf_with_0_inputs.xml"));
                 test.ok(found.equals(expected));
                 test.done();
             },
@@ -65,13 +65,13 @@ exports.setup = function() {
                     "multiValue2": ["value3", "value4"]
                 };
 
-                var found = InputDefinition.parse(fs.readFileSync("data/conf_with_2_inputs.xml"));
+                var found = InputDefinition.parse(fs.readFileSync("./data/conf_with_2_inputs.xml"));
                 test.ok(found.equals(expected));
                 test.done();
             },
 
             "Parse throws an error with malformed input definition": function(test) {
-                test.throws(function() { InputDefinition.parse(fs.readFileSync("data/conf_with_invalid_inputs.xml")); });
+                test.throws(function() { InputDefinition.parse(fs.readFileSync("./data/conf_with_invalid_inputs.xml")); });
                 test.done();
             }
         }

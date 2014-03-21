@@ -46,7 +46,7 @@ exports.setup = function() {
                     "multiValue2": ["value3", "value4"]
                 };
 
-                var found = ValidationDefinition.parse(fs.readFileSync("data/validation.xml"));
+                var found = ValidationDefinition.parse(fs.readFileSync("./data/validation.xml"));
                 test.ok(found.equals(expected));
                 test.done();
             }
