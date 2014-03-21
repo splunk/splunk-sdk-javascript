@@ -19,6 +19,7 @@ exports.setup = function() {
     var modularinput            = splunkjs.ModularInput;
     var ValidationDefinition    = modularinput.ValidationDefinition;
     var fs                      = require("fs");
+    var path                    = require("path");
 
     splunkjs.Logger.setLevel("ALL");
     return {
@@ -46,7 +47,7 @@ exports.setup = function() {
                     "multiValue2": ["value3", "value4"]
                 };
 
-                var found = ValidationDefinition.parse(fs.readFileSync("./data/validation.xml"));
+                var found = ValidationDefinition.parse(fs.readFileSync(path.resolve(__filename, "../data/validation.xml")));
                 test.ok(found.equals(expected));
                 test.done();
             }
