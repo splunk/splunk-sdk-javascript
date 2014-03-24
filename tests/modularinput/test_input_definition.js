@@ -75,14 +75,10 @@ exports.setup = function() {
             },
 
             "Parse throws an error with malformed input definition": function(test) {
-                // TODO: verify that this test follows convention
-                test.throws(function(){
-                    InputDefinition.parse(utils.readFile(__filename, "../data/conf_with_invalid_inputs.xml"), function(err) {
-                        test.ok(err);
-                        throw err;
-                    });
+                InputDefinition.parse(utils.readFile(__filename, "../data/conf_with_invalid_inputs.xml"), function(err) {
+                    test.ok(err);
+                    test.done();
                 });
-                test.done();
             }
         }
     };
