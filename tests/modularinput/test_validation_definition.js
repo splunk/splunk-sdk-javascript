@@ -18,19 +18,18 @@ exports.setup = function() {
     var splunkjs                = require('../../index');
     var modularinput            = splunkjs.ModularInput;
     var ValidationDefinition    = modularinput.ValidationDefinition;
-    var fs                      = require("fs");
-    var path                    = require("path");
+    var utils                   = modularinput.utils;
 
     splunkjs.Logger.setLevel("ALL");
     return {
 
-        "Validation Defintion tests": {
+        "Validation Definition tests": {
             setUp: function(done) {
                 done();
             },
 
             "Parse produces expected result": function(test) {
-                ValidationDefinition.parse(fs.readFileSync(path.resolve(__filename, "../data/validation.xml")), function(err, found) {
+                ValidationDefinition.parse(utils.readFile(__filename, "../data/validation.xml"), function(err, found) {
                     var expected = new ValidationDefinition();
                     expected.metadata =  {
                         "server_host": "tiny",

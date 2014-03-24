@@ -18,13 +18,12 @@ exports.setup = function() {
     var splunkjs            = require('../../index');
     var modularinput        = splunkjs.ModularInput;
     var InputDefinition     = modularinput.InputDefinition;
-    var fs                  = require("fs");
-    var path                = require("path");
+    var utils               = modularinput.utils;
 
     splunkjs.Logger.setLevel("ALL");
     return {
 
-        "Input Defintion tests": {
+        "Input Definition tests": {
             setUp: function(done) {
                 done();
             },
@@ -38,7 +37,7 @@ exports.setup = function() {
                     "session_key": "123102983109283019283"
                 };
 
-                InputDefinition.parse(fs.readFileSync(path.resolve(__filename, "../data/conf_with_0_inputs.xml")), function(err, found) {
+                InputDefinition.parse(utils.readFile(__filename, "../data/conf_with_0_inputs.xml"), function(err, found) {
                     test.ok(!err);
                     test.ok(found.equals(expected));
                     test.done();
@@ -68,7 +67,7 @@ exports.setup = function() {
                     "multiValue2": ["value3", "value4"]
                 };
 
-                InputDefinition.parse(fs.readFileSync(path.resolve(__filename, "../data/conf_with_2_inputs.xml")), function (err, found) {
+                InputDefinition.parse(utils.readFile(__filename, "../data/conf_with_2_inputs.xml"), function (err, found) {
                     test.ok(!err);
                     test.ok(found.equals(expected));
                     test.done();
@@ -77,7 +76,12 @@ exports.setup = function() {
 
             "Parse throws an error with malformed input definition": function(test) {
                 // TODO: verify that this test follows convention
-                test.throws(function() { InputDefinition.parse(fs.readFileSync(path.resolve(__filename, "../data/conf_with_invalid_inputs.xml"))); });
+                test.throws(function(){
+                    InputDefinition.parse(utils.readFile(__filename, "../data/conf_with_invalid_inputs.xml"), function(err) {
+                        test.ok(err);
+                        throw err;
+                    });
+                });
                 test.done();
             }
         }
