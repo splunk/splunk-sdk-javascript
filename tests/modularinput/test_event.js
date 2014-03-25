@@ -33,6 +33,116 @@ exports.setup = function() {
                 done();
             },
 
+            "Event class handles times correctly - Date object": function(test) {
+                var now = Date.now();
+                var expected = (now / 1000).toFixed(3);
+                var found = Event.formatTime(now);
+                test.equals(found, expected);
+
+                test.done();
+            },
+
+            "Event class handles times correctly - String": function(test) {
+                // Test time in seconds
+                var stringTime = "1372187084";
+                var expected = 1372187084.000;
+                var found = Event.formatTime(stringTime);
+                test.equals(found, expected);
+
+                // Test a super small time, 4 seconds since the epoch
+                var tinyStringTime = "4";
+                expected = 4.000;
+                found = Event.formatTime(tinyStringTime);
+                test.equals(found, expected);
+
+                // Test the time in milliseconds
+                var milliStringTime = "1372187084000";
+                expected = 1372187084.000;
+                found = Event.formatTime(milliStringTime);
+                test.equals(found, expected);                
+
+                // Test a huge integer value, just get the first 14 digits
+                var hugeStringTime = "13721870840001234";
+                expected = 1372187084.000;
+                found = Event.formatTime(hugeStringTime);
+                test.equals(found, expected);
+
+                test.done();
+            },
+
+            "Event class handles times correctly - Number (integer)": function(test) {
+                // Test time in seconds
+                var intTime = 1372187084;
+                var expected = 1372187084.000;
+                var found = Event.formatTime(intTime);
+                test.equals(found, expected);
+
+                // Test a super small time, 4 seconds since the epoch
+                var tinyIntTime = 4;
+                expected = 4.000;
+                found = Event.formatTime(tinyIntTime);
+                test.equals(found, expected);
+
+                // Test the time in milliseconds
+                var milliIntTime = 1372187084000;
+                expected = 1372187084.000;
+                found = Event.formatTime(milliIntTime);
+                test.equals(found, expected);                
+
+                // Test a huge integer value, just get the first 14 digits
+                var hugeIntTime = 13721870840001234;
+                expected = 1372187084.000;
+                found = Event.formatTime(hugeIntTime);
+                test.equals(found, expected);
+
+                test.done();
+            },
+            
+            "Event class handles times correctly - Number (float)": function(test) {
+                // Test a perfect value
+                var floatTime = 1372187084.424;
+                var expected = 1372187084.424;
+                var found = Event.formatTime(floatTime);
+                test.equals(found, expected);
+
+                // Test a really long decimal value
+                var longDecimalFloatTime = 1372187084.424242425350823423423;
+                expected = 1372187084.424;
+                found = Event.formatTime(longDecimalFloatTime);
+                test.equals(found, expected);
+
+                // Test a date far into the future
+                var crazyFloatTime = 13721874084.424242425350823423423;
+                expected = 13721874084.420;
+                found = Event.formatTime(crazyFloatTime);
+                test.equals(found, expected);
+
+                // Test a really really far into the future
+                var crazyFloatTime = 1372187084555.424242425350823423423;
+                expected = 1372187084555.000;
+                found = Event.formatTime(crazyFloatTime);
+                test.equals(found, expected);
+
+                // Test a slightly crazy value
+                var crazyFloatTime = 137218.424242425350823423423;
+                expected = 137218.424;
+                found = Event.formatTime(crazyFloatTime);
+                test.equals(found, expected);
+
+                // Test a value starting with zeros
+                var crazyFloatTime = 000000000137218.442;
+                expected = 137218.442;
+                found = Event.formatTime(crazyFloatTime);
+
+                // Test a tiny value
+                var crazyFloatTime = 4.001234235;
+                expected = 4.001;
+                found = Event.formatTime(crazyFloatTime);
+                test.equals(found, expected);
+
+                test.done();
+            },
+            
             "Event without enough fields throws error": function(test) {
                 var e = new Event();
                 var s = new Stream();
@@ -49,10 +159,7 @@ exports.setup = function() {
                     time: 1372187084.000
                 });
 
-                var myStream = new Stream.Duplex();
-
-                myEvent.writeTo(myStream, function(writeErr, xml) {
-                    console.log(myStream);
+                myEvent.writeTo(new Stream(), function(writeErr, xml) {
                     test.ok(!writeErr);
                     var results = {};
 
