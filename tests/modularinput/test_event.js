@@ -21,7 +21,6 @@ exports.setup = function() {
     var EventWriter     = modularinput.EventWriter;
     var fs              = require("fs");
     var path            = require("path");
-    var Stream          = require("stream");
     var parser          = require("xml2js");
     var utils           = modularinput.utils;
 
@@ -145,8 +144,8 @@ exports.setup = function() {
             
             "Event without enough fields throws error": function(test) {
                 var e = new Event();
-                var s = new Stream();
-                e.writeTo(s, function(err, event) {
+                // A zero size buffer is fine because it won't be written to
+                e.writeTo(new Buffer(0), function(err, event) {
                     test.ok(err);
                     test.done();
                 });
@@ -159,11 +158,11 @@ exports.setup = function() {
                     time: 1372187084.000
                 });
 
-                myEvent.writeTo(new Stream(), function(writeErr, xml) {
+                myEvent.writeTo(new Buffer(1024), function(writeErr, buff, buffPosition) {
                     test.ok(!writeErr);
                     var results = {};
 
-                    parser.parseString(xml, function (parseFoundErr, result) {
+                    parser.parseString(buff.toString("utf-8", 0, buffPosition), function (parseFoundErr, result) {
                         test.ok(!parseFoundErr);
                         results.found = result;
                     });
@@ -192,11 +191,11 @@ exports.setup = function() {
                     unbroken: true
                 });
 
-                myEvent.writeTo(new Stream(), function(writeErr, xml) {
+                myEvent.writeTo(new Buffer(1024), function(writeErr, buff, buffPosition) {
                     test.ok(!writeErr);
                     var results = {};
 
-                    parser.parseString(xml, function (parseFoundErr, result) {
+                    parser.parseString(buff.toString("utf-8", 0, buffPosition), function (parseFoundErr, result) {
                         test.ok(!parseFoundErr);
                         results.found = result;
                     });
@@ -212,18 +211,58 @@ exports.setup = function() {
                 });
             },
 
-            "EventWriter gets an error from invalid Event": function(test) {
-                var out = new Stream.Writable();
-                var err = new Stream.Writable();
+            "EventWriter event writing works": function(test) {
+                //TODO: make it work with streams
+
                 
-                var ew = new EventWriter();
-                //var ew = new EventWriter(out, err); // TODO: make it work for streams
+                test.done();
+            },
+
+            "EventWriter gets an error from invalid Event": function(test) {
+                // TODO: make it work for streams
+                var out = new Buffer(2048);
+                var err = new Buffer(2048);
+
+                var ew = new EventWriter(out, err);
                 var e = new Event();
 
-                ew.writeEvent(e, function(err){
+                ew.writeEvent(e, function(err, outBuffer, outBufferPosition){
                     test.ok(err);
                     // TODO: port the following test from the Python SDK
+                    // ... actually, this line is never run because the assert
+                    // ... exists scope immediately on Error 
                     // self.assertTrue(err.getvalue().startswith(EventWriter.WARN))
+                    test.done();
+                });
+            },
+
+            "EventWriter logging works": function(test) {
+                // TODO: make it work for streams
+                var out = new Buffer(2048);
+                var err = new Buffer(2048);
+
+                var ew = new EventWriter(out, err);
+
+                ew.log(EventWriter.ERROR, "Something happened!", function(err) {
+                    test.ok(!err);
+                    // Be safe with the buffer, and only check the first part
+                    test.ok(utils.startsWith(ew._err.toString("utf-8", 0, EventWriter.ERROR.length+1), EventWriter.ERROR));
+                    test.done();
+                });
+            },
+
+            "EventWriter XML writing works": function(test) {
+                // TODO: make it work for streams
+                var out = new Buffer(2048);
+                var err = new Buffer(2048);
+
+                var ew = new EventWriter(out, err);
+
+                var expected = utils.readFile(__filename, "../data/event_minimal.xml");
+
+                ew.writeXMLDocument(expected.toString(), function(err) {
+                    test.ok(!err);
+                    test.equals(expected.toString(), ew._out.toString("utf-8", 0, expected.toString().length));
                     test.done();
                 });
             }
