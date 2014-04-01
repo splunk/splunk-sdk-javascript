@@ -24,6 +24,7 @@
     exports.Tests.ValidationDefinition = require('./test_validation_definition').setup();
     exports.Tests.InputDefinition = require('./test_input_definition').setup();
     exports.Tests.Event = require('./test_event').setup();
+    exports.Tests.Scheme = require('./test_scheme').setup();
     
     splunkjs.Logger.setLevel("ALL");
     
