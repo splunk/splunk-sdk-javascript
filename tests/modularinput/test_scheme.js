@@ -21,6 +21,7 @@ exports.setup = function() {
     var Argument        = modularinput.Argument;
     var utils           = modularinput.utils;
     var xml2js          = require("xml2js");
+    var ET              = require("elementtree");
 
     splunkjs.Logger.setLevel("ALL");
     return {
@@ -32,25 +33,22 @@ exports.setup = function() {
 
             "Generate XML from scheme with default values": function(test) {
                 var myScheme = new Scheme("abcd");
-
+                
                 var constructed = myScheme.toXML();
-                var expected = utils.readFile(__filename, "../data/scheme_with_defaults.xml");
+                var expected = ET.parse(utils.readFile(__filename, "../data/scheme_with_defaults.xml").toString())._root;
 
-                xml2js.parseString(expected, {trim: true}, function (err, result) {
-                    test.ok(!err);
-                    test.ok(utils.compareSchemes(result, constructed));
-                    //test.ok(utils.deepEquals(result, constructed));
-                    test.done();
-                });
+                test.ok(utils.XMLCompare(expected, constructed));
+                test.done();
             },
 
             "Generating XML from scheme": function(test) {
+
                 var myScheme = new Scheme("abcd");
                 myScheme.description = "쎼 and 쎶 and <&> für";
                 myScheme.streamingMode = Scheme.streamingModeSimple;
                 myScheme.useExternalValidation = "false";
                 myScheme.useSingleInstance = "true";
-
+                
                 var arg1 = new Argument({
                     name: "arg1"
                 });
@@ -67,13 +65,21 @@ exports.setup = function() {
                 myScheme.addArgument(arg2);
 
                 var constructed = myScheme.toXML();
-                var expected = utils.readFile(__filename, "../data/scheme_without_defaults.xml");
 
+                var expected = ET.parse(utils.readFile(__filename, "../data/scheme_without_defaults.xml").toString())._root;
+                
+                //console.log(expected);
+
+                test.ok(utils.XMLCompare(expected, constructed));
+
+                /*
                 xml2js.parseString(expected, {trim: true}, function (err, result) {
                     test.ok(!err);
                     test.ok(utils.compareSchemes(result, constructed));
                     test.done();
                 });
+                */
+                test.done();
             }
         }
     };
