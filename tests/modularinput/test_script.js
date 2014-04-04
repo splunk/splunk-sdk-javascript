@@ -56,7 +56,7 @@ exports.setup = function() {
                 var inStream = new Buffer(2048);
 
                 var args = [TEST_SCRIPT_PATH, "--scheme"];
-                var returnValue = NewScript.runScript(args, ew, inStream, function(err, scriptStatus) {
+                NewScript.runScript(args, ew, inStream, function(err, scriptStatus) {
                     test.ok(!err);
 
                     // TODO: figure out how to check that the out buffer is empty
@@ -107,7 +107,7 @@ exports.setup = function() {
                 var inStream = new Buffer(2048);
 
                 var args = [TEST_SCRIPT_PATH, "--scheme"];
-                var returnValue = NewScript.runScript(args, ew, inStream, function(err, scriptStatus) {
+                NewScript.runScript(args, ew, inStream, function(err, scriptStatus) {
                     test.ok(!err);
 
                     var expected = utils.readFile(__filename, "../data/scheme_without_defaults.xml").toString();
@@ -119,6 +119,44 @@ exports.setup = function() {
 
                     test.ok(utils.XMLCompare(ET.parse(expected).getroot(), ET.parse(output).getroot()));
                     test.strictEqual(0, scriptStatus);
+                    test.done();
+                });
+            },
+
+            "Validation succeeds": function(test) {
+
+                var NewScript = new Script();
+
+                NewScript.getScheme = function() {
+                    return null;
+                };
+
+                NewScript.validateInput = function(definition) {
+                    return true; // Always succeed
+                };
+
+                NewScript.streamEvents = function() {
+                    return; // not used
+                };
+
+                // TODO: make this work with streams
+                var out = new Buffer(2048);
+                var err = new Buffer(2048);
+                var ew = new EventWriter(out, err);
+
+                var args = [TEST_SCRIPT_PATH, "--validate-arguments"];
+
+                var validationFile = utils.readFile(__filename, "../data/validation.xml").toString("utf-8");
+
+                NewScript.runScript(args, ew, validationFile, function(err, scriptStatus) {
+                    test.ok(!err);
+                    // TODO: figure out how to check that the out buffer is empty
+                    //var output = ew._out.toString("utf-8");
+                    //var error = ew._err.toString("utf-8", 0, 51);
+
+                    //test.strictEqual("", output);
+                    //test.strictEqual(error, "FATAL Modular input script returned a null scheme.\n");
+                    //test.strictEqual(0, scriptStatus);
                     test.done();
                 });
             }
