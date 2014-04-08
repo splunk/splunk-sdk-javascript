@@ -112,7 +112,8 @@ exports.setup = function() {
 
                     var expected = utils.readFile(__filename, "../data/scheme_without_defaults.xml").toString();
 
-                    var output = ew._out.toString("utf-8", 0, expected.length);
+                    // TODO: un-hardcode the 665 length for this test
+                    var output = ew._out.toString("utf-8", 0, expected.length).substring(0, 665);
 
                     // TODO: figure out how to check that the err buffer is empty
                     //var error = ew._err.toString("utf-8", 0, 51);
@@ -150,16 +151,58 @@ exports.setup = function() {
 
                 NewScript.runScript(args, ew, validationFile, function(err, scriptStatus) {
                     test.ok(!err);
-                    // TODO: figure out how to check that the out buffer is empty
+                    // TODO: figure out how to check that these buffers are empty
                     //var output = ew._out.toString("utf-8");
                     //var error = ew._err.toString("utf-8", 0, 51);
 
                     //test.strictEqual("", output);
-                    //test.strictEqual(error, "FATAL Modular input script returned a null scheme.\n");
-                    //test.strictEqual(0, scriptStatus);
+                    //test.strictEqual("", error);
+                    test.strictEqual(0, scriptStatus);
                     test.done();
                 });
-            }
+            },
+
+            "Validation fails": function(test) {
+
+                var NewScript = new Script();
+
+                NewScript.getScheme = function() {
+                    return null;
+                };
+
+                NewScript.validateInput = function(definition) {
+                    //return false; // TODO: failure
+                    throw new Error("Big fat validation error!");
+                };
+
+                NewScript.streamEvents = function() {
+                    return; // not used
+                };
+
+                // TODO: make this work with streams
+                var out = new Buffer(2048);
+                var err = new Buffer(2048);
+                var ew = new EventWriter(out, err);
+
+                var args = [TEST_SCRIPT_PATH, "--validate-arguments"];
+
+                var validationFile = utils.readFile(__filename, "../data/validation.xml").toString("utf-8");
+
+                NewScript.runScript(args, ew, validationFile, function(err, scriptStatus) {
+                    test.ok(err);
+                    // TODO: figure out how to check that the err buffer is empty
+                    //var error = ew._err.toString("utf-8", 0, 51);
+
+                    var expected = utils.readFile(__filename, "../data/validation_error.xml").toString("utf-8");
+                    var output = ew._out.toString("utf-8", 0, expected.length);
+
+                    test.ok(utils.XMLCompare(ET.parse(expected).getroot(), ET.parse(output).getroot()));
+                    test.strictEqual(1, scriptStatus);
+                    test.done();
+                });
+            },
+
+            
         }
     };
 };
