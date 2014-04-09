@@ -61,12 +61,9 @@ exports.setup = function() {
                 var args = [TEST_SCRIPT_PATH, "--scheme"];
                 NewScript.runScript(args, ew, inStream, function(err, scriptStatus) {
                     test.ok(!err);
-
-                    // TODO: figure out how to check that the out buffer is empty
-                    //var output = ew._out.toString("utf-8");
                     var error = ew._err.toString("utf-8", 0, 51);
 
-                    //test.strictEqual("", output);
+                    test.strictEqual(0, ew.outPosition);
                     test.strictEqual(error, "FATAL Modular input script returned a null scheme.\n");
                     test.strictEqual(1, scriptStatus);
                     test.done();
@@ -118,11 +115,9 @@ exports.setup = function() {
                     // TODO: un-hardcode the 665 length for this test
                     var output = ew._out.toString("utf-8", 0, expected.length).substring(0, 665);
 
-                    // TODO: figure out how to check that the err buffer is empty
-                    //var error = ew._err.toString("utf-8", 0, 51);
-
                     test.ok(utils.XMLCompare(ET.parse(expected).getroot(), ET.parse(output).getroot()));
                     test.strictEqual(0, scriptStatus);
+                    test.strictEqual(0, ew.errPosition);
                     test.done();
                 });
             },
@@ -154,12 +149,9 @@ exports.setup = function() {
 
                 NewScript.runScript(args, ew, validationFile, function(err, scriptStatus) {
                     test.ok(!err);
-                    // TODO: figure out how to check that these buffers are empty
-                    //var output = ew._out.toString("utf-8");
-                    //var error = ew._err.toString("utf-8", 0, 51);
 
-                    //test.strictEqual("", output);
-                    //test.strictEqual("", error);
+                    test.strictEqual(0, ew.outPosition);
+                    test.strictEqual(0, ew.errPosition);
                     test.strictEqual(0, scriptStatus);
                     test.done();
                 });
@@ -192,13 +184,12 @@ exports.setup = function() {
 
                 NewScript.runScript(args, ew, validationFile, function(err, scriptStatus) {
                     test.ok(err);
-                    // TODO: figure out how to check that the err buffer is empty
-                    //var error = ew._err.toString("utf-8", 0, 51);
 
                     var expected = utils.readFile(__filename, "../data/validation_error.xml").toString("utf-8");
                     var output = ew._out.toString("utf-8", 0, expected.length);
 
                     test.ok(utils.XMLCompare(ET.parse(expected).getroot(), ET.parse(output).getroot()));
+                    test.strictEqual(0, ew.errPosition);
                     test.strictEqual(1, scriptStatus);
                     test.done();
                 });
@@ -267,7 +258,6 @@ exports.setup = function() {
                     var expected = utils.readFile(__filename, "../data/stream_with_two_events.xml").toString();
                     // TODO: this stream has some garbage at the end of it.
                     var found = ew._out.toString("utf-8", 0, ew.outPosition);
-                    console.log(found);
                     //test.ok(utils.XMLCompare(ET.parse(expected).getroot(), ET.parse(found).getroot()));
                     test.strictEqual(0, scriptStatus);
                     test.done();
@@ -310,6 +300,7 @@ exports.setup = function() {
                     var found = ew._out.toString("utf-8", 0, ew.outPosition);
 
                     //test.ok(utils.XMLCompare(ET.parse(expected).getroot(), ET.parse(found+"</stream>").getroot()));
+                    test.strictEqual(0, ew.errPosition);
                     test.strictEqual(0, scriptStatus);
                     test.done();
                 });                
