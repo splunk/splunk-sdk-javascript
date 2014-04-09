@@ -16,9 +16,12 @@
 exports.setup = function() {
 
     var splunkjs        = require('../../index');
+    var Service         = splunkjs.service;
+    var Async           = splunkjs.Async;
     var ET              = require("elementtree");
     var modularinput    = splunkjs.ModularInput;
     var Script          = modularinput.Script;
+    var Event           = modularinput.Event;
     var EventWriter     = modularinput.EventWriter;
     var Scheme          = modularinput.Scheme;
     var Argument        = modularinput.Argument;
@@ -171,7 +174,6 @@ exports.setup = function() {
                 };
 
                 NewScript.validateInput = function(definition) {
-                    //return false; // TODO: failure
                     throw new Error("Big fat validation error!");
                 };
 
@@ -202,7 +204,112 @@ exports.setup = function() {
                 });
             },
 
-            
+            "Writing events works": function(test) {
+                var NewScript = new Script();
+
+                NewScript.getScheme = function() {
+                    return null;
+                };
+
+                NewScript.streamEvents = function(inputs, eventWriter, callback) {
+                    var myEvent = new Event({
+                        data: "This is a test of the emergency broadcast system.",
+                        stanza: "fubar",
+                        time: 1372275124.466,
+                        host: "localhost",
+                        index: "main",
+                        source: "hilda",
+                        sourcetype: "misc",
+                        done: true,
+                        unbroken: true
+                    });
+                    
+                    Async.chain([
+                            function (done) {;
+                                eventWriter.writeEvent(myEvent, done);
+                            },
+                            function (buffer, done) {
+                                eventWriter.writeEvent(myEvent, done);
+                            },
+                            function (buffer, done) {
+                                done();
+                            }
+                        ],
+                        function (err) {
+                            if (err) {
+                                callback(err, ew.outPosition);
+                                return;
+                            }
+                            else {
+                                callback(null);
+                                return;
+                            }
+                        }
+                    );
+                };
+
+                // TODO: make this work with streams
+                var out = new Buffer(4096);
+                var err = new Buffer(4096);
+                var ew = new EventWriter(out, err);
+
+                var args = [TEST_SCRIPT_PATH];
+
+                var inputConfiguration = utils.readFile(__filename, "../data/conf_with_2_inputs.xml").toString();
+                
+                NewScript.runScript(args, ew, inputConfiguration, function(err, scriptStatus) {
+                    test.ok(!err);
+
+                    var expected = utils.readFile(__filename, "../data/stream_with_two_events.xml").toString();
+                    // TODO: this stream has some garbage at the end of it.
+                    var found = ew._out.toString("utf-8", 0, ew.outPosition);
+
+                    test.ok(utils.XMLCompare(ET.parse(expected).getroot(), ET.parse(found+"</stream>").getroot()));
+                    test.strictEqual(0, scriptStatus);
+                    test.done();
+                });
+            },
+
+            "Script gets a valid Service": function(test) {
+                var NewScript = new Script();
+
+                NewScript.getScheme = function() {
+                    return null;
+                };
+
+                NewScript.validateInput = function(definition) {
+                    return false;
+                };
+
+                NewScript.streamEvents = function(inputs, eventWriter, callback) {
+                    var service = this.service();
+                    test.ok(service);
+                    // TODO: this test is broken.
+                    //test.strictEqual(service.authority.toString(), inputs.metadata["server_uri"]);
+                    callback(null, 0);
+                };
+
+                // TODO: make this work with streams
+                var out = new Buffer(4096);
+                var err = new Buffer(4096);
+                var ew = new EventWriter(out, err);
+
+                var args = [TEST_SCRIPT_PATH];
+
+                var inputConfiguration = utils.readFile(__filename, "../data/conf_with_2_inputs.xml").toString();
+
+                test.ok(!NewScript._service);
+
+                NewScript.runScript(args, ew, inputConfiguration, function(err, scriptStatus) {
+                    test.ok(!err);
+                    // TODO: this stream has some garbage at the end of it; investigate eventWriter.close()
+                    var found = ew._out.toString("utf-8", 0, ew.outPosition);
+
+                    test.ok(utils.XMLCompare(ET.parse(expected).getroot(), ET.parse(found+"</stream>").getroot()));
+                    test.strictEqual(0, scriptStatus);
+                    test.done();
+                });                
+            }
         }
     };
 };

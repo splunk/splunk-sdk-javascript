@@ -249,22 +249,20 @@ exports.setup = function() {
                 });
 
                 var expectedOne = utils.readFile(__filename, "../data/stream_with_one_event.xml");
-                var expectedTwo = utils.readFile(__filename, "../data/stream_with_one_event.xml");
+                var expectedTwo = utils.readFile(__filename, "../data/stream_with_two_events.xml");
 
                 var out = new Buffer(2048);
                 var err = new Buffer(2048);
                 var ew = new EventWriter(out, err);
 
                 var results = {};
-                var outBufferTempPosition = 0;
                 
                 Async.chain([
                         function (callback) {
-                            ew.writeEvent(myEvent, outBufferTempPosition, callback);
+                            ew.writeEvent(myEvent, callback);
                         },
-                        function (outBuffer, outBufferPosition, callback) {
-                            outBufferTempPosition = outBufferPosition;
-                            parser.parseString(outBuffer.toString("utf-8", 0, outBufferPosition) + "</stream>", callback);
+                        function (outBuffer, callback) {
+                            parser.parseString(outBuffer.toString("utf-8", 0, ew.outPosition) + "</stream>", callback);
                         },
                         function (result, callback) {
                             results.foundOne = result;
@@ -275,10 +273,10 @@ exports.setup = function() {
                             
                             test.ok(utils.deepEquals(results.expectedOne, results.foundOne));
                             
-                            ew.writeEvent(myEvent, outBufferTempPosition, callback);
+                            ew.writeEvent(myEvent, callback);
                         },
-                        function (outBuffer, outBufferPosition, callback) {
-                            parser.parseString(outBuffer.toString("utf-8", 0, outBufferPosition) + "</stream>", callback);
+                        function (outBuffer, callback) {
+                            parser.parseString(outBuffer.toString("utf-8", 0, ew.outPosition) + "</stream>", callback);
                         },
                         function (result, callback) {
                             results.foundTwo = result;
@@ -307,12 +305,10 @@ exports.setup = function() {
 
                 var ew = new EventWriter(out, err);
 
-                ew.writeEvent(new Event(), function(err, outBuffer, outBufferPosition){
+                ew.writeEvent(new Event(), function(err) {
                     test.ok(err);
-                    // TODO: port the following test from the Python SDK
-                    // ... actually, this line is never run because the assert
-                    // ... exists scope immediately on Error 
-                    // self.assertTrue(err.getvalue().startswith(EventWriter.WARN))
+                    
+                    test.ok(utils.startsWith(ew._err.toString("utf-8", 0, ew.errPosition), EventWriter.WARN));
                     test.done();
                 });
             },
