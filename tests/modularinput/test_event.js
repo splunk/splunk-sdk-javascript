@@ -68,6 +68,12 @@ exports.setup = function() {
                 found = Event.formatTime(hugeStringTime);
                 test.equals(found, expected);
 
+                // Test a value starting with zeros
+                var leadingZeroStringTime = "000000000137218.442";
+                expected = 137218.442;
+                found = Event.formatTime(leadingZeroStringTime);
+                test.equals(found, expected);
+                
                 test.done();
             },
 
@@ -129,11 +135,6 @@ exports.setup = function() {
                 expected = 137218.424;
                 found = Event.formatTime(crazyFloatTime3);
                 test.equals(found, expected);
-
-                // Test a value starting with zeros
-                var crazyFloatTime4 = 000000000137218.442;
-                expected = 137218.442;
-                found = Event.formatTime(crazyFloatTime4);
 
                 // Test a tiny value
                 var crazyFloatTime5 = 4.001234235;
