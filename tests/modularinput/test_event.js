@@ -22,7 +22,7 @@ exports.setup = function() {
     var EventWriter     = modularinput.EventWriter;
     var fs              = require("fs");
     var path            = require("path");
-    var parser          = require("xml2js");
+    var ET              = require("elementtree");
     var utils           = modularinput.utils;
     var Stream          = require("stream");
 
@@ -162,26 +162,19 @@ exports.setup = function() {
                     time: 1372187084.000
                 });
 
-                var expected = utils.readFile(__filename, "../data/event_minimal.xml");
+                var expectedEvent = utils.readFile(__filename, "../data/event_minimal.xml");
 
                 var myBuffer = new Buffer(1024);
-                var results = {};
 
                 Async.chain([
                         function (callback) {
                             myEvent.writeTo(myBuffer, callback);
                         },
                         function (buffer, bufferPosition, callback) {
-                            parser.parseString(buffer.toString("utf-8", 0, bufferPosition), callback);
-                        },
-                        function (result, callback) {
-                            results.found = result;
-                            parser.parseString(expected, callback);
-                        },
-                        function (result, callback) {
-                            results.expected = result;
+                            var found = ET.parse(buffer.toString("utf-8", 0, bufferPosition));
+                            var expected = ET.parse(expectedEvent);
+                            test.ok(utils.deepEquals(expected, found));
 
-                            test.ok(utils.deepEquals(results.expected, results.found));
                             callback(null);
                         }
                     ],
@@ -205,26 +198,19 @@ exports.setup = function() {
                     unbroken: true
                 });
 
-                var expected = utils.readFile(__filename, "../data/event_maximal.xml");
+                var expectedEvent = utils.readFile(__filename, "../data/event_maximal.xml");
 
                 var myBuffer = new Buffer(2048);
-                var results = {};
-
+                
                 Async.chain([
                         function (callback) {
                             myEvent.writeTo(myBuffer, callback);
                         },
                         function (buffer, bufferPosition, callback) {
-                            parser.parseString(buffer.toString("utf-8", 0, bufferPosition), callback);
-                        },
-                        function (result, callback) {
-                            results.found = result;
-                            parser.parseString(expected, callback);
-                        },
-                        function (result, callback) {
-                            results.expected = result;
+                            var found = ET.parse(buffer.toString("utf-8", 0, bufferPosition));
+                            var expected = ET.parse(expectedEvent);
 
-                            test.ok(utils.deepEquals(results.expected, results.found));
+                            test.ok(utils.deepEquals(expected, found));
                             callback(null);
                         }
                     ],
@@ -255,45 +241,29 @@ exports.setup = function() {
                 var out = new Buffer(2048);
                 var err = new Buffer(2048);
                 var ew = new EventWriter(out, err);
-
-                var results = {};
                 
                 Async.chain([
                         function (callback) {
                             ew.writeEvent(myEvent, callback);
                         },
                         function (outBuffer, callback) {
-                            parser.parseString(outBuffer.toString("utf-8", 0, ew.outPosition) + "</stream>", callback);
-                        },
-                        function (result, callback) {
-                            results.foundOne = result;
-                            parser.parseString(expectedOne, callback);
-                        },
-                        function (result, callback) {
-                            results.expectedOne = result;
-                            
-                            test.ok(utils.deepEquals(results.expectedOne, results.foundOne));
+                            var found = ET.parse(outBuffer.toString("utf-8", 0, ew.outPosition) + "</stream>");
+                            var expected = ET.parse(expectedOne);
+                            test.ok(utils.deepEquals(expected, found));
                             
                             ew.writeEvent(myEvent, callback);
                         },
                         function (outBuffer, callback) {
-                            console.log(outBuffer.toString("utf-8", 0, ew.outPosition)); // TODO: this has some garbage at the end of it.
-                            parser.parseString(outBuffer.toString("utf-8", 0, ew.outPosition) + "</stream>", callback);
-                        },
-                        function (result, callback) {
-                            results.foundTwo = result;
-                            parser.parseString(expectedTwo, callback);
-                        },
-                        function (result, callback) {
-                            results.expectedTwo = result;
-                            test.ok(utils.deepEquals(results.expectedTwo, results.foundTwo));
+                            var found = ET.parse(outBuffer.toString("utf-8", 0, ew.outPosition) + "</stream>");
+                            var expected = ET.parse(expectedTwo);
+                            test.ok(utils.deepEquals(expected, found));
+
                             callback(null);
                         }
                     ], 
                     function (err) {
                         test.ok(!err);
                         if (err) {
-                            // TODO: what should I do with this error?
                             console.log(err);
                         }
                         test.done();
@@ -338,11 +308,12 @@ exports.setup = function() {
 
                 var ew = new EventWriter(out, err);
 
-                var expected = utils.readFile(__filename, "../data/event_minimal.xml");
+                var expected = ET.parse(utils.readFile(__filename, "../data/event_minimal.xml")).getroot();
 
                 ew.writeXMLDocument(expected, function(err) {
                     test.ok(!err);
-                    test.equals(expected, ew._out.toString("utf-8", 0, expected.length));
+                    //test.equals(expected, ew._out.toString("utf-8", 0, expected.length));
+                    //test.ok(xml_compare(expected, ET.fromstring(ew._out.toString("utf-8", 0, ew.outPosition))));
                     test.done();
                 });
             }
