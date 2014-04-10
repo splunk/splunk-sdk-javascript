@@ -110,7 +110,7 @@ exports.setup = function() {
                 NewScript.runScript(args, ew, inStream, function(err, scriptStatus) {
                     test.ok(!err);
 
-                    var expected = utils.readFile(__filename, "../data/scheme_without_defaults.xml").toString();
+                    var expected = utils.readFile(__filename, "../data/scheme_without_defaults.xml");
 
                     // TODO: un-hardcode the 665 length for this test
                     var output = ew._out.toString("utf-8", 0, expected.length).substring(0, 665);
@@ -145,7 +145,7 @@ exports.setup = function() {
 
                 var args = [TEST_SCRIPT_PATH, "--validate-arguments"];
 
-                var validationFile = utils.readFile(__filename, "../data/validation.xml").toString("utf-8");
+                var validationFile = utils.readFile(__filename, "../data/validation.xml");
 
                 NewScript.runScript(args, ew, validationFile, function(err, scriptStatus) {
                     test.ok(!err);
@@ -180,12 +180,12 @@ exports.setup = function() {
 
                 var args = [TEST_SCRIPT_PATH, "--validate-arguments"];
 
-                var validationFile = utils.readFile(__filename, "../data/validation.xml").toString("utf-8");
+                var validationFile = utils.readFile(__filename, "../data/validation.xml");
 
                 NewScript.runScript(args, ew, validationFile, function(err, scriptStatus) {
                     test.ok(err);
 
-                    var expected = utils.readFile(__filename, "../data/validation_error.xml").toString("utf-8");
+                    var expected = utils.readFile(__filename, "../data/validation_error.xml");
                     var output = ew._out.toString("utf-8", 0, expected.length);
 
                     test.ok(utils.XMLCompare(ET.parse(expected).getroot(), ET.parse(output).getroot()));
@@ -220,10 +220,12 @@ exports.setup = function() {
                                 eventWriter.writeEvent(myEvent, done);
                             },
                             function (buffer, done) {
+                                // TODO: remove
                                 console.log(eventWriter._out.toString("utf-8", 0, eventWriter.outPosition));
                                 eventWriter.writeEvent(myEvent, done);
                             },
                             function (buffer, done) {
+                                // TODO: remove
                                 console.log(eventWriter._out.toString("utf-8", 0, eventWriter.outPosition));
                                 done(null);
                             }
@@ -248,12 +250,12 @@ exports.setup = function() {
 
                 var args = [TEST_SCRIPT_PATH];
 
-                var inputConfiguration = utils.readFile(__filename, "../data/conf_with_2_inputs.xml").toString();
+                var inputConfiguration = utils.readFile(__filename, "../data/conf_with_2_inputs.xml");
 
                 NewScript.runScript(args, ew, inputConfiguration, function(err, scriptStatus) {
                     test.ok(!err);
 
-                    var expected = utils.readFile(__filename, "../data/stream_with_two_events.xml").toString();
+                    var expected = utils.readFile(__filename, "../data/stream_with_two_events.xml");
                     // TODO: this stream has some garbage at the end of it.
                     var found = ew._out.toString("utf-8", 0, ew.outPosition);
                     //console.log(found);
@@ -279,7 +281,7 @@ exports.setup = function() {
                     
                     // TODO: find a better way of doing this test, the Service var is out of scope
                     test.ok(service instanceof require("../../lib/service"));
-                    test.strictEqual(service.prefix.toString(), inputs.metadata["server_uri"]);
+                    test.strictEqual(service.prefix, inputs.metadata["server_uri"]);
                     callback(null, 0);
                 };
 
@@ -290,7 +292,7 @@ exports.setup = function() {
 
                 var args = [TEST_SCRIPT_PATH];
 
-                var inputConfiguration = utils.readFile(__filename, "../data/conf_with_2_inputs.xml").toString();
+                var inputConfiguration = utils.readFile(__filename, "../data/conf_with_2_inputs.xml");
 
                 test.ok(!NewScript._service);
 

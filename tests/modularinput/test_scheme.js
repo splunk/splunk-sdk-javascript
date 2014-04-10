@@ -37,7 +37,7 @@ exports.setup = function() {
                 var myScheme = new Scheme("abcd");
                 
                 var constructed = myScheme.toXML();
-                var expected = ET.parse(utils.readFile(__filename, "../data/scheme_with_defaults.xml").toString()).getroot();
+                var expected = ET.parse(utils.readFile(__filename, "../data/scheme_with_defaults.xml")).getroot();
 
                 test.ok(utils.XMLCompare(expected, constructed));
                 test.done();
@@ -69,7 +69,7 @@ exports.setup = function() {
                 myScheme.addArgument(arg2);
 
                 var constructed = myScheme.toXML();
-                var expected = ET.parse(utils.readFile(__filename, "../data/scheme_without_defaults.xml").toString()).getroot();
+                var expected = ET.parse(utils.readFile(__filename, "../data/scheme_without_defaults.xml")).getroot();
 
                 test.ok(utils.XMLCompare(expected, constructed));
                 test.done();
@@ -84,7 +84,7 @@ exports.setup = function() {
                 var root = ET.Element("");
                 var constructed = myArg.addToDocument(root);
 
-                var expected = ET.parse(utils.readFile(__filename, "../data/argument_with_defaults.xml").toString()).getroot();
+                var expected = ET.parse(utils.readFile(__filename, "../data/argument_with_defaults.xml")).getroot();
 
                 test.ok(utils.XMLCompare(expected, constructed));
                 test.done();
@@ -106,7 +106,7 @@ exports.setup = function() {
                 var root = ET.Element("");
                 var constructed = myArg.addToDocument(root);
 
-                var expected = ET.parse(utils.readFile(__filename, "../data/argument_without_defaults.xml").toString()).getroot();
+                var expected = ET.parse(utils.readFile(__filename, "../data/argument_without_defaults.xml")).getroot();
 
                 test.ok(utils.XMLCompare(expected, constructed));
                 test.done();

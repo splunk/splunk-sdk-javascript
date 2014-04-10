@@ -175,7 +175,7 @@ exports.setup = function() {
                         },
                         function (result, callback) {
                             results.found = result;
-                            parser.parseString(expected.toString(), callback);
+                            parser.parseString(expected, callback);
                         },
                         function (result, callback) {
                             results.expected = result;
@@ -218,7 +218,7 @@ exports.setup = function() {
                         },
                         function (result, callback) {
                             results.found = result;
-                            parser.parseString(expected.toString(), callback);
+                            parser.parseString(expected, callback);
                         },
                         function (result, callback) {
                             results.expected = result;
@@ -266,7 +266,7 @@ exports.setup = function() {
                         },
                         function (result, callback) {
                             results.foundOne = result;
-                            parser.parseString(expectedOne.toString(), callback);
+                            parser.parseString(expectedOne, callback);
                         },
                         function (result, callback) {
                             results.expectedOne = result;
@@ -281,7 +281,7 @@ exports.setup = function() {
                         },
                         function (result, callback) {
                             results.foundTwo = result;
-                            parser.parseString(expectedTwo.toString(), callback);
+                            parser.parseString(expectedTwo, callback);
                         },
                         function (result, callback) {
                             results.expectedTwo = result;
@@ -292,6 +292,7 @@ exports.setup = function() {
                     function (err) {
                         test.ok(!err);
                         if (err) {
+                            // TODO: what should I do with this error?
                             console.log(err);
                         }
                         test.done();
@@ -338,9 +339,9 @@ exports.setup = function() {
 
                 var expected = utils.readFile(__filename, "../data/event_minimal.xml");
 
-                ew.writeXMLDocument(expected.toString(), function(err) {
+                ew.writeXMLDocument(expected, function(err) {
                     test.ok(!err);
-                    test.equals(expected.toString(), ew._out.toString("utf-8", 0, expected.toString().length));
+                    test.equals(expected, ew._out.toString("utf-8", 0, expected.length));
                     test.done();
                 });
             }
