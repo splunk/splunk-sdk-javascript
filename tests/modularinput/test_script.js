@@ -220,13 +220,11 @@ exports.setup = function() {
                                 eventWriter.writeEvent(myEvent, done);
                             },
                             function (buffer, done) {
-
+                                console.log(eventWriter._out.toString("utf-8", 0, eventWriter.outPosition));
                                 eventWriter.writeEvent(myEvent, done);
                             },
                             function (buffer, done) {
-                                eventWriter.close(done);
-                            },
-                            function (buffer, done) {
+                                console.log(eventWriter._out.toString("utf-8", 0, eventWriter.outPosition));
                                 done(null);
                             }
                         ],
@@ -258,6 +256,7 @@ exports.setup = function() {
                     var expected = utils.readFile(__filename, "../data/stream_with_two_events.xml").toString();
                     // TODO: this stream has some garbage at the end of it.
                     var found = ew._out.toString("utf-8", 0, ew.outPosition);
+                    //console.log(found);
                     //test.ok(utils.XMLCompare(ET.parse(expected).getroot(), ET.parse(found).getroot()));
                     test.strictEqual(0, scriptStatus);
                     test.done();
@@ -277,9 +276,10 @@ exports.setup = function() {
 
                 NewScript.streamEvents = function(inputs, eventWriter, callback) {
                     var service = this.service();
-                    test.ok(service);
-                    // TODO: this test is broken.
-                    //test.strictEqual(service.authority.toString(), inputs.metadata["server_uri"]);
+                    
+                    // TODO: find a better way of doing this test, the Service var is out of scope
+                    test.ok(service instanceof require("../../lib/service"));
+                    test.strictEqual(service.prefix.toString(), inputs.metadata["server_uri"]);
                     callback(null, 0);
                 };
 
@@ -296,10 +296,6 @@ exports.setup = function() {
 
                 NewScript.runScript(args, ew, inputConfiguration, function(err, scriptStatus) {
                     test.ok(!err);
-                    // TODO: this stream has some garbage at the end of it; investigate eventWriter
-                    var found = ew._out.toString("utf-8", 0, ew.outPosition);
-
-                    //test.ok(utils.XMLCompare(ET.parse(expected).getroot(), ET.parse(found+"</stream>").getroot()));
                     test.strictEqual(0, ew.errPosition);
                     test.strictEqual(0, scriptStatus);
                     test.done();

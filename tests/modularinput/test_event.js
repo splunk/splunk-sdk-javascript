@@ -276,6 +276,7 @@ exports.setup = function() {
                             ew.writeEvent(myEvent, callback);
                         },
                         function (outBuffer, callback) {
+                            console.log(outBuffer.toString("utf-8", 0, ew.outPosition)); // TODO: this has some garbage at the end of it.
                             parser.parseString(outBuffer.toString("utf-8", 0, ew.outPosition) + "</stream>", callback);
                         },
                         function (result, callback) {
