@@ -112,8 +112,7 @@ exports.setup = function() {
 
                     var expected = utils.readFile(__filename, "../data/scheme_without_defaults.xml");
 
-                    // TODO: un-hardcode the 665 length for this test
-                    var output = ew._out.toString("utf-8", 0, expected.length).substring(0, 665);
+                    var output = ew._out.toString("utf-8", 0, ew.outPosition);
 
                     // TODO: fix this test
                     //test.ok(utils.XMLCompare(ET.parse(expected), ET.parse(output)));
@@ -186,9 +185,9 @@ exports.setup = function() {
                 NewScript.runScript(args, ew, validationFile, function(err, scriptStatus) {
                     test.ok(err);
                     var expected = utils.readFile(__filename, "../data/validation_error.xml");
-                    var output = ew._out.toString("utf-8", 0, expected.length);
+                    var output = ew._out.toString("utf-8", 0, ew.outPosition);
 
-                    //test.ok(utils.XMLCompare(ET.parse(expected), ET.parse(output)));
+                    test.ok(utils.XMLCompare(ET.parse(expected).getroot(), ET.parse(output).getroot()));
                     test.strictEqual(0, ew.errPosition);
                     test.strictEqual(1, scriptStatus);
                     test.done();
@@ -220,13 +219,9 @@ exports.setup = function() {
                                 eventWriter.writeEvent(myEvent, done);
                             },
                             function (buffer, done) {
-                                // TODO: remove
-                                console.log(eventWriter._out.toString("utf-8", 0, eventWriter.outPosition));
                                 eventWriter.writeEvent(myEvent, done);
                             },
                             function (buffer, done) {
-                                // TODO: remove
-                                console.log(eventWriter._out.toString("utf-8", 0, eventWriter.outPosition));
                                 done(null);
                             }
                         ],
@@ -256,10 +251,9 @@ exports.setup = function() {
                     test.ok(!err);
 
                     var expected = utils.readFile(__filename, "../data/stream_with_two_events.xml");
-                    // TODO: this stream has some garbage at the end of it.
                     var found = ew._out.toString("utf-8", 0, ew.outPosition);
-                    //console.log(found);
-                    //test.ok(utils.XMLCompare(ET.parse(expected).getroot(), ET.parse(found).getroot()));
+                    
+                    test.ok(utils.XMLCompare(ET.parse(expected).getroot(), ET.parse(found).getroot()));
                     test.strictEqual(0, scriptStatus);
                     test.done();
                 });
