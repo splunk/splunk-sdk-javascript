@@ -70,12 +70,14 @@
 
             }
         );
+        // TODO: functionality
+        var inputName = "";
         var min = parseFloat();
         var max = parseFloat();
 
         var myEvent = new Event({
-            data: "This is a test of the emergency broadcast system.",
-            stanza: "fubar",
+            data: "number=" + getRandomInt(min, max),
+            stanza: "inputName",
         });
         
         Async.chain([
