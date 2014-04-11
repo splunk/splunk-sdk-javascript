@@ -22,7 +22,7 @@ exports.setup = function() {
     var EventWriter     = modularinput.EventWriter;
     var fs              = require("fs");
     var path            = require("path");
-    var parser          = require("xml2js");
+    var ET              = require("elementtree");
     var utils           = modularinput.utils;
     var Stream          = require("stream");
 
@@ -68,6 +68,12 @@ exports.setup = function() {
                 found = Event.formatTime(hugeStringTime);
                 test.equals(found, expected);
 
+                // Test a value starting with zeros
+                var leadingZeroStringTime = "000000000137218.442";
+                expected = 137218.442;
+                found = Event.formatTime(leadingZeroStringTime);
+                test.equals(found, expected);
+                
                 test.done();
             },
 
@@ -130,11 +136,6 @@ exports.setup = function() {
                 found = Event.formatTime(crazyFloatTime3);
                 test.equals(found, expected);
 
-                // Test a value starting with zeros
-                var crazyFloatTime4 = 000000000137218.442;
-                expected = 137218.442;
-                found = Event.formatTime(crazyFloatTime4);
-
                 // Test a tiny value
                 var crazyFloatTime5 = 4.001234235;
                 expected = 4.001;
@@ -161,26 +162,19 @@ exports.setup = function() {
                     time: 1372187084.000
                 });
 
-                var expected = utils.readFile(__filename, "../data/event_minimal.xml");
+                var expectedEvent = utils.readFile(__filename, "../data/event_minimal.xml");
 
                 var myBuffer = new Buffer(1024);
-                var results = {};
 
                 Async.chain([
                         function (callback) {
                             myEvent.writeTo(myBuffer, callback);
                         },
                         function (buffer, bufferPosition, callback) {
-                            parser.parseString(buffer.toString("utf-8", 0, bufferPosition), callback);
-                        },
-                        function (result, callback) {
-                            results.found = result;
-                            parser.parseString(expected.toString(), callback);
-                        },
-                        function (result, callback) {
-                            results.expected = result;
+                            var found = ET.parse(buffer.toString("utf-8", 0, bufferPosition));
+                            var expected = ET.parse(expectedEvent);
+                            test.ok(utils.deepEquals(expected, found));
 
-                            test.ok(utils.deepEquals(results.expected, results.found));
                             callback(null);
                         }
                     ],
@@ -204,26 +198,19 @@ exports.setup = function() {
                     unbroken: true
                 });
 
-                var expected = utils.readFile(__filename, "../data/event_maximal.xml");
+                var expectedEvent = utils.readFile(__filename, "../data/event_maximal.xml");
 
                 var myBuffer = new Buffer(2048);
-                var results = {};
-
+                
                 Async.chain([
                         function (callback) {
                             myEvent.writeTo(myBuffer, callback);
                         },
                         function (buffer, bufferPosition, callback) {
-                            parser.parseString(buffer.toString("utf-8", 0, bufferPosition), callback);
-                        },
-                        function (result, callback) {
-                            results.found = result;
-                            parser.parseString(expected.toString(), callback);
-                        },
-                        function (result, callback) {
-                            results.expected = result;
+                            var found = ET.parse(buffer.toString("utf-8", 0, bufferPosition));
+                            var expected = ET.parse(expectedEvent);
 
-                            test.ok(utils.deepEquals(results.expected, results.found));
+                            test.ok(utils.deepEquals(expected, found));
                             callback(null);
                         }
                     ],
@@ -249,44 +236,28 @@ exports.setup = function() {
                 });
 
                 var expectedOne = utils.readFile(__filename, "../data/stream_with_one_event.xml");
-                var expectedTwo = utils.readFile(__filename, "../data/stream_with_one_event.xml");
+                var expectedTwo = utils.readFile(__filename, "../data/stream_with_two_events.xml");
 
                 var out = new Buffer(2048);
                 var err = new Buffer(2048);
                 var ew = new EventWriter(out, err);
-
-                var results = {};
-                var outBufferTempPosition = 0;
                 
                 Async.chain([
                         function (callback) {
-                            ew.writeEvent(myEvent, outBufferTempPosition, callback);
+                            ew.writeEvent(myEvent, callback);
                         },
-                        function (outBuffer, outBufferPosition, callback) {
-                            outBufferTempPosition = outBufferPosition;
-                            parser.parseString(outBuffer.toString("utf-8", 0, outBufferPosition) + "</stream>", callback);
-                        },
-                        function (result, callback) {
-                            results.foundOne = result;
-                            parser.parseString(expectedOne.toString(), callback);
-                        },
-                        function (result, callback) {
-                            results.expectedOne = result;
+                        function (outBuffer, callback) {
+                            var found = ET.parse(outBuffer.toString("utf-8", 0, ew.outPosition) + "</stream>");
+                            var expected = ET.parse(expectedOne);
+                            test.ok(utils.deepEquals(expected, found));
                             
-                            test.ok(utils.deepEquals(results.expectedOne, results.foundOne));
-                            
-                            ew.writeEvent(myEvent, outBufferTempPosition, callback);
+                            ew.writeEvent(myEvent, callback);
                         },
-                        function (outBuffer, outBufferPosition, callback) {
-                            parser.parseString(outBuffer.toString("utf-8", 0, outBufferPosition) + "</stream>", callback);
-                        },
-                        function (result, callback) {
-                            results.foundTwo = result;
-                            parser.parseString(expectedTwo.toString(), callback);
-                        },
-                        function (result, callback) {
-                            results.expectedTwo = result;
-                            test.ok(utils.deepEquals(results.expectedTwo, results.foundTwo));
+                        function (outBuffer, callback) {
+                            var found = ET.parse(outBuffer.toString("utf-8", 0, ew.outPosition) + "</stream>");
+                            var expected = ET.parse(expectedTwo);
+                            test.ok(utils.deepEquals(expected, found));
+
                             callback(null);
                         }
                     ], 
@@ -307,12 +278,10 @@ exports.setup = function() {
 
                 var ew = new EventWriter(out, err);
 
-                ew.writeEvent(new Event(), function(err, outBuffer, outBufferPosition){
+                ew.writeEvent(new Event(), function(err) {
                     test.ok(err);
-                    // TODO: port the following test from the Python SDK
-                    // ... actually, this line is never run because the assert
-                    // ... exists scope immediately on Error 
-                    // self.assertTrue(err.getvalue().startswith(EventWriter.WARN))
+                    
+                    test.ok(utils.startsWith(ew._err.toString("utf-8", 0, ew.errPosition), EventWriter.WARN));
                     test.done();
                 });
             },
@@ -339,11 +308,12 @@ exports.setup = function() {
 
                 var ew = new EventWriter(out, err);
 
-                var expected = utils.readFile(__filename, "../data/event_minimal.xml");
+                var expected = ET.parse(utils.readFile(__filename, "../data/event_minimal.xml")).getroot();
 
-                ew.writeXMLDocument(expected.toString(), function(err) {
+                ew.writeXMLDocument(expected, function(err) {
                     test.ok(!err);
-                    test.equals(expected.toString(), ew._out.toString("utf-8", 0, expected.toString().length));
+                    //test.equals(expected, ew._out.toString("utf-8", 0, expected.length));
+                    //test.ok(xml_compare(expected, ET.fromstring(ew._out.toString("utf-8", 0, ew.outPosition))));
                     test.done();
                 });
             }
