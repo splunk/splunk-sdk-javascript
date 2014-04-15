@@ -123,7 +123,6 @@ exports.setup = function() {
             },
 
             "Validation succeeds": function(test) {
-
                 var NewScript = new Script();
 
                 NewScript.getScheme = function() {
@@ -158,7 +157,6 @@ exports.setup = function() {
             },
 
             "Validation fails": function(test) {
-
                 var NewScript = new Script();
 
                 NewScript.getScheme = function() {
@@ -273,8 +271,7 @@ exports.setup = function() {
                 NewScript.streamEvents = function(inputs, eventWriter, callback) {
                     var service = this.service();
                     
-                    // TODO: find a better way of doing this test, the Service var is out of scope
-                    test.ok(service instanceof require("../../lib/service"));
+                    test.ok(service instanceof splunkjs.Service);
                     test.strictEqual(service.prefix, inputs.metadata["server_uri"]);
                     callback(null, 0);
                 };

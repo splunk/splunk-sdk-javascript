@@ -146,6 +146,7 @@ exports.setup = function() {
             },
             
             "Event without enough fields throws error": function(test) {
+                // TODO: make it work for Streams
                 var e = new Event();
                 // A zero size buffer is fine because it won't be written to,
                 // due to the thrown error.
@@ -156,6 +157,7 @@ exports.setup = function() {
             },
 
             "Event with minimal config matches expected XML": function(test) {
+                // TODO: make it work for Streams
                 var myEvent = new Event({
                     data: "This is a test of the emergency broadcast system.",
                     stanza: "fubar",
@@ -186,6 +188,7 @@ exports.setup = function() {
             },
 
             "Event with full config matches expected XML": function(test) {
+                // TODO: make it work for Streams
                 var myEvent = new Event({
                     data: "This is a test of the emergency broadcast system.",
                     stanza: "fubar",
