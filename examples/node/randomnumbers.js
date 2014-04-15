@@ -17,6 +17,7 @@
     var splunkjs        = require('../../index');
     var ModularInput    = splunkjs.ModularInput;
     var Script          = ModularInput.Script;
+    var Event           = ModularInput.Event;
     var Scheme          = ModularInput.Scheme;
     var Argument        = ModularInput.Argument;
     var Async           = splunkjs.Async;
@@ -77,7 +78,7 @@
 
         var myEvent = new Event({
             data: "number=" + getRandomInt(min, max),
-            stanza: "inputName",
+            stanza: "inputName"
         });
         
         Async.chain([
