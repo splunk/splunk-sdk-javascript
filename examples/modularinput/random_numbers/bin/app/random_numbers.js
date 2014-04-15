@@ -14,7 +14,7 @@
 // under the License.
 
 (function() {
-    var splunkjs        = require('../../index');
+    var splunkjs        = require('./splunk-sdk-javascript/index');
     var ModularInput    = splunkjs.ModularInput;
     var Script          = ModularInput.Script;
     var Event           = ModularInput.Event;
@@ -62,45 +62,52 @@
     };
 
     NewScript.streamEvents = function(inputDefinition, eventWriter, callback) {
-        Async.parallel([
-                function (done) {
+        var total = 0;
 
-                }
-            ],
-            function (err) {
+        Async.parallelEach(
+            inputDefinition.inputs.keys(),
+            function (val, idx, done) {
+                var min = parseFloat(inputDefinition.inputs[val].name["min"]);
+                var min = parseFloat(inputDefinition.inputs[val].name["max"]);
 
-            }
-        );
-        // TODO: functionality
-        var inputName = "";
-        var min = parseFloat();
-        var max = parseFloat();
+                var event = new Event();
+                event.stanza = inputDefinition.inputs[val].name;
+                event.data = "number=\"" + getRandomInt(min, max).toString()  +  "\"";
+                var myEvent = new Event({
+                    data: "number=\"" + getRandomInt(min, max) + "\"",
+                    stanza: inputDefinition.inputs[val].name
+                });
 
-        var myEvent = new Event({
-            data: "number=" + getRandomInt(min, max),
-            stanza: "inputName"
-        });
-        
-        Async.chain([
-                function (done) {
-                    eventWriter.writeEvent(myEvent, done);
-                },
-                function (buffer, done) {
-                    eventWriter.writeEvent(myEvent, done);
-                },
-                function (buffer, done) {
-                    done(null);
-                }
-            ],
+                total++;
+
+                Async.chain([
+                        function (chainDone) {
+                            eventWriter.writeEvent(myEvent, chainDone);
+                        },/*
+                        function (buffer, done) {
+                            eventWriter.writeEvent(myEvent, chainDone);
+                        },*/
+                        function (buffer, chainDone) {
+                            chainDone(null);
+                        }
+                    ],
+                    function (err) {
+                        if (err) {
+                            done(err, 1);
+                            return;
+                        }
+                        else {
+                            done(null, 0);
+                            return;
+                        }
+                    }
+                );
+            },
             function (err) {
                 if (err) {
-                    callback(err, 1);
-                    return;
+                    console.log("WOAH ERROR", err);
                 }
-                else {
-                    callback(null, 0);
-                    return;
-                }
+                console.log("Total", total);
             }
         );
     };
