@@ -18,6 +18,7 @@
     var ModularInput    = splunkjs.ModularInput;
     var Script          = ModularInput.Script;
     var Event           = ModularInput.Event;
+    var EventWriter     = ModularInput.EventWriter;
     var Scheme          = ModularInput.Scheme;
     var Argument        = ModularInput.Argument;
     var Async           = splunkjs.Async;
@@ -63,10 +64,10 @@
 
     NewScript.streamEvents = function(inputDefinition, eventWriter, callback) {
         var total = 0;
-
         Async.parallelEach(
             inputDefinition.inputs.keys(),
             function (val, idx, done) {
+                process.stderr.write("val", val, "idx", idx); // TODO: debug
                 var min = parseFloat(inputDefinition.inputs[val].name["min"]);
                 var min = parseFloat(inputDefinition.inputs[val].name["max"]);
 
@@ -83,10 +84,7 @@
                 Async.chain([
                         function (chainDone) {
                             eventWriter.writeEvent(myEvent, chainDone);
-                        },/*
-                        function (buffer, done) {
-                            eventWriter.writeEvent(myEvent, chainDone);
-                        },*/
+                        },
                         function (buffer, chainDone) {
                             chainDone(null);
                         }
@@ -112,11 +110,18 @@
         );
     };
 
-
     if (module === require.main) {
-        NewScript.run(process.argv, function(err){
+        
+        NewScript.run(process.argv, function(err) {
+            var ew = new EventWriter();
+            ew.log(EventWriter.DEBUG, "The script is running and running. ", function (writeErr) {
+                // Writing to process.stdout ends up prepending that text to the data input name in Splunk
+                //process.stderr.write("test test test");            
+            });
+
             if (err) {
-                console.log("Error running modular input", err);
+                // TODO: it seems that process.stderr, at this point, is actually a socket... not a stream
+                process.stderr.write("Error running modular input " + err);
             }
         });
     }
