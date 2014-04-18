@@ -61,7 +61,7 @@ exports.setup = function() {
                 var args = [TEST_SCRIPT_PATH, "--scheme"];
                 NewScript.runScript(args, ew, inStream, function(err, scriptStatus) {
                     test.ok(!err);
-                    var error = ew._err.toString("utf-8", 0, 51);
+                    var error = ew._err.toString("utf8", 0, 51);
 
                     test.strictEqual(0, ew.outPosition);
                     test.strictEqual(error, "FATAL Modular input script returned a null scheme.\n");
@@ -112,7 +112,7 @@ exports.setup = function() {
 
                     var expected = utils.readFile(__filename, "../data/scheme_without_defaults.xml");
 
-                    var output = ew._out.toString("utf-8", 0, ew.outPosition);
+                    var output = ew._out.toString("utf8", 0, ew.outPosition);
 
                     // TODO: fix this test
                     //test.ok(utils.XMLCompare(ET.parse(expected), ET.parse(output)));
@@ -183,7 +183,7 @@ exports.setup = function() {
                 NewScript.runScript(args, ew, validationFile, function(err, scriptStatus) {
                     test.ok(err);
                     var expected = utils.readFile(__filename, "../data/validation_error.xml");
-                    var output = ew._out.toString("utf-8", 0, ew.outPosition);
+                    var output = ew._out.toString("utf8", 0, ew.outPosition);
 
                     test.ok(utils.XMLCompare(ET.parse(expected).getroot(), ET.parse(output).getroot()));
                     test.strictEqual(0, ew.errPosition);
@@ -199,7 +199,7 @@ exports.setup = function() {
                     return null;
                 };
 
-                NewScript.streamEvents = function(inputs, eventWriter, callback) {
+                NewScript.streamEvents = function(name, input, eventWriter, callback) {
                     var myEvent = new Event({
                         data: "This is a test of the emergency broadcast system.",
                         stanza: "fubar",
@@ -216,22 +216,13 @@ exports.setup = function() {
                             function (done) {
                                 eventWriter.writeEvent(myEvent, done);
                             },
-                            function (buffer, done) {
-                                eventWriter.writeEvent(myEvent, done);
-                            },
-                            function (buffer, done) {
+                            function (done) {
                                 done(null);
                             }
                         ],
                         function (err) {
-                            if (err) {
-                                callback(err, 1);
-                                return;
-                            }
-                            else {
-                                callback(null, 0);
-                                return;
-                            }
+                            callback(err, err ? 1 : 0);
+                            return;
                         }
                     );
                 };
@@ -249,7 +240,7 @@ exports.setup = function() {
                     test.ok(!err);
 
                     var expected = utils.readFile(__filename, "../data/stream_with_two_events.xml");
-                    var found = ew._out.toString("utf-8", 0, ew.outPosition);
+                    var found = ew._out.toString("utf8", 0, ew.outPosition);
                     
                     test.ok(utils.XMLCompare(ET.parse(expected).getroot(), ET.parse(found).getroot()));
                     test.strictEqual(0, scriptStatus);
@@ -268,11 +259,11 @@ exports.setup = function() {
                     return false;
                 };
 
-                NewScript.streamEvents = function(inputs, eventWriter, callback) {
+                NewScript.streamEvents = function(name, input, eventWriter, callback) {
                     var service = this.service();
                     
                     test.ok(service instanceof splunkjs.Service);
-                    test.strictEqual(service.prefix, inputs.metadata["server_uri"]);
+                    test.strictEqual(service.prefix, this._inputDefinition.metadata["server_uri"]);
                     callback(null, 0);
                 };
 

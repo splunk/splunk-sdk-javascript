@@ -21,11 +21,7 @@
     var EventWriter     = ModularInput.EventWriter;
     var Scheme          = ModularInput.Scheme;
     var Argument        = ModularInput.Argument;
-    var Async           = splunkjs.Async;
-
-    function getRandomInt(min, max) {
-        return Math.floor(Math.random() * (max - min + 1)) + min;
-    }
+    var utils           = ModularInput.utils;
 
     var NewScript = new Script();
 
@@ -36,18 +32,23 @@
         scheme.useExternalValidation = true;
         scheme.useSingleInstance = true;
 
-        var minArg = new Argument("min");
-        minArg.dataType = Argument.dataTypeNumber;
-        minArg.description = "Minimum random number to be produced by this input.";
-        minArg.requiredOnCreate = true;
+        var minArg = new Argument({
+            name: "min",
+            dataType: Argument.dataTypeNumber,
+            description: "Minimum random number to be produced by this input.",
+            requiredOnCreate: true,
+            requiredOnEdit: true
+        });
 
-        scheme.addArgument(minArg);
+        var maxArg = new Argument({
+            name: "max",
+            dataType: Argument.dataTypeNumber,
+            description: "Maximum random number to be produced by this input.",
+            requiredOnCreate: true,
+            requiredOnEdit: true
+        });
 
-        var maxArg = new Argument("max");
-        maxArg.dataType = Argument.dataTypeNumber;
-        maxArg.description = "Maximum random number to be produced by this input.";
-        maxArg.requiredOnCreate = true;
-        scheme.addArgument(maxArg);
+        scheme.args = [minArg, maxArg];
 
         return scheme;
     };
@@ -62,66 +63,38 @@
         done();
     };
 
-    NewScript.streamEvents = function(inputDefinition, eventWriter, callback) {
-        var total = 0;
-        Async.parallelEach(
-            inputDefinition.inputs.keys(),
-            function (val, idx, done) {
-                process.stderr.write("val", val, "idx", idx); // TODO: debug
-                var min = parseFloat(inputDefinition.inputs[val].name["min"]);
-                var min = parseFloat(inputDefinition.inputs[val].name["max"]);
+    NewScript.streamEvents = function(name, inputDefinition, eventWriter, callback) {
+        var getRandomInt = function (min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        };
 
-                var event = new Event();
-                event.stanza = inputDefinition.inputs[val].name;
-                event.data = "number=\"" + getRandomInt(min, max).toString()  +  "\"";
-                var myEvent = new Event({
-                    data: "number=\"" + getRandomInt(min, max) + "\"",
-                    stanza: inputDefinition.inputs[val].name
-                });
+        var singleInput = inputDefinition;
 
-                total++;
+        var min = parseFloat(singleInput.min);
+        var max = parseFloat(singleInput.max);
 
-                Async.chain([
-                        function (chainDone) {
-                            eventWriter.writeEvent(myEvent, chainDone);
-                        },
-                        function (buffer, chainDone) {
-                            chainDone(null);
-                        }
-                    ],
-                    function (err) {
-                        if (err) {
-                            done(err, 1);
-                            return;
-                        }
-                        else {
-                            done(null, 0);
-                            return;
-                        }
-                    }
-                );
-            },
-            function (err) {
-                if (err) {
-                    console.log("WOAH ERROR", err);
-                }
-                console.log("Total", total);
-            }
-        );
+        var curEvent = new Event({
+            stanza: name,
+            data: "number=\"" + getRandomInt(min, max).toString() + "\""
+        });
+
+        eventWriter.writeEvent(curEvent, function(err) {
+            callback(err, err ? 1 : 0);
+        });
     };
 
     if (module === require.main) {
         
-        NewScript.run(process.argv, function(err) {
+        NewScript.run(process.argv, function(err, scriptStatus) {
             var ew = new EventWriter();
-            ew.log(EventWriter.DEBUG, "The script is running and running. ", function (writeErr) {
-                // Writing to process.stdout ends up prepending that text to the data input name in Splunk
-                //process.stderr.write("test test test");            
-            });
-
+            var title = NewScript.getScheme().title;
             if (err) {
-                // TODO: it seems that process.stderr, at this point, is actually a socket... not a stream
-                process.stderr.write("Error running modular input " + err);
+                // TODO: is there a better way to deal w/ the callback so the script doesn't hang?
+                ew.log(EventWriter.ERROR, "Error (" + err + ") while running modular input " + title + " with status: " + scriptStatus, function(){});
+            }
+            else {
+                // TODO: is there a better way to deal w/ the callback so the script doesn't hang?
+                ew.log(EventWriter.INFO, "Now running modular input " + title + " with status " + scriptStatus, function() {});
             }
         });
     }
