@@ -314,8 +314,7 @@ exports.setup = function() {
 
                 ew.writeXMLDocument(expected, function(err) {
                     test.ok(!err);
-                    //test.equals(expected, ew._out.toString("utf8", 0, expected.length));
-                    //test.ok(xml_compare(expected, ET.fromstring(ew._out.toString("utf-8", 0, ew.outPosition))));
+                    test.ok(utils.XMLCompare(expected, ET.parse(ew._out.toString("utf8", 0, ew.outPosition)).getroot()));
                     test.done();
                 });
             }
