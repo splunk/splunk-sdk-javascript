@@ -53,14 +53,13 @@
         return scheme;
     };
 
-    NewScript.validateInput = function(definition, done) {
+    NewScript.validateInput = function(definition) {
         var min = parseFloat(definition.parameters["min"]);
         var max = parseFloat(definition.parameters["max"]);
 
         if (min >= max) {
             throw new Error("min must be less than max; found min=" + min.toString() + ", max=" + max.toString());
         }
-        done();
     };
 
     NewScript.streamEvents = function(name, inputDefinition, eventWriter, callback) {
@@ -90,11 +89,18 @@
             var title = NewScript.getScheme().title;
             if (err) {
                 // TODO: is there a better way to deal w/ the callback so the script doesn't hang?
-                ew.log(EventWriter.ERROR, "Error (" + err + ") while running modular input " + title + " with status: " + scriptStatus, function(){});
+                ew.log(EventWriter.ERROR, "Error (" + err + ") while running modular input " + title + " with status: " + scriptStatus, function(){
+                    throw err; // Throw the error, Splunk knows there's a problem
+                    //process.exit(1);
+                });
             }
             else {
-                // TODO: is there a better way to deal w/ the callback so the script doesn't hang?
-                ew.log(EventWriter.INFO, "Now running modular input " + title + " with status " + scriptStatus, function() {});
+                ew.log(EventWriter.INFO, "Now running modular input " + title + " with status " + scriptStatus, function() {
+                    // TODO: when do I want to exit the process?
+                    // The process shouldn't hang when passed --scheme
+                    //process.exit(0);
+                });
+
             }
         });
     }
