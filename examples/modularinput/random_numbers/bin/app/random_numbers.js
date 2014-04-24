@@ -14,7 +14,7 @@
 // under the License.
 
 (function() {
-    var splunkjs        = require('./splunk-sdk-javascript/index');
+    var splunkjs        = require('splunk-sdk-javascript'); // TODO: change to splunk-sdk
     var ModularInput    = splunkjs.ModularInput;
     var Script          = ModularInput.Script;
     var Event           = ModularInput.Event;
@@ -90,7 +90,7 @@
             if (err) {
                 // TODO: is there a better way to deal w/ the callback so the script doesn't hang?
                 ew.log(EventWriter.ERROR, "Error (" + err + ") while running modular input " + title + " with status: " + scriptStatus, function(){
-                    throw err; // Throw the error, Splunk knows there's a problem
+                    throw err; // Throw the error, so Splunk knows there's a problem
                     //process.exit(1);
                 });
             }
