@@ -48,7 +48,15 @@
             requiredOnEdit: true
         });
 
-        scheme.args = [minArg, maxArg];
+        var countArg = new Argument({
+            name: "count",
+            dataType: Argument.dataTypeNumber,
+            description: "Number of events to generate.",
+            requiredOnCreate: true,
+            requiredOnEdit: true
+        });
+
+        scheme.args = [minArg, maxArg, countArg];
 
         return scheme;
     };
@@ -56,30 +64,39 @@
     NewScript.validateInput = function(definition) {
         var min = parseFloat(definition.parameters["min"]);
         var max = parseFloat(definition.parameters["max"]);
+        var count = parseInt(definition.parameters["count"], 10);
 
         if (min >= max) {
             throw new Error("min must be less than max; found min=" + min.toString() + ", max=" + max.toString());
         }
+        if (count < 0) {
+            throw new Error("count must be a positive value; found count=" + count.toString());
+        }
     };
 
     NewScript.streamEvents = function(name, inputDefinition, eventWriter, callback) {
-        var getRandomInt = function (min, max) {
-            return Math.floor(Math.random() * (max - min + 1)) + min;
+        var getRandomFloat = function (min, max) {
+            return Math.random() * (max - min + 1) + min;
         };
 
         var singleInput = inputDefinition;
 
         var min = parseFloat(singleInput.min);
         var max = parseFloat(singleInput.max);
+        var count = parseInt(singleInput.count, 10);
 
-        var curEvent = new Event({
-            stanza: name,
-            data: "number=\"" + getRandomInt(min, max).toString() + "\""
-        });
-
-        eventWriter.writeEvent(curEvent, function(err) {
-            callback(err, err ? 1 : 0);
-        });
+        for (var i = 0; i < count; i++) {
+            var curEvent = new Event({
+                stanza: name,
+                data: "number=\"" + getRandomFloat(min, max).toString() + "\""
+            });
+            eventWriter.writeEvent(curEvent, function(err) {
+                // Only call the callback on error, or when done.
+                if (err || i + 1 === count) {
+                    callback(err, err ? 1 : 0);
+                }
+            });    
+        }
     };
 
     if (module === require.main) {
@@ -89,7 +106,7 @@
             var title = NewScript.getScheme().title;
             if (err) {
                 // TODO: is there a better way to deal w/ the callback so the script doesn't hang?
-                ew.log(EventWriter.ERROR, "Error (" + err + ") while running modular input " + title + " with status: " + scriptStatus, function(){
+                ew.log(EventWriter.ERROR, "Error (" + err + ") while running modular input " + title + " with status: " + scriptStatus, function() {
                     throw err; // Throw the error, so Splunk knows there's a problem
                     //process.exit(1);
                 });
