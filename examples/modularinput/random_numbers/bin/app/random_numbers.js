@@ -17,17 +17,13 @@
     var ModularInput    = splunkjs.ModularInput;
     var Script          = ModularInput.Script;
     var Event           = ModularInput.Event;
-    var EventWriter     = ModularInput.EventWriter;
     var Scheme          = ModularInput.Scheme;
     var Argument        = ModularInput.Argument;
-    var utils           = ModularInput.utils;
 
-    var NewScript = new Script();
-
-    NewScript.getScheme = function() {
+    exports.getScheme = function() {
         var scheme = new Scheme("Random Numbers");
+        
         scheme.description = "Streams events containing a random number.";
-
         scheme.useExternalValidation = true;
         scheme.useSingleInstance = true;
 
@@ -60,7 +56,7 @@
         return scheme;
     };
 
-    NewScript.validateInput = function(definition) {
+    exports.validateInput = function(definition) {
         var min = parseFloat(definition.parameters["min"]);
         var max = parseFloat(definition.parameters["max"]);
         var count = parseInt(definition.parameters["count"], 10);
@@ -73,7 +69,7 @@
         }
     };
 
-    NewScript.streamEvents = function(name, inputDefinition, eventWriter, callback) {
+    exports.streamEvents = function(name, inputDefinition, eventWriter, callback) {
         var getRandomFloat = function (min, max) {
             return Math.random() * (max - min + 1) + min;
         };
@@ -98,8 +94,5 @@
         }
     };
 
-    if (module === require.main) {
-        NewScript.run(process.argv);
-    }
-
+    Script.execute(exports, module);
 })();
