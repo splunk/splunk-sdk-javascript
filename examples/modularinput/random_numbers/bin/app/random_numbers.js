@@ -1,4 +1,3 @@
-
 // Copyright 2014 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -95,11 +94,11 @@
                 if (err || i + 1 === count) {
                     callback(err, err ? 1 : 0);
                 }
-            });    
+            });
         }
     };
 
-    if (module === require.main) {    
+    if (module === require.main) {
         NewScript.run(process.argv);
     }
 
