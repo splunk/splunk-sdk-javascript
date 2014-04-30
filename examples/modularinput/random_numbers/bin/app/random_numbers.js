@@ -22,7 +22,7 @@
 
     exports.getScheme = function() {
         var scheme = new Scheme("Random Numbers");
-        
+
         scheme.description = "Streams events containing a random number.";
         scheme.useExternalValidation = true;
         scheme.useSingleInstance = true;
