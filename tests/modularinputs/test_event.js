@@ -17,12 +17,12 @@ exports.setup = function() {
 
     var splunkjs        = require('../../index');
     var Async           = splunkjs.Async;
-    var modularinput    = splunkjs.ModularInput;
-    var Event           = modularinput.Event;
-    var EventWriter     = modularinput.EventWriter;
+    var ModularInput   = splunkjs.ModularInputs;
+    var Event           = ModularInput.Event;
+    var EventWriter     = ModularInput.EventWriter;
     var path            = require("path");
     var ET              = require("elementtree");
-    var utils           = modularinput.utils;
+    var utils           = ModularInput.utils;
     var Stream          = require("stream");
 
     splunkjs.Logger.setLevel("ALL");

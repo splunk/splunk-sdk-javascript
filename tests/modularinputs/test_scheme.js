@@ -16,10 +16,10 @@
 exports.setup = function() {
 
     var splunkjs        = require('../../index');
-    var modularinput    = splunkjs.ModularInput;
-    var Scheme          = modularinput.Scheme;
-    var Argument        = modularinput.Argument;
-    var utils           = modularinput.utils;
+    var ModularInput   = splunkjs.ModularInputs;
+    var Scheme          = ModularInput.Scheme;
+    var Argument        = ModularInput.Argument;
+    var utils           = ModularInput.utils;
     var ET              = require("elementtree");
 
     splunkjs.Logger.setLevel("ALL");

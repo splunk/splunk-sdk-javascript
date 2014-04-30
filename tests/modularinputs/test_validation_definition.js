@@ -16,9 +16,9 @@
 exports.setup = function() {
 
     var splunkjs                = require('../../index');
-    var modularinput            = splunkjs.ModularInput;
-    var ValidationDefinition    = modularinput.ValidationDefinition;
-    var utils                   = modularinput.utils;
+    var ModularInputs           = splunkjs.ModularInputs;
+    var ValidationDefinition    = ModularInputs.ValidationDefinition;
+    var utils                   = ModularInputs.utils;
 
     splunkjs.Logger.setLevel("ALL");
     return {

@@ -14,11 +14,11 @@
 
 (function() {
     var splunkjs        = require('splunk-sdk-javascript'); // TODO: change to splunk-sdk
-    var ModularInput    = splunkjs.ModularInput;
-    var Script          = ModularInput.Script;
-    var Event           = ModularInput.Event;
-    var Scheme          = ModularInput.Scheme;
-    var Argument        = ModularInput.Argument;
+    var ModularInputs   = splunkjs.ModularInputs;
+    var ModularInput    = ModularInputs.ModularInput;
+    var Event           = ModularInputs.Event;
+    var Scheme          = ModularInputs.Scheme;
+    var Argument        = ModularInputs.Argument;
 
     exports.getScheme = function() {
         var scheme = new Scheme("Random Numbers");
@@ -94,5 +94,5 @@
         }
     };
 
-    Script.execute(exports, module);
+    ModularInput.execute(exports, module);
 })();
