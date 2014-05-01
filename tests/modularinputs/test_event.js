@@ -17,13 +17,12 @@ exports.setup = function() {
 
     var splunkjs        = require('../../index');
     var Async           = splunkjs.Async;
-    var modularinput    = splunkjs.ModularInput;
-    var Event           = modularinput.Event;
-    var EventWriter     = modularinput.EventWriter;
-    var fs              = require("fs");
+    var ModularInput   = splunkjs.ModularInputs;
+    var Event           = ModularInput.Event;
+    var EventWriter     = ModularInput.EventWriter;
     var path            = require("path");
     var ET              = require("elementtree");
-    var utils           = modularinput.utils;
+    var utils           = ModularInput.utils;
     var Stream          = require("stream");
 
     splunkjs.Logger.setLevel("ALL");
@@ -173,7 +172,7 @@ exports.setup = function() {
                             myEvent.writeTo(myBuffer, callback);
                         },
                         function (buffer, bufferPosition, callback) {
-                            var found = ET.parse(buffer.toString("utf-8", 0, bufferPosition));
+                            var found = ET.parse(buffer.toString("utf8", 0, bufferPosition));
                             var expected = ET.parse(expectedEvent);
                             test.ok(utils.deepEquals(expected, found));
 
@@ -210,7 +209,7 @@ exports.setup = function() {
                             myEvent.writeTo(myBuffer, callback);
                         },
                         function (buffer, bufferPosition, callback) {
-                            var found = ET.parse(buffer.toString("utf-8", 0, bufferPosition));
+                            var found = ET.parse(buffer.toString("utf8", 0, bufferPosition));
                             var expected = ET.parse(expectedEvent);
 
                             test.ok(utils.deepEquals(expected, found));
@@ -249,15 +248,15 @@ exports.setup = function() {
                         function (callback) {
                             ew.writeEvent(myEvent, callback);
                         },
-                        function (outBuffer, callback) {
-                            var found = ET.parse(outBuffer.toString("utf-8", 0, ew.outPosition) + "</stream>");
+                        function (callback) {
+                            var found = ET.parse(ew._out.toString("utf8", 0, ew.outPosition) + "</stream>");
                             var expected = ET.parse(expectedOne);
                             test.ok(utils.deepEquals(expected, found));
                             
                             ew.writeEvent(myEvent, callback);
                         },
-                        function (outBuffer, callback) {
-                            var found = ET.parse(outBuffer.toString("utf-8", 0, ew.outPosition) + "</stream>");
+                        function (callback) {
+                            var found = ET.parse(ew._out.toString("utf8", 0, ew.outPosition) + "</stream>");
                             var expected = ET.parse(expectedTwo);
                             test.ok(utils.deepEquals(expected, found));
 
@@ -284,7 +283,7 @@ exports.setup = function() {
                 ew.writeEvent(new Event(), function(err) {
                     test.ok(err);
                     
-                    test.ok(utils.startsWith(ew._err.toString("utf-8", 0, ew.errPosition), EventWriter.WARN));
+                    test.ok(utils.startsWith(ew._err.toString("utf8", 0, ew.errPosition), EventWriter.WARN));
                     test.done();
                 });
             },
@@ -299,7 +298,7 @@ exports.setup = function() {
                 ew.log(EventWriter.ERROR, "Something happened!", function(err) {
                     test.ok(!err);
                     // Be safe with the buffer, and only check the first part
-                    test.ok(utils.startsWith(ew._err.toString("utf-8", 0, EventWriter.ERROR.length), EventWriter.ERROR));
+                    test.ok(utils.startsWith(ew._err.toString("utf8", 0, EventWriter.ERROR.length), EventWriter.ERROR));
                     test.done();
                 });
             },
@@ -315,8 +314,7 @@ exports.setup = function() {
 
                 ew.writeXMLDocument(expected, function(err) {
                     test.ok(!err);
-                    //test.equals(expected, ew._out.toString("utf-8", 0, expected.length));
-                    //test.ok(xml_compare(expected, ET.fromstring(ew._out.toString("utf-8", 0, ew.outPosition))));
+                    test.ok(utils.XMLCompare(expected, ET.parse(ew._out.toString("utf8", 0, ew.outPosition)).getroot()));
                     test.done();
                 });
             }

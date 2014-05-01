@@ -46,7 +46,7 @@
     exports.Tests = {};
 
     // Modular input tests
-    exports.Tests.ModularInputs = require('./modularinput');
+    exports.Tests.ModularInputs = require('./modularinputs');
 
     // Building block tests
     exports.Tests.Utils = require('./test_utils').setup();

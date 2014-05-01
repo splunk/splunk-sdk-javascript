@@ -25,7 +25,7 @@
     exports.Tests.InputDefinition = require('./test_input_definition').setup();
     exports.Tests.Event = require('./test_event').setup();
     exports.Tests.Scheme = require('./test_scheme').setup();
-    exports.Tests.Script = require('./test_script').setup();
+    exports.Tests.ModularInput = require('./test_modularinput').setup();
     
     splunkjs.Logger.setLevel("ALL");
     
