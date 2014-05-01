@@ -158,15 +158,14 @@ exports.setup = function() {
 
                     var output = ew._out._read();
 
-                    // TODO: fix this test, it fails when it shouldn't
-                    //test.ok(utils.XMLCompare(ET.parse(expected), ET.parse(output)));
+                    test.ok(utils.XMLCompare(ET.parse(expected), ET.parse(output)));
                     test.strictEqual(0, scriptStatus);
                     test.strictEqual("", ew._err._read());
                     test.done();
                 });
             },
 
-            "Validation succeeds": function(test) {
+            "Script Input Validation succeeds": function(test) {
 
                 exports.getScheme = function() {
                     return null;
@@ -217,7 +216,7 @@ exports.setup = function() {
                 });
             },
 
-            "Validation fails": function(test) {
+            "Script Input Validation fails": function(test) {
 
                 exports.getScheme = function() {
                     return null;
@@ -269,7 +268,7 @@ exports.setup = function() {
                 });
             },
 
-            "Writing events works": function(test) {
+            "Script streaming events works": function(test) {
 
                 exports.getScheme = function () {
                     return null;
@@ -342,8 +341,6 @@ exports.setup = function() {
 
             "Script gets a valid Service": function(test) {
 
-                // TODO: broken test.
-
                 exports.getScheme = function() {
                     return null;
                 };
@@ -384,11 +381,10 @@ exports.setup = function() {
 
                 var inputConfiguration = utils.readFile(__filename, "../data/conf_with_2_inputs.xml");
 
-                test.ok(!ModularInput._service); // TODO: update this once making service actually work.
+                test.ok(!ModularInput._service);
 
                 var args = [TEST_SCRIPT_PATH];
                 ModularInput.runScript(exports, args, ew, inputConfiguration, function(err, scriptStatus) {
-                    console.log(err, inputConfiguration);
                     test.ok(!err);
 
                     test.strictEqual("", ew._err._read());
