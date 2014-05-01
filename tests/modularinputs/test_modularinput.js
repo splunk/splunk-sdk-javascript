@@ -205,8 +205,18 @@ exports.setup = function() {
 
                 var validationFile = utils.readFile(__filename, "../data/validation.xml");
 
+                var inStream = new Stream.Duplex();
+                inStream.data = "";
+                inStream._write = function (chunk, enc, next) {
+                    this.data += chunk.toString();
+                    next();
+                };
+                inStream._read = function() {
+                    return this.data;
+                };
+
                 var args = [TEST_SCRIPT_PATH, "--validate-arguments"];
-                ModularInput.runScript(exports, args, ew, validationFile, function(err, scriptStatus) {
+                ModularInput.runScript(exports, args, ew, inStream, function(err, scriptStatus) {
                     test.ok(!err);
 
                     test.strictEqual("", ew._out._read());
@@ -214,6 +224,7 @@ exports.setup = function() {
                     test.strictEqual(0, scriptStatus);
                     test.done();
                 });
+                inStream.emit("data", validationFile);
             },
 
             "Script Input Validation fails": function(test) {
@@ -253,10 +264,20 @@ exports.setup = function() {
 
                 var ew = new EventWriter(out, err);
 
+                var inStream = new Stream.Duplex();
+                inStream.data = "";
+                inStream._write = function (chunk, enc, next) {
+                    this.data += chunk.toString();
+                    next();
+                };
+                inStream._read = function() {
+                    return this.data;
+                };
+
                 var validationFile = utils.readFile(__filename, "../data/validation.xml");
 
                 var args = [TEST_SCRIPT_PATH, "--validate-arguments"];
-                ModularInput.runScript(exports, args, ew, validationFile, function(err, scriptStatus) {
+                ModularInput.runScript(exports, args, ew, inStream, function(err, scriptStatus) {
                     test.ok(err);
                     var expected = utils.readFile(__filename, "../data/validation_error.xml");
                     var output = ew._out._read();
@@ -266,6 +287,7 @@ exports.setup = function() {
                     test.strictEqual(1, scriptStatus);
                     test.done();
                 });
+                inStream.emit("data", validationFile);
             },
 
             "Script streaming events works": function(test) {
@@ -324,19 +346,30 @@ exports.setup = function() {
 
                 var ew = new EventWriter(out, err);
 
+                var inStream = new Stream.Duplex();
+                inStream.data = "";
+                inStream._write = function (chunk, enc, next) {
+                    this.data += chunk.toString();
+                    next();
+                };
+                inStream._read = function() {
+                    return this.data;
+                };
+
                 var inputConfiguration = utils.readFile(__filename, "../data/conf_with_2_inputs.xml");
 
                 var args = [TEST_SCRIPT_PATH];
-                ModularInput.runScript(exports, args, ew, inputConfiguration, function(err, scriptStatus) {
+                ModularInput.runScript(exports, args, ew, inStream, function(err, scriptStatus) {
                     test.ok(!err);
 
                     var expected = utils.readFile(__filename, "../data/stream_with_two_events.xml");
-                    var found = ew._out._read() + "</stream>"; //TODO: the close stream tag should be added automatically
+                    var found = ew._out._read() + "</stream>";
 
                     test.ok(utils.XMLCompare(ET.parse(expected).getroot(), ET.parse(found).getroot()));
                     test.strictEqual(0, scriptStatus);
                     test.done();
                 });
+                inStream.emit("data", inputConfiguration);
             },
 
             "Script gets a valid Service": function(test) {
@@ -379,18 +412,29 @@ exports.setup = function() {
 
                 var ew = new EventWriter(out, err);
 
+                var inStream = new Stream.Duplex();
+                inStream.data = "";
+                inStream._write = function (chunk, enc, next) {
+                    this.data += chunk.toString();
+                    next();
+                };
+                inStream._read = function() {
+                    return this.data;
+                };
+
                 var inputConfiguration = utils.readFile(__filename, "../data/conf_with_2_inputs.xml");
 
                 test.ok(!ModularInput._service);
 
                 var args = [TEST_SCRIPT_PATH];
-                ModularInput.runScript(exports, args, ew, inputConfiguration, function(err, scriptStatus) {
+                ModularInput.runScript(exports, args, ew, inStream, function(err, scriptStatus) {
                     test.ok(!err);
 
                     test.strictEqual("", ew._err._read());
                     test.strictEqual(0, scriptStatus);
                     test.done();
-                });                
+                });
+                inStream.emit("data", inputConfiguration);
             }
         }
     };
