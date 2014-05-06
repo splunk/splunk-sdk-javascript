@@ -14,7 +14,6 @@
 // under the License.
 
 exports.setup = function() {
-
     var splunkjs        = require('../../index');
     var Async           = splunkjs.Async;
     var ModularInput    = splunkjs.ModularInputs;
@@ -27,7 +26,6 @@ exports.setup = function() {
 
     splunkjs.Logger.setLevel("ALL");
     return {
-
         "Event tests": {
             setUp: function(done) {
                 done();
@@ -157,7 +155,7 @@ exports.setup = function() {
             "Event with minimal config matches expected XML": function(test) {
                 var out = new Stream.Duplex();
                 out.data = "";
-                out._write = function (chunk, enc, next) {
+                out._write = function(chunk, enc, next) {
                     this.data += chunk.toString();
                     next();
                 };
@@ -174,10 +172,10 @@ exports.setup = function() {
                 var expectedEvent = utils.readFile(__filename, "../data/event_minimal.xml");
 
                 Async.chain([
-                        function (callback) {
+                        function(callback) {
                             myEvent.writeTo(out, callback);
                         },
-                        function (stream, callback) {
+                        function(stream, callback) {
                             var found = ET.parse(stream._read());
                             var expected = ET.parse(expectedEvent);
                             test.ok(utils.deepEquals(expected, found));
@@ -195,7 +193,7 @@ exports.setup = function() {
             "Event with full config matches expected XML": function(test) {
                 var out = new Stream.Duplex();
                 out.data = "";
-                out._write = function (chunk, enc, next) {
+                out._write = function(chunk, enc, next) {
                     this.data += chunk.toString();
                     next();
                 };
@@ -218,10 +216,10 @@ exports.setup = function() {
                 var expectedEvent = utils.readFile(__filename, "../data/event_maximal.xml");
                 
                 Async.chain([
-                        function (callback) {
+                        function(callback) {
                             myEvent.writeTo(out, callback);
                         },
-                        function (stream, callback) {
+                        function(stream, callback) {
                             var found = ET.parse(stream._read());
                             var expected = ET.parse(expectedEvent);
 
@@ -239,7 +237,7 @@ exports.setup = function() {
             "EventWriter event writing works": function(test) {
                 var out = new Stream.Duplex();
                 out.data = "";
-                out._write = function (chunk, enc, next) {
+                out._write = function(chunk, enc, next) {
                     this.data += chunk.toString();
                     next();
                 };
@@ -249,7 +247,7 @@ exports.setup = function() {
 
                 var err = new Stream.Duplex();
                 err.data = "";
-                err._write = function (chunk, enc, next) {
+                err._write = function(chunk, enc, next) {
                     this.data += chunk.toString();
                     next();
                 };
@@ -275,20 +273,20 @@ exports.setup = function() {
                 var ew = new EventWriter(out, err);
                 
                 Async.chain([
-                        function (callback) {
+                        function(callback) {
                             ew.writeEvent(myEvent, callback);
                         },
-                        function (callback) {
+                        function(callback) {
                             var found = ET.parse(ew._out._read() + "</stream>");
                             var expected = ET.parse(expectedOne);
                             test.ok(utils.deepEquals(expected, found));
                             
                             ew.writeEvent(myEvent, callback);
                         },
-                        function (callback) {
+                        function(callback) {
                             ew.close(callback);
                         },
-                        function (outStream, callback) {
+                        function(outStream, callback) {
                             var found = ET.parse(ew._out._read());
                             var expected = ET.parse(expectedTwo);
                             test.ok(utils.deepEquals(expected, found));
@@ -296,11 +294,8 @@ exports.setup = function() {
                             callback(null);
                         }
                     ], 
-                    function (err) {
+                    function(err) {
                         test.ok(!err);
-                        if (err) {
-                            console.log(err);
-                        }
                         test.done();
                     }
                 );
@@ -309,7 +304,7 @@ exports.setup = function() {
             "EventWriter gets an error from invalid Event": function(test) {
                 var out = new Stream.Duplex();
                 out.data = "";
-                out._write = function (chunk, enc, next) {
+                out._write = function(chunk, enc, next) {
                     this.data += chunk.toString();
                     next();
                 };
@@ -319,7 +314,7 @@ exports.setup = function() {
 
                 var err = new Stream.Duplex();
                 err.data = "";
-                err._write = function (chunk, enc, next) {
+                err._write = function(chunk, enc, next) {
                     this.data += chunk.toString();
                     next();
                 };
@@ -340,7 +335,7 @@ exports.setup = function() {
             "EventWriter logging works": function(test) {
                 var out = new Stream.Duplex();
                 out.data = "";
-                out._write = function (chunk, enc, next) {
+                out._write = function(chunk, enc, next) {
                     this.data += chunk.toString();
                     next();
                 };
@@ -350,7 +345,7 @@ exports.setup = function() {
 
                 var err = new Stream.Duplex();
                 err.data = "";
-                err._write = function (chunk, enc, next) {
+                err._write = function(chunk, enc, next) {
                     this.data += chunk.toString();
                     next();
                 };
@@ -371,7 +366,7 @@ exports.setup = function() {
             "EventWriter XML writing works": function(test) {
                 var out = new Stream.Duplex();
                 out.data = "";
-                out._write = function (chunk, enc, next) {
+                out._write = function(chunk, enc, next) {
                     this.data += chunk.toString();
                     next();
                 };
@@ -381,7 +376,7 @@ exports.setup = function() {
 
                 var err = new Stream.Duplex();
                 err.data = "";
-                err._write = function (chunk, enc, next) {
+                err._write = function(chunk, enc, next) {
                     this.data += chunk.toString();
                     next();
                 };
