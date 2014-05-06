@@ -15,7 +15,6 @@
 (function() {
     var splunkjs        = require('splunk-sdk-javascript'); // TODO: change to splunk-sdk
     var ModularInputs   = splunkjs.ModularInputs;
-    var ModularInput    = ModularInputs.ModularInput;
     var Event           = ModularInputs.Event;
     var Scheme          = ModularInputs.Scheme;
     var Argument        = ModularInputs.Argument;
@@ -94,5 +93,5 @@
         }
     };
 
-    ModularInput.execute(exports, module);
+    ModularInputs.execute(exports, module);
 })();
