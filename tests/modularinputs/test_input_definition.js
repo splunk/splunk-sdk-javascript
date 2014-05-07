@@ -14,7 +14,6 @@
 // under the License.
 
 exports.setup = function() {
-
     var splunkjs            = require('../../index');
     var ModularInputs       = splunkjs.ModularInputs;
     var InputDefinition     = ModularInputs.InputDefinition;
@@ -22,7 +21,6 @@ exports.setup = function() {
 
     splunkjs.Logger.setLevel("ALL");
     return {
-
         "Input Definition tests": {
             setUp: function(done) {
                 done();
@@ -36,12 +34,15 @@ exports.setup = function() {
                     "checkpoint_dir": "/some/dir",
                     "session_key": "123102983109283019283"
                 };
-
-                InputDefinition.parse(utils.readFile(__filename, "../data/conf_with_0_inputs.xml"), function(err, found) {
-                    test.ok(!err);
+                
+                try {
+                    var found = InputDefinition.parse(utils.readFile(__filename, "../data/conf_with_0_inputs.xml"));
                     test.ok(found.equals(expected));
-                    test.done();
-                });
+                }
+                catch (e) {
+                    test.ok(false);
+                }
+                test.done();
             },
 
             "Parse produces expected result - 2 inputs": function(test) {
@@ -66,19 +67,26 @@ exports.setup = function() {
                     "multiValue": ["value1", "value2"],
                     "multiValue2": ["value3", "value4"]
                 };
-
-                InputDefinition.parse(utils.readFile(__filename, "../data/conf_with_2_inputs.xml"), function (err, found) {
-                    test.ok(!err);
+                
+                try {
+                    var found = InputDefinition.parse(utils.readFile(__filename, "../data/conf_with_2_inputs.xml"));
                     test.ok(found.equals(expected));
-                    test.done();
-                });
+                }
+                catch (e) {
+                    test.ok(false);
+                }
+                test.done();
             },
 
             "Parse throws an error with malformed input definition": function(test) {
-                InputDefinition.parse(utils.readFile(__filename, "../data/conf_with_invalid_inputs.xml"), function(err) {
-                    test.ok(err);
-                    test.done();
-                });
+                try {
+                    InputDefinition.parse(utils.readFile(__filename, "../data/conf_with_invalid_inputs.xml"));
+                    test.ok(false);
+                }
+                catch (e) {
+                    test.ok(true);
+                }
+                test.done();
             }
         }
     };

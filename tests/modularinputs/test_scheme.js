@@ -14,7 +14,6 @@
 // under the License.
 
 exports.setup = function() {
-
     var splunkjs        = require('../../index');
     var ModularInput   = splunkjs.ModularInputs;
     var Scheme          = ModularInput.Scheme;
@@ -24,7 +23,6 @@ exports.setup = function() {
 
     splunkjs.Logger.setLevel("ALL");
     return {
-
         "Scheme tests": {
             setUp: function(done) {
                 done();

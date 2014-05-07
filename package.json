@@ -23,7 +23,6 @@
     "dependencies" : {
         "request" : "2.21.x",
         "elementtree" : "0.1.6"
-
     },
     "devDependencies" : {
         "browserify" : "https://github.com/itay/node-browserify/tarball/master",

@@ -14,7 +14,6 @@
 // under the License.
 
 exports.setup = function() {
-
     var splunkjs        = require('../../index');
     var Service         = splunkjs.service;
     var Async           = splunkjs.Async;
@@ -33,7 +32,6 @@ exports.setup = function() {
     var TEST_SCRIPT_PATH = "__IGNORED_SCRIPT_PATH__";
 
     return {
-
         "Script tests": {
             setUp: function(done) {
                 done();
@@ -81,13 +79,11 @@ exports.setup = function() {
                 };
 
                 var args = [TEST_SCRIPT_PATH, "--scheme"];
-                ModularInput.runScript(exports, args, ew, inStream, function(err, scriptStatus) {
-                    test.ok(!err);
-
+                ModularInput.runScript(exports, args, ew, inStream, function (err, status) {
                     var error = ew._err._read();
 
                     test.strictEqual(error, "FATAL Modular input script returned a null scheme.\n");
-                    test.strictEqual(1, scriptStatus);
+                    test.strictEqual(1, status);
                     test.done();
                 });
             },
@@ -115,7 +111,6 @@ exports.setup = function() {
 
                     return scheme;
                 };
-
                 
                 exports.streamEvents = function() {
                     // Not used
@@ -151,22 +146,18 @@ exports.setup = function() {
                 };
 
                 var args = [TEST_SCRIPT_PATH, "--scheme"];
-                ModularInput.runScript(exports, args, ew, inStream, function(err, scriptStatus) {
-                    test.ok(!err);
-
+                ModularInput.runScript(exports, args, ew, inStream, function(err, status) {
                     var expected = utils.readFile(__filename, "../data/scheme_without_defaults.xml");
-
                     var output = ew._out._read();
 
                     test.ok(utils.XMLCompare(ET.parse(expected), ET.parse(output)));
-                    test.strictEqual(0, scriptStatus);
                     test.strictEqual("", ew._err._read());
+                    test.strictEqual(0, status);
                     test.done();
                 });
             },
 
             "Script Input Validation succeeds": function(test) {
-
                 exports.getScheme = function() {
                     return null;
                 };
@@ -216,19 +207,18 @@ exports.setup = function() {
                 };
 
                 var args = [TEST_SCRIPT_PATH, "--validate-arguments"];
-                ModularInput.runScript(exports, args, ew, inStream, function(err, scriptStatus) {
+                ModularInput.runScript(exports, args, ew, inStream, function(err, status) {
                     test.ok(!err);
 
                     test.strictEqual("", ew._out._read());
                     test.strictEqual("", ew._err._read());
-                    test.strictEqual(0, scriptStatus);
+                    test.strictEqual(0, status);
                     test.done();
                 });
                 inStream.emit("data", validationFile);
             },
 
             "Script Input Validation fails": function(test) {
-
                 exports.getScheme = function() {
                     return null;
                 };
@@ -291,7 +281,6 @@ exports.setup = function() {
             },
 
             "Script streaming events works": function(test) {
-
                 exports.getScheme = function () {
                     return null;
                 };
@@ -308,20 +297,14 @@ exports.setup = function() {
                         done: true,
                         unbroken: true
                     });
-                    
-                    Async.chain([
-                            function (done) {
-                                eventWriter.writeEvent(myEvent, done);
-                            },
-                            function (done) {
-                                done(null);
-                            }
-                        ],
-                        function (err) {
-                            callback(err, err ? 1 : 0);
-                            return;
-                        }
-                    );
+
+                    try {
+                        eventWriter.writeEvent(myEvent);
+                        callback(null, 0);    
+                    }
+                    catch (e) {
+                        callback(e, 1);    
+                    }
                 };
 
                 var out = new Stream.Duplex();
@@ -373,7 +356,6 @@ exports.setup = function() {
             },
 
             "Script gets a valid Service": function(test) {
-
                 exports.getScheme = function() {
                     return null;
                 };
@@ -429,7 +411,6 @@ exports.setup = function() {
                 var args = [TEST_SCRIPT_PATH];
                 ModularInput.runScript(exports, args, ew, inStream, function(err, scriptStatus) {
                     test.ok(!err);
-
                     test.strictEqual("", ew._err._read());
                     test.strictEqual(0, scriptStatus);
                     test.done();

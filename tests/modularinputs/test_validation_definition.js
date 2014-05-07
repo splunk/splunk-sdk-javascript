@@ -14,7 +14,6 @@
 // under the License.
 
 exports.setup = function() {
-
     var splunkjs                = require('../../index');
     var ModularInputs           = splunkjs.ModularInputs;
     var ValidationDefinition    = ModularInputs.ValidationDefinition;
@@ -22,7 +21,6 @@ exports.setup = function() {
 
     splunkjs.Logger.setLevel("ALL");
     return {
-
         "Validation Definition tests": {
             setUp: function(done) {
                 done();
