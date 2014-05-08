@@ -228,7 +228,7 @@ exports.setup = function() {
                     test.strictEqual(0, scriptStatus);
                     test.done();
                 });
-                inStream.emit("data", inputConfiguration);
+                inStream.emit("data", new Buffer(inputConfiguration));
             },
 
             "Script gets a valid Service": function(test) {
@@ -265,7 +265,7 @@ exports.setup = function() {
                     test.strictEqual(0, scriptStatus);
                     test.done();
                 });
-                inStream.emit("data", inputConfiguration);
+                inStream.emit("data", new Buffer(inputConfiguration));
             }
         }
     };

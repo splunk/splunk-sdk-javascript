@@ -69,6 +69,7 @@
     };
 
     exports.streamEvents = function(name, inputDefinition, eventWriter, callback) {
+        eventWriter.log(ModularInputs.EventWriter.ERROR, "test test test");
         var getRandomFloat = function (min, max) {
             return Math.random() * (max - min + 1) + min;
         };
@@ -79,17 +80,28 @@
         var max = parseFloat(singleInput.max);
         var count = parseInt(singleInput.count, 10);
 
+        var errorFound = false;
+
         for (var i = 0; i < count; i++) {
             var curEvent = new Event({
                 stanza: name,
                 data: "number=\"" + getRandomFloat(min, max).toString() + "\""
             });
-            eventWriter.writeEvent(curEvent, function(err) {
-                // Only call the callback on error, or when done.
-                if (err || i + 1 === count) {
-                    callback(err, err ? 1 : 0);
-                }
-            });
+
+            try {
+                eventWriter.writeEvent(curEvent);
+                eventWriter.log(ModularInputs.EventWriter.ERROR, i + "th event was written");
+            }
+            catch (e) {
+                errorFound = true;
+                eventWriter.log(ModularInputs.EventWriter.ERROR, e.message);
+                callback(e, 1);
+                break;
+            }
+        }
+
+        if (!errorFound) {
+            callback(null, 1);
         }
     };
 
