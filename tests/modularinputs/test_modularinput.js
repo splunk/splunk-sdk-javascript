@@ -202,10 +202,10 @@ exports.setup = function() {
 
                     try {
                         eventWriter.writeEvent(myEvent);
-                        callback(null, 0);    
+                        callback(null);    
                     }
                     catch (e) {
-                        callback(e, 1);    
+                        callback(e);    
                     }
                 };
 
@@ -245,7 +245,7 @@ exports.setup = function() {
                     
                     test.ok(service instanceof splunkjs.Service);
                     test.strictEqual(service.prefix, this._inputDefinition.metadata["server_uri"]);
-                    callback(null, 0);
+                    callback(null);
                 };
 
                 var out = testUtils.getDuplexStream();

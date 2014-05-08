@@ -144,8 +144,8 @@ exports.setup = function() {
             "Event without enough fields throws error": function(test) {
                 try {
                     var myEvent = new Event();
-                    myEvent.writeTo(testUtils.getDuplexStream());
-                    test.ok(false); // This should not execute if an error is thrown by `Event.writeTo`
+                    myEvent._writeTo(testUtils.getDuplexStream());
+                    test.ok(false); // This should not execute if an error is thrown by `Event._writeTo`
                 }
                 catch (e) {
                     test.equals(e.message, "Events must have at least the data field set to be written to XML.");
@@ -166,7 +166,7 @@ exports.setup = function() {
                 var expectedEvent = utils.readFile(__filename, "../data/event_minimal.xml");
 
                 try {
-                    myEvent.writeTo(out);
+                    myEvent._writeTo(out);
                     var found = ET.parse(out._read());
                     var expected = ET.parse(expectedEvent);
                     test.ok(utils.deepEquals(expected, found));
@@ -195,7 +195,7 @@ exports.setup = function() {
                 var expectedEvent = utils.readFile(__filename, "../data/event_maximal.xml");
                 
                 try {
-                    myEvent.writeTo(out);
+                    myEvent._writeTo(out);
                     var found = ET.parse(out._read());
                     var expected = ET.parse(expectedEvent);
                     test.ok(utils.deepEquals(expected, found));

@@ -18,6 +18,7 @@
     var Event           = ModularInputs.Event;
     var Scheme          = ModularInputs.Scheme;
     var Argument        = ModularInputs.Argument;
+    var utils           = ModularInputs.utils;
 
     exports.getScheme = function() {
         var scheme = new Scheme("Random Numbers");
@@ -69,7 +70,6 @@
     };
 
     exports.streamEvents = function(name, inputDefinition, eventWriter, callback) {
-        eventWriter.log(ModularInputs.EventWriter.ERROR, "test test test");
         var getRandomFloat = function (min, max) {
             return Math.random() * (max - min + 1) + min;
         };
@@ -81,8 +81,8 @@
         var count = parseInt(singleInput.count, 10);
 
         var errorFound = false;
-
-        for (var i = 0; i < count; i++) {
+        
+        utils.forEach(new Array(count), function() {
             var curEvent = new Event({
                 stanza: name,
                 data: "number=\"" + getRandomFloat(min, max).toString() + "\""
@@ -90,18 +90,16 @@
 
             try {
                 eventWriter.writeEvent(curEvent);
-                eventWriter.log(ModularInputs.EventWriter.ERROR, i + "th event was written");
             }
             catch (e) {
                 errorFound = true;
                 eventWriter.log(ModularInputs.EventWriter.ERROR, e.message);
-                callback(e, 1);
-                break;
+                callback(e);
             }
-        }
+        });
 
         if (!errorFound) {
-            callback(null, 1);
+            callback(null);
         }
     };
 
