@@ -18,12 +18,12 @@ exports.setup = function() {
     var ModularInput    = splunkjs.ModularInputs;
     var Event           = ModularInput.Event;
     var EventWriter     = ModularInput.EventWriter;
-    var path            = require("path");
     var ET              = require("elementtree");
     var utils           = ModularInput.utils;
-    var Stream          = require("stream");
+    var testUtils       = require("./utils");
 
     splunkjs.Logger.setLevel("ALL");
+
     return {
         "Event tests": {
             setUp: function(done) {
@@ -144,7 +144,7 @@ exports.setup = function() {
             "Event without enough fields throws error": function(test) {
                 try {
                     var myEvent = new Event();
-                    myEvent.writeTo(new Stream.Duplex());
+                    myEvent.writeTo(testUtils.getDuplexStream());
                     test.ok(false); // This should not execute if an error is thrown by `Event.writeTo`
                 }
                 catch (e) {
@@ -155,15 +155,7 @@ exports.setup = function() {
             },
             
             "Event with minimal config matches expected XML": function(test) {
-                var out = new Stream.Duplex();
-                out.data = "";
-                out._write = function(chunk, enc, next) {
-                    this.data += chunk.toString();
-                    next();
-                };
-                out._read = function() {
-                    return this.data;
-                };
+                var out = testUtils.getDuplexStream();
 
                 var myEvent = new Event({
                     data: "This is a test of the emergency broadcast system.",
@@ -186,15 +178,7 @@ exports.setup = function() {
             },
             
             "Event with full config matches expected XML": function(test) {
-                var out = new Stream.Duplex();
-                out.data = "";
-                out._write = function(chunk, enc, next) {
-                    this.data += chunk.toString();
-                    next();
-                };
-                out._read = function() {
-                    return this.data;
-                };
+                var out = testUtils.getDuplexStream();
 
                 var myEvent = new Event({
                     data: "This is a test of the emergency broadcast system.",
@@ -223,25 +207,8 @@ exports.setup = function() {
             },
             
             "EventWriter event writing works": function(test) {
-                var out = new Stream.Duplex();
-                out.data = "";
-                out._write = function(chunk, enc, next) {
-                    this.data += chunk.toString();
-                    next();
-                };
-                out._read = function() {
-                    return this.data;
-                };
-
-                var err = new Stream.Duplex();
-                err.data = "";
-                err._write = function(chunk, enc, next) {
-                    this.data += chunk.toString();
-                    next();
-                };
-                err._read = function() {
-                    return this.data;
-                };
+                var out = testUtils.getDuplexStream();
+                var err = testUtils.getDuplexStream();
 
                 var myEvent = new Event({
                     data: "This is a test of the emergency broadcast system.",
@@ -281,25 +248,8 @@ exports.setup = function() {
             },
             
             "EventWriter gets an error from invalid Event": function(test) {
-                var out = new Stream.Duplex();
-                out.data = "";
-                out._write = function(chunk, enc, next) {
-                    this.data += chunk.toString();
-                    next();
-                };
-                out._read = function() {
-                    return this.data;
-                };
-
-                var err = new Stream.Duplex();
-                err.data = "";
-                err._write = function(chunk, enc, next) {
-                    this.data += chunk.toString();
-                    next();
-                };
-                err._read = function() {
-                    return this.data;
-                };
+                var out = testUtils.getDuplexStream();
+                var err = testUtils.getDuplexStream();
 
                 var ew = new EventWriter(out, err);
 
@@ -315,25 +265,8 @@ exports.setup = function() {
             },
             
             "EventWriter logging works": function(test) {
-                var out = new Stream.Duplex();
-                out.data = "";
-                out._write = function(chunk, enc, next) {
-                    this.data += chunk.toString();
-                    next();
-                };
-                out._read = function() {
-                    return this.data;
-                };
-
-                var err = new Stream.Duplex();
-                err.data = "";
-                err._write = function(chunk, enc, next) {
-                    this.data += chunk.toString();
-                    next();
-                };
-                err._read = function() {
-                    return this.data;
-                };
+                var out = testUtils.getDuplexStream();
+                var err = testUtils.getDuplexStream();
 
                 var ew = new EventWriter(out, err);
                 
@@ -348,25 +281,8 @@ exports.setup = function() {
             },
             
             "EventWriter XML writing works": function(test) {
-                var out = new Stream.Duplex();
-                out.data = "";
-                out._write = function(chunk, enc, next) {
-                    this.data += chunk.toString();
-                    next();
-                };
-                out._read = function() {
-                    return this.data;
-                };
-
-                var err = new Stream.Duplex();
-                err.data = "";
-                err._write = function(chunk, enc, next) {
-                    this.data += chunk.toString();
-                    next();
-                };
-                err._read = function() {
-                    return this.data;
-                };
+                var out = testUtils.getDuplexStream();
+                var err = testUtils.getDuplexStream();
 
                 var ew = new EventWriter(out, err);
 

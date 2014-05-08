@@ -20,6 +20,7 @@ exports.setup = function() {
     var utils                   = ModularInputs.utils;
 
     splunkjs.Logger.setLevel("ALL");
+    
     return {
         "Validation Definition tests": {
             setUp: function(done) {

@@ -15,8 +15,6 @@
 
 exports.setup = function() {
     var splunkjs        = require('../../index');
-    var Service         = splunkjs.service;
-    var Async           = splunkjs.Async;
     var ET              = require("elementtree");
     var ModularInputs   = splunkjs.ModularInputs;
     var ModularInput    = ModularInputs.ModularInput;
@@ -25,7 +23,7 @@ exports.setup = function() {
     var Scheme          = ModularInputs.Scheme;
     var Argument        = ModularInputs.Argument;
     var utils           = ModularInputs.utils;
-    var Stream          = require("stream");
+    var testUtils       = require("./utils");
 
     splunkjs.Logger.setLevel("ALL");
 
@@ -50,36 +48,14 @@ exports.setup = function() {
                     return null;
                 };
 
-                var out = new Stream.Duplex();
-                out.data = "";
-                out._write = function (chunk, enc, next) {
-                    this.data += chunk.toString();
-                    next();
-                };
-                out._read = function() {
-                    return this.data;
-                };
-
-                var err = new Stream.Duplex();
-                err.data = "";
-                err._write = function (chunk, enc, next) {
-                    this.data += chunk.toString();
-                    next();
-                };
-                err._read = function() {
-                    return this.data;
-                };
-
+                var out = testUtils.getDuplexStream();
+                var err = testUtils.getDuplexStream();
                 var ew = new EventWriter(out, err);
 
-                var inStream = new Stream.Readable();
-                inStream.data = "";
-                inStream._read = function() {
-                    return this.data;
-                };
+                var inStream = testUtils.getReadableStream();
 
                 var args = [TEST_SCRIPT_PATH, "--scheme"];
-                ModularInput.runScript(exports, args, ew, inStream, function (err, status) {
+                ModularInput.runScript(exports, args, ew, inStream, function(err, status) {
                     var error = ew._err._read();
 
                     test.strictEqual(error, "FATAL Modular input script returned a null scheme.\n");
@@ -117,33 +93,11 @@ exports.setup = function() {
                     return null;
                 };
 
-                var out = new Stream.Duplex();
-                out.data = "";
-                out._write = function (chunk, enc, next) {
-                    this.data += chunk.toString();
-                    next();
-                };
-                out._read = function() {
-                    return this.data;
-                };
-
-                var err = new Stream.Duplex();
-                err.data = "";
-                err._write = function (chunk, enc, next) {
-                    this.data += chunk.toString();
-                    next();
-                };
-                err._read = function() {
-                    return this.data;
-                };
-
+                var out = testUtils.getDuplexStream();
+                var err = testUtils.getDuplexStream();
                 var ew = new EventWriter(out, err);
 
-                var inStream = new Stream.Readable();
-                inStream.data = "";
-                inStream._read = function() {
-                    return this.data;
-                };
+                var inStream = testUtils.getReadableStream();
 
                 var args = [TEST_SCRIPT_PATH, "--scheme"];
                 ModularInput.runScript(exports, args, ew, inStream, function(err, status) {
@@ -172,39 +126,13 @@ exports.setup = function() {
                     return;
                 };
 
-                var out = new Stream.Duplex();
-                out.data = "";
-                out._write = function (chunk, enc, next) {
-                    this.data += chunk.toString();
-                    next();
-                };
-                out._read = function() {
-                    return this.data;
-                };
-
-                var err = new Stream.Duplex();
-                err.data = "";
-                err._write = function (chunk, enc, next) {
-                    this.data += chunk.toString();
-                    next();
-                };
-                err._read = function() {
-                    return this.data;
-                };
-
+                var out = testUtils.getDuplexStream();
+                var err = testUtils.getDuplexStream();
                 var ew = new EventWriter(out, err);
 
                 var validationFile = utils.readFile(__filename, "../data/validation.xml");
 
-                var inStream = new Stream.Duplex();
-                inStream.data = "";
-                inStream._write = function (chunk, enc, next) {
-                    this.data += chunk.toString();
-                    next();
-                };
-                inStream._read = function() {
-                    return this.data;
-                };
+                var inStream = testUtils.getReadableStream();
 
                 var args = [TEST_SCRIPT_PATH, "--validate-arguments"];
                 ModularInput.runScript(exports, args, ew, inStream, function(err, status) {
@@ -232,37 +160,11 @@ exports.setup = function() {
                     return;
                 };
 
-                var out = new Stream.Duplex();
-                out.data = "";
-                out._write = function (chunk, enc, next) {
-                    this.data += chunk.toString();
-                    next();
-                };
-                out._read = function() {
-                    return this.data;
-                };
-
-                var err = new Stream.Duplex();
-                err.data = "";
-                err._write = function (chunk, enc, next) {
-                    this.data += chunk.toString();
-                    next();
-                };
-                err._read = function() {
-                    return this.data;
-                };
-
+                var out = testUtils.getDuplexStream();
+                var err = testUtils.getDuplexStream();
                 var ew = new EventWriter(out, err);
 
-                var inStream = new Stream.Duplex();
-                inStream.data = "";
-                inStream._write = function (chunk, enc, next) {
-                    this.data += chunk.toString();
-                    next();
-                };
-                inStream._read = function() {
-                    return this.data;
-                };
+                var inStream = testUtils.getReadableStream();
 
                 var validationFile = utils.readFile(__filename, "../data/validation.xml");
 
@@ -281,11 +183,11 @@ exports.setup = function() {
             },
 
             "Script streaming events works": function(test) {
-                exports.getScheme = function () {
+                exports.getScheme = function() {
                     return null;
                 };
 
-                exports.streamEvents = function (name, input, eventWriter, callback) {
+                exports.streamEvents = function(name, input, eventWriter, callback) {
                     var myEvent = new Event({
                         data: "This is a test of the emergency broadcast system.",
                         stanza: "fubar",
@@ -307,37 +209,11 @@ exports.setup = function() {
                     }
                 };
 
-                var out = new Stream.Duplex();
-                out.data = "";
-                out._write = function (chunk, enc, next) {
-                    this.data += chunk.toString();
-                    next();
-                };
-                out._read = function() {
-                    return this.data;
-                };
-
-                var err = new Stream.Duplex();
-                err.data = "";
-                err._write = function (chunk, enc, next) {
-                    this.data += chunk.toString();
-                    next();
-                };
-                err._read = function() {
-                    return this.data;
-                };
-
+                var out = testUtils.getDuplexStream();
+                var err = testUtils.getDuplexStream();
                 var ew = new EventWriter(out, err);
 
-                var inStream = new Stream.Duplex();
-                inStream.data = "";
-                inStream._write = function (chunk, enc, next) {
-                    this.data += chunk.toString();
-                    next();
-                };
-                inStream._read = function() {
-                    return this.data;
-                };
+                var inStream = testUtils.getReadableStream();
 
                 var inputConfiguration = utils.readFile(__filename, "../data/conf_with_2_inputs.xml");
 
@@ -372,37 +248,11 @@ exports.setup = function() {
                     callback(null, 0);
                 };
 
-                var out = new Stream.Duplex();
-                out.data = "";
-                out._write = function (chunk, enc, next) {
-                    this.data += chunk.toString();
-                    next();
-                };
-                out._read = function() {
-                    return this.data;
-                };
-
-                var err = new Stream.Duplex();
-                err.data = "";
-                err._write = function (chunk, enc, next) {
-                    this.data += chunk.toString();
-                    next();
-                };
-                err._read = function() {
-                    return this.data;
-                };
-
+                var out = testUtils.getDuplexStream();
+                var err = testUtils.getDuplexStream();
                 var ew = new EventWriter(out, err);
 
-                var inStream = new Stream.Duplex();
-                inStream.data = "";
-                inStream._write = function (chunk, enc, next) {
-                    this.data += chunk.toString();
-                    next();
-                };
-                inStream._read = function() {
-                    return this.data;
-                };
+                var inStream = testUtils.getReadableStream();
 
                 var inputConfiguration = utils.readFile(__filename, "../data/conf_with_2_inputs.xml");
 
