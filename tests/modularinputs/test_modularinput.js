@@ -143,7 +143,7 @@ exports.setup = function() {
                     test.strictEqual(0, status);
                     test.done();
                 });
-                inStream.emit("data", validationFile);
+                inStream.emit("data", new Buffer(validationFile));
             },
 
             "Script Input Validation fails": function(test) {
@@ -179,7 +179,7 @@ exports.setup = function() {
                     test.strictEqual(1, scriptStatus);
                     test.done();
                 });
-                inStream.emit("data", validationFile);
+                inStream.emit("data", new Buffer(validationFile));
             },
 
             "Script streaming events works": function(test) {
