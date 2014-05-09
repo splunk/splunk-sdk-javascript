@@ -14,7 +14,7 @@
 
 (function() {
     "use strict";
-    var Stream = require("stream");
+    var Stream = require("readable-stream");
 
     var root = exports || this;
 
