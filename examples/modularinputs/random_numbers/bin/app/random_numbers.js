@@ -13,7 +13,7 @@
 // under the License.
 
 (function() {
-    var splunkjs        = require('splunk-sdk-javascript'); // TODO: change to splunk-sdk
+    var splunkjs        = require("splunk-sdk");
     var ModularInputs   = splunkjs.ModularInputs;
     var Logger          = ModularInputs.Logger;
     var Event           = ModularInputs.Event;
@@ -103,7 +103,7 @@
                 // We had an error, die
                 return;
             }
-        }
+        };
 
         // We're done
         callback();
