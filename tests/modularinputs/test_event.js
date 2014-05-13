@@ -16,6 +16,7 @@
 exports.setup = function() {
     var splunkjs        = require('../../index');
     var ModularInput    = splunkjs.ModularInputs;
+    var Logger          = splunkjs.ModularInputs.Logger;
     var Event           = ModularInput.Event;
     var EventWriter     = ModularInput.EventWriter;
     var ET              = require("elementtree");
@@ -259,7 +260,7 @@ exports.setup = function() {
                 }
                 catch (e) {
                     test.ok(e);
-                    test.ok(utils.startsWith(ew._err._read(), EventWriter.WARN));
+                    test.ok(utils.startsWith(ew._err._read(), Logger.WARN));
                 }
                 test.done();
             },
@@ -271,8 +272,8 @@ exports.setup = function() {
                 var ew = new EventWriter(out, err);
                 
                 try {
-                    ew.log(EventWriter.ERROR, "Something happened!");
-                    test.ok(utils.startsWith(ew._err._read(), EventWriter.ERROR));
+                    Logger.error("", "Something happened!", err);
+                    test.ok(utils.startsWith(ew._err._read(), Logger.ERROR));
                 }
                 catch (e) {
                     test.ok(false);

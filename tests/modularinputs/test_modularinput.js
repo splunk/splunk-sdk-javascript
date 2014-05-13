@@ -14,9 +14,10 @@
 // under the License.
 
 exports.setup = function() {
-    var splunkjs        = require('../../index');
+    var splunkjs        = require("../../index");
     var ET              = require("elementtree");
     var ModularInputs   = splunkjs.ModularInputs;
+    var Logger          = ModularInputs.Logger;
     var ModularInput    = ModularInputs.ModularInput;
     var Event           = ModularInputs.Event;
     var EventWriter     = ModularInputs.EventWriter;
@@ -33,6 +34,66 @@ exports.setup = function() {
         "ModularInput tests": {
             setUp: function(done) {
                 done();
+            },
+
+            "ModularInputs logger works, severity: DEBUG": function(test) {
+                var err = testUtils.getDuplexStream();
+                try {
+                    Logger.debug("Modular Input Tests", "Something happened!", err);
+                    test.ok(utils.startsWith(err._read(), Logger.DEBUG));
+                }
+                catch (e) {
+                    test.ok(false);
+                }
+                test.done();
+            },
+
+            "ModularInputs logger works, severity: INFO": function(test) {
+                var err = testUtils.getDuplexStream();
+                try {
+                    Logger.info("Modular Input Tests", "Something happened!", err);
+                    test.ok(utils.startsWith(err._read(), Logger.INFO));
+                }
+                catch (e) {
+                    test.ok(false);
+                }
+                test.done();
+            },
+
+            "ModularInputs logger works, severity: WARN": function(test) {
+                var err = testUtils.getDuplexStream();
+                try {
+                    Logger.warn("Modular Input Tests", "Something happened!", err);
+                    test.ok(utils.startsWith(err._read(), Logger.WARN));
+                }
+                catch (e) {
+                    test.ok(false);
+                }
+                test.done();
+            },
+
+            "ModularInputs logger works, severity: ERROR": function(test) {
+                var err = testUtils.getDuplexStream();
+                try {
+                    Logger.error("Modular Input Tests", "Something happened!", err);
+                    test.ok(utils.startsWith(err._read(), Logger.ERROR));
+                }
+                catch (e) {
+                    test.ok(false);
+                }
+                test.done();
+            },
+
+            "ModularInputs logger works, severity: FATAL": function(test) {
+                var err = testUtils.getDuplexStream();
+                try {
+                    Logger.fatal("Modular Input Tests", "Something happened!", err);
+                    test.ok(utils.startsWith(err._read(), Logger.FATAL));
+                }
+                catch (e) {
+                    test.ok(false);
+                }
+                test.done();
             },
 
             "An error happens when a ModularInput has a null scheme": function(test) {

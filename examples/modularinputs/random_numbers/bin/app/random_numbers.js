@@ -15,6 +15,7 @@
 (function() {
     var splunkjs        = require('splunk-sdk-javascript'); // TODO: change to splunk-sdk
     var ModularInputs   = splunkjs.ModularInputs;
+    var Logger          = ModularInputs.Logger;
     var Event           = ModularInputs.Event;
     var Scheme          = ModularInputs.Scheme;
     var Argument        = ModularInputs.Argument;
@@ -81,8 +82,11 @@
         var count = parseInt(singleInput.count, 10);
 
         var errorFound = false;
-        
-        utils.forEach(new Array(count), function() {
+
+        var i = 0;
+        while (i < count && !errorFound) {
+            i++;
+            
             var curEvent = new Event({
                 stanza: name,
                 data: "number=\"" + getRandomFloat(min, max).toString() + "\""
@@ -93,14 +97,16 @@
             }
             catch (e) {
                 errorFound = true;
-                eventWriter.log(ModularInputs.EventWriter.ERROR, e.message);
+                Logger.error(name, e.message, eventWriter._err);
                 callback(e);
-            }
-        });
 
-        if (!errorFound) {
-            callback(null);
+                // We had an error, die
+                return;
+            }
         }
+
+        // We're done
+        callback();
     };
 
     ModularInputs.execute(exports, module);
