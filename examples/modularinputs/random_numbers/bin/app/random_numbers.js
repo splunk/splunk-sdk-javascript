@@ -57,20 +57,23 @@
         return scheme;
     };
 
-    exports.validateInput = function(definition) {
+    exports.validateInput = function(definition, done) {
         var min = parseFloat(definition.parameters["min"]);
         var max = parseFloat(definition.parameters["max"]);
         var count = parseInt(definition.parameters["count"], 10);
 
         if (min >= max) {
-            throw new Error("min must be less than max; found min=" + min.toString() + ", max=" + max.toString());
+            done(new Error("min must be less than max; found min=" + min.toString() + ", max=" + max.toString()));
         }
-        if (count < 0) {
-            throw new Error("count must be a positive value; found count=" + count.toString());
+        else if (count < 0) {
+            done(new Error("count must be a positive value; found count=" + count.toString()));
+        }
+        else {
+            done();
         }
     };
 
-    exports.streamEvents = function(name, inputDefinition, eventWriter, callback) {
+    exports.streamEvents = function(name, inputDefinition, eventWriter, done) {
         var getRandomFloat = function (min, max) {
             return Math.random() * (max - min + 1) + min;
         };
@@ -98,15 +101,15 @@
             catch (e) {
                 errorFound = true;
                 Logger.error(name, e.message, eventWriter._err);
-                callback(e);
+                done(e);
 
                 // We had an error, die
                 return;
             }
-        }
+        };
 
         // We're done
-        callback();
+        done();
     };
 
     ModularInputs.execute(exports, module);
