@@ -23,12 +23,42 @@
     var Argument        = ModularInputs.Argument;
     var utils           = ModularInputs.utils;
 
+    // Get the Github API path, with the the access token if supplied
+    function getPath(singleInput) {
+        var path = "/repos/" + singleInput.owner + "/" + singleInput.repository + "/commits";
+
+        if (utils.isUndefined(singleInput.token)) {
+            path += "?access_token=" + singleInput.token;
+        }
+
+        return path;
+    }
+
+    // Create easy to read date format
+    function getDisplayDate(date) {
+        var monthStrings = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+        date = new Date(date);
+
+        var hours = date.getHours();
+        if (hours < 10) {
+            hours = "0" + hours.toString();
+        }
+        var mins = date.getMinutes();
+        if (mins < 10) {
+            mins = "0" + mins.toString();
+        }
+
+        return monthStrings[date.getMonth()] + " " + date.getDate() + ", " + date.getFullYear() +
+            " - " + hours + ":" + mins + " " + (date.getUTCHours() < 12 ? "AM" : "PM");
+    }
+
     exports.getScheme = function() {
         var scheme = new Scheme("Github Commits");
 
-        scheme.description = "Streams events of commits in the specified Github repository (must be public).";
+        scheme.description = "Streams events of commits in the specified Github repository (must be public, unless setting a token).";
         scheme.useExternalValidation = true;
-        scheme.useSingleInstance = false; // We set since instance to false so we can constantly fetch the API
+        scheme.useSingleInstance = false; // Set to false so an input can have an optional interval parameter
 
         var owner = new Argument({
             name: "owner",
@@ -46,42 +76,33 @@
             requiredOnEdit: true
         });
 
-        ///*
         var token = new Argument({
             name: "token",
             dataType: Argument.dataTypeString,
-            description: "(Optional) A Github API access token, recommended to avoid hitting Github's API limit if using the interval option.",
+            description: "(Optional) A Github API access token. Required for private repositories (the token must have the 'repo' and 'public_repo' scopes enabled). Recommended to avoid Github's API limit, especially if setting an interval.",
             requiredOnCreate: false,
             requiredOnEdit: false
         });
-        //*/
 
         scheme.args = [owner, repository, token];
 
         return scheme;
     };
 
-    exports.validateInput = function(definition, callback) {
-        var owner = definition.parameters["owner"];
-        var repository = definition.parameters["repository"];
+    exports.validateInput = function(definition, done) {
+        var owner = definition.parameters.owner;
+        var repository = definition.parameters.repository;
 
-        var path = "/repos/" + owner + "/" + repository + "/commits"; //+ "?access_token=0916d93fa8234a35048bb50917a96a2f5f96faa3";
-
-        if (!utils.isUndefined(definition.parameters["token"])) {
-            path += "?access_token=" + definition.parameters["token"];
-        }
-
-
+        // Do an HTTP get request to the Github API and check if the repository is valid
         https.get({
             host: "api.github.com",
-            path: path,
-            //path:  "/repos/" + owner + "/" + repository + "/commits" + "?access_token=0916d93fa8234a35048bb50917a96a2f5f96faa3",
+            path: getPath(definition.parameters),
             headers: {
+                // Must specify a user agent for the Github API, arbitrarily selected Googlebot
                 "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
             }
         }, function(res) {
             var data = "";
-
             res.on("data", function(chunk) {
                 data += chunk.toString();
             });
@@ -89,77 +110,32 @@
             res.on("end", function() {
                 data = JSON.parse(data); 
 
+                // Did we reach Github's API limit?
                 if (!utils.isUndefined(data.message) && utils.startsWith(data.message, "API rate limit exceeded")) {
                     Logger.info("Github Commits", "Reached the API limit");
-                    callback(new Error("Your IP address has been rate limited by the Github API."));
+                    done(new Error("Your IP address has been rate limited by the Github API."));
                 }
-                // If there is only 1 element in the data Array, some kind or error occurred
-                // with the Github API.
-                // Typically, this will happen with an invalid repository.
+                // Was the repository not found?
                 else if (data.length === 1 || (!utils.isUndefined(data.message) && data.message === "Not Found")) {
+                    // If there is only 1 element in the data Array, some kind or error occurred
+                    // with the Github API.
+                    // Typically, this will happen with an invalid repository.
                     Logger.info("Github Commits", "Repository not found " + repository + " owned by " + owner);
-                    callback(new Error("The Github repository was not found."));
+                    done(new Error("The Github repository was not found."));
                 }
                 else {
                     // If the API response seems normal, assume valid input
-                    callback();
+                    done();
                 }
             });
         }).on("error", function(e) {
-            callback(e);
+            done(e);
         });
     };
 
-    exports.streamEvents = function(name, singleInput, eventWriter, callback) {
+    exports.streamEvents = function(name, singleInput, eventWriter, done) {
         // Get the checkpoint directory out of the modular input's metadata
         var checkpointDir = this._inputDefinition.metadata["checkpoint_dir"];
-
-        var monthStrings = [
-            "Jan",
-            "Feb",
-            "Mar",
-            "Apr",
-            "May",
-            "Jun",
-            "Jul",
-            "Aug",
-            "Sep",
-            "Oct",
-            "Nov",
-            "Dec"
-        ];
-
-        var getSplunkDate = function (date) {
-            date = new Date(date);
-            var mins = date.getMinutes();
-            if (mins < 10) {
-                mins = "0" + mins.toString();
-            }
-
-            return date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate() +
-            " " + date.getUTCHours() + ":" + mins + ":" + date.getSeconds();
-        };
-
-        var getDisplayDate = function (date) {
-            date = new Date(date);
-            var hours = date.getHours();
-            if (hours < 10) {
-                hours = "0" + hours.toString();
-            }
-            var mins = date.getMinutes();
-            if (mins < 10) {
-                mins = "0" + mins.toString();
-            }
-
-            return monthStrings[date.getMonth()] + " " + date.getDate() + ", " +
-                date.getFullYear() + " - " + hours + ":" + mins +
-                " " + (date.getUTCHours() < 12 ? "AM" : "PM");
-        };
-
-        var getMonthDate = function (date) {
-            date = new Date(date);
-            return monthStrings[date.getMonth()] + " " + date.getDate();
-        };
 
         var owner = singleInput.owner;
         var repository = singleInput.repository;
@@ -168,7 +144,7 @@
 
         https.get({
             host: "api.github.com",
-            path: "/repos/" + owner + "/" + repository + "/commits" ,//+ "?access_token=0916d93fa8234a35048bb50917a96a2f5f96faa3",
+            path: getPath(singleInput),
             headers: {
                 "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
             }
@@ -179,15 +155,15 @@
             });
 
             res.on("end", function() {
-                data = JSON.parse(data).reverse(); // Reverse the data to index events in ascending order
+                data = JSON.parse(data); // Reverse the data to index events in ascending order
 
                 var errorFound = false;
                 for (var i = 0; i < data.length && !errorFound; i++) {
-                    var json = {};
-
-                    json.sha = data[i].sha;
-                    json.api_url = data[i].url;
-                    json.url = "https://github.com/" + owner + "/" + repository + "/commit/" + json.sha;
+                    var json = {
+                        sha: data[i].sha,
+                        api_url: data[i].url,
+                        url: "https://github.com/" + owner + "/" + repository + "/commit/" + data[i].sha
+                    };
 
                     var checkpointFilePath = checkpointDir + "/" + json.sha;
                     
@@ -199,14 +175,7 @@
                         json.message = commit.message.replace("\n|\r", " "); // Replace newlines and carriage returns with spaces
                         json.author = commit.author.name;
                         json.rawdate = commit.author.date;
-
-
-                        var date = commit.author.date.replace("T|Z", " ").trim();
-
-                        // A few different time formats to simplify Splunk search queries
-                        json.splunkdate = getSplunkDate(date);
-                        json.displaydate = getDisplayDate(date);
-                        json.monthdate = getMonthDate(date);
+                        json.displaydate = getDisplayDate(commit.author.date.replace("T|Z", " ").trim());
 
                         try {
                             var event = new Event({
@@ -214,16 +183,16 @@
                                 sourcetype: "Github API",
                                 data: JSON.stringify(json) // Have Splunk index our event data as JSON
                             });
-                            
                             eventWriter.writeEvent(event);
+
                             // Write the checkpoint file
                             fs.writeFileSync(checkpointFilePath, "");
-                            Logger.info(name, "Indexed a Github commit with sha: " + data[i].sha, eventWriter._err);
+                            Logger.info(name, "Indexed a Github commit with sha: " + data[i].sha);
                         }
                         catch (e) {
                             errorFound = true;
                             Logger.error(name, e.message, eventWriter._err);
-                            callback(e);
+                            done(e);
 
                             // We had an error, die
                             return;
@@ -233,15 +202,16 @@
                         alreadyIndexed++;
                     }
                 }
-                if (alreadyIndexed > 0) {
-                    Logger.info(name, "Skipped " + alreadyIndexed.toString() + " already indexed Github commits.", eventWriter._err);
-                }
 
+                if (alreadyIndexed > 0) {
+                    Logger.info(name, "Skipped " + alreadyIndexed.toString() + " already indexed Github commits from " + owner + "/" + repository);
+                }
+                
                 // We're done
-                callback();
+                done();
             });
         }).on("error", function(e) {
-            callback(e);
+            done(e);
         });
     };
 
