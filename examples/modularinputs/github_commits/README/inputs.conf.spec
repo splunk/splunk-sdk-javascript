@@ -3,3 +3,5 @@
 
 owner = <value>
 repository = <value>
+token = <value>
+interval = <value>

@@ -46,7 +46,7 @@
             requiredOnEdit: true
         });
 
-        /*
+        ///*
         var token = new Argument({
             name: "token",
             dataType: Argument.dataTypeString,
@@ -54,9 +54,9 @@
             requiredOnCreate: false,
             requiredOnEdit: false
         });
-        */
+        //*/
 
-        scheme.args = [owner, repository];
+        scheme.args = [owner, repository, token];
 
         return scheme;
     };
@@ -65,9 +65,17 @@
         var owner = definition.parameters["owner"];
         var repository = definition.parameters["repository"];
 
+        var path = "/repos/" + owner + "/" + repository + "/commits"; //+ "?access_token=0916d93fa8234a35048bb50917a96a2f5f96faa3";
+
+        if (!utils.isUndefined(definition.parameters["token"])) {
+            path += "?access_token=" + definition.parameters["token"];
+        }
+
+
         https.get({
             host: "api.github.com",
-            path:  "/repos/" + owner + "/" + repository + "/commits" + "?access_token=0916d93fa8234a35048bb50917a96a2f5f96faa3",
+            path: path,
+            //path:  "/repos/" + owner + "/" + repository + "/commits" + "?access_token=0916d93fa8234a35048bb50917a96a2f5f96faa3",
             headers: {
                 "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
             }
