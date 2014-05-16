@@ -181,7 +181,8 @@
                             var event = new Event({
                                 stanza: repository,
                                 sourcetype: "Github API",
-                                data: JSON.stringify(json) // Have Splunk index our event data as JSON
+                                data: JSON.stringify(json), // Have Splunk index our event data as JSON
+                                time: Date.parse(json.rawdate) // Set the event timestamp to the time of the commit
                             });
                             eventWriter.writeEvent(event);
 

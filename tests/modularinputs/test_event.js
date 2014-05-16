@@ -37,6 +37,16 @@ exports.setup = function() {
                 var found = Event.formatTime(now);
                 test.equals(found, expected);
 
+                var old = new Date(1372187084);
+                var oldExpected = (1372187084 / 1000).toFixed(3);
+                var oldFound = Event.formatTime(old);
+                test.equals(oldFound, oldExpected);
+
+                var other = Date.parse("2014-04-11T19:41:32Z");
+                var otherExpected = (1397245292000 / 1000).toFixed(3);
+                var otherFound = Event.formatTime(other);
+                test.equals(otherFound, otherExpected);
+
                 test.done();
             },
 
