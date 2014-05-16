@@ -86,10 +86,7 @@
 
         var errorFound = false;
 
-        var i = 0;
-        while (i < count && !errorFound) {
-            i++;
-            
+        for (var i = 0; i < count && !errorFound; i++) {            
             var curEvent = new Event({
                 stanza: name,
                 data: "number=\"" + getRandomFloat(min, max).toString() + "\""
@@ -106,7 +103,7 @@
                 // We had an error, die
                 return;
             }
-        };
+        }
 
         // We're done
         done();
