@@ -177,9 +177,9 @@ exports.setup = function() {
                     return null;
                 };
 
-                exports.validateInput = function(definition) {
+                exports.validateInput = function(definition, done) {
                     // Always succeed
-                    return true;
+                    done();
                 };
 
                 exports.streamEvents = function() {
@@ -212,8 +212,8 @@ exports.setup = function() {
                     return null;
                 };
 
-                exports.validateInput = function(definition) {
-                    throw new Error("Big fat validation error!");
+                exports.validateInput = function(definition, done) {
+                    done(new Error("Big fat validation error!"));
                 };
 
                 exports.streamEvents = function() {
@@ -284,7 +284,7 @@ exports.setup = function() {
 
                     var expected = utils.readFile(__filename, "../data/stream_with_two_events.xml");
                     var found = ew._out._read() + "</stream>";
-
+                    
                     test.ok(utils.XMLCompare(ET.parse(expected).getroot(), ET.parse(found).getroot()));
                     test.strictEqual(0, scriptStatus);
                     test.done();

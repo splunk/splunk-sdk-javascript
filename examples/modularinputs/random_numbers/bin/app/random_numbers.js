@@ -103,7 +103,7 @@
                 // We had an error, die
                 return;
             }
-        };
+        }
 
         // We're done
         callback();

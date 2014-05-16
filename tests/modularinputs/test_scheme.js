@@ -37,6 +37,7 @@ exports.setup = function() {
                 var constructed = myScheme.toXML();
                 var expected = ET.parse(utils.readFile(__filename, "../data/scheme_with_defaults.xml")).getroot();
 
+                test.equals(myScheme.title, "abcd");
                 test.ok(utils.XMLCompare(expected, constructed));
                 test.done();
             },
@@ -69,6 +70,7 @@ exports.setup = function() {
                 var constructed = myScheme.toXML();
                 var expected = ET.parse(utils.readFile(__filename, "../data/scheme_without_defaults.xml")).getroot();
 
+                test.equals(myScheme.title, "abcd");
                 test.ok(utils.XMLCompare(expected, constructed));
                 test.done();
             },
@@ -84,6 +86,7 @@ exports.setup = function() {
 
                 var expected = ET.parse(utils.readFile(__filename, "../data/argument_with_defaults.xml")).getroot();
 
+                test.equals(myArg.name, "some_name");
                 test.ok(utils.XMLCompare(expected, constructed));
                 test.done();
             },
@@ -106,6 +109,7 @@ exports.setup = function() {
 
                 var expected = ET.parse(utils.readFile(__filename, "../data/argument_without_defaults.xml")).getroot();
 
+                test.equals(myArg.name, "some_name");
                 test.ok(utils.XMLCompare(expected, constructed));
                 test.done();
             }
