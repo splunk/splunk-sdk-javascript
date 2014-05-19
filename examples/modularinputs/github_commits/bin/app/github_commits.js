@@ -27,7 +27,7 @@
     function getPath(singleInput) {
         var path = "/repos/" + singleInput.owner + "/" + singleInput.repository + "/commits";
 
-        if (utils.isUndefined(singleInput.token)) {
+        if (!utils.isUndefined(singleInput.token)) {
             path += "?access_token=" + singleInput.token;
         }
 
