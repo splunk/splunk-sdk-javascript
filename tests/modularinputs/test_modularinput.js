@@ -96,6 +96,35 @@ exports.setup = function() {
                 test.done();
             },
 
+            "An error happens when a ModularInput gets bad args": function(test) {
+                // A script that returns a null scheme should generate no output on stdout
+                // and an error on stderr saying that the scheme was null.
+
+                exports.getScheme = function() {
+                    return null;
+                };
+                
+                exports.streamEvents = function() {
+                    // Not used
+                    return null;
+                };
+
+                var out = testUtils.getDuplexStream();
+                var err = testUtils.getDuplexStream();
+                var ew = new EventWriter(out, err);
+
+                var inStream = testUtils.getReadableStream();
+
+                var args = [TEST_SCRIPT_PATH, "foobar"];
+                ModularInput.runScript(exports, args, ew, inStream, function(err, scriptStatus) {
+                    var error = ew._err._read();
+                    
+                    test.ok(utils.startsWith(error, "ERROR Modular input Invalid arguments to modular input script:"));
+                    test.strictEqual(1, scriptStatus);
+                    test.done();
+                });
+            },
+
             "An error happens when a ModularInput has a null scheme": function(test) {
                 // A script that returns a null scheme should generate no output on stdout
                 // and an error on stderr saying that the scheme was null.
