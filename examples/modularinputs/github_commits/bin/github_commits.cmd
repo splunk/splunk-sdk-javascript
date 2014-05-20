@@ -1,1 +1,1 @@
-@"%SPLUNK_HOME%"\bin\splunk cmd node "%~dp0app\github_commits.js" %*
+@"%SPLUNK_HOME%"\bin\splunk cmd node "%~dp0\app\github_commits.js" %*
