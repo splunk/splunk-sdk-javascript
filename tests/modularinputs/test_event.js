@@ -38,7 +38,7 @@ exports.setup = function() {
                 test.equals(found, expected);
 
                 var old = new Date(1372187084);
-                var oldExpected = (1372187084 / 1000).toFixed(3);
+                var oldExpected = (1372187084000 / 1000).toFixed(3);
                 var oldFound = Event.formatTime(old);
                 test.equals(oldFound, oldExpected);
 
