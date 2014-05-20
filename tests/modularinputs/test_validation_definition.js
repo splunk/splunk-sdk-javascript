@@ -28,7 +28,9 @@ exports.setup = function() {
             },
 
             "Parse produces expected result": function(test) {
-                ValidationDefinition.parse(utils.readFile(__filename, "../data/validation.xml"), function(err, found) {
+                try {
+                    var found = ValidationDefinition.parse(utils.readFile(__filename, "../data/validation.xml"));
+
                     var expected = new ValidationDefinition();
                     expected.metadata =  {
                         "server_host": "tiny",
@@ -45,10 +47,14 @@ exports.setup = function() {
                         "multiValue": ["value1", "value2"],
                         "multiValue2": ["value3", "value4"]
                     };
-                    test.ok(!err);
+
                     test.ok(found.equals(expected));
-                    test.done();
-                });
+                }
+                catch (e) {
+                    test.ok(!e);
+                }
+
+                test.done();
             }
         }
     };

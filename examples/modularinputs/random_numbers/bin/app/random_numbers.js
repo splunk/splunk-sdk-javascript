@@ -58,27 +58,28 @@
     };
 
     exports.validateInput = function(definition, done) {
-        var min = parseFloat(definition.parameters["min"]);
-        var max = parseFloat(definition.parameters["max"]);
-        var count = parseInt(definition.parameters["count"], 10);
+        var min = parseFloat(definition.parameters.min);
+        var max = parseFloat(definition.parameters.max);
+        var count = parseInt(definition.parameters.count, 10);
 
         if (min >= max) {
-            done(new Error("min must be less than max; found min=" + min.toString() + ", max=" + max.toString()));
+            done(new Error("min must be less than max; found min=" + min + ", max=" + max));
         }
         else if (count < 0) {
-            done(new Error("count must be a positive value; found count=" + count.toString()));
+            done(new Error("count must be a positive value; found count=" + count));
+        }
+        else if (min < 0 || max < 0) {
+            done(new Error("min and max must be positive values; found min=" + min + ", max=" + max));
         }
         else {
             done();
         }
     };
 
-    exports.streamEvents = function(name, inputDefinition, eventWriter, done) {
+    exports.streamEvents = function(name, singleInput, eventWriter, done) {
         var getRandomFloat = function (min, max) {
             return Math.random() * (max - min + 1) + min;
         };
-
-        var singleInput = inputDefinition;
 
         var min = parseFloat(singleInput.min);
         var max = parseFloat(singleInput.max);
