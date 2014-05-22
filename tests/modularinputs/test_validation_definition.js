@@ -48,6 +48,28 @@ exports.setup = function() {
                         "multiValue2": ["value3", "value4"]
                     };
 
+                    test.same(found.metadata, expected.metadata);
+                    test.equals(found.metadata["server_host"], expected.metadata["server_host"]);
+                    test.equals(found.metadata["server_uri"], expected.metadata["server_uri"]);
+                    test.equals(found.metadata["checkpoint_dir"], expected.metadata["checkpoint_dir"]);
+                    test.equals(found.metadata["session_key"], expected.metadata["session_key"]);
+                    test.equals(found.metadata["name"], expected.metadata["name"]);
+
+                    test.same(found.parameters, expected.parameters);
+                    test.equals(found.parameters["param1"], expected.parameters["param1"]);
+                    test.equals(found.parameters["param2"], expected.parameters["param2"]);
+                    test.equals(found.parameters["disabled"], expected.parameters["disabled"]);
+                    test.equals(found.parameters["index"], expected.parameters["index"]);
+
+                    test.same(found.parameters["multiValue"], expected.parameters["multiValue"]);
+                    test.equals(found.parameters["multiValue"][0], expected.parameters["multiValue"][0]);
+                    test.equals(found.parameters["multiValue"][1], expected.parameters["multiValue"][1]);
+
+                    test.same(found.parameters["multiValue2"], expected.parameters["multiValue2"]);
+                    test.equals(found.parameters["multiValue2"][0], expected.parameters["multiValue2"][0]);
+                    test.equals(found.parameters["multiValue2"][1], expected.parameters["multiValue2"][1]);
+
+                    test.same(found, expected);
                     test.ok(found.equals(expected));
                 }
                 catch (e) {

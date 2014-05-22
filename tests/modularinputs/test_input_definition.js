@@ -37,6 +37,12 @@ exports.setup = function() {
                 
                 try {
                     var found = InputDefinition.parse(utils.readFile(__filename, "../data/conf_with_0_inputs.xml"));
+
+                    test.equals(found.metadata["server_host"], expected.metadata["server_host"]);
+                    test.equals(found.metadata["server_uri"], expected.metadata["server_uri"]);
+                    test.equals(found.metadata["checkpoint_dir"], expected.metadata["checkpoint_dir"]);
+                    test.equals(found.metadata["session_key"], expected.metadata["session_key"]);
+                    test.same(found, expected);
                     test.ok(found.equals(expected));
                 }
                 catch (e) {
@@ -70,6 +76,31 @@ exports.setup = function() {
                 
                 try {
                     var found = InputDefinition.parse(utils.readFile(__filename, "../data/conf_with_2_inputs.xml"));
+
+                    test.equals(found.metadata["server_host"], expected.metadata["server_host"]);
+                    test.equals(found.metadata["server_uri"], expected.metadata["server_uri"]);
+                    test.equals(found.metadata["checkpoint_dir"], expected.metadata["checkpoint_dir"]);
+                    test.equals(found.metadata["session_key"], expected.metadata["session_key"]);
+
+                    test.same(found.inputs["foobar://bbb"], expected.inputs["foobar://bbb"]);
+                    test.equals(found.inputs["foobar://bbb"]["param1"], expected.inputs["foobar://bbb"]["param1"]);
+                    test.equals(found.inputs["foobar://bbb"]["param2"], expected.inputs["foobar://bbb"]["param2"]);
+                    test.equals(found.inputs["foobar://bbb"]["disabled"], expected.inputs["foobar://bbb"]["disabled"]);
+                    test.equals(found.inputs["foobar://bbb"]["index"], expected.inputs["foobar://bbb"]["index"]);
+
+                    test.same(found.inputs["foobar://bbb"], expected.inputs["foobar://bbb"]);
+                    test.equals(found.inputs["foobar://bbb"]["param1"], expected.inputs["foobar://bbb"]["param1"]);
+                    test.equals(found.inputs["foobar://bbb"]["param2"], expected.inputs["foobar://bbb"]["param2"]);
+                    test.equals(found.inputs["foobar://bbb"]["disabled"], expected.inputs["foobar://bbb"]["disabled"]);
+                    test.equals(found.inputs["foobar://bbb"]["index"], expected.inputs["foobar://bbb"]["index"]);
+                    test.same(found.inputs["foobar://bbb"]["multiValue"], expected.inputs["foobar://bbb"]["multiValue"]);
+                    test.equals(found.inputs["foobar://bbb"]["multiValue"][0], expected.inputs["foobar://bbb"]["multiValue"][0]);
+                    test.equals(found.inputs["foobar://bbb"]["multiValue"][1], expected.inputs["foobar://bbb"]["multiValue"][1]);
+                    test.same(found.inputs["foobar://bbb"]["multiValue2"], expected.inputs["foobar://bbb"]["multiValue2"]);
+                    test.equals(found.inputs["foobar://bbb"]["multiValue2"][0], expected.inputs["foobar://bbb"]["multiValue2"][0]);
+                    test.equals(found.inputs["foobar://bbb"]["multiValue2"][1], expected.inputs["foobar://bbb"]["multiValue2"][1]);
+                    
+                    test.same(found, expected);
                     test.ok(found.equals(expected));
                 }
                 catch (e) {
@@ -84,6 +115,7 @@ exports.setup = function() {
                     test.ok(false);
                 }
                 catch (e) {
+
                     test.ok(true);
                 }
                 test.done();
