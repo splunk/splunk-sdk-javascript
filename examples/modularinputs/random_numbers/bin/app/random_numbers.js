@@ -28,31 +28,29 @@
         scheme.useExternalValidation = true;
         scheme.useSingleInstance = true;
 
-        var minArg = new Argument({
-            name: "min",
-            dataType: Argument.dataTypeNumber,
-            description: "Minimum random number to be produced by this input.",
-            requiredOnCreate: true,
-            requiredOnEdit: true
-        });
-
-        var maxArg = new Argument({
-            name: "max",
-            dataType: Argument.dataTypeNumber,
-            description: "Maximum random number to be produced by this input.",
-            requiredOnCreate: true,
-            requiredOnEdit: true
-        });
-
-        var countArg = new Argument({
-            name: "count",
-            dataType: Argument.dataTypeNumber,
-            description: "Number of events to generate.",
-            requiredOnCreate: true,
-            requiredOnEdit: true
-        });
-
-        scheme.args = [minArg, maxArg, countArg];
+        scheme.args = [
+            new Argument({
+                name: "min",
+                dataType: Argument.dataTypeNumber,
+                description: "Minimum random number to be produced by this input.",
+                requiredOnCreate: true,
+                requiredOnEdit: false
+            }),
+            new Argument({
+                name: "max",
+                dataType: Argument.dataTypeNumber,
+                description: "Maximum random number to be produced by this input.",
+                requiredOnCreate: true,
+                requiredOnEdit: false
+            }),
+            new Argument({
+                name: "count",
+                dataType: Argument.dataTypeNumber,
+                description: "Number of events to generate.",
+                requiredOnCreate: true,
+                requiredOnEdit: false
+            })
+        ];
 
         return scheme;
     };
@@ -68,9 +66,6 @@
         else if (count < 0) {
             done(new Error("count must be a positive value; found count=" + count));
         }
-        else if (min < 0 || max < 0) {
-            done(new Error("min and max must be positive values; found min=" + min + ", max=" + max));
-        }
         else {
             done();
         }
@@ -78,7 +73,7 @@
 
     exports.streamEvents = function(name, singleInput, eventWriter, done) {
         var getRandomFloat = function (min, max) {
-            return Math.random() * (max - min + 1) + min;
+            return Math.random() * (max - min) + min;
         };
 
         var min = parseFloat(singleInput.min);
@@ -90,7 +85,7 @@
         for (var i = 0; i < count && !errorFound; i++) {            
             var curEvent = new Event({
                 stanza: name,
-                data: "number=\"" + getRandomFloat(min, max).toString() + "\""
+                data: "number=" + getRandomFloat(min, max)
             });
 
             try {
