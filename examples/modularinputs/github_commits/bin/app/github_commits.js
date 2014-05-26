@@ -60,31 +60,29 @@
         scheme.useExternalValidation = true;
         scheme.useSingleInstance = false; // Set to false so an input can have an optional interval parameter
 
-        var owner = new Argument({
-            name: "owner",
-            dataType: Argument.dataTypeString,
-            description: "Github user or organization that created the repository.",
-            requiredOnCreate: true,
-            requiredOnEdit: true
-        });
-
-        var repository = new Argument({
-            name: "repository",
-            dataType: Argument.dataTypeString,
-            description: "Name of a public Github repository, owned by the specified owner.",
-            requiredOnCreate: true,
-            requiredOnEdit: true
-        });
-
-        var token = new Argument({
-            name: "token",
-            dataType: Argument.dataTypeString,
-            description: "(Optional) A Github API access token. Required for private repositories (the token must have the 'repo' and 'public_repo' scopes enabled). Recommended to avoid Github's API limit, especially if setting an interval.",
-            requiredOnCreate: false,
-            requiredOnEdit: false
-        });
-
-        scheme.args = [owner, repository, token];
+        scheme.args = [
+            new Argument({
+                name: "owner",
+                dataType: Argument.dataTypeString,
+                description: "Github user or organization that created the repository.",
+                requiredOnCreate: true,
+                requiredOnEdit: false
+            }),
+            new Argument({
+                name: "repository",
+                dataType: Argument.dataTypeString,
+                description: "Name of a public Github repository, owned by the specified owner.",
+                requiredOnCreate: true,
+                requiredOnEdit: false
+            }),
+            new Argument({
+                name: "token",
+                dataType: Argument.dataTypeString,
+                description: "(Optional) A Github API access token. Required for private repositories (the token must have the 'repo' and 'public_repo' scopes enabled). Recommended to avoid Github's API limit, especially if setting an interval.",
+                requiredOnCreate: false,
+                requiredOnEdit: false
+            })
+        ];
 
         return scheme;
     };
@@ -95,11 +93,11 @@
 
         // Do an HTTP get request to the Github API and check if the repository is valid
         https.get({
-            host: "api.github.com",
+            hostname: "api.github.com",
             path: getPath(definition.parameters),
             headers: {
-                // Must specify a user agent for the Github API, arbitrarily selected Googlebot
-                "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
+                // Must specify a user agent for the Github API
+                "User-Agent": "splunk-sdk-javascript/1.4.0"
             }
         }, function(res) {
             var data = "";
@@ -143,10 +141,11 @@
         var alreadyIndexed = 0;
 
         https.get({
-            host: "api.github.com",
+            hostname: "api.github.com",
             path: getPath(singleInput),
             headers: {
-                "User-Agent": "Mozilla/5.0 (compatible; Googlebot/2.1; +http://www.google.com/bot.html)"
+                // Must specify a user agent for the Github API
+                "User-Agent": "splunk-sdk-javascript/1.4.0"
             }
         }, function(res) {
             var data = "";
@@ -180,7 +179,7 @@
                         try {
                             var event = new Event({
                                 stanza: repository,
-                                sourcetype: "Github API",
+                                sourcetype: "github_commits",
                                 data: JSON.stringify(json), // Have Splunk index our event data as JSON
                                 time: Date.parse(json.rawdate) // Set the event timestamp to the time of the commit
                             });
