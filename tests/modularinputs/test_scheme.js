@@ -38,6 +38,10 @@ exports.setup = function() {
                 var expected = ET.parse(utils.readFile(__filename, "../data/scheme_with_defaults.xml")).getroot();
 
                 test.equals(myScheme.title, "abcd");
+                test.equals(myScheme.description, null);
+                test.equals(myScheme.useExternalValidation, true);
+                test.equals(myScheme.useSingleInstance, false);
+                test.equals(myScheme.streamingMode, Scheme.streamingModeXML);
                 test.ok(utils.XMLCompare(expected, constructed));
                 test.done();
             },
@@ -52,6 +56,12 @@ exports.setup = function() {
                 myScheme.useExternalValidation = false;
                 myScheme.useSingleInstance = true;
                 
+                test.equals(myScheme.title, "abcd");
+                test.equals(myScheme.description, "쎼 and 쎶 and <&> für");
+                test.equals(myScheme.streamingMode, Scheme.streamingModeSimple);
+                test.equals(myScheme.useExternalValidation, false);
+                test.equals(myScheme.useSingleInstance, true);
+
                 var arg1 = new Argument({
                     name: "arg1"
                 });
@@ -67,10 +77,11 @@ exports.setup = function() {
                 });
                 myScheme.addArgument(arg2);
 
+                test.equals(myScheme.args.length, 2);
+
                 var constructed = myScheme.toXML();
                 var expected = ET.parse(utils.readFile(__filename, "../data/scheme_without_defaults.xml")).getroot();
 
-                test.equals(myScheme.title, "abcd");
                 test.ok(utils.XMLCompare(expected, constructed));
                 test.done();
             },
@@ -104,12 +115,17 @@ exports.setup = function() {
                     requiredOnCreate: true
                 });
 
+                test.equals(myArg.name, "some_name");
+                test.equals(myArg.description, "쎼 and 쎶 and <&> für");
+                test.equals(myArg.validation, "is_pos_int('some_name')");
+                test.equals(myArg.dataType, Argument.dataTypeBoolean);
+                test.equals(myArg.requiredOnEdit, true);
+                test.equals(myArg.requiredOnCreate, true);
+
                 var root = ET.Element("");
                 var constructed = myArg.addToDocument(root);
 
                 var expected = ET.parse(utils.readFile(__filename, "../data/argument_without_defaults.xml")).getroot();
-
-                test.equals(myArg.name, "some_name");
                 test.ok(utils.XMLCompare(expected, constructed));
                 test.done();
             }

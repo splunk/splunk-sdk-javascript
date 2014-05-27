@@ -115,7 +115,6 @@ exports.setup = function() {
                     test.ok(false);
                 }
                 catch (e) {
-
                     test.ok(true);
                 }
                 test.done();

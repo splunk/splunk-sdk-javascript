@@ -180,6 +180,7 @@ exports.setup = function() {
                     myEvent._writeTo(out);
                     var found = ET.parse(out._read());
                     var expected = ET.parse(expectedEvent);
+                    test.ok(utils.XMLCompare(expected, found));
                     test.ok(utils.deepEquals(expected, found));
                 }
                 catch (e) {
@@ -209,6 +210,7 @@ exports.setup = function() {
                     myEvent._writeTo(out);
                     var found = ET.parse(out._read());
                     var expected = ET.parse(expectedEvent);
+                    test.ok(utils.XMLCompare(expected, found));
                     test.ok(utils.deepEquals(expected, found));
                 }
                 catch (e) {
@@ -242,6 +244,7 @@ exports.setup = function() {
                     ew.writeEvent(myEvent);
                     var found = ET.parse(ew._out._read() + "</stream>");
                     var expected = ET.parse(expectedOne);
+                    test.ok(utils.XMLCompare(expected, found));
                     test.ok(utils.deepEquals(expected, found));
 
                     ew.writeEvent(myEvent);
@@ -249,8 +252,8 @@ exports.setup = function() {
 
                     found = ET.parse(ew._out._read());
                     expected = ET.parse(expectedTwo);
+                    test.ok(utils.XMLCompare(expected, found));
                     test.ok(utils.deepEquals(expected, found));
-
                 }
                 catch (e) {
                     test.ok(false);
