@@ -203,42 +203,6 @@
                     else {
                         alreadyIndexed++; // The file exists and contains the sha, assume it's already indexed
                     }
-
-                    // // Look for the checkpoint file, if it exists skip this commit
-                    // if (!fs.existsSync(checkpointFilePath)) {
-                    //     var commit = data[i].commit;
-
-                    //     // At this point, assumed checkpoint doesn't exist
-                    //     json.message = commit.message.replace("\n|\r", " "); // Replace newlines and carriage returns with spaces
-                    //     json.author = commit.author.name;
-                    //     json.rawdate = commit.author.date;
-                    //     json.displaydate = getDisplayDate(commit.author.date.replace("T|Z", " ").trim());
-
-                    //     try {
-                    //         var event = new Event({
-                    //             stanza: repository,
-                    //             sourcetype: "github_commits",
-                    //             data: JSON.stringify(json), // Have Splunk index our event data as JSON
-                    //             time: Date.parse(json.rawdate) // Set the event timestamp to the time of the commit
-                    //         });
-                    //         eventWriter.writeEvent(event);
-
-                    //         // Write the checkpoint file
-                    //         fs.writeFileSync(checkpointFilePath, "");
-                    //         Logger.info(name, "Indexed a Github commit with sha: " + data[i].sha);
-                    //     }
-                    //     catch (e) {
-                    //         errorFound = true;
-                    //         Logger.error(name, e.message, eventWriter._err);
-                    //         done(e);
-
-                    //         // We had an error, die
-                    //         return;
-                    //     }
-                    // }
-                    // else {
-                    //     alreadyIndexed++;
-                    // }
                 }
 
                 if (alreadyIndexed > 0) {
