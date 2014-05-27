@@ -23,6 +23,9 @@
     var Argument        = ModularInputs.Argument;
     var utils           = ModularInputs.utils;
 
+    // The version number should be updated every time a new version of the JavaScript SDK is released
+    var SDK_UA_STRING = "splunk-sdk-javascript/1.4.0";
+
     // Get the Github API path, with the the access token if supplied
     function getPath(singleInput) {
         var path = "/repos/" + singleInput.owner + "/" + singleInput.repository + "/commits";
@@ -97,7 +100,7 @@
             path: getPath(definition.parameters),
             headers: {
                 // Must specify a user agent for the Github API
-                "User-Agent": "splunk-sdk-javascript/1.4.0"
+                "User-Agent": SDK_UA_STRING
             }
         }, function(res) {
             var data = "";
@@ -145,7 +148,7 @@
             path: getPath(singleInput),
             headers: {
                 // Must specify a user agent for the Github API
-                "User-Agent": "splunk-sdk-javascript/1.4.0"
+                "User-Agent": SDK_UA_STRING
             }
         }, function(res) {
             var data = "";
@@ -164,10 +167,10 @@
                         url: "https://github.com/" + owner + "/" + repository + "/commit/" + data[i].sha
                     };
 
-                    var checkpointFilePath = checkpointDir + "/" + json.sha;
+                    var checkpointFilePath = checkpointDir + "/" + owner + " " + repository + ".txt";
                     
-                    // Look for the checkpoint file, if it exists skip this commit
-                    if (!fs.existsSync(checkpointFilePath)) {
+                    // If the file exists and doesn't contain the sha, or if the file doesn't exist
+                    if ((fs.existsSync(checkpointFilePath) && utils.readFile("", checkpointFilePath).indexOf(data[i].sha + "\n") < 0) || !fs.existsSync(checkpointFilePath)) {
                         var commit = data[i].commit;
 
                         // At this point, assumed checkpoint doesn't exist
@@ -185,8 +188,7 @@
                             });
                             eventWriter.writeEvent(event);
 
-                            // Write the checkpoint file
-                            fs.writeFileSync(checkpointFilePath, "");
+                            fs.appendFileSync(checkpointFilePath, data[i].sha + "\n");
                             Logger.info(name, "Indexed a Github commit with sha: " + data[i].sha);
                         }
                         catch (e) {
@@ -199,8 +201,44 @@
                         }
                     }
                     else {
-                        alreadyIndexed++;
+                        alreadyIndexed++; // The file exists and contains the sha, assume it's already indexed
                     }
+
+                    // // Look for the checkpoint file, if it exists skip this commit
+                    // if (!fs.existsSync(checkpointFilePath)) {
+                    //     var commit = data[i].commit;
+
+                    //     // At this point, assumed checkpoint doesn't exist
+                    //     json.message = commit.message.replace("\n|\r", " "); // Replace newlines and carriage returns with spaces
+                    //     json.author = commit.author.name;
+                    //     json.rawdate = commit.author.date;
+                    //     json.displaydate = getDisplayDate(commit.author.date.replace("T|Z", " ").trim());
+
+                    //     try {
+                    //         var event = new Event({
+                    //             stanza: repository,
+                    //             sourcetype: "github_commits",
+                    //             data: JSON.stringify(json), // Have Splunk index our event data as JSON
+                    //             time: Date.parse(json.rawdate) // Set the event timestamp to the time of the commit
+                    //         });
+                    //         eventWriter.writeEvent(event);
+
+                    //         // Write the checkpoint file
+                    //         fs.writeFileSync(checkpointFilePath, "");
+                    //         Logger.info(name, "Indexed a Github commit with sha: " + data[i].sha);
+                    //     }
+                    //     catch (e) {
+                    //         errorFound = true;
+                    //         Logger.error(name, e.message, eventWriter._err);
+                    //         done(e);
+
+                    //         // We had an error, die
+                    //         return;
+                    //     }
+                    // }
+                    // else {
+                    //     alreadyIndexed++;
+                    // }
                 }
 
                 if (alreadyIndexed > 0) {
