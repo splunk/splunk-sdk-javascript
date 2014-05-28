@@ -100,7 +100,7 @@
 
         try {
             // Authenticate with the access token if it was provided
-            if (token.length > 0) {
+            if (token && token.length > 0) {
                 Github.authenticate({
                     type: "oauth",
                     token: token
@@ -149,7 +149,7 @@
 
         var Github = new GithubAPI({version: "3.0.0"});
 
-        if (token.length > 0) {
+        if (token && token.length > 0) {
             Github.authenticate({
                 type: "oauth",
                 token: token
@@ -195,7 +195,7 @@
                                 var commit = res[i].commit;
 
                                 // At this point, assumed checkpoint doesn't exist
-                                json.message = commit.message.replace("\n|\r", " "); // Replace newlines and carriage returns with spaces
+                                json.message = commit.message.replace(/(\n|\r)+/g, " "); // Replace newlines and carriage returns with spaces
                                 json.author = commit.author.name;
                                 json.rawdate = commit.author.date;
                                 json.displaydate = getDisplayDate(commit.author.date.replace("T|Z", " ").trim());
