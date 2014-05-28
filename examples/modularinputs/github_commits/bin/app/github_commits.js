@@ -13,9 +13,10 @@
 // under the License.
 
 (function() {
-    var https           = require("https");
     var fs              = require("fs");
+    var GithubAPI       = require("github");
     var splunkjs        = require("splunk-sdk");
+    var Async           = splunkjs.Async;
     var ModularInputs   = splunkjs.ModularInputs;
     var Logger          = ModularInputs.Logger;
     var Event           = ModularInputs.Event;
@@ -93,45 +94,47 @@
     exports.validateInput = function(definition, done) {
         var owner = definition.parameters.owner;
         var repository = definition.parameters.repository;
+        var token = definition.parameters.token;
 
-        // Do an HTTP get request to the Github API and check if the repository is valid
-        https.get({
-            hostname: "api.github.com",
-            path: getPath(definition.parameters),
-            headers: {
-                // Must specify a user agent for the Github API
-                "User-Agent": SDK_UA_STRING
+        var Github = new GithubAPI({version: "3.0.0"});
+
+        try {
+            // Authenticate with the access token if it was provided
+            if (!utils.isUndefined(token)) {
+                Github.authenticate({
+                    type: "oauth",
+                    token: token
+                });
             }
-        }, function(res) {
-            var data = "";
-            res.on("data", function(chunk) {
-                data += chunk.toString();
-            });
 
-            res.on("end", function() {
-                data = JSON.parse(data); 
-
-                // Did we reach Github's API limit?
-                if (!utils.isUndefined(data.message) && utils.startsWith(data.message, "API rate limit exceeded")) {
-                    Logger.info("Github Commits", "Reached the API limit");
-                    done(new Error("Your IP address has been rate limited by the Github API."));
-                }
-                // Was the repository not found?
-                else if (data.length === 1 || (!utils.isUndefined(data.message) && data.message === "Not Found")) {
-                    // If there is only 1 element in the data Array, some kind or error occurred
-                    // with the Github API.
-                    // Typically, this will happen with an invalid repository.
-                    Logger.info("Github Commits", "Repository not found " + repository + " owned by " + owner);
-                    done(new Error("The Github repository was not found."));
+            Github.repos.getCommits({
+                headers: {"User-Agent": SDK_UA_STRING},
+                user: owner,
+                repo: repository,
+                per_page: 1, // The minimum per page value supported by the Github API
+                page: 1
+            }, function (err, res) {
+                if (err) {
+                    done(err);
                 }
                 else {
-                    // If the API response seems normal, assume valid input
-                    done();
+                    // If we get any kind of message, that's a bad sign
+                    if (res.message) {
+                        done(new Error(res.message));
+                    }
+                    // We got exactly what we expected
+                    else if (res.length === 1 && !utils.isUndefined(res[0].sha)) {
+                        done();
+                    }
+                    else {
+                        done(new Error("Expected only the latest commit, instead found " + res.length + " commits."));
+                    }
                 }
             });
-        }).on("error", function(e) {
+        }
+        catch (e) {
             done(e);
-        });
+        }
     };
 
     exports.streamEvents = function(name, singleInput, eventWriter, done) {
@@ -140,81 +143,109 @@
 
         var owner = singleInput.owner;
         var repository = singleInput.repository;
+        var token      = singleInput.token;
 
         var alreadyIndexed = 0;
 
-        https.get({
-            hostname: "api.github.com",
-            path: getPath(singleInput),
-            headers: {
-                // Must specify a user agent for the Github API
-                "User-Agent": SDK_UA_STRING
+        var Github = new GithubAPI({version: "3.0.0"});
+
+        if (!utils.isUndefined(token)) {
+            Github.authenticate({
+                type: "oauth",
+                token: token
+            });
+        }
+
+        // TODO: move to streaming & finish it off.
+        var page = 1;
+        var working = true;
+        Async.whilst(
+            function() {
+                return working;
+            },
+            function(callback) {
+                try {
+                    Github.repos.getCommits({
+                        headers: {"User-Agent": SDK_UA_STRING},
+                        user: owner,
+                        repo: repository,
+                        per_page: 100, // The maximum per page value supported by the Github API
+                        page: page
+                    }, function (err, res) {
+                        if (err) {
+                            callback(err);
+                            // TODO: How can I make sure we exit the full scope here?
+                        }
+                        else {
+                            // When res.meta.link doesn't contain "next", we should stop the loop
+                            if (res.meta.link.indexOf("rel=\"next\"") < 0) {
+                                working = false;
+                            }
+                            else {
+                                fs.appendFileSync("/Users/smohamed/Downloads/splunk/var/log/_github.log", "data starts with obj[0]: "+res[0].sha+"\n");
+                                page++;
+
+                                var errorFound = false;
+                                for (var i = 0; i < res.length && !errorFound; i++) {
+                                    var json = {
+                                        sha: res[i].sha,
+                                        api_url: res[i].url,
+                                        url: "https://github.com/" + owner + "/" + repository + "/commit/" + res[i].sha
+                                    };
+
+                                    var checkpointFilePath = checkpointDir + "/" + owner + " " + repository + ".txt";
+                                                        
+                                    // If the file exists and doesn't contain the sha, or if the file doesn't exist
+                                    if ((fs.existsSync(checkpointFilePath) && utils.readFile("", checkpointFilePath).indexOf(res[i].sha + "\n") < 0) || !fs.existsSync(checkpointFilePath)) {
+                                        var commit = res[i].commit;
+
+                                        // At this point, assumed checkpoint doesn't exist
+                                        json.message = commit.message.replace("\n|\r", " "); // Replace newlines and carriage returns with spaces
+                                        json.author = commit.author.name;
+                                        json.rawdate = commit.author.date;
+                                        json.displaydate = getDisplayDate(commit.author.date.replace("T|Z", " ").trim());
+
+                                        try {
+                                            var event = new Event({
+                                                stanza: repository,
+                                                sourcetype: "github_commits",
+                                                data: JSON.stringify(json), // Have Splunk index our event data as JSON
+                                                time: Date.parse(json.rawdate) // Set the event timestamp to the time of the commit
+                                            });
+                                            eventWriter.writeEvent(event);
+
+                                            fs.appendFileSync(checkpointFilePath, res[i].sha + "\n");
+                                            Logger.info(name, "Indexed a Github commit with sha: " + res[i].sha);
+                                        }
+                                        catch (e) {
+                                            errorFound = true;
+                                            working = false; // Stop streaming we get an error
+                                            Logger.error(name, e.message, eventWriter._err);
+                                            done(e);
+
+                                            // We had an error, die
+                                            return;
+                                        }
+                                    }
+                                }
+
+                                if (alreadyIndexed > 0) {
+                                    Logger.info(name, "Skipped " + alreadyIndexed.toString() + " already indexed Github commits from " + owner + "/" + repository);
+                                }
+                            }
+                            // We're done
+                            callback();
+                        }
+                    });
+                }
+                catch (e) {
+                    callback(e);
+                }
+            },
+            function(err) {
+                done(err);
             }
-        }, function(res) {
-            var data = "";
-            res.on("data", function(chunk) {
-                data += chunk.toString();
-            });
-
-            res.on("end", function() {
-                data = JSON.parse(data); // Reverse the data to index events in ascending order
-
-                var errorFound = false;
-                for (var i = 0; i < data.length && !errorFound; i++) {
-                    var json = {
-                        sha: data[i].sha,
-                        api_url: data[i].url,
-                        url: "https://github.com/" + owner + "/" + repository + "/commit/" + data[i].sha
-                    };
-
-                    var checkpointFilePath = checkpointDir + "/" + owner + " " + repository + ".txt";
-                    
-                    // If the file exists and doesn't contain the sha, or if the file doesn't exist
-                    if ((fs.existsSync(checkpointFilePath) && utils.readFile("", checkpointFilePath).indexOf(data[i].sha + "\n") < 0) || !fs.existsSync(checkpointFilePath)) {
-                        var commit = data[i].commit;
-
-                        // At this point, assumed checkpoint doesn't exist
-                        json.message = commit.message.replace("\n|\r", " "); // Replace newlines and carriage returns with spaces
-                        json.author = commit.author.name;
-                        json.rawdate = commit.author.date;
-                        json.displaydate = getDisplayDate(commit.author.date.replace("T|Z", " ").trim());
-
-                        try {
-                            var event = new Event({
-                                stanza: repository,
-                                sourcetype: "github_commits",
-                                data: JSON.stringify(json), // Have Splunk index our event data as JSON
-                                time: Date.parse(json.rawdate) // Set the event timestamp to the time of the commit
-                            });
-                            eventWriter.writeEvent(event);
-
-                            fs.appendFileSync(checkpointFilePath, data[i].sha + "\n");
-                            Logger.info(name, "Indexed a Github commit with sha: " + data[i].sha);
-                        }
-                        catch (e) {
-                            errorFound = true;
-                            Logger.error(name, e.message, eventWriter._err);
-                            done(e);
-
-                            // We had an error, die
-                            return;
-                        }
-                    }
-                    else {
-                        alreadyIndexed++; // The file exists and contains the sha, assume it's already indexed
-                    }
-                }
-
-                if (alreadyIndexed > 0) {
-                    Logger.info(name, "Skipped " + alreadyIndexed.toString() + " already indexed Github commits from " + owner + "/" + repository);
-                }
-                
-                // We're done
-                done();
-            });
-        }).on("error", function(e) {
-            done(e);
-        });
+        );
     };
 
     ModularInputs.execute(exports, module);
