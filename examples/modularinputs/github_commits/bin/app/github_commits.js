@@ -100,6 +100,7 @@
 
         try {
             // Authenticate with the access token if it was provided
+            // TODO: this is broken and will try to auth even if token isn't set.
             if (!utils.isUndefined(token)) {
                 Github.authenticate({
                     type: "oauth",
@@ -182,7 +183,6 @@
                                 working = false;
                             }
                             else {
-                                fs.appendFileSync("/Users/smohamed/Downloads/splunk/var/log/_github.log", "data starts with obj[0]: "+res[0].sha+"\n");
                                 page++;
 
                                 var errorFound = false;
