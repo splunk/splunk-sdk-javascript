@@ -29,7 +29,7 @@
         Async           : require('./lib/async'),
         Paths           : require('./lib/paths').Paths,
         Class           : require('./lib/jquery.class').Class,
-        ModularInputs    : require('./lib/modularinputs')
+        ModularInputs   : require('./lib/modularinputs')
     };
     
     if (typeof(window) === 'undefined') {

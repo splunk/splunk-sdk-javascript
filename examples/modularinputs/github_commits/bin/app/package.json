@@ -4,7 +4,8 @@
     "description": "Splunk modular input example for generating events of Github commits",
     "main": "github_commits.js",
     "dependencies": {
-        "splunk-sdk": ">=1.4.0"
+        "splunk-sdk": ">=1.4.0",
+        "github": "0.1.16"
     },
     "author": "Splunk"
 }
