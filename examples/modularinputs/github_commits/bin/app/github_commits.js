@@ -100,8 +100,7 @@
 
         try {
             // Authenticate with the access token if it was provided
-            // TODO: this is broken and will try to auth even if token isn't set.
-            if (!utils.isUndefined(token)) {
+            if (token.length > 0) {
                 Github.authenticate({
                     type: "oauth",
                     token: token
@@ -124,7 +123,7 @@
                         done(new Error(res.message));
                     }
                     // We got exactly what we expected
-                    else if (res.length === 1 && !utils.isUndefined(res[0].sha)) {
+                    else if (res.length === 1 && res[0].hasOwnProperty("sha")) {
                         done();
                     }
                     else {
@@ -150,16 +149,16 @@
 
         var Github = new GithubAPI({version: "3.0.0"});
 
-        if (!utils.isUndefined(token)) {
+        if (token.length > 0) {
             Github.authenticate({
                 type: "oauth",
                 token: token
             });
         }
 
-        // TODO: move to streaming & finish it off.
         var page = 1;
         var working = true;
+
         Async.whilst(
             function() {
                 return working;
@@ -175,67 +174,62 @@
                     }, function (err, res) {
                         if (err) {
                             callback(err);
-                            // TODO: How can I make sure we exit the full scope here?
+                            return;
                         }
-                        else {
-                            // When res.meta.link doesn't contain "next", we should stop the loop
-                            if (res.meta.link.indexOf("rel=\"next\"") < 0) {
-                                working = false;
-                            }
-                            else {
-                                page++;
+                        // When res.meta.link doesn't contain "next", we should stop the loop after streaming commits on this page
+                        if (res.meta.link.indexOf("rel=\"next\"") < 0) {
+                            working = false;
+                        }
+                        var errorFound = false;
+                        for (var i = 0; i < res.length && !errorFound; i++) {
+                            var json = {
+                                sha: res[i].sha,
+                                api_url: res[i].url,
+                                url: "https://github.com/" + owner + "/" + repository + "/commit/" + res[i].sha
+                            };
 
-                                var errorFound = false;
-                                for (var i = 0; i < res.length && !errorFound; i++) {
-                                    var json = {
-                                        sha: res[i].sha,
-                                        api_url: res[i].url,
-                                        url: "https://github.com/" + owner + "/" + repository + "/commit/" + res[i].sha
-                                    };
+                            var checkpointFilePath = checkpointDir + "/" + owner + " " + repository + ".txt";
+                                                
+                            // If the file exists and doesn't contain the sha, or if the file doesn't exist
+                            if ((fs.existsSync(checkpointFilePath) && utils.readFile("", checkpointFilePath).indexOf(res[i].sha + "\n") < 0) || !fs.existsSync(checkpointFilePath)) {
+                                var commit = res[i].commit;
 
-                                    var checkpointFilePath = checkpointDir + "/" + owner + " " + repository + ".txt";
-                                                        
-                                    // If the file exists and doesn't contain the sha, or if the file doesn't exist
-                                    if ((fs.existsSync(checkpointFilePath) && utils.readFile("", checkpointFilePath).indexOf(res[i].sha + "\n") < 0) || !fs.existsSync(checkpointFilePath)) {
-                                        var commit = res[i].commit;
+                                // At this point, assumed checkpoint doesn't exist
+                                json.message = commit.message.replace("\n|\r", " "); // Replace newlines and carriage returns with spaces
+                                json.author = commit.author.name;
+                                json.rawdate = commit.author.date;
+                                json.displaydate = getDisplayDate(commit.author.date.replace("T|Z", " ").trim());
 
-                                        // At this point, assumed checkpoint doesn't exist
-                                        json.message = commit.message.replace("\n|\r", " "); // Replace newlines and carriage returns with spaces
-                                        json.author = commit.author.name;
-                                        json.rawdate = commit.author.date;
-                                        json.displaydate = getDisplayDate(commit.author.date.replace("T|Z", " ").trim());
+                                try {
+                                    var event = new Event({
+                                        stanza: repository,
+                                        sourcetype: "github_commits",
+                                        data: JSON.stringify(json), // Have Splunk index our event data as JSON
+                                        time: Date.parse(json.rawdate) // Set the event timestamp to the time of the commit
+                                    });
+                                    eventWriter.writeEvent(event);
 
-                                        try {
-                                            var event = new Event({
-                                                stanza: repository,
-                                                sourcetype: "github_commits",
-                                                data: JSON.stringify(json), // Have Splunk index our event data as JSON
-                                                time: Date.parse(json.rawdate) // Set the event timestamp to the time of the commit
-                                            });
-                                            eventWriter.writeEvent(event);
-
-                                            fs.appendFileSync(checkpointFilePath, res[i].sha + "\n");
-                                            Logger.info(name, "Indexed a Github commit with sha: " + res[i].sha);
-                                        }
-                                        catch (e) {
-                                            errorFound = true;
-                                            working = false; // Stop streaming we get an error
-                                            Logger.error(name, e.message, eventWriter._err);
-                                            done(e);
-
-                                            // We had an error, die
-                                            return;
-                                        }
-                                    }
+                                    fs.appendFileSync(checkpointFilePath, res[i].sha + "\n");
+                                    Logger.info(name, "Indexed a Github commit with sha: " + res[i].sha);
                                 }
+                                catch (e) {
+                                    errorFound = true;
+                                    working = false; // Stop streaming we get an error
+                                    Logger.error(name, e.message, eventWriter._err);
+                                    done(e);
 
-                                if (alreadyIndexed > 0) {
-                                    Logger.info(name, "Skipped " + alreadyIndexed.toString() + " already indexed Github commits from " + owner + "/" + repository);
+                                    // We had an error, die
+                                    return;
                                 }
                             }
-                            // We're done
-                            callback();
                         }
+
+                        if (alreadyIndexed > 0) {
+                            Logger.info(name, "Skipped " + alreadyIndexed.toString() + " already indexed Github commits from " + owner + "/" + repository);
+                        }
+                        
+                        page++;
+                        callback();
                     });
                 }
                 catch (e) {
@@ -243,6 +237,7 @@
                 }
             },
             function(err) {
+                // We're done streaming
                 done(err);
             }
         );
