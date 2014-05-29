@@ -14,6 +14,7 @@
 
 (function() {
     var fs              = require("fs");
+    var path            = require("path");
     var GithubAPI       = require("github");
     var splunkjs        = require("splunk-sdk");
     var Async           = splunkjs.Async;
@@ -26,17 +27,6 @@
 
     // The version number should be updated every time a new version of the JavaScript SDK is released
     var SDK_UA_STRING = "splunk-sdk-javascript/1.4.0";
-
-    // Get the Github API path, with the the access token if supplied
-    function getPath(singleInput) {
-        var path = "/repos/" + singleInput.owner + "/" + singleInput.repository + "/commits";
-
-        if (!utils.isUndefined(singleInput.token)) {
-            path += "?access_token=" + singleInput.token;
-        }
-
-        return path;
-    }
 
     // Create easy to read date format
     function getDisplayDate(date) {
@@ -188,7 +178,7 @@
                                 url: "https://github.com/" + owner + "/" + repository + "/commit/" + res[i].sha
                             };
 
-                            var checkpointFilePath = checkpointDir + "/" + owner + " " + repository + ".txt";
+                            var checkpointFilePath  = path.join(checkpointDir, owner + " " + repository + ".txt");
                                                 
                             // If the file exists and doesn't contain the sha, or if the file doesn't exist
                             if ((fs.existsSync(checkpointFilePath) && utils.readFile("", checkpointFilePath).indexOf(res[i].sha + "\n") < 0) || !fs.existsSync(checkpointFilePath)) {
