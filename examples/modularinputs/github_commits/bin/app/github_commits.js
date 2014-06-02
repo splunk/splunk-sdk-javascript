@@ -25,10 +25,10 @@
     var Argument        = ModularInputs.Argument;
     var utils           = ModularInputs.utils;
 
-    // The version number should be updated every time a new version of the JavaScript SDK is released
+    // The version number should be updated every time a new version of the JavaScript SDK is released.
     var SDK_UA_STRING = "splunk-sdk-javascript/1.4.0";
 
-    // Create easy to read date format
+    // Create easy to read date format.
     function getDisplayDate(date) {
         var monthStrings = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
@@ -52,7 +52,7 @@
 
         scheme.description = "Streams events of commits in the specified Github repository (must be public, unless setting a token).";
         scheme.useExternalValidation = true;
-        scheme.useSingleInstance = false; // Set to false so an input can have an optional interval parameter
+        scheme.useSingleInstance = false; // Set to false so an input can have an optional interval parameter.
 
         scheme.args = [
             new Argument({
@@ -89,7 +89,7 @@
         var Github = new GithubAPI({version: "3.0.0"});
 
         try {
-            // Authenticate with the access token if it was provided
+            // Authenticate with the access token if it was provided.
             if (token && token.length > 0) {
                 Github.authenticate({
                     type: "oauth",
@@ -101,18 +101,18 @@
                 headers: {"User-Agent": SDK_UA_STRING},
                 user: owner,
                 repo: repository,
-                per_page: 1, // The minimum per page value supported by the Github API
+                per_page: 1, // The minimum per page value supported by the Github API.
                 page: 1
             }, function (err, res) {
                 if (err) {
                     done(err);
                 }
                 else {
-                    // If we get any kind of message, that's a bad sign
+                    // If we get any kind of message, that's a bad sign.
                     if (res.message) {
                         done(new Error(res.message));
                     }
-                    // We got exactly what we expected
+                    // We got exactly what we expected.
                     else if (res.length === 1 && res[0].hasOwnProperty("sha")) {
                         done();
                     }
@@ -128,7 +128,7 @@
     };
 
     exports.streamEvents = function(name, singleInput, eventWriter, done) {
-        // Get the checkpoint directory out of the modular input's metadata
+        // Get the checkpoint directory out of the modular input's metadata.
         var checkpointDir = this._inputDefinition.metadata["checkpoint_dir"];
 
         var owner = singleInput.owner;
@@ -159,14 +159,14 @@
                         headers: {"User-Agent": SDK_UA_STRING},
                         user: owner,
                         repo: repository,
-                        per_page: 100, // The maximum per page value supported by the Github API
+                        per_page: 100, // The maximum per page value supported by the Github API.
                         page: page
                     }, function (err, res) {
                         if (err) {
                             callback(err);
                             return;
                         }
-                        // When res.meta.link doesn't contain "next", we should stop the loop after streaming commits on this page
+                        // When res.meta.link doesn't contain "next", we should stop the loop after streaming commits on this page.
                         if (res.meta.link.indexOf("rel=\"next\"") < 0) {
                             working = false;
                         }
@@ -180,12 +180,12 @@
 
                             var checkpointFilePath  = path.join(checkpointDir, owner + " " + repository + ".txt");
                                                 
-                            // If the file exists and doesn't contain the sha, or if the file doesn't exist
+                            // If the file exists and doesn't contain the sha, or if the file doesn't exist.
                             if ((fs.existsSync(checkpointFilePath) && utils.readFile("", checkpointFilePath).indexOf(res[i].sha + "\n") < 0) || !fs.existsSync(checkpointFilePath)) {
                                 var commit = res[i].commit;
 
-                                // At this point, assumed checkpoint doesn't exist
-                                json.message = commit.message.replace(/(\n|\r)+/g, " "); // Replace newlines and carriage returns with spaces
+                                // At this point, assumed checkpoint doesn't exist.
+                                json.message = commit.message.replace(/(\n|\r)+/g, " "); // Replace newlines and carriage returns with spaces.
                                 json.author = commit.author.name;
                                 json.rawdate = commit.author.date;
                                 json.displaydate = getDisplayDate(commit.author.date.replace("T|Z", " ").trim());
@@ -194,8 +194,8 @@
                                     var event = new Event({
                                         stanza: repository,
                                         sourcetype: "github_commits",
-                                        data: JSON.stringify(json), // Have Splunk index our event data as JSON
-                                        time: Date.parse(json.rawdate) // Set the event timestamp to the time of the commit
+                                        data: JSON.stringify(json), // Have Splunk index our event data as JSON.
+                                        time: Date.parse(json.rawdate) // Set the event timestamp to the time of the commit.
                                     });
                                     eventWriter.writeEvent(event);
 
@@ -204,11 +204,11 @@
                                 }
                                 catch (e) {
                                     errorFound = true;
-                                    working = false; // Stop streaming we get an error
+                                    working = false; // Stop streaming we get an error.
                                     Logger.error(name, e.message, eventWriter._err);
                                     done(e);
 
-                                    // We had an error, die
+                                    // We had an error, die.
                                     return;
                                 }
                             }
@@ -227,7 +227,7 @@
                 }
             },
             function(err) {
-                // We're done streaming
+                // We're done streaming.
                 done(err);
             }
         );
