@@ -170,18 +170,31 @@
                         if (res.meta.link.indexOf("rel=\"next\"") < 0) {
                             working = false;
                         }
+
+                        var checkpointFilePath  = path.join(checkpointDir, owner + " " + repository + ".txt");
+                        var checkpointFileNewContents = "";
                         var errorFound = false;
+
+                        // Set the temporary contents of the checkpoint file to an empty string
+                        var checkpointFileContents = "";
+                        try {
+                            checkpointFileContents = utils.readFile("", checkpointFilePath);
+                        }
+                        catch (e) {
+                            // If there's an exception, assume the file doesn't exist
+                            // Create the checkpoint file with an empty string
+                            fs.appendFileSync(checkpointFilePath, "");
+                        }
+
                         for (var i = 0; i < res.length && !errorFound; i++) {
                             var json = {
                                 sha: res[i].sha,
                                 api_url: res[i].url,
                                 url: "https://github.com/" + owner + "/" + repository + "/commit/" + res[i].sha
                             };
-
-                            var checkpointFilePath  = path.join(checkpointDir, owner + " " + repository + ".txt");
                                                 
                             // If the file exists and doesn't contain the sha, or if the file doesn't exist.
-                            if ((fs.existsSync(checkpointFilePath) && utils.readFile("", checkpointFilePath).indexOf(res[i].sha + "\n") < 0) || !fs.existsSync(checkpointFilePath)) {
+                            if (checkpointFileContents.indexOf(res[i].sha + "\n") < 0) {
                                 var commit = res[i].commit;
 
                                 // At this point, assumed checkpoint doesn't exist.
@@ -198,27 +211,35 @@
                                         time: Date.parse(json.rawdate) // Set the event timestamp to the time of the commit.
                                     });
                                     eventWriter.writeEvent(event);
-
-                                    fs.appendFileSync(checkpointFilePath, res[i].sha + "\n");
+                                    
+                                    checkpointFileNewContents += res[i].sha + "\n"; // Append this commit to the string we'll write at the end
                                     Logger.info(name, "Indexed a Github commit with sha: " + res[i].sha);
                                 }
                                 catch (e) {
                                     errorFound = true;
-                                    working = false; // Stop streaming we get an error.
+                                    working = false; // Stop streaming if we get an error.
                                     Logger.error(name, e.message, eventWriter._err);
+                                    fs.appendFileSync(checkpointFilePath, checkpointFileNewContents); // Write to the checkpoint file
                                     done(e);
 
                                     // We had an error, die.
                                     return;
                                 }
                             }
+                            else {
+                                // The commit has already been indexed
+                                alreadyIndexed++;
+                            }
                         }
 
+                        fs.appendFileSync(checkpointFilePath, checkpointFileNewContents); // Write to the checkpoint file
+                        
                         if (alreadyIndexed > 0) {
                             Logger.info(name, "Skipped " + alreadyIndexed.toString() + " already indexed Github commits from " + owner + "/" + repository);
                         }
                         
                         page++;
+                        alreadyIndexed = 0;
                         callback();
                     });
                 }
