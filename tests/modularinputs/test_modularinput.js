@@ -261,10 +261,27 @@ exports.setup = function() {
                 var args = [TEST_SCRIPT_PATH, "--validate-arguments"];
                 ModularInput.runScript(exports, args, ew, inStream, function(err, scriptStatus) {
                     test.ok(err);
-                    var expected = utils.readFile(__filename, "../data/validation_error.xml");
                     var output = ew._out._read();
 
-                    test.ok(utils.XMLCompare(ET.parse(expected).getroot(), ET.parse(output).getroot()));
+                    var expected = ET.parse(utils.readFile(__filename, "../data/validation_error.xml")).getroot();
+                    var found = ET.parse(output).getroot();
+
+                    test.strictEqual(expected.tag, found.tag);
+                    test.strictEqual(expected.text.trim(), found.text.trim());
+                    test.strictEqual(expected.tail, found.tail);
+                    test.strictEqual(expected.getchildren().length, found.getchildren().length);
+
+                    var expectedChildren = expected.getchildren();
+                    var foundChildren = found.getchildren();
+                    for (var i = 0; i < expectedChildren.length; i++) {
+                        var expectedchild = expectedChildren[i];
+                        var foundChild = foundChildren[i];
+                        test.strictEqual(expectedchild.tag, foundChild.tag);
+                        test.strictEqual(expectedchild.text.trim(), foundChild.text.trim());
+                        test.strictEqual(expectedchild.tail, foundChild.tail);
+                    }
+                    
+                    test.ok(utils.XMLCompare(expected, found));
                     test.strictEqual("", ew._err._read());
                     test.strictEqual(1, scriptStatus);
                     test.done();
@@ -272,7 +289,7 @@ exports.setup = function() {
                 inStream.emit("data", new Buffer(validationFile));
             },
 
-            "ModularInput streaming events works": function(test) {
+            "ModularInput streaming events works - 2 inputs": function(test) {
                 exports.getScheme = function() {
                     return null;
                 };
@@ -314,6 +331,87 @@ exports.setup = function() {
                     var expected = utils.readFile(__filename, "../data/stream_with_two_events.xml");
                     var found = ew._out._read() + "</stream>";
                     
+                    test.ok(utils.XMLCompare(ET.parse(expected).getroot(), ET.parse(found).getroot()));
+                    test.strictEqual(0, scriptStatus);
+                    test.done();
+                });
+                inStream.emit("data", new Buffer(inputConfiguration));
+            },
+
+            "ModularInput streaming events works - 5 inputs": function(test) {
+                exports.getScheme = function() {
+                    return null;
+                };
+
+                var num = 1;
+                exports.streamEvents = function(name, input, eventWriter, callback) {
+                    var myEvent = new Event({
+                        data: "This is a test of the emergency broadcast system. " + num,
+                        stanza: "fubar",
+                        time: 1372275124.466,
+                        host: "localhost",
+                        index: "main",
+                        source: "hilda",
+                        sourcetype: "misc",
+                        done: true,
+                        unbroken: true
+                    });
+
+                    try {
+                        eventWriter.writeEvent(myEvent);
+                        num++;
+                        callback(null);    
+                    }
+                    catch (e) {
+                        callback(e);    
+                    }
+                };
+
+                var out = testUtils.getDuplexStream();
+                var err = testUtils.getDuplexStream();
+                var ew = new EventWriter(out, err);
+
+                var inStream = testUtils.getReadableStream();
+
+                var inputConfiguration = utils.readFile(__filename, "../data/conf_with_5_inputs.xml");
+
+                var args = [TEST_SCRIPT_PATH];
+                ModularInput.runScript(exports, args, ew, inStream, function(err, scriptStatus) {
+                    test.ok(!err);
+
+                    var expected = utils.readFile(__filename, "../data/stream_with_five_events.xml");
+                    var found = ew._out._read() + "</stream>";
+
+                    var expectedChildren = ET.parse(expected).getroot().getchildren();
+                    var foundChildren = ET.parse(found).getroot().getchildren();
+
+                    // Loop through instead of comparing to hardcoded XML, since
+                    // streamEvents() will be called several times in parallel
+                    // and the events MAY not get streamed in the order they're sent.
+                    var totalFound = 0;
+                    // We're expecting 5 events to have data ending in a different value between 1 and 5
+                    for (var i = 1; i <= 5; i++) {
+                        // Iterate over the individual events
+                        for (var c = 0; c < foundChildren.length; c++) {
+                            // Iterate over the tags of the current event
+                            var tags = foundChildren[c].getchildren();
+                            for (var t = 0; t < tags.length; t++) {
+                                // When we find the <data> tag, read the text and check if it ends with the current value we're looking for
+                                // between 1 and 5
+                                if (tags[t].tag === "data") {
+                                    if (tags[t].text.indexOf("This is a test of the emergency broadcast system. " + i) >= 0) {
+                                        totalFound++;
+                                        i++;
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    test.equal(5, totalFound); // Did we find as many events as we expected?
+                    test.equal(5, expectedChildren.length);
+                    test.equal(expectedChildren.length, foundChildren.length);
+
                     test.ok(utils.XMLCompare(ET.parse(expected).getroot(), ET.parse(found).getroot()));
                     test.strictEqual(0, scriptStatus);
                     test.done();
