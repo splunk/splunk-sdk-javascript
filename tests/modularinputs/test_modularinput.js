@@ -236,6 +236,78 @@ exports.setup = function() {
                 inStream.emit("data", new Buffer(validationFile));
             },
 
+            "ModularInput Input Validation succeeds when validateInput is undefined": function(test) {
+                exports.getScheme = function() {
+                    return null;
+                };
+
+                exports.validateInput = undefined;
+
+                exports.streamEvents = function() {
+                    // not used
+                    return;
+                };
+
+                var out = testUtils.getDuplexStream();
+                var err = testUtils.getDuplexStream();
+                var ew = new EventWriter(out, err);
+
+                var validationFile = utils.readFile(__filename, "../data/validation.xml");
+
+                var inStream = testUtils.getReadableStream();
+
+                var args = [TEST_SCRIPT_PATH, "--validate-arguments"];
+                ModularInput.runScript(exports, args, ew, inStream, function(err, scriptStatus) {
+                    test.ok(!err);
+
+                    test.strictEqual("", ew._out._read());
+                    test.strictEqual("", ew._err._read());
+                    test.strictEqual(0, scriptStatus);
+                    test.done();
+                });
+                inStream.emit("data", new Buffer(validationFile));
+            },
+
+            "ModularInput Input Validation times out after 30s with impartial XML": function(test) {
+                exports.getScheme = function() {
+                    return null;
+                };
+
+                exports.validateInput = function() {
+                    return;
+                };
+                exports.validateInput = undefined;
+
+                exports.streamEvents = function() {
+                    // not used
+                    return;
+                };
+
+                var out = testUtils.getDuplexStream();
+                var err = testUtils.getDuplexStream();
+                var ew = new EventWriter(out, err);
+
+                var validationFile = utils.readFile(__filename, "../data/validation.xml");
+
+                var inStream = testUtils.getReadableStream();
+
+                var startTime = Date.now();
+
+                var args = [TEST_SCRIPT_PATH, "--validate-arguments"];
+                ModularInput.runScript(exports, args, ew, inStream, function(err, scriptStatus) {
+                    test.ok(err);
+                    test.strictEqual("Receiving validation definition prior to validating timed out.", err.message);
+
+                    test.ok(Date.now() - startTime >= 30000); // Make sure it times out only after 30 seconds
+                    test.strictEqual("", ew._out._read());
+                    test.strictEqual("", ew._err._read());
+                    test.strictEqual(1, scriptStatus);
+                    test.done();
+                });
+                // Remove the closing </items> tag to send impartial data
+                inStream.emit("data", new Buffer(validationFile.replace("</items>", "")));
+            },
+
             "ModularInput Input Validation fails": function(test) {
                 exports.getScheme = function() {
                     return null;
@@ -419,13 +491,134 @@ exports.setup = function() {
                 inStream.emit("data", new Buffer(inputConfiguration));
             },
 
+            "ModularInput streaming events times out after 30s with impartial XML": function(test) {
+                exports.getScheme = function() {
+                    return null;
+                };
+
+                exports.streamEvents = function(name, input, eventWriter, callback) {
+                    var myEvent = new Event({
+                        data: "This is a test of the emergency broadcast system.",
+                        stanza: "fubar",
+                        time: 1372275124.466,
+                        host: "localhost",
+                        index: "main",
+                        source: "hilda",
+                        sourcetype: "misc",
+                        done: true,
+                        unbroken: true
+                    });
+
+                    try {
+                        eventWriter.writeEvent(myEvent);
+                        callback(null);    
+                    }
+                    catch (e) {
+                        callback(e);    
+                    }
+                };
+
+                var out = testUtils.getDuplexStream();
+                var err = testUtils.getDuplexStream();
+                var ew = new EventWriter(out, err);
+
+                var inStream = testUtils.getReadableStream();
+
+                var inputConfiguration = utils.readFile(__filename, "../data/conf_with_2_inputs.xml");
+
+                var startTime = Date.now();
+
+                var args = [TEST_SCRIPT_PATH];
+                ModularInput.runScript(exports, args, ew, inStream, function(err, scriptStatus) {
+                    test.ok(err);
+                    test.strictEqual("Receiving input definitions prior to streaming timed out.", err.message);
+
+                    test.ok(Date.now() - startTime >= 30000); // Make sure it times out only after 30 seconds
+                    test.strictEqual("", ew._out._read());
+                    test.strictEqual("", ew._err._read());
+                    test.strictEqual(1, scriptStatus);
+                    test.done();
+                });
+                // Remove the closing </input> tag to send impartial data
+                inStream.emit("data", new Buffer(inputConfiguration.replace("</input>", "")));
+            },
+
+            "ModularInput streaming events times out after 30s with no data sent": function(test) {
+                exports.getScheme = function() {
+                    return null;
+                };
+
+                exports.streamEvents = function(name, input, eventWriter, callback) {
+                    return;
+                };
+
+                var out = testUtils.getDuplexStream();
+                var err = testUtils.getDuplexStream();
+                var ew = new EventWriter(out, err);
+
+                var inStream = testUtils.getReadableStream();
+
+                var inputConfiguration = utils.readFile(__filename, "../data/conf_with_2_inputs.xml");
+
+                var startTime = Date.now();
+
+                var args = [TEST_SCRIPT_PATH];
+                ModularInput.runScript(exports, args, ew, inStream, function(err, scriptStatus) {
+                    test.ok(err);
+                    test.strictEqual("Receiving input definitions prior to streaming timed out.", err.message);
+
+                    test.ok(Date.now() - startTime >= 30000); // Make sure it times out only after 30 seconds
+                    test.strictEqual("", ew._out._read());
+                    test.strictEqual("", ew._err._read());
+                    test.strictEqual(1, scriptStatus);
+                    test.done();
+                });
+            },
+
+            "ModularInput streaming events times out after 30s with data sent after 30s": function(test) {
+                exports.getScheme = function() {
+                    return null;
+                };
+
+                exports.streamEvents = function(name, input, eventWriter, callback) {
+                    return;
+                };
+
+                var out = testUtils.getDuplexStream();
+                var err = testUtils.getDuplexStream();
+                var ew = new EventWriter(out, err);
+
+                var inStream = testUtils.getReadableStream();
+
+                var inputConfiguration = utils.readFile(__filename, "../data/conf_with_2_inputs.xml");
+
+                var startTime = Date.now();
+
+                // Emit the data 1 second after the timeout threshold
+                setTimeout(function() {
+                    inStream.emit("data", new Buffer(inputConfiguration));
+                    test.done();
+                }, 31000);
+
+                var args = [TEST_SCRIPT_PATH];
+                ModularInput.runScript(exports, args, ew, inStream, function(err, scriptStatus) {
+                    test.ok(err);
+                    test.strictEqual("Receiving input definitions prior to streaming timed out.", err.message);
+
+                    test.ok(Date.now() - startTime >= 30000); // Make sure it times out only after 30 seconds
+                    test.strictEqual("", ew._out._read());
+                    test.strictEqual("", ew._err._read());
+                    test.strictEqual(1, scriptStatus);
+                });
+            },
+
             "ModularInput gets a valid Service": function(test) {
                 exports.getScheme = function() {
                     return null;
                 };
 
                 exports.validateInput = function(definition) {
-                    return false;
+                    return null;
                 };
 
                 exports.streamEvents = function(name, input, eventWriter, callback) {
@@ -444,7 +637,7 @@ exports.setup = function() {
 
                 var inputConfiguration = utils.readFile(__filename, "../data/conf_with_2_inputs.xml");
 
-                test.ok(!ModularInput._service);
+                test.ok(utils.isUndefined(ModularInput._service));
 
                 var args = [TEST_SCRIPT_PATH];
                 ModularInput.runScript(exports, args, ew, inStream, function(err, scriptStatus) {
