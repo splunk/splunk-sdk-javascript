@@ -594,11 +594,11 @@ exports.setup = function() {
 
                 var startTime = Date.now();
 
-                // Emit the data 1 second after the timeout threshold
+                // Emit the data 1.5 seconds after the timeout threshold
                 setTimeout(function() {
                     inStream.emit("data", new Buffer(inputConfiguration));
                     test.done();
-                }, 31000);
+                }, 32000);
 
                 var args = [TEST_SCRIPT_PATH];
                 ModularInput.runScript(exports, args, ew, inStream, function(err, scriptStatus) {
