@@ -74,7 +74,7 @@ exports.setup = function(http) {
                     var args = res.data.args;
                     test.strictEqual(args.a, "1");
                     test.strictEqual(args.b, "2");
-                    test.strictEqual(args.c, "1");
+                    test.same(args.c, ["1", "2", "3"]);
                     test.strictEqual(args.d, "a/b");
                     test.strictEqual(res.data.url, "http://httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
                     test.done();
@@ -88,7 +88,7 @@ exports.setup = function(http) {
                     function(err, res) {
                         var args = res.data.args;
                         test.strictEqual(args.a, "1");
-                        test.strictEqual(args.b, "ab");
+                        test.same(args.b, ["ab", "12"]);
                         test.strictEqual(
                             res.data.url,
                             "http://httpbin.org/get?a=1&b=ab&b=12"
@@ -130,7 +130,7 @@ exports.setup = function(http) {
                     var args = res.data.args;
                     test.strictEqual(args.a, "1");
                     test.strictEqual(args.b, "2");
-                    test.strictEqual(args.c, "1");
+                    test.same(args.c, ["1", "2", "3"]);
                     test.strictEqual(args.d, "a/b");
                     test.strictEqual(res.data.url, "http://httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
                     test.done();
