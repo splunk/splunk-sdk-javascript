@@ -28,6 +28,4 @@
     exports.Tests.ModularInput = require('./test_modularinput').setup();
 
     splunkjs.Logger.setLevel("ALL");
-    
-    test.run([exports]);
 })();
