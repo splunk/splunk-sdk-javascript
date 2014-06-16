@@ -22,15 +22,15 @@
     ],
     "dependencies" : {
         "request" : "2.21.x",
-        "elementtree" : "0.1.6",
-        "readable-stream" : "1.1.13-1"
+        "elementtree" : "0.1.6"
     },
     "devDependencies" : {
         "browserify" : "https://github.com/itay/node-browserify/tarball/master",
         "uglify-js" : "1.1.x",
         "nodeunit" : "0.6.x",
         "jshint" : "0.5.x >= 0.5.4",
-        "mustache": "0.3.x"
+        "mustache": "0.3.x",
+        "readable-stream" : "1.1.13-1"
     },
     "author" : {
         "name" : "Splunk",
