@@ -67,6 +67,10 @@ exports.setup = function() {
                 });
                 myScheme.addArgument(arg1);
 
+                test.equals(myScheme.args[0].name, arg1.name);
+                test.equals(myScheme.args[0].requiredOnEdit, arg1.requiredOnEdit);
+                test.equals(myScheme.args[0].requiredOnCreate, arg1.requiredOnCreate);
+
                 var arg2 = new Argument({
                     name: "arg2",
                     description: "쎼 and 쎶 and <&> für",
@@ -76,6 +80,10 @@ exports.setup = function() {
                     requiredOnCreate: false
                 });
                 myScheme.addArgument(arg2);
+
+                test.equals(myScheme.args[1].name, arg2.name);
+                test.equals(myScheme.args[1].requiredOnEdit, arg2.requiredOnEdit);
+                test.equals(myScheme.args[1].requiredOnCreate, arg2.requiredOnCreate);
 
                 test.equals(myScheme.args.length, 2);
 
@@ -98,6 +106,8 @@ exports.setup = function() {
                 var expected = ET.parse(utils.readFile(__filename, "../data/argument_with_defaults.xml")).getroot();
 
                 test.equals(myArg.name, "some_name");
+                test.equals(myArg.requiredOnEdit, false);
+                test.equals(myArg.requiredOnCreate, false);
                 test.ok(utils.XMLCompare(expected, constructed));
                 test.done();
             },

@@ -43,7 +43,6 @@ exports.setup = function() {
                     test.equals(found.metadata["checkpoint_dir"], expected.metadata["checkpoint_dir"]);
                     test.equals(found.metadata["session_key"], expected.metadata["session_key"]);
                     test.same(found, expected);
-                    test.ok(found.equals(expected));
                 }
                 catch (e) {
                     test.ok(false);
@@ -101,7 +100,6 @@ exports.setup = function() {
                     test.equals(found.inputs["foobar://bbb"]["multiValue2"][1], expected.inputs["foobar://bbb"]["multiValue2"][1]);
                     
                     test.same(found, expected);
-                    test.ok(found.equals(expected));
                 }
                 catch (e) {
                     test.ok(false);

@@ -178,10 +178,29 @@ exports.setup = function() {
 
                 try {
                     myEvent._writeTo(out);
-                    var found = ET.parse(out._read());
-                    var expected = ET.parse(expectedEvent);
+                    var found = ET.parse(out._read()).getroot();
+                    var expected = ET.parse(expectedEvent).getroot();
                     test.ok(utils.XMLCompare(expected, found));
-                    test.ok(utils.deepEquals(expected, found));
+                    test.equals(expected.tag.trim(), found.tag.trim());
+                    test.equals(expected.text.trim(), found.text.trim());
+                    test.equals(expected.tail, found.tail);
+                    test.equals(expected.attrib.stanza, found.attrib.stanza);
+                    test.equals(expected.attrib.unbroken, found.attrib.unbroken);
+                    test.equals(expected._children.length, found._children.length);
+
+                    // Sort the children by tag name
+                    expected._children = utils.sortByKey(expected._children, "tag");
+                    found._children = utils.sortByKey(found._children, "tag");
+
+                    for (var i = 0; i < found._children.length; i++) {
+                        var f = found._children[i];
+                        var ex = expected._children[i];
+                        test.equals(ex.tag.trim(), f.tag.trim());
+                        test.equals(ex.text.trim(), f.text.trim());
+                        test.equals(ex.tail.trim(), f.tail.trim());
+                        test.same(ex.attrib, f.attrib);
+                        test.equals(ex._children.length, f._children.length);
+                    }
                 }
                 catch (e) {
                     test.ok(false);
@@ -208,10 +227,29 @@ exports.setup = function() {
                 
                 try {
                     myEvent._writeTo(out);
-                    var found = ET.parse(out._read());
-                    var expected = ET.parse(expectedEvent);
+                    var found = ET.parse(out._read()).getroot();
+                    var expected = ET.parse(expectedEvent).getroot();
                     test.ok(utils.XMLCompare(expected, found));
-                    test.ok(utils.deepEquals(expected, found));
+                    test.equals(expected.tag.trim(), found.tag.trim());
+                    test.equals(expected.text.trim(), found.text.trim());
+                    test.equals(expected.tail, found.tail);
+                    test.equals(expected.attrib.stanza, found.attrib.stanza);
+                    test.equals(expected.attrib.unbroken, found.attrib.unbroken);
+                    test.equals(expected._children.length, found._children.length);
+
+                    // Sort the children by tag name
+                    expected._children = utils.sortByKey(expected._children, "tag");
+                    found._children = utils.sortByKey(found._children, "tag");
+
+                    for (var i = 0; i < found._children.length; i++) {
+                        var f = found._children[i];
+                        var ex = expected._children[i];
+                        test.equals(ex.tag.trim(), f.tag.trim());
+                        test.equals(ex.text.trim(), f.text.trim());
+                        test.equals(ex.tail.trim(), f.tail.trim());
+                        test.same(ex.attrib, f.attrib);
+                        test.equals(ex._children.length, f._children.length);
+                    }
                 }
                 catch (e) {
                     test.ok(false);
@@ -242,18 +280,49 @@ exports.setup = function() {
                 
                 try {
                     ew.writeEvent(myEvent);
-                    var found = ET.parse(ew._out._read() + "</stream>");
-                    var expected = ET.parse(expectedOne);
+                    var found = ET.parse(ew._out._read() + "</stream>").getroot();
+                    var expected = ET.parse(expectedOne).getroot();
                     test.ok(utils.XMLCompare(expected, found));
-                    test.ok(utils.deepEquals(expected, found));
+                    test.equals(expected._children.length, found._children.length);
+
+                    if (expected._children.length > 0) {
+                        // Sort the children by tag name
+                        expected._children = utils.sortByKey(expected._children, "tag");
+                        found._children = utils.sortByKey(found._children, "tag");
+                    }
+
+                    for (var i = 0; i < found._children.length; i++) {
+                        var f = found._children[i];
+                        var ex = expected._children[i];
+                        test.equals(ex.tag.trim(), f.tag.trim());
+                        test.equals(ex.text.trim(), f.text.trim());
+                        test.equals(ex.tail.trim(), f.tail.trim());
+                        test.same(ex.attrib, f.attrib);
+                        test.equals(ex._children.length, f._children.length);
+                    }
 
                     ew.writeEvent(myEvent);
                     ew.close();
 
-                    found = ET.parse(ew._out._read());
-                    expected = ET.parse(expectedTwo);
+                    found = ET.parse(ew._out._read()).getroot();
+                    expected = ET.parse(expectedTwo).getroot();
                     test.ok(utils.XMLCompare(expected, found));
-                    test.ok(utils.deepEquals(expected, found));
+
+                    if (expected._children.length > 0) {
+                        // Sort the children by tag name
+                        expected._children = utils.sortByKey(expected._children, "tag");
+                        found._children = utils.sortByKey(found._children, "tag");
+                    }
+
+                    for (var i = 0; i < found._children.length; i++) {
+                        var f = found._children[i];
+                        var ex = expected._children[i];
+                        test.equals(ex.tag.trim(), f.tag.trim());
+                        test.equals(ex.text.trim(), f.text.trim());
+                        test.equals(ex.tail.trim(), f.tail.trim());
+                        test.same(ex.attrib, f.attrib);
+                        test.equals(ex._children.length, f._children.length);
+                    }
                 }
                 catch (e) {
                     test.ok(false);
@@ -304,7 +373,29 @@ exports.setup = function() {
 
                 try {
                     ew.writeXMLDocument(expected);
-                    test.ok(utils.XMLCompare(expected, ET.parse(ew._out._read()).getroot()));
+                    var found = ET.parse(ew._out._read()).getroot();
+                    test.ok(utils.XMLCompare(expected, found));
+                    test.equals(expected.tag.trim(), found.tag.trim());
+                    test.equals(expected.text.trim(), found.text.trim());
+                    test.equals(expected.tail, found.tail);
+                    test.equals(expected.attrib.stanza, found.attrib.stanza);
+                    test.equals(expected.attrib.unbroken, found.attrib.unbroken);
+                    test.equals(expected._children.length, found._children.length);
+
+                    if (expected._children.length > 0) {
+                        // Sort the children by tag name
+                        expected._children = utils.sortByKey(expected._children, "tag");
+                        found._children = utils.sortByKey(found._children, "tag");
+                    }
+                    for (var i = 0; i < found._children.length; i++) {
+                        var f = found._children[i];
+                        var ex = expected._children[i];
+                        test.equals(ex.tag.trim(), f.tag.trim());
+                        test.equals(ex.text.trim(), f.text.trim());
+                        test.equals(ex.tail.trim(), f.tail.trim());
+                        test.same(ex.attrib, f.attrib);
+                        test.equals(ex._children.length, f._children.length);
+                    }
                 }
                 catch (e) {
                     test.ok(false);

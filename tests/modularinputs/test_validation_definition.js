@@ -70,7 +70,6 @@ exports.setup = function() {
                     test.equals(found.parameters["multiValue2"][1], expected.parameters["multiValue2"][1]);
 
                     test.same(found, expected);
-                    test.ok(found.equals(expected));
                 }
                 catch (e) {
                     test.ok(!e);
