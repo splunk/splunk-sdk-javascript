@@ -15,10 +15,11 @@
 
 exports.setup = function() {
     var splunkjs        = require('../../index');
-    var ModularInput   = splunkjs.ModularInputs;
+    var ModularInput    = splunkjs.ModularInputs;
     var Scheme          = ModularInput.Scheme;
     var Argument        = ModularInput.Argument;
     var utils           = ModularInput.utils;
+    var testUtils       = require("./utils");
     var ET              = require("elementtree");
 
     splunkjs.Logger.setLevel("ALL");
@@ -42,7 +43,7 @@ exports.setup = function() {
                 test.equals(myScheme.useExternalValidation, true);
                 test.equals(myScheme.useSingleInstance, false);
                 test.equals(myScheme.streamingMode, Scheme.streamingModeXML);
-                test.ok(utils.XMLCompare(expected, constructed));
+                test.ok(testUtils.XMLCompare(expected, constructed));
                 test.done();
             },
 
@@ -90,7 +91,7 @@ exports.setup = function() {
                 var constructed = myScheme.toXML();
                 var expected = ET.parse(utils.readFile(__filename, "../data/scheme_without_defaults.xml")).getroot();
 
-                test.ok(utils.XMLCompare(expected, constructed));
+                test.ok(testUtils.XMLCompare(expected, constructed));
                 test.done();
             },
 
@@ -108,7 +109,7 @@ exports.setup = function() {
                 test.equals(myArg.name, "some_name");
                 test.equals(myArg.requiredOnEdit, false);
                 test.equals(myArg.requiredOnCreate, false);
-                test.ok(utils.XMLCompare(expected, constructed));
+                test.ok(testUtils.XMLCompare(expected, constructed));
                 test.done();
             },
 
@@ -136,7 +137,7 @@ exports.setup = function() {
                 var constructed = myArg.addToDocument(root);
 
                 var expected = ET.parse(utils.readFile(__filename, "../data/argument_without_defaults.xml")).getroot();
-                test.ok(utils.XMLCompare(expected, constructed));
+                test.ok(testUtils.XMLCompare(expected, constructed));
                 test.done();
             }
         }

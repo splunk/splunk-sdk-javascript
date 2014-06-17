@@ -15,7 +15,7 @@
 (function() {
     "use strict";
     var Stream = require("readable-stream");
-
+    var utils  = require("../../lib/utils"); // Grab the SDK utils
     var root = exports || this;
 
     root.getDuplexStream = function() {
@@ -38,5 +38,79 @@
             return this.data;
         };
         return readable;
+    };
+
+    /**
+     * Takes an array of objects, and sorts the array by the values of each
+     * object at the specified key.
+     *
+     * @param {Array} an array of objects.
+     * @param {String} the key to sort by.
+     * @return {Boolean} true if they are equal, else false 
+     */
+    root.sortByKey = function(array, key) {
+        return array.sort(function(a, b) {
+            var x = a[key]; var y = b[key];
+            return ((x < y) ? -1 : ((x > y) ? 1 : 0));
+        });
+    };
+
+    /**
+     * Takes two XML documents represented by `Elementtree` objects and 
+     * checks whether they are equal.
+     *
+     * @param {Object} an `Elementtree` object.
+     * @param {Object} an `Elementtree` object.
+     * @return {Boolean} true if they are equal, else false 
+     */
+    root.XMLCompare = function(expected, found) {
+        // They're equal if they're the same.
+        if (expected === found) {
+            return true;
+        }
+
+        // Compare the attributes.
+        if (typeof expected.items !== typeof found.items) {
+            return false;
+        }
+        if (found.items && expected.items) {
+            var expectedItems = expected.items().sort();
+            var foundItems = expected.items().sort();
+            if (expectedItems.length !== foundItems.length) {
+                return false;    
+            }
+            else {
+                for (var i = 0; i < foundItems.length; i++) {
+                    if (foundItems[i] && expectedItems[i]) {
+                        var f = foundItems[i];
+                        var e = expectedItems[i];
+                        
+                        for (var j = 0; j < e.length; j++) {
+                            if (f[j] !== e[j]) {
+                                return false;
+                            }
+                        }
+                    }
+                    else {
+                        return false;
+                    }
+                }
+                return true;
+            }
+        }
+
+        // Do they have the same number of children?
+        if (expected.len !== found.len) {
+            return false;
+        }
+
+        // Compare the root level elements.
+        if (!expected.text || utils.trim(expected.text) === "" &&
+            !found.text || utils.trim(found.text) === "") {
+            return true;
+        }
+        else {
+            return (expected.tag === found.tag && expected.text === found.text);
+        }
     };
 })();

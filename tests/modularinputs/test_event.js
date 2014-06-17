@@ -25,6 +25,35 @@ exports.setup = function() {
 
     splunkjs.Logger.setLevel("ALL");
 
+    function compareEvents(test, expected, found) {
+        test.ok(testUtils.XMLCompare(expected, found));
+        test.equals(expected.tag.trim(), found.tag.trim());
+        test.equals(expected.text.trim(), found.text.trim());
+        test.equals(expected.tail, found.tail);
+        test.equals(expected.attrib.stanza, found.attrib.stanza);
+        test.equals(expected.attrib.unbroken, found.attrib.unbroken);
+        test.equals(expected._children.length, found._children.length);
+        if (expected._children.length > 0) {
+            testChildren(test, expected, found);
+        }
+    }
+
+    function testChildren(test, expected, found) {
+        // Sort the children by tag name
+        var expectedChildren = testUtils.sortByKey(expected._children, "tag");
+        var foundChildren = testUtils.sortByKey(found._children, "tag");
+
+        for (var i = 0; i < foundChildren.length; i++) {
+            var f = foundChildren[i];
+            var ex = expectedChildren[i];
+            test.equals(ex.tag.trim(), f.tag.trim());
+            test.equals(ex.text.trim(), f.text.trim());
+            test.equals(ex.tail.trim(), f.tail.trim());
+            test.same(ex.attrib, f.attrib);
+            test.equals(ex._children.length, f._children.length);
+        }
+    }
+
     return {
         "Event tests": {
             setUp: function(done) {
@@ -180,29 +209,10 @@ exports.setup = function() {
                     myEvent._writeTo(out);
                     var found = ET.parse(out._read()).getroot();
                     var expected = ET.parse(expectedEvent).getroot();
-                    test.ok(utils.XMLCompare(expected, found));
-                    test.equals(expected.tag.trim(), found.tag.trim());
-                    test.equals(expected.text.trim(), found.text.trim());
-                    test.equals(expected.tail, found.tail);
-                    test.equals(expected.attrib.stanza, found.attrib.stanza);
-                    test.equals(expected.attrib.unbroken, found.attrib.unbroken);
-                    test.equals(expected._children.length, found._children.length);
-
-                    // Sort the children by tag name
-                    expected._children = utils.sortByKey(expected._children, "tag");
-                    found._children = utils.sortByKey(found._children, "tag");
-
-                    for (var i = 0; i < found._children.length; i++) {
-                        var f = found._children[i];
-                        var ex = expected._children[i];
-                        test.equals(ex.tag.trim(), f.tag.trim());
-                        test.equals(ex.text.trim(), f.text.trim());
-                        test.equals(ex.tail.trim(), f.tail.trim());
-                        test.same(ex.attrib, f.attrib);
-                        test.equals(ex._children.length, f._children.length);
-                    }
+                    compareEvents(test, expected, found);
                 }
                 catch (e) {
+                    console.log(e);
                     test.ok(false);
                 }
                 test.done();
@@ -229,27 +239,8 @@ exports.setup = function() {
                     myEvent._writeTo(out);
                     var found = ET.parse(out._read()).getroot();
                     var expected = ET.parse(expectedEvent).getroot();
-                    test.ok(utils.XMLCompare(expected, found));
-                    test.equals(expected.tag.trim(), found.tag.trim());
-                    test.equals(expected.text.trim(), found.text.trim());
-                    test.equals(expected.tail, found.tail);
-                    test.equals(expected.attrib.stanza, found.attrib.stanza);
-                    test.equals(expected.attrib.unbroken, found.attrib.unbroken);
-                    test.equals(expected._children.length, found._children.length);
-
-                    // Sort the children by tag name
-                    expected._children = utils.sortByKey(expected._children, "tag");
-                    found._children = utils.sortByKey(found._children, "tag");
-
-                    for (var i = 0; i < found._children.length; i++) {
-                        var f = found._children[i];
-                        var ex = expected._children[i];
-                        test.equals(ex.tag.trim(), f.tag.trim());
-                        test.equals(ex.text.trim(), f.text.trim());
-                        test.equals(ex.tail.trim(), f.tail.trim());
-                        test.same(ex.attrib, f.attrib);
-                        test.equals(ex._children.length, f._children.length);
-                    }
+                    test.ok(testUtils.XMLCompare(expected, found));
+                    compareEvents(test, expected, found);
                 }
                 catch (e) {
                     test.ok(false);
@@ -282,47 +273,16 @@ exports.setup = function() {
                     ew.writeEvent(myEvent);
                     var found = ET.parse(ew._out._read() + "</stream>").getroot();
                     var expected = ET.parse(expectedOne).getroot();
-                    test.ok(utils.XMLCompare(expected, found));
-                    test.equals(expected._children.length, found._children.length);
-
-                    if (expected._children.length > 0) {
-                        // Sort the children by tag name
-                        expected._children = utils.sortByKey(expected._children, "tag");
-                        found._children = utils.sortByKey(found._children, "tag");
-                    }
-
-                    for (var i = 0; i < found._children.length; i++) {
-                        var f = found._children[i];
-                        var ex = expected._children[i];
-                        test.equals(ex.tag.trim(), f.tag.trim());
-                        test.equals(ex.text.trim(), f.text.trim());
-                        test.equals(ex.tail.trim(), f.tail.trim());
-                        test.same(ex.attrib, f.attrib);
-                        test.equals(ex._children.length, f._children.length);
-                    }
+                    test.ok(testUtils.XMLCompare(expected, found));
+                    compareEvents(test, expected, found);
 
                     ew.writeEvent(myEvent);
                     ew.close();
 
                     found = ET.parse(ew._out._read()).getroot();
                     expected = ET.parse(expectedTwo).getroot();
-                    test.ok(utils.XMLCompare(expected, found));
-
-                    if (expected._children.length > 0) {
-                        // Sort the children by tag name
-                        expected._children = utils.sortByKey(expected._children, "tag");
-                        found._children = utils.sortByKey(found._children, "tag");
-                    }
-
-                    for (var k = 0; k < found._children.length; k++) {
-                        var fc = found._children[k];
-                        var exc = expected._children[k];
-                        test.equals(exc.tag.trim(), fc.tag.trim());
-                        test.equals(exc.text.trim(), fc.text.trim());
-                        test.equals(exc.tail.trim(), fc.tail.trim());
-                        test.same(exc.attrib, fc.attrib);
-                        test.equals(exc._children.length, fc._children.length);
-                    }
+                    test.ok(testUtils.XMLCompare(expected, found));
+                    compareEvents(test, expected, found);
                 }
                 catch (e) {
                     test.ok(false);
@@ -374,28 +334,8 @@ exports.setup = function() {
                 try {
                     ew.writeXMLDocument(expected);
                     var found = ET.parse(ew._out._read()).getroot();
-                    test.ok(utils.XMLCompare(expected, found));
-                    test.equals(expected.tag.trim(), found.tag.trim());
-                    test.equals(expected.text.trim(), found.text.trim());
-                    test.equals(expected.tail, found.tail);
-                    test.equals(expected.attrib.stanza, found.attrib.stanza);
-                    test.equals(expected.attrib.unbroken, found.attrib.unbroken);
-                    test.equals(expected._children.length, found._children.length);
-
-                    if (expected._children.length > 0) {
-                        // Sort the children by tag name
-                        expected._children = utils.sortByKey(expected._children, "tag");
-                        found._children = utils.sortByKey(found._children, "tag");
-                    }
-                    for (var i = 0; i < found._children.length; i++) {
-                        var f = found._children[i];
-                        var ex = expected._children[i];
-                        test.equals(ex.tag.trim(), f.tag.trim());
-                        test.equals(ex.text.trim(), f.text.trim());
-                        test.equals(ex.tail.trim(), f.tail.trim());
-                        test.same(ex.attrib, f.attrib);
-                        test.equals(ex._children.length, f._children.length);
-                    }
+                    test.ok(testUtils.XMLCompare(expected, found));
+                    compareEvents(test, expected, found);
                 }
                 catch (e) {
                     test.ok(false);

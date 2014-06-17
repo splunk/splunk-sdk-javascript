@@ -194,7 +194,7 @@ exports.setup = function() {
                     var expected = utils.readFile(__filename, "../data/scheme_without_defaults.xml");
                     var output = ew._out._read();
 
-                    test.ok(utils.XMLCompare(ET.parse(expected), ET.parse(output)));
+                    test.ok(testUtils.XMLCompare(ET.parse(expected), ET.parse(output)));
                     test.strictEqual("", ew._err._read());
                     test.strictEqual(0, scriptStatus);
                     test.done();
@@ -353,7 +353,7 @@ exports.setup = function() {
                         test.strictEqual(expectedchild.tail, foundChild.tail);
                     }
                     
-                    test.ok(utils.XMLCompare(expected, found));
+                    test.ok(testUtils.XMLCompare(expected, found));
                     test.strictEqual("", ew._err._read());
                     test.strictEqual(1, scriptStatus);
                     test.done();
@@ -403,7 +403,7 @@ exports.setup = function() {
                     var expected = utils.readFile(__filename, "../data/stream_with_two_events.xml");
                     var found = ew._out._read() + "</stream>";
                     
-                    test.ok(utils.XMLCompare(ET.parse(expected).getroot(), ET.parse(found).getroot()));
+                    test.ok(testUtils.XMLCompare(ET.parse(expected).getroot(), ET.parse(found).getroot()));
                     test.strictEqual(0, scriptStatus);
                     test.done();
                 });
@@ -484,7 +484,7 @@ exports.setup = function() {
                     test.equal(5, expectedChildren.length);
                     test.equal(expectedChildren.length, foundChildren.length);
 
-                    test.ok(utils.XMLCompare(ET.parse(expected).getroot(), ET.parse(found).getroot()));
+                    test.ok(testUtils.XMLCompare(ET.parse(expected).getroot(), ET.parse(found).getroot()));
                     test.strictEqual(0, scriptStatus);
                     test.done();
                 });
