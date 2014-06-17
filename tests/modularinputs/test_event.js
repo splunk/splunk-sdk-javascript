@@ -314,14 +314,14 @@ exports.setup = function() {
                         found._children = utils.sortByKey(found._children, "tag");
                     }
 
-                    for (var i = 0; i < found._children.length; i++) {
-                        var f = found._children[i];
-                        var ex = expected._children[i];
-                        test.equals(ex.tag.trim(), f.tag.trim());
-                        test.equals(ex.text.trim(), f.text.trim());
-                        test.equals(ex.tail.trim(), f.tail.trim());
-                        test.same(ex.attrib, f.attrib);
-                        test.equals(ex._children.length, f._children.length);
+                    for (var k = 0; k < found._children.length; k++) {
+                        var fc = found._children[k];
+                        var exc = expected._children[k];
+                        test.equals(exc.tag.trim(), fc.tag.trim());
+                        test.equals(exc.text.trim(), fc.text.trim());
+                        test.equals(exc.tail.trim(), fc.tail.trim());
+                        test.same(exc.attrib, fc.attrib);
+                        test.equals(exc._children.length, fc._children.length);
                     }
                 }
                 catch (e) {
