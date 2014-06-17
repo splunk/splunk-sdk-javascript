@@ -1,5 +1,14 @@
 # Splunk SDK for JavaScript Changelog
 
+## v1.4.0
+
+### New features and APIs
+
+* Added support for building modular inputs with node.js using the Splunk
+  SDK for JavaScript.
+* Added the `elementtree` module as a dependency
+* Added the `readable-stream` module as a devDependency (used only in the modular input unit tests)
+
 ## v1.3.0
 
 ### New features and APIs

@@ -637,7 +637,8 @@ require.define("/index.js", function (require, module, exports, __dirname, __fil
         Utils           : require('./lib/utils'),
         Async           : require('./lib/async'),
         Paths           : require('./lib/paths').Paths,
-        Class           : require('./lib/jquery.class').Class
+        Class           : require('./lib/jquery.class').Class,
+        ModularInputs   : require('./lib/modularinputs')
     };
     
     if (typeof(window) === 'undefined') {
@@ -1278,6 +1279,16 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
         }
         
         return map["default"];
+    };
+
+    /**
+     * Checks if an object is undefined.
+     *
+     * @param {Object} obj An object.
+     * @return {Boolean} `true` if the object is undefined, `false` if not.
+     */
+    root.isUndefined = function (obj) {
+        return (typeof obj === "undefined");
     };
 })();
 });
@@ -6515,6 +6526,5171 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
 })();
 });
 
+require.define("/lib/modularinputs/index.js", function (require, module, exports, __dirname, __filename) {
+
+// Copyright 2014 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+var Async = require('../async');
+
+var ModularInputs = {
+    utils: require("./utils"),
+    ValidationDefinition: require('./validationdefinition'),
+    InputDefinition: require('./inputdefinition'),
+    Event: require('./event'),
+    EventWriter: require('./eventwriter'),
+    Argument: require('./argument'),
+    Scheme: require('./scheme'),
+    ModularInput: require('./modularinput'),
+    Logger: require('./logger')
+};
+
+/**
+ * Executes a modular input script.
+ *
+ * @param {Object} exports An instance of ModularInput representing a modular input.
+ * @param {Object} module The module object, used for determining if it's the main module (`require.main`).
+ */
+ModularInputs.execute = function(exports, module) {
+    if (require.main === module) {
+        var args = process.argv;
+
+        // Trim the first argument, if it is the node.js executable.
+        if (args[0] === 'node' || ModularInputs.utils.contains(args[0], 'node.exe')) {
+            args = args.slice(1, args.length);
+        }
+
+        // Default empty functions for life cycle events.
+        exports.setup       = exports.setup     || ModularInputs.ModularInput.prototype.setup;
+        exports.start       = exports.start     || ModularInputs.ModularInput.prototype.start;
+        exports.end         = exports.end       || ModularInputs.ModularInput.prototype.end;
+        exports.teardown    = exports.teardown  || ModularInputs.ModularInput.prototype.teardown;
+
+        // Setup the default values.
+        exports._inputDefinition = exports._inputDefinition || null;
+        exports._service         = exports._service         || null;
+
+        // We will call close() on this EventWriter after streaming events, which is handled internally
+        // by ModularInput.runScript().
+        var ew = new this.EventWriter();
+
+        var scriptStatus;
+        Async.chain([
+                function(done) {
+                    exports.setup(done);
+                },
+                function(done) {
+                    ModularInputs.ModularInput.runScript(exports, args, ew, process.stdin, done);
+                },
+                function(status, done) {
+                    scriptStatus = status;
+                    exports.teardown(done);
+                }
+            ],
+            function(err) {
+                if (err) {
+                    ModularInputs.Logger.error('', err, ew._err);
+                }
+
+                // Wait for process.stdout to drain before exiting the process.
+                process.stdout.once("drain", function() {
+                    process.exit(scriptStatus || err ? 1 : 0);
+                });
+            }
+        );
+    }
+};
+
+module.exports = ModularInputs;
+
+});
+
+require.define("/lib/modularinputs/utils.js", function (require, module, exports, __dirname, __filename) {
+
+// Copyright 2014 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+var utils   = require('../utils'); // Get all of the existing utils
+var fs      = require('fs');
+var path    = require('path');
+
+/**
+ * Parse the parameters from an `InputDefinition` or `ValidationDefinition`.
+ *
+ * This is a helper function for `parseXMLData`.
+ *
+ * The XML typically will look like this:
+ * 
+ *   `<configuration>`
+ *     `<stanza name="foobar://aaa">`
+ *       `<param name="param1">value1</param>`
+ *       `<param name="param2">value2</param>`
+ *       `<param name="disabled">0</param>`
+ *       `<param name="index">default</param>`
+ *     `</stanza>`
+ *     `<stanza name="foobar://bbb">`
+ *       `<param name="param1">value11</param>`
+ *       `<param name="param2">value22</param>`
+ *       `<param name="disabled">0</param>`
+ *       `<param name="index">default</param>`
+ *       `<param_list name="multiValue">`
+ *         `<value>value1</value>`
+ *         `<value>value2</value>`
+ *       `</param_list>`
+ *       `<param_list name="multiValue2">`
+ *         `<value>value3</value>`
+ *         `<value>value4</value>`
+ *       `</param_list>`
+ *     `</stanza>`
+ *   `</configuration>`
+ *
+ * @param {Object} an `Elementree` object representing the `<configuration>` XML node.
+ * @return {Object} an `Elementree` object representing the parameters of node passed in.
+ */
+utils.parseParameters = function(paramNode) {
+    switch (paramNode.tag) {
+        case "param":
+            return paramNode.text;
+        case "param_list":
+            var parameters = [];
+            var paramChildren = paramNode.getchildren();
+            for (var i = 0; i < paramChildren.length; i++) {
+                var mvp = paramChildren[i];
+                parameters.push(mvp.text);
+            }
+            return parameters;
+        default:
+            throw new Error("Invalid configuration scheme, <" + paramNode.tag + "> tag unexpected.");
+    }
+};
+
+/**
+ * Parses the parameters from `Elementtree` representations of XML for
+ * `InputDefinition` and `ValidationDefinition` objects.
+ *
+ * @param {Object} a parent `Elementtree` element object.
+ * @param {String} the name of the child element to parse parameters from.
+ * @return {Object} an object of the parameters parsed.
+ */
+utils.parseXMLData = function(parentNode, childNodeTag) {
+    var data = {};
+    var children = parentNode.getchildren();
+    for (var i = 0; i < children.length; i++) {
+        var child = children[i];
+        if (child.tag === childNodeTag) {
+            if (childNodeTag === "stanza") {
+                data[child.get("name")] = {};
+                var stanzaChildren = child.getchildren();
+                for (var p = 0; p < stanzaChildren.length; p++) {
+                    var param = stanzaChildren[p];
+                    data[child.get("name")][param.get("name")] = utils.parseParameters(param);
+                }
+            }
+        }
+        else if ("item" === parentNode.tag) {
+            data[child.get("name")] = utils.parseParameters(child);
+        }
+    }
+    return data;
+};
+
+/**
+ * Read files in a way that makes unit tests work as well.
+ *
+ * @example
+ *
+ *      // To read `splunk-sdk-javascript/tests/modularinput/data/validation.xml`  
+ *      // from    `splunk-sdk-javascript/tests/modularinput/test_validation_definition.js`
+ *      var fileContents = utils.readFile(__filename, "../data/validation.xml");
+ *      
+ * @param {String} __filename of the script calling this function.
+ * @param {String} a path relative to the script calling this function.
+ * @return {String} The contents of the file.
+ */
+utils.readFile = function(filename, relativePath) {
+    return fs.readFileSync(path.resolve(filename, relativePath)).toString();
+};
+
+module.exports = utils;
+
+});
+
+require.define("fs", function (require, module, exports, __dirname, __filename) {
+// nothing to see here... no file methods for the browser
+
+});
+
+require.define("/lib/modularinputs/validationdefinition.js", function (require, module, exports, __dirname, __filename) {
+
+// Copyright 2014 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+(function() {
+    var ET      = require("elementtree");
+    var utils   = require("./utils");
+
+    /**
+     * This class represents the XML sent by Splunk for external validation of a
+     * new modular input.
+     *
+     * @example
+     *
+     *      var v =  new ValidationDefinition();
+     *
+     * @class splunkjs.ModularInputs.ValidationDefinition
+     */
+    function ValidationDefinition() {
+        this.metadata = {};
+        this.parameters = {};
+    }
+
+    /**
+     * Creates a `ValidationDefinition` from a provided string containing XML.
+     *
+     * This function will throw an exception if `str`
+     * contains unexpected XML.
+     *
+     * The XML typically will look like this:
+     * 
+     * `<items>`
+     * `   <server_host>myHost</server_host>`
+     * `     <server_uri>https://127.0.0.1:8089</server_uri>`
+     * `     <session_key>123102983109283019283</session_key>`
+     * `     <checkpoint_dir>/opt/splunk/var/lib/splunk/modinputs</checkpoint_dir>`
+     * `     <item name="myScheme">`
+     * `       <param name="param1">value1</param>`
+     * `       <param_list name="param2">`
+     * `         <value>value2</value>`
+     * `         <value>value3</value>`
+     * `         <value>value4</value>`
+     * `       </param_list>`
+     * `     </item>`
+     * `</items>`
+     *
+     * @param {String} str A string containing XML to parse.
+     *
+     * @class splunkjs.ModularInputs.ValidationDefinition
+     */
+    ValidationDefinition.parse = function(str) {
+        var definition = new ValidationDefinition();
+        var rootChildren = ET.parse(str).getroot().getchildren();
+
+        for (var i = 0; i < rootChildren.length; i++) {
+            var node = rootChildren[i];            
+            if (node.tag === "item") {
+                definition.metadata["name"] = node.get("name");
+                definition.parameters = utils.parseXMLData(node, "");
+            }
+            else {
+                definition.metadata[node.tag] = node.text;
+            }
+        }
+        return definition;
+    };
+    
+    module.exports = ValidationDefinition;
+})();
+});
+
+require.define("/node_modules/elementtree/package.json", function (require, module, exports, __dirname, __filename) {
+module.exports = {"main":"lib/elementtree.js"}
+});
+
+require.define("/node_modules/elementtree/lib/elementtree.js", function (require, module, exports, __dirname, __filename) {
+/**
+ *  Copyright 2011 Rackspace
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ */
+
+var sprintf = require('./sprintf').sprintf;
+
+var utils = require('./utils');
+var ElementPath = require('./elementpath');
+var TreeBuilder = require('./treebuilder').TreeBuilder;
+var get_parser = require('./parser').get_parser;
+var constants = require('./constants');
+
+var element_ids = 0;
+
+function Element(tag, attrib)
+{
+  this._id = element_ids++;
+  this.tag = tag;
+  this.attrib = {};
+  this.text = null;
+  this.tail = null;
+  this._children = [];
+
+  if (attrib) {
+    this.attrib = utils.merge(this.attrib, attrib);
+  }
+}
+
+Element.prototype.toString = function()
+{
+  return sprintf("<Element %s at %s>", this.tag, this._id);
+};
+
+Element.prototype.makeelement = function(tag, attrib)
+{
+  return new Element(tag, attrib);
+};
+
+Element.prototype.len = function()
+{
+  return this._children.length;
+};
+
+Element.prototype.getItem = function(index)
+{
+  return this._children[index];
+};
+
+Element.prototype.setItem = function(index, element)
+{
+  this._children[index] = element;
+};
+
+Element.prototype.delItem = function(index)
+{
+  this._children.splice(index, 1);
+};
+
+Element.prototype.getSlice = function(start, stop)
+{
+  return this._children.slice(start, stop);
+};
+
+Element.prototype.setSlice = function(start, stop, elements)
+{
+  var i;
+  var k = 0;
+  for (i = start; i < stop; i++, k++) {
+    this._children[i] = elements[k];
+  }
+};
+
+Element.prototype.delSlice = function(start, stop)
+{
+  this._children.splice(start, stop - start);
+};
+
+Element.prototype.append = function(element)
+{
+  this._children.push(element);
+};
+
+Element.prototype.extend = function(elements)
+{
+  this._children.concat(elements);
+};
+
+Element.prototype.insert = function(index, element)
+{
+  this._children[index] = element;
+};
+
+Element.prototype.remove = function(element)
+{
+  this._children = this._children.filter(function(e) {
+    /* TODO: is this the right way to do this? */
+    if (e._id === element._id) {
+      return false;
+    }
+    return true;
+  });
+};
+
+Element.prototype.getchildren = function() {
+  return this._children;
+};
+
+Element.prototype.find = function(path)
+{
+  return ElementPath.find(this, path);
+};
+
+Element.prototype.findtext = function(path, defvalue)
+{
+  return ElementPath.findtext(this, path, defvalue);
+};
+
+Element.prototype.findall = function(path, defvalue)
+{
+  return ElementPath.findall(this, path, defvalue);
+};
+
+Element.prototype.clear = function()
+{
+  this.attrib = {};
+  this._children = [];
+  this.text = null;
+  this.tail = null;
+};
+
+Element.prototype.get = function(key, defvalue)
+{
+  if (this.attrib[key] !== undefined) {
+    return this.attrib[key];
+  }
+  else {
+    return defvalue;
+  }
+};
+
+Element.prototype.set = function(key, value)
+{
+  this.attrib[key] = value;
+};
+
+Element.prototype.keys = function()
+{
+  return Object.keys(this.attrib);
+};
+
+Element.prototype.items = function()
+{
+  return utils.items(this.attrib);
+};
+
+/*
+ * In python this uses a generator, but in v8 we don't have em,
+ * so we use a callback instead.
+ **/
+Element.prototype.iter = function(tag, callback)
+{
+  var self = this;
+  var i, child;
+
+  if (tag === "*") {
+    tag = null;
+  }
+
+  if (tag === null || this.tag === tag) {
+    callback(self);
+  }
+
+  for (i = 0; i < this._children.length; i++) {
+    child = this._children[i];
+    child.iter(tag, function(e) {
+      callback(e);
+    });
+  }
+};
+
+Element.prototype.itertext = function(callback)
+{
+  this.iter(null, function(e) {
+    if (e.text) {
+      callback(e.text);
+    }
+
+    if (e.tail) {
+      callback(e.tail);
+    }
+  });
+};
+
+
+function SubElement(parent, tag, attrib) {
+  var element = parent.makeelement(tag, attrib);
+  parent.append(element);
+  return element;
+}
+
+function Comment(text) {
+  var element = new Element(Comment);
+  if (text) {
+    element.text = text;
+  }
+  return element;
+}
+
+function CData(text) {
+  var element = new Element(CData);
+  if (text) {
+    element.text = text;
+  }
+  return element;
+}
+
+function ProcessingInstruction(target, text)
+{
+  var element = new Element(ProcessingInstruction);
+  element.text = target;
+  if (text) {
+    element.text = element.text + " " + text;
+  }
+  return element;
+}
+
+function QName(text_or_uri, tag)
+{
+  if (tag) {
+    text_or_uri = sprintf("{%s}%s", text_or_uri, tag);
+  }
+  this.text = text_or_uri;
+}
+
+QName.prototype.toString = function() {
+  return this.text;
+};
+
+function ElementTree(element)
+{
+  this._root = element;
+}
+
+ElementTree.prototype.getroot = function() {
+  return this._root;
+};
+
+ElementTree.prototype._setroot = function(element) {
+  this._root = element;
+};
+
+ElementTree.prototype.parse = function(source, parser) {
+  if (!parser) {
+    parser = get_parser(constants.DEFAULT_PARSER);
+    parser = new parser.XMLParser(new TreeBuilder());
+  }
+
+  parser.feed(source);
+  this._root = parser.close();
+  return this._root;
+};
+
+ElementTree.prototype.iter = function(tag, callback) {
+  this._root.iter(tag, callback);
+};
+
+ElementTree.prototype.find = function(path) {
+  return this._root.find(path);
+};
+
+ElementTree.prototype.findtext = function(path, defvalue) {
+  return this._root.findtext(path, defvalue);
+};
+
+ElementTree.prototype.findall = function(path) {
+  return this._root.findall(path);
+};
+
+/**
+ * Unlike ElementTree, we don't write to a file, we return you a string.
+ */
+ElementTree.prototype.write = function(options) {
+  var sb = [];
+  options = utils.merge({
+    encoding: 'utf-8',
+    xml_declaration: null,
+    default_namespace: null,
+    method: 'xml'}, options);
+
+  if (options.xml_declaration !== false) {
+    sb.push("<?xml version='1.0' encoding='"+options.encoding +"'?>\n");
+  }
+
+  if (options.method === "text") {
+    _serialize_text(sb, self._root, encoding);
+  }
+  else {
+    var qnames, namespaces, indent, indent_string;
+    var x = _namespaces(this._root, options.encoding, options.default_namespace);
+    qnames = x[0];
+    namespaces = x[1];
+
+    if (options.hasOwnProperty('indent')) {
+      indent = 0;
+      indent_string = new Array(options.indent + 1).join(' ');
+    }
+    else {
+      indent = false;
+    }
+
+    if (options.method === "xml") {
+      _serialize_xml(function(data) {
+        sb.push(data);
+      }, this._root, options.encoding, qnames, namespaces, indent, indent_string);
+    }
+    else {
+      /* TODO: html */
+      throw new Error("unknown serialization method "+ options.method);
+    }
+  }
+
+  return sb.join("");
+};
+
+var _namespace_map = {
+    /* "well-known" namespace prefixes */
+    "http://www.w3.org/XML/1998/namespace": "xml",
+    "http://www.w3.org/1999/xhtml": "html",
+    "http://www.w3.org/1999/02/22-rdf-syntax-ns#": "rdf",
+    "http://schemas.xmlsoap.org/wsdl/": "wsdl",
+    /* xml schema */
+    "http://www.w3.org/2001/XMLSchema": "xs",
+    "http://www.w3.org/2001/XMLSchema-instance": "xsi",
+    /* dublic core */
+    "http://purl.org/dc/elements/1.1/": "dc",
+};
+
+function register_namespace(prefix, uri) {
+  if (/ns\d+$/.test(prefix)) {
+    throw new Error('Prefix format reserved for internal use');
+  }
+
+  if (_namespace_map.hasOwnProperty(uri) && _namespace_map[uri] === prefix) {
+    delete _namespace_map[uri];
+  }
+
+  _namespace_map[uri] = prefix;
+}
+
+
+function _escape(text, encoding, isAttribute, isText) {
+  if (text) {
+    text = text.toString();
+    text = text.replace(/&/g, '&amp;');
+    text = text.replace(/</g, '&lt;');
+    text = text.replace(/>/g, '&gt;');
+    if (!isText) {
+        text = text.replace(/\n/g, '&#xA;');
+        text = text.replace(/\r/g, '&#xD;');
+    }
+    if (isAttribute) {
+      text = text.replace(/"/g, '&quot;');
+    }
+  }
+  return text;
+}
+
+/* TODO: benchmark single regex */
+function _escape_attrib(text, encoding) {
+  return _escape(text, encoding, true);
+}
+
+function _escape_cdata(text, encoding) {
+  return _escape(text, encoding, false);
+}
+
+function _escape_text(text, encoding) {
+  return _escape(text, encoding, false, true);
+}
+
+function _namespaces(elem, encoding, default_namespace) {
+  var qnames = {};
+  var namespaces = {};
+
+  if (default_namespace) {
+    namespaces[default_namespace] = "";
+  }
+
+  function encode(text) {
+    return text;
+  }
+
+  function add_qname(qname) {
+    if (qname[0] === "{") {
+      var tmp = qname.substring(1).split("}", 2);
+      var uri = tmp[0];
+      var tag = tmp[1];
+      var prefix = namespaces[uri];
+
+      if (prefix === undefined) {
+        prefix = _namespace_map[uri];
+        if (prefix === undefined) {
+          prefix = "ns" + Object.keys(namespaces).length;
+        }
+        if (prefix !== "xml") {
+          namespaces[uri] = prefix;
+        }
+      }
+
+      if (prefix) {
+        qnames[qname] = sprintf("%s:%s", prefix, tag);
+      }
+      else {
+        qnames[qname] = tag;
+      }
+    }
+    else {
+      if (default_namespace) {
+        throw new Error('cannot use non-qualified names with default_namespace option');
+      }
+
+      qnames[qname] = qname;
+    }
+  }
+
+
+  elem.iter(null, function(e) {
+    var i;
+    var tag = e.tag;
+    var text = e.text;
+    var items = e.items();
+
+    if (tag instanceof QName && qnames[tag.text] === undefined) {
+      add_qname(tag.text);
+    }
+    else if (typeof(tag) === "string") {
+      add_qname(tag);
+    }
+    else if (tag !== null && tag !== Comment && tag !== CData && tag !== ProcessingInstruction) {
+      throw new Error('Invalid tag type for serialization: '+ tag);
+    }
+
+    if (text instanceof QName && qnames[text.text] === undefined) {
+      add_qname(text.text);
+    }
+
+    items.forEach(function(item) {
+      var key = item[0],
+          value = item[1];
+      if (key instanceof QName) {
+        key = key.text;
+      }
+
+      if (qnames[key] === undefined) {
+        add_qname(key);
+      }
+
+      if (value instanceof QName && qnames[value.text] === undefined) {
+        add_qname(value.text);
+      }
+    });
+  });
+  return [qnames, namespaces];
+}
+
+function _serialize_xml(write, elem, encoding, qnames, namespaces, indent, indent_string) {
+  var tag = elem.tag;
+  var text = elem.text;
+  var items;
+  var i;
+
+  var newlines = indent || (indent === 0);
+  write(Array(indent + 1).join(indent_string));
+
+  if (tag === Comment) {
+    write(sprintf("<!--%s-->", _escape_cdata(text, encoding)));
+  }
+  else if (tag === ProcessingInstruction) {
+    write(sprintf("<?%s?>", _escape_cdata(text, encoding)));
+  }
+  else if (tag === CData) {
+    text = text || '';
+    write(sprintf("<![CDATA[%s]]>", text));
+  }
+  else {
+    tag = qnames[tag];
+    if (tag === undefined) {
+      if (text) {
+        write(_escape_text(text, encoding));
+      }
+      elem.iter(function(e) {
+        _serialize_xml(write, e, encoding, qnames, null, newlines ? indent + 1 : false, indent_string);
+      });
+    }
+    else {
+      write("<" + tag);
+      items = elem.items();
+
+      if (items || namespaces) {
+        items.sort(); // lexical order
+
+        items.forEach(function(item) {
+          var k = item[0],
+              v = item[1];
+
+            if (k instanceof QName) {
+              k = k.text;
+            }
+
+            if (v instanceof QName) {
+              v = qnames[v.text];
+            }
+            else {
+              v = _escape_attrib(v, encoding);
+            }
+            write(sprintf(" %s=\"%s\"", qnames[k], v));
+        });
+
+        if (namespaces) {
+          items = utils.items(namespaces);
+          items.sort(function(a, b) { return a[1] < b[1]; });
+
+          items.forEach(function(item) {
+            var k = item[1],
+                v = item[0];
+
+            if (k) {
+              k = ':' + k;
+            }
+
+            write(sprintf(" xmlns%s=\"%s\"", k, _escape_attrib(v, encoding)));
+          });
+        }
+      }
+
+      if (text || elem.len()) {
+        if (text && text.toString().match(/^\s*$/)) {
+            text = null;
+        }
+
+        write(">");
+        if (!text && newlines) {
+          write("\n");
+        }
+
+        if (text) {
+          write(_escape_text(text, encoding));
+        }
+        elem._children.forEach(function(e) {
+          _serialize_xml(write, e, encoding, qnames, null, newlines ? indent + 1 : false, indent_string);
+        });
+
+        if (!text && indent) {
+          write(Array(indent + 1).join(indent_string));
+        }
+        write("</" + tag + ">");
+      }
+      else {
+        write(" />");
+      }
+    }
+  }
+
+  if (newlines) {
+    write("\n");
+  }
+}
+
+function parse(source, parser) {
+  var tree = new ElementTree();
+  tree.parse(source, parser);
+  return tree;
+}
+
+function tostring(element, options) {
+  return new ElementTree(element).write(options);
+}
+
+exports.PI = ProcessingInstruction;
+exports.Comment = Comment;
+exports.CData = CData;
+exports.ProcessingInstruction = ProcessingInstruction;
+exports.SubElement = SubElement;
+exports.QName = QName;
+exports.ElementTree = ElementTree;
+exports.ElementPath = ElementPath;
+exports.Element = function(tag, attrib) {
+  return new Element(tag, attrib);
+};
+
+exports.XML = function(data) {
+  var et = new ElementTree();
+  return et.parse(data);
+};
+
+exports.parse = parse;
+exports.register_namespace = register_namespace;
+exports.tostring = tostring;
+
+});
+
+require.define("/node_modules/elementtree/lib/sprintf.js", function (require, module, exports, __dirname, __filename) {
+/*
+ *  Copyright 2011 Rackspace
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ */
+
+var cache = {};
+
+
+// Do any others need escaping?
+var TO_ESCAPE = {
+  '\'': '\\\'',
+  '\n': '\\n'
+};
+
+
+function populate(formatter) {
+  var i, type,
+      key = formatter,
+      prev = 0,
+      arg = 1,
+      builder = 'return \'';
+
+  for (i = 0; i < formatter.length; i++) {
+    if (formatter[i] === '%') {
+      type = formatter[i + 1];
+
+      switch (type) {
+        case 's':
+          builder += formatter.slice(prev, i) + '\' + arguments[' + arg + '] + \'';
+          prev = i + 2;
+          arg++;
+          break;
+        case 'j':
+          builder += formatter.slice(prev, i) + '\' + JSON.stringify(arguments[' + arg + ']) + \'';
+          prev = i + 2;
+          arg++;
+          break;
+        case '%':
+          builder += formatter.slice(prev, i + 1);
+          prev = i + 2;
+          i++;
+          break;
+      }
+
+
+    } else if (TO_ESCAPE[formatter[i]]) {
+      builder += formatter.slice(prev, i) + TO_ESCAPE[formatter[i]];
+      prev = i + 1;
+    }
+  }
+
+  builder += formatter.slice(prev) + '\';';
+  cache[key] = new Function(builder);
+}
+
+
+/**
+ * A fast version of sprintf(), which currently only supports the %s and %j.
+ * This caches a formatting function for each format string that is used, so
+ * you should only use this sprintf() will be called many times with a single
+ * format string and a limited number of format strings will ever be used (in
+ * general this means that format strings should be string literals).
+ *
+ * @param {String} formatter A format string.
+ * @param {...String} var_args Values that will be formatted by %s and %j.
+ * @return {String} The formatted output.
+ */
+exports.sprintf = function(formatter, var_args) {
+  if (!cache[formatter]) {
+    populate(formatter);
+  }
+
+  return cache[formatter].apply(null, arguments);
+};
+
+});
+
+require.define("/node_modules/elementtree/lib/utils.js", function (require, module, exports, __dirname, __filename) {
+/**
+ *  Copyright 2011 Rackspace
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ */
+
+/**
+ * @param {Object} hash.
+ * @param {Array} ignored.
+ */
+function items(hash, ignored) {
+  ignored = ignored || null;
+  var k, rv = [];
+
+  function is_ignored(key) {
+    if (!ignored || ignored.length === 0) {
+      return false;
+    }
+
+    return ignored.indexOf(key);
+  }
+
+  for (k in hash) {
+    if (hash.hasOwnProperty(k) && !(is_ignored(ignored))) {
+      rv.push([k, hash[k]]);
+    }
+  }
+
+  return rv;
+}
+
+
+function findall(re, str) {
+  var match, matches = [];
+
+  while ((match = re.exec(str))) {
+      matches.push(match);
+  }
+
+  return matches;
+}
+
+function merge(a, b) {
+  var c = {}, attrname;
+
+  for (attrname in a) {
+    if (a.hasOwnProperty(attrname)) {
+      c[attrname] = a[attrname];
+    }
+  }
+  for (attrname in b) {
+    if (b.hasOwnProperty(attrname)) {
+      c[attrname] = b[attrname];
+    }
+  }
+  return c;
+}
+
+exports.items = items;
+exports.findall = findall;
+exports.merge = merge;
+
+});
+
+require.define("/node_modules/elementtree/lib/elementpath.js", function (require, module, exports, __dirname, __filename) {
+/**
+ *  Copyright 2011 Rackspace
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ */
+
+var sprintf = require('./sprintf').sprintf;
+
+var utils = require('./utils');
+var SyntaxError = require('./errors').SyntaxError;
+
+var _cache = {};
+
+var RE = new RegExp(
+  "(" +
+  "'[^']*'|\"[^\"]*\"|" +
+  "::|" +
+  "//?|" +
+  "\\.\\.|" +
+  "\\(\\)|" +
+  "[/.*:\\[\\]\\(\\)@=])|" +
+  "((?:\\{[^}]+\\})?[^/\\[\\]\\(\\)@=\\s]+)|" +
+  "\\s+", 'g'
+);
+
+var xpath_tokenizer = utils.findall.bind(null, RE);
+
+function prepare_tag(next, token) {
+  var tag = token[0];
+
+  function select(context, result) {
+    var i, len, elem, rv = [];
+
+    for (i = 0, len = result.length; i < len; i++) {
+      elem = result[i];
+      elem._children.forEach(function(e) {
+        if (e.tag === tag) {
+          rv.push(e);
+        }
+      });
+    }
+
+    return rv;
+  }
+
+  return select;
+}
+
+function prepare_star(next, token) {
+  function select(context, result) {
+    var i, len, elem, rv = [];
+
+    for (i = 0, len = result.length; i < len; i++) {
+      elem = result[i];
+      elem._children.forEach(function(e) {
+        rv.push(e);
+      });
+    }
+
+    return rv;
+  }
+
+  return select;
+}
+
+function prepare_dot(next, token) {
+  function select(context, result) {
+    var i, len, elem, rv = [];
+
+    for (i = 0, len = result.length; i < len; i++) {
+      elem = result[i];
+      rv.push(elem);
+    }
+
+    return rv;
+  }
+
+  return select;
+}
+
+function prepare_iter(next, token) {
+  var tag;
+  token = next();
+
+  if (token[1] === '*') {
+    tag = '*';
+  }
+  else if (!token[1]) {
+    tag = token[0] || '';
+  }
+  else {
+    throw new SyntaxError(token);
+  }
+
+  function select(context, result) {
+    var i, len, elem, rv = [];
+
+    for (i = 0, len = result.length; i < len; i++) {
+      elem = result[i];
+      elem.iter(tag, function(e) {
+        if (e !== elem) {
+          rv.push(e);
+        }
+      });
+    }
+
+    return rv;
+  }
+
+  return select;
+}
+
+function prepare_dot_dot(next, token) {
+  function select(context, result) {
+    var i, len, elem, rv = [], parent_map = context.parent_map;
+
+    if (!parent_map) {
+      context.parent_map = parent_map = {};
+
+      context.root.iter(null, function(p) {
+        p._children.forEach(function(e) {
+          parent_map[e] = p;
+        });
+      });
+    }
+
+    for (i = 0, len = result.length; i < len; i++) {
+      elem = result[i];
+
+      if (parent_map.hasOwnProperty(elem)) {
+        rv.push(parent_map[elem]);
+      }
+    }
+
+    return rv;
+  }
+
+  return select;
+}
+
+
+function prepare_predicate(next, token) {
+  var tag, key, value, select;
+  token = next();
+
+  if (token[1] === '@') {
+    // attribute
+    token = next();
+
+    if (token[1]) {
+      throw new SyntaxError(token, 'Invalid attribute predicate');
+    }
+
+    key = token[0];
+    token = next();
+
+    if (token[1] === ']') {
+      select = function(context, result) {
+        var i, len, elem, rv = [];
+
+        for (i = 0, len = result.length; i < len; i++) {
+          elem = result[i];
+
+          if (elem.get(key)) {
+            rv.push(elem);
+          }
+        }
+
+        return rv;
+      };
+    }
+    else if (token[1] === '=') {
+      value = next()[1];
+
+      if (value[0] === '"' || value[value.length - 1] === '\'') {
+        value = value.slice(1, value.length - 1);
+      }
+      else {
+        throw new SyntaxError(token, 'Ivalid comparison target');
+      }
+
+      token = next();
+      select = function(context, result) {
+        var i, len, elem, rv = [];
+
+        for (i = 0, len = result.length; i < len; i++) {
+          elem = result[i];
+
+          if (elem.get(key) === value) {
+            rv.push(elem);
+          }
+        }
+
+        return rv;
+      };
+    }
+
+    if (token[1] !== ']') {
+      throw new SyntaxError(token, 'Invalid attribute predicate');
+    }
+  }
+  else if (!token[1]) {
+    tag = token[0] || '';
+    token = next();
+
+    if (token[1] !== ']') {
+      throw new SyntaxError(token, 'Invalid node predicate');
+    }
+
+    select = function(context, result) {
+      var i, len, elem, rv = [];
+
+      for (i = 0, len = result.length; i < len; i++) {
+        elem = result[i];
+
+        if (elem.find(tag)) {
+          rv.push(elem);
+        }
+      }
+
+      return rv;
+    };
+  }
+  else {
+    throw new SyntaxError(null, 'Invalid predicate');
+  }
+
+  return select;
+}
+
+
+
+var ops = {
+  "": prepare_tag,
+  "*": prepare_star,
+  ".": prepare_dot,
+  "..": prepare_dot_dot,
+  "//": prepare_iter,
+  "[": prepare_predicate,
+};
+
+function _SelectorContext(root) {
+  this.parent_map = null;
+  this.root = root;
+}
+
+function findall(elem, path) {
+  var selector, result, i, len, token, value, select, context;
+
+  if (_cache.hasOwnProperty(path)) {
+    selector = _cache[path];
+  }
+  else {
+    // TODO: Use smarter cache purging approach
+    if (Object.keys(_cache).length > 100) {
+      _cache = {};
+    }
+
+    if (path.charAt(0) === '/') {
+      throw new SyntaxError(null, 'Cannot use absolute path on element');
+    }
+
+    result = xpath_tokenizer(path);
+    selector = [];
+
+    function getToken() {
+      return result.shift();
+    }
+
+    token = getToken();
+    while (true) {
+      var c = token[1] || '';
+      value = ops[c](getToken, token);
+
+      if (!value) {
+        throw new SyntaxError(null, sprintf('Invalid path: %s', path));
+      }
+
+      selector.push(value);
+      token = getToken();
+
+      if (!token) {
+        break;
+      }
+      else if (token[1] === '/') {
+        token = getToken();
+      }
+
+      if (!token) {
+        break;
+      }
+    }
+
+    _cache[path] = selector;
+  }
+
+  // Execute slector pattern
+  result = [elem];
+  context = new _SelectorContext(elem);
+
+  for (i = 0, len = selector.length; i < len; i++) {
+    select = selector[i];
+    result = select(context, result);
+  }
+
+  return result || [];
+}
+
+function find(element, path) {
+  var resultElements = findall(element, path);
+
+  if (resultElements && resultElements.length > 0) {
+    return resultElements[0];
+  }
+
+  return null;
+}
+
+function findtext(element, path, defvalue) {
+  var resultElements = findall(element, path);
+
+  if (resultElements && resultElements.length > 0) {
+    return resultElements[0].text;
+  }
+
+  return defvalue;
+}
+
+
+exports.find = find;
+exports.findall = findall;
+exports.findtext = findtext;
+
+});
+
+require.define("/node_modules/elementtree/lib/errors.js", function (require, module, exports, __dirname, __filename) {
+/**
+ *  Copyright 2011 Rackspace
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ */
+
+var util = require('util');
+
+var sprintf = require('./sprintf').sprintf;
+
+function SyntaxError(token, msg) {
+  msg = msg || sprintf('Syntax Error at token %s', token.toString());
+  this.token = token;
+  this.message = msg;
+  Error.call(this, msg);
+}
+
+util.inherits(SyntaxError, Error);
+
+exports.SyntaxError = SyntaxError;
+
+});
+
+require.define("util", function (require, module, exports, __dirname, __filename) {
+var events = require('events');
+
+exports.print = function () {};
+exports.puts = function () {};
+exports.debug = function() {};
+
+exports.inspect = function(obj, showHidden, depth, colors) {
+  var seen = [];
+
+  var stylize = function(str, styleType) {
+    // http://en.wikipedia.org/wiki/ANSI_escape_code#graphics
+    var styles =
+        { 'bold' : [1, 22],
+          'italic' : [3, 23],
+          'underline' : [4, 24],
+          'inverse' : [7, 27],
+          'white' : [37, 39],
+          'grey' : [90, 39],
+          'black' : [30, 39],
+          'blue' : [34, 39],
+          'cyan' : [36, 39],
+          'green' : [32, 39],
+          'magenta' : [35, 39],
+          'red' : [31, 39],
+          'yellow' : [33, 39] };
+
+    var style =
+        { 'special': 'cyan',
+          'number': 'blue',
+          'boolean': 'yellow',
+          'undefined': 'grey',
+          'null': 'bold',
+          'string': 'green',
+          'date': 'magenta',
+          // "name": intentionally not styling
+          'regexp': 'red' }[styleType];
+
+    if (style) {
+      return '\033[' + styles[style][0] + 'm' + str +
+             '\033[' + styles[style][1] + 'm';
+    } else {
+      return str;
+    }
+  };
+  if (! colors) {
+    stylize = function(str, styleType) { return str; };
+  }
+
+  function format(value, recurseTimes) {
+    // Provide a hook for user-specified inspect functions.
+    // Check that value is an object with an inspect function on it
+    if (value && typeof value.inspect === 'function' &&
+        // Filter out the util module, it's inspect function is special
+        value !== exports &&
+        // Also filter out any prototype objects using the circular check.
+        !(value.constructor && value.constructor.prototype === value)) {
+      return value.inspect(recurseTimes);
+    }
+
+    // Primitive types cannot have properties
+    switch (typeof value) {
+      case 'undefined':
+        return stylize('undefined', 'undefined');
+
+      case 'string':
+        var simple = '\'' + JSON.stringify(value).replace(/^"|"$/g, '')
+                                                 .replace(/'/g, "\\'")
+                                                 .replace(/\\"/g, '"') + '\'';
+        return stylize(simple, 'string');
+
+      case 'number':
+        return stylize('' + value, 'number');
+
+      case 'boolean':
+        return stylize('' + value, 'boolean');
+    }
+    // For some reason typeof null is "object", so special case here.
+    if (value === null) {
+      return stylize('null', 'null');
+    }
+
+    // Look up the keys of the object.
+    var visible_keys = Object_keys(value);
+    var keys = showHidden ? Object_getOwnPropertyNames(value) : visible_keys;
+
+    // Functions without properties can be shortcutted.
+    if (typeof value === 'function' && keys.length === 0) {
+      if (isRegExp(value)) {
+        return stylize('' + value, 'regexp');
+      } else {
+        var name = value.name ? ': ' + value.name : '';
+        return stylize('[Function' + name + ']', 'special');
+      }
+    }
+
+    // Dates without properties can be shortcutted
+    if (isDate(value) && keys.length === 0) {
+      return stylize(value.toUTCString(), 'date');
+    }
+
+    var base, type, braces;
+    // Determine the object type
+    if (isArray(value)) {
+      type = 'Array';
+      braces = ['[', ']'];
+    } else {
+      type = 'Object';
+      braces = ['{', '}'];
+    }
+
+    // Make functions say that they are functions
+    if (typeof value === 'function') {
+      var n = value.name ? ': ' + value.name : '';
+      base = (isRegExp(value)) ? ' ' + value : ' [Function' + n + ']';
+    } else {
+      base = '';
+    }
+
+    // Make dates with properties first say the date
+    if (isDate(value)) {
+      base = ' ' + value.toUTCString();
+    }
+
+    if (keys.length === 0) {
+      return braces[0] + base + braces[1];
+    }
+
+    if (recurseTimes < 0) {
+      if (isRegExp(value)) {
+        return stylize('' + value, 'regexp');
+      } else {
+        return stylize('[Object]', 'special');
+      }
+    }
+
+    seen.push(value);
+
+    var output = keys.map(function(key) {
+      var name, str;
+      if (value.__lookupGetter__) {
+        if (value.__lookupGetter__(key)) {
+          if (value.__lookupSetter__(key)) {
+            str = stylize('[Getter/Setter]', 'special');
+          } else {
+            str = stylize('[Getter]', 'special');
+          }
+        } else {
+          if (value.__lookupSetter__(key)) {
+            str = stylize('[Setter]', 'special');
+          }
+        }
+      }
+      if (visible_keys.indexOf(key) < 0) {
+        name = '[' + key + ']';
+      }
+      if (!str) {
+        if (seen.indexOf(value[key]) < 0) {
+          if (recurseTimes === null) {
+            str = format(value[key]);
+          } else {
+            str = format(value[key], recurseTimes - 1);
+          }
+          if (str.indexOf('\n') > -1) {
+            if (isArray(value)) {
+              str = str.split('\n').map(function(line) {
+                return '  ' + line;
+              }).join('\n').substr(2);
+            } else {
+              str = '\n' + str.split('\n').map(function(line) {
+                return '   ' + line;
+              }).join('\n');
+            }
+          }
+        } else {
+          str = stylize('[Circular]', 'special');
+        }
+      }
+      if (typeof name === 'undefined') {
+        if (type === 'Array' && key.match(/^\d+$/)) {
+          return str;
+        }
+        name = JSON.stringify('' + key);
+        if (name.match(/^"([a-zA-Z_][a-zA-Z_0-9]*)"$/)) {
+          name = name.substr(1, name.length - 2);
+          name = stylize(name, 'name');
+        } else {
+          name = name.replace(/'/g, "\\'")
+                     .replace(/\\"/g, '"')
+                     .replace(/(^"|"$)/g, "'");
+          name = stylize(name, 'string');
+        }
+      }
+
+      return name + ': ' + str;
+    });
+
+    seen.pop();
+
+    var numLinesEst = 0;
+    var length = output.reduce(function(prev, cur) {
+      numLinesEst++;
+      if (cur.indexOf('\n') >= 0) numLinesEst++;
+      return prev + cur.length + 1;
+    }, 0);
+
+    if (length > 50) {
+      output = braces[0] +
+               (base === '' ? '' : base + '\n ') +
+               ' ' +
+               output.join(',\n  ') +
+               ' ' +
+               braces[1];
+
+    } else {
+      output = braces[0] + base + ' ' + output.join(', ') + ' ' + braces[1];
+    }
+
+    return output;
+  }
+  return format(obj, (typeof depth === 'undefined' ? 2 : depth));
+};
+
+
+function isArray(ar) {
+  return ar instanceof Array ||
+         Array.isArray(ar) ||
+         (ar && ar !== Object.prototype && isArray(ar.__proto__));
+}
+
+
+function isRegExp(re) {
+  return re instanceof RegExp ||
+    (typeof re === 'object' && Object.prototype.toString.call(re) === '[object RegExp]');
+}
+
+
+function isDate(d) {
+  if (d instanceof Date) return true;
+  if (typeof d !== 'object') return false;
+  var properties = Date.prototype && Object_getOwnPropertyNames(Date.prototype);
+  var proto = d.__proto__ && Object_getOwnPropertyNames(d.__proto__);
+  return JSON.stringify(proto) === JSON.stringify(properties);
+}
+
+function pad(n) {
+  return n < 10 ? '0' + n.toString(10) : n.toString(10);
+}
+
+var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
+              'Oct', 'Nov', 'Dec'];
+
+// 26 Feb 16:19:34
+function timestamp() {
+  var d = new Date();
+  var time = [pad(d.getHours()),
+              pad(d.getMinutes()),
+              pad(d.getSeconds())].join(':');
+  return [d.getDate(), months[d.getMonth()], time].join(' ');
+}
+
+exports.log = function (msg) {};
+
+exports.pump = null;
+
+var Object_keys = Object.keys || function (obj) {
+    var res = [];
+    for (var key in obj) res.push(key);
+    return res;
+};
+
+var Object_getOwnPropertyNames = Object.getOwnPropertyNames || function (obj) {
+    var res = [];
+    for (var key in obj) {
+        if (Object.hasOwnProperty.call(obj, key)) res.push(key);
+    }
+    return res;
+};
+
+var Object_create = Object.create || function (prototype, properties) {
+    // from es5-shim
+    var object;
+    if (prototype === null) {
+        object = { '__proto__' : null };
+    }
+    else {
+        if (typeof prototype !== 'object') {
+            throw new TypeError(
+                'typeof prototype[' + (typeof prototype) + '] != \'object\''
+            );
+        }
+        var Type = function () {};
+        Type.prototype = prototype;
+        object = new Type();
+        object.__proto__ = prototype;
+    }
+    if (typeof properties !== 'undefined' && Object.defineProperties) {
+        Object.defineProperties(object, properties);
+    }
+    return object;
+};
+
+exports.inherits = function(ctor, superCtor) {
+  ctor.super_ = superCtor;
+  ctor.prototype = Object_create(superCtor.prototype, {
+    constructor: {
+      value: ctor,
+      enumerable: false,
+      writable: true,
+      configurable: true
+    }
+  });
+};
+
+});
+
+require.define("events", function (require, module, exports, __dirname, __filename) {
+if (!process.EventEmitter) process.EventEmitter = function () {};
+
+var EventEmitter = exports.EventEmitter = process.EventEmitter;
+var isArray = typeof Array.isArray === 'function'
+    ? Array.isArray
+    : function (xs) {
+        return Object.toString.call(xs) === '[object Array]'
+    }
+;
+
+// By default EventEmitters will print a warning if more than
+// 10 listeners are added to it. This is a useful default which
+// helps finding memory leaks.
+//
+// Obviously not all Emitters should be limited to 10. This function allows
+// that to be increased. Set to zero for unlimited.
+var defaultMaxListeners = 10;
+EventEmitter.prototype.setMaxListeners = function(n) {
+  if (!this._events) this._events = {};
+  this._events.maxListeners = n;
+};
+
+
+EventEmitter.prototype.emit = function(type) {
+  // If there is no 'error' event listener then throw.
+  if (type === 'error') {
+    if (!this._events || !this._events.error ||
+        (isArray(this._events.error) && !this._events.error.length))
+    {
+      if (arguments[1] instanceof Error) {
+        throw arguments[1]; // Unhandled 'error' event
+      } else {
+        throw new Error("Uncaught, unspecified 'error' event.");
+      }
+      return false;
+    }
+  }
+
+  if (!this._events) return false;
+  var handler = this._events[type];
+  if (!handler) return false;
+
+  if (typeof handler == 'function') {
+    switch (arguments.length) {
+      // fast cases
+      case 1:
+        handler.call(this);
+        break;
+      case 2:
+        handler.call(this, arguments[1]);
+        break;
+      case 3:
+        handler.call(this, arguments[1], arguments[2]);
+        break;
+      // slower
+      default:
+        var args = Array.prototype.slice.call(arguments, 1);
+        handler.apply(this, args);
+    }
+    return true;
+
+  } else if (isArray(handler)) {
+    var args = Array.prototype.slice.call(arguments, 1);
+
+    var listeners = handler.slice();
+    for (var i = 0, l = listeners.length; i < l; i++) {
+      listeners[i].apply(this, args);
+    }
+    return true;
+
+  } else {
+    return false;
+  }
+};
+
+// EventEmitter is defined in src/node_events.cc
+// EventEmitter.prototype.emit() is also defined there.
+EventEmitter.prototype.addListener = function(type, listener) {
+  if ('function' !== typeof listener) {
+    throw new Error('addListener only takes instances of Function');
+  }
+
+  if (!this._events) this._events = {};
+
+  // To avoid recursion in the case that type == "newListeners"! Before
+  // adding it to the listeners, first emit "newListeners".
+  this.emit('newListener', type, listener);
+
+  if (!this._events[type]) {
+    // Optimize the case of one listener. Don't need the extra array object.
+    this._events[type] = listener;
+  } else if (isArray(this._events[type])) {
+
+    // Check for listener leak
+    if (!this._events[type].warned) {
+      var m;
+      if (this._events.maxListeners !== undefined) {
+        m = this._events.maxListeners;
+      } else {
+        m = defaultMaxListeners;
+      }
+
+      if (m && m > 0 && this._events[type].length > m) {
+        this._events[type].warned = true;
+        console.error('(node) warning: possible EventEmitter memory ' +
+                      'leak detected. %d listeners added. ' +
+                      'Use emitter.setMaxListeners() to increase limit.',
+                      this._events[type].length);
+        console.trace();
+      }
+    }
+
+    // If we've already got an array, just append.
+    this._events[type].push(listener);
+  } else {
+    // Adding the second element, need to change to array.
+    this._events[type] = [this._events[type], listener];
+  }
+
+  return this;
+};
+
+EventEmitter.prototype.on = EventEmitter.prototype.addListener;
+
+EventEmitter.prototype.once = function(type, listener) {
+  var self = this;
+  self.on(type, function g() {
+    self.removeListener(type, g);
+    listener.apply(this, arguments);
+  });
+
+  return this;
+};
+
+EventEmitter.prototype.removeListener = function(type, listener) {
+  if ('function' !== typeof listener) {
+    throw new Error('removeListener only takes instances of Function');
+  }
+
+  // does not use listeners(), so no side effect of creating _events[type]
+  if (!this._events || !this._events[type]) return this;
+
+  var list = this._events[type];
+
+  if (isArray(list)) {
+    var i = list.indexOf(listener);
+    if (i < 0) return this;
+    list.splice(i, 1);
+    if (list.length == 0)
+      delete this._events[type];
+  } else if (this._events[type] === listener) {
+    delete this._events[type];
+  }
+
+  return this;
+};
+
+EventEmitter.prototype.removeAllListeners = function(type) {
+  // does not use listeners(), so no side effect of creating _events[type]
+  if (type && this._events && this._events[type]) this._events[type] = null;
+  return this;
+};
+
+EventEmitter.prototype.listeners = function(type) {
+  if (!this._events) this._events = {};
+  if (!this._events[type]) this._events[type] = [];
+  if (!isArray(this._events[type])) {
+    this._events[type] = [this._events[type]];
+  }
+  return this._events[type];
+};
+
+});
+
+require.define("/node_modules/elementtree/lib/treebuilder.js", function (require, module, exports, __dirname, __filename) {
+function TreeBuilder(element_factory) {
+  this._data = [];
+  this._elem = [];
+  this._last = null;
+  this._tail = null;
+  if (!element_factory) {
+    /* evil circular dep */
+    element_factory = require('./elementtree').Element;
+  }
+  this._factory = element_factory;
+}
+
+TreeBuilder.prototype.close = function() {
+  return this._last;
+};
+
+TreeBuilder.prototype._flush = function() {
+  if (this._data) {
+    if (this._last !== null) {
+      var text = this._data.join("");
+      if (this._tail) {
+        this._last.tail = text;
+      }
+      else {
+        this._last.text = text;
+      }
+    }
+    this._data = [];
+  }
+};
+
+TreeBuilder.prototype.data = function(data) {
+  this._data.push(data);
+};
+
+TreeBuilder.prototype.start = function(tag, attrs) {
+  this._flush();
+  var elem = this._factory(tag, attrs);
+  this._last = elem;
+
+  if (this._elem.length) {
+    this._elem[this._elem.length - 1].append(elem);
+  }
+
+  this._elem.push(elem);
+
+  this._tail = null;
+};
+
+TreeBuilder.prototype.end = function(tag) {
+  this._flush();
+  this._last = this._elem.pop();
+  if (this._last.tag !== tag) {
+    throw new Error("end tag mismatch");
+  }
+  this._tail = 1;
+  return this._last;
+};
+
+exports.TreeBuilder = TreeBuilder;
+
+});
+
+require.define("/node_modules/elementtree/lib/parser.js", function (require, module, exports, __dirname, __filename) {
+/*
+ *  Copyright 2011 Rackspace
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ */
+
+/* TODO: support node-expat C++ module optionally */
+
+var util = require('util');
+var parsers = require('./parsers/index');
+
+function get_parser(name) {
+  if (name === 'sax') {
+    return parsers.sax;
+  }
+  else {
+    throw new Error('Invalid parser: ' + name);
+  }
+}
+
+
+exports.get_parser = get_parser;
+
+});
+
+require.define("/node_modules/elementtree/lib/parsers/index.js", function (require, module, exports, __dirname, __filename) {
+exports.sax = require('./sax');
+
+});
+
+require.define("/node_modules/elementtree/lib/parsers/sax.js", function (require, module, exports, __dirname, __filename) {
+var util = require('util');
+
+var sax = require('sax');
+
+var TreeBuilder = require('./../treebuilder').TreeBuilder;
+
+function XMLParser(target) {
+  this.parser = sax.parser(true);
+
+  this.target = (target) ? target : new TreeBuilder();
+
+  this.parser.onopentag = this._handleOpenTag.bind(this);
+  this.parser.ontext = this._handleText.bind(this);
+  this.parser.oncdata = this._handleCdata.bind(this);
+  this.parser.ondoctype = this._handleDoctype.bind(this);
+  this.parser.oncomment = this._handleComment.bind(this);
+  this.parser.onclosetag = this._handleCloseTag.bind(this);
+  this.parser.onerror = this._handleError.bind(this);
+}
+
+XMLParser.prototype._handleOpenTag = function(tag) {
+  this.target.start(tag.name, tag.attributes);
+};
+
+XMLParser.prototype._handleText = function(text) {
+  this.target.data(text);
+};
+
+XMLParser.prototype._handleCdata = function(text) {
+  this.target.data(text);
+};
+
+XMLParser.prototype._handleDoctype = function(text) {
+};
+
+XMLParser.prototype._handleComment = function(comment) {
+};
+
+XMLParser.prototype._handleCloseTag = function(tag) {
+  this.target.end(tag);
+};
+
+XMLParser.prototype._handleError = function(err) {
+  throw err;
+};
+
+XMLParser.prototype.feed = function(chunk) {
+  this.parser.write(chunk);
+};
+
+XMLParser.prototype.close = function() {
+  this.parser.close();
+  return this.target.close();
+};
+
+exports.XMLParser = XMLParser;
+
+});
+
+require.define("/node_modules/elementtree/node_modules/sax/package.json", function (require, module, exports, __dirname, __filename) {
+module.exports = {"main":"lib/sax.js"}
+});
+
+require.define("/node_modules/elementtree/node_modules/sax/lib/sax.js", function (require, module, exports, __dirname, __filename) {
+// wrapper for non-node envs
+;(function (sax) {
+
+sax.parser = function (strict, opt) { return new SAXParser(strict, opt) }
+sax.SAXParser = SAXParser
+sax.SAXStream = SAXStream
+sax.createStream = createStream
+
+// When we pass the MAX_BUFFER_LENGTH position, start checking for buffer overruns.
+// When we check, schedule the next check for MAX_BUFFER_LENGTH - (max(buffer lengths)),
+// since that's the earliest that a buffer overrun could occur.  This way, checks are
+// as rare as required, but as often as necessary to ensure never crossing this bound.
+// Furthermore, buffers are only tested at most once per write(), so passing a very
+// large string into write() might have undesirable effects, but this is manageable by
+// the caller, so it is assumed to be safe.  Thus, a call to write() may, in the extreme
+// edge case, result in creating at most one complete copy of the string passed in.
+// Set to Infinity to have unlimited buffers.
+sax.MAX_BUFFER_LENGTH = 64 * 1024
+
+var buffers = [
+  "comment", "sgmlDecl", "textNode", "tagName", "doctype",
+  "procInstName", "procInstBody", "entity", "attribName",
+  "attribValue", "cdata", "script"
+]
+
+sax.EVENTS = // for discoverability.
+  [ "text"
+  , "processinginstruction"
+  , "sgmldeclaration"
+  , "doctype"
+  , "comment"
+  , "attribute"
+  , "opentag"
+  , "closetag"
+  , "opencdata"
+  , "cdata"
+  , "closecdata"
+  , "error"
+  , "end"
+  , "ready"
+  , "script"
+  , "opennamespace"
+  , "closenamespace"
+  ]
+
+function SAXParser (strict, opt) {
+  if (!(this instanceof SAXParser)) return new SAXParser(strict, opt)
+
+  var parser = this
+  clearBuffers(parser)
+  parser.q = parser.c = ""
+  parser.bufferCheckPosition = sax.MAX_BUFFER_LENGTH
+  parser.opt = opt || {}
+  parser.tagCase = parser.opt.lowercasetags ? "toLowerCase" : "toUpperCase"
+  parser.tags = []
+  parser.closed = parser.closedRoot = parser.sawRoot = false
+  parser.tag = parser.error = null
+  parser.strict = !!strict
+  parser.noscript = !!(strict || parser.opt.noscript)
+  parser.state = S.BEGIN
+  parser.ENTITIES = Object.create(sax.ENTITIES)
+  parser.attribList = []
+
+  // namespaces form a prototype chain.
+  // it always points at the current tag,
+  // which protos to its parent tag.
+  if (parser.opt.xmlns) parser.ns = Object.create(rootNS)
+
+  // mostly just for error reporting
+  parser.position = parser.line = parser.column = 0
+  emit(parser, "onready")
+}
+
+if (!Object.create) Object.create = function (o) {
+  function f () { this.__proto__ = o }
+  f.prototype = o
+  return new f
+}
+
+if (!Object.getPrototypeOf) Object.getPrototypeOf = function (o) {
+  return o.__proto__
+}
+
+if (!Object.keys) Object.keys = function (o) {
+  var a = []
+  for (var i in o) if (o.hasOwnProperty(i)) a.push(i)
+  return a
+}
+
+function checkBufferLength (parser) {
+  var maxAllowed = Math.max(sax.MAX_BUFFER_LENGTH, 10)
+    , maxActual = 0
+  for (var i = 0, l = buffers.length; i < l; i ++) {
+    var len = parser[buffers[i]].length
+    if (len > maxAllowed) {
+      // Text/cdata nodes can get big, and since they're buffered,
+      // we can get here under normal conditions.
+      // Avoid issues by emitting the text node now,
+      // so at least it won't get any bigger.
+      switch (buffers[i]) {
+        case "textNode":
+          closeText(parser)
+        break
+
+        case "cdata":
+          emitNode(parser, "oncdata", parser.cdata)
+          parser.cdata = ""
+        break
+
+        case "script":
+          emitNode(parser, "onscript", parser.script)
+          parser.script = ""
+        break
+
+        default:
+          error(parser, "Max buffer length exceeded: "+buffers[i])
+      }
+    }
+    maxActual = Math.max(maxActual, len)
+  }
+  // schedule the next check for the earliest possible buffer overrun.
+  parser.bufferCheckPosition = (sax.MAX_BUFFER_LENGTH - maxActual)
+                             + parser.position
+}
+
+function clearBuffers (parser) {
+  for (var i = 0, l = buffers.length; i < l; i ++) {
+    parser[buffers[i]] = ""
+  }
+}
+
+SAXParser.prototype =
+  { end: function () { end(this) }
+  , write: write
+  , resume: function () { this.error = null; return this }
+  , close: function () { return this.write(null) }
+  , end: function () { return this.write(null) }
+  }
+
+try {
+  var Stream = require("stream").Stream
+} catch (ex) {
+  var Stream = function () {}
+}
+
+
+var streamWraps = sax.EVENTS.filter(function (ev) {
+  return ev !== "error" && ev !== "end"
+})
+
+function createStream (strict, opt) {
+  return new SAXStream(strict, opt)
+}
+
+function SAXStream (strict, opt) {
+  if (!(this instanceof SAXStream)) return new SAXStream(strict, opt)
+
+  Stream.apply(me)
+
+  this._parser = new SAXParser(strict, opt)
+  this.writable = true
+  this.readable = true
+
+
+  var me = this
+
+  this._parser.onend = function () {
+    me.emit("end")
+  }
+
+  this._parser.onerror = function (er) {
+    me.emit("error", er)
+
+    // if didn't throw, then means error was handled.
+    // go ahead and clear error, so we can write again.
+    me._parser.error = null
+  }
+
+  streamWraps.forEach(function (ev) {
+    Object.defineProperty(me, "on" + ev, {
+      get: function () { return me._parser["on" + ev] },
+      set: function (h) {
+        if (!h) {
+          me.removeAllListeners(ev)
+          return me._parser["on"+ev] = h
+        }
+        me.on(ev, h)
+      },
+      enumerable: true,
+      configurable: false
+    })
+  })
+}
+
+SAXStream.prototype = Object.create(Stream.prototype,
+  { constructor: { value: SAXStream } })
+
+SAXStream.prototype.write = function (data) {
+  this._parser.write(data.toString())
+  this.emit("data", data)
+  return true
+}
+
+SAXStream.prototype.end = function (chunk) {
+  if (chunk && chunk.length) this._parser.write(chunk.toString())
+  this._parser.end()
+  return true
+}
+
+SAXStream.prototype.on = function (ev, handler) {
+  var me = this
+  if (!me._parser["on"+ev] && streamWraps.indexOf(ev) !== -1) {
+    me._parser["on"+ev] = function () {
+      var args = arguments.length === 1 ? [arguments[0]]
+               : Array.apply(null, arguments)
+      args.splice(0, 0, ev)
+      me.emit.apply(me, args)
+    }
+  }
+
+  return Stream.prototype.on.call(me, ev, handler)
+}
+
+
+
+// character classes and tokens
+var whitespace = "\r\n\t "
+  // this really needs to be replaced with character classes.
+  // XML allows all manner of ridiculous numbers and digits.
+  , number = "0124356789"
+  , letter = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+  // (Letter | "_" | ":")
+  , nameStart = letter+"_:"
+  , nameBody = nameStart+number+"-."
+  , quote = "'\""
+  , entity = number+letter+"#"
+  , attribEnd = whitespace + ">"
+  , CDATA = "[CDATA["
+  , DOCTYPE = "DOCTYPE"
+  , XML_NAMESPACE = "http://www.w3.org/XML/1998/namespace"
+  , XMLNS_NAMESPACE = "http://www.w3.org/2000/xmlns/"
+  , rootNS = { xml: XML_NAMESPACE, xmlns: XMLNS_NAMESPACE }
+
+// turn all the string character sets into character class objects.
+whitespace = charClass(whitespace)
+number = charClass(number)
+letter = charClass(letter)
+nameStart = charClass(nameStart)
+nameBody = charClass(nameBody)
+quote = charClass(quote)
+entity = charClass(entity)
+attribEnd = charClass(attribEnd)
+
+function charClass (str) {
+  return str.split("").reduce(function (s, c) {
+    s[c] = true
+    return s
+  }, {})
+}
+
+function is (charclass, c) {
+  return charclass[c]
+}
+
+function not (charclass, c) {
+  return !charclass[c]
+}
+
+var S = 0
+sax.STATE =
+{ BEGIN                     : S++
+, TEXT                      : S++ // general stuff
+, TEXT_ENTITY               : S++ // &amp and such.
+, OPEN_WAKA                 : S++ // <
+, SGML_DECL                 : S++ // <!BLARG
+, SGML_DECL_QUOTED          : S++ // <!BLARG foo "bar
+, DOCTYPE                   : S++ // <!DOCTYPE
+, DOCTYPE_QUOTED            : S++ // <!DOCTYPE "//blah
+, DOCTYPE_DTD               : S++ // <!DOCTYPE "//blah" [ ...
+, DOCTYPE_DTD_QUOTED        : S++ // <!DOCTYPE "//blah" [ "foo
+, COMMENT_STARTING          : S++ // <!-
+, COMMENT                   : S++ // <!--
+, COMMENT_ENDING            : S++ // <!-- blah -
+, COMMENT_ENDED             : S++ // <!-- blah --
+, CDATA                     : S++ // <![CDATA[ something
+, CDATA_ENDING              : S++ // ]
+, CDATA_ENDING_2            : S++ // ]]
+, PROC_INST                 : S++ // <?hi
+, PROC_INST_BODY            : S++ // <?hi there
+, PROC_INST_QUOTED          : S++ // <?hi "there
+, PROC_INST_ENDING          : S++ // <?hi "there" ?
+, OPEN_TAG                  : S++ // <strong
+, OPEN_TAG_SLASH            : S++ // <strong /
+, ATTRIB                    : S++ // <a
+, ATTRIB_NAME               : S++ // <a foo
+, ATTRIB_NAME_SAW_WHITE     : S++ // <a foo _
+, ATTRIB_VALUE              : S++ // <a foo=
+, ATTRIB_VALUE_QUOTED       : S++ // <a foo="bar
+, ATTRIB_VALUE_UNQUOTED     : S++ // <a foo=bar
+, ATTRIB_VALUE_ENTITY_Q     : S++ // <foo bar="&quot;"
+, ATTRIB_VALUE_ENTITY_U     : S++ // <foo bar=&quot;
+, CLOSE_TAG                 : S++ // </a
+, CLOSE_TAG_SAW_WHITE       : S++ // </a   >
+, SCRIPT                    : S++ // <script> ...
+, SCRIPT_ENDING             : S++ // <script> ... <
+}
+
+sax.ENTITIES =
+{ "apos" : "'"
+, "quot" : "\""
+, "amp"  : "&"
+, "gt"   : ">"
+, "lt"   : "<"
+}
+
+for (var S in sax.STATE) sax.STATE[sax.STATE[S]] = S
+
+// shorthand
+S = sax.STATE
+
+function emit (parser, event, data) {
+  parser[event] && parser[event](data)
+}
+
+function emitNode (parser, nodeType, data) {
+  if (parser.textNode) closeText(parser)
+  emit(parser, nodeType, data)
+}
+
+function closeText (parser) {
+  parser.textNode = textopts(parser.opt, parser.textNode)
+  if (parser.textNode) emit(parser, "ontext", parser.textNode)
+  parser.textNode = ""
+}
+
+function textopts (opt, text) {
+  if (opt.trim) text = text.trim()
+  if (opt.normalize) text = text.replace(/\s+/g, " ")
+  return text
+}
+
+function error (parser, er) {
+  closeText(parser)
+  er += "\nLine: "+parser.line+
+        "\nColumn: "+parser.column+
+        "\nChar: "+parser.c
+  er = new Error(er)
+  parser.error = er
+  emit(parser, "onerror", er)
+  return parser
+}
+
+function end (parser) {
+  if (parser.state !== S.TEXT) error(parser, "Unexpected end")
+  closeText(parser)
+  parser.c = ""
+  parser.closed = true
+  emit(parser, "onend")
+  SAXParser.call(parser, parser.strict, parser.opt)
+  return parser
+}
+
+function strictFail (parser, message) {
+  if (parser.strict) error(parser, message)
+}
+
+function newTag (parser) {
+  if (!parser.strict) parser.tagName = parser.tagName[parser.tagCase]()
+  var parent = parser.tags[parser.tags.length - 1] || parser
+    , tag = parser.tag = { name : parser.tagName, attributes : {} }
+
+  // will be overridden if tag contails an xmlns="foo" or xmlns:foo="bar"
+  if (parser.opt.xmlns) tag.ns = parent.ns
+  parser.attribList.length = 0
+}
+
+function qname (name) {
+  var i = name.indexOf(":")
+    , qualName = i < 0 ? [ "", name ] : name.split(":")
+    , prefix = qualName[0]
+    , local = qualName[1]
+
+  // <x "xmlns"="http://foo">
+  if (name === "xmlns") {
+    prefix = "xmlns"
+    local = ""
+  }
+
+  return { prefix: prefix, local: local }
+}
+
+function attrib (parser) {
+  if (parser.opt.xmlns) {
+    var qn = qname(parser.attribName)
+      , prefix = qn.prefix
+      , local = qn.local
+
+    if (prefix === "xmlns") {
+      // namespace binding attribute; push the binding into scope
+      if (local === "xml" && parser.attribValue !== XML_NAMESPACE) {
+        strictFail( parser
+                  , "xml: prefix must be bound to " + XML_NAMESPACE + "\n"
+                  + "Actual: " + parser.attribValue )
+      } else if (local === "xmlns" && parser.attribValue !== XMLNS_NAMESPACE) {
+        strictFail( parser
+                  , "xmlns: prefix must be bound to " + XMLNS_NAMESPACE + "\n"
+                  + "Actual: " + parser.attribValue )
+      } else {
+        var tag = parser.tag
+          , parent = parser.tags[parser.tags.length - 1] || parser
+        if (tag.ns === parent.ns) {
+          tag.ns = Object.create(parent.ns)
+        }
+        tag.ns[local] = parser.attribValue
+      }
+    }
+
+    // defer onattribute events until all attributes have been seen
+    // so any new bindings can take effect; preserve attribute order
+    // so deferred events can be emitted in document order
+    parser.attribList.push([parser.attribName, parser.attribValue])
+  } else {
+    // in non-xmlns mode, we can emit the event right away
+    parser.tag.attributes[parser.attribName] = parser.attribValue
+    emitNode( parser
+            , "onattribute"
+            , { name: parser.attribName
+              , value: parser.attribValue } )
+  }
+
+  parser.attribName = parser.attribValue = ""
+}
+
+function openTag (parser, selfClosing) {
+  if (parser.opt.xmlns) {
+    // emit namespace binding events
+    var tag = parser.tag
+
+    // add namespace info to tag
+    var qn = qname(parser.tagName)
+    tag.prefix = qn.prefix
+    tag.local = qn.local
+    tag.uri = tag.ns[qn.prefix] || qn.prefix
+
+    if (tag.prefix && !tag.uri) {
+      strictFail(parser, "Unbound namespace prefix: "
+                       + JSON.stringify(parser.tagName))
+    }
+
+    var parent = parser.tags[parser.tags.length - 1] || parser
+    if (tag.ns && parent.ns !== tag.ns) {
+      Object.keys(tag.ns).forEach(function (p) {
+        emitNode( parser
+                , "onopennamespace"
+                , { prefix: p , uri: tag.ns[p] } )
+      })
+    }
+
+    // handle deferred onattribute events
+    for (var i = 0, l = parser.attribList.length; i < l; i ++) {
+      var nv = parser.attribList[i]
+      var name = nv[0]
+        , value = nv[1]
+        , qualName = qname(name)
+        , prefix = qualName.prefix
+        , local = qualName.local
+        , uri = tag.ns[prefix] || ""
+        , a = { name: name
+              , value: value
+              , prefix: prefix
+              , local: local
+              , uri: uri
+              }
+
+      // if there's any attributes with an undefined namespace,
+      // then fail on them now.
+      if (prefix && prefix != "xmlns" && !uri) {
+        strictFail(parser, "Unbound namespace prefix: "
+                         + JSON.stringify(prefix))
+        a.uri = prefix
+      }
+      parser.tag.attributes[name] = a
+      emitNode(parser, "onattribute", a)
+    }
+    parser.attribList.length = 0
+  }
+
+  // process the tag
+  parser.sawRoot = true
+  parser.tags.push(parser.tag)
+  emitNode(parser, "onopentag", parser.tag)
+  if (!selfClosing) {
+    // special case for <script> in non-strict mode.
+    if (!parser.noscript && parser.tagName.toLowerCase() === "script") {
+      parser.state = S.SCRIPT
+    } else {
+      parser.state = S.TEXT
+    }
+    parser.tag = null
+    parser.tagName = ""
+  }
+  parser.attribName = parser.attribValue = ""
+  parser.attribList.length = 0
+}
+
+function closeTag (parser) {
+  if (!parser.tagName) {
+    strictFail(parser, "Weird empty close tag.")
+    parser.textNode += "</>"
+    parser.state = S.TEXT
+    return
+  }
+  // first make sure that the closing tag actually exists.
+  // <a><b></c></b></a> will close everything, otherwise.
+  var t = parser.tags.length
+  var tagName = parser.tagName
+  if (!parser.strict) tagName = tagName[parser.tagCase]()
+  var closeTo = tagName
+  while (t --) {
+    var close = parser.tags[t]
+    if (close.name !== closeTo) {
+      // fail the first time in strict mode
+      strictFail(parser, "Unexpected close tag")
+    } else break
+  }
+
+  // didn't find it.  we already failed for strict, so just abort.
+  if (t < 0) {
+    strictFail(parser, "Unmatched closing tag: "+parser.tagName)
+    parser.textNode += "</" + parser.tagName + ">"
+    parser.state = S.TEXT
+    return
+  }
+  parser.tagName = tagName
+  var s = parser.tags.length
+  while (s --> t) {
+    var tag = parser.tag = parser.tags.pop()
+    parser.tagName = parser.tag.name
+    emitNode(parser, "onclosetag", parser.tagName)
+
+    var x = {}
+    for (var i in tag.ns) x[i] = tag.ns[i]
+
+    var parent = parser.tags[parser.tags.length - 1] || parser
+    if (parser.opt.xmlns && tag.ns !== parent.ns) {
+      // remove namespace bindings introduced by tag
+      Object.keys(tag.ns).forEach(function (p) {
+        var n = tag.ns[p]
+        emitNode(parser, "onclosenamespace", { prefix: p, uri: n })
+      })
+    }
+  }
+  if (t === 0) parser.closedRoot = true
+  parser.tagName = parser.attribValue = parser.attribName = ""
+  parser.attribList.length = 0
+  parser.state = S.TEXT
+}
+
+function parseEntity (parser) {
+  var entity = parser.entity.toLowerCase()
+    , num
+    , numStr = ""
+  if (parser.ENTITIES[entity]) return parser.ENTITIES[entity]
+  if (entity.charAt(0) === "#") {
+    if (entity.charAt(1) === "x") {
+      entity = entity.slice(2)
+      num = parseInt(entity, 16)
+      numStr = num.toString(16)
+    } else {
+      entity = entity.slice(1)
+      num = parseInt(entity, 10)
+      numStr = num.toString(10)
+    }
+  }
+  entity = entity.replace(/^0+/, "")
+  if (numStr.toLowerCase() !== entity) {
+    strictFail(parser, "Invalid character entity")
+    return "&"+parser.entity + ";"
+  }
+  return String.fromCharCode(num)
+}
+
+function write (chunk) {
+  var parser = this
+  if (this.error) throw this.error
+  if (parser.closed) return error(parser,
+    "Cannot write after close. Assign an onready handler.")
+  if (chunk === null) return end(parser)
+  var i = 0, c = ""
+  while (parser.c = c = chunk.charAt(i++)) {
+    parser.position ++
+    if (c === "\n") {
+      parser.line ++
+      parser.column = 0
+    } else parser.column ++
+    switch (parser.state) {
+
+      case S.BEGIN:
+        if (c === "<") parser.state = S.OPEN_WAKA
+        else if (not(whitespace,c)) {
+          // have to process this as a text node.
+          // weird, but happens.
+          strictFail(parser, "Non-whitespace before first tag.")
+          parser.textNode = c
+          parser.state = S.TEXT
+        }
+      continue
+
+      case S.TEXT:
+        if (parser.sawRoot && !parser.closedRoot) {
+          var starti = i-1
+          while (c && c!=="<" && c!=="&") {
+            c = chunk.charAt(i++)
+            if (c) {
+              parser.position ++
+              if (c === "\n") {
+                parser.line ++
+                parser.column = 0
+              } else parser.column ++
+            }
+          }
+          parser.textNode += chunk.substring(starti, i-1)
+        }
+        if (c === "<") parser.state = S.OPEN_WAKA
+        else {
+          if (not(whitespace, c) && (!parser.sawRoot || parser.closedRoot))
+            strictFail("Text data outside of root node.")
+          if (c === "&") parser.state = S.TEXT_ENTITY
+          else parser.textNode += c
+        }
+      continue
+
+      case S.SCRIPT:
+        // only non-strict
+        if (c === "<") {
+          parser.state = S.SCRIPT_ENDING
+        } else parser.script += c
+      continue
+
+      case S.SCRIPT_ENDING:
+        if (c === "/") {
+          emitNode(parser, "onscript", parser.script)
+          parser.state = S.CLOSE_TAG
+          parser.script = ""
+          parser.tagName = ""
+        } else {
+          parser.script += "<" + c
+          parser.state = S.SCRIPT
+        }
+      continue
+
+      case S.OPEN_WAKA:
+        // either a /, ?, !, or text is coming next.
+        if (c === "!") {
+          parser.state = S.SGML_DECL
+          parser.sgmlDecl = ""
+        } else if (is(whitespace, c)) {
+          // wait for it...
+        } else if (is(nameStart,c)) {
+          parser.startTagPosition = parser.position - 1
+          parser.state = S.OPEN_TAG
+          parser.tagName = c
+        } else if (c === "/") {
+          parser.startTagPosition = parser.position - 1
+          parser.state = S.CLOSE_TAG
+          parser.tagName = ""
+        } else if (c === "?") {
+          parser.state = S.PROC_INST
+          parser.procInstName = parser.procInstBody = ""
+        } else {
+          strictFail(parser, "Unencoded <")
+          parser.textNode += "<" + c
+          parser.state = S.TEXT
+        }
+      continue
+
+      case S.SGML_DECL:
+        if ((parser.sgmlDecl+c).toUpperCase() === CDATA) {
+          emitNode(parser, "onopencdata")
+          parser.state = S.CDATA
+          parser.sgmlDecl = ""
+          parser.cdata = ""
+        } else if (parser.sgmlDecl+c === "--") {
+          parser.state = S.COMMENT
+          parser.comment = ""
+          parser.sgmlDecl = ""
+        } else if ((parser.sgmlDecl+c).toUpperCase() === DOCTYPE) {
+          parser.state = S.DOCTYPE
+          if (parser.doctype || parser.sawRoot) strictFail(parser,
+            "Inappropriately located doctype declaration")
+          parser.doctype = ""
+          parser.sgmlDecl = ""
+        } else if (c === ">") {
+          emitNode(parser, "onsgmldeclaration", parser.sgmlDecl)
+          parser.sgmlDecl = ""
+          parser.state = S.TEXT
+        } else if (is(quote, c)) {
+          parser.state = S.SGML_DECL_QUOTED
+          parser.sgmlDecl += c
+        } else parser.sgmlDecl += c
+      continue
+
+      case S.SGML_DECL_QUOTED:
+        if (c === parser.q) {
+          parser.state = S.SGML_DECL
+          parser.q = ""
+        }
+        parser.sgmlDecl += c
+      continue
+
+      case S.DOCTYPE:
+        if (c === ">") {
+          parser.state = S.TEXT
+          emitNode(parser, "ondoctype", parser.doctype)
+          parser.doctype = true // just remember that we saw it.
+        } else {
+          parser.doctype += c
+          if (c === "[") parser.state = S.DOCTYPE_DTD
+          else if (is(quote, c)) {
+            parser.state = S.DOCTYPE_QUOTED
+            parser.q = c
+          }
+        }
+      continue
+
+      case S.DOCTYPE_QUOTED:
+        parser.doctype += c
+        if (c === parser.q) {
+          parser.q = ""
+          parser.state = S.DOCTYPE
+        }
+      continue
+
+      case S.DOCTYPE_DTD:
+        parser.doctype += c
+        if (c === "]") parser.state = S.DOCTYPE
+        else if (is(quote,c)) {
+          parser.state = S.DOCTYPE_DTD_QUOTED
+          parser.q = c
+        }
+      continue
+
+      case S.DOCTYPE_DTD_QUOTED:
+        parser.doctype += c
+        if (c === parser.q) {
+          parser.state = S.DOCTYPE_DTD
+          parser.q = ""
+        }
+      continue
+
+      case S.COMMENT:
+        if (c === "-") parser.state = S.COMMENT_ENDING
+        else parser.comment += c
+      continue
+
+      case S.COMMENT_ENDING:
+        if (c === "-") {
+          parser.state = S.COMMENT_ENDED
+          parser.comment = textopts(parser.opt, parser.comment)
+          if (parser.comment) emitNode(parser, "oncomment", parser.comment)
+          parser.comment = ""
+        } else {
+          parser.comment += "-" + c
+          parser.state = S.COMMENT
+        }
+      continue
+
+      case S.COMMENT_ENDED:
+        if (c !== ">") {
+          strictFail(parser, "Malformed comment")
+          // allow <!-- blah -- bloo --> in non-strict mode,
+          // which is a comment of " blah -- bloo "
+          parser.comment += "--" + c
+          parser.state = S.COMMENT
+        } else parser.state = S.TEXT
+      continue
+
+      case S.CDATA:
+        if (c === "]") parser.state = S.CDATA_ENDING
+        else parser.cdata += c
+      continue
+
+      case S.CDATA_ENDING:
+        if (c === "]") parser.state = S.CDATA_ENDING_2
+        else {
+          parser.cdata += "]" + c
+          parser.state = S.CDATA
+        }
+      continue
+
+      case S.CDATA_ENDING_2:
+        if (c === ">") {
+          if (parser.cdata) emitNode(parser, "oncdata", parser.cdata)
+          emitNode(parser, "onclosecdata")
+          parser.cdata = ""
+          parser.state = S.TEXT
+        } else if (c === "]") {
+          parser.cdata += "]"
+        } else {
+          parser.cdata += "]]" + c
+          parser.state = S.CDATA
+        }
+      continue
+
+      case S.PROC_INST:
+        if (c === "?") parser.state = S.PROC_INST_ENDING
+        else if (is(whitespace, c)) parser.state = S.PROC_INST_BODY
+        else parser.procInstName += c
+      continue
+
+      case S.PROC_INST_BODY:
+        if (!parser.procInstBody && is(whitespace, c)) continue
+        else if (c === "?") parser.state = S.PROC_INST_ENDING
+        else if (is(quote, c)) {
+          parser.state = S.PROC_INST_QUOTED
+          parser.q = c
+          parser.procInstBody += c
+        } else parser.procInstBody += c
+      continue
+
+      case S.PROC_INST_ENDING:
+        if (c === ">") {
+          emitNode(parser, "onprocessinginstruction", {
+            name : parser.procInstName,
+            body : parser.procInstBody
+          })
+          parser.procInstName = parser.procInstBody = ""
+          parser.state = S.TEXT
+        } else {
+          parser.procInstBody += "?" + c
+          parser.state = S.PROC_INST_BODY
+        }
+      continue
+
+      case S.PROC_INST_QUOTED:
+        parser.procInstBody += c
+        if (c === parser.q) {
+          parser.state = S.PROC_INST_BODY
+          parser.q = ""
+        }
+      continue
+
+      case S.OPEN_TAG:
+        if (is(nameBody, c)) parser.tagName += c
+        else {
+          newTag(parser)
+          if (c === ">") openTag(parser)
+          else if (c === "/") parser.state = S.OPEN_TAG_SLASH
+          else {
+            if (not(whitespace, c)) strictFail(
+              parser, "Invalid character in tag name")
+            parser.state = S.ATTRIB
+          }
+        }
+      continue
+
+      case S.OPEN_TAG_SLASH:
+        if (c === ">") {
+          openTag(parser, true)
+          closeTag(parser)
+        } else {
+          strictFail(parser, "Forward-slash in opening tag not followed by >")
+          parser.state = S.ATTRIB
+        }
+      continue
+
+      case S.ATTRIB:
+        // haven't read the attribute name yet.
+        if (is(whitespace, c)) continue
+        else if (c === ">") openTag(parser)
+        else if (c === "/") parser.state = S.OPEN_TAG_SLASH
+        else if (is(nameStart, c)) {
+          parser.attribName = c
+          parser.attribValue = ""
+          parser.state = S.ATTRIB_NAME
+        } else strictFail(parser, "Invalid attribute name")
+      continue
+
+      case S.ATTRIB_NAME:
+        if (c === "=") parser.state = S.ATTRIB_VALUE
+        else if (is(whitespace, c)) parser.state = S.ATTRIB_NAME_SAW_WHITE
+        else if (is(nameBody, c)) parser.attribName += c
+        else strictFail(parser, "Invalid attribute name")
+      continue
+
+      case S.ATTRIB_NAME_SAW_WHITE:
+        if (c === "=") parser.state = S.ATTRIB_VALUE
+        else if (is(whitespace, c)) continue
+        else {
+          strictFail(parser, "Attribute without value")
+          parser.tag.attributes[parser.attribName] = ""
+          parser.attribValue = ""
+          emitNode(parser, "onattribute",
+                   { name : parser.attribName, value : "" })
+          parser.attribName = ""
+          if (c === ">") openTag(parser)
+          else if (is(nameStart, c)) {
+            parser.attribName = c
+            parser.state = S.ATTRIB_NAME
+          } else {
+            strictFail(parser, "Invalid attribute name")
+            parser.state = S.ATTRIB
+          }
+        }
+      continue
+
+      case S.ATTRIB_VALUE:
+        if (is(whitespace, c)) continue
+        else if (is(quote, c)) {
+          parser.q = c
+          parser.state = S.ATTRIB_VALUE_QUOTED
+        } else {
+          strictFail(parser, "Unquoted attribute value")
+          parser.state = S.ATTRIB_VALUE_UNQUOTED
+          parser.attribValue = c
+        }
+      continue
+
+      case S.ATTRIB_VALUE_QUOTED:
+        if (c !== parser.q) {
+          if (c === "&") parser.state = S.ATTRIB_VALUE_ENTITY_Q
+          else parser.attribValue += c
+          continue
+        }
+        attrib(parser)
+        parser.q = ""
+        parser.state = S.ATTRIB
+      continue
+
+      case S.ATTRIB_VALUE_UNQUOTED:
+        if (not(attribEnd,c)) {
+          if (c === "&") parser.state = S.ATTRIB_VALUE_ENTITY_U
+          else parser.attribValue += c
+          continue
+        }
+        attrib(parser)
+        if (c === ">") openTag(parser)
+        else parser.state = S.ATTRIB
+      continue
+
+      case S.CLOSE_TAG:
+        if (!parser.tagName) {
+          if (is(whitespace, c)) continue
+          else if (not(nameStart, c)) strictFail(parser,
+            "Invalid tagname in closing tag.")
+          else parser.tagName = c
+        }
+        else if (c === ">") closeTag(parser)
+        else if (is(nameBody, c)) parser.tagName += c
+        else {
+          if (not(whitespace, c)) strictFail(parser,
+            "Invalid tagname in closing tag")
+          parser.state = S.CLOSE_TAG_SAW_WHITE
+        }
+      continue
+
+      case S.CLOSE_TAG_SAW_WHITE:
+        if (is(whitespace, c)) continue
+        if (c === ">") closeTag(parser)
+        else strictFail("Invalid characters in closing tag")
+      continue
+
+      case S.TEXT_ENTITY:
+      case S.ATTRIB_VALUE_ENTITY_Q:
+      case S.ATTRIB_VALUE_ENTITY_U:
+        switch(parser.state) {
+          case S.TEXT_ENTITY:
+            var returnState = S.TEXT, buffer = "textNode"
+          break
+
+          case S.ATTRIB_VALUE_ENTITY_Q:
+            var returnState = S.ATTRIB_VALUE_QUOTED, buffer = "attribValue"
+          break
+
+          case S.ATTRIB_VALUE_ENTITY_U:
+            var returnState = S.ATTRIB_VALUE_UNQUOTED, buffer = "attribValue"
+          break
+        }
+        if (c === ";") {
+          parser[buffer] += parseEntity(parser)
+          parser.entity = ""
+          parser.state = returnState
+        }
+        else if (is(entity, c)) parser.entity += c
+        else {
+          strictFail("Invalid character entity")
+          parser[buffer] += "&" + parser.entity + c
+          parser.entity = ""
+          parser.state = returnState
+        }
+      continue
+
+      default:
+        throw new Error(parser, "Unknown state: " + parser.state)
+    }
+  } // while
+  // cdata blocks can get very big under normal conditions. emit and move on.
+  // if (parser.state === S.CDATA && parser.cdata) {
+  //   emitNode(parser, "oncdata", parser.cdata)
+  //   parser.cdata = ""
+  // }
+  if (parser.position >= parser.bufferCheckPosition) checkBufferLength(parser)
+  return parser
+}
+
+})(typeof exports === "undefined" ? sax = {} : exports)
+
+});
+
+require.define("stream", function (require, module, exports, __dirname, __filename) {
+var events = require('events');
+var util = require('util');
+
+function Stream() {
+  events.EventEmitter.call(this);
+}
+util.inherits(Stream, events.EventEmitter);
+module.exports = Stream;
+// Backwards-compat with node 0.4.x
+Stream.Stream = Stream;
+
+Stream.prototype.pipe = function(dest, options) {
+  var source = this;
+
+  function ondata(chunk) {
+    if (dest.writable) {
+      if (false === dest.write(chunk) && source.pause) {
+        source.pause();
+      }
+    }
+  }
+
+  source.on('data', ondata);
+
+  function ondrain() {
+    if (source.readable && source.resume) {
+      source.resume();
+    }
+  }
+
+  dest.on('drain', ondrain);
+
+  // If the 'end' option is not supplied, dest.end() will be called when
+  // source gets the 'end' or 'close' events.  Only dest.end() once, and
+  // only when all sources have ended.
+  if (!dest._isStdio && (!options || options.end !== false)) {
+    dest._pipeCount = dest._pipeCount || 0;
+    dest._pipeCount++;
+
+    source.on('end', onend);
+    source.on('close', onclose);
+  }
+
+  var didOnEnd = false;
+  function onend() {
+    if (didOnEnd) return;
+    didOnEnd = true;
+
+    dest._pipeCount--;
+
+    // remove the listeners
+    cleanup();
+
+    if (dest._pipeCount > 0) {
+      // waiting for other incoming streams to end.
+      return;
+    }
+
+    dest.end();
+  }
+
+
+  function onclose() {
+    if (didOnEnd) return;
+    didOnEnd = true;
+
+    dest._pipeCount--;
+
+    // remove the listeners
+    cleanup();
+
+    if (dest._pipeCount > 0) {
+      // waiting for other incoming streams to end.
+      return;
+    }
+
+    dest.destroy();
+  }
+
+  // don't leave dangling pipes when there are errors.
+  function onerror(er) {
+    cleanup();
+    if (this.listeners('error').length === 0) {
+      throw er; // Unhandled stream error in pipe.
+    }
+  }
+
+  source.on('error', onerror);
+  dest.on('error', onerror);
+
+  // remove all the event listeners that were added.
+  function cleanup() {
+    source.removeListener('data', ondata);
+    dest.removeListener('drain', ondrain);
+
+    source.removeListener('end', onend);
+    source.removeListener('close', onclose);
+
+    source.removeListener('error', onerror);
+    dest.removeListener('error', onerror);
+
+    source.removeListener('end', cleanup);
+    source.removeListener('close', cleanup);
+
+    dest.removeListener('end', cleanup);
+    dest.removeListener('close', cleanup);
+  }
+
+  source.on('end', cleanup);
+  source.on('close', cleanup);
+
+  dest.on('end', cleanup);
+  dest.on('close', cleanup);
+
+  dest.emit('pipe', source);
+
+  // Allow for unix-like usage: A.pipe(B).pipe(C)
+  return dest;
+};
+
+});
+
+require.define("/node_modules/elementtree/lib/constants.js", function (require, module, exports, __dirname, __filename) {
+/*
+ *  Copyright 2011 Rackspace
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ *
+ */
+
+var DEFAULT_PARSER = 'sax';
+
+exports.DEFAULT_PARSER = DEFAULT_PARSER;
+
+});
+
+require.define("/lib/modularinputs/inputdefinition.js", function (require, module, exports, __dirname, __filename) {
+
+// Copyright 2014 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+(function() {
+    var ET      = require("elementtree");
+    var utils   = require("./utils");
+
+    /**
+     * `InputDefinition` encodes the XML defining inputs that Splunk passes to
+     * a modular input script.
+     *
+     * @example
+     *
+     *      var i =  new InputDefinition();
+     *
+     * @class splunkjs.ModularInputs.InputDefinition
+     */
+    function InputDefinition() {
+        this.metadata = {};
+        this.inputs = {};
+    }
+
+    /**
+     * Parse a string containing XML into an `InputDefinition`.
+     *
+     * This function will throw an exception if `str`
+     * contains unexpected XML.
+     *
+     * The XML typically will look like this:
+     * 
+     * `<input>`
+     *   `<server_host>tiny</server_host>`
+     *   `<server_uri>https://127.0.0.1:8089</server_uri>`
+     *   `<checkpoint_dir>/opt/splunk/var/lib/splunk/modinputs</checkpoint_dir>`
+     *   `<session_key>123102983109283019283</session_key>`
+     *   `<configuration>`
+     *     `<stanza name="foobar://aaa">`
+     *       `<param name="param1">value1</param>`
+     *       `<param name="param2">value2</param>`
+     *       `<param name="disabled">0</param>`
+     *       `<param name="index">default</param>`
+     *     `</stanza>`
+     *     `<stanza name="foobar://bbb">`
+     *       `<param name="param1">value11</param>`
+     *       `<param name="param2">value22</param>`
+     *       `<param name="disabled">0</param>`
+     *       `<param name="index">default</param>`
+     *       `<param_list name="multiValue">`
+     *         `<value>value1</value>`
+     *         `<value>value2</value>`
+     *       `</param_list>`
+     *       `<param_list name="multiValue2">`
+     *         `<value>value3</value>`
+     *         `<value>value4</value>`
+     *       `</param_list>`
+     *     `</stanza>`
+     *   `</configuration>`
+     * `</input>`
+     *
+     * @param {String} str A string containing XML to parse.
+     * @return {Object} An InputDefiniion object.
+     * @class splunkjs.ModularInputs.InputDefinition
+     */
+    InputDefinition.parse = function(str) {
+        var definition = new InputDefinition();
+        var rootChildren = ET.parse(str).getroot().getchildren();
+        for (var i = 0; i < rootChildren.length; i++) {
+            var node = rootChildren[i];
+            if (node.tag === "configuration") {
+                definition.inputs = utils.parseXMLData(node, "stanza");
+            }
+            else {
+                definition.metadata[node.tag] = node.text;
+            }
+        }
+        return definition;
+    };
+
+    module.exports = InputDefinition;
+})();
+});
+
+require.define("/lib/modularinputs/event.js", function (require, module, exports, __dirname, __filename) {
+
+// Copyright 2014 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+(function() {
+    var ET      = require("elementtree");
+    var utils   = require("./utils");
+
+    /**
+     * `Event` represents an event or fragment of an event to be written by this
+     * modular input to Splunk.
+     *
+     * @example
+     *      
+     *      // Minimal configuration
+     *      var myEvent =  new Event({
+     *          data: "This is a test of my new event.",
+     *          stanza: "myStanzaName",
+     *          time: parseFloat("1372187084.000")
+     *      });
+     *
+     *      // Full configuration
+     *      var myBetterEvent =  new Event({
+     *          data: "This is a test of my better event.",
+     *          stanza: "myStanzaName",
+     *          time: parseFloat("1372187084.000"),
+     *          host: "localhost",
+     *          index: "main",
+     *          source: "Splunk",
+     *          sourcetype: "misc",
+     *          done: true,
+     *          unbroken: true
+     *      });
+     *
+     * @param {Object} eventConfig An object containing the configuration for an `Event`.
+     * @class splunkjs.ModularInputs.Event
+     */
+    function Event(eventConfig) {
+        eventConfig = utils.isUndefined(eventConfig) ? {} : eventConfig;
+
+        this.data = utils.isUndefined(eventConfig.data) ? null : eventConfig.data;
+        this.done = utils.isUndefined(eventConfig.done) ? true : eventConfig.done;
+        this.host = utils.isUndefined(eventConfig.host) ? null : eventConfig.host;
+        this.index = utils.isUndefined(eventConfig.index) ? null : eventConfig.index;
+        this.source = utils.isUndefined(eventConfig.source) ? null : eventConfig.source;
+        this.sourcetype = utils.isUndefined(eventConfig.sourcetype) ? null : eventConfig.sourcetype;
+        this.stanza = utils.isUndefined(eventConfig.stanza) ? null : eventConfig.stanza;
+        this.unbroken = utils.isUndefined(eventConfig.unbroken) ? true : eventConfig.unbroken;
+
+        // eventConfig.time can be of type Date, Number, or String.
+        this.time = utils.isUndefined(eventConfig.time) ? null : eventConfig.time;
+    }
+
+    /** 
+    * Formats a time for Splunk, should be something like `1372187084.000`.
+    *
+    * @example
+    *
+    *   // When the time parameter is a string.
+    *   var stringTime = "1372187084";
+    *   var stringTimeFormatted = Event.formatTime(stringTime);
+    *
+    *   // When the time parameter is a number, no decimals.
+    *   var numericalTime = 1372187084;
+    *   var numericalTimeFormatted = Event.formatTime(numericalTime);
+    *
+    *   // When the time parameter is a number, with decimals.
+    *   var decimalTime = 1372187084.424;
+    *   var decimalTimeFormatted = Event.formatTime(decimalTime);
+    *
+    *   // When the time parameter is a Date object.
+    *   var dateObjectTime = Date.now();
+    *   var dateObjectTimeFormatted = Event.formatTime(dateObjectTime);
+    *
+    * @param {Anything} time The unformatted time in seconds or milliseconds, typically a String, Number, or `Date` Object.
+    * @return {Number} The formatted time in seconds.
+    * @class splunkjs.ModularInputs.Event
+    */
+    Event.formatTime = function(time) {
+        var cleanTime;
+        
+        // If time is a Date object, return its value.
+        if (time instanceof Date) {
+            time = time.valueOf();
+        }
+
+        if (!time || time === null) {
+            return null;
+        }
+
+        // Values with decimals
+        if (time.toString().indexOf(".") !== -1) {
+            time = parseFloat(time).toFixed(3); // Clean up the extra decimals right away.
+
+            // A perfect time in milliseconds, with the decimal in the right spot.
+            if (time.toString().indexOf(".") >= 10) {
+                cleanTime = parseFloat(time.toString().substring(0,14)).toFixed(3);
+            }
+            // A time with fewer than expected digits, or with a decimal too far to the left.
+            else if (time.toString().length <= 13 || time.toString().indexOf(".") < 10) {
+                cleanTime = parseFloat(time).toFixed(3);
+            }
+            // Any other value has more digits than the expected time format, get the first 15.
+            else {
+                cleanTime = (parseFloat(time.toString().substring(0,14))/1000).toFixed(3);
+            }
+        }
+        // Values without decimals
+        else {
+            // A time in milliseconds, no decimal (ex: Date.now()).
+            if (time.toString().length === 13) {
+                cleanTime = (parseFloat(time)/1000).toFixed(3);
+            }
+            // A time with fewer than expected digits.
+            else if (time.toString().length <= 12) {
+                cleanTime = parseFloat(time).toFixed(3);
+            }
+            // Any other value has more digits than the expected time format, get the first 14.
+            else {
+                cleanTime = parseFloat(time.toString().substring(0, 13)/1000).toFixed(3);
+            }
+        }
+        return cleanTime;
+    };
+
+    /** 
+    * Writes an XML representation of this, and Event object to the provided `Stream`,
+    * starting at the provided offset.
+    *
+    * If this.data is undefined, or if there is an error writing to the provided `Stream`,
+    * an error will be thrown.
+    *
+    * @param {Object} stream A `Stream` object to write this `Event` to.
+    * @class splunkjs.ModularInputs.Event
+    */
+    Event.prototype._writeTo = function(stream) {
+        if (!this.data) {
+            throw new Error("Events must have at least the data field set to be written to XML.");
+        }
+        
+        var xmlEvent = ET.Element("event");
+
+        if (this.stanza) {
+            xmlEvent.set("stanza", this.stanza);
+        }
+        // Convert this.unbroken (a boolean) to a number (0 or 1), then to a string
+        xmlEvent.set("unbroken", (+this.unbroken).toString());
+        
+        if (!utils.isUndefined(this.time) && this.time !== null) {
+            ET.SubElement(xmlEvent, "time").text = Event.formatTime(this.time).toString();
+        }
+
+        var subElements = [
+            {tag: "source", text: this.source},
+            {tag: "sourcetype", text: this.sourcetype},
+            {tag: "index", text: this.index},
+            {tag: "host", text: this.host},
+            {tag: "data", text: this.data}
+        ];
+        for (var i = 0; i < subElements.length; i++) {
+            var node = subElements[i];
+            if (node.text) {
+                ET.SubElement(xmlEvent, node.tag).text = node.text;
+            }
+        }
+
+        if (this.done || !utils.isUndefined(this.done)) {
+            ET.SubElement(xmlEvent, "done");
+        }
+
+        var eventString = ET.tostring(xmlEvent, {"xml_declaration": false});
+
+        // Throws an exception if there's an error writing to the stream.
+        stream.write(eventString);
+    };
+
+    module.exports = Event;
+})();
+
+});
+
+require.define("/lib/modularinputs/eventwriter.js", function (require, module, exports, __dirname, __filename) {
+
+// Copyright 2014 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+(function() {
+    var ET      = require("elementtree");
+    var utils   = require("./utils");
+    var Logger  = require("./logger");
+    var stream  = require("stream");
+    var Async   = require("../async");
+    /**
+     * `EventWriter` writes events and error messages to Splunk from a modular input.
+     *
+     * Its two important methods are `writeEvent`, which takes an `Event` object,
+     * and `log`, which takes a severity and an error message.
+     *
+     * @param {Object} output A stream to output data, defaults to `process.stdout`
+     * @param {Object} error A stream to output errors, defaults to `process.stderr`
+     * @class splunkjs.ModularInputs.EventWriter
+     */
+    function EventWriter(output, error) {
+        this._out = utils.isUndefined(output) ? process.stdout : output;
+        this._err = utils.isUndefined(error) ? process.stderr : error;
+
+        // Has the opening <stream> tag been written yet?
+        this._headerWritten = false;
+    }
+
+    /**
+    * Writes an `Event` object to the output stream specified
+    * in the constructor.
+    *
+    * @param {Object} event An `Event` Object.
+    * @class splunkjs.ModularInputs.EventWriter
+    */
+    EventWriter.prototype.writeEvent = function(event) {        
+        if (!this._headerWritten) {
+            this._out.write("<stream>");
+            this._headerWritten = true;
+        }
+
+        try {
+            event._writeTo(this._out);
+        }
+        catch (e) {
+            if (e.message === "Events must have at least the data field set to be written to XML.") {
+                Logger.warn("", e.message, this._err);
+                throw e;
+            }
+            Logger.error("", e.message, this._err);
+            throw e;
+        }
+    };
+
+    /**
+    * Writes a string representation of an `Elementtree` Object to the 
+    * output stream specified in the constructor.
+    *
+    * This function will throw an exception if there is an error
+    * while making a string from `xmlDocument`, or
+    * while writing the string created from `xmlDocument`.
+    *
+    * @param {Object} xmlDocument An `Elementtree` Object representing an XML document.
+    * @class splunkjs.ModularInputs.EventWriter
+    */
+    EventWriter.prototype.writeXMLDocument = function(xmlDocument) {
+        var xmlString = ET.tostring(xmlDocument, {"xml_declaration": false});
+        this._out.write(xmlString);
+    };
+
+    /**
+    * Writes the closing </stream> tag to make the XML well formed.
+    *
+    * @class splunkjs.ModularInputs.EventWriter
+    */
+    EventWriter.prototype.close = function() {
+        this._out.write("</stream>");
+    };
+
+    module.exports = EventWriter;
+})();
+
+});
+
+require.define("/lib/modularinputs/logger.js", function (require, module, exports, __dirname, __filename) {
+
+// Copyright 2014 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+(function () {
+    "use strict";
+    var utils   = require("./utils");
+    var root = exports || this;
+
+    /**
+     * `Logger` logs messages to Splunk's internal logs.
+     *
+     * @class splunkjs.ModularInputs.Logger
+     */
+
+    // Severities that Splunk understands for log messages from modular inputs.
+    // DO NOT CHANGE THESE
+    root.DEBUG = "DEBUG";
+    root.INFO  = "INFO";
+    root.WARN  = "WARN";
+    root.ERROR = "ERROR";
+    root.FATAL = "FATAL";
+
+    root._log = function(severity, name, message, logStream) {
+        logStream = logStream || process.stderr;
+
+        // Prevent a double space if name isn't passed.
+        if (name && name.length > 0) {
+            name = name + " ";
+        }
+
+        var msg = severity + " Modular input " + name + message + "\n";
+        logStream.write(msg);
+    };
+
+    /**
+     * Logs messages about the state of this modular input to Splunk.
+     * These messages will show up in Splunk's internal logs.
+     *
+     * @param {String} name The name of this modular input.
+     * @param {String} message The message to log.
+     * @param {Object} stream (Optional) A stream to write log messages to, defaults to process.stderr.
+     * @class splunkjs.ModularInputs.Logger
+     */
+    root.debug = function (name, message, stream) {
+        try {
+            root._log(root.DEBUG, name, message, stream);
+        }
+        catch (e) {
+            throw e;
+        }
+    };
+
+    /**
+     * Logs messages about the state of this modular input to Splunk.
+     * These messages will show up in Splunk's internal logs.
+     *
+     * @param {String} name The name of this modular input.
+     * @param {String} message The message to log.
+     * @param {Object} stream (Optional) A stream to write log messages to, defaults to process.stderr.
+     * @class splunkjs.ModularInputs.Logger
+     */
+    root.info = function (name, message, stream) {
+        try {
+            root._log(root.INFO, name, message, stream);
+        }
+        catch (e) {
+            throw e;
+        }
+    };
+
+    /**
+     * Logs messages about the state of this modular input to Splunk.
+     * These messages will show up in Splunk's internal logs.
+     *
+     * @param {String} name The name of this modular input.
+     * @param {String} message The message to log.
+     * @param {Object} stream (Optional) A stream to write log messages to, defaults to process.stderr.
+     * @class splunkjs.ModularInputs.Logger
+     */
+    root.warn = function (name, message, stream) {
+        try {
+            root._log(root.WARN, name, message, stream);
+        }
+        catch (e) {
+            throw e;
+        }
+    };
+
+    /**
+     * Logs messages about the state of this modular input to Splunk.
+     * These messages will show up in Splunk's internal logs.
+     *
+     * @param {String} name The name of this modular input.
+     * @param {String} message The message to log.
+     * @param {Object} stream (Optional) A stream to write log messages to, defaults to process.stderr.
+     * @class splunkjs.ModularInputs.Logger
+     */
+    root.error = function (name, message, stream) {
+        try {
+            root._log(root.ERROR, name, message, stream);
+        }
+        catch (e) {
+            throw e;
+        }
+    };
+
+    /**
+     * Logs messages about the state of this modular input to Splunk.
+     * These messages will show up in Splunk's internal logs.
+     *
+     * @param {String} name The name of this modular input.
+     * @param {String} message The message to log.
+     * @param {Object} stream (Optional) A stream to write log messages to, defaults to process.stderr.
+     * @class splunkjs.ModularInputs.Logger
+     */
+    root.fatal = function (name, message, stream) {
+        try {
+            root._log(root.FATAL, name, message, stream);
+        }
+        catch (e) {
+            throw e;
+        }
+    };
+
+    module.exports = root;
+}());
+
+});
+
+require.define("/lib/modularinputs/argument.js", function (require, module, exports, __dirname, __filename) {
+
+// Copyright 2014 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+(function() {
+    var ET = require("elementtree");
+    var utils = require("./utils");
+
+    /**
+     * Class representing an argument to a modular input kind.
+     *
+     * `Argument` is meant to be used with `Scheme` to generate an XML 
+     * definition of the modular input kind that Splunk understands.
+     *
+     * `name` is the only required parameter for the constructor.
+     *
+     * @example
+     *      
+     *      // Example with minimal parameters
+     *      var myArg1 = new Argument({name: "arg1"});
+     *
+     *      // Example with all parameters
+     *      var myArg2 = new Argument({
+     *          name: "arg1",
+     *          description: "This an argument with lots of parameters",
+     *          validation: "is_pos_int('some_name')",
+     *          dataType: Argument.dataTypeNumber,
+     *          requiredOnEdit: true,
+     *          requiredOnCreate: true
+     *      });
+     *
+     * @param {Object} argumentConfig An object containing at least the name property to configure this Argument
+     * @class splunkjs.ModularInputs.Argument
+     */
+    function Argument(argumentConfig) {
+        if (!argumentConfig) {
+            argumentConfig = {};
+        }
+
+        this.name = utils.isUndefined(argumentConfig.name) ? "" : argumentConfig.name;
+        this.description = utils.isUndefined(argumentConfig.description) ? null : argumentConfig.description;
+        this.validation = utils.isUndefined(argumentConfig.validation) ? null : argumentConfig.validation;
+        this.dataType = utils.isUndefined(argumentConfig.dataType) ? Argument.dataTypeString : argumentConfig.dataType;
+        this.requiredOnEdit = utils.isUndefined(argumentConfig.requiredOnEdit) ? false : argumentConfig.requiredOnEdit;
+        this.requiredOnCreate = utils.isUndefined(argumentConfig.requiredOnCreate) ? false : argumentConfig.requiredOnCreate;
+    }
+
+    // Constant values, do not change
+    // These should be used for setting the value of an Argument object's dataType field.
+    Argument.dataTypeBoolean = "BOOLEAN";
+    Argument.dataTypeNumber = "NUMBER";
+    Argument.dataTypeString = "STRING";
+
+    /**
+     * Adds an `Argument` object the passed in elementtree object.
+     * 
+     * Adds an <arg> subelement to the parent element, typically <args>,
+     * and sets up its subelements with their respective text.
+     *
+     * @param {Object} parent An elementtree element object to be the parent of a new <arg> subelement
+     * @return {Object} An elementtree element object representing this argument.
+     * @class splunkjs.ModularInputs.Argument
+     */
+    Argument.prototype.addToDocument = function (parent) {
+        var arg = ET.SubElement(parent, "arg");
+        arg.set("name", this.name);
+
+        if (this.description) {
+            ET.SubElement(arg, "description").text = this.description;
+        }
+
+        if (this.validation) {
+            ET.SubElement(arg, "validation").text = this.validation;
+        }
+
+        // Add all other subelements to this <arg>, represented by (tag, text)
+        var subElements = [
+            {tag: "data_type", value: this.dataType},
+            {tag: "required_on_edit", value: this.requiredOnEdit},
+            {tag: "required_on_create", value: this.requiredOnCreate}
+        ];
+
+        for (var i = 0; i < subElements.length; i++) {
+            ET.SubElement(arg, subElements[i].tag).text = subElements[i].value.toString().toLowerCase();
+        }
+
+        return arg;
+    }; 
+    
+    module.exports = Argument;
+})();
+});
+
+require.define("/lib/modularinputs/scheme.js", function (require, module, exports, __dirname, __filename) {
+
+// Copyright 2014 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+(function() {
+    var ET = require("elementtree");
+    var utils = require("./utils");
+    var Argument = require("./argument");
+
+    /**
+     * Class representing the metadata for a modular input kind.
+     *
+     * A `Scheme` specifies a title, description, several options of how Splunk 
+     * should run modular inputs of this kind, and a set of arguments that define
+     * a particular modular input's properties.
+     * The primary use of `Scheme` is to abstract away the construction of XML
+     * to feed to Splunk.
+     *
+     * @example
+     *
+     *      var s =  new Scheme();
+     *
+     *      var myFullScheme = new Scheme("fullScheme");
+     *      myFullScheme.description = "This is how you set the other properties";
+     *      myFullScheme.useExternalValidation = true;
+     *      myFullScheme.useSingleInstance = false;
+     *      myFullScheme.streamingMode = Scheme.streamingModeSimple;
+     *
+     * @param {String} The identifier for this Scheme in Splunk.
+     * @class splunkjs.ModularInputs.Scheme
+     */
+    function Scheme(title) {
+        this.title = utils.isUndefined(title) ? "" : title;
+
+        // Set the defaults.
+        this.description = null;
+        this.useExternalValidation = true;
+        this.useSingleInstance = false;
+        this.streamingMode = Scheme.streamingModeXML;
+
+        // List of Argument objects, each to be represented by an <arg> tag.
+        this.args = [];
+    }
+
+    // Constant values, do not change.
+    // These should be used for setting the value of a Scheme object's streamingMode field.
+    Scheme.streamingModeSimple = "SIMPLE";
+    Scheme.streamingModeXML = "XML";
+
+    /**
+     * Add the provided argument, `arg`, to the `this.arguments` Array.
+     *
+     * @param {Object} arg An Argument object to add to this Scheme's argument list.
+     * @class splunkjs.ModularInputs.Scheme
+     */
+    Scheme.prototype.addArgument = function (arg) {
+        if (arg) {
+            this.args.push(arg);
+        }
+    };
+
+    /**
+     * Creates an elementtree Element representing this Scheme, then returns it.
+     *
+     * @return {Object} An elementtree Element object representing this Scheme.
+     * @class splunkjs.ModularInputs.Scheme
+     */
+    Scheme.prototype.toXML = function () {
+        var root = ET.Element("scheme");
+
+        ET.SubElement(root, "title").text = this.title;
+
+        if (this.description) {
+            ET.SubElement(root, "description").text = this.description;
+        }
+
+        // Add all subelements to this <scheme>, represented by (tag, text).
+        var subElements = [
+            {tag: "use_external_validation", value: this.useExternalValidation},
+            {tag: "use_single_instance", value: this.useSingleInstance},
+            {tag: "streaming_mode", value: this.streamingMode}
+        ];
+        
+        for (var i = 0; i < subElements.length; i++) {
+            ET.SubElement(root, subElements[i].tag).text = subElements[i].value.toString().toLowerCase();
+        }
+
+        // Create an <endpoint> subelement in root, then an <args> subelement in endpoint.
+        var argsElement = ET.SubElement(ET.SubElement(root, "endpoint"), "args");
+
+        // Add arguments as subelements to <args>.
+        for (var j = 0; j < this.args.length; j++) {
+            this.args[j].addToDocument(argsElement);
+        }
+
+        return root;
+    };
+    
+    module.exports = Scheme;
+})();
+
+});
+
+require.define("/lib/modularinputs/modularinput.js", function (require, module, exports, __dirname, __filename) {
+
+// Copyright 2014 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+(function() {
+    var ET = require("elementtree");
+    var url = require("url");
+    var utils = require("./utils");
+    var Async = require("../async");
+    var ValidationDefinition = require("./validationdefinition");
+    var InputDefinition = require("./inputdefinition");
+    var EventWriter = require("./eventwriter");
+    var Scheme = require("./scheme");
+    var Service = require("../service");
+    var Logger = require("./logger");
+
+    /**
+     * A base class for implementing modular inputs.
+     *
+     * Subclasses should implement `getScheme` and `streamEvents`,
+     * and optionally `validateInput` if the modular input uses 
+     * external validation.
+     * 
+     * The `run` function is used to run modular inputs; it typically
+     * should not be overridden.
+     * @class splunkjs.ModularInputs.ModularInput
+     */
+    function ModularInput() {
+        this._inputDefinition = null;
+        this._service = null;
+    }
+
+    /**
+     * Handles all the specifics of running a modular input.
+     *
+     * @param {Object} exports An object representing a modular input script.
+     * @param {Array} args A list of command line arguments passed to this script.
+     * @param {Object} eventWriter An `EventWriter` object for writing event.
+     * @param {Object} inputStream A `Stream` object for reading inputs.
+     * @param {Function} callback The function to call after running this script: `(err, status)`.
+     * @class splunkjs.ModularInputs.ModularInput
+     */
+    ModularInput.runScript = function(exports, args, eventWriter, inputStream, callback) {
+        // Default empty functions for life cycle events, this is mostly used for the unit tests
+        exports.setup       = exports.setup     || ModularInput.prototype.setup;
+        exports.start       = exports.start     || ModularInput.prototype.start;
+        exports.end         = exports.end       || ModularInput.prototype.end;
+        exports.teardown    = exports.teardown  || ModularInput.prototype.teardown;
+
+        var that = this;
+
+        // Resume streams before trying to read their data.
+        if (inputStream.resume) {
+            inputStream.resume();
+        }
+        var bigBuff = new Buffer(0);
+
+        // When streaming events...
+        if (args.length === 1) {
+            // After waiting 30.5 seconds for input definitions, assume something bad happened
+            var inputDefintionsReceivedTimer = setTimeout(function() {
+                callback(new Error("Receiving input definitions prior to streaming timed out."), 1);
+            }, 30500);
+
+            // Listen for data on inputStream.
+            inputStream.on("data", function(chunk) {
+                // Chunk will be a Buffer when interacting with Splunk.
+                bigBuff = Buffer.concat([bigBuff, chunk]);
+
+                // Remove any trailing whitespace.
+                var bufferString = bigBuff.toString("utf8", 0, bigBuff.length).trim();
+                
+                if (utils.endsWith(bufferString, "</input>")) {
+                    // If we've received all of the input definitions, clear the timeout timer
+                    clearTimeout(inputDefintionsReceivedTimer);
+
+                    var found = InputDefinition.parse(bufferString);
+                    exports._inputDefinition = found;
+                    that._inputDefinition = found;
+                    
+                    Async.parallelEach(
+                        Object.keys(exports._inputDefinition.inputs),
+                        function (name, index, doneEach) {
+                            var input = exports._inputDefinition.inputs[name];
+
+                            Async.chain([
+                                    function(innerDone) {
+                                        exports.start(name, input, innerDone);
+                                    },
+                                    function(innerDone) {
+                                        exports.streamEvents(name, input, eventWriter, innerDone);
+                                    },
+                                    function(innerDone) {
+                                        // end() will only be called if streamEvents doesn't fail.
+                                        exports.end(name, input, innerDone);
+                                    }
+                                ],
+                                function(innerErr) {
+                                    doneEach(innerErr, innerErr ? 1 : 0);
+                                }
+                            );
+                        }, 
+                        function (streamErr) {
+                            callback(streamErr, streamErr ? 1 : 0);
+                        }
+                    );
+                }
+            });
+        }
+        // When getting the scheme...
+        else if (args.length >= 2 && args[1].toString().toLowerCase() === "--scheme") {
+            var scheme = exports.getScheme();
+
+            if (!scheme) {
+                Logger.fatal("", "script returned a null scheme.", eventWriter._err);
+                callback(null, 1);
+            }
+            else {
+                try {
+                    eventWriter.writeXMLDocument(scheme.toXML());
+                    callback(null, 0);
+                }
+                catch (e) {
+                    Logger.fatal("", "script could not return the scheme, error: " + e, eventWriter._err);
+                    callback(e, 1);
+                }
+            }
+        }
+        // When validating arguments...
+        else if (args.length >= 2 && args[1].toString().toLowerCase() === "--validate-arguments") {
+            // After waiting 30.5 seconds for a validation definition, assume something bad happened
+            var validationDefintionReceivedTimer = setTimeout(function() {
+                callback(new Error("Receiving validation definition prior to validating timed out."), 1);
+            }, 30500);
+
+            // Listen for data on inputStream.
+            inputStream.on("data", function(chunk) {
+                bigBuff = Buffer.concat([bigBuff, chunk]);
+                
+                // Remove any trailing whitespace.
+                var bufferString = bigBuff.toString("utf8", 0, bigBuff.length).trim();
+
+                if (utils.endsWith(bufferString, "</items>")) {
+                    // If we've received all of the validation definition, clear the timeout timer
+                    clearTimeout(validationDefintionReceivedTimer);
+                    Async.chain([
+                            function (done) {
+                                try {
+                                    // If there is no validateInput method set, accept all input.
+                                    if (utils.isUndefined(exports.validateInput)) {
+                                        done();
+                                    }
+                                    else {
+                                        // If exports.validateInput doesn't throw an error, we assume validation succeeded.
+                                        var definition = ValidationDefinition.parse(bigBuff.toString("utf8", 0, bigBuff.length));
+                                        exports.validateInput(definition, done);
+                                    }
+                                }
+                                catch (e) {
+                                    // If exports.validateInput throws an error, we assume validation failed.
+                                    done(e);
+                                }
+                            }
+                        ],
+                        function (err) {
+                            if (err) {
+                                Logger.error("", err.message);
+                                Logger.error("", "Stack trace for a modular input error: " + err.stack);
+
+                                try {
+                                    var errorRoot = ET.Element("error");
+                                    ET.SubElement(errorRoot, "message").text = err.message;
+                                    eventWriter.writeXMLDocument(errorRoot);
+                                    callback(err, 1); // Some error while validating the input.
+                                }
+                                catch (e) {
+                                    callback(e, 1); // Error trying to write the error.
+                                }
+                            }
+                            else {
+                                callback(null, 0); // No error
+                            }
+                        }
+                    );
+                }
+            });
+        }
+        // When we get unexpected args...
+        else {
+            var msg = "Invalid arguments to modular input script: " + args.join() + "\n";
+            Logger.error("", msg, eventWriter._err);
+            callback(msg, 1);
+        }
+    };
+
+    /**
+     * Returns a `splunkjs.Service` object for this script invocation.
+     *
+     * The service object is created from the Splunkd URI and session key
+     * passed to the command invocation on the modular input stream. It is
+     * available as soon as the `ModularInput.streamEvents` function is called.
+     *
+     * @return {Object} A `Splunkjs.Service` Object, or null if you call this function before the `ModularInput.streamEvents` function is called.
+     * @class splunkjs.ModularInputs.ModularInput
+     */
+    ModularInput.service = function() {
+        if (this._service) {
+            return this._service;
+        }
+
+        if (!this._inputDefinition) {
+            return null;
+        }
+
+        var splunkdURI = this._inputDefinition.metadata["server_uri"];
+        var sessionKey = this._inputDefinition.metadata["session_key"];
+
+        var urlParts = url.parse(splunkdURI);
+
+        // urlParts.protocol will have a trailing colon; remove it.
+        var scheme = urlParts.protocol.replace(":", "");
+        var splunkdHost = urlParts.hostname;
+        var splunkdPort = urlParts.port;
+
+        this._service = new Service({
+            scheme: scheme,
+            host: splunkdHost,
+            port: splunkdPort,
+            token: sessionKey
+        });
+
+        return this._service;
+    };
+
+    // Default to empty functions for life cycle events.
+
+    /**
+     * Runs before streaming begins.
+     *
+     * @param {Function} done The function to call when done: `(err)`.
+     * @class splunkjs.ModularInputs.ModularInput
+     */
+    ModularInput.prototype.setup = function(done) {
+        done();
+    };
+    /**
+     * Runs once the streaming starts, for an input.
+     *
+     * @param {String} name The name of this modular input.
+     * @param {Object} definition An InputDefinition object.
+     * @param {Function} done The function to call when done: `(err)`.
+     * @class splunkjs.ModularInputs.ModularInput
+     */
+    ModularInput.prototype.start = function(name, definition, done) {
+        done();
+    };
+    /**
+     * Runs once the streaming ends, for an input (upon successfully streaming all events).
+     *
+     * @param {String} name The name of this modular input.
+     * @param {Object} definition An InputDefinition object.
+     * @param {Function} done The function to call when done: `(err)`.
+     * @class splunkjs.ModularInputs.ModularInput
+     */
+    ModularInput.prototype.end = function(name, definition, done) {
+        done();
+    };
+    /**
+     * Runs after all streaming is done for all inputs definitions.
+     *
+     * @param {Function} done The function to call when done: `(err)`.
+     * @class splunkjs.ModularInputs.ModularInput
+     */
+    ModularInput.prototype.teardown = function(done) {
+        done();
+    };
+
+    module.exports = ModularInput;
+})();
+
+});
+
+require.define("url", function (require, module, exports, __dirname, __filename) {
+var punycode = { encode : function (s) { return s } };
+
+exports.parse = urlParse;
+exports.resolve = urlResolve;
+exports.resolveObject = urlResolveObject;
+exports.format = urlFormat;
+
+// Reference: RFC 3986, RFC 1808, RFC 2396
+
+// define these here so at least they only have to be
+// compiled once on the first module load.
+var protocolPattern = /^([a-z0-9.+-]+:)/i,
+    portPattern = /:[0-9]+$/,
+    // RFC 2396: characters reserved for delimiting URLs.
+    delims = ['<', '>', '"', '`', ' ', '\r', '\n', '\t'],
+    // RFC 2396: characters not allowed for various reasons.
+    unwise = ['{', '}', '|', '\\', '^', '~', '[', ']', '`'].concat(delims),
+    // Allowed by RFCs, but cause of XSS attacks.  Always escape these.
+    autoEscape = ['\''],
+    // Characters that are never ever allowed in a hostname.
+    // Note that any invalid chars are also handled, but these
+    // are the ones that are *expected* to be seen, so we fast-path
+    // them.
+    nonHostChars = ['%', '/', '?', ';', '#']
+      .concat(unwise).concat(autoEscape),
+    nonAuthChars = ['/', '@', '?', '#'].concat(delims),
+    hostnameMaxLen = 255,
+    hostnamePartPattern = /^[a-zA-Z0-9][a-z0-9A-Z_-]{0,62}$/,
+    hostnamePartStart = /^([a-zA-Z0-9][a-z0-9A-Z_-]{0,62})(.*)$/,
+    // protocols that can allow "unsafe" and "unwise" chars.
+    unsafeProtocol = {
+      'javascript': true,
+      'javascript:': true
+    },
+    // protocols that never have a hostname.
+    hostlessProtocol = {
+      'javascript': true,
+      'javascript:': true
+    },
+    // protocols that always have a path component.
+    pathedProtocol = {
+      'http': true,
+      'https': true,
+      'ftp': true,
+      'gopher': true,
+      'file': true,
+      'http:': true,
+      'ftp:': true,
+      'gopher:': true,
+      'file:': true
+    },
+    // protocols that always contain a // bit.
+    slashedProtocol = {
+      'http': true,
+      'https': true,
+      'ftp': true,
+      'gopher': true,
+      'file': true,
+      'http:': true,
+      'https:': true,
+      'ftp:': true,
+      'gopher:': true,
+      'file:': true
+    },
+    querystring = require('querystring');
+
+function urlParse(url, parseQueryString, slashesDenoteHost) {
+  if (url && typeof(url) === 'object' && url.href) return url;
+
+  if (typeof url !== 'string') {
+    throw new TypeError("Parameter 'url' must be a string, not " + typeof url);
+  }
+
+  var out = {},
+      rest = url;
+
+  // cut off any delimiters.
+  // This is to support parse stuff like "<http://foo.com>"
+  for (var i = 0, l = rest.length; i < l; i++) {
+    if (delims.indexOf(rest.charAt(i)) === -1) break;
+  }
+  if (i !== 0) rest = rest.substr(i);
+
+
+  var proto = protocolPattern.exec(rest);
+  if (proto) {
+    proto = proto[0];
+    var lowerProto = proto.toLowerCase();
+    out.protocol = lowerProto;
+    rest = rest.substr(proto.length);
+  }
+
+  // figure out if it's got a host
+  // user@server is *always* interpreted as a hostname, and url
+  // resolution will treat //foo/bar as host=foo,path=bar because that's
+  // how the browser resolves relative URLs.
+  if (slashesDenoteHost || proto || rest.match(/^\/\/[^@\/]+@[^@\/]+/)) {
+    var slashes = rest.substr(0, 2) === '//';
+    if (slashes && !(proto && hostlessProtocol[proto])) {
+      rest = rest.substr(2);
+      out.slashes = true;
+    }
+  }
+
+  if (!hostlessProtocol[proto] &&
+      (slashes || (proto && !slashedProtocol[proto]))) {
+    // there's a hostname.
+    // the first instance of /, ?, ;, or # ends the host.
+    // don't enforce full RFC correctness, just be unstupid about it.
+
+    // If there is an @ in the hostname, then non-host chars *are* allowed
+    // to the left of the first @ sign, unless some non-auth character
+    // comes *before* the @-sign.
+    // URLs are obnoxious.
+    var atSign = rest.indexOf('@');
+    if (atSign !== -1) {
+      // there *may be* an auth
+      var hasAuth = true;
+      for (var i = 0, l = nonAuthChars.length; i < l; i++) {
+        var index = rest.indexOf(nonAuthChars[i]);
+        if (index !== -1 && index < atSign) {
+          // not a valid auth.  Something like http://foo.com/bar@baz/
+          hasAuth = false;
+          break;
+        }
+      }
+      if (hasAuth) {
+        // pluck off the auth portion.
+        out.auth = rest.substr(0, atSign);
+        rest = rest.substr(atSign + 1);
+      }
+    }
+
+    var firstNonHost = -1;
+    for (var i = 0, l = nonHostChars.length; i < l; i++) {
+      var index = rest.indexOf(nonHostChars[i]);
+      if (index !== -1 &&
+          (firstNonHost < 0 || index < firstNonHost)) firstNonHost = index;
+    }
+
+    if (firstNonHost !== -1) {
+      out.host = rest.substr(0, firstNonHost);
+      rest = rest.substr(firstNonHost);
+    } else {
+      out.host = rest;
+      rest = '';
+    }
+
+    // pull out port.
+    var p = parseHost(out.host);
+    var keys = Object.keys(p);
+    for (var i = 0, l = keys.length; i < l; i++) {
+      var key = keys[i];
+      out[key] = p[key];
+    }
+
+    // we've indicated that there is a hostname,
+    // so even if it's empty, it has to be present.
+    out.hostname = out.hostname || '';
+
+    // validate a little.
+    if (out.hostname.length > hostnameMaxLen) {
+      out.hostname = '';
+    } else {
+      var hostparts = out.hostname.split(/\./);
+      for (var i = 0, l = hostparts.length; i < l; i++) {
+        var part = hostparts[i];
+        if (!part) continue;
+        if (!part.match(hostnamePartPattern)) {
+          var newpart = '';
+          for (var j = 0, k = part.length; j < k; j++) {
+            if (part.charCodeAt(j) > 127) {
+              // we replace non-ASCII char with a temporary placeholder
+              // we need this to make sure size of hostname is not
+              // broken by replacing non-ASCII by nothing
+              newpart += 'x';
+            } else {
+              newpart += part[j];
+            }
+          }
+          // we test again with ASCII char only
+          if (!newpart.match(hostnamePartPattern)) {
+            var validParts = hostparts.slice(0, i);
+            var notHost = hostparts.slice(i + 1);
+            var bit = part.match(hostnamePartStart);
+            if (bit) {
+              validParts.push(bit[1]);
+              notHost.unshift(bit[2]);
+            }
+            if (notHost.length) {
+              rest = '/' + notHost.join('.') + rest;
+            }
+            out.hostname = validParts.join('.');
+            break;
+          }
+        }
+      }
+    }
+
+    // hostnames are always lower case.
+    out.hostname = out.hostname.toLowerCase();
+
+    // IDNA Support: Returns a puny coded representation of "domain".
+    // It only converts the part of the domain name that
+    // has non ASCII characters. I.e. it dosent matter if
+    // you call it with a domain that already is in ASCII.
+    var domainArray = out.hostname.split('.');
+    var newOut = [];
+    for (var i = 0; i < domainArray.length; ++i) {
+      var s = domainArray[i];
+      newOut.push(s.match(/[^A-Za-z0-9_-]/) ?
+          'xn--' + punycode.encode(s) : s);
+    }
+    out.hostname = newOut.join('.');
+
+    out.host = (out.hostname || '') +
+        ((out.port) ? ':' + out.port : '');
+    out.href += out.host;
+  }
+
+  // now rest is set to the post-host stuff.
+  // chop off any delim chars.
+  if (!unsafeProtocol[lowerProto]) {
+
+    // First, make 100% sure that any "autoEscape" chars get
+    // escaped, even if encodeURIComponent doesn't think they
+    // need to be.
+    for (var i = 0, l = autoEscape.length; i < l; i++) {
+      var ae = autoEscape[i];
+      var esc = encodeURIComponent(ae);
+      if (esc === ae) {
+        esc = escape(ae);
+      }
+      rest = rest.split(ae).join(esc);
+    }
+
+    // Now make sure that delims never appear in a url.
+    var chop = rest.length;
+    for (var i = 0, l = delims.length; i < l; i++) {
+      var c = rest.indexOf(delims[i]);
+      if (c !== -1) {
+        chop = Math.min(c, chop);
+      }
+    }
+    rest = rest.substr(0, chop);
+  }
+
+
+  // chop off from the tail first.
+  var hash = rest.indexOf('#');
+  if (hash !== -1) {
+    // got a fragment string.
+    out.hash = rest.substr(hash);
+    rest = rest.slice(0, hash);
+  }
+  var qm = rest.indexOf('?');
+  if (qm !== -1) {
+    out.search = rest.substr(qm);
+    out.query = rest.substr(qm + 1);
+    if (parseQueryString) {
+      out.query = querystring.parse(out.query);
+    }
+    rest = rest.slice(0, qm);
+  } else if (parseQueryString) {
+    // no query string, but parseQueryString still requested
+    out.search = '';
+    out.query = {};
+  }
+  if (rest) out.pathname = rest;
+  if (slashedProtocol[proto] &&
+      out.hostname && !out.pathname) {
+    out.pathname = '/';
+  }
+
+  //to support http.request
+  if (out.pathname || out.search) {
+    out.path = (out.pathname ? out.pathname : '') +
+               (out.search ? out.search : '');
+  }
+
+  // finally, reconstruct the href based on what has been validated.
+  out.href = urlFormat(out);
+  return out;
+}
+
+// format a parsed object into a url string
+function urlFormat(obj) {
+  // ensure it's an object, and not a string url.
+  // If it's an obj, this is a no-op.
+  // this way, you can call url_format() on strings
+  // to clean up potentially wonky urls.
+  if (typeof(obj) === 'string') obj = urlParse(obj);
+
+  var auth = obj.auth || '';
+  if (auth) {
+    auth = auth.split('@').join('%40');
+    for (var i = 0, l = nonAuthChars.length; i < l; i++) {
+      var nAC = nonAuthChars[i];
+      auth = auth.split(nAC).join(encodeURIComponent(nAC));
+    }
+    auth += '@';
+  }
+
+  var protocol = obj.protocol || '',
+      host = (obj.host !== undefined) ? auth + obj.host :
+          obj.hostname !== undefined ? (
+              auth + obj.hostname +
+              (obj.port ? ':' + obj.port : '')
+          ) :
+          false,
+      pathname = obj.pathname || '',
+      query = obj.query &&
+              ((typeof obj.query === 'object' &&
+                Object.keys(obj.query).length) ?
+                 querystring.stringify(obj.query) :
+                 '') || '',
+      search = obj.search || (query && ('?' + query)) || '',
+      hash = obj.hash || '';
+
+  if (protocol && protocol.substr(-1) !== ':') protocol += ':';
+
+  // only the slashedProtocols get the //.  Not mailto:, xmpp:, etc.
+  // unless they had them to begin with.
+  if (obj.slashes ||
+      (!protocol || slashedProtocol[protocol]) && host !== false) {
+    host = '//' + (host || '');
+    if (pathname && pathname.charAt(0) !== '/') pathname = '/' + pathname;
+  } else if (!host) {
+    host = '';
+  }
+
+  if (hash && hash.charAt(0) !== '#') hash = '#' + hash;
+  if (search && search.charAt(0) !== '?') search = '?' + search;
+
+  return protocol + host + pathname + search + hash;
+}
+
+function urlResolve(source, relative) {
+  return urlFormat(urlResolveObject(source, relative));
+}
+
+function urlResolveObject(source, relative) {
+  if (!source) return relative;
+
+  source = urlParse(urlFormat(source), false, true);
+  relative = urlParse(urlFormat(relative), false, true);
+
+  // hash is always overridden, no matter what.
+  source.hash = relative.hash;
+
+  if (relative.href === '') {
+    source.href = urlFormat(source);
+    return source;
+  }
+
+  // hrefs like //foo/bar always cut to the protocol.
+  if (relative.slashes && !relative.protocol) {
+    relative.protocol = source.protocol;
+    //urlParse appends trailing / to urls like http://www.example.com
+    if (slashedProtocol[relative.protocol] &&
+        relative.hostname && !relative.pathname) {
+      relative.path = relative.pathname = '/';
+    }
+    relative.href = urlFormat(relative);
+    return relative;
+  }
+
+  if (relative.protocol && relative.protocol !== source.protocol) {
+    // if it's a known url protocol, then changing
+    // the protocol does weird things
+    // first, if it's not file:, then we MUST have a host,
+    // and if there was a path
+    // to begin with, then we MUST have a path.
+    // if it is file:, then the host is dropped,
+    // because that's known to be hostless.
+    // anything else is assumed to be absolute.
+    if (!slashedProtocol[relative.protocol]) {
+      relative.href = urlFormat(relative);
+      return relative;
+    }
+    source.protocol = relative.protocol;
+    if (!relative.host && !hostlessProtocol[relative.protocol]) {
+      var relPath = (relative.pathname || '').split('/');
+      while (relPath.length && !(relative.host = relPath.shift()));
+      if (!relative.host) relative.host = '';
+      if (!relative.hostname) relative.hostname = '';
+      if (relPath[0] !== '') relPath.unshift('');
+      if (relPath.length < 2) relPath.unshift('');
+      relative.pathname = relPath.join('/');
+    }
+    source.pathname = relative.pathname;
+    source.search = relative.search;
+    source.query = relative.query;
+    source.host = relative.host || '';
+    source.auth = relative.auth;
+    source.hostname = relative.hostname || relative.host;
+    source.port = relative.port;
+    //to support http.request
+    if (source.pathname !== undefined || source.search !== undefined) {
+      source.path = (source.pathname ? source.pathname : '') +
+                    (source.search ? source.search : '');
+    }
+    source.slashes = source.slashes || relative.slashes;
+    source.href = urlFormat(source);
+    return source;
+  }
+
+  var isSourceAbs = (source.pathname && source.pathname.charAt(0) === '/'),
+      isRelAbs = (
+          relative.host !== undefined ||
+          relative.pathname && relative.pathname.charAt(0) === '/'
+      ),
+      mustEndAbs = (isRelAbs || isSourceAbs ||
+                    (source.host && relative.pathname)),
+      removeAllDots = mustEndAbs,
+      srcPath = source.pathname && source.pathname.split('/') || [],
+      relPath = relative.pathname && relative.pathname.split('/') || [],
+      psychotic = source.protocol &&
+          !slashedProtocol[source.protocol];
+
+  // if the url is a non-slashed url, then relative
+  // links like ../.. should be able
+  // to crawl up to the hostname, as well.  This is strange.
+  // source.protocol has already been set by now.
+  // Later on, put the first path part into the host field.
+  if (psychotic) {
+
+    delete source.hostname;
+    delete source.port;
+    if (source.host) {
+      if (srcPath[0] === '') srcPath[0] = source.host;
+      else srcPath.unshift(source.host);
+    }
+    delete source.host;
+    if (relative.protocol) {
+      delete relative.hostname;
+      delete relative.port;
+      if (relative.host) {
+        if (relPath[0] === '') relPath[0] = relative.host;
+        else relPath.unshift(relative.host);
+      }
+      delete relative.host;
+    }
+    mustEndAbs = mustEndAbs && (relPath[0] === '' || srcPath[0] === '');
+  }
+
+  if (isRelAbs) {
+    // it's absolute.
+    source.host = (relative.host || relative.host === '') ?
+                      relative.host : source.host;
+    source.hostname = (relative.hostname || relative.hostname === '') ?
+                      relative.hostname : source.hostname;
+    source.search = relative.search;
+    source.query = relative.query;
+    srcPath = relPath;
+    // fall through to the dot-handling below.
+  } else if (relPath.length) {
+    // it's relative
+    // throw away the existing file, and take the new path instead.
+    if (!srcPath) srcPath = [];
+    srcPath.pop();
+    srcPath = srcPath.concat(relPath);
+    source.search = relative.search;
+    source.query = relative.query;
+  } else if ('search' in relative) {
+    // just pull out the search.
+    // like href='?foo'.
+    // Put this after the other two cases because it simplifies the booleans
+    if (psychotic) {
+      source.hostname = source.host = srcPath.shift();
+      //occationaly the auth can get stuck only in host
+      //this especialy happens in cases like
+      //url.resolveObject('mailto:local1@domain1', 'local2@domain2')
+      var authInHost = source.host && source.host.indexOf('@') > 0 ?
+                       source.host.split('@') : false;
+      if (authInHost) {
+        source.auth = authInHost.shift();
+        source.host = source.hostname = authInHost.shift();
+      }
+    }
+    source.search = relative.search;
+    source.query = relative.query;
+    //to support http.request
+    if (source.pathname !== undefined || source.search !== undefined) {
+      source.path = (source.pathname ? source.pathname : '') +
+                    (source.search ? source.search : '');
+    }
+    source.href = urlFormat(source);
+    return source;
+  }
+  if (!srcPath.length) {
+    // no path at all.  easy.
+    // we've already handled the other stuff above.
+    delete source.pathname;
+    //to support http.request
+    if (!source.search) {
+      source.path = '/' + source.search;
+    } else {
+      delete source.path;
+    }
+    source.href = urlFormat(source);
+    return source;
+  }
+  // if a url ENDs in . or .., then it must get a trailing slash.
+  // however, if it ends in anything else non-slashy,
+  // then it must NOT get a trailing slash.
+  var last = srcPath.slice(-1)[0];
+  var hasTrailingSlash = (
+      (source.host || relative.host) && (last === '.' || last === '..') ||
+      last === '');
+
+  // strip single dots, resolve double dots to parent dir
+  // if the path tries to go above the root, `up` ends up > 0
+  var up = 0;
+  for (var i = srcPath.length; i >= 0; i--) {
+    last = srcPath[i];
+    if (last == '.') {
+      srcPath.splice(i, 1);
+    } else if (last === '..') {
+      srcPath.splice(i, 1);
+      up++;
+    } else if (up) {
+      srcPath.splice(i, 1);
+      up--;
+    }
+  }
+
+  // if the path is allowed to go above the root, restore leading ..s
+  if (!mustEndAbs && !removeAllDots) {
+    for (; up--; up) {
+      srcPath.unshift('..');
+    }
+  }
+
+  if (mustEndAbs && srcPath[0] !== '' &&
+      (!srcPath[0] || srcPath[0].charAt(0) !== '/')) {
+    srcPath.unshift('');
+  }
+
+  if (hasTrailingSlash && (srcPath.join('/').substr(-1) !== '/')) {
+    srcPath.push('');
+  }
+
+  var isAbsolute = srcPath[0] === '' ||
+      (srcPath[0] && srcPath[0].charAt(0) === '/');
+
+  // put the host back
+  if (psychotic) {
+    source.hostname = source.host = isAbsolute ? '' :
+                                    srcPath.length ? srcPath.shift() : '';
+    //occationaly the auth can get stuck only in host
+    //this especialy happens in cases like
+    //url.resolveObject('mailto:local1@domain1', 'local2@domain2')
+    var authInHost = source.host && source.host.indexOf('@') > 0 ?
+                     source.host.split('@') : false;
+    if (authInHost) {
+      source.auth = authInHost.shift();
+      source.host = source.hostname = authInHost.shift();
+    }
+  }
+
+  mustEndAbs = mustEndAbs || (source.host && srcPath.length);
+
+  if (mustEndAbs && !isAbsolute) {
+    srcPath.unshift('');
+  }
+
+  source.pathname = srcPath.join('/');
+  //to support request.http
+  if (source.pathname !== undefined || source.search !== undefined) {
+    source.path = (source.pathname ? source.pathname : '') +
+                  (source.search ? source.search : '');
+  }
+  source.auth = relative.auth || source.auth;
+  source.slashes = source.slashes || relative.slashes;
+  source.href = urlFormat(source);
+  return source;
+}
+
+function parseHost(host) {
+  var out = {};
+  var port = portPattern.exec(host);
+  if (port) {
+    port = port[0];
+    out.port = port.substr(1);
+    host = host.substr(0, host.length - port.length);
+  }
+  if (host) out.hostname = host;
+  return out;
+}
+
+});
+
+require.define("querystring", function (require, module, exports, __dirname, __filename) {
+var isArray = typeof Array.isArray === 'function'
+    ? Array.isArray
+    : function (xs) {
+        return Object.toString.call(xs) === '[object Array]'
+    }
+;
+
+/*!
+ * querystring
+ * Copyright(c) 2010 TJ Holowaychuk <tj@vision-media.ca>
+ * MIT Licensed
+ */
+
+/**
+ * Library version.
+ */
+
+exports.version = '0.3.1';
+
+/**
+ * Object#toString() ref for stringify().
+ */
+
+var toString = Object.prototype.toString;
+
+/**
+ * Cache non-integer test regexp.
+ */
+
+var notint = /[^0-9]/;
+
+/**
+ * Parse the given query `str`, returning an object.
+ *
+ * @param {String} str
+ * @return {Object}
+ * @api public
+ */
+
+exports.parse = function(str){
+  if (null == str || '' == str) return {};
+
+  function promote(parent, key) {
+    if (parent[key].length == 0) return parent[key] = {};
+    var t = {};
+    for (var i in parent[key]) t[i] = parent[key][i];
+    parent[key] = t;
+    return t;
+  }
+
+  return String(str)
+    .split('&')
+    .reduce(function(ret, pair){
+      try{ 
+        pair = decodeURIComponent(pair.replace(/\+/g, ' '));
+      } catch(e) {
+        // ignore
+      }
+
+      var eql = pair.indexOf('=')
+        , brace = lastBraceInKey(pair)
+        , key = pair.substr(0, brace || eql)
+        , val = pair.substr(brace || eql, pair.length)
+        , val = val.substr(val.indexOf('=') + 1, val.length)
+        , parent = ret;
+
+      // ?foo
+      if ('' == key) key = pair, val = '';
+
+      // nested
+      if (~key.indexOf(']')) {
+        var parts = key.split('[')
+          , len = parts.length
+          , last = len - 1;
+
+        function parse(parts, parent, key) {
+          var part = parts.shift();
+
+          // end
+          if (!part) {
+            if (isArray(parent[key])) {
+              parent[key].push(val);
+            } else if ('object' == typeof parent[key]) {
+              parent[key] = val;
+            } else if ('undefined' == typeof parent[key]) {
+              parent[key] = val;
+            } else {
+              parent[key] = [parent[key], val];
+            }
+          // array
+          } else {
+            obj = parent[key] = parent[key] || [];
+            if (']' == part) {
+              if (isArray(obj)) {
+                if ('' != val) obj.push(val);
+              } else if ('object' == typeof obj) {
+                obj[Object.keys(obj).length] = val;
+              } else {
+                obj = parent[key] = [parent[key], val];
+              }
+            // prop
+            } else if (~part.indexOf(']')) {
+              part = part.substr(0, part.length - 1);
+              if(notint.test(part) && isArray(obj)) obj = promote(parent, key);
+              parse(parts, obj, part);
+            // key
+            } else {
+              if(notint.test(part) && isArray(obj)) obj = promote(parent, key);
+              parse(parts, obj, part);
+            }
+          }
+        }
+
+        parse(parts, parent, 'base');
+      // optimize
+      } else {
+        if (notint.test(key) && isArray(parent.base)) {
+          var t = {};
+          for(var k in parent.base) t[k] = parent.base[k];
+          parent.base = t;
+        }
+        set(parent.base, key, val);
+      }
+
+      return ret;
+    }, {base: {}}).base;
+};
+
+/**
+ * Turn the given `obj` into a query string
+ *
+ * @param {Object} obj
+ * @return {String}
+ * @api public
+ */
+
+var stringify = exports.stringify = function(obj, prefix) {
+  if (isArray(obj)) {
+    return stringifyArray(obj, prefix);
+  } else if ('[object Object]' == toString.call(obj)) {
+    return stringifyObject(obj, prefix);
+  } else if ('string' == typeof obj) {
+    return stringifyString(obj, prefix);
+  } else {
+    return prefix;
+  }
+};
+
+/**
+ * Stringify the given `str`.
+ *
+ * @param {String} str
+ * @param {String} prefix
+ * @return {String}
+ * @api private
+ */
+
+function stringifyString(str, prefix) {
+  if (!prefix) throw new TypeError('stringify expects an object');
+  return prefix + '=' + encodeURIComponent(str);
+}
+
+/**
+ * Stringify the given `arr`.
+ *
+ * @param {Array} arr
+ * @param {String} prefix
+ * @return {String}
+ * @api private
+ */
+
+function stringifyArray(arr, prefix) {
+  var ret = [];
+  if (!prefix) throw new TypeError('stringify expects an object');
+  for (var i = 0; i < arr.length; i++) {
+    ret.push(stringify(arr[i], prefix + '[]'));
+  }
+  return ret.join('&');
+}
+
+/**
+ * Stringify the given `obj`.
+ *
+ * @param {Object} obj
+ * @param {String} prefix
+ * @return {String}
+ * @api private
+ */
+
+function stringifyObject(obj, prefix) {
+  var ret = []
+    , keys = Object.keys(obj)
+    , key;
+  for (var i = 0, len = keys.length; i < len; ++i) {
+    key = keys[i];
+    ret.push(stringify(obj[key], prefix
+      ? prefix + '[' + encodeURIComponent(key) + ']'
+      : encodeURIComponent(key)));
+  }
+  return ret.join('&');
+}
+
+/**
+ * Set `obj`'s `key` to `val` respecting
+ * the weird and wonderful syntax of a qs,
+ * where "foo=bar&foo=baz" becomes an array.
+ *
+ * @param {Object} obj
+ * @param {String} key
+ * @param {String} val
+ * @api private
+ */
+
+function set(obj, key, val) {
+  var v = obj[key];
+  if (undefined === v) {
+    obj[key] = val;
+  } else if (isArray(v)) {
+    v.push(val);
+  } else {
+    obj[key] = [v, val];
+  }
+}
+
+/**
+ * Locate last brace in `str` within the key.
+ *
+ * @param {String} str
+ * @return {Number}
+ * @api private
+ */
+
+function lastBraceInKey(str) {
+  var len = str.length
+    , brace
+    , c;
+  for (var i = 0; i < len; ++i) {
+    c = str[i];
+    if (']' == c) brace = false;
+    if ('[' == c) brace = true;
+    if ('=' == c && !brace) return i;
+  }
+}
+
+});
+
 require.define("/tests/test_async.js", function (require, module, exports, __dirname, __filename) {
 
 // Copyright 2011 Splunk, Inc.
@@ -7131,7 +12307,7 @@ exports.setup = function(http) {
                     var args = res.data.args;
                     test.strictEqual(args.a, "1");
                     test.strictEqual(args.b, "2");
-                    test.strictEqual(args.c, "1");
+                    test.same(args.c, ["1", "2", "3"]);
                     test.strictEqual(args.d, "a/b");
                     test.strictEqual(res.data.url, "http://httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
                     test.done();
@@ -7145,7 +12321,7 @@ exports.setup = function(http) {
                     function(err, res) {
                         var args = res.data.args;
                         test.strictEqual(args.a, "1");
-                        test.strictEqual(args.b, "ab");
+                        test.same(args.b, ["ab", "12"]);
                         test.strictEqual(
                             res.data.url,
                             "http://httpbin.org/get?a=1&b=ab&b=12"
@@ -7187,7 +12363,7 @@ exports.setup = function(http) {
                     var args = res.data.args;
                     test.strictEqual(args.a, "1");
                     test.strictEqual(args.b, "2");
-                    test.strictEqual(args.c, "1");
+                    test.same(args.c, ["1", "2", "3"]);
                     test.strictEqual(args.d, "a/b");
                     test.strictEqual(res.data.url, "http://httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
                     test.done();
@@ -8307,11 +13483,6 @@ require.define("/examples/node/cmdline.js", function (require, module, exports, 
         return parser;
     };
 })();
-});
-
-require.define("fs", function (require, module, exports, __dirname, __filename) {
-// nothing to see here... no file methods for the browser
-
 });
 
 require.define("/tests/test_service.js", function (require, module, exports, __dirname, __filename) {
@@ -13840,497 +19011,6 @@ require.define("/examples/node/search.js", function (require, module, exports, _
         exports.main(process.argv);
     }
 })();
-});
-
-require.define("util", function (require, module, exports, __dirname, __filename) {
-var events = require('events');
-
-exports.print = function () {};
-exports.puts = function () {};
-exports.debug = function() {};
-
-exports.inspect = function(obj, showHidden, depth, colors) {
-  var seen = [];
-
-  var stylize = function(str, styleType) {
-    // http://en.wikipedia.org/wiki/ANSI_escape_code#graphics
-    var styles =
-        { 'bold' : [1, 22],
-          'italic' : [3, 23],
-          'underline' : [4, 24],
-          'inverse' : [7, 27],
-          'white' : [37, 39],
-          'grey' : [90, 39],
-          'black' : [30, 39],
-          'blue' : [34, 39],
-          'cyan' : [36, 39],
-          'green' : [32, 39],
-          'magenta' : [35, 39],
-          'red' : [31, 39],
-          'yellow' : [33, 39] };
-
-    var style =
-        { 'special': 'cyan',
-          'number': 'blue',
-          'boolean': 'yellow',
-          'undefined': 'grey',
-          'null': 'bold',
-          'string': 'green',
-          'date': 'magenta',
-          // "name": intentionally not styling
-          'regexp': 'red' }[styleType];
-
-    if (style) {
-      return '\033[' + styles[style][0] + 'm' + str +
-             '\033[' + styles[style][1] + 'm';
-    } else {
-      return str;
-    }
-  };
-  if (! colors) {
-    stylize = function(str, styleType) { return str; };
-  }
-
-  function format(value, recurseTimes) {
-    // Provide a hook for user-specified inspect functions.
-    // Check that value is an object with an inspect function on it
-    if (value && typeof value.inspect === 'function' &&
-        // Filter out the util module, it's inspect function is special
-        value !== exports &&
-        // Also filter out any prototype objects using the circular check.
-        !(value.constructor && value.constructor.prototype === value)) {
-      return value.inspect(recurseTimes);
-    }
-
-    // Primitive types cannot have properties
-    switch (typeof value) {
-      case 'undefined':
-        return stylize('undefined', 'undefined');
-
-      case 'string':
-        var simple = '\'' + JSON.stringify(value).replace(/^"|"$/g, '')
-                                                 .replace(/'/g, "\\'")
-                                                 .replace(/\\"/g, '"') + '\'';
-        return stylize(simple, 'string');
-
-      case 'number':
-        return stylize('' + value, 'number');
-
-      case 'boolean':
-        return stylize('' + value, 'boolean');
-    }
-    // For some reason typeof null is "object", so special case here.
-    if (value === null) {
-      return stylize('null', 'null');
-    }
-
-    // Look up the keys of the object.
-    var visible_keys = Object_keys(value);
-    var keys = showHidden ? Object_getOwnPropertyNames(value) : visible_keys;
-
-    // Functions without properties can be shortcutted.
-    if (typeof value === 'function' && keys.length === 0) {
-      if (isRegExp(value)) {
-        return stylize('' + value, 'regexp');
-      } else {
-        var name = value.name ? ': ' + value.name : '';
-        return stylize('[Function' + name + ']', 'special');
-      }
-    }
-
-    // Dates without properties can be shortcutted
-    if (isDate(value) && keys.length === 0) {
-      return stylize(value.toUTCString(), 'date');
-    }
-
-    var base, type, braces;
-    // Determine the object type
-    if (isArray(value)) {
-      type = 'Array';
-      braces = ['[', ']'];
-    } else {
-      type = 'Object';
-      braces = ['{', '}'];
-    }
-
-    // Make functions say that they are functions
-    if (typeof value === 'function') {
-      var n = value.name ? ': ' + value.name : '';
-      base = (isRegExp(value)) ? ' ' + value : ' [Function' + n + ']';
-    } else {
-      base = '';
-    }
-
-    // Make dates with properties first say the date
-    if (isDate(value)) {
-      base = ' ' + value.toUTCString();
-    }
-
-    if (keys.length === 0) {
-      return braces[0] + base + braces[1];
-    }
-
-    if (recurseTimes < 0) {
-      if (isRegExp(value)) {
-        return stylize('' + value, 'regexp');
-      } else {
-        return stylize('[Object]', 'special');
-      }
-    }
-
-    seen.push(value);
-
-    var output = keys.map(function(key) {
-      var name, str;
-      if (value.__lookupGetter__) {
-        if (value.__lookupGetter__(key)) {
-          if (value.__lookupSetter__(key)) {
-            str = stylize('[Getter/Setter]', 'special');
-          } else {
-            str = stylize('[Getter]', 'special');
-          }
-        } else {
-          if (value.__lookupSetter__(key)) {
-            str = stylize('[Setter]', 'special');
-          }
-        }
-      }
-      if (visible_keys.indexOf(key) < 0) {
-        name = '[' + key + ']';
-      }
-      if (!str) {
-        if (seen.indexOf(value[key]) < 0) {
-          if (recurseTimes === null) {
-            str = format(value[key]);
-          } else {
-            str = format(value[key], recurseTimes - 1);
-          }
-          if (str.indexOf('\n') > -1) {
-            if (isArray(value)) {
-              str = str.split('\n').map(function(line) {
-                return '  ' + line;
-              }).join('\n').substr(2);
-            } else {
-              str = '\n' + str.split('\n').map(function(line) {
-                return '   ' + line;
-              }).join('\n');
-            }
-          }
-        } else {
-          str = stylize('[Circular]', 'special');
-        }
-      }
-      if (typeof name === 'undefined') {
-        if (type === 'Array' && key.match(/^\d+$/)) {
-          return str;
-        }
-        name = JSON.stringify('' + key);
-        if (name.match(/^"([a-zA-Z_][a-zA-Z_0-9]*)"$/)) {
-          name = name.substr(1, name.length - 2);
-          name = stylize(name, 'name');
-        } else {
-          name = name.replace(/'/g, "\\'")
-                     .replace(/\\"/g, '"')
-                     .replace(/(^"|"$)/g, "'");
-          name = stylize(name, 'string');
-        }
-      }
-
-      return name + ': ' + str;
-    });
-
-    seen.pop();
-
-    var numLinesEst = 0;
-    var length = output.reduce(function(prev, cur) {
-      numLinesEst++;
-      if (cur.indexOf('\n') >= 0) numLinesEst++;
-      return prev + cur.length + 1;
-    }, 0);
-
-    if (length > 50) {
-      output = braces[0] +
-               (base === '' ? '' : base + '\n ') +
-               ' ' +
-               output.join(',\n  ') +
-               ' ' +
-               braces[1];
-
-    } else {
-      output = braces[0] + base + ' ' + output.join(', ') + ' ' + braces[1];
-    }
-
-    return output;
-  }
-  return format(obj, (typeof depth === 'undefined' ? 2 : depth));
-};
-
-
-function isArray(ar) {
-  return ar instanceof Array ||
-         Array.isArray(ar) ||
-         (ar && ar !== Object.prototype && isArray(ar.__proto__));
-}
-
-
-function isRegExp(re) {
-  return re instanceof RegExp ||
-    (typeof re === 'object' && Object.prototype.toString.call(re) === '[object RegExp]');
-}
-
-
-function isDate(d) {
-  if (d instanceof Date) return true;
-  if (typeof d !== 'object') return false;
-  var properties = Date.prototype && Object_getOwnPropertyNames(Date.prototype);
-  var proto = d.__proto__ && Object_getOwnPropertyNames(d.__proto__);
-  return JSON.stringify(proto) === JSON.stringify(properties);
-}
-
-function pad(n) {
-  return n < 10 ? '0' + n.toString(10) : n.toString(10);
-}
-
-var months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
-              'Oct', 'Nov', 'Dec'];
-
-// 26 Feb 16:19:34
-function timestamp() {
-  var d = new Date();
-  var time = [pad(d.getHours()),
-              pad(d.getMinutes()),
-              pad(d.getSeconds())].join(':');
-  return [d.getDate(), months[d.getMonth()], time].join(' ');
-}
-
-exports.log = function (msg) {};
-
-exports.pump = null;
-
-var Object_keys = Object.keys || function (obj) {
-    var res = [];
-    for (var key in obj) res.push(key);
-    return res;
-};
-
-var Object_getOwnPropertyNames = Object.getOwnPropertyNames || function (obj) {
-    var res = [];
-    for (var key in obj) {
-        if (Object.hasOwnProperty.call(obj, key)) res.push(key);
-    }
-    return res;
-};
-
-var Object_create = Object.create || function (prototype, properties) {
-    // from es5-shim
-    var object;
-    if (prototype === null) {
-        object = { '__proto__' : null };
-    }
-    else {
-        if (typeof prototype !== 'object') {
-            throw new TypeError(
-                'typeof prototype[' + (typeof prototype) + '] != \'object\''
-            );
-        }
-        var Type = function () {};
-        Type.prototype = prototype;
-        object = new Type();
-        object.__proto__ = prototype;
-    }
-    if (typeof properties !== 'undefined' && Object.defineProperties) {
-        Object.defineProperties(object, properties);
-    }
-    return object;
-};
-
-exports.inherits = function(ctor, superCtor) {
-  ctor.super_ = superCtor;
-  ctor.prototype = Object_create(superCtor.prototype, {
-    constructor: {
-      value: ctor,
-      enumerable: false,
-      writable: true,
-      configurable: true
-    }
-  });
-};
-
-});
-
-require.define("events", function (require, module, exports, __dirname, __filename) {
-if (!process.EventEmitter) process.EventEmitter = function () {};
-
-var EventEmitter = exports.EventEmitter = process.EventEmitter;
-var isArray = typeof Array.isArray === 'function'
-    ? Array.isArray
-    : function (xs) {
-        return Object.toString.call(xs) === '[object Array]'
-    }
-;
-
-// By default EventEmitters will print a warning if more than
-// 10 listeners are added to it. This is a useful default which
-// helps finding memory leaks.
-//
-// Obviously not all Emitters should be limited to 10. This function allows
-// that to be increased. Set to zero for unlimited.
-var defaultMaxListeners = 10;
-EventEmitter.prototype.setMaxListeners = function(n) {
-  if (!this._events) this._events = {};
-  this._events.maxListeners = n;
-};
-
-
-EventEmitter.prototype.emit = function(type) {
-  // If there is no 'error' event listener then throw.
-  if (type === 'error') {
-    if (!this._events || !this._events.error ||
-        (isArray(this._events.error) && !this._events.error.length))
-    {
-      if (arguments[1] instanceof Error) {
-        throw arguments[1]; // Unhandled 'error' event
-      } else {
-        throw new Error("Uncaught, unspecified 'error' event.");
-      }
-      return false;
-    }
-  }
-
-  if (!this._events) return false;
-  var handler = this._events[type];
-  if (!handler) return false;
-
-  if (typeof handler == 'function') {
-    switch (arguments.length) {
-      // fast cases
-      case 1:
-        handler.call(this);
-        break;
-      case 2:
-        handler.call(this, arguments[1]);
-        break;
-      case 3:
-        handler.call(this, arguments[1], arguments[2]);
-        break;
-      // slower
-      default:
-        var args = Array.prototype.slice.call(arguments, 1);
-        handler.apply(this, args);
-    }
-    return true;
-
-  } else if (isArray(handler)) {
-    var args = Array.prototype.slice.call(arguments, 1);
-
-    var listeners = handler.slice();
-    for (var i = 0, l = listeners.length; i < l; i++) {
-      listeners[i].apply(this, args);
-    }
-    return true;
-
-  } else {
-    return false;
-  }
-};
-
-// EventEmitter is defined in src/node_events.cc
-// EventEmitter.prototype.emit() is also defined there.
-EventEmitter.prototype.addListener = function(type, listener) {
-  if ('function' !== typeof listener) {
-    throw new Error('addListener only takes instances of Function');
-  }
-
-  if (!this._events) this._events = {};
-
-  // To avoid recursion in the case that type == "newListeners"! Before
-  // adding it to the listeners, first emit "newListeners".
-  this.emit('newListener', type, listener);
-
-  if (!this._events[type]) {
-    // Optimize the case of one listener. Don't need the extra array object.
-    this._events[type] = listener;
-  } else if (isArray(this._events[type])) {
-
-    // Check for listener leak
-    if (!this._events[type].warned) {
-      var m;
-      if (this._events.maxListeners !== undefined) {
-        m = this._events.maxListeners;
-      } else {
-        m = defaultMaxListeners;
-      }
-
-      if (m && m > 0 && this._events[type].length > m) {
-        this._events[type].warned = true;
-        console.error('(node) warning: possible EventEmitter memory ' +
-                      'leak detected. %d listeners added. ' +
-                      'Use emitter.setMaxListeners() to increase limit.',
-                      this._events[type].length);
-        console.trace();
-      }
-    }
-
-    // If we've already got an array, just append.
-    this._events[type].push(listener);
-  } else {
-    // Adding the second element, need to change to array.
-    this._events[type] = [this._events[type], listener];
-  }
-
-  return this;
-};
-
-EventEmitter.prototype.on = EventEmitter.prototype.addListener;
-
-EventEmitter.prototype.once = function(type, listener) {
-  var self = this;
-  self.on(type, function g() {
-    self.removeListener(type, g);
-    listener.apply(this, arguments);
-  });
-
-  return this;
-};
-
-EventEmitter.prototype.removeListener = function(type, listener) {
-  if ('function' !== typeof listener) {
-    throw new Error('removeListener only takes instances of Function');
-  }
-
-  // does not use listeners(), so no side effect of creating _events[type]
-  if (!this._events || !this._events[type]) return this;
-
-  var list = this._events[type];
-
-  if (isArray(list)) {
-    var i = list.indexOf(listener);
-    if (i < 0) return this;
-    list.splice(i, 1);
-    if (list.length == 0)
-      delete this._events[type];
-  } else if (this._events[type] === listener) {
-    delete this._events[type];
-  }
-
-  return this;
-};
-
-EventEmitter.prototype.removeAllListeners = function(type) {
-  // does not use listeners(), so no side effect of creating _events[type]
-  if (type && this._events && this._events[type]) this._events[type] = null;
-  return this;
-};
-
-EventEmitter.prototype.listeners = function(type) {
-  if (!this._events) this._events = {};
-  if (!this._events[type]) this._events[type] = [];
-  if (!isArray(this._events[type])) {
-    this._events[type] = [this._events[type]];
-  }
-  return this._events[type];
-};
-
 });
 
 require.define("/browser.test.entry.js", function (require, module, exports, __dirname, __filename) {
