@@ -859,6 +859,16 @@ require.define("/utils.js", function (require, module, exports, __dirname, __fil
         
         return map["default"];
     };
+
+    /**
+     * Checks if an object is undefined.
+     *
+     * @param {Object} obj An object.
+     * @return {Boolean} `true` if the object is undefined, `false` if not.
+     */
+    root.isUndefined = function (obj) {
+        return (typeof obj === "undefined");
+    };
 })();
 });
 
