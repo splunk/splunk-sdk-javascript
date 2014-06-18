@@ -616,7 +616,16 @@
             "lib/utils.js",
             "lib/async.js",
             "lib/context.js",
-            "lib/service.js"
+            "lib/service.js",
+            "lib/modularinputs/argument.js",
+            "lib/modularinputs/event.js",
+            "lib/modularinputs/eventwriter.js",
+            "lib/modularinputs/inputdefinition.js",
+            "lib/modularinputs/logger.js",
+            "lib/modularinputs/modularinput.js",
+            "lib/modularinputs/scheme.js",
+            "lib/modularinputs/utils.js",
+            "lib/modularinputs/validationdefinition.js",
         ];
         
         var comments = [];
