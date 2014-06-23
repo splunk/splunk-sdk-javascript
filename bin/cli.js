@@ -625,7 +625,7 @@
             "lib/modularinputs/modularinput.js",
             "lib/modularinputs/scheme.js",
             "lib/modularinputs/utils.js",
-            "lib/modularinputs/validationdefinition.js",
+            "lib/modularinputs/validationdefinition.js"
         ];
         
         var comments = [];
