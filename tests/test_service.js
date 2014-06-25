@@ -1110,6 +1110,31 @@ exports.setup = function(svc, loggedOutSvc) {
                 this.service = svc;
                 done();
             },
+            "Callback#DataModels Collection - can fetch a built in data model": function(test) {
+                var dataModels = this.service.dataModels();
+
+                Async.chain([
+                        function(done) {
+                            dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            var dm = dataModels.item("internal_audit_logs");
+                            // Check for the 3 objects we expect
+                            test.ok(dm.objectByName("Audit"));
+                            test.ok(dm.objectByName("searches"));
+                            test.ok(dm.objectByName("modify"));
+
+                            // Check for an object that shouldn't exist
+                            test.ok(utils.isUndefined(dm.objectByName(getNextId())));
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
             "Callback#DataModels Collection - create & delete an empty data model": function(test) {
                 var dataModels = this.service.dataModels();
 
@@ -1126,12 +1151,11 @@ exports.setup = function(svc, loggedOutSvc) {
                             dataModels.create(name, args, done);
                         },
                         function(response, done) {
-                            console.log("Created a data model: " + response.name);
                             dataModels.fetch(done);
                         },
                         function(dataModels, done) {
                             // Make sure we have 1 more data model than we started with
-                            test.equals(initialSize + 1, dataModels.list().length);
+                            test.strictEqual(initialSize + 1, dataModels.list().length);
                             // Delete the data model we just created, by name.
                             dataModels.item(name).remove(done);
                         },
@@ -1140,7 +1164,7 @@ exports.setup = function(svc, loggedOutSvc) {
                         },
                         function(dataModels, done) {
                             // Make sure we have as many data models as we started with
-                            test.equals(initialSize, dataModels.list().length);
+                            test.strictEqual(initialSize, dataModels.list().length);
                             done();
                         }
                     ],
@@ -1150,17 +1174,170 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
-            "Callback#DataModels Collection - can fetch a built in data model": function(test) {
+            "Callback#DataModels Collection - create a data model with 0 objects": function(test) {
                 var dataModels = this.service.dataModels();
 
-                var dm;
+                var args = JSON.parse(utils.readFile(__filename, "../data/empty_data_model.json"));
+                var name = "delete-me-" + getNextId();
                 Async.chain([
                         function(done) {
                             dataModels.fetch(done);
                         },
                         function(dataModels, done) {
-                            dm = dataModels.item("internal_audit_logs");
-                            test.ok(dm.objectByName("searches"));
+                            dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            // Check for 0 objects before fetch
+                            test.strictEqual(0, dataModel.objects().length);
+                            dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            // Check for 0 objects after fetch
+                            test.strictEqual(0, dataModels.item(name).objects().length);
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            "Callback#DataModels Collection - create a data model with 1 search object": function(test) {
+                var dataModels = this.service.dataModels();
+
+                var args = JSON.parse(utils.readFile(__filename, "../data/object_with_one_search.json"));
+                var name = "delete-me-" + getNextId();
+                Async.chain([
+                        function(done) {
+                            dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            // Check for 1 object before fetch
+                            test.strictEqual(1, dataModel.objects().length);
+                            dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            // Check for 1 object after fetch
+                            test.strictEqual(1, dataModels.item(name).objects().length);
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            "Callback#DataModels Collection - create a data model with 2 search objects": function(test) {
+                var dataModels = this.service.dataModels();
+
+                var args = JSON.parse(utils.readFile(__filename, "../data/object_with_two_searches.json"));
+                var name = "delete-me-" + getNextId();
+                Async.chain([
+                        function(done) {
+                            dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            // Check for 2 objects before fetch
+                            test.strictEqual(2, dataModel.objects().length);
+                            dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            // Check for 2 objects after fetch
+                            test.strictEqual(2, dataModels.item(name).objects().length);
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            "Callback#DataModels Collection - data model objects are created correctly": function(test) {
+                var dataModels = this.service.dataModels();
+
+                var args = JSON.parse(utils.readFile(__filename, "../data/object_with_two_searches.json"));
+                var name = "delete-me-" + getNextId();
+                Async.chain([
+                        function(done) {
+                            dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            test.ok(dataModel.hasObject("search1"));
+                            test.ok(dataModel.hasObject("search2"));
+                            
+                            var search1 = dataModel.objectByName("search1");
+                            test.ok(search1);
+                            test.strictEqual("‡Øµ‡Ø±‡Ø∞‡ØØ - search 1", search1.displayName);
+
+                            var search2 = dataModel.objectByName("search2");
+                            test.ok(search2);
+                            test.strictEqual("‡Øµ‡Ø±‡Ø∞‡ØØ - search 2", search2.displayName);
+
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            "Callback#DataModels Collection - data model handles unicode characters": function(test) {
+                var dataModels = this.service.dataModels();
+
+                var args = JSON.parse(utils.readFile(__filename, "../data/model_with_unicode_headers.json"));
+                var name = "delete-me-" + getNextId();
+                Async.chain([
+                        function(done) {
+                            dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            test.ok(name, dataModel.name);
+
+                            test.strictEqual("·Ä©·öô‡Øµ", dataModel.displayName());
+                            test.strictEqual("‡Øµ‡Ø±‡Ø∞‡ØØ", dataModel.description());
+
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            "Callback#DataModels Collection - create data model with empty headers": function(test) {
+                var dataModels = this.service.dataModels();
+
+                var args = JSON.parse(utils.readFile(__filename, "../data/model_with_empty_headers.json"));
+                var name = "delete-me-" + getNextId();
+                Async.chain([
+                        function(done) {
+                            dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            test.strictEqual(name, dataModel.name);
+                            test.strictEqual("", dataModel.displayName());
+                            test.strictEqual("", dataModel.description());
+
                             done();
                         }
                     ],
