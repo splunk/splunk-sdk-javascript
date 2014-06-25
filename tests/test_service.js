@@ -1174,7 +1174,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
-            "Callback#DataModels Collection - create a data model with 0 objects": function(test) {
+            "Callback#DataModels - create a data model with 0 objects": function(test) {
                 var dataModels = this.service.dataModels();
 
                 var args = JSON.parse(utils.readFile(__filename, "../data/empty_data_model.json"));
@@ -1203,7 +1203,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
-            "Callback#DataModels Collection - create a data model with 1 search object": function(test) {
+            "Callback#DataModels - create a data model with 1 search object": function(test) {
                 var dataModels = this.service.dataModels();
 
                 var args = JSON.parse(utils.readFile(__filename, "../data/object_with_one_search.json"));
@@ -1232,7 +1232,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
-            "Callback#DataModels Collection - create a data model with 2 search objects": function(test) {
+            "Callback#DataModels - create a data model with 2 search objects": function(test) {
                 var dataModels = this.service.dataModels();
 
                 var args = JSON.parse(utils.readFile(__filename, "../data/object_with_two_searches.json"));
@@ -1261,7 +1261,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
-            "Callback#DataModels Collection - data model objects are created correctly": function(test) {
+            "Callback#DataModels - data model objects are created correctly": function(test) {
                 var dataModels = this.service.dataModels();
 
                 var args = JSON.parse(utils.readFile(__filename, "../data/object_with_two_searches.json"));
@@ -1294,7 +1294,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
-            "Callback#DataModels Collection - data model handles unicode characters": function(test) {
+            "Callback#DataModels - data model handles unicode characters": function(test) {
                 var dataModels = this.service.dataModels();
 
                 var args = JSON.parse(utils.readFile(__filename, "../data/model_with_unicode_headers.json"));
@@ -1321,7 +1321,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
-            "Callback#DataModels Collection - create data model with empty headers": function(test) {
+            "Callback#DataModels - create data model with empty headers": function(test) {
                 var dataModels = this.service.dataModels();
 
                 var args = JSON.parse(utils.readFile(__filename, "../data/model_with_empty_headers.json"));
@@ -1337,6 +1337,108 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual(name, dataModel.name);
                             test.strictEqual("", dataModel.displayName());
                             test.strictEqual("", dataModel.description());
+
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            "Callback#DataModels - test acceleration settings": function(test) {
+                var dataModels = svc.dataModels();
+
+                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
+                var name = "delete-me-" + getNextId();
+
+                Async.chain([
+                        function(done) {
+                            dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            // TODO: see if these can be made into convenience methods on the acceleration object
+                            dataModel.setAcceleration(true);
+                            dataModel.setEarliestAcceleratedTime("-2mon");
+                            dataModel.setAccelerationCronSchedule("5/* * * * *");
+
+                            test.ok(dataModel.isAccelerated());
+                            test.strictEqual("-2mon", dataModel.properties().earliestTime);
+                            test.strictEqual("5/* * * * *", dataModel.properties().cronSchedule);
+
+                            dataModel.setAcceleration(false);
+                            dataModel.setEarliestAcceleratedTime("-1mon");
+                            dataModel.setAccelerationCronSchedule("* * * * *");
+
+                            test.ok(!dataModel.isAccelerated());
+                            test.strictEqual("-1mon", dataModel.properties().earliestTime);
+                            test.strictEqual("* * * * *", dataModel.properties().cronSchedule);
+
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            "Callback#DataModels - test data model object metadata": function(test) {
+                var dataModels = svc.dataModels();
+
+                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
+                var name = "delete-me-" + getNextId();
+
+                Async.chain([
+                        function(done) {
+                            dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            var obj1 = dataModel.objectByName("event1");
+                            test.ok(obj1);
+
+                            // TODO: rename after refactor
+                            test.strictEqual("event1 ·Ä©·öô", obj1.displayName);
+                            test.strictEqual("event1", obj1.objectName);
+                            test.same(dataModel, obj1.dataModel());
+
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            "Callback#DataModels - test data model object's parent": function(test) {
+                var dataModels = svc.dataModels();
+
+                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
+                var name = "delete-me-" + getNextId();
+
+                Async.chain([
+                        function(done) {
+                            dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            var obj1 = dataModel.objectByName("event1");
+                            test.ok(obj1);
+
+
+                            // TODO: implement what's necessary for this
+                            // var parent = obj1.getParent();
+                            // test.ok(parent);
 
                             done();
                         }
