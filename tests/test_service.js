@@ -1160,10 +1160,7 @@ exports.setup = function(svc, loggedOutSvc) {
                         },
                         function(dataModels, done) {
                             dm = dataModels.item("internal_audit_logs");
-                            done();
-                        },
-                        function(done) {
-                            // TODO: get the searches object, check that it's not null
+                            test.ok(dm.objectByName("searches"));
                             done();
                         }
                     ],
@@ -1174,7 +1171,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 );
             },
             "Callback#DataModels Collection - delete any remaining SDK created data models": function(test) {
-                this.service.dataModels().fetch(function(err, dataModels) {
+                svc.dataModels().fetch(function(err, dataModels) {
                     if (err) {
                         test.ok(!err);
                     }
