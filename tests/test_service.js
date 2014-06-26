@@ -1537,6 +1537,64 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
+            "Callback#DataModels - test data model object fields": function(test) {
+                var dataModels = svc.dataModels();
+
+                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                var name = "delete-me-" + getNextId();
+
+                Async.chain([
+                        function(done) {
+                            dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            var obj = dataModel.objectByName("test_data");
+                            test.ok(obj);
+                            test.strictEqual(5, obj.fieldNames().length);
+                            test.strictEqual(10, obj.allFieldNames().length);
+                            test.ok(obj.fieldByName("has_boris"));
+                            test.ok(obj.fieldByName("_time"));
+
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            "Callback#DataModels - create local acceleration job": function(test) {
+                var dataModels = svc.dataModels();
+
+                var args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
+                var name = "delete-me-" + getNextId();
+
+                Async.chain([
+                        function(done) {
+                            dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            var obj = dataModel.objectByName("level_2");
+                            test.ok(obj);
+
+                            // TODO: create an acceleration job
+                            
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
             "Callback#DataModels - delete any remaining SDK created data models": function(test) {
                 svc.dataModels().fetch(function(err, dataModels) {
                     if (err) {
