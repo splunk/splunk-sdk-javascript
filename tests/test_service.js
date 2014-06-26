@@ -1110,7 +1110,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 this.service = svc;
                 done();
             },
-            "Callback#DataModels Collection - can fetch a built in data model": function(test) {
+            "Callback#DataModels - can fetch a built in data model": function(test) {
                 var dataModels = this.service.dataModels();
 
                 Async.chain([
@@ -1135,7 +1135,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
-            "Callback#DataModels Collection - create & delete an empty data model": function(test) {
+            "Callback#DataModels - create & delete an empty data model": function(test) {
                 var dataModels = this.service.dataModels();
 
                 var args = JSON.parse(utils.readFile(__filename, "../data/empty_data_model.json"));
@@ -1307,7 +1307,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
-                            test.ok(name, dataModel.name);
+                            test.strictEqual(name, dataModel.name);
 
                             test.strictEqual("·Ä©·öô‡Øµ", dataModel.displayName());
                             test.strictEqual("‡Øµ‡Ø±‡Ø∞‡ØØ", dataModel.description());
@@ -1408,7 +1408,6 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual("event1 ·Ä©·öô", obj1.displayName);
                             test.strictEqual("event1", obj1.objectName);
                             test.same(dataModel, obj1.dataModel());
-
                             done();
                         }
                     ],
@@ -1432,13 +1431,9 @@ exports.setup = function(svc, loggedOutSvc) {
                             dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
-                            var obj1 = dataModel.objectByName("event1");
-                            test.ok(obj1);
-
-
-                            // TODO: implement what's necessary for this
-                            // var parent = obj1.getParent();
-                            // test.ok(parent);
+                            var obj = dataModel.objectByName("event1");
+                            test.ok(obj);
+                            test.ok(!obj.parent());
 
                             done();
                         }
@@ -1449,7 +1444,36 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
-            "Callback#DataModels Collection - delete any remaining SDK created data models": function(test) {
+            "Callback#DataModels - test lineage": function(test) {
+                var dataModels = svc.dataModels();
+
+                var args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
+                var name = "delete-me-" + getNextId();
+
+                Async.chain([
+                        function(done) {
+                            dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            var obj = dataModel.objectByName("level_0");
+                            test.ok(obj);
+                            // TODO: make a lineage function
+                            test.equals(1, obj.lineage().length);
+                            test.equal("level_0", obj.lineage()[0]);
+
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            "Callback#DataModels - delete any remaining SDK created data models": function(test) {
                 svc.dataModels().fetch(function(err, dataModels) {
                     if (err) {
                         test.ok(!err);
