@@ -1460,9 +1460,73 @@ exports.setup = function(svc, loggedOutSvc) {
                         function(dataModel, done) {
                             var obj = dataModel.objectByName("level_0");
                             test.ok(obj);
-                            // TODO: make a lineage function
-                            test.equals(1, obj.lineage().length);
-                            test.equal("level_0", obj.lineage()[0]);
+                            test.strictEqual(1, obj.lineage().length);
+                            test.strictEqual("level_0", obj.lineage()[0]);
+                            test.strictEqual("BaseEvent", obj.parentName);
+
+                            obj = dataModel.objectByName("level_1");
+                            test.ok(obj);
+                            test.strictEqual(2, obj.lineage().length);
+                            test.same(["level_0", "level_1"], obj.lineage());
+                            test.strictEqual("level_0", obj.parentName);
+
+                            obj = dataModel.objectByName("level_2");
+                            test.ok(obj);
+                            test.strictEqual(3, obj.lineage().length);
+                            test.same(["level_0", "level_1", "level_2"], obj.lineage());
+                            test.strictEqual("level_1", obj.parentName);
+
+                            // Make sure there's no extra children
+                            test.ok(!dataModel.objectByName("level_3"));
+
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            "Callback#DataModels - test object fields": function(test) {
+                var dataModels = svc.dataModels();
+
+                var args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
+                var name = "delete-me-" + getNextId();
+
+                Async.chain([
+                        function(done) {
+                            dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            var obj = dataModel.objectByName("level_2");
+                            test.ok(obj);
+                            
+                            var timeField = obj.fieldByName("_time");
+                            test.ok(timeField);
+                            test.strictEqual("timestamp", timeField.type); // TODO: do I need some object constants?
+                            test.same(["BaseEvent"], timeField.ownerLineage);
+                            test.strictEqual("_time", timeField.name);
+                            test.strictEqual(false, timeField.required);
+                            test.strictEqual(false, timeField.multivalued);
+                            test.strictEqual(false, timeField.hidden);
+                            test.strictEqual(false, timeField.editable);
+                            test.strictEqual("", timeField.comment);
+
+                            var lvl2 = obj.fieldByName("level_2");
+                            test.strictEqual("level_2", lvl2.ownerName);
+                            test.same(["level_0", "level_1", "level_2"], lvl2.ownerLineage);
+                            test.strictEqual("objectCount", lvl2.type);
+                            test.strictEqual("level_2", lvl2.name);
+                            test.strictEqual("level 2", lvl2.displayName);
+                            test.strictEqual(false, lvl2.required);
+                            test.strictEqual(false, lvl2.multivalued);
+                            test.strictEqual(false, lvl2.hidden);
+                            test.strictEqual(false, lvl2.editable);
+                            test.strictEqual("", lvl2.comment);
 
                             done();
                         }
