@@ -1401,13 +1401,13 @@ exports.setup = function(svc, loggedOutSvc) {
                             dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
-                            var obj1 = dataModel.objectByName("event1");
-                            test.ok(obj1);
+                            var obj = dataModel.objectByName("event1");
+                            test.ok(obj);
 
                             // TODO: rename after refactor
-                            test.strictEqual("event1 ·Ä©·öô", obj1.displayName);
-                            test.strictEqual("event1", obj1.objectName);
-                            test.same(dataModel, obj1.dataModel());
+                            test.strictEqual("event1 ·Ä©·öô", obj.displayName);
+                            test.strictEqual("event1", obj.name);
+                            test.same(dataModel, obj.dataModel());
                             done();
                         }
                     ],
@@ -1504,11 +1504,11 @@ exports.setup = function(svc, loggedOutSvc) {
                         function(dataModel, done) {
                             var obj = dataModel.objectByName("level_2");
                             test.ok(obj);
-                            
+
                             var timeField = obj.fieldByName("_time");
                             test.ok(timeField);
                             test.strictEqual("timestamp", timeField.type); // TODO: do I need some object constants?
-                            test.same(["BaseEvent"], timeField.ownerLineage);
+                            test.same(["BaseEvent"], timeField.ownerLineage());
                             test.strictEqual("_time", timeField.name);
                             test.strictEqual(false, timeField.required);
                             test.strictEqual(false, timeField.multivalued);
@@ -1517,8 +1517,8 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual("", timeField.comment);
 
                             var lvl2 = obj.fieldByName("level_2");
-                            test.strictEqual("level_2", lvl2.ownerName);
-                            test.same(["level_0", "level_1", "level_2"], lvl2.ownerLineage);
+                            test.strictEqual("level_2", lvl2.ownerName());
+                            test.same(["level_0", "level_1", "level_2"], lvl2.ownerLineage());
                             test.strictEqual("objectCount", lvl2.type);
                             test.strictEqual("level_2", lvl2.name);
                             test.strictEqual("level 2", lvl2.displayName);
@@ -1556,7 +1556,9 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual(5, obj.fieldNames().length);
                             test.strictEqual(10, obj.allFieldNames().length);
                             test.ok(obj.fieldByName("has_boris"));
+                            test.ok(obj.hasField("has_boris"));
                             test.ok(obj.fieldByName("_time"));
+                            test.ok(obj.hasField("_time"));
 
                             done();
                         }
