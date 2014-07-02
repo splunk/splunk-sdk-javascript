@@ -1591,6 +1591,7 @@ exports.setup = function(svc, loggedOutSvc) {
                         },
                         function(job, done) {
                             test.ok(job);
+                            // TODO: should be using tutils.polluntils
                             test.strictEqual("| datamodel " + name + " level_2 search | tscollect", job.query);
                             job.cancel(done);
                         }
@@ -1618,7 +1619,7 @@ exports.setup = function(svc, loggedOutSvc) {
                         function(dataModel, done) {
                             obj = dataModel.objectByName("level_2");
                             test.ok(obj);
-
+                            // TODO: should be using tutils.polluntils
                             obj.createLocalAccelerationJob("-1d", done);
                         },
                         function(job, done) {
@@ -1756,6 +1757,101 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual("·Ä©·öô‡Øµ comment of pbe9bd0rp4", geoIPCalculation.comment);
                             test.strictEqual(5, geoIPCalculation.outputFieldNames().length);
                             test.strictEqual("output_from_reverse_hostname", geoIPCalculation.inputField());
+
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            "Callback#DataModels - run queries": function(test) {
+                var dataModels = this.service.dataModels();
+                var obj;
+                Async.chain([
+                        function(done) {
+                            dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            var dm = dataModels.item("internal_audit_logs");
+                            obj = dm.objectByName("searches");
+                            // TODO: should be using tutils.polluntils
+                            obj.runQuery({}, "", done);
+                        },
+                        function(job, done) {
+                            test.strictEqual("| datamodel internal_audit_logs searches search", job.query);
+                            job.cancel(done);
+                        },
+                        function(response, done) {
+                            obj.runQuery({status_buckets: 5, enable_lookups: false}, "| head 3", done);
+                        },
+                        function(job, done) {
+                            test.strictEqual("| datamodel internal_audit_logs searches search | head 3", job.query);
+                            // TODO: should be using tutils.polluntils
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            "Callback#DataModels - baseSearch is parsed correctly": function(test) {
+                var dataModels = svc.dataModels();
+
+                var args = JSON.parse(utils.readFile(__filename, "../data/model_with_multiple_types.json"));
+                var name = "delete-me-" + getNextId();
+
+                var obj;
+                Async.chain([
+                        function(done) {
+                            dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            obj = dataModel.objectByName("search1");
+                            test.ok(obj);
+                            test.ok(obj instanceof splunkjs.Service.DataModelObject);
+                            test.strictEqual("BaseSearch", obj.parentName);
+                            test.strictEqual("search index=_internal | head 10", obj.baseSearch);
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            "Callback#DataModels - baseTransaction is parsed correctly": function(test) {
+                var dataModels = svc.dataModels();
+
+                var args = JSON.parse(utils.readFile(__filename, "../data/model_with_multiple_types.json"));
+                var name = "delete-me-" + getNextId();
+
+                var obj;
+                Async.chain([
+                        function(done) {
+                            dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            obj = dataModel.objectByName("transaction1");
+                            test.ok(obj);
+                            test.ok(obj instanceof splunkjs.Service.DataModelObject);
+                            test.strictEqual("BaseTransaction", obj.parentName);
+                            test.ok(obj.isBaseTransaction());
+                            test.same(["event1"], obj.objectsToGroup());
+                            test.same(["host", "from"], obj.groupByFields());
+                            test.strictEqual("25s", obj.maxPause);
+                            test.strictEqual("100m", obj.maxSpan);
 
                             done();
                         }
