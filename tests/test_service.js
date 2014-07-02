@@ -1575,6 +1575,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
                 var name = "delete-me-" + getNextId();
 
+                var obj;
                 Async.chain([
                         function(done) {
                             dataModels.fetch(done);
@@ -1583,11 +1584,132 @@ exports.setup = function(svc, loggedOutSvc) {
                             dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
-                            var obj = dataModel.objectByName("level_2");
+                            obj = dataModel.objectByName("level_2");
                             test.ok(obj);
 
-                            // TODO: create an acceleration job
-                            
+                            obj.createLocalAccelerationJob(null, done);
+                        },
+                        function(job, done) {
+                            test.ok(job);
+                            test.strictEqual("| datamodel " + name + " level_2 search | tscollect", job.query);
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            "Callback#DataModels - create local acceleration job with earliest time": function(test) {
+                var dataModels = svc.dataModels();
+
+                var args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
+                var name = "delete-me-" + getNextId();
+
+                var obj;
+                Async.chain([
+                        function(done) {
+                            dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            obj = dataModel.objectByName("level_2");
+                            test.ok(obj);
+
+                            obj.createLocalAccelerationJob("-1d", done);
+                        },
+                        function(job, done) {
+                            test.ok(job);
+                            // TODO: see if there is someway to test that the job is actually created with the earliestTime property set
+                            test.strictEqual("| datamodel " + name + " level_2 search | tscollect", job.query);
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            "Callback#DataModels - test constraints": function(test) {
+                var dataModels = svc.dataModels();
+
+                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
+                var name = "delete-me-" + getNextId();
+
+                var obj;
+                Async.chain([
+                        function(done) {
+                            dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            obj = dataModel.objectByName("event1");
+                            test.ok(obj);
+                            var constraints = obj.constraints();
+                            test.ok(constraints);
+                            var onlyOne = true;
+
+                            for (var i = 0; i < constraints.length; i++) {
+                                var constraint = constraints[i];
+                                test.ok(!!onlyOne);
+
+                                test.strictEqual("event1", constraint.owner());
+                                test.strictEqual('uri="*.php" OR uri="*.py"\nNOT (referer=null OR referer="-")', constraint.query);
+                            }
+
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            "Callback#DataModels - test calculations": function(test) {
+                var dataModels = svc.dataModels();
+
+                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
+                var name = "delete-me-" + getNextId();
+
+                var obj;
+                Async.chain([
+                        function(done) {
+                            dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            obj = dataModel.objectByName("event1");
+                            test.ok(obj);
+
+                            var calculations = obj.calculations();
+                            test.strictEqual(4, Object.keys(calculations).length);
+                            test.strictEqual(4, obj.calculationIDs().length);
+
+                            var calculation = calculations["93fzsv03wa7"];
+                            test.ok(calculation);
+                            test.strictEqual("event1", calculation.owner());
+                            test.same(["event1"], calculation.lineage());
+                            test.strictEqual("", calculation.comment);
+                            test.strictEqual(true, calculation.isEditable());
+                            test.strictEqual("if(cidrmatch(\"192.0.0.0/16\", clientip), \"local\", \"other\")", calculation.expression());
+
+                            test.strictEqual(1, Object.keys(calculation.outputFields()).length);
+                            test.strictEqual(1, calculation.outputFieldNames().length);
+
+                            var field = calculation.outputFields()["new_field"];
+                            test.strictEqual("My New Field", field.displayName);
+
+                            // TODO: finish this test.
+
                             done();
                         }
                     ],
