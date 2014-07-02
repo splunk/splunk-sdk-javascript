@@ -1660,7 +1660,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.ok(!!onlyOne);
 
                                 test.strictEqual("event1", constraint.owner());
-                                test.strictEqual('uri="*.php" OR uri="*.py"\nNOT (referer=null OR referer="-")', constraint.query);
+                                test.strictEqual("uri=\"*.php\" OR uri=\"*.py\"\nNOT (referer=null OR referer=\"-\")", constraint.query);
                             }
 
                             done();
@@ -1672,7 +1672,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
-            "Callback#DataModels - test calculations": function(test) {
+            "Callback#DataModels - test calculations, and the different type": function(test) {
                 var dataModels = svc.dataModels();
 
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
@@ -1694,21 +1694,68 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual(4, Object.keys(calculations).length);
                             test.strictEqual(4, obj.calculationIDs().length);
 
-                            var calculation = calculations["93fzsv03wa7"];
-                            test.ok(calculation);
-                            test.strictEqual("event1", calculation.owner());
-                            test.same(["event1"], calculation.lineage());
-                            test.strictEqual("", calculation.comment);
-                            test.strictEqual(true, calculation.isEditable());
-                            test.strictEqual("if(cidrmatch(\"192.0.0.0/16\", clientip), \"local\", \"other\")", calculation.expression());
+                            var evalCalculation = calculations["93fzsv03wa7"];
+                            test.ok(evalCalculation);
+                            test.strictEqual("event1", evalCalculation.owner());
+                            test.same(["event1"], evalCalculation.lineage());
+                            test.strictEqual(evalCalculation.typeEval, evalCalculation.type);
+                            test.ok(evalCalculation.isEval());
+                            test.ok(!evalCalculation.isLookup());
+                            test.ok(!evalCalculation.isGeoIP());
+                            test.ok(!evalCalculation.isRegexp());
+                            test.strictEqual("", evalCalculation.comment);
+                            test.strictEqual(true, evalCalculation.isEditable());
+                            test.strictEqual("if(cidrmatch(\"192.0.0.0/16\", clientip), \"local\", \"other\")", evalCalculation.expression());
 
-                            test.strictEqual(1, Object.keys(calculation.outputFields()).length);
-                            test.strictEqual(1, calculation.outputFieldNames().length);
+                            test.strictEqual(1, Object.keys(evalCalculation.outputFields()).length);
+                            test.strictEqual(1, evalCalculation.outputFieldNames().length);
 
-                            var field = calculation.outputFields()["new_field"];
+                            var field = evalCalculation.outputFields()["new_field"];
+                            test.ok(field);
                             test.strictEqual("My New Field", field.displayName);
 
-                            // TODO: finish this test.
+                            var lookupCalculation = calculations["sr3mc8o3mjr"];
+                            test.ok(lookupCalculation);
+                            test.strictEqual("event1", lookupCalculation.owner());
+                            test.same(["event1"], lookupCalculation.lineage());
+                            test.strictEqual(lookupCalculation.typeLookup, lookupCalculation.type);
+                            test.ok(lookupCalculation.isLookup());
+                            test.ok(!lookupCalculation.isEval());
+                            test.ok(!lookupCalculation.isGeoIP());
+                            test.ok(!lookupCalculation.isRegexp());
+                            test.strictEqual("", lookupCalculation.comment);
+                            test.strictEqual(true, lookupCalculation.isEditable());
+                            test.same([{lookupField: "a_lookup_field", inputField: "host"}], lookupCalculation.inputFieldMappings());
+                            test.strictEqual(1, lookupCalculation.inputFieldMappings().length);
+                            test.strictEqual("a_lookup_field", lookupCalculation.inputFieldMappings()[0].lookupField);
+                            test.strictEqual("host", lookupCalculation.inputFieldMappings()[0].inputField);
+                            test.strictEqual("dnslookup", lookupCalculation.lookupName);
+                            
+                            var regexpCalculation = calculations["a5v1k82ymic"];
+                            test.ok(regexpCalculation);
+                            test.strictEqual("event1", regexpCalculation.owner());
+                            test.same(["event1"], regexpCalculation.lineage());
+                            test.strictEqual(regexpCalculation.typeRegexp, regexpCalculation.type);
+                            test.ok(regexpCalculation.isRegexp());
+                            test.ok(!regexpCalculation.isLookup());
+                            test.ok(!regexpCalculation.isEval());
+                            test.ok(!regexpCalculation.isGeoIP());
+                            test.strictEqual(2, regexpCalculation.outputFieldNames().length);
+                            test.strictEqual("_raw", regexpCalculation.inputField());
+                            test.strictEqual(" From: (?<from>.*) To: (?<to>.*) ", regexpCalculation.expression());
+
+                            var geoIPCalculation = calculations["pbe9bd0rp4"];
+                            test.ok(geoIPCalculation);
+                            test.strictEqual("event1", geoIPCalculation.owner());
+                            test.same(["event1"], geoIPCalculation.lineage());
+                            test.strictEqual(geoIPCalculation.typeGeoIP, geoIPCalculation.type);
+                            test.ok(geoIPCalculation.isGeoIP());
+                            test.ok(!geoIPCalculation.isLookup());
+                            test.ok(!geoIPCalculation.isEval());
+                            test.ok(!geoIPCalculation.isRegexp());
+                            test.strictEqual("·Ä©·öô‡Øµ comment of pbe9bd0rp4", geoIPCalculation.comment);
+                            test.strictEqual(5, geoIPCalculation.outputFieldNames().length);
+                            test.strictEqual("output_from_reverse_hostname", geoIPCalculation.inputField());
 
                             done();
                         }
