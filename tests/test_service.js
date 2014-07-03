@@ -1404,7 +1404,6 @@ exports.setup = function(svc, loggedOutSvc) {
                             var obj = dataModel.objectByName("event1");
                             test.ok(obj);
 
-                            // TODO: rename after refactor
                             test.strictEqual("event1 ·Ä©·öô", obj.displayName);
                             test.strictEqual("event1", obj.name);
                             test.same(dataModel, obj.dataModel());
@@ -1591,8 +1590,19 @@ exports.setup = function(svc, loggedOutSvc) {
                         },
                         function(job, done) {
                             test.ok(job);
-                            // TODO: should be using tutils.polluntils
-                            test.strictEqual("| datamodel " + name + " level_2 search | tscollect", job.query);
+                            // TODO: using pollUntil, we can get all the properties, and avoid setting
+                            // the query property on job in service.js... do this everywhere that needs it.
+                            tutils.pollUntil(
+                                job,
+                                function(j) {
+                                    return job.properties()["isDone"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            test.strictEqual("| datamodel " + name + " level_2 search | tscollect", job.properties().request.search);
                             job.cancel(done);
                         }
                     ],
@@ -1619,13 +1629,22 @@ exports.setup = function(svc, loggedOutSvc) {
                         function(dataModel, done) {
                             obj = dataModel.objectByName("level_2");
                             test.ok(obj);
-                            // TODO: should be using tutils.polluntils
                             obj.createLocalAccelerationJob("-1d", done);
                         },
                         function(job, done) {
                             test.ok(job);
                             // TODO: see if there is someway to test that the job is actually created with the earliestTime property set
-                            test.strictEqual("| datamodel " + name + " level_2 search | tscollect", job.query);
+                            tutils.pollUntil(
+                                job,
+                                function(j) {
+                                    return job.properties()["isDone"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            test.strictEqual("| datamodel " + name + " level_2 search | tscollect", job.properties().request.search);
                             job.cancel(done);
                         }
                     ],
@@ -1777,19 +1796,37 @@ exports.setup = function(svc, loggedOutSvc) {
                         function(dataModels, done) {
                             var dm = dataModels.item("internal_audit_logs");
                             obj = dm.objectByName("searches");
-                            // TODO: should be using tutils.polluntils
                             obj.runQuery({}, "", done);
                         },
                         function(job, done) {
-                            test.strictEqual("| datamodel internal_audit_logs searches search", job.query);
+                            tutils.pollUntil(
+                                job,
+                                function(j) {
+                                    return job.properties()["isDone"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            test.strictEqual("| datamodel internal_audit_logs searches search", job.properties().request.search);
                             job.cancel(done);
                         },
                         function(response, done) {
                             obj.runQuery({status_buckets: 5, enable_lookups: false}, "| head 3", done);
                         },
                         function(job, done) {
-                            test.strictEqual("| datamodel internal_audit_logs searches search | head 3", job.query);
-                            // TODO: should be using tutils.polluntils
+                            tutils.pollUntil(
+                                job,
+                                function(j) {
+                                    return job.properties()["isDone"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            test.strictEqual("| datamodel internal_audit_logs searches search | head 3", job.properties().request.search);
                             job.cancel(done);
                         }
                     ],
