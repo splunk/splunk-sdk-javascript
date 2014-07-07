@@ -617,6 +617,7 @@
             "lib/async.js",
             "lib/context.js",
             "lib/service.js",
+            "lib/datamodels.js",
             "lib/modularinputs/argument.js",
             "lib/modularinputs/event.js",
             "lib/modularinputs/eventwriter.js",
