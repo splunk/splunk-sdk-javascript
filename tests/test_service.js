@@ -1698,7 +1698,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.ok(!!onlyOne);
 
                                 test.strictEqual("event1", constraint.ownerName());
-                                test.strictEqual("uri=\"*.php\" OR uri=\"*.py\"\nNOT (referer=null OR referer=\"-\")", constraint.query);
+                                test.strictEqual("uri=\"*.php\" OR uri=\"*.py\"\nNOT (referer=null OR referer=\"-\")", constraint.query());
                             }
 
                             done();
@@ -1921,7 +1921,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
-            
+
             "Callback#DataModels - delete any remaining data models created by the SDK tests": function(test) {
                 svc.dataModels().fetch(function(err, dataModels) {
                     if (err) {
