@@ -1110,7 +1110,8 @@ exports.setup = function(svc, loggedOutSvc) {
                 this.service = svc;
                 done();
             },
-            "Callback#DataModels - can fetch a built in data model": function(test) {
+
+            "Callback#DataModels - fetch a built-in data model": function(test) {
                 var dataModels = this.service.dataModels();
 
                 Async.chain([
@@ -1135,6 +1136,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
+
             "Callback#DataModels - create & delete an empty data model": function(test) {
                 var dataModels = this.service.dataModels();
 
@@ -1174,6 +1176,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
+
             "Callback#DataModels - create a data model with 0 objects": function(test) {
                 var dataModels = this.service.dataModels();
 
@@ -1203,6 +1206,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
+
             "Callback#DataModels - create a data model with 1 search object": function(test) {
                 var dataModels = this.service.dataModels();
 
@@ -1232,6 +1236,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
+
             "Callback#DataModels - create a data model with 2 search objects": function(test) {
                 var dataModels = this.service.dataModels();
 
@@ -1261,6 +1266,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
+
             "Callback#DataModels - data model objects are created correctly": function(test) {
                 var dataModels = this.service.dataModels();
 
@@ -1294,6 +1300,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
+
             "Callback#DataModels - data model handles unicode characters": function(test) {
                 var dataModels = this.service.dataModels();
 
@@ -1308,7 +1315,8 @@ exports.setup = function(svc, loggedOutSvc) {
                         },
                         function(dataModel, done) {
                             test.strictEqual(name, dataModel.name);
-
+                            // TODO: Should have some proper unicode handling?
+                            //     : see https://github.com/splunk/splunk-sdk-java/blob/master/tests/com/splunk/DataModelTest.java#L139
                             test.strictEqual("·Ä©·öô‡Øµ", dataModel.displayName());
                             test.strictEqual("‡Øµ‡Ø±‡Ø∞‡ØØ", dataModel.description());
 
@@ -1321,6 +1329,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
+
             "Callback#DataModels - create data model with empty headers": function(test) {
                 var dataModels = this.service.dataModels();
 
@@ -1347,6 +1356,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
+
             "Callback#DataModels - test acceleration settings": function(test) {
                 var dataModels = svc.dataModels();
 
@@ -1387,6 +1397,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
+
             "Callback#DataModels - test data model object metadata": function(test) {
                 var dataModels = svc.dataModels();
 
@@ -1416,7 +1427,8 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
-            "Callback#DataModels - test data model object's parent": function(test) {
+
+            "Callback#DataModels - test data model object parent": function(test) {
                 var dataModels = svc.dataModels();
 
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
@@ -1443,7 +1455,8 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
-            "Callback#DataModels - test lineage": function(test) {
+
+            "Callback#DataModels - test data model object lineage": function(test) {
                 var dataModels = svc.dataModels();
 
                 var args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
@@ -1487,7 +1500,8 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
-            "Callback#DataModels - test object fields": function(test) {
+
+            "Callback#DataModels - test data model object fields": function(test) {
                 var dataModels = svc.dataModels();
 
                 var args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
@@ -1536,7 +1550,8 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
-            "Callback#DataModels - test data model object fields": function(test) {
+
+            "Callback#DataModels - test data model object properties": function(test) {
                 var dataModels = svc.dataModels();
 
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
@@ -1568,6 +1583,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
+
             "Callback#DataModels - create local acceleration job": function(test) {
                 var dataModels = svc.dataModels();
 
@@ -1590,8 +1606,7 @@ exports.setup = function(svc, loggedOutSvc) {
                         },
                         function(job, done) {
                             test.ok(job);
-                            // TODO: using pollUntil, we can get all the properties, and avoid setting
-                            // the query property on job in service.js... do this everywhere that needs it.
+
                             tutils.pollUntil(
                                 job,
                                 function(j) {
@@ -1612,6 +1627,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
+
             "Callback#DataModels - create local acceleration job with earliest time": function(test) {
                 var dataModels = svc.dataModels();
 
@@ -1619,6 +1635,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var name = "delete-me-" + getNextId();
 
                 var obj;
+                var oldNow = Date.now();
                 Async.chain([
                         function(done) {
                             dataModels.fetch(done);
@@ -1654,7 +1671,8 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
-            "Callback#DataModels - test constraints": function(test) {
+
+            "Callback#DataModels - test data model constraints": function(test) {
                 var dataModels = svc.dataModels();
 
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
@@ -1679,7 +1697,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                 var constraint = constraints[i];
                                 test.ok(!!onlyOne);
 
-                                test.strictEqual("event1", constraint.owner());
+                                test.strictEqual("event1", constraint.ownerName());
                                 test.strictEqual("uri=\"*.php\" OR uri=\"*.py\"\nNOT (referer=null OR referer=\"-\")", constraint.query);
                             }
 
@@ -1692,7 +1710,8 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
-            "Callback#DataModels - test calculations, and the different type": function(test) {
+
+            "Callback#DataModels - test data model calculations, and the different types": function(test) {
                 var dataModels = svc.dataModels();
 
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
@@ -1786,6 +1805,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
+
             "Callback#DataModels - run queries": function(test) {
                 var dataModels = this.service.dataModels();
                 var obj;
@@ -1836,6 +1856,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
+
             "Callback#DataModels - baseSearch is parsed correctly": function(test) {
                 var dataModels = svc.dataModels();
 
@@ -1865,6 +1886,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
+
             "Callback#DataModels - baseTransaction is parsed correctly": function(test) {
                 var dataModels = svc.dataModels();
 
@@ -1899,7 +1921,8 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 );
             },
-            "Callback#DataModels - delete any remaining SDK created data models": function(test) {
+            
+            "Callback#DataModels - delete any remaining data models created by the SDK tests": function(test) {
                 svc.dataModels().fetch(function(err, dataModels) {
                     if (err) {
                         test.ok(!err);
@@ -1924,7 +1947,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     );
                 });
             }
-        }
+        },
         /*
         "App Tests": {
             setUp: function(done) {
