@@ -1112,6 +1112,7 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - fetch a built-in data model": function(test) {
+                // TODO: pull this out into the setup since it's used in all tests for this suite.
                 var dataModels = this.service.dataModels();
 
                 Async.chain([
@@ -1948,6 +1949,68 @@ exports.setup = function(svc, loggedOutSvc) {
                 });
             }
         },
+
+        "Pivot tests": {
+            setUp: function(done) {
+                this.dataModels = svc.dataModels();
+                done();
+            },
+
+            "Callback#Pivot - test constructor args": function(test) {
+                var name = "delete-me-" + getNextId();
+                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            test.ok(dataModel.objectByName("test_data"));
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#Pivot - test acceleration": function(test) {
+                var name = "delete-me-" + getNextId();
+                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            dataModel.objectByName("test_data");
+                            test.ok(dataModel);
+
+                            dataModel.setAcceleration(true);
+                            dataModel.setEarliestAcceleratedTime("-2mon");
+                            dataModel.setAccelerationCronSchedule("0 */12 * * *");
+                            // TODO: write some code and come back to this
+                            //dataModel.update();
+                            // TODO: this test is failing
+                            dataModel.update(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        console.log(err.data.messages);
+                        test.done();
+                    }
+                );
+            }
+        }
         /*
         "App Tests": {
             setUp: function(done) {
