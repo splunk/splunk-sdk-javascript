@@ -1977,11 +1977,29 @@ exports.setup = function(svc, loggedOutSvc) {
                             }
                             test.same(expectedConstraints, constraints);
 
-                            // TODO: find a better way to tests calculations, this isn't it.
-                            // var expectedCalculations = JSON.parse(utils.readFile(__filename, "../data/data_model_expected_calculations.json"));
-                            // var calculations = obj.calculatedFieldNames();
+                            // Test the calculations JSON; the calculationID changes frequently, so we will re-parse it
+                            // instead of storing the expected JSON in a file.
+                            var objList = JSON.parse(dm.description()).objects;
+                            var expectedCalculations = null;
+                            for (var i = 0; i < objList.length; i++) {
+                                if (objList[i].objectName === "Audit") {
+                                    expectedCalculations = objList[i].calculations;
+                                }
+                            }
+                            var recreatedJSON = JSON.parse(obj.toJSON()).calculations;
+                            var calculations = JSON.parse(obj.toJSON()).calculations;
+                            for (var i = 0; i < calculations.length; i++) {
+                                calculations[i] = JSON.parse(calculations[i]);
+                                for (var j = 0; j < calculations[i].outputFields.length; j++) {
+                                    calculations[i].outputFields[j] = JSON.parse(calculations[i].outputFields[j]);
+                                }
+                            }
+                            test.strictEqual(typeof expectedCalculations, typeof calculations);
+                            test.strictEqual(expectedCalculations.length, calculations.length);
+                            test.same(expectedCalculations, calculations);
 
-                            // TODO: test dataModelObject's toJSON method
+
+                            // TODO: test dataModelObject's toJSON method as a whole
 
                             done();
                         }
