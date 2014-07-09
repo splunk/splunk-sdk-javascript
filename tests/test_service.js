@@ -1947,6 +1947,45 @@ exports.setup = function(svc, loggedOutSvc) {
                         }
                     );
                 });
+            },
+
+            "Callback#DataModels - all toJSON functions work": function(test) {
+                // TODO: write these tests, 
+                var dataModels = this.service.dataModels();
+
+                Async.chain([
+                        function(done) {
+                            dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            var dm = dataModels.item("internal_audit_logs");
+                            var obj = dm.objectByName("Audit"); 
+                            test.ok(obj);
+
+                            // Test the fields JSON
+                            // TODO: move to a data file
+                            var expectedFields = JSON.parse('[{"fieldName":"action","owner":"Audit","type":"string","required":false,"multivalue":false,"hidden":false,"editable":true,"displayName":"action","comment":"","fieldSearch":""},{"fieldName":"info","owner":"Audit","type":"string","required":false,"multivalue":false,"hidden":false,"editable":true,"displayName":"info","comment":"","fieldSearch":""},{"fieldName":"object","owner":"Audit","type":"string","required":false,"multivalue":false,"hidden":true,"editable":true,"displayName":"object","comment":"","fieldSearch":""},{"fieldName":"operation","owner":"Audit","type":"string","required":false,"multivalue":false,"hidden":true,"editable":true,"displayName":"operation","comment":"","fieldSearch":""},{"fieldName":"path","owner":"Audit","type":"string","required":false,"multivalue":false,"hidden":true,"editable":true,"displayName":"path","comment":"","fieldSearch":""},{"fieldName":"user","owner":"Audit","type":"string","required":false,"multivalue":false,"hidden":false,"editable":true,"displayName":"user","comment":"","fieldSearch":""},{"fieldName":"exec_time","owner":"Audit","type":"number","required":false,"multivalue":false,"hidden":true,"editable":true,"displayName":"execution time","comment":"","fieldSearch":""},{"fieldName":"result_count","owner":"Audit","type":"number","required":false,"multivalue":false,"hidden":true,"editable":true,"displayName":"result count","comment":"","fieldSearch":""},{"fieldName":"savedsearch_name","owner":"Audit","type":"string","required":false,"multivalue":false,"hidden":true,"editable":true,"displayName":"savedsearch name","comment":"","fieldSearch":""},{"fieldName":"scan_count","owner":"Audit","type":"number","required":false,"multivalue":false,"hidden":true,"editable":true,"displayName":"scan count","comment":"","fieldSearch":""},{"fieldName":"total_run_time","owner":"Audit","type":"number","required":false,"multivalue":false,"hidden":true,"editable":true,"displayName":"total run time","comment":"","fieldSearch":""},{"fieldName":"_time","owner":"BaseEvent","type":"timestamp","required":false,"multivalue":false,"hidden":false,"editable":false,"displayName":"_time","comment":"","fieldSearch":""},{"fieldName":"host","owner":"BaseEvent","type":"string","required":false,"multivalue":false,"hidden":false,"editable":false,"displayName":"host","comment":"","fieldSearch":""},{"fieldName":"source","owner":"BaseEvent","type":"string","required":false,"multivalue":false,"hidden":false,"editable":false,"displayName":"source","comment":"","fieldSearch":""},{"fieldName":"sourcetype","owner":"BaseEvent","type":"string","required":false,"multivalue":false,"hidden":false,"editable":false,"displayName":"sourcetype","comment":"","fieldSearch":""},{"fieldName":"Audit","owner":"Audit","type":"objectCount","required":false,"multivalue":false,"hidden":false,"editable":false,"displayName":"Audit","comment":"","fieldSearch":""}]');
+                            var fields = JSON.parse(obj.toJSON()).fields;
+                            for (var i = 0; i < fields.length; i++) {
+                                fields[i] = JSON.parse(fields[i]);
+                            }
+                            test.same(expectedFields, fields);
+
+                            var expectedConstraints = JSON.parse('[{"search": "index=_audit", "owner": "Audit"}]');
+                            var constraints = JSON.parse(obj.toJSON()).constraints;
+                            for (var i = 0; i < constraints.length; i++) {
+                                constraints[i] = JSON.parse(constraints[i]);
+                            }
+                            test.same(expectedConstraints, constraints);
+
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
             }
         },
 
@@ -1998,9 +2037,8 @@ exports.setup = function(svc, loggedOutSvc) {
                             dataModel.setEarliestAcceleratedTime("-2mon");
                             dataModel.setAccelerationCronSchedule("0 */12 * * *");
                             // TODO: write some code and come back to this
-                            //dataModel.update();
                             // TODO: this test is failing
-                            dataModel.update(done);
+                            dataModel.update(done);                            
                         }
                     ],
                     function(err) {
