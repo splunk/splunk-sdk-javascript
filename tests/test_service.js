@@ -1981,12 +1981,13 @@ exports.setup = function(svc, loggedOutSvc) {
                             // instead of storing the expected JSON in a file.
                             var objList = JSON.parse(dm.description()).objects;
                             var expectedCalculations = null;
+                            var tempObj = null;
                             for (var i = 0; i < objList.length; i++) {
                                 if (objList[i].objectName === "Audit") {
+                                    tempObj = objList[i];
                                     expectedCalculations = objList[i].calculations;
                                 }
                             }
-                            var recreatedJSON = JSON.parse(obj.toJSON()).calculations;
                             var calculations = JSON.parse(obj.toJSON()).calculations;
                             for (var i = 0; i < calculations.length; i++) {
                                 calculations[i] = JSON.parse(calculations[i]);
@@ -1998,8 +1999,15 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual(expectedCalculations.length, calculations.length);
                             test.same(expectedCalculations, calculations);
 
-
-                            // TODO: test dataModelObject's toJSON method as a whole
+                            // Test data model object JSON
+                            var recreatedJSON = JSON.parse(obj.toJSON());
+                            recreatedJSON.constraints = constraints;
+                            recreatedJSON.calculations = calculations;
+                            recreatedJSON.fields = fields;
+                            for (var i = 0; i < Object.keys(recreatedJSON).length; i++) {
+                                var k = Object.keys(recreatedJSON)[i];
+                                test.same(tempObj[k], recreatedJSON[k]);
+                            }
 
                             done();
                         }
