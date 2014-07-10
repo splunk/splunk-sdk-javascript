@@ -1348,6 +1348,9 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual("", dataModel.displayName());
                             test.strictEqual("", dataModel.description());
 
+                            // Make sure we're not getting a summary of the data model definition
+                            test.strictEqual("0", dataModel.properties().concise);
+
                             done();
                         }
                     ],
