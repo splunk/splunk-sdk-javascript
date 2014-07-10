@@ -1972,8 +1972,8 @@ exports.setup = function(svc, loggedOutSvc) {
                             // Test the constraints JSON
                             var expectedConstraints = JSON.parse(utils.readFile(__filename, "../data/data_model_expected_constraints.json"));
                             var constraints = JSON.parse(obj.toJSON()).constraints;
-                            for (var i = 0; i < constraints.length; i++) {
-                                constraints[i] = JSON.parse(constraints[i]);
+                            for (var j = 0; j < constraints.length; j++) {
+                                constraints[j] = JSON.parse(constraints[j]);
                             }
                             test.same(expectedConstraints, constraints);
 
@@ -1982,17 +1982,17 @@ exports.setup = function(svc, loggedOutSvc) {
                             var objList = JSON.parse(dm.description()).objects;
                             var expectedCalculations = null;
                             var tempObj = null;
-                            for (var i = 0; i < objList.length; i++) {
-                                if (objList[i].objectName === "Audit") {
-                                    tempObj = objList[i];
-                                    expectedCalculations = objList[i].calculations;
+                            for (var k = 0; k < objList.length; k++) {
+                                if (objList[k].objectName === "Audit") {
+                                    tempObj = objList[k];
+                                    expectedCalculations = objList[k].calculations;
                                 }
                             }
                             var calculations = JSON.parse(obj.toJSON()).calculations;
-                            for (var i = 0; i < calculations.length; i++) {
-                                calculations[i] = JSON.parse(calculations[i]);
-                                for (var j = 0; j < calculations[i].outputFields.length; j++) {
-                                    calculations[i].outputFields[j] = JSON.parse(calculations[i].outputFields[j]);
+                            for (var l = 0; l < calculations.length; l++) {
+                                calculations[l] = JSON.parse(calculations[l]);
+                                for (var m = 0; m < calculations[l].outputFields.length; m++) {
+                                    calculations[l].outputFields[m] = JSON.parse(calculations[l].outputFields[m]);
                                 }
                             }
                             test.strictEqual(typeof expectedCalculations, typeof calculations);
@@ -2004,9 +2004,9 @@ exports.setup = function(svc, loggedOutSvc) {
                             recreatedJSON.constraints = constraints;
                             recreatedJSON.calculations = calculations;
                             recreatedJSON.fields = fields;
-                            for (var i = 0; i < Object.keys(recreatedJSON).length; i++) {
-                                var k = Object.keys(recreatedJSON)[i];
-                                test.same(tempObj[k], recreatedJSON[k]);
+                            for (var n = 0; n < Object.keys(recreatedJSON).length; n++) {
+                                var o = Object.keys(recreatedJSON)[n];
+                                test.same(tempObj[o], recreatedJSON[o]);
                             }
 
                             // TODO: test DataModel.toJSON()
