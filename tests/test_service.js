@@ -2009,6 +2009,9 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.same(tempObj[k], recreatedJSON[k]);
                             }
 
+                            // TODO: test DataModel.toJSON()
+                            // TODO: actually all toJSON() functions can be dropped, but leave them in for now
+
                             done();
                         }
                     ],
@@ -2022,7 +2025,8 @@ exports.setup = function(svc, loggedOutSvc) {
 
         "Pivot tests": {
             setUp: function(done) {
-                this.dataModels = svc.dataModels();
+                this.service = svc;
+                this.dataModels = svc.dataModels({owner: "nobody", app: "search"});
                 done();
             },
 
@@ -2063,18 +2067,26 @@ exports.setup = function(svc, loggedOutSvc) {
                         function(dataModel, done) {
                             dataModel.objectByName("test_data");
                             test.ok(dataModel);
-
+                            
                             dataModel.setAcceleration(true);
                             dataModel.setEarliestAcceleratedTime("-2mon");
                             dataModel.setAccelerationCronSchedule("0 */12 * * *");
-                            // TODO: write some code and come back to this
-                            // TODO: this test is failing
                             dataModel.update(done);                            
+                        },
+                        function(dataModel, done) {
+                            var props = dataModel.properties();
+                            // TODO: also check the helper functions here
+                            test.strictEqual(true, !!props.acceleration.enabled);
+                            test.strictEqual("-2mon", props.acceleration.earliest_time);
+                            test.strictEqual("0 */12 * * *", props.acceleration.cron_schedule);
+                            done();
                         }
                     ],
                     function(err) {
                         test.ok(!err);
-                        console.log(err.data.messages);
+                        if (err) {
+                            console.log(err);
+                        }
                         test.done();
                     }
                 );
