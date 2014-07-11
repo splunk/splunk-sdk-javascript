@@ -1112,8 +1112,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 done();
             },
 
-            "Callback#DataModels - fetch a built-in data model": function(test) {
-                // TODO: pull this out into the setup since it's used in all tests for this suite.
+            "Callback#DataModels - fetch a built-in data model": function(test) {                
                 var that = this;
                 Async.chain([
                         function(done) {
