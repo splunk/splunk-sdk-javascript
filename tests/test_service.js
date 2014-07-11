@@ -1108,16 +1108,16 @@ exports.setup = function(svc, loggedOutSvc) {
         "Data Model tests": {
             setUp: function(done) {
                 this.service = svc;
+                this.dataModels = svc.dataModels();
                 done();
             },
 
             "Callback#DataModels - fetch a built-in data model": function(test) {
                 // TODO: pull this out into the setup since it's used in all tests for this suite.
-                var dataModels = this.service.dataModels();
-
+                var that = this;
                 Async.chain([
                         function(done) {
-                            dataModels.fetch(done);
+                            that.dataModels.fetch(done);
                         },
                         function(dataModels, done) {
                             var dm = dataModels.item("internal_audit_logs");
@@ -1139,22 +1139,21 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - create & delete an empty data model": function(test) {
-                var dataModels = this.service.dataModels();
-
                 var args = JSON.parse(utils.readFile(__filename, "../data/empty_data_model.json"));
                 var name = "delete-me-" + getNextId();
 
                 var initialSize;
+                var that = this;
                 Async.chain([
                         function(done) {
-                            dataModels.fetch(done);
+                            that.dataModels.fetch(done);
                         },
                         function(dataModels, done) {
                             initialSize = dataModels.list().length;
                             dataModels.create(name, args, done);
                         },
                         function(response, done) {
-                            dataModels.fetch(done);
+                            that.dataModels.fetch(done);
                         },
                         function(dataModels, done) {
                             // Make sure we have 1 more data model than we started with
@@ -1163,7 +1162,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             dataModels.item(name).remove(done);
                         },
                         function(done) {
-                            dataModels.fetch(done);
+                            that.dataModels.fetch(done);
                         },
                         function(dataModels, done) {
                             // Make sure we have as many data models as we started with
@@ -1179,13 +1178,13 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - create a data model with 0 objects": function(test) {
-                var dataModels = this.service.dataModels();
-
                 var args = JSON.parse(utils.readFile(__filename, "../data/empty_data_model.json"));
                 var name = "delete-me-" + getNextId();
+
+                var that = this;
                 Async.chain([
                         function(done) {
-                            dataModels.fetch(done);
+                            that.dataModels.fetch(done);
                         },
                         function(dataModels, done) {
                             dataModels.create(name, args, done);
@@ -1193,7 +1192,7 @@ exports.setup = function(svc, loggedOutSvc) {
                         function(dataModel, done) {
                             // Check for 0 objects before fetch
                             test.strictEqual(0, dataModel.objects().length);
-                            dataModels.fetch(done);
+                            that.dataModels.fetch(done);
                         },
                         function(dataModels, done) {
                             // Check for 0 objects after fetch
@@ -1213,9 +1212,11 @@ exports.setup = function(svc, loggedOutSvc) {
 
                 var args = JSON.parse(utils.readFile(__filename, "../data/object_with_one_search.json"));
                 var name = "delete-me-" + getNextId();
+
+                var that = this;
                 Async.chain([
                         function(done) {
-                            dataModels.fetch(done);
+                            that.dataModels.fetch(done);
                         },
                         function(dataModels, done) {
                             dataModels.create(name, args, done);
@@ -1223,7 +1224,7 @@ exports.setup = function(svc, loggedOutSvc) {
                         function(dataModel, done) {
                             // Check for 1 object before fetch
                             test.strictEqual(1, dataModel.objects().length);
-                            dataModels.fetch(done);
+                            that.dataModels.fetch(done);
                         },
                         function(dataModels, done) {
                             // Check for 1 object after fetch
@@ -1239,13 +1240,13 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - create a data model with 2 search objects": function(test) {
-                var dataModels = this.service.dataModels();
-
                 var args = JSON.parse(utils.readFile(__filename, "../data/object_with_two_searches.json"));
                 var name = "delete-me-" + getNextId();
+
+                var that = this;
                 Async.chain([
                         function(done) {
-                            dataModels.fetch(done);
+                            that.dataModels.fetch(done);
                         },
                         function(dataModels, done) {
                             dataModels.create(name, args, done);
@@ -1253,7 +1254,7 @@ exports.setup = function(svc, loggedOutSvc) {
                         function(dataModel, done) {
                             // Check for 2 objects before fetch
                             test.strictEqual(2, dataModel.objects().length);
-                            dataModels.fetch(done);
+                            that.dataModels.fetch(done);
                         },
                         function(dataModels, done) {
                             // Check for 2 objects after fetch
@@ -1269,13 +1270,13 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - data model objects are created correctly": function(test) {
-                var dataModels = this.service.dataModels();
-
                 var args = JSON.parse(utils.readFile(__filename, "../data/object_with_two_searches.json"));
                 var name = "delete-me-" + getNextId();
+
+                var that = this;
                 Async.chain([
                         function(done) {
-                            dataModels.fetch(done);
+                            that.dataModels.fetch(done);
                         },
                         function(dataModels, done) {
                             dataModels.create(name, args, done);
@@ -1303,13 +1304,13 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - data model handles unicode characters": function(test) {
-                var dataModels = this.service.dataModels();
-
                 var args = JSON.parse(utils.readFile(__filename, "../data/model_with_unicode_headers.json"));
                 var name = "delete-me-" + getNextId();
+
+                var that = this;
                 Async.chain([
                         function(done) {
-                            dataModels.fetch(done);
+                            that.dataModels.fetch(done);
                         },
                         function(dataModels, done) {
                             dataModels.create(name, args, done);
@@ -1332,13 +1333,13 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - create data model with empty headers": function(test) {
-                var dataModels = this.service.dataModels();
-
                 var args = JSON.parse(utils.readFile(__filename, "../data/model_with_empty_headers.json"));
                 var name = "delete-me-" + getNextId();
+
+                var that = this;
                 Async.chain([
                         function(done) {
-                            dataModels.fetch(done);
+                            that.dataModels.fetch(done);
                         },
                         function(dataModels, done) {
                             dataModels.create(name, args, done);
@@ -1362,14 +1363,13 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - test acceleration settings": function(test) {
-                var dataModels = svc.dataModels();
-
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
                 var name = "delete-me-" + getNextId();
 
+                var that = this;
                 Async.chain([
                         function(done) {
-                            dataModels.fetch(done);
+                            that.dataModels.fetch(done);
                         },
                         function(dataModels, done) {
                             dataModels.create(name, args, done);
@@ -1380,17 +1380,17 @@ exports.setup = function(svc, loggedOutSvc) {
                             dataModel.setEarliestAcceleratedTime("-2mon");
                             dataModel.setAccelerationCronSchedule("5/* * * * *");
 
-                            test.ok(dataModel.isAccelerated());
-                            test.strictEqual("-2mon", dataModel.properties().earliestTime);
-                            test.strictEqual("5/* * * * *", dataModel.properties().cronSchedule);
+                            test.strictEqual(true, dataModel.isAccelerated());
+                            test.strictEqual("-2mon", dataModel.properties().acceleration.earliestTime);
+                            test.strictEqual("5/* * * * *", dataModel.properties().acceleration.cronSchedule);
 
                             dataModel.setAcceleration(false);
                             dataModel.setEarliestAcceleratedTime("-1mon");
                             dataModel.setAccelerationCronSchedule("* * * * *");
 
                             test.ok(!dataModel.isAccelerated());
-                            test.strictEqual("-1mon", dataModel.properties().earliestTime);
-                            test.strictEqual("* * * * *", dataModel.properties().cronSchedule);
+                            test.strictEqual("-1mon", dataModel.properties().acceleration.earliestTime);
+                            test.strictEqual("* * * * *", dataModel.properties().acceleration.cronSchedule);
 
                             done();
                         }
@@ -1403,14 +1403,13 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - test data model object metadata": function(test) {
-                var dataModels = svc.dataModels();
-
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
                 var name = "delete-me-" + getNextId();
 
+                var that = this;
                 Async.chain([
                         function(done) {
-                            dataModels.fetch(done);
+                            that.dataModels.fetch(done);
                         },
                         function(dataModels, done) {
                             dataModels.create(name, args, done);
@@ -1433,14 +1432,13 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - test data model object parent": function(test) {
-                var dataModels = svc.dataModels();
-
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
                 var name = "delete-me-" + getNextId();
 
+                var that = this;
                 Async.chain([
                         function(done) {
-                            dataModels.fetch(done);
+                            that.dataModels.fetch(done);
                         },
                         function(dataModels, done) {
                             dataModels.create(name, args, done);
@@ -1461,14 +1459,13 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - test data model object lineage": function(test) {
-                var dataModels = svc.dataModels();
-
                 var args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
                 var name = "delete-me-" + getNextId();
 
+                var that = this;
                 Async.chain([
                         function(done) {
-                            dataModels.fetch(done);
+                            that.dataModels.fetch(done);
                         },
                         function(dataModels, done) {
                             dataModels.create(name, args, done);
@@ -1506,14 +1503,13 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - test data model object fields": function(test) {
-                var dataModels = svc.dataModels();
-
                 var args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
                 var name = "delete-me-" + getNextId();
 
+                var that = this;
                 Async.chain([
                         function(done) {
-                            dataModels.fetch(done);
+                            that.dataModels.fetch(done);
                         },
                         function(dataModels, done) {
                             dataModels.create(name, args, done);
@@ -1556,14 +1552,13 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - test data model object properties": function(test) {
-                var dataModels = svc.dataModels();
-
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                 var name = "delete-me-" + getNextId();
 
+                var that = this;
                 Async.chain([
                         function(done) {
-                            dataModels.fetch(done);
+                            that.dataModels.fetch(done);
                         },
                         function(dataModels, done) {
                             dataModels.create(name, args, done);
@@ -1589,15 +1584,14 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - create local acceleration job": function(test) {
-                var dataModels = svc.dataModels();
-
                 var args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
                 var name = "delete-me-" + getNextId();
 
                 var obj;
+                var that = this;
                 Async.chain([
                         function(done) {
-                            dataModels.fetch(done);
+                            that.dataModels.fetch(done);
                         },
                         function(dataModels, done) {
                             dataModels.create(name, args, done);
@@ -1633,16 +1627,15 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - create local acceleration job with earliest time": function(test) {
-                var dataModels = svc.dataModels();
-
                 var args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
                 var name = "delete-me-" + getNextId();
 
                 var obj;
                 var oldNow = Date.now();
+                var that = this;
                 Async.chain([
                         function(done) {
-                            dataModels.fetch(done);
+                            that.dataModels.fetch(done);
                         },
                         function(dataModels, done) {
                             dataModels.create(name, args, done);
@@ -1677,15 +1670,14 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - test data model constraints": function(test) {
-                var dataModels = svc.dataModels();
-
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
                 var name = "delete-me-" + getNextId();
 
                 var obj;
+                var that = this;
                 Async.chain([
                         function(done) {
-                            dataModels.fetch(done);
+                            that.dataModels.fetch(done);
                         },
                         function(dataModels, done) {
                             dataModels.create(name, args, done);
@@ -1716,15 +1708,14 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - test data model calculations, and the different types": function(test) {
-                var dataModels = svc.dataModels();
-
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
                 var name = "delete-me-" + getNextId();
 
                 var obj;
+                var that = this;
                 Async.chain([
                         function(done) {
-                            dataModels.fetch(done);
+                            that.dataModels.fetch(done);
                         },
                         function(dataModels, done) {
                             dataModels.create(name, args, done);
@@ -1811,11 +1802,11 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - run queries": function(test) {
-                var dataModels = this.service.dataModels();
                 var obj;
+                var that = this;
                 Async.chain([
                         function(done) {
-                            dataModels.fetch(done);
+                            that.dataModels.fetch(done);
                         },
                         function(dataModels, done) {
                             var dm = dataModels.item("internal_audit_logs");
@@ -1862,15 +1853,14 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - baseSearch is parsed correctly": function(test) {
-                var dataModels = svc.dataModels();
-
                 var args = JSON.parse(utils.readFile(__filename, "../data/model_with_multiple_types.json"));
                 var name = "delete-me-" + getNextId();
 
                 var obj;
+                var that = this;
                 Async.chain([
                         function(done) {
-                            dataModels.fetch(done);
+                            that.dataModels.fetch(done);
                         },
                         function(dataModels, done) {
                             dataModels.create(name, args, done);
@@ -1892,15 +1882,14 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - baseTransaction is parsed correctly": function(test) {
-                var dataModels = svc.dataModels();
-
                 var args = JSON.parse(utils.readFile(__filename, "../data/model_with_multiple_types.json"));
                 var name = "delete-me-" + getNextId();
 
                 var obj;
+                var that = this;
                 Async.chain([
                         function(done) {
-                            dataModels.fetch(done);
+                            that.dataModels.fetch(done);
                         },
                         function(dataModels, done) {
                             dataModels.create(name, args, done);
@@ -1953,11 +1942,11 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - all toJSON functions work": function(test) {
-                var dataModels = this.service.dataModels();
-
+                // TODO: actually all toJSON() functions can be dropped, but leave them in for now
+                var that = this;
                 Async.chain([
                         function(done) {
-                            dataModels.fetch(done);
+                            that.dataModels.fetch(done);
                         },
                         function(dataModels, done) {
                             var dm = dataModels.item("internal_audit_logs");
@@ -2013,7 +2002,6 @@ exports.setup = function(svc, loggedOutSvc) {
                             }
 
                             // TODO: test DataModel.toJSON()
-                            // TODO: actually all toJSON() functions can be dropped, but leave them in for now
 
                             done();
                         }
@@ -2078,7 +2066,8 @@ exports.setup = function(svc, loggedOutSvc) {
                         },
                         function(dataModel, done) {
                             var props = dataModel.properties();
-                            // TODO: also check the helper functions here
+
+                            test.strictEqual(true, dataModel.isAccelerated());
                             test.strictEqual(true, !!props.acceleration.enabled);
                             test.strictEqual("-2mon", props.acceleration.earliest_time);
                             test.strictEqual("0 */12 * * *", props.acceleration.cron_schedule);
