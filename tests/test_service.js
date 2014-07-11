@@ -1375,7 +1375,6 @@ exports.setup = function(svc, loggedOutSvc) {
                             dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
-                            // TODO: see if these can be made into convenience methods on the acceleration object
                             dataModel.setAcceleration(true);
                             dataModel.setEarliestAcceleratedTime("-2mon");
                             dataModel.setAccelerationCronSchedule("5/* * * * *");
@@ -1648,6 +1647,7 @@ exports.setup = function(svc, loggedOutSvc) {
                         function(job, done) {
                             test.ok(job);
                             // TODO: see if there is someway to test that the job is actually created with the earliestTime property set
+                            //     : probably do an update, and get it's properties at that time.
                             tutils.pollUntil(
                                 job,
                                 function(j) {
