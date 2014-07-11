@@ -2070,6 +2070,20 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual(true, !!props.acceleration.enabled);
                             test.strictEqual("-2mon", props.acceleration.earliest_time);
                             test.strictEqual("0 */12 * * *", props.acceleration.cron_schedule);
+
+                            var dataModelObject = dataModel.objectByName("test_data");
+                            var pivotSpec = dataModelObject.createPivotSpec();
+
+                            test.strictEqual(dataModelObject.dataModel().name, pivotSpec.accelerationNamespace);
+
+                            var name1 = "delete-me-" + getNextId();
+                            pivotSpec.setAccelerationJob(name1);
+                            test.strictEqual("sid=" + name1, pivotSpec.accelerationNamespace);
+
+                            var namespaceTemp = "delete-me-" + getNextId();
+                            pivotSpec.setAccelerationNamespace(namespaceTemp);
+                            test.strictEqual(namespaceTemp, pivotSpec.accelerationNamespace);
+
                             done();
                         }
                     ],
