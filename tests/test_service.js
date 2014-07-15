@@ -2097,7 +2097,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 );
             },
 
-            "Callback#Pivot - test illegal filtering": function(test) {
+            "Callback#Pivot - test illegal filtering (all types)": function(test) {
                var name = "delete-me-" + getNextId();
                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                var that = this;
@@ -2113,22 +2113,95 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.ok(obj);
 
                             var pivotSpec = obj.createPivotSpec();
+
+                            // Boolean comparisons
                             try {
-                                pivotSpec.addFilter(getNextId()); // TODO: add in other parameters, since all should be required
+                                pivotSpec.addFilter(getNextId(), pivotSpec.comparisonBoolean, "=", true);
                                 test.ok(false);
                             }
                             catch (e) {
                                 test.ok(e);
-                                test.strictEqual("Cannot add filter on a nonexistent field.", e.message);
+                                test.strictEqual(e.message, "Cannot add filter on a nonexistent field.");
+                            }
+                            try {
+                                pivotSpec.addFilter("_time", pivotSpec.comparisonBoolean, "=", true);
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Cannot add " + pivotSpec.comparisonBoolean + " filter on _time because it is of type timestamp");
                             }
 
+                            // String comparisons
                             try {
-                                pivotSpec.addFilter("_time", pivotSpec.comparisonBoolean); // TODO: add in other parameters, since all should be required
+                                pivotSpec.addFilter("has_boris", pivotSpec.comparisonString, "contains", "abc");
                                 test.ok(false);
                             }
                             catch (e) {
                                 test.ok(e);
-                                // TODO: test the specific error message
+                                test.strictEqual(e.message, "Cannot add " + pivotSpec.comparisonString + " filter on has_boris because it is of type boolean");
+                            }
+                            try {
+                                pivotSpec.addFilter(getNextId(), pivotSpec.comparisonString, "contains", "abc");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Cannot add filter on a nonexistent field.");
+                            }
+
+                            // IPv4 comparisons
+                            try {
+                                pivotSpec.addFilter("has_boris", pivotSpec.comparisonIPv4, "startsWith", "192.168");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Cannot add " + pivotSpec.comparisonIPv4 + " filter on has_boris because it is of type boolean");
+                            }
+                            try {
+                                pivotSpec.addFilter(getNextId(), pivotSpec.comparisonIPv4, "startsWith", "192.168");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Cannot add filter on a nonexistent field.");
+                            }
+
+                            // Number comparisons
+                            try {
+                                pivotSpec.addFilter("has_boris", pivotSpec.comparisonNumber, "atLeast", 2.3);
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Cannot add " + pivotSpec.comparisonNumber + " filter on has_boris because it is of type boolean");
+                            }
+                            try {
+                                pivotSpec.addFilter(getNextId(), pivotSpec.comparisonNumber, "atLeast", 2.3);
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Cannot add filter on a nonexistent field.");
+                            }
+
+                            // Number comparisons
+                            try {
+                                pivotSpec.addFilter("has_boris", pivotSpec.comparisonNumber, "atLeast", 2.3);
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Cannot add " + pivotSpec.comparisonNumber + " filter on has_boris because it is of type boolean");
+                            }
+                            try {
+                                pivotSpec.addFilter(getNextId(), pivotSpec.comparisonNumber, "atLeast", 2.3);
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Cannot add filter on a nonexistent field.");
                             }
                             
                             done();
@@ -2141,7 +2214,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 ); 
             },
 
-            "Callback#Pivot - test filtering": function(test) {
+            "Callback#Pivot - test boolean filtering": function(test) {
                var name = "delete-me-" + getNextId();
                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                var that = this;
@@ -2158,13 +2231,178 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             var pivotSpec = obj.createPivotSpec();
                             try {
-                                // TODO: refactor the comparison types, this isn't good enough
-                                pivotSpec.addFilter("has_boris", pivotSpec.comparisonBoolean, "EQUALS", true);
+                                pivotSpec.addFilter("has_boris", pivotSpec.comparisonBoolean, "=", true);
                                 test.strictEqual(1, pivotSpec.filters.length);
 
-                                // TODO: test the individual parts of the filter
+                                //Test the individual parts of the filter
                                 var filter = pivotSpec.filters[0];
                                 test.strictEqual(pivotSpec.comparisonBoolean, filter.type);
+
+                                var filterJSON = filter.toJSON();
+                                test.ok(filterJSON.hasOwnProperty("fieldName"));
+                                test.ok(filterJSON.hasOwnProperty("type"));
+                                test.ok(filterJSON.hasOwnProperty("comparator"));
+                                test.ok(filterJSON.hasOwnProperty("compareTo"));
+                                test.ok(filterJSON.hasOwnProperty("owner"));
+
+                                test.strictEqual("has_boris", filterJSON.fieldName);
+                                test.strictEqual("boolean", filterJSON.type);
+                                test.strictEqual("=", filterJSON.comparator);
+                                test.strictEqual(true, filterJSON.compareTo);
+                                test.strictEqual("test_data", filterJSON.owner);
+                            }
+                            catch (e) {
+                                test.ok(false);
+                            }
+                            
+                            done();
+                        }
+                    ],
+                    function(err) {
+                       test.ok(!err);
+                       test.done();
+                    }
+                ); 
+            },
+
+            "Callback#Pivot - test string filtering": function(test) {
+               var name = "delete-me-" + getNextId();
+               var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+               var that = this;
+               Async.chain([
+                        function(done) {
+                            that.dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                           dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            var obj = dataModel.objectByName("test_data");
+                            test.ok(obj);
+
+                            var pivotSpec = obj.createPivotSpec();
+                            try {
+                                pivotSpec.addFilter("host", pivotSpec.comparisonString, "contains", "abc");
+                                test.strictEqual(1, pivotSpec.filters.length);
+
+                                //Test the individual parts of the filter
+                                var filter = pivotSpec.filters[0];
+                                test.strictEqual(pivotSpec.comparisonString, filter.type);
+
+                                var filterJSON = filter.toJSON();
+                                test.ok(filterJSON.hasOwnProperty("fieldName"));
+                                test.ok(filterJSON.hasOwnProperty("type"));
+                                test.ok(filterJSON.hasOwnProperty("comparator"));
+                                test.ok(filterJSON.hasOwnProperty("compareTo"));
+                                test.ok(filterJSON.hasOwnProperty("owner"));
+
+                                test.strictEqual("host", filterJSON.fieldName);
+                                test.strictEqual("string", filterJSON.type);
+                                test.strictEqual("contains", filterJSON.comparator);
+                                test.strictEqual("abc", filterJSON.compareTo);
+                                test.strictEqual("BaseEvent", filterJSON.owner);
+                            }
+                            catch (e) {
+                                test.ok(false);
+                            }
+                            
+                            done();
+                        }
+                    ],
+                    function(err) {
+                       test.ok(!err);
+                       test.done();
+                    }
+                ); 
+            },
+
+            "Callback#Pivot - test IPv4 filtering": function(test) {
+               var name = "delete-me-" + getNextId();
+               var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+               var that = this;
+               Async.chain([
+                        function(done) {
+                            that.dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                           dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            var obj = dataModel.objectByName("test_data");
+                            test.ok(obj);
+
+                            var pivotSpec = obj.createPivotSpec();
+                            try {
+                                pivotSpec.addFilter("hostip", pivotSpec.comparisonIPv4, "startsWith", "192.168");
+                                test.strictEqual(1, pivotSpec.filters.length);
+
+                                //Test the individual parts of the filter
+                                var filter = pivotSpec.filters[0];
+                                test.strictEqual(pivotSpec.comparisonIPv4, filter.type);
+
+                                var filterJSON = filter.toJSON();
+                                test.ok(filterJSON.hasOwnProperty("fieldName"));
+                                test.ok(filterJSON.hasOwnProperty("type"));
+                                test.ok(filterJSON.hasOwnProperty("comparator"));
+                                test.ok(filterJSON.hasOwnProperty("compareTo"));
+                                test.ok(filterJSON.hasOwnProperty("owner"));
+
+                                test.strictEqual("hostip", filterJSON.fieldName);
+                                test.strictEqual("ipv4", filterJSON.type);
+                                test.strictEqual("startsWith", filterJSON.comparator);
+                                test.strictEqual("192.168", filterJSON.compareTo);
+                                test.strictEqual("test_data", filterJSON.owner);
+                            }
+                            catch (e) {
+                                test.ok(false);
+                            }
+                            
+                            done();
+                        }
+                    ],
+                    function(err) {
+                       test.ok(!err);
+                       test.done();
+                    }
+                ); 
+            },
+
+            "Callback#Pivot - test number filtering": function(test) {
+               var name = "delete-me-" + getNextId();
+               var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+               var that = this;
+               Async.chain([
+                        function(done) {
+                            that.dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                           dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            var obj = dataModel.objectByName("test_data");
+                            test.ok(obj);
+
+                            var pivotSpec = obj.createPivotSpec();
+                            try {
+                                pivotSpec.addFilter("epsilon", pivotSpec.comparisonNumber, ">=", 2.3);
+                                test.strictEqual(1, pivotSpec.filters.length);
+
+                                //Test the individual parts of the filter
+                                var filter = pivotSpec.filters[0];
+                                test.strictEqual(pivotSpec.comparisonNumber, filter.type);
+
+                                var filterJSON = filter.toJSON();
+                                test.ok(filterJSON.hasOwnProperty("fieldName"));
+                                test.ok(filterJSON.hasOwnProperty("type"));
+                                test.ok(filterJSON.hasOwnProperty("comparator"));
+                                test.ok(filterJSON.hasOwnProperty("compareTo"));
+                                test.ok(filterJSON.hasOwnProperty("owner"));
+
+                                test.strictEqual("epsilon", filterJSON.fieldName);
+                                test.strictEqual("number", filterJSON.type);
+                                test.strictEqual(">=", filterJSON.comparator);
+                                test.strictEqual(2.3, filterJSON.compareTo);
+                                test.strictEqual("test_data", filterJSON.owner);
                             }
                             catch (e) {
                                 test.ok(false);
