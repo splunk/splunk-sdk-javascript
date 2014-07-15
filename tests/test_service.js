@@ -2130,8 +2130,33 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.ok(e);
                                 // TODO: test the specific error message
                             }
+                            
+                            done();
+                        }
+                    ],
+                    function(err) {
+                       test.ok(!err);
+                       test.done();
+                    }
+                ); 
+            },
 
-                            // TODO: move this into a new test "test filtering"
+            "Callback#Pivot - test filtering": function(test) {
+               var name = "delete-me-" + getNextId();
+               var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+               var that = this;
+               Async.chain([
+                        function(done) {
+                            that.dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                           dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            var obj = dataModel.objectByName("test_data");
+                            test.ok(obj);
+
+                            var pivotSpec = obj.createPivotSpec();
                             try {
                                 // TODO: refactor the comparison types, this isn't good enough
                                 pivotSpec.addFilter("has_boris", pivotSpec.comparisonBoolean, "EQUALS", true);
@@ -2154,7 +2179,8 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 ); 
             }
-        }
+        },
+
         /*
         "App Tests": {
             setUp: function(done) {
