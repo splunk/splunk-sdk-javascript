@@ -2095,6 +2095,64 @@ exports.setup = function(svc, loggedOutSvc) {
                         test.done();
                     }
                 );
+            },
+
+            "Callback#Pivot - test illegal filtering": function(test) {
+               var name = "delete-me-" + getNextId();
+               var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+               var that = this;
+               Async.chain([
+                        function(done) {
+                            that.dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                           dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            var obj = dataModel.objectByName("test_data");
+                            test.ok(obj);
+
+                            var pivotSpec = obj.createPivotSpec();
+                            try {
+                                pivotSpec.addFilter(getNextId()); // TODO: add in other parameters, since all should be required
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual("Cannot add filter on a nonexistent field.", e.message);
+                            }
+
+                            try {
+                                pivotSpec.addFilter("_time", pivotSpec.comparisonBoolean); // TODO: add in other parameters, since all should be required
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                // TODO: test the specific error message
+                            }
+
+                            // TODO: move this into a new test "test filtering"
+                            try {
+                                // TODO: refactor the comparison types, this isn't good enough
+                                pivotSpec.addFilter("has_boris", pivotSpec.comparisonBoolean, "EQUALS", true);
+                                test.strictEqual(1, pivotSpec.filters.length);
+
+                                // TODO: test the individual parts of the filter
+                                var filter = pivotSpec.filters[0];
+                                test.strictEqual(pivotSpec.comparisonBoolean, filter.type);
+                            }
+                            catch (e) {
+                                test.ok(false);
+                            }
+                            
+                            done();
+                        }
+                    ],
+                    function(err) {
+                       test.ok(!err);
+                       test.done();
+                    }
+                ); 
             }
         }
         /*
