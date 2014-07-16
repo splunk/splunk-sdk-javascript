@@ -2186,22 +2186,22 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.strictEqual(e.message, "Cannot add filter on a nonexistent field.");
                             }
 
-                            // Number comparisons
+                            // Limit filter
                             try {
-                                pivotSpec.addFilter("has_boris", pivotSpec.comparisonNumber, "atLeast", 2.3);
+                                pivotSpec.addLimitFilter("has_boris", "host", pivotSpec.sortDirections.DEFAULT, 50, pivotSpec.statsFunctions.COUNT);
                                 test.ok(false);
                             }
                             catch (e) {
                                 test.ok(e);
-                                test.strictEqual(e.message, "Cannot add " + pivotSpec.comparisonNumber + " filter on has_boris because it is of type boolean");
+                                test.strictEqual(e.message, "Cannot add limit filter on has_boris because it is of type boolean");
                             }
                             try {
-                                pivotSpec.addFilter(getNextId(), pivotSpec.comparisonNumber, "atLeast", 2.3);
+                                pivotSpec.addLimitFilter(getNextId(), "host", pivotSpec.sortDirections.DEFAULT, 50, pivotSpec.statsFunctions.COUNT);
                                 test.ok(false);
                             }
                             catch (e) {
                                 test.ok(e);
-                                test.strictEqual(e.message, "Cannot add filter on a nonexistent field.");
+                                test.strictEqual(e.message, "Cannot add limit filter on a nonexistent field.");
                             }
                             
                             done();
@@ -2416,7 +2416,55 @@ exports.setup = function(svc, loggedOutSvc) {
                        test.done();
                     }
                 ); 
-            }
+            },
+
+            "Callback#Pivot - test number filtering": function(test) {
+               var name = "delete-me-" + getNextId();
+               var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+               var that = this;
+               Async.chain([
+                        function(done) {
+                            that.dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                           dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            var obj = dataModel.objectByName("test_data");
+                            test.ok(obj);
+
+                            var pivotSpec = obj.createPivotSpec();
+                            try {
+                                pivotSpec.addLimitFilter("epsilon", "host", pivotSpec.sortDirections.ASC, 500, pivotSpec.statsFunctions.AVERAGE);
+                                test.strictEqual(1, pivotSpec.filters.length);
+
+                                //Test the individual parts of the filter
+                                var filter = pivotSpec.filters[0];
+                                test.strictEqual(pivotSpec.comparisonNumber, filter.type);
+
+                                var filterJSON = filter.toJSON();
+                                test.ok(filterJSON.hasOwnProperty("fieldName"));
+                                test.ok(filterJSON.hasOwnProperty("type"));
+                                test.ok(filterJSON.hasOwnProperty("owner"));
+
+                                test.strictEqual("epsilon", filterJSON.fieldName);
+
+                                // TODO: finish writing the tests of the JSON fields
+                            }
+                            catch (e) {
+                                console.log(e.message);
+                                test.ok(false);
+                            }
+                            
+                            done();
+                        }
+                    ],
+                    function(err) {
+                       test.ok(!err);
+                       test.done();
+                    }
+                ); 
+            },            
         },
 
         /*
