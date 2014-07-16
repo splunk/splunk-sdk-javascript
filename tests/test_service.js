@@ -2447,7 +2447,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 ); 
             },
 
-            "Callback#Pivot - test number filtering": function(test) {
+            "Callback#Pivot - test limit filtering": function(test) {
                var name = "delete-me-" + getNextId();
                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                var that = this;
@@ -2502,8 +2502,8 @@ exports.setup = function(svc, loggedOutSvc) {
                        test.done();
                     }
                 ); 
-            },            
-        },
+            }
+        },  
 
         /*
         "App Tests": {
