@@ -2523,12 +2523,12 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             // Test error handling for row split
                             try {
-                                pivotSpec.addRowSplit("_time", "Wrong type here");
+                                pivotSpec.addRowSplit("has_boris", "Wrong type here");
                                 test.ok(false);
                             }
                             catch (e) {
                                 test.ok(e);
-                                test.strictEqual(e.message, "Field was of type " + obj.fieldByName("_time").type + ", expected number or string.");
+                                test.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number or string.");
                             }
                             var field = getNextId();
                             try {
@@ -2541,7 +2541,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.strictEqual(e.message, "Did not find field " + field);
                             }
 
-                            // Properly add a row split
+                            // Properly add a row split, number
                             pivotSpec.addRowSplit("epsilon", "My Label");
                             test.strictEqual(1, pivotSpec.rows.length);
                             
@@ -2551,11 +2551,148 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.ok(row.hasOwnProperty("type"));
                             test.ok(row.hasOwnProperty("label"));
                             test.ok(row.hasOwnProperty("display"));
+
                             test.strictEqual("epsilon", row.fieldName);
                             test.strictEqual("test_data", row.owner);
-                            test.strictEqual("number", row.type);
+                            test.strictEqual(pivotSpec.comparisonNumber, row.type);
                             test.strictEqual("My Label", row.label);
                             test.strictEqual("all", row.display);
+                            test.same({
+                                    fieldName: "epsilon",
+                                    owner: "test_data",
+                                    type: "number",
+                                    label: "My Label",
+                                    display: "all"
+                                },
+                                row);
+                            
+                            // Properly add a row split, string
+                            pivotSpec.addRowSplit("host", "My Label");
+                            test.strictEqual(2, pivotSpec.rows.length);
+
+                            row = pivotSpec.rows[pivotSpec.rows.length - 1];
+                            test.ok(row.hasOwnProperty("fieldName"));
+                            test.ok(row.hasOwnProperty("owner"));
+                            test.ok(row.hasOwnProperty("type"));
+                            test.ok(row.hasOwnProperty("label"));
+                            test.ok(row.hasOwnProperty("display"));
+
+                            test.strictEqual("host", row.fieldName);
+                            test.strictEqual("BaseEvent", row.owner);
+                            test.strictEqual("string", row.type);
+                            test.strictEqual("My Label", row.label);
+                            test.strictEqual("all", row.display);
+                            test.same({
+                                    fieldName: "host",
+                                    owner: "BaseEvent",
+                                    type: "string",
+                                    label: "My Label",
+                                    display: "all"
+                                },
+                                row);
+
+                            // Test error handling on range row split
+                            try {
+                                pivotSpec.addRangeRowSplit("has_boris", "Wrong type here", 0, 100, 20, 5);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number.");
+                            }
+
+                            pivotSpec.addRangeRowSplit("epsilon", "My Label", 0, 100, 20, 5);
+                            test.strictEqual(3, pivotSpec.rows.length);
+
+                            row = pivotSpec.rows[pivotSpec.rows.length - 1];
+                            test.ok(row.hasOwnProperty("fieldName"));
+                            test.ok(row.hasOwnProperty("owner"));
+                            test.ok(row.hasOwnProperty("type"));
+                            test.ok(row.hasOwnProperty("label"));
+                            test.ok(row.hasOwnProperty("display"));
+                            test.ok(row.hasOwnProperty("ranges"));
+
+                            test.strictEqual("epsilon", row.fieldName);
+                            test.strictEqual("test_data", row.owner);
+                            test.strictEqual(pivotSpec.comparisonNumber, row.type);
+                            test.strictEqual("My Label", row.label);
+                            test.strictEqual("ranges", row.display);
+
+                            var ranges = {
+                                start: 0,
+                                end: 100,
+                                size: 20,
+                                maxNumberOf: 5,
+                            };
+                            test.same(ranges, row.ranges);
+                            test.same({
+                                    fieldName: "epsilon",
+                                    owner: "test_data",
+                                    type: "number",
+                                    label: "My Label",
+                                    display: "ranges",
+                                    ranges: ranges
+                                },
+                                row);
+
+                            // Test error handling on boolean row split
+                            try {
+                                pivotSpec.addBooleanRowSplit("epsilon", "Wrong type here", "t", "f");
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected boolean.");
+                            }
+
+                            pivotSpec.addBooleanRowSplit("has_boris", "My Label", "is_true", "is_false");
+                            test.strictEqual(4, pivotSpec.rows.length);
+
+                            row = pivotSpec.rows[pivotSpec.rows.length - 1];
+                            test.ok(row.hasOwnProperty("fieldName"));
+                            test.ok(row.hasOwnProperty("owner"));
+                            test.ok(row.hasOwnProperty("type"));
+                            test.ok(row.hasOwnProperty("label"));
+                            test.ok(row.hasOwnProperty("trueLabel"));
+                            test.ok(row.hasOwnProperty("falseLabel"));
+
+                            test.strictEqual("has_boris", row.fieldName);
+                            test.strictEqual("My Label", row.label);
+                            test.strictEqual("test_data", row.owner);
+                            test.strictEqual(pivotSpec.comparisonBoolean, row.type);
+                            test.strictEqual("is_true", row.trueLabel);
+                            test.strictEqual("is_false", row.falseLabel);
+
+                            // Test error handling on timestamp row split
+                            try {
+                                pivotSpec.addTimestampRowSplit("epsilon", "Wrong type here");
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected timestamp.");
+                            }
+
+                            pivotSpec.addTimestampRowSplit("_time", "My Label", pivotSpec.binning.DAY);
+                            test.strictEqual(5, pivotSpec.rows.length);
+
+                            row = pivotSpec.rows[pivotSpec.rows.length - 1];
+                            test.ok(row.hasOwnProperty("fieldName"));
+                            test.ok(row.hasOwnProperty("owner"));
+                            test.ok(row.hasOwnProperty("type"));
+                            test.ok(row.hasOwnProperty("label"));
+                            test.ok(row.hasOwnProperty("period"));
+
+                            test.strictEqual("_time", row.fieldName);
+                            test.strictEqual("My Label", row.label);
+                            test.strictEqual("BaseEvent", row.owner);
+                            test.strictEqual(pivotSpec.comparisonTimestamp, row.type);
+                            test.strictEqual(pivotSpec.binning.DAY, row.period);
+                            test.same({
+                                    fieldName: "_time",
+                                    label: "My Label",
+                                    owner: "BaseEvent",
+                                    type: "timestamp",
+                                    period: "day"
+                                },
+                                row);
 
                             done();
                         }
