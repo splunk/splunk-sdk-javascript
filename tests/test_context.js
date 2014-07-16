@@ -736,6 +736,21 @@ exports.setup = function(svc) {
             test.ok(ctx.versionCompare("5.0") === 0);
 
             test.done();
+        },
+
+        "timeout check": function(test){
+            var http = tutils.DummyHttp;
+            var ctx;
+
+            ctx = new splunkjs.Context(http, {});
+            test.ok(ctx.timeout === 0);
+
+            ctx = new splunkjs.Context(http, {timeout:10000});
+            test.ok(ctx.timeout === 10000);
+
+            test.ok(this.service.timeout === 10000);
+
+            test.done();
         }
     };
     return suite;
@@ -760,15 +775,18 @@ if (module === require.main) {
         port: cmdline.opts.port,
         username: cmdline.opts.username,
         password: cmdline.opts.password,
-        version: cmdline.opts.version
+        version: cmdline.opts.version,
+        timeout: 10000
     });
 
     var suite = exports.setup(svc);
 
     svc.login(function(err, success) {
         if (err || !success) {
+            console.log(err);
             throw new Error("Login failed - not running tests", err || "");
         }
         test.run([{"Tests": suite}]);
     });
+
 }
