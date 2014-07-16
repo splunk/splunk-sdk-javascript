@@ -2203,7 +2203,36 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.ok(e);
                                 test.strictEqual(e.message, "Cannot add limit filter on a nonexistent field.");
                             }
-                            
+                            try {
+                                pivotSpec.addLimitFilter("source", "host", pivotSpec.sortDirections.DEFAULT, 50, pivotSpec.statsFunctions.SUM);
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message,
+                                    "Stats function for fields of type string must be COUNT or DISTINCT_COUNT; found " +
+                                    pivotSpec.statsFunctions.SUM);
+                            }
+                            try {
+                                pivotSpec.addLimitFilter("epsilon", "host", pivotSpec.sortDirections.DEFAULT, 50, pivotSpec.statsFunctions.DURATION);
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message,
+                                    "Stats function for fields of type number must be one of COUNT, DISTINCT_COUNT, SUM, or AVERAGE; found " +
+                                    pivotSpec.statsFunctions.DURATION);
+                            }
+                            try {
+                                pivotSpec.addLimitFilter("test_data", "host", pivotSpec.sortDirections.DEFAULT, 50, pivotSpec.statsFunctions.LIST);
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message,
+                                    "Stats function for fields of type object count must be COUNT; found " +
+                                    pivotSpec.statsFunctions.LIST);
+                            }
                             done();
                         }
                     ],
@@ -2446,13 +2475,22 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.ok(filterJSON.hasOwnProperty("fieldName"));
                                 test.ok(filterJSON.hasOwnProperty("type"));
                                 test.ok(filterJSON.hasOwnProperty("owner"));
+                                test.ok(filterJSON.hasOwnProperty("attributeName"));
+                                test.ok(filterJSON.hasOwnProperty("attributeOwner"));
+                                test.ok(filterJSON.hasOwnProperty("limitType"));
+                                test.ok(filterJSON.hasOwnProperty("limitAmount"));
+                                test.ok(filterJSON.hasOwnProperty("statsFn"));
 
                                 test.strictEqual("epsilon", filterJSON.fieldName);
-
-                                // TODO: finish writing the tests of the JSON fields
+                                test.strictEqual(pivotSpec.comparisonNumber, filterJSON.type);
+                                test.strictEqual("test_data", filterJSON.owner);
+                                test.strictEqual("host", filterJSON.attributeName);
+                                test.strictEqual("BaseEvent", filterJSON.attributeOwner);
+                                test.strictEqual("lowest", filterJSON.limitType);
+                                test.strictEqual(500, filterJSON.limitAmount);
+                                test.strictEqual("average", filterJSON.statsFn);
                             }
                             catch (e) {
-                                console.log(e.message);
                                 test.ok(false);
                             }
                             
