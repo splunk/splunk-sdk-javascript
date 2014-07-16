@@ -2098,10 +2098,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#Pivot - test illegal filtering (all types)": function(test) {
-               var name = "delete-me-" + getNextId();
-               var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
-               var that = this;
-               Async.chain([
+                var name = "delete-me-" + getNextId();
+                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                var that = this;
+                Async.chain([
                         function(done) {
                             that.dataModels.fetch(done);
                         },
@@ -2237,10 +2237,10 @@ exports.setup = function(svc, loggedOutSvc) {
                         }
                     ],
                     function(err) {
-                       test.ok(!err);
-                       test.done();
+                        test.ok(!err);
+                        test.done();
                     }
-                ); 
+                );
             },
 
             "Callback#Pivot - test boolean filtering": function(test) {
@@ -2502,6 +2502,69 @@ exports.setup = function(svc, loggedOutSvc) {
                        test.done();
                     }
                 ); 
+            },
+
+            "Callback#Pivot - test row split": function(test) {
+                var name = "delete-me-" + getNextId();
+                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                           dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            var obj = dataModel.objectByName("test_data");
+                            test.ok(obj);
+
+                            var pivotSpec = obj.createPivotSpec();
+
+                            // Test error handling for row split
+                            try {
+                                pivotSpec.addRowSplit("_time", "Wrong type here");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Field was of type " + obj.fieldByName("_time").type + ", expected number or string.");
+                            }
+                            var field = getNextId();
+                            try {
+
+                                pivotSpec.addRowSplit(field, "Break Me!");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Did not find field " + field);
+                            }
+
+                            // Properly add a row split
+                            pivotSpec.addRowSplit("epsilon", "My Label");
+                            test.strictEqual(1, pivotSpec.rows.length);
+                            
+                            var row = pivotSpec.rows[0];
+                            test.ok(row.hasOwnProperty("fieldName"));
+                            test.ok(row.hasOwnProperty("owner"));
+                            test.ok(row.hasOwnProperty("type"));
+                            test.ok(row.hasOwnProperty("label"));
+                            test.ok(row.hasOwnProperty("display"));
+                            test.strictEqual("epsilon", row.fieldName);
+                            test.strictEqual("test_data", row.owner);
+                            test.strictEqual("number", row.type);
+                            test.strictEqual("My Label", row.label);
+                            test.strictEqual("all", row.display);
+
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
             }
         },  
 
