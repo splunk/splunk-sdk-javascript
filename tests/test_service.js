@@ -199,7 +199,39 @@ exports.setup = function(svc, loggedOutSvc) {
                             }
                             
                             test.ok(thrown);
-                                                    
+
+                            // Ensure that we can't get the item using wildcard namespaces.
+
+                            thrown = false;
+                            try{
+                                savedSearches_1.item(searchName, {owner:'-'});
+                            }
+                            catch(ex){
+                                thrown = true;
+                            }
+
+                            test.ok(thrown);
+
+                            thrown = false;
+
+                            try{
+                                savedSearches_1.item(searchName, {app:'-'});
+                            }
+                            catch(ex){
+                                thrown = true;
+                            }
+                                              
+                            test.ok(thrown);
+
+                            try{
+                                savedSearches_1.item(searchName, {app:'-', owner:'-'});
+                            }      
+                            catch(ex){
+                                thrown = true;
+                            }
+
+                            test.ok(thrown);
+
                             // Ensure we get the right entities from the -/1 namespace when we
                             // specify it.  
                             var entity11 = savedSearches_1.item(searchName, that.namespace11);
