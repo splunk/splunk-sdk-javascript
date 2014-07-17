@@ -668,6 +668,41 @@ exports.setup = function(svc) {
             req.abort();
         },
 
+        "Callback#timeout test": function(test){
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    version: svc.version,
+                }
+            );
+
+            test.strictEqual(0, service.timeout);
+
+            // With a timeout of 1ms, the timeout error is expected.
+            service.timeout = 1;
+            service.request("search/jobs", "GET", {count:1}, null, null, {"X-TestHeader":1}, function(err, res){
+                test.strictEqual(600, err.status);
+                test.strictEqual("ETIMEDOUT", err.error.code);
+            });
+
+            service.timeout = 10000;
+            service.request("search/jobs", "GET", {count:1}, null, null, {"X-TestHeader":1}, function(err, res){
+                test.ok(res);
+            });
+
+            service.timeout = 0;
+            service.request("search/jobs", "GET", {count:1}, null, null, {"X-TestHeader":1}, function(err, res){
+                test.ok(res);
+            });
+
+            test.done();
+        },
+
         "Cancel test search": function(test) {
             // Here, the search created for several of the previous tests is terminated, it is no longer necessary
             var endpoint = "search/jobs/DELETEME_JSSDK_UNITTEST/control";
@@ -736,21 +771,6 @@ exports.setup = function(svc) {
             test.ok(ctx.versionCompare("5.0") === 0);
 
             test.done();
-        },
-
-        "timeout check": function(test){
-            var http = tutils.DummyHttp;
-            var ctx;
-
-            ctx = new splunkjs.Context(http, {});
-            test.ok(ctx.timeout === 0);
-
-            ctx = new splunkjs.Context(http, {timeout:10000});
-            test.ok(ctx.timeout === 10000);
-
-            test.ok(this.service.timeout === 10000);
-
-            test.done();
         }
     };
     return suite;
@@ -776,7 +796,6 @@ if (module === require.main) {
         username: cmdline.opts.username,
         password: cmdline.opts.password,
         version: cmdline.opts.version,
-        timeout: 10000
     });
 
     var suite = exports.setup(svc);
