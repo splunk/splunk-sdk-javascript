@@ -802,10 +802,8 @@ if (module === require.main) {
 
     svc.login(function(err, success) {
         if (err || !success) {
-            console.log(err);
             throw new Error("Login failed - not running tests", err || "");
         }
         test.run([{"Tests": suite}]);
     });
-
 }
