@@ -2597,6 +2597,14 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.ok(e);
                                 test.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number.");
                             }
+                            try {
+                                pivotSpec.addRangeRowSplit(field, "Break Me!", 0, 100, 20, 5);
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Did not find field " + field);
+                            }
 
                             // Test range row split
                             pivotSpec.addRangeRowSplit("epsilon", "My Label", 0, 100, 20, 5);
@@ -2641,6 +2649,14 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.ok(e);
                                 test.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected boolean.");
                             }
+                            try {
+                                pivotSpec.addBooleanRowSplit(field, "Break Me!", "t", "f");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Did not find field " + field);
+                            }
 
                             // Test boolean row split
                             pivotSpec.addBooleanRowSplit("has_boris", "My Label", "is_true", "is_false");
@@ -2660,6 +2676,15 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual(pivotSpec.comparisonBoolean, row.type);
                             test.strictEqual("is_true", row.trueLabel);
                             test.strictEqual("is_false", row.falseLabel);
+                            test.same({
+                                    fieldName: "has_boris",
+                                    label: "My Label",
+                                    owner: "test_data",
+                                    type: "boolean",
+                                    trueLabel: "is_true",
+                                    falseLabel: "is_false"
+                                },
+                                row);
 
                             // Test error handling on timestamp row split
                             try {
@@ -2668,6 +2693,14 @@ exports.setup = function(svc, loggedOutSvc) {
                             catch (e) {
                                 test.ok(e);
                                 test.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected timestamp.");
+                            }
+                            try {
+                                pivotSpec.addTimestampRowSplit(field, "Break Me!");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Did not find field " + field);
                             }
 
                             // Test timestamp row split
@@ -2793,13 +2826,19 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.ok(e);
                                 test.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number.");
                             }
+                            try {
+                                pivotSpec.addRangeColumnSplit(field, 0, 100, 20, 5);
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Did not find field " + field);
+                            }
 
                             // Test range column split
-
                             pivotSpec.addRangeColumnSplit("epsilon", 0, 100, 20, 5);
                             test.strictEqual(3, pivotSpec.columns.length);
 
-                            
                             col = pivotSpec.columns[pivotSpec.columns.length - 1];
                             test.ok(col.hasOwnProperty("fieldName"));
                             test.ok(col.hasOwnProperty("owner"));
@@ -2811,12 +2850,104 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual("test_data", col.owner);
                             test.strictEqual(pivotSpec.comparisonNumber, col.type);
                             test.strictEqual("ranges", col.display);
+                            var ranges = {
+                                start: "0",
+                                end: "100",
+                                size: "20",
+                                maxNumberOf: "5"
+                            };
+                            test.same(ranges, col.ranges);
                             test.same({
                                     fieldName: "epsilon",
-                                    
+                                    owner: "test_data",
+                                    type: "number",
+                                    display: "ranges",
+                                    ranges: ranges
                                 },
-                                col.ranges);
+                                col);
                             
+                            // Test error handling on boolean column split
+                            try {
+                                pivotSpec.addBooleanColumnSplit("epsilon", "t", "f");
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected boolean.");
+                            }
+                            try {
+                                pivotSpec.addBooleanColumnSplit(field, "t", "f");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Did not find field " + field);
+                            }
+
+                            // Test boolean column split
+                            pivotSpec.addBooleanColumnSplit("has_boris", "is_true", "is_false");
+                            test.strictEqual(4, pivotSpec.columns.length);
+
+                            col = pivotSpec.columns[pivotSpec.columns.length - 1];
+                            test.ok(col.hasOwnProperty("fieldName"));
+                            test.ok(col.hasOwnProperty("owner"));
+                            test.ok(col.hasOwnProperty("type"));
+                            test.ok(!col.hasOwnProperty("label"));
+                            test.ok(col.hasOwnProperty("trueLabel"));
+                            test.ok(col.hasOwnProperty("falseLabel"));
+
+                            test.strictEqual("has_boris", col.fieldName);
+                            test.strictEqual("test_data", col.owner);
+                            test.strictEqual(pivotSpec.comparisonBoolean, col.type);
+                            test.strictEqual("is_true", col.trueLabel);
+                            test.strictEqual("is_false", col.falseLabel);
+                            test.same({
+                                    fieldName: "has_boris",
+                                    owner: "test_data",
+                                    type: "boolean",
+                                    trueLabel: "is_true",
+                                    falseLabel: "is_false"
+                                },
+                                col);
+
+                            // Test error handling on timestamp column split
+                            try {
+                                pivotSpec.addTimestampColumnSplit("epsilon", "Wrong type here");
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected timestamp.");
+                            }
+                            try {
+                                pivotSpec.addTimestampColumnSplit(field, "Break Me!");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Did not find field " + field);
+                            }
+
+                            // Test timestamp column split
+                            pivotSpec.addTimestampColumnSplit("_time", pivotSpec.binning.DAY);
+                            test.strictEqual(5, pivotSpec.columns.length);
+
+                            col = pivotSpec.columns[pivotSpec.columns.length - 1];
+                            test.ok(col.hasOwnProperty("fieldName"));
+                            test.ok(col.hasOwnProperty("owner"));
+                            test.ok(col.hasOwnProperty("type"));
+                            test.ok(!col.hasOwnProperty("label"));
+                            test.ok(col.hasOwnProperty("period"));
+
+                            test.strictEqual("_time", col.fieldName);
+                            test.strictEqual("BaseEvent", col.owner);
+                            test.strictEqual(pivotSpec.comparisonTimestamp, col.type);
+                            test.strictEqual(pivotSpec.binning.DAY, col.period);
+                            test.same({
+                                    fieldName: "_time",
+                                    owner: "BaseEvent",
+                                    type: "timestamp",
+                                    period: "day"
+                                },
+                                col);
                         }
                     ],
                     function(err) {
