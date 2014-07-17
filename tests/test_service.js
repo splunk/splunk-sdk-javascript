@@ -2628,7 +2628,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                 start: 0,
                                 end: 100,
                                 size: 20,
-                                maxNumberOf: 5,
+                                maxNumberOf: 5
                             };
                             test.same(ranges, row.ranges);
                             test.same({
@@ -2948,6 +2948,244 @@ exports.setup = function(svc, loggedOutSvc) {
                                     period: "day"
                                 },
                                 col);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            "Callback#Pivot - test cell value": function(test) {
+                var name = "delete-me-" + getNextId();
+                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                           dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            var obj = dataModel.objectByName("test_data");
+                            test.ok(obj);
+
+                            var pivotSpec = obj.createPivotSpec();
+
+                            // Test error handling for cell value, string
+                            try {
+                                pivotSpec.addCellValue("iDontExist", "Break Me!", "explosion");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Did not find field iDontExist");
+                            }
+                            try {
+                                pivotSpec.addCellValue("source", "Wrong Stats Function", pivotSpec.statsFunctions.STDEV);
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Stats function on string and IPv4 fields must be one of:" + 
+                                    " list, distinct_values, first, last, count, or distinct_count; found " + 
+                                    pivotSpec.statsFunctions.STDEV);
+                            }
+
+                            // Add cell value, string
+                            pivotSpec.addCellValue("source", "Source Value", pivotSpec.statsFunctions.DISTINCT_COUNT);
+                            test.strictEqual(1, pivotSpec.cells.length);
+
+                            var cell = pivotSpec.cells[pivotSpec.cells.length - 1];
+                            test.ok(cell.hasOwnProperty("fieldName"));
+                            test.ok(cell.hasOwnProperty("owner"));
+                            test.ok(cell.hasOwnProperty("type"));
+                            test.ok(cell.hasOwnProperty("label"));
+                            test.ok(cell.hasOwnProperty("value"));
+                            test.ok(cell.hasOwnProperty("sparkline"));
+
+                            test.strictEqual("source", cell.fieldName);
+                            test.strictEqual("BaseEvent", cell.owner);
+                            test.strictEqual(pivotSpec.comparisonString, cell.type);
+                            test.strictEqual("Source Value", cell.label);
+                            test.strictEqual("dc", cell.value);
+                            test.strictEqual(false, cell.sparkline);
+                            test.same({
+                                    fieldName: "source",
+                                    owner: "BaseEvent",
+                                    type: "string",
+                                    label: "Source Value",
+                                    value: "dc",
+                                    sparkline: false
+                                }, cell);
+
+                            // Test error handling for cell value, IPv4
+                            try {
+                                pivotSpec.addCellValue("hostip", "Wrong Stats Function", pivotSpec.statsFunctions.STDEV);
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Stats function on string and IPv4 fields must be one of:" + 
+                                    " list, distinct_values, first, last, count, or distinct_count; found " + 
+                                    pivotSpec.statsFunctions.STDEV);
+                            }
+
+                            // Add cell value, IPv4
+                            pivotSpec.addCellValue("hostip", "Source Value", pivotSpec.statsFunctions.DISTINCT_COUNT);
+                            test.strictEqual(2, pivotSpec.cells.length);
+
+                            cell = pivotSpec.cells[pivotSpec.cells.length - 1];
+                            test.ok(cell.hasOwnProperty("fieldName"));
+                            test.ok(cell.hasOwnProperty("owner"));
+                            test.ok(cell.hasOwnProperty("type"));
+                            test.ok(cell.hasOwnProperty("label"));
+                            test.ok(cell.hasOwnProperty("value"));
+                            test.ok(cell.hasOwnProperty("sparkline"));
+
+                            test.strictEqual("hostip", cell.fieldName);
+                            test.strictEqual("test_data", cell.owner);
+                            test.strictEqual(pivotSpec.comparisonIPv4, cell.type);
+                            test.strictEqual("Source Value", cell.label);
+                            test.strictEqual(pivotSpec.statsFunctions.DISTINCT_COUNT, cell.value);
+                            test.strictEqual(false, cell.sparkline);
+                            test.same({
+                                    fieldName: "hostip",
+                                    owner: "test_data",
+                                    type: "ipv4",
+                                    label: "Source Value",
+                                    value: "dc",
+                                    sparkline: false
+                                }, cell);
+
+                            // Test error handling for cell value, boolean
+                            try {
+                                pivotSpec.addCellValue("has_boris", "Booleans not allowed", pivotSpec.statsFunctions.SUM);
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Cannot use boolean valued fields as cell values.");
+                            }
+
+                            // Test error handling for cell value, number
+                            try {
+                                pivotSpec.addCellValue("epsilon", "Wrong Stats Function", pivotSpec.statsFunctions.LATEST);
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Stats function on number field must be must be one of:" +
+                                    " sum, count, average, max, min, stdev, list, or distinct_values; found " +
+                                    pivotSpec.statsFunctions.LATEST);
+                            }
+
+                            // Add cell value, number
+                            pivotSpec.addCellValue("epsilon", "Source Value", pivotSpec.statsFunctions.AVERAGE);
+                            test.strictEqual(3, pivotSpec.cells.length);
+
+                            cell = pivotSpec.cells[pivotSpec.cells.length - 1];
+                            test.ok(cell.hasOwnProperty("fieldName"));
+                            test.ok(cell.hasOwnProperty("owner"));
+                            test.ok(cell.hasOwnProperty("type"));
+                            test.ok(cell.hasOwnProperty("label"));
+                            test.ok(cell.hasOwnProperty("value"));
+                            test.ok(cell.hasOwnProperty("sparkline"));
+
+                            test.strictEqual("epsilon", cell.fieldName);
+                            test.strictEqual("test_data", cell.owner);
+                            test.strictEqual(pivotSpec.comparisonNumber, cell.type);
+                            test.strictEqual("Source Value", cell.label);
+                            test.strictEqual(pivotSpec.statsFunctions.AVERAGE, cell.value);
+                            test.strictEqual(false, cell.sparkline);
+                            test.same({
+                                    fieldName: "epsilon",
+                                    owner: "test_data",
+                                    type: "number",
+                                    label: "Source Value",
+                                    value: "average",
+                                    sparkline: false
+                                }, cell);
+
+                            // Test error handling for cell value, timestamp
+                            try {
+                                pivotSpec.addCellValue("_time", "Wrong Stats Function", pivotSpec.statsFunctions.MAX);
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Stats function on timestamp field must be one of:" +
+                                    " duration, earliest, latest, list, or distinct values; found " +   
+                                    pivotSpec.statsFunctions.MAX);
+                            }
+
+                            // Add cell value, timestamp
+                            pivotSpec.addCellValue("_time", "Source Value", pivotSpec.statsFunctions.EARLIEST);
+                            test.strictEqual(4, pivotSpec.cells.length);
+
+                            cell = pivotSpec.cells[pivotSpec.cells.length - 1];
+                            test.ok(cell.hasOwnProperty("fieldName"));
+                            test.ok(cell.hasOwnProperty("owner"));
+                            test.ok(cell.hasOwnProperty("type"));
+                            test.ok(cell.hasOwnProperty("label"));
+                            test.ok(cell.hasOwnProperty("value"));
+                            test.ok(cell.hasOwnProperty("sparkline"));
+
+                            test.strictEqual("_time", cell.fieldName);
+                            test.strictEqual("BaseEvent", cell.owner);
+                            test.strictEqual(pivotSpec.comparisonTimestamp, cell.type);
+                            test.strictEqual("Source Value", cell.label);
+                            test.strictEqual(pivotSpec.statsFunctions.EARLIEST, cell.value);
+                            test.strictEqual(false, cell.sparkline);
+                            test.same({
+                                    fieldName: "_time",
+                                    owner: "BaseEvent",
+                                    type: "timestamp",
+                                    label: "Source Value",
+                                    value: "earliest",
+                                    sparkline: false
+                                }, cell);
+
+                            // Test error handling for cell value, count
+                            try {
+                                pivotSpec.addCellValue("test_data", "Wrong Stats Function", pivotSpec.statsFunctions.MIN);
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Stats function on childcount and objectcount fields " +
+                                    "must be count; found " + pivotSpec.statsFunctions.MIN);
+                            }
+                            
+                            // Add cell value, count
+                            pivotSpec.addCellValue("test_data", "Source Value", pivotSpec.statsFunctions.COUNT);
+                            test.strictEqual(5, pivotSpec.cells.length);
+
+                            cell = pivotSpec.cells[pivotSpec.cells.length - 1];
+                            test.ok(cell.hasOwnProperty("fieldName"));
+                            test.ok(cell.hasOwnProperty("owner"));
+                            test.ok(cell.hasOwnProperty("type"));
+                            test.ok(cell.hasOwnProperty("label"));
+                            test.ok(cell.hasOwnProperty("value"));
+                            test.ok(cell.hasOwnProperty("sparkline"));
+
+                            test.strictEqual("test_data", cell.fieldName);
+                            test.strictEqual("test_data", cell.owner);
+                            test.strictEqual(pivotSpec.comparisonObjectCount, cell.type);
+                            test.strictEqual("Source Value", cell.label);
+                            test.strictEqual(pivotSpec.statsFunctions.COUNT, cell.value);
+                            test.strictEqual(false, cell.sparkline);
+                            test.same({
+                                    fieldName: "test_data",
+                                    owner: "test_data",
+                                    type: "objectCount",
+                                    label: "Source Value",
+                                    value: "count",
+                                    sparkline: false
+                                }, cell);
+
+                            done();
                         }
                     ],
                     function(err) {
