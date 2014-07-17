@@ -2541,7 +2541,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.strictEqual(e.message, "Did not find field " + field);
                             }
 
-                            // Properly add a row split, number
+                            // Test row split, number
                             pivotSpec.addRowSplit("epsilon", "My Label");
                             test.strictEqual(1, pivotSpec.rows.length);
                             
@@ -2566,7 +2566,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                 },
                                 row);
                             
-                            // Properly add a row split, string
+                            // Test row split, string
                             pivotSpec.addRowSplit("host", "My Label");
                             test.strictEqual(2, pivotSpec.rows.length);
 
@@ -2575,19 +2575,17 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.ok(row.hasOwnProperty("owner"));
                             test.ok(row.hasOwnProperty("type"));
                             test.ok(row.hasOwnProperty("label"));
-                            test.ok(row.hasOwnProperty("display"));
+                            test.ok(!row.hasOwnProperty("display"));
 
                             test.strictEqual("host", row.fieldName);
                             test.strictEqual("BaseEvent", row.owner);
                             test.strictEqual("string", row.type);
                             test.strictEqual("My Label", row.label);
-                            test.strictEqual("all", row.display);
                             test.same({
                                     fieldName: "host",
                                     owner: "BaseEvent",
                                     type: "string",
-                                    label: "My Label",
-                                    display: "all"
+                                    label: "My Label"
                                 },
                                 row);
 
@@ -2600,6 +2598,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number.");
                             }
 
+                            // Test range row split
                             pivotSpec.addRangeRowSplit("epsilon", "My Label", 0, 100, 20, 5);
                             test.strictEqual(3, pivotSpec.rows.length);
 
@@ -2643,6 +2642,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected boolean.");
                             }
 
+                            // Test boolean row split
                             pivotSpec.addBooleanRowSplit("has_boris", "My Label", "is_true", "is_false");
                             test.strictEqual(4, pivotSpec.rows.length);
 
@@ -2670,6 +2670,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected timestamp.");
                             }
 
+                            // Test timestamp row split
                             pivotSpec.addTimestampRowSplit("_time", "My Label", pivotSpec.binning.DAY);
                             test.strictEqual(5, pivotSpec.rows.length);
 
@@ -2695,6 +2696,127 @@ exports.setup = function(svc, loggedOutSvc) {
                                 row);
 
                             done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            "Callback#Pivot - test column split": function(test) {
+                var name = "delete-me-" + getNextId();
+                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                           dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            var obj = dataModel.objectByName("test_data");
+                            test.ok(obj);
+
+                            var pivotSpec = obj.createPivotSpec();
+
+                            // Test error handling for column split
+                            try {
+                                pivotSpec.addColumnSplit("has_boris", "Wrong type here");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number or string.");
+                            }
+                            var field = getNextId();
+                            try {
+
+                                pivotSpec.addColumnSplit(field, "Break Me!");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Did not find field " + field);
+                            }
+
+                            // Test column split, number
+                            pivotSpec.addColumnSplit("epsilon");
+                            test.strictEqual(1, pivotSpec.columns.length);
+
+                            var col = pivotSpec.columns[pivotSpec.columns.length - 1];
+                            test.ok(col.hasOwnProperty("fieldName"));
+                            test.ok(col.hasOwnProperty("owner"));
+                            test.ok(col.hasOwnProperty("type"));
+                            test.ok(col.hasOwnProperty("display"));
+
+                            test.strictEqual("epsilon", col.fieldName);
+                            test.strictEqual("test_data", col.owner);
+                            test.strictEqual(pivotSpec.comparisonNumber, col.type);
+                            test.strictEqual("all", col.display);
+                            test.same({
+                                    fieldName: "epsilon",
+                                    owner: "test_data",
+                                    type: "number",
+                                    display: "all"
+                                }, 
+                                col);
+
+                            // Test column split, string
+                            pivotSpec.addColumnSplit("host");
+                            test.strictEqual(2, pivotSpec.columns.length);
+
+                            col = pivotSpec.columns[pivotSpec.columns.length - 1];
+                            test.ok(col.hasOwnProperty("fieldName"));
+                            test.ok(col.hasOwnProperty("owner"));
+                            test.ok(col.hasOwnProperty("type"));
+                            test.ok(!col.hasOwnProperty("display"));
+
+                            test.strictEqual("host", col.fieldName);
+                            test.strictEqual("BaseEvent", col.owner);
+                            test.strictEqual(pivotSpec.comparisonString, col.type);
+                            test.same({
+                                    fieldName: "host",
+                                    owner: "BaseEvent",
+                                    type: "string"
+                                }, 
+                                col);
+
+                            done();
+
+                            // Test error handling for range column split
+                            try {
+                                pivotSpec.addRangeColumnSplit("has_boris", "Wrong type here", 0, 100, 20, 5);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number.");
+                            }
+
+                            // Test range column split
+
+                            pivotSpec.addRangeColumnSplit("epsilon", 0, 100, 20, 5);
+                            test.strictEqual(3, pivotSpec.columns.length);
+
+                            
+                            col = pivotSpec.columns[pivotSpec.columns.length - 1];
+                            test.ok(col.hasOwnProperty("fieldName"));
+                            test.ok(col.hasOwnProperty("owner"));
+                            test.ok(col.hasOwnProperty("type"));
+                            test.ok(col.hasOwnProperty("display"));
+                            test.ok(col.hasOwnProperty("ranges"));
+
+                            test.strictEqual("epsilon", col.fieldName);
+                            test.strictEqual("test_data", col.owner);
+                            test.strictEqual(pivotSpec.comparisonNumber, col.type);
+                            test.strictEqual("ranges", col.display);
+                            test.same({
+                                    fieldName: "epsilon",
+                                    
+                                },
+                                col.ranges);
+                            
                         }
                     ],
                     function(err) {
