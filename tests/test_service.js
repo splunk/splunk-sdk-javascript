@@ -189,11 +189,9 @@ exports.setup = function(svc, loggedOutSvc) {
                         },
                         function(savedSearches, done) {  
                             // Ensure that we can't get the item from the generic
-                            // namespace without specifying a namespace
-                            var entity;
-                            
+                            // namespace without specifying a namespace                            
                             try {
-                                entity = savedSearches_1.item(searchName);
+                                savedSearches_1.item(searchName);
                                 test.ok(false);
                             }
                             catch(err) {
