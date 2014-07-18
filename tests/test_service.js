@@ -3215,7 +3215,6 @@ exports.setup = function(svc, loggedOutSvc) {
                     ],
                     function(err) {
                         test.ok(err);
-                        // test.ok(utils.endsWith("Must have non-empty cells or non-empty rows.", err.message));
                         test.done();
                     }
                 ); 
@@ -3235,19 +3234,37 @@ exports.setup = function(svc, loggedOutSvc) {
                             var obj = dataModel.objectByName("test_data");
                             test.ok(obj);
                             var pivotSpec = obj.createPivotSpec();
-                            try {
+                            
                             pivotSpec.addBooleanRowSplit("has_boris", "Has Boris", "meep", "hilda");
                             pivotSpec.addCellValue("hostip", "Distinct IPs", pivotSpec.statsFunctions.DISTINCT_COUNT);
-                            }catch(e){console.log(e);}
+
                             pivotSpec.pivot(done);
                         },
+                        function(pivot, done) {
+                            test.strictEqual(null, pivot.tstatsSearch);
+                            // TODO: this test fails with utils.startsWith, probably due to the pipe char
+                            test.strictEqual(0, pivot.pivotSearch.indexOf("| pivot"));
+
+                            pivot.run(done);
+                        },
+                        function(job, done) {
+                            tutils.pollUntil(
+                                job,
+                                function(j) {
+                                    return job.properties()["isDone"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            job.cancel(done);
+                        },
                         function(response, done) {
-                            console.log(response);
                             done();
                         }
                     ],
                     function(err) {
-                        console.log(err);
                         test.ok(!err);
                         test.done();
                     }
