@@ -2446,7 +2446,6 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 ); 
             },
-
             "Callback#Pivot - test limit filtering": function(test) {
                var name = "delete-me-" + getNextId();
                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
@@ -2503,7 +2502,6 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 ); 
             },
-
             "Callback#Pivot - test row split": function(test) {
                 var name = "delete-me-" + getNextId();
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
@@ -3193,7 +3191,68 @@ exports.setup = function(svc, loggedOutSvc) {
                         test.done();
                     }
                 );
-            }
+            },
+            "Callback#Pivot - test pivot throws HTTP exception": function(test) {
+               var name = "delete-me-" + getNextId();
+               var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+               var that = this;
+               Async.chain([
+                        function(done) {
+                            that.dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                           dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            var obj = dataModel.objectByName("test_data");
+                            test.ok(obj);
+
+                            obj.createPivotSpec().pivot(done);
+                        },
+                        function(response, done) {
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(err);
+                        // test.ok(utils.endsWith("Must have non-empty cells or non-empty rows.", err.message));
+                        test.done();
+                    }
+                ); 
+            },
+            "Callback#Pivot - test pivot without namespace": function(test) {
+               var name = "delete-me-" + getNextId();
+               var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+               var that = this;
+               Async.chain([
+                        function(done) {
+                            that.dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                           dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            var obj = dataModel.objectByName("test_data");
+                            test.ok(obj);
+                            var pivotSpec = obj.createPivotSpec();
+                            try {
+                            pivotSpec.addBooleanRowSplit("has_boris", "Has Boris", "meep", "hilda");
+                            pivotSpec.addCellValue("hostip", "Distinct IPs", pivotSpec.statsFunctions.DISTINCT_COUNT);
+                            }catch(e){console.log(e);}
+                            pivotSpec.pivot(done);
+                        },
+                        function(response, done) {
+                            console.log(response);
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        console.log(err);
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
         },  
 
         /*
