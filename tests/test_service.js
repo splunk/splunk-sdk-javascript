@@ -2960,10 +2960,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var that = this;
                 Async.chain([
                         function(done) {
-                            that.dataModels.fetch(done);
-                        },
-                        function(dataModels, done) {
-                           dataModels.create(name, args, done);
+                           that.dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
                             var obj = dataModel.objectByName("test_data");
@@ -3258,10 +3255,124 @@ exports.setup = function(svc, loggedOutSvc) {
                             );
                         },
                         function(job, done) {
+                            // TODO: this test fails with utils.startsWith, probably due to the pipe char
+                            test.strictEqual(0, job.properties().request.search.indexOf("| pivot"));
                             job.cancel(done);
                         },
                         function(response, done) {
                             done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
+            "Callback#Pivot - test pivot with simple namespace": function(test) {
+               var name = "delete-me-" + getNextId();
+               var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+               var that = this;
+               var obj;
+               var pivotSpec;
+               var adhocjob;
+               Async.chain([
+                        function(done) {
+                           that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            obj = dataModel.objectByName("test_data");
+                            test.ok(obj);
+                            obj.createLocalAccelerationJob(null, done);
+                        },
+                        function(job, done) {
+                            adhocjob = job;
+                            test.ok(job);
+                            pivotSpec = obj.createPivotSpec();
+                            
+                            pivotSpec.addBooleanRowSplit("has_boris", "Has Boris", "meep", "hilda");
+                            pivotSpec.addCellValue("hostip", "Distinct IPs", pivotSpec.statsFunctions.DISTINCT_COUNT);
+
+                            pivotSpec.setAccelerationJob(job);
+                            test.ok(typeof pivotSpec.accelerationNamespace === "string");
+                            pivotSpec.setAccelerationJob(job.sid);
+                            test.ok(typeof pivotSpec.accelerationNamespace === "string");
+                            
+                            pivotSpec.pivot(done);
+                        },
+                        function(pivot, done) {
+                            test.ok(pivot.tstatsSearch);
+                            test.ok(pivot.tstatsSearch.length > 0);
+                            // TODO: this test fails with utils.startsWith, probably due to the pipe char
+                            test.strictEqual(0, pivot.tstatsSearch.indexOf("| tstats"));
+                            pivot.run(done);
+                        },
+                        function(job, done) {
+                            tutils.pollUntil(
+                                job,
+                                function(j) {
+                                    return job.properties()["isDone"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            // TODO: this test fails with utils.startsWith, probably due to the pipe char
+                            test.strictEqual(0, job.properties().request.search.indexOf("| tstats"));
+                            adhocjob.cancel(done);
+                        },
+                        function(response, done) {
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
+            "Callback#Pivot - test pivot column range split": function(test) {
+                // This test is here because we had a problem with fields that were supposed to be
+                // numbers being expected as strings in Splunk 6.0. This was fixed in Splunk 6.1, and accepts
+                // either strings or numbers.
+               var name = "delete-me-" + getNextId();
+               var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+               var that = this;
+               var search;
+               Async.chain([
+                        function(done) {
+                            that.dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            var dm = dataModels.item("internal_audit_logs");
+                            var obj = dm.objectByName("searches");
+                            var pivotSpec = obj.createPivotSpec();
+
+                            pivotSpec.addRowSplit("user", "Executing user");
+                            pivotSpec.addRangeColumnSplit("exec_time", 0, 12, 5, 4);
+                            pivotSpec.addCellValue("search", "Search Query", pivotSpec.statsFunctions.DISTINCT_VALUES);
+                            pivotSpec.pivot(done);
+                        },
+                        function(pivot, done) {
+                            // If tstats is undefined, use pivotSearch
+                            search = pivot.tstatsSearch || pivot.pivotSearch;
+                            pivot.run(done);
+                        },
+                        function(job, done) {
+                            tutils.pollUntil(
+                                job,
+                                function(j) {
+                                    return job.properties()["isDone"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            // Make sure the job is run with the correct search query
+                            test.strictEqual(search, job.properties().request.search);
+                            job.cancel(done);
                         }
                     ],
                     function(err) {
