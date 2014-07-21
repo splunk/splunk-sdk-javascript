@@ -1495,7 +1495,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual("", timeField.comment);
 
                             var lvl2 = obj.fieldByName("level_2");
-                            test.strictEqual("level_2", lvl2.ownerName());
+                            test.strictEqual("level_2", lvl2.owner());
                             test.same(["level_0", "level_1", "level_2"], lvl2.ownerLineage());
                             test.strictEqual("objectCount", lvl2.type);
                             test.strictEqual("level_2", lvl2.name);
@@ -1655,7 +1655,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                 var constraint = constraints[i];
                                 test.ok(!!onlyOne);
 
-                                test.strictEqual("event1", constraint.ownerName());
+                                test.strictEqual("event1", constraint.owner());
                                 test.strictEqual("uri=\"*.php\" OR uri=\"*.py\"\nNOT (referer=null OR referer=\"-\")", constraint.query());
                             }
 
