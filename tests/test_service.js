@@ -1860,33 +1860,6 @@ exports.setup = function(svc, loggedOutSvc) {
                 );
             },
 
-            "Callback#DataModels - delete any remaining data models created by the SDK tests": function(test) {
-                // TODO: this test should be at the end
-                svc.dataModels().fetch(function(err, dataModels) {
-                    if (err) {
-                        test.ok(!err);
-                    }
-
-                    var dms = dataModels.list();
-                    Async.seriesEach(
-                        dms,
-                        function(val, i, done) {
-                            // Delete any tests that we created
-                            if (utils.startsWith(val["name"], "delete-me")) {
-                                val.remove(done);
-                            }
-                            else {
-                                done();
-                            }
-                        }, 
-                        function(err) {
-                            test.ok(!err);
-                            test.done();
-                        }
-                    );
-                });
-            },
-
             "Callback#DataModels - all toJSON functions work": function(test) {
                 // TODO: actually all toJSON() functions can be dropped, but leave them in for now
                 var that = this;
@@ -3150,8 +3123,10 @@ exports.setup = function(svc, loggedOutSvc) {
                         },
                         function(pivot, done) {
                             test.strictEqual(null, pivot.tstatsSearch);
-                            // TODO: this test fails with utils.startsWith, probably due to the pipe char
                             test.strictEqual(0, pivot.pivotSearch.indexOf("| pivot"));
+                            // This test won't work with utils.startsWith due to the regex escaping
+                            test.strictEqual("| pivot", pivot.pivotSearch.match("^\\| pivot")[0]);
+                            test.strictEqual(1, pivot.pivotSearch.match("^\\| pivot").length);
 
                             pivot.run(done);
                         },
@@ -3166,8 +3141,10 @@ exports.setup = function(svc, loggedOutSvc) {
                             );
                         },
                         function(job, done) {
-                            // TODO: this test fails with utils.startsWith, probably due to the pipe char
                             test.strictEqual(0, job.properties().request.search.indexOf("| pivot"));
+                            // This test won't work with utils.startsWith due to the regex escaping
+                            test.strictEqual("| pivot", job.properties().request.search.match("^\\| pivot")[0]);
+                            test.strictEqual(1, job.properties().request.search.match("^\\| pivot").length);
                             job.cancel(done);
                         },
                         function(response, done) {
@@ -3214,8 +3191,10 @@ exports.setup = function(svc, loggedOutSvc) {
                         function(pivot, done) {
                             test.ok(pivot.tstatsSearch);
                             test.ok(pivot.tstatsSearch.length > 0);
-                            // TODO: this test fails with utils.startsWith, probably due to the pipe char
                             test.strictEqual(0, pivot.tstatsSearch.indexOf("| tstats"));
+                            // This test won't work with utils.startsWith due to the regex escaping
+                            test.strictEqual("| tstats", pivot.tstatsSearch.match("^\\| tstats")[0]);
+                            test.strictEqual(1, pivot.tstatsSearch.match("^\\| tstats").length);
                             pivot.run(done);
                         },
                         function(job, done) {
@@ -3229,8 +3208,10 @@ exports.setup = function(svc, loggedOutSvc) {
                             );
                         },
                         function(job, done) {
-                            // TODO: this test fails with utils.startsWith, probably due to the pipe char
                             test.strictEqual(0, job.properties().request.search.indexOf("| tstats"));
+                            // This test won't work with utils.startsWith due to the regex escaping
+                            test.strictEqual("| tstats", job.properties().request.search.match("^\\| tstats")[0]);
+                            test.strictEqual(1, job.properties().request.search.match("^\\| tstats").length);
                             adhocjob.cancel(done);
                         },
                         function(response, done) {
@@ -3292,6 +3273,32 @@ exports.setup = function(svc, loggedOutSvc) {
                     }
                 ); 
             },
+            "Callback#DataModels - delete any remaining data models created by the SDK tests": function(test) {
+                // TODO: this test should be at the end
+                svc.dataModels().fetch(function(err, dataModels) {
+                    if (err) {
+                        test.ok(!err);
+                    }
+
+                    var dms = dataModels.list();
+                    Async.seriesEach(
+                        dms,
+                        function(val, i, done) {
+                            // Delete any tests that we created
+                            if (utils.startsWith(val["name"], "delete-me")) {
+                                val.remove(done);
+                            }
+                            else {
+                                done();
+                            }
+                        }, 
+                        function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
+                });
+            }
         },  
 
         /*
