@@ -1183,10 +1183,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var that = this;
                 Async.chain([
                         function(done) {
-                            that.dataModels.fetch(done);
-                        },
-                        function(dataModels, done) {
-                            dataModels.create(name, args, done);
+                            that.dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
                             // Check for 0 objects before fetch
@@ -1215,10 +1212,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var that = this;
                 Async.chain([
                         function(done) {
-                            that.dataModels.fetch(done);
-                        },
-                        function(dataModels, done) {
-                            dataModels.create(name, args, done);
+                            that.dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
                             // Check for 1 object before fetch
@@ -1245,10 +1239,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var that = this;
                 Async.chain([
                         function(done) {
-                            that.dataModels.fetch(done);
-                        },
-                        function(dataModels, done) {
-                            dataModels.create(name, args, done);
+                            that.dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
                             // Check for 2 objects before fetch
@@ -1275,10 +1266,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var that = this;
                 Async.chain([
                         function(done) {
-                            that.dataModels.fetch(done);
-                        },
-                        function(dataModels, done) {
-                            dataModels.create(name, args, done);
+                            that.dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
                             test.ok(dataModel.hasObject("search1"));
@@ -1309,10 +1297,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var that = this;
                 Async.chain([
                         function(done) {
-                            that.dataModels.fetch(done);
-                        },
-                        function(dataModels, done) {
-                            dataModels.create(name, args, done);
+                            that.dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
                             test.strictEqual(name, dataModel.name);
@@ -1338,10 +1323,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var that = this;
                 Async.chain([
                         function(done) {
-                            that.dataModels.fetch(done);
-                        },
-                        function(dataModels, done) {
-                            dataModels.create(name, args, done);
+                            that.dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
                             test.strictEqual(name, dataModel.name);
@@ -1368,10 +1350,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var that = this;
                 Async.chain([
                         function(done) {
-                            that.dataModels.fetch(done);
-                        },
-                        function(dataModels, done) {
-                            dataModels.create(name, args, done);
+                            that.dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
                             dataModel.setAcceleration(true);
@@ -1407,10 +1386,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var that = this;
                 Async.chain([
                         function(done) {
-                            that.dataModels.fetch(done);
-                        },
-                        function(dataModels, done) {
-                            dataModels.create(name, args, done);
+                            that.dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
                             var obj = dataModel.objectByName("event1");
@@ -1436,10 +1412,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var that = this;
                 Async.chain([
                         function(done) {
-                            that.dataModels.fetch(done);
-                        },
-                        function(dataModels, done) {
-                            dataModels.create(name, args, done);
+                            that.dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
                             var obj = dataModel.objectByName("event1");
@@ -1463,10 +1436,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var that = this;
                 Async.chain([
                         function(done) {
-                            that.dataModels.fetch(done);
-                        },
-                        function(dataModels, done) {
-                            dataModels.create(name, args, done);
+                            that.dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
                             var obj = dataModel.objectByName("level_0");
@@ -1507,10 +1477,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var that = this;
                 Async.chain([
                         function(done) {
-                            that.dataModels.fetch(done);
-                        },
-                        function(dataModels, done) {
-                            dataModels.create(name, args, done);
+                            that.dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
                             var obj = dataModel.objectByName("level_2");
@@ -1556,10 +1523,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var that = this;
                 Async.chain([
                         function(done) {
-                            that.dataModels.fetch(done);
-                        },
-                        function(dataModels, done) {
-                            dataModels.create(name, args, done);
+                            that.dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
                             var obj = dataModel.objectByName("test_data");
@@ -1589,10 +1553,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var that = this;
                 Async.chain([
                         function(done) {
-                            that.dataModels.fetch(done);
-                        },
-                        function(dataModels, done) {
-                            dataModels.create(name, args, done);
+                            that.dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
                             obj = dataModel.objectByName("level_2");
@@ -1633,10 +1594,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var that = this;
                 Async.chain([
                         function(done) {
-                            that.dataModels.fetch(done);
-                        },
-                        function(dataModels, done) {
-                            dataModels.create(name, args, done);
+                            that.dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
                             obj = dataModel.objectByName("level_2");
@@ -1676,10 +1634,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var that = this;
                 Async.chain([
                         function(done) {
-                            that.dataModels.fetch(done);
-                        },
-                        function(dataModels, done) {
-                            dataModels.create(name, args, done);
+                            that.dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
                             obj = dataModel.objectByName("event1");
@@ -1714,10 +1669,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var that = this;
                 Async.chain([
                         function(done) {
-                            that.dataModels.fetch(done);
-                        },
-                        function(dataModels, done) {
-                            dataModels.create(name, args, done);
+                            that.dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
                             obj = dataModel.objectByName("event1");
@@ -1859,10 +1811,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var that = this;
                 Async.chain([
                         function(done) {
-                            that.dataModels.fetch(done);
-                        },
-                        function(dataModels, done) {
-                            dataModels.create(name, args, done);
+                            that.dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
                             obj = dataModel.objectByName("search1");
@@ -1888,10 +1837,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var that = this;
                 Async.chain([
                         function(done) {
-                            that.dataModels.fetch(done);
-                        },
-                        function(dataModels, done) {
-                            dataModels.create(name, args, done);
+                            that.dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
                             obj = dataModel.objectByName("transaction1");
@@ -1915,6 +1861,7 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - delete any remaining data models created by the SDK tests": function(test) {
+                // TODO: this test should be at the end
                 svc.dataModels().fetch(function(err, dataModels) {
                     if (err) {
                         test.ok(!err);
@@ -2026,10 +1973,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var that = this;
                 Async.chain([
                         function(done) {
-                            that.dataModels.fetch(done);
-                        },
-                        function(dataModels, done) {
-                            dataModels.create(name, args, done);
+                            that.dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
                             test.ok(dataModel.objectByName("test_data"));
@@ -2049,10 +1993,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var that = this;
                 Async.chain([
                         function(done) {
-                            that.dataModels.fetch(done);
-                        },
-                        function(dataModels, done) {
-                            dataModels.create(name, args, done);
+                            that.dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
                             dataModel.objectByName("test_data");
@@ -2103,10 +2044,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var that = this;
                 Async.chain([
                         function(done) {
-                            that.dataModels.fetch(done);
-                        },
-                        function(dataModels, done) {
-                           dataModels.create(name, args, done);
+                           that.dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
                             var obj = dataModel.objectByName("test_data");
@@ -2249,10 +2187,7 @@ exports.setup = function(svc, loggedOutSvc) {
                var that = this;
                Async.chain([
                         function(done) {
-                            that.dataModels.fetch(done);
-                        },
-                        function(dataModels, done) {
-                           dataModels.create(name, args, done);
+                           that.dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
                             var obj = dataModel.objectByName("test_data");
@@ -2300,10 +2235,7 @@ exports.setup = function(svc, loggedOutSvc) {
                var that = this;
                Async.chain([
                         function(done) {
-                            that.dataModels.fetch(done);
-                        },
-                        function(dataModels, done) {
-                           dataModels.create(name, args, done);
+                           that.dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
                             var obj = dataModel.objectByName("test_data");
@@ -2351,10 +2283,7 @@ exports.setup = function(svc, loggedOutSvc) {
                var that = this;
                Async.chain([
                         function(done) {
-                            that.dataModels.fetch(done);
-                        },
-                        function(dataModels, done) {
-                           dataModels.create(name, args, done);
+                           that.dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
                             var obj = dataModel.objectByName("test_data");
@@ -2402,10 +2331,7 @@ exports.setup = function(svc, loggedOutSvc) {
                var that = this;
                Async.chain([
                         function(done) {
-                            that.dataModels.fetch(done);
-                        },
-                        function(dataModels, done) {
-                           dataModels.create(name, args, done);
+                           that.dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
                             var obj = dataModel.objectByName("test_data");
@@ -2452,10 +2378,7 @@ exports.setup = function(svc, loggedOutSvc) {
                var that = this;
                Async.chain([
                         function(done) {
-                            that.dataModels.fetch(done);
-                        },
-                        function(dataModels, done) {
-                           dataModels.create(name, args, done);
+                           that.dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
                             var obj = dataModel.objectByName("test_data");
@@ -2508,10 +2431,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var that = this;
                 Async.chain([
                         function(done) {
-                            that.dataModels.fetch(done);
-                        },
-                        function(dataModels, done) {
-                           dataModels.create(name, args, done);
+                           that.dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
                             var obj = dataModel.objectByName("test_data");
@@ -2741,10 +2661,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var that = this;
                 Async.chain([
                         function(done) {
-                            that.dataModels.fetch(done);
-                        },
-                        function(dataModels, done) {
-                           dataModels.create(name, args, done);
+                           that.dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
                             var obj = dataModel.objectByName("test_data");
@@ -3195,10 +3112,7 @@ exports.setup = function(svc, loggedOutSvc) {
                var that = this;
                Async.chain([
                         function(done) {
-                            that.dataModels.fetch(done);
-                        },
-                        function(dataModels, done) {
-                           dataModels.create(name, args, done);
+                           that.dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
                             var obj = dataModel.objectByName("test_data");
@@ -3222,10 +3136,7 @@ exports.setup = function(svc, loggedOutSvc) {
                var that = this;
                Async.chain([
                         function(done) {
-                            that.dataModels.fetch(done);
-                        },
-                        function(dataModels, done) {
-                           dataModels.create(name, args, done);
+                           that.dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
                             var obj = dataModel.objectByName("test_data");
