@@ -1603,8 +1603,6 @@ exports.setup = function(svc, loggedOutSvc) {
                         },
                         function(job, done) {
                             test.ok(job);
-                            // TODO: see if there is someway to test that the job is actually created with the earliestTime property set
-                            //     : probably do an update, and get it's properties at that time.
                             tutils.pollUntil(
                                 job,
                                 function(j) {
@@ -1616,6 +1614,16 @@ exports.setup = function(svc, loggedOutSvc) {
                         },
                         function(job, done) {
                             test.strictEqual("| datamodel " + name + " level_2 search | tscollect", job.properties().request.search);
+
+                            // Make sure the earliest time is 1 day behind
+                            var yesterday = new Date(Date.now() - (1000 * 60 * 60 * 24));
+                            var month = (yesterday.getMonth() + 1);
+                            if (month <= 9) {
+                                month = "0" + month;
+                            }
+                            var expectedDate = yesterday.getFullYear() + "-" + month + "-" + yesterday.getDate();
+                            test.ok(utils.startsWith(job._state.content.earliestTime, expectedDate));
+
                             job.cancel(done);
                         }
                     ],
@@ -1849,78 +1857,6 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.same(["host", "from"], obj.groupByFields());
                             test.strictEqual("25s", obj.maxPause);
                             test.strictEqual("100m", obj.maxSpan);
-
-                            done();
-                        }
-                    ],
-                    function(err) {
-                        test.ok(!err);
-                        test.done();
-                    }
-                );
-            },
-
-            "Callback#DataModels - all toJSON functions work": function(test) {
-                // TODO: actually all toJSON() functions can be dropped, but leave them in for now
-                var that = this;
-                Async.chain([
-                        function(done) {
-                            that.dataModels.fetch(done);
-                        },
-                        function(dataModels, done) {
-                            var dm = dataModels.item("internal_audit_logs");
-                            var obj = dm.objectByName("Audit"); 
-                            test.ok(obj);
-
-                            // Test the fields JSON
-                            var expectedFields = JSON.parse(utils.readFile(__filename, "../data/data_model_expected_fields.json"));
-                            var fields = JSON.parse(obj.toJSON()).fields;
-                            for (var i = 0; i < fields.length; i++) {
-                                fields[i] = JSON.parse(fields[i]);
-                            }
-                            test.same(expectedFields, fields);
-
-                            // Test the constraints JSON
-                            var expectedConstraints = JSON.parse(utils.readFile(__filename, "../data/data_model_expected_constraints.json"));
-                            var constraints = JSON.parse(obj.toJSON()).constraints;
-                            for (var j = 0; j < constraints.length; j++) {
-                                constraints[j] = JSON.parse(constraints[j]);
-                            }
-                            test.same(expectedConstraints, constraints);
-
-                            // Test the calculations JSON; the calculationID changes frequently, so we will re-parse it
-                            // instead of storing the expected JSON in a file.
-                            var objList = JSON.parse(dm.description()).objects;
-                            var expectedCalculations = null;
-                            var tempObj = null;
-                            for (var k = 0; k < objList.length; k++) {
-                                if (objList[k].objectName === "Audit") {
-                                    tempObj = objList[k];
-                                    expectedCalculations = objList[k].calculations;
-                                }
-                            }
-                            var calculations = JSON.parse(obj.toJSON()).calculations;
-                            for (var l = 0; l < calculations.length; l++) {
-                                calculations[l] = JSON.parse(calculations[l]);
-                                for (var m = 0; m < calculations[l].outputFields.length; m++) {
-                                    calculations[l].outputFields[m] = JSON.parse(calculations[l].outputFields[m]);
-                                }
-                            }
-                            test.strictEqual(typeof expectedCalculations, typeof calculations);
-                            test.strictEqual(expectedCalculations.length, calculations.length);
-                            test.same(expectedCalculations, calculations);
-
-                            // Test data model object JSON
-                            var recreatedJSON = JSON.parse(obj.toJSON());
-                            recreatedJSON.constraints = constraints;
-                            recreatedJSON.calculations = calculations;
-                            recreatedJSON.fields = fields;
-                            for (var n = 0; n < Object.keys(recreatedJSON).length; n++) {
-                                var o = Object.keys(recreatedJSON)[n];
-                                test.same(tempObj[o], recreatedJSON[o]);
-                            }
-
-                            // TODO: test DataModel.toJSON()
 
                             done();
                         }
@@ -3274,7 +3210,6 @@ exports.setup = function(svc, loggedOutSvc) {
                 ); 
             },
             "Callback#DataModels - delete any remaining data models created by the SDK tests": function(test) {
-                // TODO: this test should be at the end
                 svc.dataModels().fetch(function(err, dataModels) {
                     if (err) {
                         test.ok(!err);
