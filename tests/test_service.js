@@ -1489,7 +1489,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             var timeField = obj.fieldByName("_time");
                             test.ok(timeField);
                             test.strictEqual("timestamp", timeField.type); // TODO: do I need some object constants?
-                            test.same(["BaseEvent"], timeField.ownerLineage());
+                            test.same(["BaseEvent"], timeField.lineage);
                             test.strictEqual("_time", timeField.name);
                             test.strictEqual(false, timeField.required);
                             test.strictEqual(false, timeField.multivalued);
@@ -1499,7 +1499,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             var lvl2 = obj.fieldByName("level_2");
                             test.strictEqual("level_2", lvl2.owner());
-                            test.same(["level_0", "level_1", "level_2"], lvl2.ownerLineage());
+                            test.same(["level_0", "level_1", "level_2"], lvl2.lineage);
                             test.strictEqual("objectCount", lvl2.type);
                             test.strictEqual("level_2", lvl2.name);
                             test.strictEqual("level 2", lvl2.displayName);

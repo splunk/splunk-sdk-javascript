@@ -12,9 +12,7 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-// This example will login to Splunk, and then retrieve the list of fired alerts,
-// printing each alert's name and properties. It is the same as firedalerts.js, 
-// except that it uses the Async library
+// TODO: add a description of this example.
 
 var splunkjs = require('../../../index');
 var Async  = splunkjs.Async;
