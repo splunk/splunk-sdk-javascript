@@ -1420,7 +1420,7 @@ exports.setup = function(svc, loggedOutSvc) {
                         function(dataModel, done) {
                             var obj = dataModel.objectByName("event1");
                             test.ok(obj);
-                            test.ok(!obj.parent());
+                            test.ok(!obj.parent);
 
                             done();
                         }
