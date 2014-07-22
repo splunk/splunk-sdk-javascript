@@ -1694,7 +1694,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.ok(evalCalculation);
                             test.strictEqual("event1", evalCalculation.owner());
                             test.same(["event1"], evalCalculation.lineage());
-                            test.strictEqual(evalCalculation.typeEval, evalCalculation.type);
+                            test.strictEqual(evalCalculation.types.Eval, evalCalculation.type);
                             test.ok(evalCalculation.isEval());
                             test.ok(!evalCalculation.isLookup());
                             test.ok(!evalCalculation.isGeoIP());
@@ -1714,7 +1714,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.ok(lookupCalculation);
                             test.strictEqual("event1", lookupCalculation.owner());
                             test.same(["event1"], lookupCalculation.lineage());
-                            test.strictEqual(lookupCalculation.typeLookup, lookupCalculation.type);
+                            test.strictEqual(lookupCalculation.types.Lookup, lookupCalculation.type);
                             test.ok(lookupCalculation.isLookup());
                             test.ok(!lookupCalculation.isEval());
                             test.ok(!lookupCalculation.isGeoIP());
@@ -1731,7 +1731,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.ok(regexpCalculation);
                             test.strictEqual("event1", regexpCalculation.owner());
                             test.same(["event1"], regexpCalculation.lineage());
-                            test.strictEqual(regexpCalculation.typeRegexp, regexpCalculation.type);
+                            test.strictEqual(regexpCalculation.types.Regexp, regexpCalculation.type);
                             test.ok(regexpCalculation.isRegexp());
                             test.ok(!regexpCalculation.isLookup());
                             test.ok(!regexpCalculation.isEval());
@@ -1744,7 +1744,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.ok(geoIPCalculation);
                             test.strictEqual("event1", geoIPCalculation.owner());
                             test.same(["event1"], geoIPCalculation.lineage());
-                            test.strictEqual(geoIPCalculation.typeGeoIP, geoIPCalculation.type);
+                            test.strictEqual(geoIPCalculation.types.GeoIP, geoIPCalculation.type);
                             test.ok(geoIPCalculation.isGeoIP());
                             test.ok(!geoIPCalculation.isLookup());
                             test.ok(!geoIPCalculation.isEval());

@@ -69,7 +69,7 @@ exports.main = function(opts, callback) {
 
                 var lineageString = "\t Lineage:";
                 for (var i = 0; i < searches.lineage().length; i++) {
-                    lineageString += " -> " + searches.lineage()[i]
+                    lineageString += " -> " + searches.lineage()[i];
                 }
                 console.log(lineageString);
 
