@@ -1444,20 +1444,20 @@ exports.setup = function(svc, loggedOutSvc) {
                         function(dataModel, done) {
                             var obj = dataModel.objectByName("level_0");
                             test.ok(obj);
-                            test.strictEqual(1, obj.lineage().length);
-                            test.strictEqual("level_0", obj.lineage()[0]);
+                            test.strictEqual(1, obj.lineage.length);
+                            test.strictEqual("level_0", obj.lineage[0]);
                             test.strictEqual("BaseEvent", obj.parentName);
 
                             obj = dataModel.objectByName("level_1");
                             test.ok(obj);
-                            test.strictEqual(2, obj.lineage().length);
-                            test.same(["level_0", "level_1"], obj.lineage());
+                            test.strictEqual(2, obj.lineage.length);
+                            test.same(["level_0", "level_1"], obj.lineage);
                             test.strictEqual("level_0", obj.parentName);
 
                             obj = dataModel.objectByName("level_2");
                             test.ok(obj);
-                            test.strictEqual(3, obj.lineage().length);
-                            test.same(["level_0", "level_1", "level_2"], obj.lineage());
+                            test.strictEqual(3, obj.lineage.length);
+                            test.same(["level_0", "level_1", "level_2"], obj.lineage);
                             test.strictEqual("level_1", obj.parentName);
 
                             // Make sure there's no extra children
@@ -1693,7 +1693,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             var evalCalculation = calculations["93fzsv03wa7"];
                             test.ok(evalCalculation);
                             test.strictEqual("event1", evalCalculation.owner());
-                            test.same(["event1"], evalCalculation.lineage());
+                            test.same(["event1"], evalCalculation.lineage);
                             test.strictEqual(evalCalculation.types.Eval, evalCalculation.type);
                             test.ok(evalCalculation.isEval());
                             test.ok(!evalCalculation.isLookup());
@@ -1713,7 +1713,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             var lookupCalculation = calculations["sr3mc8o3mjr"];
                             test.ok(lookupCalculation);
                             test.strictEqual("event1", lookupCalculation.owner());
-                            test.same(["event1"], lookupCalculation.lineage());
+                            test.same(["event1"], lookupCalculation.lineage);
                             test.strictEqual(lookupCalculation.types.Lookup, lookupCalculation.type);
                             test.ok(lookupCalculation.isLookup());
                             test.ok(!lookupCalculation.isEval());
@@ -1730,7 +1730,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             var regexpCalculation = calculations["a5v1k82ymic"];
                             test.ok(regexpCalculation);
                             test.strictEqual("event1", regexpCalculation.owner());
-                            test.same(["event1"], regexpCalculation.lineage());
+                            test.same(["event1"], regexpCalculation.lineage);
                             test.strictEqual(regexpCalculation.types.Regexp, regexpCalculation.type);
                             test.ok(regexpCalculation.isRegexp());
                             test.ok(!regexpCalculation.isLookup());
@@ -1743,7 +1743,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             var geoIPCalculation = calculations["pbe9bd0rp4"];
                             test.ok(geoIPCalculation);
                             test.strictEqual("event1", geoIPCalculation.owner());
-                            test.same(["event1"], geoIPCalculation.lineage());
+                            test.same(["event1"], geoIPCalculation.lineage);
                             test.strictEqual(geoIPCalculation.types.GeoIP, geoIPCalculation.type);
                             test.ok(geoIPCalculation.isGeoIP());
                             test.ok(!geoIPCalculation.isLookup());
