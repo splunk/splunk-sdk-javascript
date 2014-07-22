@@ -1358,17 +1358,16 @@ exports.setup = function(svc, loggedOutSvc) {
                             dataModel.setAccelerationCronSchedule("5/* * * * *");
 
                             test.strictEqual(true, dataModel.isAccelerated());
-                            test.strictEqual("-2mon", dataModel.properties().acceleration.earliestTime);
-                            test.strictEqual("5/* * * * *", dataModel.properties().acceleration.cronSchedule);
+                            test.strictEqual("-2mon", dataModel.acceleration.earliestTime);
+                            test.strictEqual("5/* * * * *", dataModel.acceleration.cronSchedule);
 
                             dataModel.setAcceleration(false);
                             dataModel.setEarliestAcceleratedTime("-1mon");
                             dataModel.setAccelerationCronSchedule("* * * * *");
 
                             test.ok(!dataModel.isAccelerated());
-                            test.strictEqual("-1mon", dataModel.properties().acceleration.earliestTime);
-                            test.strictEqual("* * * * *", dataModel.properties().acceleration.cronSchedule);
-
+                            test.strictEqual("-1mon", dataModel.acceleration.earliestTime);
+                            test.strictEqual("* * * * *", dataModel.acceleration.cronSchedule);
                             done();
                         }
                     ],
@@ -1917,9 +1916,9 @@ exports.setup = function(svc, loggedOutSvc) {
                             var props = dataModel.properties();
 
                             test.strictEqual(true, dataModel.isAccelerated());
-                            test.strictEqual(true, !!props.acceleration.enabled);
-                            test.strictEqual("-2mon", props.acceleration.earliest_time);
-                            test.strictEqual("0 */12 * * *", props.acceleration.cron_schedule);
+                            test.strictEqual(true, !!dataModel.acceleration.enabled);
+                            test.strictEqual("-2mon", dataModel.acceleration.earliest_time);
+                            test.strictEqual("0 */12 * * *", dataModel.acceleration.cron_schedule);
 
                             var dataModelObject = dataModel.objectByName("test_data");
                             var pivotSpec = dataModelObject.createPivotSpec();
