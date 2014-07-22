@@ -121,6 +121,7 @@ exports.main = function(opts, callback) {
                 }
                 
                 var pivotSpec = searches.createPivotSpec();
+                // Each function call here returns a pivotSpecification so we can chain them
                 pivotSpec
                     .addRowSplit("user", "Executing user")
                     .addRangeColumnSplit("exec_time", null, null, null, 4)

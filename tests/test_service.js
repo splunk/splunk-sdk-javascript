@@ -1352,22 +1352,26 @@ exports.setup = function(svc, loggedOutSvc) {
                         function(done) {
                             that.dataModels.create(name, args, done);
                         },
-                        function(dataModel, done) {
-                            dataModel.setAcceleration(true);
-                            dataModel.setEarliestAcceleratedTime("-2mon");
-                            dataModel.setAccelerationCronSchedule("5/* * * * *");
+                        function(dataModel, done) {                            
+                            dataModel.acceleration.enabled = true;
+                            dataModel.acceleration.earliestTime = "-2mon";
+                            dataModel.acceleration.cronSchedule = "5/* * * * *";
 
                             test.strictEqual(true, dataModel.isAccelerated());
+                            test.strictEqual(true, dataModel.acceleration.enabled);
                             test.strictEqual("-2mon", dataModel.acceleration.earliestTime);
                             test.strictEqual("5/* * * * *", dataModel.acceleration.cronSchedule);
+                            test.same({enabled: true, earliestTime: "-2mon", cronSchedule: "5/* * * * *"}, dataModel.acceleration);
 
-                            dataModel.setAcceleration(false);
-                            dataModel.setEarliestAcceleratedTime("-1mon");
-                            dataModel.setAccelerationCronSchedule("* * * * *");
+                            dataModel.acceleration.enabled = false;
+                            dataModel.acceleration.earliestTime = "-1mon";
+                            dataModel.acceleration.cronSchedule = "* * * * *";
 
-                            test.ok(!dataModel.isAccelerated());
+                            test.strictEqual(false, dataModel.isAccelerated());
+                            test.strictEqual(false, dataModel.acceleration.enabled);
                             test.strictEqual("-1mon", dataModel.acceleration.earliestTime);
                             test.strictEqual("* * * * *", dataModel.acceleration.cronSchedule);
+                            test.same({enabled: false, earliestTime: "-1mon", cronSchedule: "* * * * *"}, dataModel.acceleration);
                             done();
                         }
                     ],
@@ -1907,9 +1911,9 @@ exports.setup = function(svc, loggedOutSvc) {
                             dataModel.objectByName("test_data");
                             test.ok(dataModel);
                             
-                            dataModel.setAcceleration(true);
-                            dataModel.setEarliestAcceleratedTime("-2mon");
-                            dataModel.setAccelerationCronSchedule("0 */12 * * *");
+                            dataModel.acceleration.enabled = true;
+                            dataModel.acceleration.earliestTime = "-2mon";
+                            dataModel.acceleration.cronSchedule = "0 */12 * * *";
                             dataModel.update(done);                            
                         },
                         function(dataModel, done) {
