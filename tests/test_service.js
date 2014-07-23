@@ -1715,7 +1715,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.ok(!evalCalculation.isRegexp());
                             test.strictEqual("", evalCalculation.comment);
                             test.strictEqual(true, evalCalculation.isEditable());
-                            test.strictEqual("if(cidrmatch(\"192.0.0.0/16\", clientip), \"local\", \"other\")", evalCalculation.expression());
+                            test.strictEqual("if(cidrmatch(\"192.0.0.0/16\", clientip), \"local\", \"other\")", evalCalculation.expression);
 
                             test.strictEqual(1, Object.keys(evalCalculation.outputFields()).length);
                             test.strictEqual(1, evalCalculation.outputFieldNames().length);
@@ -1735,10 +1735,10 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.ok(!lookupCalculation.isRegexp());
                             test.strictEqual("", lookupCalculation.comment);
                             test.strictEqual(true, lookupCalculation.isEditable());
-                            test.same([{lookupField: "a_lookup_field", inputField: "host"}], lookupCalculation.inputFieldMappings());
-                            test.strictEqual(1, lookupCalculation.inputFieldMappings().length);
-                            test.strictEqual("a_lookup_field", lookupCalculation.inputFieldMappings()[0].lookupField);
-                            test.strictEqual("host", lookupCalculation.inputFieldMappings()[0].inputField);
+                            test.same([{lookupField: "a_lookup_field", inputField: "host"}], lookupCalculation.inputFieldMappings);
+                            test.strictEqual(1, lookupCalculation.inputFieldMappings.length);
+                            test.strictEqual("a_lookup_field", lookupCalculation.inputFieldMappings[0].lookupField);
+                            test.strictEqual("host", lookupCalculation.inputFieldMappings[0].inputField);
                             test.strictEqual("dnslookup", lookupCalculation.lookupName);
                             
                             var regexpCalculation = calculations["a5v1k82ymic"];
@@ -1751,8 +1751,8 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.ok(!regexpCalculation.isEval());
                             test.ok(!regexpCalculation.isGeoIP());
                             test.strictEqual(2, regexpCalculation.outputFieldNames().length);
-                            test.strictEqual("_raw", regexpCalculation.inputField());
-                            test.strictEqual(" From: (?<from>.*) To: (?<to>.*) ", regexpCalculation.expression());
+                            test.strictEqual("_raw", regexpCalculation.inputField);
+                            test.strictEqual(" From: (?<from>.*) To: (?<to>.*) ", regexpCalculation.expression);
 
                             var geoIPCalculation = calculations["pbe9bd0rp4"];
                             test.ok(geoIPCalculation);
@@ -1765,7 +1765,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.ok(!geoIPCalculation.isRegexp());
                             test.strictEqual("·Ä©·öô‡Øµ comment of pbe9bd0rp4", geoIPCalculation.comment);
                             test.strictEqual(5, geoIPCalculation.outputFieldNames().length);
-                            test.strictEqual("output_from_reverse_hostname", geoIPCalculation.inputField());
+                            test.strictEqual("output_from_reverse_hostname", geoIPCalculation.inputField);
 
                             done();
                         }
@@ -1870,8 +1870,8 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.ok(obj instanceof splunkjs.Service.DataModelObject);
                             test.strictEqual("BaseTransaction", obj.parentName);
                             test.ok(obj.isBaseTransaction());
-                            test.same(["event1"], obj.objectsToGroup());
-                            test.same(["host", "from"], obj.groupByFields());
+                            test.same(["event1"], obj.objectsToGroup);
+                            test.same(["host", "from"], obj.groupByFields);
                             test.strictEqual("25s", obj.maxPause);
                             test.strictEqual("100m", obj.maxSpan);
 
