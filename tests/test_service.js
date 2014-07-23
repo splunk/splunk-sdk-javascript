@@ -1151,7 +1151,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             initialSize = dataModels.list().length;
                             dataModels.create(name, args, done);
                         },
-                        function(response, done) {
+                        function(dataModel, done) {
                             that.dataModels.fetch(done);
                         },
                         function(dataModels, done) {
@@ -1397,7 +1397,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             test.strictEqual("event1 ·Ä©·öô", obj.displayName);
                             test.strictEqual("event1", obj.name);
-                            test.same(dataModel, obj.dataModel());
+                            test.same(dataModel, obj.dataModel);
                             done();
                         }
                     ],
@@ -1941,7 +1941,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             var dataModelObject = dataModel.objectByName("test_data");
                             var pivotSpec = dataModelObject.createPivotSpec();
 
-                            test.strictEqual(dataModelObject.dataModel().name, pivotSpec.accelerationNamespace);
+                            test.strictEqual(dataModelObject.dataModel.name, pivotSpec.accelerationNamespace);
 
                             var name1 = "delete-me-" + getNextId();
                             pivotSpec.setAccelerationJob(name1);
@@ -2142,6 +2142,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.strictEqual("test_data", filterJSON.owner);
                             }
                             catch (e) {
+                                console.log(e.message, e.stack);
                                 test.ok(false);
                             }
                             
@@ -3235,10 +3236,10 @@ exports.setup = function(svc, loggedOutSvc) {
                     var dms = dataModels.list();
                     Async.seriesEach(
                         dms,
-                        function(val, i, done) {
-                            // Delete any tests that we created
-                            if (utils.startsWith(val["name"], "delete-me")) {
-                                val.remove(done);
+                        function(datamodel, i, done) {
+                            // Delete any test data models that we created
+                            if (utils.startsWith(datamodel.name, "delete-me")) {
+                                datamodel.remove(done);
                             }
                             else {
                                 done();
