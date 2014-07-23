@@ -1187,12 +1187,12 @@ exports.setup = function(svc, loggedOutSvc) {
                         },
                         function(dataModel, done) {
                             // Check for 0 objects before fetch
-                            test.strictEqual(0, dataModel.objects().length);
+                            test.strictEqual(0, dataModel.objects.length);
                             that.dataModels.fetch(done);
                         },
                         function(dataModels, done) {
                             // Check for 0 objects after fetch
-                            test.strictEqual(0, dataModels.item(name).objects().length);
+                            test.strictEqual(0, dataModels.item(name).objects.length);
                             done();
                         }
                     ],
@@ -1216,12 +1216,12 @@ exports.setup = function(svc, loggedOutSvc) {
                         },
                         function(dataModel, done) {
                             // Check for 1 object before fetch
-                            test.strictEqual(1, dataModel.objects().length);
+                            test.strictEqual(1, dataModel.objects.length);
                             that.dataModels.fetch(done);
                         },
                         function(dataModels, done) {
                             // Check for 1 object after fetch
-                            test.strictEqual(1, dataModels.item(name).objects().length);
+                            test.strictEqual(1, dataModels.item(name).objects.length);
                             done();
                         }
                     ],
@@ -1243,12 +1243,12 @@ exports.setup = function(svc, loggedOutSvc) {
                         },
                         function(dataModel, done) {
                             // Check for 2 objects before fetch
-                            test.strictEqual(2, dataModel.objects().length);
+                            test.strictEqual(2, dataModel.objects.length);
                             that.dataModels.fetch(done);
                         },
                         function(dataModels, done) {
                             // Check for 2 objects after fetch
-                            test.strictEqual(2, dataModels.item(name).objects().length);
+                            test.strictEqual(2, dataModels.item(name).objects.length);
                             done();
                         }
                     ],
@@ -1303,8 +1303,8 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual(name, dataModel.name);
                             // TODO: Should have some proper unicode handling?
                             //     : see https://github.com/splunk/splunk-sdk-java/blob/master/tests/com/splunk/DataModelTest.java#L139
-                            test.strictEqual("·Ä©·öô‡Øµ", dataModel.displayName());
-                            test.strictEqual("‡Øµ‡Ø±‡Ø∞‡ØØ", dataModel.description());
+                            test.strictEqual("·Ä©·öô‡Øµ", dataModel.displayName);
+                            test.strictEqual("‡Øµ‡Ø±‡Ø∞‡ØØ", dataModel.description);
 
                             done();
                         }
@@ -1327,11 +1327,11 @@ exports.setup = function(svc, loggedOutSvc) {
                         },
                         function(dataModel, done) {
                             test.strictEqual(name, dataModel.name);
-                            test.strictEqual("", dataModel.displayName());
-                            test.strictEqual("", dataModel.description());
+                            test.strictEqual("", dataModel.displayName);
+                            test.strictEqual("", dataModel.description);
 
                             // Make sure we're not getting a summary of the data model definition
-                            test.strictEqual("0", dataModel.properties().concise);
+                            test.strictEqual("0", dataModel.concise);
 
                             done();
                         }
@@ -1420,7 +1420,7 @@ exports.setup = function(svc, loggedOutSvc) {
                         function(dataModel, done) {
                             var obj = dataModel.objectByName("event1");
                             test.ok(obj);
-                            test.ok(!obj.parent);
+                            test.ok(!obj.parent());
 
                             done();
                         }
@@ -1505,7 +1505,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual("", timeField.comment);
 
                             var lvl2 = obj.fieldByName("level_2");
-                            test.strictEqual("level_2", lvl2.owner());
+                            test.strictEqual("level_2", lvl2.owner);
                             test.same(["level_0", "level_1", "level_2"], lvl2.lineage);
                             test.strictEqual("objectCount", lvl2.type);
                             test.strictEqual(lvl2.types.objectcount, lvl2.type);
@@ -1664,7 +1664,7 @@ exports.setup = function(svc, loggedOutSvc) {
                         function(dataModel, done) {
                             obj = dataModel.objectByName("event1");
                             test.ok(obj);
-                            var constraints = obj.constraints();
+                            var constraints = obj.constraints;
                             test.ok(constraints);
                             var onlyOne = true;
 
@@ -1672,8 +1672,8 @@ exports.setup = function(svc, loggedOutSvc) {
                                 var constraint = constraints[i];
                                 test.ok(!!onlyOne);
 
-                                test.strictEqual("event1", constraint.owner());
-                                test.strictEqual("uri=\"*.php\" OR uri=\"*.py\"\nNOT (referer=null OR referer=\"-\")", constraint.query());
+                                test.strictEqual("event1", constraint.owner);
+                                test.strictEqual("uri=\"*.php\" OR uri=\"*.py\"\nNOT (referer=null OR referer=\"-\")", constraint.query);
                             }
 
                             done();
@@ -1700,13 +1700,13 @@ exports.setup = function(svc, loggedOutSvc) {
                             obj = dataModel.objectByName("event1");
                             test.ok(obj);
 
-                            var calculations = obj.calculations();
+                            var calculations = obj.calculations;
                             test.strictEqual(4, Object.keys(calculations).length);
                             test.strictEqual(4, obj.calculationIDs().length);
 
                             var evalCalculation = calculations["93fzsv03wa7"];
                             test.ok(evalCalculation);
-                            test.strictEqual("event1", evalCalculation.owner());
+                            test.strictEqual("event1", evalCalculation.owner);
                             test.same(["event1"], evalCalculation.lineage);
                             test.strictEqual(evalCalculation.types.Eval, evalCalculation.type);
                             test.ok(evalCalculation.isEval());
@@ -1717,16 +1717,16 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual(true, evalCalculation.isEditable());
                             test.strictEqual("if(cidrmatch(\"192.0.0.0/16\", clientip), \"local\", \"other\")", evalCalculation.expression);
 
-                            test.strictEqual(1, Object.keys(evalCalculation.outputFields()).length);
+                            test.strictEqual(1, Object.keys(evalCalculation.outputFields).length);
                             test.strictEqual(1, evalCalculation.outputFieldNames().length);
 
-                            var field = evalCalculation.outputFields()["new_field"];
+                            var field = evalCalculation.outputFields["new_field"];
                             test.ok(field);
                             test.strictEqual("My New Field", field.displayName);
 
                             var lookupCalculation = calculations["sr3mc8o3mjr"];
                             test.ok(lookupCalculation);
-                            test.strictEqual("event1", lookupCalculation.owner());
+                            test.strictEqual("event1", lookupCalculation.owner);
                             test.same(["event1"], lookupCalculation.lineage);
                             test.strictEqual(lookupCalculation.types.Lookup, lookupCalculation.type);
                             test.ok(lookupCalculation.isLookup());
@@ -1743,7 +1743,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             
                             var regexpCalculation = calculations["a5v1k82ymic"];
                             test.ok(regexpCalculation);
-                            test.strictEqual("event1", regexpCalculation.owner());
+                            test.strictEqual("event1", regexpCalculation.owner);
                             test.same(["event1"], regexpCalculation.lineage);
                             test.strictEqual(regexpCalculation.types.Regexp, regexpCalculation.type);
                             test.ok(regexpCalculation.isRegexp());
@@ -1756,7 +1756,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             var geoIPCalculation = calculations["pbe9bd0rp4"];
                             test.ok(geoIPCalculation);
-                            test.strictEqual("event1", geoIPCalculation.owner());
+                            test.strictEqual("event1", geoIPCalculation.owner);
                             test.same(["event1"], geoIPCalculation.lineage);
                             test.strictEqual(geoIPCalculation.types.GeoIP, geoIPCalculation.type);
                             test.ok(geoIPCalculation.isGeoIP());
@@ -1870,6 +1870,8 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.ok(obj instanceof splunkjs.Service.DataModelObject);
                             test.strictEqual("BaseTransaction", obj.parentName);
                             test.ok(obj.isBaseTransaction());
+                            test.ok(!obj.isBaseSearch());
+                            test.ok(!obj.isBaseEvent());
                             test.same(["event1"], obj.objectsToGroup);
                             test.same(["host", "from"], obj.groupByFields);
                             test.strictEqual("25s", obj.maxPause);
@@ -1928,7 +1930,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             dataModel.acceleration.enabled = true;
                             dataModel.acceleration.earliestTime = "-2mon";
                             dataModel.acceleration.cronSchedule = "0 */12 * * *";
-                            dataModel.update(done);                            
+                            dataModel.update(done);
                         },
                         function(dataModel, done) {
                             var props = dataModel.properties();
@@ -1957,7 +1959,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     function(err) {
                         test.ok(!err);
                         if (err) {
-                            console.log(err);
+                            console.log(err); // TODO: remove
                         }
                         test.done();
                     }
@@ -1980,7 +1982,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             // Boolean comparisons
                             try {
-                                pivotSpec.addFilter(getNextId(), pivotSpec.comparisonBoolean, "=", true);
+                                pivotSpec.addFilter(getNextId(), pivotSpec.comparisonTypes.boolean, "=", true);
                                 test.ok(false);
                             }
                             catch (e) {
@@ -1988,25 +1990,25 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.strictEqual(e.message, "Cannot add filter on a nonexistent field.");
                             }
                             try {
-                                pivotSpec.addFilter("_time", pivotSpec.comparisonBoolean, "=", true);
+                                pivotSpec.addFilter("_time", pivotSpec.comparisonTypes.boolean, "=", true);
                                 test.ok(false);
                             }
                             catch (e) {
                                 test.ok(e);
-                                test.strictEqual(e.message, "Cannot add " + pivotSpec.comparisonBoolean + " filter on _time because it is of type timestamp");
+                                test.strictEqual(e.message, "Cannot add " + pivotSpec.comparisonTypes.boolean + " filter on _time because it is of type timestamp");
                             }
 
                             // String comparisons
                             try {
-                                pivotSpec.addFilter("has_boris", pivotSpec.comparisonString, "contains", "abc");
+                                pivotSpec.addFilter("has_boris", pivotSpec.comparisonTypes.string, "contains", "abc");
                                 test.ok(false);
                             }
                             catch (e) {
                                 test.ok(e);
-                                test.strictEqual(e.message, "Cannot add " + pivotSpec.comparisonString + " filter on has_boris because it is of type boolean");
+                                test.strictEqual(e.message, "Cannot add " + pivotSpec.comparisonTypes.string + " filter on has_boris because it is of type boolean");
                             }
                             try {
-                                pivotSpec.addFilter(getNextId(), pivotSpec.comparisonString, "contains", "abc");
+                                pivotSpec.addFilter(getNextId(), pivotSpec.comparisonTypes.string, "contains", "abc");
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2016,15 +2018,15 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             // IPv4 comparisons
                             try {
-                                pivotSpec.addFilter("has_boris", pivotSpec.comparisonIPv4, "startsWith", "192.168");
+                                pivotSpec.addFilter("has_boris", pivotSpec.comparisonTypes.IPv4, "startsWith", "192.168");
                                 test.ok(false);
                             }
                             catch (e) {
                                 test.ok(e);
-                                test.strictEqual(e.message, "Cannot add " + pivotSpec.comparisonIPv4 + " filter on has_boris because it is of type boolean");
+                                test.strictEqual(e.message, "Cannot add " + pivotSpec.comparisonTypes.IPv4 + " filter on has_boris because it is of type boolean");
                             }
                             try {
-                                pivotSpec.addFilter(getNextId(), pivotSpec.comparisonIPv4, "startsWith", "192.168");
+                                pivotSpec.addFilter(getNextId(), pivotSpec.comparisonTypes.IPv4, "startsWith", "192.168");
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2034,15 +2036,15 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             // Number comparisons
                             try {
-                                pivotSpec.addFilter("has_boris", pivotSpec.comparisonNumber, "atLeast", 2.3);
+                                pivotSpec.addFilter("has_boris", pivotSpec.comparisonTypes.number, "atLeast", 2.3);
                                 test.ok(false);
                             }
                             catch (e) {
                                 test.ok(e);
-                                test.strictEqual(e.message, "Cannot add " + pivotSpec.comparisonNumber + " filter on has_boris because it is of type boolean");
+                                test.strictEqual(e.message, "Cannot add " + pivotSpec.comparisonTypes.number + " filter on has_boris because it is of type boolean");
                             }
                             try {
-                                pivotSpec.addFilter(getNextId(), pivotSpec.comparisonNumber, "atLeast", 2.3);
+                                pivotSpec.addFilter(getNextId(), pivotSpec.comparisonTypes.number, "atLeast", 2.3);
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2121,12 +2123,12 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             var pivotSpec = obj.createPivotSpec();
                             try {
-                                pivotSpec.addFilter("has_boris", pivotSpec.comparisonBoolean, "=", true);
+                                pivotSpec.addFilter("has_boris", pivotSpec.comparisonTypes.boolean, "=", true);
                                 test.strictEqual(1, pivotSpec.filters.length);
 
                                 //Test the individual parts of the filter
                                 var filter = pivotSpec.filters[0];
-                                test.strictEqual(pivotSpec.comparisonBoolean, filter.type);
+                                test.strictEqual(pivotSpec.comparisonTypes.boolean, filter.type);
 
                                 var filterJSON = filter.toJSON();
                                 test.ok(filterJSON.hasOwnProperty("fieldName"));
@@ -2142,7 +2144,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.strictEqual("test_data", filterJSON.owner);
                             }
                             catch (e) {
-                                console.log(e.message, e.stack);
+                                console.log(e.message, e.stack); // TODO: remove
                                 test.ok(false);
                             }
                             
@@ -2170,12 +2172,12 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             var pivotSpec = obj.createPivotSpec();
                             try {
-                                pivotSpec.addFilter("host", pivotSpec.comparisonString, "contains", "abc");
+                                pivotSpec.addFilter("host", pivotSpec.comparisonTypes.string, "contains", "abc");
                                 test.strictEqual(1, pivotSpec.filters.length);
 
                                 //Test the individual parts of the filter
                                 var filter = pivotSpec.filters[0];
-                                test.strictEqual(pivotSpec.comparisonString, filter.type);
+                                test.strictEqual(pivotSpec.comparisonTypes.string, filter.type);
 
                                 var filterJSON = filter.toJSON();
                                 test.ok(filterJSON.hasOwnProperty("fieldName"));
@@ -2218,12 +2220,12 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             var pivotSpec = obj.createPivotSpec();
                             try {
-                                pivotSpec.addFilter("hostip", pivotSpec.comparisonIPv4, "startsWith", "192.168");
+                                pivotSpec.addFilter("hostip", pivotSpec.comparisonTypes.IPv4, "startsWith", "192.168");
                                 test.strictEqual(1, pivotSpec.filters.length);
 
                                 //Test the individual parts of the filter
                                 var filter = pivotSpec.filters[0];
-                                test.strictEqual(pivotSpec.comparisonIPv4, filter.type);
+                                test.strictEqual(pivotSpec.comparisonTypes.IPv4, filter.type);
 
                                 var filterJSON = filter.toJSON();
                                 test.ok(filterJSON.hasOwnProperty("fieldName"));
@@ -2266,12 +2268,12 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             var pivotSpec = obj.createPivotSpec();
                             try {
-                                pivotSpec.addFilter("epsilon", pivotSpec.comparisonNumber, ">=", 2.3);
+                                pivotSpec.addFilter("epsilon", pivotSpec.comparisonTypes.number, ">=", 2.3);
                                 test.strictEqual(1, pivotSpec.filters.length);
 
                                 //Test the individual parts of the filter
                                 var filter = pivotSpec.filters[0];
-                                test.strictEqual(pivotSpec.comparisonNumber, filter.type);
+                                test.strictEqual(pivotSpec.comparisonTypes.number, filter.type);
 
                                 var filterJSON = filter.toJSON();
                                 test.ok(filterJSON.hasOwnProperty("fieldName"));
@@ -2287,6 +2289,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.strictEqual("test_data", filterJSON.owner);
                             }
                             catch (e) {
+                                console.log(e.message);
                                 test.ok(false);
                             }
                             
@@ -2318,7 +2321,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                                 //Test the individual parts of the filter
                                 var filter = pivotSpec.filters[0];
-                                test.strictEqual(pivotSpec.comparisonNumber, filter.type);
+                                test.strictEqual(pivotSpec.comparisonTypes.number, filter.type);
 
                                 var filterJSON = filter.toJSON();
                                 test.ok(filterJSON.hasOwnProperty("fieldName"));
@@ -2331,7 +2334,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.ok(filterJSON.hasOwnProperty("statsFn"));
 
                                 test.strictEqual("epsilon", filterJSON.fieldName);
-                                test.strictEqual(pivotSpec.comparisonNumber, filterJSON.type);
+                                test.strictEqual(pivotSpec.comparisonTypes.number, filterJSON.type);
                                 test.strictEqual("test_data", filterJSON.owner);
                                 test.strictEqual("host", filterJSON.attributeName);
                                 test.strictEqual("BaseEvent", filterJSON.attributeOwner);
@@ -2399,7 +2402,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             test.strictEqual("epsilon", row.fieldName);
                             test.strictEqual("test_data", row.owner);
-                            test.strictEqual(pivotSpec.comparisonNumber, row.type);
+                            test.strictEqual(pivotSpec.comparisonTypes.number, row.type);
                             test.strictEqual("My Label", row.label);
                             test.strictEqual("all", row.display);
                             test.same({
@@ -2465,7 +2468,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             test.strictEqual("epsilon", row.fieldName);
                             test.strictEqual("test_data", row.owner);
-                            test.strictEqual(pivotSpec.comparisonNumber, row.type);
+                            test.strictEqual(pivotSpec.comparisonTypes.number, row.type);
                             test.strictEqual("My Label", row.label);
                             test.strictEqual("ranges", row.display);
 
@@ -2518,7 +2521,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual("has_boris", row.fieldName);
                             test.strictEqual("My Label", row.label);
                             test.strictEqual("test_data", row.owner);
-                            test.strictEqual(pivotSpec.comparisonBoolean, row.type);
+                            test.strictEqual(pivotSpec.comparisonTypes.boolean, row.type);
                             test.strictEqual("is_true", row.trueLabel);
                             test.strictEqual("is_false", row.falseLabel);
                             test.same({
@@ -2562,7 +2565,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual("_time", row.fieldName);
                             test.strictEqual("My Label", row.label);
                             test.strictEqual("BaseEvent", row.owner);
-                            test.strictEqual(pivotSpec.comparisonTimestamp, row.type);
+                            test.strictEqual(pivotSpec.comparisonTypes.timestamp, row.type);
                             test.strictEqual(pivotSpec.binning.DAY, row.period);
                             test.same({
                                     fieldName: "_time",
@@ -2628,7 +2631,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             test.strictEqual("epsilon", col.fieldName);
                             test.strictEqual("test_data", col.owner);
-                            test.strictEqual(pivotSpec.comparisonNumber, col.type);
+                            test.strictEqual(pivotSpec.comparisonTypes.number, col.type);
                             test.strictEqual("all", col.display);
                             test.same({
                                     fieldName: "epsilon",
@@ -2650,7 +2653,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             test.strictEqual("host", col.fieldName);
                             test.strictEqual("BaseEvent", col.owner);
-                            test.strictEqual(pivotSpec.comparisonString, col.type);
+                            test.strictEqual(pivotSpec.comparisonTypes.string, col.type);
                             test.same({
                                     fieldName: "host",
                                     owner: "BaseEvent",
@@ -2690,7 +2693,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             test.strictEqual("epsilon", col.fieldName);
                             test.strictEqual("test_data", col.owner);
-                            test.strictEqual(pivotSpec.comparisonNumber, col.type);
+                            test.strictEqual(pivotSpec.comparisonTypes.number, col.type);
                             test.strictEqual("ranges", col.display);
                             var ranges = {
                                 start: "0",
@@ -2739,7 +2742,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             test.strictEqual("has_boris", col.fieldName);
                             test.strictEqual("test_data", col.owner);
-                            test.strictEqual(pivotSpec.comparisonBoolean, col.type);
+                            test.strictEqual(pivotSpec.comparisonTypes.boolean, col.type);
                             test.strictEqual("is_true", col.trueLabel);
                             test.strictEqual("is_false", col.falseLabel);
                             test.same({
@@ -2781,7 +2784,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             test.strictEqual("_time", col.fieldName);
                             test.strictEqual("BaseEvent", col.owner);
-                            test.strictEqual(pivotSpec.comparisonTimestamp, col.type);
+                            test.strictEqual(pivotSpec.comparisonTypes.timestamp, col.type);
                             test.strictEqual(pivotSpec.binning.DAY, col.period);
                             test.same({
                                     fieldName: "_time",
@@ -2846,7 +2849,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             test.strictEqual("source", cell.fieldName);
                             test.strictEqual("BaseEvent", cell.owner);
-                            test.strictEqual(pivotSpec.comparisonString, cell.type);
+                            test.strictEqual(pivotSpec.comparisonTypes.string, cell.type);
                             test.strictEqual("Source Value", cell.label);
                             test.strictEqual("dc", cell.value);
                             test.strictEqual(false, cell.sparkline);
@@ -2885,7 +2888,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             test.strictEqual("hostip", cell.fieldName);
                             test.strictEqual("test_data", cell.owner);
-                            test.strictEqual(pivotSpec.comparisonIPv4, cell.type);
+                            test.strictEqual(pivotSpec.comparisonTypes.IPv4, cell.type);
                             test.strictEqual("Source Value", cell.label);
                             test.strictEqual(pivotSpec.statsFunctions.DISTINCT_COUNT, cell.value);
                             test.strictEqual(false, cell.sparkline);
@@ -2934,7 +2937,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             test.strictEqual("epsilon", cell.fieldName);
                             test.strictEqual("test_data", cell.owner);
-                            test.strictEqual(pivotSpec.comparisonNumber, cell.type);
+                            test.strictEqual(pivotSpec.comparisonTypes.number, cell.type);
                             test.strictEqual("Source Value", cell.label);
                             test.strictEqual(pivotSpec.statsFunctions.AVERAGE, cell.value);
                             test.strictEqual(false, cell.sparkline);
@@ -2973,7 +2976,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             test.strictEqual("_time", cell.fieldName);
                             test.strictEqual("BaseEvent", cell.owner);
-                            test.strictEqual(pivotSpec.comparisonTimestamp, cell.type);
+                            test.strictEqual(pivotSpec.comparisonTypes.timestamp, cell.type);
                             test.strictEqual("Source Value", cell.label);
                             test.strictEqual(pivotSpec.statsFunctions.EARLIEST, cell.value);
                             test.strictEqual(false, cell.sparkline);
@@ -3011,7 +3014,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             test.strictEqual("test_data", cell.fieldName);
                             test.strictEqual("test_data", cell.owner);
-                            test.strictEqual(pivotSpec.comparisonObjectCount, cell.type);
+                            test.strictEqual(pivotSpec.comparisonTypes.objectcount, cell.type);
                             test.strictEqual("Source Value", cell.label);
                             test.strictEqual(pivotSpec.statsFunctions.COUNT, cell.value);
                             test.strictEqual(false, cell.sparkline);
