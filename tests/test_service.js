@@ -1502,7 +1502,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual(false, timeField.multivalued);
                             test.strictEqual(false, timeField.hidden);
                             test.strictEqual(false, timeField.editable);
-                            test.strictEqual("", timeField.comment);
+                            test.strictEqual(null, timeField.comment);
 
                             var lvl2 = obj.fieldByName("level_2");
                             test.strictEqual("level_2", lvl2.owner);
@@ -1521,7 +1521,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual(false, lvl2.multivalued);
                             test.strictEqual(false, lvl2.hidden);
                             test.strictEqual(false, lvl2.editable);
-                            test.strictEqual("", lvl2.comment);
+                            test.strictEqual(null, lvl2.comment);
 
                             done();
                         }
@@ -1713,7 +1713,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.ok(!evalCalculation.isLookup());
                             test.ok(!evalCalculation.isGeoIP());
                             test.ok(!evalCalculation.isRegexp());
-                            test.strictEqual("", evalCalculation.comment);
+                            test.strictEqual(null, evalCalculation.comment);
                             test.strictEqual(true, evalCalculation.isEditable());
                             test.strictEqual("if(cidrmatch(\"192.0.0.0/16\", clientip), \"local\", \"other\")", evalCalculation.expression);
 
@@ -1733,7 +1733,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.ok(!lookupCalculation.isEval());
                             test.ok(!lookupCalculation.isGeoIP());
                             test.ok(!lookupCalculation.isRegexp());
-                            test.strictEqual("", lookupCalculation.comment);
+                            test.strictEqual(null, lookupCalculation.comment);
                             test.strictEqual(true, lookupCalculation.isEditable());
                             test.same([{lookupField: "a_lookup_field", inputField: "host"}], lookupCalculation.inputFieldMappings);
                             test.strictEqual(1, lookupCalculation.inputFieldMappings.length);
@@ -1950,7 +1950,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual("sid=" + name1, pivotSpec.accelerationNamespace);
 
                             var namespaceTemp = "delete-me-" + getNextId();
-                            pivotSpec.setAccelerationNamespace(namespaceTemp);
+                            pivotSpec.accelerationNamespace = namespaceTemp;
                             test.strictEqual(namespaceTemp, pivotSpec.accelerationNamespace);
 
                             done();
