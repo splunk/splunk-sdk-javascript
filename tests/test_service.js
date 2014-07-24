@@ -1126,7 +1126,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.ok(dm.objectByName("modify"));
 
                             // Check for an object that shouldn't exist
-                            test.ok(utils.isUndefined(dm.objectByName(getNextId())));
+                            test.ok(!dm.objectByName(getNextId())); // TODO: check for null instead
                             done();
                         }
                     ],
