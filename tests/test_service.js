@@ -3050,7 +3050,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             obj.createPivotSpec().pivot(done);
                         },
-                        function(response, done) {
+                        function(pivot, done) {
                             done();
                         }
                     ],
@@ -3103,9 +3103,6 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual("| pivot", job.properties().request.search.match("^\\| pivot")[0]);
                             test.strictEqual(1, job.properties().request.search.match("^\\| pivot").length);
                             job.cancel(done);
-                        },
-                        function(response, done) {
-                            done();
                         }
                     ],
                     function(err) {
@@ -3170,9 +3167,6 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual("| tstats", job.properties().request.search.match("^\\| tstats")[0]);
                             test.strictEqual(1, job.properties().request.search.match("^\\| tstats").length);
                             adhocjob.cancel(done);
-                        },
-                        function(response, done) {
-                            done();
                         }
                     ],
                     function(err) {
