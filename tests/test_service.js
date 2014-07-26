@@ -3091,7 +3091,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             tutils.pollUntil(
                                 job,
                                 function(j) {
-                                    return job.properties()["isDone"];
+                                    return job.properties().isDone;
                                 },
                                 10,
                                 done

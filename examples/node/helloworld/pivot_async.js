@@ -62,12 +62,14 @@ exports.main = function(opts, callback) {
                     "Working with object",
                     searches.displayName,
                     "in model",
-                    dm.displayName()
+                    dm.displayName
                     );
 
-                var lineageString = "\t Lineage:";
-                for (var i = 0; i < searches.lineage().length; i++) {
-                    lineageString += " -> " + searches.lineage()[i];
+                var lineageString = "\t Lineage:"; // TODO: append searches.lineage().join(" -> ");
+
+                // TODO: remove loop
+                for (var i = 0; i < searches.lineage.length; i++) {
+                    lineageString += " -> " + searches.lineage[i];
                 }
                 console.log(lineageString);
 
