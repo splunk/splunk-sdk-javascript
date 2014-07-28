@@ -889,10 +889,11 @@ exports.setup = function(svc, loggedOutSvc) {
                 var sid = getNextId();
                 var that = this;
                 var originalTime = "";
+                var namespace = {owner: "admin", app: "search"};
                 
                 Async.chain([
                         function(done) {
-                            that.service.oneshotSearch('search index=_internal | head 1 | stats count', {id: sid}, done);
+                            that.service.oneshotSearch('search index=_internal | head 1 | stats count', {id: sid}, namespace, done);
                         },
                         function(results, done) {
                             test.ok(results);
@@ -903,7 +904,9 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual(results.rows.length, 1);
                             test.strictEqual(results.rows[0].length, 1);
                             test.strictEqual(results.rows[0][0], "1");
-                            
+                            test.ok(results.messages[1].text.indexOf('user="admin"'));
+                            test.ok(results.messages[1].text.indexOf('app="search"'));
+
                             done();
                         }
                     ],
@@ -918,13 +921,15 @@ exports.setup = function(svc, loggedOutSvc) {
                 var sid = getNextId();
                 var service = this.service;
                 var that = this;
+                var namespace = {owner: "admin", app: "search"};
                 
                 Async.chain([
                         function(done) {
-                            that.service.search('search index=_internal | head 1 | stats count', {id: sid}, done);
+                            that.service.search('search index=_internal | head 1 | stats count', {id: sid}, namespace, done);
                         },
                         function(job, done) {
                             test.strictEqual(job.sid, sid);
+                            test.strictEqual(job.namespace, namespace);
                             tutils.pollUntil(
                                 job,
                                 function(j) {
@@ -1799,7 +1804,6 @@ exports.setup = function(svc, loggedOutSvc) {
                                                     firedAlert.triggerTime();
                                                     firedAlert.triggerTimeRendered();
                                                     firedAlert.triggeredAlertCount();
-                                                    console.log();
                                                 }
                                                 insideChainCallback(null);
                                             }
