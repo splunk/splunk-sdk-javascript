@@ -1126,7 +1126,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.ok(dm.objectByName("modify"));
 
                             // Check for an object that shouldn't exist
-                            test.ok(!dm.objectByName(getNextId())); // TODO: check for null instead
+                            test.strictEqual(null, dm.objectByName(getNextId()));
                             done();
                         }
                     ],
@@ -1489,7 +1489,6 @@ exports.setup = function(svc, loggedOutSvc) {
                             var timeField = obj.fieldByName("_time");
                             test.ok(timeField);
                             test.strictEqual("timestamp", timeField.type);
-                            test.strictEqual(timeField.types.timestamp, timeField.type);
                             test.ok(timeField.isTimestamp());
                             test.ok(!timeField.isNumber());
                             test.ok(!timeField.isString());
@@ -1508,7 +1507,6 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual("level_2", lvl2.owner);
                             test.same(["level_0", "level_1", "level_2"], lvl2.lineage);
                             test.strictEqual("objectCount", lvl2.type);
-                            test.strictEqual(lvl2.types.objectcount, lvl2.type);
                             test.ok(!lvl2.isTimestamp());
                             test.ok(!lvl2.isNumber());
                             test.ok(!lvl2.isString());
@@ -1708,7 +1706,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.ok(evalCalculation);
                             test.strictEqual("event1", evalCalculation.owner);
                             test.same(["event1"], evalCalculation.lineage);
-                            test.strictEqual(evalCalculation.types.Eval, evalCalculation.type);
+                            test.strictEqual("Eval", evalCalculation.type);
                             test.ok(evalCalculation.isEval());
                             test.ok(!evalCalculation.isLookup());
                             test.ok(!evalCalculation.isGeoIP());
@@ -1728,7 +1726,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.ok(lookupCalculation);
                             test.strictEqual("event1", lookupCalculation.owner);
                             test.same(["event1"], lookupCalculation.lineage);
-                            test.strictEqual(lookupCalculation.types.Lookup, lookupCalculation.type);
+                            test.strictEqual("Lookup", lookupCalculation.type);
                             test.ok(lookupCalculation.isLookup());
                             test.ok(!lookupCalculation.isEval());
                             test.ok(!lookupCalculation.isGeoIP());
@@ -1745,7 +1743,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.ok(regexpCalculation);
                             test.strictEqual("event1", regexpCalculation.owner);
                             test.same(["event1"], regexpCalculation.lineage);
-                            test.strictEqual(regexpCalculation.types.Regexp, regexpCalculation.type);
+                            test.strictEqual("Rex", regexpCalculation.type);
                             test.ok(regexpCalculation.isRegexp());
                             test.ok(!regexpCalculation.isLookup());
                             test.ok(!regexpCalculation.isEval());
@@ -1758,7 +1756,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.ok(geoIPCalculation);
                             test.strictEqual("event1", geoIPCalculation.owner);
                             test.same(["event1"], geoIPCalculation.lineage);
-                            test.strictEqual(geoIPCalculation.types.GeoIP, geoIPCalculation.type);
+                            test.strictEqual("GeoIP", geoIPCalculation.type);
                             test.ok(geoIPCalculation.isGeoIP());
                             test.ok(!geoIPCalculation.isLookup());
                             test.ok(!geoIPCalculation.isEval());
@@ -1958,9 +1956,6 @@ exports.setup = function(svc, loggedOutSvc) {
                     ],
                     function(err) {
                         test.ok(!err);
-                        if (err) {
-                            console.log(err); // TODO: remove
-                        }
                         test.done();
                     }
                 );
@@ -1982,7 +1977,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             // Boolean comparisons
                             try {
-                                pivotSpec.addFilter(getNextId(), pivotSpec.comparisonTypes.boolean, "=", true);
+                                pivotSpec.addFilter(getNextId(), "boolean", "=", true);
                                 test.ok(false);
                             }
                             catch (e) {
@@ -1990,25 +1985,25 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.strictEqual(e.message, "Cannot add filter on a nonexistent field.");
                             }
                             try {
-                                pivotSpec.addFilter("_time", pivotSpec.comparisonTypes.boolean, "=", true);
+                                pivotSpec.addFilter("_time", "boolean", "=", true);
                                 test.ok(false);
                             }
                             catch (e) {
                                 test.ok(e);
-                                test.strictEqual(e.message, "Cannot add " + pivotSpec.comparisonTypes.boolean + " filter on _time because it is of type timestamp");
+                                test.strictEqual(e.message, "Cannot add boolean filter on _time because it is of type timestamp");
                             }
 
                             // String comparisons
                             try {
-                                pivotSpec.addFilter("has_boris", pivotSpec.comparisonTypes.string, "contains", "abc");
+                                pivotSpec.addFilter("has_boris", "string", "contains", "abc");
                                 test.ok(false);
                             }
                             catch (e) {
                                 test.ok(e);
-                                test.strictEqual(e.message, "Cannot add " + pivotSpec.comparisonTypes.string + " filter on has_boris because it is of type boolean");
+                                test.strictEqual(e.message, "Cannot add string filter on has_boris because it is of type boolean");
                             }
                             try {
-                                pivotSpec.addFilter(getNextId(), pivotSpec.comparisonTypes.string, "contains", "abc");
+                                pivotSpec.addFilter(getNextId(), "string", "contains", "abc");
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2018,15 +2013,15 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             // IPv4 comparisons
                             try {
-                                pivotSpec.addFilter("has_boris", pivotSpec.comparisonTypes.IPv4, "startsWith", "192.168");
+                                pivotSpec.addFilter("has_boris", "ipv4", "startsWith", "192.168");
                                 test.ok(false);
                             }
                             catch (e) {
                                 test.ok(e);
-                                test.strictEqual(e.message, "Cannot add " + pivotSpec.comparisonTypes.IPv4 + " filter on has_boris because it is of type boolean");
+                                test.strictEqual(e.message, "Cannot add ipv4 filter on has_boris because it is of type boolean");
                             }
                             try {
-                                pivotSpec.addFilter(getNextId(), pivotSpec.comparisonTypes.IPv4, "startsWith", "192.168");
+                                pivotSpec.addFilter(getNextId(), "ipv4", "startsWith", "192.168");
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2036,15 +2031,15 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             // Number comparisons
                             try {
-                                pivotSpec.addFilter("has_boris", pivotSpec.comparisonTypes.number, "atLeast", 2.3);
+                                pivotSpec.addFilter("has_boris", "number", "atLeast", 2.3);
                                 test.ok(false);
                             }
                             catch (e) {
                                 test.ok(e);
-                                test.strictEqual(e.message, "Cannot add " + pivotSpec.comparisonTypes.number + " filter on has_boris because it is of type boolean");
+                                test.strictEqual(e.message, "Cannot add number filter on has_boris because it is of type boolean");
                             }
                             try {
-                                pivotSpec.addFilter(getNextId(), pivotSpec.comparisonTypes.number, "atLeast", 2.3);
+                                pivotSpec.addFilter(getNextId(), "number", "atLeast", 2.3);
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2054,7 +2049,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             // Limit filter
                             try {
-                                pivotSpec.addLimitFilter("has_boris", "host", pivotSpec.sortDirections.DEFAULT, 50, pivotSpec.statsFunctions.COUNT);
+                                pivotSpec.addLimitFilter("has_boris", "host", "DEFAULT", 50, "count");
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2062,7 +2057,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.strictEqual(e.message, "Cannot add limit filter on has_boris because it is of type boolean");
                             }
                             try {
-                                pivotSpec.addLimitFilter(getNextId(), "host", pivotSpec.sortDirections.DEFAULT, 50, pivotSpec.statsFunctions.COUNT);
+                                pivotSpec.addLimitFilter(getNextId(), "host", "DEFAULT", 50, "count");
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2070,34 +2065,31 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.strictEqual(e.message, "Cannot add limit filter on a nonexistent field.");
                             }
                             try {
-                                pivotSpec.addLimitFilter("source", "host", pivotSpec.sortDirections.DEFAULT, 50, pivotSpec.statsFunctions.SUM);
+                                pivotSpec.addLimitFilter("source", "host", "DEFAULT", 50, "sum");
                                 test.ok(false);
                             }
                             catch (e) {
                                 test.ok(e);
                                 test.strictEqual(e.message,
-                                    "Stats function for fields of type string must be COUNT or DISTINCT_COUNT; found " +
-                                    pivotSpec.statsFunctions.SUM);
+                                    "Stats function for fields of type string must be COUNT or DISTINCT_COUNT; found sum");
                             }
                             try {
-                                pivotSpec.addLimitFilter("epsilon", "host", pivotSpec.sortDirections.DEFAULT, 50, pivotSpec.statsFunctions.DURATION);
+                                pivotSpec.addLimitFilter("epsilon", "host", "DEFAULT", 50, "duration");
                                 test.ok(false);
                             }
                             catch (e) {
                                 test.ok(e);
                                 test.strictEqual(e.message,
-                                    "Stats function for fields of type number must be one of COUNT, DISTINCT_COUNT, SUM, or AVERAGE; found " +
-                                    pivotSpec.statsFunctions.DURATION);
+                                    "Stats function for fields of type number must be one of COUNT, DISTINCT_COUNT, SUM, or AVERAGE; found duration");
                             }
                             try {
-                                pivotSpec.addLimitFilter("test_data", "host", pivotSpec.sortDirections.DEFAULT, 50, pivotSpec.statsFunctions.LIST);
+                                pivotSpec.addLimitFilter("test_data", "host", "DEFAULT", 50, "list");
                                 test.ok(false);
                             }
                             catch (e) {
                                 test.ok(e);
                                 test.strictEqual(e.message,
-                                    "Stats function for fields of type object count must be COUNT; found " +
-                                    pivotSpec.statsFunctions.LIST);
+                                    "Stats function for fields of type object count must be COUNT; found list");
                             }
                             done();
                         }
@@ -2123,14 +2115,14 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             var pivotSpec = obj.createPivotSpec();
                             try {
-                                pivotSpec.addFilter("has_boris", pivotSpec.comparisonTypes.boolean, "=", true);
+                                pivotSpec.addFilter("has_boris", "boolean", "=", true);
                                 test.strictEqual(1, pivotSpec.filters.length);
 
                                 //Test the individual parts of the filter
                                 var filter = pivotSpec.filters[0];
-                                test.strictEqual(pivotSpec.comparisonTypes.boolean, filter.type);
+                                test.strictEqual("boolean", filter.type);
 
-                                var filterJSON = filter.toJSON();
+                                var filterJSON = filter.toJsonObject();
                                 test.ok(filterJSON.hasOwnProperty("fieldName"));
                                 test.ok(filterJSON.hasOwnProperty("type"));
                                 test.ok(filterJSON.hasOwnProperty("comparator"));
@@ -2144,7 +2136,6 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.strictEqual("test_data", filterJSON.owner);
                             }
                             catch (e) {
-                                console.log(e.message, e.stack); // TODO: remove
                                 test.ok(false);
                             }
                             
@@ -2172,14 +2163,14 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             var pivotSpec = obj.createPivotSpec();
                             try {
-                                pivotSpec.addFilter("host", pivotSpec.comparisonTypes.string, "contains", "abc");
+                                pivotSpec.addFilter("host", "string", "contains", "abc");
                                 test.strictEqual(1, pivotSpec.filters.length);
 
                                 //Test the individual parts of the filter
                                 var filter = pivotSpec.filters[0];
-                                test.strictEqual(pivotSpec.comparisonTypes.string, filter.type);
+                                test.strictEqual("string", filter.type);
 
-                                var filterJSON = filter.toJSON();
+                                var filterJSON = filter.toJsonObject();
                                 test.ok(filterJSON.hasOwnProperty("fieldName"));
                                 test.ok(filterJSON.hasOwnProperty("type"));
                                 test.ok(filterJSON.hasOwnProperty("comparator"));
@@ -2220,14 +2211,14 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             var pivotSpec = obj.createPivotSpec();
                             try {
-                                pivotSpec.addFilter("hostip", pivotSpec.comparisonTypes.IPv4, "startsWith", "192.168");
+                                pivotSpec.addFilter("hostip", "ipv4", "startsWith", "192.168");
                                 test.strictEqual(1, pivotSpec.filters.length);
 
                                 //Test the individual parts of the filter
                                 var filter = pivotSpec.filters[0];
-                                test.strictEqual(pivotSpec.comparisonTypes.IPv4, filter.type);
+                                test.strictEqual("ipv4", filter.type);
 
-                                var filterJSON = filter.toJSON();
+                                var filterJSON = filter.toJsonObject();
                                 test.ok(filterJSON.hasOwnProperty("fieldName"));
                                 test.ok(filterJSON.hasOwnProperty("type"));
                                 test.ok(filterJSON.hasOwnProperty("comparator"));
@@ -2268,14 +2259,14 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             var pivotSpec = obj.createPivotSpec();
                             try {
-                                pivotSpec.addFilter("epsilon", pivotSpec.comparisonTypes.number, ">=", 2.3);
+                                pivotSpec.addFilter("epsilon", "number", ">=", 2.3);
                                 test.strictEqual(1, pivotSpec.filters.length);
 
                                 //Test the individual parts of the filter
                                 var filter = pivotSpec.filters[0];
-                                test.strictEqual(pivotSpec.comparisonTypes.number, filter.type);
+                                test.strictEqual("number", filter.type);
 
-                                var filterJSON = filter.toJSON();
+                                var filterJSON = filter.toJsonObject();
                                 test.ok(filterJSON.hasOwnProperty("fieldName"));
                                 test.ok(filterJSON.hasOwnProperty("type"));
                                 test.ok(filterJSON.hasOwnProperty("comparator"));
@@ -2289,7 +2280,6 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.strictEqual("test_data", filterJSON.owner);
                             }
                             catch (e) {
-                                console.log(e.message);
                                 test.ok(false);
                             }
                             
@@ -2316,14 +2306,14 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             var pivotSpec = obj.createPivotSpec();
                             try {
-                                pivotSpec.addLimitFilter("epsilon", "host", pivotSpec.sortDirections.ASC, 500, pivotSpec.statsFunctions.AVERAGE);
+                                pivotSpec.addLimitFilter("epsilon", "host", "ASCENDING", 500, "average");
                                 test.strictEqual(1, pivotSpec.filters.length);
 
                                 //Test the individual parts of the filter
                                 var filter = pivotSpec.filters[0];
-                                test.strictEqual(pivotSpec.comparisonTypes.number, filter.type);
+                                test.strictEqual("number", filter.type);
 
-                                var filterJSON = filter.toJSON();
+                                var filterJSON = filter.toJsonObject();
                                 test.ok(filterJSON.hasOwnProperty("fieldName"));
                                 test.ok(filterJSON.hasOwnProperty("type"));
                                 test.ok(filterJSON.hasOwnProperty("owner"));
@@ -2334,7 +2324,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.ok(filterJSON.hasOwnProperty("statsFn"));
 
                                 test.strictEqual("epsilon", filterJSON.fieldName);
-                                test.strictEqual(pivotSpec.comparisonTypes.number, filterJSON.type);
+                                test.strictEqual("number", filterJSON.type);
                                 test.strictEqual("test_data", filterJSON.owner);
                                 test.strictEqual("host", filterJSON.attributeName);
                                 test.strictEqual("BaseEvent", filterJSON.attributeOwner);
@@ -2402,7 +2392,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             test.strictEqual("epsilon", row.fieldName);
                             test.strictEqual("test_data", row.owner);
-                            test.strictEqual(pivotSpec.comparisonTypes.number, row.type);
+                            test.strictEqual("number", row.type);
                             test.strictEqual("My Label", row.label);
                             test.strictEqual("all", row.display);
                             test.same({
@@ -2439,14 +2429,14 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             // Test error handling on range row split
                             try {
-                                pivotSpec.addRangeRowSplit("has_boris", "Wrong type here", 0, 100, 20, 5);
+                                pivotSpec.addRangeRowSplit("has_boris", "Wrong type here", {start: 0, end: 100, step:20, limit:5});
                             }
                             catch (e) {
                                 test.ok(e);
                                 test.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number.");
                             }
                             try {
-                                pivotSpec.addRangeRowSplit(field, "Break Me!", 0, 100, 20, 5);
+                                pivotSpec.addRangeRowSplit(field, "Break Me!", {start: 0, end: 100, step:20, limit:5});
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2455,7 +2445,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             }
 
                             // Test range row split
-                            pivotSpec.addRangeRowSplit("epsilon", "My Label", 0, 100, 20, 5);
+                            pivotSpec.addRangeRowSplit("epsilon", "My Label", {start: 0, end: 100, step:20, limit:5});
                             test.strictEqual(3, pivotSpec.rows.length);
 
                             row = pivotSpec.rows[pivotSpec.rows.length - 1];
@@ -2468,7 +2458,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             test.strictEqual("epsilon", row.fieldName);
                             test.strictEqual("test_data", row.owner);
-                            test.strictEqual(pivotSpec.comparisonTypes.number, row.type);
+                            test.strictEqual("number", row.type);
                             test.strictEqual("My Label", row.label);
                             test.strictEqual("ranges", row.display);
 
@@ -2521,7 +2511,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual("has_boris", row.fieldName);
                             test.strictEqual("My Label", row.label);
                             test.strictEqual("test_data", row.owner);
-                            test.strictEqual(pivotSpec.comparisonTypes.boolean, row.type);
+                            test.strictEqual("boolean", row.type);
                             test.strictEqual("is_true", row.trueLabel);
                             test.strictEqual("is_false", row.falseLabel);
                             test.same({
@@ -2536,23 +2526,31 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             // Test error handling on timestamp row split
                             try {
-                                pivotSpec.addTimestampRowSplit("epsilon", "Wrong type here");
+                                pivotSpec.addTimestampRowSplit("epsilon", "Wrong type here", "some binning");
                             }
                             catch (e) {
                                 test.ok(e);
                                 test.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected timestamp.");
                             }
                             try {
-                                pivotSpec.addTimestampRowSplit(field, "Break Me!");
+                                pivotSpec.addTimestampRowSplit(field, "Break Me!", "some binning");
                                 test.ok(false);
                             }
                             catch (e) {
                                 test.ok(e);
                                 test.strictEqual(e.message, "Did not find field " + field);
                             }
+                            try {
+                                pivotSpec.addTimestampRowSplit("_time", "some label", "Bogus binning value");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Invalid binning Bogus binning value found. Valid values are: " + pivotSpec._binning.join(", "));
+                            }
 
                             // Test timestamp row split
-                            pivotSpec.addTimestampRowSplit("_time", "My Label", pivotSpec.binning.DAY);
+                            pivotSpec.addTimestampRowSplit("_time", "My Label", "day");
                             test.strictEqual(5, pivotSpec.rows.length);
 
                             row = pivotSpec.rows[pivotSpec.rows.length - 1];
@@ -2565,8 +2563,8 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual("_time", row.fieldName);
                             test.strictEqual("My Label", row.label);
                             test.strictEqual("BaseEvent", row.owner);
-                            test.strictEqual(pivotSpec.comparisonTypes.timestamp, row.type);
-                            test.strictEqual(pivotSpec.binning.DAY, row.period);
+                            test.strictEqual("timestamp", row.type);
+                            test.strictEqual("day", row.period);
                             test.same({
                                     fieldName: "_time",
                                     label: "My Label",
@@ -2631,7 +2629,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             test.strictEqual("epsilon", col.fieldName);
                             test.strictEqual("test_data", col.owner);
-                            test.strictEqual(pivotSpec.comparisonTypes.number, col.type);
+                            test.strictEqual("number", col.type);
                             test.strictEqual("all", col.display);
                             test.same({
                                     fieldName: "epsilon",
@@ -2653,7 +2651,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             test.strictEqual("host", col.fieldName);
                             test.strictEqual("BaseEvent", col.owner);
-                            test.strictEqual(pivotSpec.comparisonTypes.string, col.type);
+                            test.strictEqual("string", col.type);
                             test.same({
                                     fieldName: "host",
                                     owner: "BaseEvent",
@@ -2665,14 +2663,14 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             // Test error handling for range column split
                             try {
-                                pivotSpec.addRangeColumnSplit("has_boris", "Wrong type here", 0, 100, 20, 5);
+                                pivotSpec.addRangeColumnSplit("has_boris", "Wrong type here", {start: 0, end: 100, step:20, limit:5});
                             }
                             catch (e) {
                                 test.ok(e);
                                 test.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number.");
                             }
                             try {
-                                pivotSpec.addRangeColumnSplit(field, 0, 100, 20, 5);
+                                pivotSpec.addRangeColumnSplit(field, {start: 0, end: 100, step:20, limit:5});
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2681,7 +2679,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             }
 
                             // Test range column split
-                            pivotSpec.addRangeColumnSplit("epsilon", 0, 100, 20, 5);
+                            pivotSpec.addRangeColumnSplit("epsilon", {start: 0, end: 100, step:20, limit:5});
                             test.strictEqual(3, pivotSpec.columns.length);
 
                             col = pivotSpec.columns[pivotSpec.columns.length - 1];
@@ -2693,7 +2691,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             test.strictEqual("epsilon", col.fieldName);
                             test.strictEqual("test_data", col.owner);
-                            test.strictEqual(pivotSpec.comparisonTypes.number, col.type);
+                            test.strictEqual("number", col.type);
                             test.strictEqual("ranges", col.display);
                             var ranges = {
                                 start: "0",
@@ -2742,7 +2740,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             test.strictEqual("has_boris", col.fieldName);
                             test.strictEqual("test_data", col.owner);
-                            test.strictEqual(pivotSpec.comparisonTypes.boolean, col.type);
+                            test.strictEqual("boolean", col.type);
                             test.strictEqual("is_true", col.trueLabel);
                             test.strictEqual("is_false", col.falseLabel);
                             test.same({
@@ -2770,9 +2768,17 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.ok(e);
                                 test.strictEqual(e.message, "Did not find field " + field);
                             }
+                            try {
+                                pivotSpec.addTimestampColumnSplit("_time", "Bogus binning value");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Invalid binning Bogus binning value found. Valid values are: " + pivotSpec._binning.join(", "));
+                            }
 
                             // Test timestamp column split
-                            pivotSpec.addTimestampColumnSplit("_time", pivotSpec.binning.DAY);
+                            pivotSpec.addTimestampColumnSplit("_time", "day");
                             test.strictEqual(5, pivotSpec.columns.length);
 
                             col = pivotSpec.columns[pivotSpec.columns.length - 1];
@@ -2784,8 +2790,8 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             test.strictEqual("_time", col.fieldName);
                             test.strictEqual("BaseEvent", col.owner);
-                            test.strictEqual(pivotSpec.comparisonTypes.timestamp, col.type);
-                            test.strictEqual(pivotSpec.binning.DAY, col.period);
+                            test.strictEqual("timestamp", col.type);
+                            test.strictEqual("day", col.period);
                             test.same({
                                     fieldName: "_time",
                                     owner: "BaseEvent",
@@ -2825,18 +2831,17 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.strictEqual(e.message, "Did not find field iDontExist");
                             }
                             try {
-                                pivotSpec.addCellValue("source", "Wrong Stats Function", pivotSpec.statsFunctions.STDEV);
+                                pivotSpec.addCellValue("source", "Wrong Stats Function", "stdev");
                                 test.ok(false);
                             }
                             catch (e) {
                                 test.ok(e);
                                 test.strictEqual(e.message, "Stats function on string and IPv4 fields must be one of:" + 
-                                    " list, distinct_values, first, last, count, or distinct_count; found " + 
-                                    pivotSpec.statsFunctions.STDEV);
+                                    " list, distinct_values, first, last, count, or distinct_count; found stdev");
                             }
 
                             // Add cell value, string
-                            pivotSpec.addCellValue("source", "Source Value", pivotSpec.statsFunctions.DISTINCT_COUNT);
+                            pivotSpec.addCellValue("source", "Source Value", "dc");
                             test.strictEqual(1, pivotSpec.cells.length);
 
                             var cell = pivotSpec.cells[pivotSpec.cells.length - 1];
@@ -2849,7 +2854,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             test.strictEqual("source", cell.fieldName);
                             test.strictEqual("BaseEvent", cell.owner);
-                            test.strictEqual(pivotSpec.comparisonTypes.string, cell.type);
+                            test.strictEqual("string", cell.type);
                             test.strictEqual("Source Value", cell.label);
                             test.strictEqual("dc", cell.value);
                             test.strictEqual(false, cell.sparkline);
@@ -2864,18 +2869,17 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             // Test error handling for cell value, IPv4
                             try {
-                                pivotSpec.addCellValue("hostip", "Wrong Stats Function", pivotSpec.statsFunctions.STDEV);
+                                pivotSpec.addCellValue("hostip", "Wrong Stats Function", "stdev");
                                 test.ok(false);
                             }
                             catch (e) {
                                 test.ok(e);
                                 test.strictEqual(e.message, "Stats function on string and IPv4 fields must be one of:" + 
-                                    " list, distinct_values, first, last, count, or distinct_count; found " + 
-                                    pivotSpec.statsFunctions.STDEV);
+                                    " list, distinct_values, first, last, count, or distinct_count; found stdev");
                             }
 
                             // Add cell value, IPv4
-                            pivotSpec.addCellValue("hostip", "Source Value", pivotSpec.statsFunctions.DISTINCT_COUNT);
+                            pivotSpec.addCellValue("hostip", "Source Value", "dc");
                             test.strictEqual(2, pivotSpec.cells.length);
 
                             cell = pivotSpec.cells[pivotSpec.cells.length - 1];
@@ -2888,9 +2892,9 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             test.strictEqual("hostip", cell.fieldName);
                             test.strictEqual("test_data", cell.owner);
-                            test.strictEqual(pivotSpec.comparisonTypes.IPv4, cell.type);
+                            test.strictEqual("ipv4", cell.type);
                             test.strictEqual("Source Value", cell.label);
-                            test.strictEqual(pivotSpec.statsFunctions.DISTINCT_COUNT, cell.value);
+                            test.strictEqual("dc", cell.value);
                             test.strictEqual(false, cell.sparkline);
                             test.same({
                                     fieldName: "hostip",
@@ -2903,7 +2907,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             // Test error handling for cell value, boolean
                             try {
-                                pivotSpec.addCellValue("has_boris", "Booleans not allowed", pivotSpec.statsFunctions.SUM);
+                                pivotSpec.addCellValue("has_boris", "Booleans not allowed", "sum");
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2913,18 +2917,17 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             // Test error handling for cell value, number
                             try {
-                                pivotSpec.addCellValue("epsilon", "Wrong Stats Function", pivotSpec.statsFunctions.LATEST);
+                                pivotSpec.addCellValue("epsilon", "Wrong Stats Function", "latest");
                                 test.ok(false);
                             }
                             catch (e) {
                                 test.ok(e);
                                 test.strictEqual(e.message, "Stats function on number field must be must be one of:" +
-                                    " sum, count, average, max, min, stdev, list, or distinct_values; found " +
-                                    pivotSpec.statsFunctions.LATEST);
+                                    " sum, count, average, max, min, stdev, list, or distinct_values; found latest");
                             }
 
                             // Add cell value, number
-                            pivotSpec.addCellValue("epsilon", "Source Value", pivotSpec.statsFunctions.AVERAGE);
+                            pivotSpec.addCellValue("epsilon", "Source Value", "average");
                             test.strictEqual(3, pivotSpec.cells.length);
 
                             cell = pivotSpec.cells[pivotSpec.cells.length - 1];
@@ -2937,9 +2940,9 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             test.strictEqual("epsilon", cell.fieldName);
                             test.strictEqual("test_data", cell.owner);
-                            test.strictEqual(pivotSpec.comparisonTypes.number, cell.type);
+                            test.strictEqual("number", cell.type);
                             test.strictEqual("Source Value", cell.label);
-                            test.strictEqual(pivotSpec.statsFunctions.AVERAGE, cell.value);
+                            test.strictEqual("average", cell.value);
                             test.strictEqual(false, cell.sparkline);
                             test.same({
                                     fieldName: "epsilon",
@@ -2952,18 +2955,17 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             // Test error handling for cell value, timestamp
                             try {
-                                pivotSpec.addCellValue("_time", "Wrong Stats Function", pivotSpec.statsFunctions.MAX);
+                                pivotSpec.addCellValue("_time", "Wrong Stats Function", "max");
                                 test.ok(false);
                             }
                             catch (e) {
                                 test.ok(e);
                                 test.strictEqual(e.message, "Stats function on timestamp field must be one of:" +
-                                    " duration, earliest, latest, list, or distinct values; found " +   
-                                    pivotSpec.statsFunctions.MAX);
+                                    " duration, earliest, latest, list, or distinct values; found max");
                             }
 
                             // Add cell value, timestamp
-                            pivotSpec.addCellValue("_time", "Source Value", pivotSpec.statsFunctions.EARLIEST);
+                            pivotSpec.addCellValue("_time", "Source Value", "earliest");
                             test.strictEqual(4, pivotSpec.cells.length);
 
                             cell = pivotSpec.cells[pivotSpec.cells.length - 1];
@@ -2976,9 +2978,9 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             test.strictEqual("_time", cell.fieldName);
                             test.strictEqual("BaseEvent", cell.owner);
-                            test.strictEqual(pivotSpec.comparisonTypes.timestamp, cell.type);
+                            test.strictEqual("timestamp", cell.type);
                             test.strictEqual("Source Value", cell.label);
-                            test.strictEqual(pivotSpec.statsFunctions.EARLIEST, cell.value);
+                            test.strictEqual("earliest", cell.value);
                             test.strictEqual(false, cell.sparkline);
                             test.same({
                                     fieldName: "_time",
@@ -2991,17 +2993,17 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             // Test error handling for cell value, count
                             try {
-                                pivotSpec.addCellValue("test_data", "Wrong Stats Function", pivotSpec.statsFunctions.MIN);
+                                pivotSpec.addCellValue("test_data", "Wrong Stats Function", "min");
                                 test.ok(false);
                             }
                             catch (e) {
                                 test.ok(e);
                                 test.strictEqual(e.message, "Stats function on childcount and objectcount fields " +
-                                    "must be count; found " + pivotSpec.statsFunctions.MIN);
+                                    "must be count; found " + "min");
                             }
                             
                             // Add cell value, count
-                            pivotSpec.addCellValue("test_data", "Source Value", pivotSpec.statsFunctions.COUNT);
+                            pivotSpec.addCellValue("test_data", "Source Value", "count");
                             test.strictEqual(5, pivotSpec.cells.length);
 
                             cell = pivotSpec.cells[pivotSpec.cells.length - 1];
@@ -3014,9 +3016,9 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             test.strictEqual("test_data", cell.fieldName);
                             test.strictEqual("test_data", cell.owner);
-                            test.strictEqual(pivotSpec.comparisonTypes.objectcount, cell.type);
+                            test.strictEqual("objectCount", cell.type);
                             test.strictEqual("Source Value", cell.label);
-                            test.strictEqual(pivotSpec.statsFunctions.COUNT, cell.value);
+                            test.strictEqual("count", cell.value);
                             test.strictEqual(false, cell.sparkline);
                             test.same({
                                     fieldName: "test_data",
@@ -3074,7 +3076,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             var pivotSpec = obj.createPivotSpec();
                             
                             pivotSpec.addBooleanRowSplit("has_boris", "Has Boris", "meep", "hilda");
-                            pivotSpec.addCellValue("hostip", "Distinct IPs", pivotSpec.statsFunctions.DISTINCT_COUNT);
+                            pivotSpec.addCellValue("hostip", "Distinct IPs", "count");
 
                             pivotSpec.pivot(done);
                         },
@@ -3133,7 +3135,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             pivotSpec = obj.createPivotSpec();
                             
                             pivotSpec.addBooleanRowSplit("has_boris", "Has Boris", "meep", "hilda");
-                            pivotSpec.addCellValue("hostip", "Distinct IPs", pivotSpec.statsFunctions.DISTINCT_COUNT);
+                            pivotSpec.addCellValue("hostip", "Distinct IPs", "count");
 
                             pivotSpec.setAccelerationJob(job);
                             test.ok(typeof pivotSpec.accelerationNamespace === "string");
@@ -3191,10 +3193,11 @@ exports.setup = function(svc, loggedOutSvc) {
                             var dm = dataModels.item("internal_audit_logs");
                             var obj = dm.objectByName("searches");
                             var pivotSpec = obj.createPivotSpec();
-
+                            
                             pivotSpec.addRowSplit("user", "Executing user");
-                            pivotSpec.addRangeColumnSplit("exec_time", 0, 12, 5, 4);
-                            pivotSpec.addCellValue("search", "Search Query", pivotSpec.statsFunctions.DISTINCT_VALUES);
+                            // pivotSpec.addRangeColumnSplit("exec_time", 0, 12, 5, 4);
+                            pivotSpec.addRangeColumnSplit("exec_time", {start: 0, end: 12, step:5, limit:4});
+                            pivotSpec.addCellValue("search", "Search Query", "values");
                             pivotSpec.pivot(done);
                         },
                         function(pivot, done) {
@@ -3249,7 +3252,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     );
                 });
             }
-        },  
+        },
 
         /*
         "App Tests": {
