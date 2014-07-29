@@ -1301,8 +1301,6 @@ exports.setup = function(svc, loggedOutSvc) {
                         },
                         function(dataModel, done) {
                             test.strictEqual(name, dataModel.name);
-                            // TODO: Should have some proper unicode handling?
-                            //     : see https://github.com/splunk/splunk-sdk-java/blob/master/tests/com/splunk/DataModelTest.java#L139
                             test.strictEqual("·Ä©·öô‡Øµ", dataModel.displayName);
                             test.strictEqual("‡Øµ‡Ø±‡Ø∞‡ØØ", dataModel.description);
 
@@ -1330,7 +1328,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual("", dataModel.displayName);
                             test.strictEqual("", dataModel.description);
 
-                            // Make sure we're not getting a summary of the data model definition
+                            // Make sure we're not getting a summary of the data model
                             test.strictEqual("0", dataModel.concise);
 
                             done();
@@ -1372,6 +1370,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual("-1mon", dataModel.acceleration.earliestTime);
                             test.strictEqual("* * * * *", dataModel.acceleration.cronSchedule);
                             test.same({enabled: false, earliestTime: "-1mon", cronSchedule: "* * * * *"}, dataModel.acceleration);
+
                             done();
                         }
                     ],
@@ -1398,6 +1397,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual("event1 ·Ä©·öô", obj.displayName);
                             test.strictEqual("event1", obj.name);
                             test.same(dataModel, obj.dataModel);
+
                             done();
                         }
                     ],
@@ -1785,7 +1785,7 @@ exports.setup = function(svc, loggedOutSvc) {
                         function(dataModels, done) {
                             var dm = dataModels.item("internal_audit_logs");
                             obj = dm.objectByName("searches");
-                            obj.runQuery({}, "", done);
+                            obj.startSearch({}, "", done);
                         },
                         function(job, done) {
                             tutils.pollUntil(
@@ -1802,7 +1802,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             job.cancel(done);
                         },
                         function(response, done) {
-                            obj.runQuery({status_buckets: 5, enable_lookups: false}, "| head 3", done);
+                            obj.startSearch({status_buckets: 5, enable_lookups: false}, "| head 3", done);
                         },
                         function(job, done) {
                             tutils.pollUntil(
@@ -1841,6 +1841,9 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.ok(obj);
                             test.ok(obj instanceof splunkjs.Service.DataModelObject);
                             test.strictEqual("BaseSearch", obj.parentName);
+                            test.ok(obj.isBaseSearch());
+                            test.ok(!obj.isBaseTransaction());
+                            test.ok(!obj.isBaseEvent());
                             test.strictEqual("search index=_internal | head 10", obj.baseSearch);
                             done();
                         }
@@ -1939,17 +1942,17 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual("0 */12 * * *", dataModel.acceleration.cron_schedule);
 
                             var dataModelObject = dataModel.objectByName("test_data");
-                            var pivotSpec = dataModelObject.createPivotSpec();
+                            var pivotSpecification = dataModelObject.createPivotSpecification();
 
-                            test.strictEqual(dataModelObject.dataModel.name, pivotSpec.accelerationNamespace);
+                            test.strictEqual(dataModelObject.dataModel.name, pivotSpecification.accelerationNamespace);
 
                             var name1 = "delete-me-" + getNextId();
-                            pivotSpec.setAccelerationJob(name1);
-                            test.strictEqual("sid=" + name1, pivotSpec.accelerationNamespace);
+                            pivotSpecification.setAccelerationJob(name1);
+                            test.strictEqual("sid=" + name1, pivotSpecification.accelerationNamespace);
 
                             var namespaceTemp = "delete-me-" + getNextId();
-                            pivotSpec.accelerationNamespace = namespaceTemp;
-                            test.strictEqual(namespaceTemp, pivotSpec.accelerationNamespace);
+                            pivotSpecification.accelerationNamespace = namespaceTemp;
+                            test.strictEqual(namespaceTemp, pivotSpecification.accelerationNamespace);
 
                             done();
                         }
@@ -1973,11 +1976,11 @@ exports.setup = function(svc, loggedOutSvc) {
                             var obj = dataModel.objectByName("test_data");
                             test.ok(obj);
 
-                            var pivotSpec = obj.createPivotSpec();
+                            var pivotSpecification = obj.createPivotSpecification();
 
                             // Boolean comparisons
                             try {
-                                pivotSpec.addFilter(getNextId(), "boolean", "=", true);
+                                pivotSpecification.addFilter(getNextId(), "boolean", "=", true);
                                 test.ok(false);
                             }
                             catch (e) {
@@ -1985,7 +1988,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.strictEqual(e.message, "Cannot add filter on a nonexistent field.");
                             }
                             try {
-                                pivotSpec.addFilter("_time", "boolean", "=", true);
+                                pivotSpecification.addFilter("_time", "boolean", "=", true);
                                 test.ok(false);
                             }
                             catch (e) {
@@ -1995,7 +1998,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             // String comparisons
                             try {
-                                pivotSpec.addFilter("has_boris", "string", "contains", "abc");
+                                pivotSpecification.addFilter("has_boris", "string", "contains", "abc");
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2003,7 +2006,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.strictEqual(e.message, "Cannot add string filter on has_boris because it is of type boolean");
                             }
                             try {
-                                pivotSpec.addFilter(getNextId(), "string", "contains", "abc");
+                                pivotSpecification.addFilter(getNextId(), "string", "contains", "abc");
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2013,7 +2016,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             // IPv4 comparisons
                             try {
-                                pivotSpec.addFilter("has_boris", "ipv4", "startsWith", "192.168");
+                                pivotSpecification.addFilter("has_boris", "ipv4", "startsWith", "192.168");
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2021,7 +2024,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.strictEqual(e.message, "Cannot add ipv4 filter on has_boris because it is of type boolean");
                             }
                             try {
-                                pivotSpec.addFilter(getNextId(), "ipv4", "startsWith", "192.168");
+                                pivotSpecification.addFilter(getNextId(), "ipv4", "startsWith", "192.168");
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2031,7 +2034,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             // Number comparisons
                             try {
-                                pivotSpec.addFilter("has_boris", "number", "atLeast", 2.3);
+                                pivotSpecification.addFilter("has_boris", "number", "atLeast", 2.3);
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2039,7 +2042,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.strictEqual(e.message, "Cannot add number filter on has_boris because it is of type boolean");
                             }
                             try {
-                                pivotSpec.addFilter(getNextId(), "number", "atLeast", 2.3);
+                                pivotSpecification.addFilter(getNextId(), "number", "atLeast", 2.3);
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2049,7 +2052,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             // Limit filter
                             try {
-                                pivotSpec.addLimitFilter("has_boris", "host", "DEFAULT", 50, "count");
+                                pivotSpecification.addLimitFilter("has_boris", "host", "DEFAULT", 50, "count");
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2057,7 +2060,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.strictEqual(e.message, "Cannot add limit filter on has_boris because it is of type boolean");
                             }
                             try {
-                                pivotSpec.addLimitFilter(getNextId(), "host", "DEFAULT", 50, "count");
+                                pivotSpecification.addLimitFilter(getNextId(), "host", "DEFAULT", 50, "count");
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2065,7 +2068,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.strictEqual(e.message, "Cannot add limit filter on a nonexistent field.");
                             }
                             try {
-                                pivotSpec.addLimitFilter("source", "host", "DEFAULT", 50, "sum");
+                                pivotSpecification.addLimitFilter("source", "host", "DEFAULT", 50, "sum");
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2074,7 +2077,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                     "Stats function for fields of type string must be COUNT or DISTINCT_COUNT; found sum");
                             }
                             try {
-                                pivotSpec.addLimitFilter("epsilon", "host", "DEFAULT", 50, "duration");
+                                pivotSpecification.addLimitFilter("epsilon", "host", "DEFAULT", 50, "duration");
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2083,7 +2086,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                     "Stats function for fields of type number must be one of COUNT, DISTINCT_COUNT, SUM, or AVERAGE; found duration");
                             }
                             try {
-                                pivotSpec.addLimitFilter("test_data", "host", "DEFAULT", 50, "list");
+                                pivotSpecification.addLimitFilter("test_data", "host", "DEFAULT", 50, "list");
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2113,27 +2116,25 @@ exports.setup = function(svc, loggedOutSvc) {
                             var obj = dataModel.objectByName("test_data");
                             test.ok(obj);
 
-                            var pivotSpec = obj.createPivotSpec();
+                            var pivotSpecification = obj.createPivotSpecification();
                             try {
-                                pivotSpec.addFilter("has_boris", "boolean", "=", true);
-                                test.strictEqual(1, pivotSpec.filters.length);
+                                pivotSpecification.addFilter("has_boris", "boolean", "=", true);
+                                test.strictEqual(1, pivotSpecification.filters.length);
 
                                 //Test the individual parts of the filter
-                                var filter = pivotSpec.filters[0];
+                                var filter = pivotSpecification.filters[0];
+
+                                test.ok(filter.hasOwnProperty("fieldName"));
+                                test.ok(filter.hasOwnProperty("type"));
+                                test.ok(filter.hasOwnProperty("comparator"));
+                                test.ok(filter.hasOwnProperty("compareTo"));
+                                test.ok(filter.hasOwnProperty("owner"));
+
+                                test.strictEqual("has_boris", filter.fieldName);
                                 test.strictEqual("boolean", filter.type);
-
-                                var filterJSON = filter.toJsonObject();
-                                test.ok(filterJSON.hasOwnProperty("fieldName"));
-                                test.ok(filterJSON.hasOwnProperty("type"));
-                                test.ok(filterJSON.hasOwnProperty("comparator"));
-                                test.ok(filterJSON.hasOwnProperty("compareTo"));
-                                test.ok(filterJSON.hasOwnProperty("owner"));
-
-                                test.strictEqual("has_boris", filterJSON.fieldName);
-                                test.strictEqual("boolean", filterJSON.type);
-                                test.strictEqual("=", filterJSON.comparator);
-                                test.strictEqual(true, filterJSON.compareTo);
-                                test.strictEqual("test_data", filterJSON.owner);
+                                test.strictEqual("=", filter.comparator);
+                                test.strictEqual(true, filter.compareTo);
+                                test.strictEqual("test_data", filter.owner);
                             }
                             catch (e) {
                                 test.ok(false);
@@ -2161,27 +2162,25 @@ exports.setup = function(svc, loggedOutSvc) {
                             var obj = dataModel.objectByName("test_data");
                             test.ok(obj);
 
-                            var pivotSpec = obj.createPivotSpec();
+                            var pivotSpecification = obj.createPivotSpecification();
                             try {
-                                pivotSpec.addFilter("host", "string", "contains", "abc");
-                                test.strictEqual(1, pivotSpec.filters.length);
+                                pivotSpecification.addFilter("host", "string", "contains", "abc");
+                                test.strictEqual(1, pivotSpecification.filters.length);
 
                                 //Test the individual parts of the filter
-                                var filter = pivotSpec.filters[0];
+                                var filter = pivotSpecification.filters[0];
+
+                                test.ok(filter.hasOwnProperty("fieldName"));
+                                test.ok(filter.hasOwnProperty("type"));
+                                test.ok(filter.hasOwnProperty("comparator"));
+                                test.ok(filter.hasOwnProperty("compareTo"));
+                                test.ok(filter.hasOwnProperty("owner"));
+
+                                test.strictEqual("host", filter.fieldName);
                                 test.strictEqual("string", filter.type);
-
-                                var filterJSON = filter.toJsonObject();
-                                test.ok(filterJSON.hasOwnProperty("fieldName"));
-                                test.ok(filterJSON.hasOwnProperty("type"));
-                                test.ok(filterJSON.hasOwnProperty("comparator"));
-                                test.ok(filterJSON.hasOwnProperty("compareTo"));
-                                test.ok(filterJSON.hasOwnProperty("owner"));
-
-                                test.strictEqual("host", filterJSON.fieldName);
-                                test.strictEqual("string", filterJSON.type);
-                                test.strictEqual("contains", filterJSON.comparator);
-                                test.strictEqual("abc", filterJSON.compareTo);
-                                test.strictEqual("BaseEvent", filterJSON.owner);
+                                test.strictEqual("contains", filter.comparator);
+                                test.strictEqual("abc", filter.compareTo);
+                                test.strictEqual("BaseEvent", filter.owner);
                             }
                             catch (e) {
                                 test.ok(false);
@@ -2209,27 +2208,25 @@ exports.setup = function(svc, loggedOutSvc) {
                             var obj = dataModel.objectByName("test_data");
                             test.ok(obj);
 
-                            var pivotSpec = obj.createPivotSpec();
+                            var pivotSpecification = obj.createPivotSpecification();
                             try {
-                                pivotSpec.addFilter("hostip", "ipv4", "startsWith", "192.168");
-                                test.strictEqual(1, pivotSpec.filters.length);
+                                pivotSpecification.addFilter("hostip", "ipv4", "startsWith", "192.168");
+                                test.strictEqual(1, pivotSpecification.filters.length);
 
                                 //Test the individual parts of the filter
-                                var filter = pivotSpec.filters[0];
+                                var filter = pivotSpecification.filters[0];                                
+
+                                test.ok(filter.hasOwnProperty("fieldName"));
+                                test.ok(filter.hasOwnProperty("type"));
+                                test.ok(filter.hasOwnProperty("comparator"));
+                                test.ok(filter.hasOwnProperty("compareTo"));
+                                test.ok(filter.hasOwnProperty("owner"));
+
+                                test.strictEqual("hostip", filter.fieldName);
                                 test.strictEqual("ipv4", filter.type);
-
-                                var filterJSON = filter.toJsonObject();
-                                test.ok(filterJSON.hasOwnProperty("fieldName"));
-                                test.ok(filterJSON.hasOwnProperty("type"));
-                                test.ok(filterJSON.hasOwnProperty("comparator"));
-                                test.ok(filterJSON.hasOwnProperty("compareTo"));
-                                test.ok(filterJSON.hasOwnProperty("owner"));
-
-                                test.strictEqual("hostip", filterJSON.fieldName);
-                                test.strictEqual("ipv4", filterJSON.type);
-                                test.strictEqual("startsWith", filterJSON.comparator);
-                                test.strictEqual("192.168", filterJSON.compareTo);
-                                test.strictEqual("test_data", filterJSON.owner);
+                                test.strictEqual("startsWith", filter.comparator);
+                                test.strictEqual("192.168", filter.compareTo);
+                                test.strictEqual("test_data", filter.owner);
                             }
                             catch (e) {
                                 test.ok(false);
@@ -2257,27 +2254,25 @@ exports.setup = function(svc, loggedOutSvc) {
                             var obj = dataModel.objectByName("test_data");
                             test.ok(obj);
 
-                            var pivotSpec = obj.createPivotSpec();
+                            var pivotSpecification = obj.createPivotSpecification();
                             try {
-                                pivotSpec.addFilter("epsilon", "number", ">=", 2.3);
-                                test.strictEqual(1, pivotSpec.filters.length);
+                                pivotSpecification.addFilter("epsilon", "number", ">=", 2.3);
+                                test.strictEqual(1, pivotSpecification.filters.length);
 
                                 //Test the individual parts of the filter
-                                var filter = pivotSpec.filters[0];
+                                var filter = pivotSpecification.filters[0];
+                                
+                                test.ok(filter.hasOwnProperty("fieldName"));
+                                test.ok(filter.hasOwnProperty("type"));
+                                test.ok(filter.hasOwnProperty("comparator"));
+                                test.ok(filter.hasOwnProperty("compareTo"));
+                                test.ok(filter.hasOwnProperty("owner"));
+
+                                test.strictEqual("epsilon", filter.fieldName);
                                 test.strictEqual("number", filter.type);
-
-                                var filterJSON = filter.toJsonObject();
-                                test.ok(filterJSON.hasOwnProperty("fieldName"));
-                                test.ok(filterJSON.hasOwnProperty("type"));
-                                test.ok(filterJSON.hasOwnProperty("comparator"));
-                                test.ok(filterJSON.hasOwnProperty("compareTo"));
-                                test.ok(filterJSON.hasOwnProperty("owner"));
-
-                                test.strictEqual("epsilon", filterJSON.fieldName);
-                                test.strictEqual("number", filterJSON.type);
-                                test.strictEqual(">=", filterJSON.comparator);
-                                test.strictEqual(2.3, filterJSON.compareTo);
-                                test.strictEqual("test_data", filterJSON.owner);
+                                test.strictEqual(">=", filter.comparator);
+                                test.strictEqual(2.3, filter.compareTo);
+                                test.strictEqual("test_data", filter.owner);
                             }
                             catch (e) {
                                 test.ok(false);
@@ -2304,33 +2299,31 @@ exports.setup = function(svc, loggedOutSvc) {
                             var obj = dataModel.objectByName("test_data");
                             test.ok(obj);
 
-                            var pivotSpec = obj.createPivotSpec();
+                            var pivotSpecification = obj.createPivotSpecification();
                             try {
-                                pivotSpec.addLimitFilter("epsilon", "host", "ASCENDING", 500, "average");
-                                test.strictEqual(1, pivotSpec.filters.length);
+                                pivotSpecification.addLimitFilter("epsilon", "host", "ASCENDING", 500, "average");
+                                test.strictEqual(1, pivotSpecification.filters.length);
 
                                 //Test the individual parts of the filter
-                                var filter = pivotSpec.filters[0];
+                                var filter = pivotSpecification.filters[0];
+
+                                test.ok(filter.hasOwnProperty("fieldName"));
+                                test.ok(filter.hasOwnProperty("type"));
+                                test.ok(filter.hasOwnProperty("owner"));
+                                test.ok(filter.hasOwnProperty("attributeName"));
+                                test.ok(filter.hasOwnProperty("attributeOwner"));
+                                test.ok(filter.hasOwnProperty("limitType"));
+                                test.ok(filter.hasOwnProperty("limitAmount"));
+                                test.ok(filter.hasOwnProperty("statsFn"));
+
+                                test.strictEqual("epsilon", filter.fieldName);
                                 test.strictEqual("number", filter.type);
-
-                                var filterJSON = filter.toJsonObject();
-                                test.ok(filterJSON.hasOwnProperty("fieldName"));
-                                test.ok(filterJSON.hasOwnProperty("type"));
-                                test.ok(filterJSON.hasOwnProperty("owner"));
-                                test.ok(filterJSON.hasOwnProperty("attributeName"));
-                                test.ok(filterJSON.hasOwnProperty("attributeOwner"));
-                                test.ok(filterJSON.hasOwnProperty("limitType"));
-                                test.ok(filterJSON.hasOwnProperty("limitAmount"));
-                                test.ok(filterJSON.hasOwnProperty("statsFn"));
-
-                                test.strictEqual("epsilon", filterJSON.fieldName);
-                                test.strictEqual("number", filterJSON.type);
-                                test.strictEqual("test_data", filterJSON.owner);
-                                test.strictEqual("host", filterJSON.attributeName);
-                                test.strictEqual("BaseEvent", filterJSON.attributeOwner);
-                                test.strictEqual("lowest", filterJSON.limitType);
-                                test.strictEqual(500, filterJSON.limitAmount);
-                                test.strictEqual("average", filterJSON.statsFn);
+                                test.strictEqual("test_data", filter.owner);
+                                test.strictEqual("host", filter.attributeName);
+                                test.strictEqual("BaseEvent", filter.attributeOwner);
+                                test.strictEqual("lowest", filter.limitType);
+                                test.strictEqual(500, filter.limitAmount);
+                                test.strictEqual("average", filter.statsFn);
                             }
                             catch (e) {
                                 test.ok(false);
@@ -2357,11 +2350,11 @@ exports.setup = function(svc, loggedOutSvc) {
                             var obj = dataModel.objectByName("test_data");
                             test.ok(obj);
 
-                            var pivotSpec = obj.createPivotSpec();
+                            var pivotSpecification = obj.createPivotSpecification();
 
                             // Test error handling for row split
                             try {
-                                pivotSpec.addRowSplit("has_boris", "Wrong type here");
+                                pivotSpecification.addRowSplit("has_boris", "Wrong type here");
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2371,7 +2364,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             var field = getNextId();
                             try {
 
-                                pivotSpec.addRowSplit(field, "Break Me!");
+                                pivotSpecification.addRowSplit(field, "Break Me!");
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2380,10 +2373,10 @@ exports.setup = function(svc, loggedOutSvc) {
                             }
 
                             // Test row split, number
-                            pivotSpec.addRowSplit("epsilon", "My Label");
-                            test.strictEqual(1, pivotSpec.rows.length);
+                            pivotSpecification.addRowSplit("epsilon", "My Label");
+                            test.strictEqual(1, pivotSpecification.rows.length);
                             
-                            var row = pivotSpec.rows[0];
+                            var row = pivotSpecification.rows[0];
                             test.ok(row.hasOwnProperty("fieldName"));
                             test.ok(row.hasOwnProperty("owner"));
                             test.ok(row.hasOwnProperty("type"));
@@ -2405,10 +2398,10 @@ exports.setup = function(svc, loggedOutSvc) {
                                 row);
                             
                             // Test row split, string
-                            pivotSpec.addRowSplit("host", "My Label");
-                            test.strictEqual(2, pivotSpec.rows.length);
+                            pivotSpecification.addRowSplit("host", "My Label");
+                            test.strictEqual(2, pivotSpecification.rows.length);
 
-                            row = pivotSpec.rows[pivotSpec.rows.length - 1];
+                            row = pivotSpecification.rows[pivotSpecification.rows.length - 1];
                             test.ok(row.hasOwnProperty("fieldName"));
                             test.ok(row.hasOwnProperty("owner"));
                             test.ok(row.hasOwnProperty("type"));
@@ -2429,14 +2422,14 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             // Test error handling on range row split
                             try {
-                                pivotSpec.addRangeRowSplit("has_boris", "Wrong type here", {start: 0, end: 100, step:20, limit:5});
+                                pivotSpecification.addRangeRowSplit("has_boris", "Wrong type here", {start: 0, end: 100, step:20, limit:5});
                             }
                             catch (e) {
                                 test.ok(e);
                                 test.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number.");
                             }
                             try {
-                                pivotSpec.addRangeRowSplit(field, "Break Me!", {start: 0, end: 100, step:20, limit:5});
+                                pivotSpecification.addRangeRowSplit(field, "Break Me!", {start: 0, end: 100, step:20, limit:5});
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2445,10 +2438,10 @@ exports.setup = function(svc, loggedOutSvc) {
                             }
 
                             // Test range row split
-                            pivotSpec.addRangeRowSplit("epsilon", "My Label", {start: 0, end: 100, step:20, limit:5});
-                            test.strictEqual(3, pivotSpec.rows.length);
+                            pivotSpecification.addRangeRowSplit("epsilon", "My Label", {start: 0, end: 100, step:20, limit:5});
+                            test.strictEqual(3, pivotSpecification.rows.length);
 
-                            row = pivotSpec.rows[pivotSpec.rows.length - 1];
+                            row = pivotSpecification.rows[pivotSpecification.rows.length - 1];
                             test.ok(row.hasOwnProperty("fieldName"));
                             test.ok(row.hasOwnProperty("owner"));
                             test.ok(row.hasOwnProperty("type"));
@@ -2481,14 +2474,14 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             // Test error handling on boolean row split
                             try {
-                                pivotSpec.addBooleanRowSplit("epsilon", "Wrong type here", "t", "f");
+                                pivotSpecification.addBooleanRowSplit("epsilon", "Wrong type here", "t", "f");
                             }
                             catch (e) {
                                 test.ok(e);
                                 test.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected boolean.");
                             }
                             try {
-                                pivotSpec.addBooleanRowSplit(field, "Break Me!", "t", "f");
+                                pivotSpecification.addBooleanRowSplit(field, "Break Me!", "t", "f");
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2497,10 +2490,10 @@ exports.setup = function(svc, loggedOutSvc) {
                             }
 
                             // Test boolean row split
-                            pivotSpec.addBooleanRowSplit("has_boris", "My Label", "is_true", "is_false");
-                            test.strictEqual(4, pivotSpec.rows.length);
+                            pivotSpecification.addBooleanRowSplit("has_boris", "My Label", "is_true", "is_false");
+                            test.strictEqual(4, pivotSpecification.rows.length);
 
-                            row = pivotSpec.rows[pivotSpec.rows.length - 1];
+                            row = pivotSpecification.rows[pivotSpecification.rows.length - 1];
                             test.ok(row.hasOwnProperty("fieldName"));
                             test.ok(row.hasOwnProperty("owner"));
                             test.ok(row.hasOwnProperty("type"));
@@ -2526,14 +2519,14 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             // Test error handling on timestamp row split
                             try {
-                                pivotSpec.addTimestampRowSplit("epsilon", "Wrong type here", "some binning");
+                                pivotSpecification.addTimestampRowSplit("epsilon", "Wrong type here", "some binning");
                             }
                             catch (e) {
                                 test.ok(e);
                                 test.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected timestamp.");
                             }
                             try {
-                                pivotSpec.addTimestampRowSplit(field, "Break Me!", "some binning");
+                                pivotSpecification.addTimestampRowSplit(field, "Break Me!", "some binning");
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2541,19 +2534,19 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.strictEqual(e.message, "Did not find field " + field);
                             }
                             try {
-                                pivotSpec.addTimestampRowSplit("_time", "some label", "Bogus binning value");
+                                pivotSpecification.addTimestampRowSplit("_time", "some label", "Bogus binning value");
                                 test.ok(false);
                             }
                             catch (e) {
                                 test.ok(e);
-                                test.strictEqual(e.message, "Invalid binning Bogus binning value found. Valid values are: " + pivotSpec._binning.join(", "));
+                                test.strictEqual(e.message, "Invalid binning Bogus binning value found. Valid values are: " + pivotSpecification._binning.join(", "));
                             }
 
                             // Test timestamp row split
-                            pivotSpec.addTimestampRowSplit("_time", "My Label", "day");
-                            test.strictEqual(5, pivotSpec.rows.length);
+                            pivotSpecification.addTimestampRowSplit("_time", "My Label", "day");
+                            test.strictEqual(5, pivotSpecification.rows.length);
 
-                            row = pivotSpec.rows[pivotSpec.rows.length - 1];
+                            row = pivotSpecification.rows[pivotSpecification.rows.length - 1];
                             test.ok(row.hasOwnProperty("fieldName"));
                             test.ok(row.hasOwnProperty("owner"));
                             test.ok(row.hasOwnProperty("type"));
@@ -2595,11 +2588,11 @@ exports.setup = function(svc, loggedOutSvc) {
                             var obj = dataModel.objectByName("test_data");
                             test.ok(obj);
 
-                            var pivotSpec = obj.createPivotSpec();
+                            var pivotSpecification = obj.createPivotSpecification();
 
                             // Test error handling for column split
                             try {
-                                pivotSpec.addColumnSplit("has_boris", "Wrong type here");
+                                pivotSpecification.addColumnSplit("has_boris", "Wrong type here");
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2609,7 +2602,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             var field = getNextId();
                             try {
 
-                                pivotSpec.addColumnSplit(field, "Break Me!");
+                                pivotSpecification.addColumnSplit(field, "Break Me!");
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2618,10 +2611,10 @@ exports.setup = function(svc, loggedOutSvc) {
                             }
 
                             // Test column split, number
-                            pivotSpec.addColumnSplit("epsilon");
-                            test.strictEqual(1, pivotSpec.columns.length);
+                            pivotSpecification.addColumnSplit("epsilon");
+                            test.strictEqual(1, pivotSpecification.columns.length);
 
-                            var col = pivotSpec.columns[pivotSpec.columns.length - 1];
+                            var col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
                             test.ok(col.hasOwnProperty("fieldName"));
                             test.ok(col.hasOwnProperty("owner"));
                             test.ok(col.hasOwnProperty("type"));
@@ -2640,10 +2633,10 @@ exports.setup = function(svc, loggedOutSvc) {
                                 col);
 
                             // Test column split, string
-                            pivotSpec.addColumnSplit("host");
-                            test.strictEqual(2, pivotSpec.columns.length);
+                            pivotSpecification.addColumnSplit("host");
+                            test.strictEqual(2, pivotSpecification.columns.length);
 
-                            col = pivotSpec.columns[pivotSpec.columns.length - 1];
+                            col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
                             test.ok(col.hasOwnProperty("fieldName"));
                             test.ok(col.hasOwnProperty("owner"));
                             test.ok(col.hasOwnProperty("type"));
@@ -2663,14 +2656,14 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             // Test error handling for range column split
                             try {
-                                pivotSpec.addRangeColumnSplit("has_boris", "Wrong type here", {start: 0, end: 100, step:20, limit:5});
+                                pivotSpecification.addRangeColumnSplit("has_boris", "Wrong type here", {start: 0, end: 100, step:20, limit:5});
                             }
                             catch (e) {
                                 test.ok(e);
                                 test.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number.");
                             }
                             try {
-                                pivotSpec.addRangeColumnSplit(field, {start: 0, end: 100, step:20, limit:5});
+                                pivotSpecification.addRangeColumnSplit(field, {start: 0, end: 100, step:20, limit:5});
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2679,10 +2672,10 @@ exports.setup = function(svc, loggedOutSvc) {
                             }
 
                             // Test range column split
-                            pivotSpec.addRangeColumnSplit("epsilon", {start: 0, end: 100, step:20, limit:5});
-                            test.strictEqual(3, pivotSpec.columns.length);
+                            pivotSpecification.addRangeColumnSplit("epsilon", {start: 0, end: 100, step:20, limit:5});
+                            test.strictEqual(3, pivotSpecification.columns.length);
 
-                            col = pivotSpec.columns[pivotSpec.columns.length - 1];
+                            col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
                             test.ok(col.hasOwnProperty("fieldName"));
                             test.ok(col.hasOwnProperty("owner"));
                             test.ok(col.hasOwnProperty("type"));
@@ -2711,14 +2704,14 @@ exports.setup = function(svc, loggedOutSvc) {
                             
                             // Test error handling on boolean column split
                             try {
-                                pivotSpec.addBooleanColumnSplit("epsilon", "t", "f");
+                                pivotSpecification.addBooleanColumnSplit("epsilon", "t", "f");
                             }
                             catch (e) {
                                 test.ok(e);
                                 test.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected boolean.");
                             }
                             try {
-                                pivotSpec.addBooleanColumnSplit(field, "t", "f");
+                                pivotSpecification.addBooleanColumnSplit(field, "t", "f");
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2727,10 +2720,10 @@ exports.setup = function(svc, loggedOutSvc) {
                             }
 
                             // Test boolean column split
-                            pivotSpec.addBooleanColumnSplit("has_boris", "is_true", "is_false");
-                            test.strictEqual(4, pivotSpec.columns.length);
+                            pivotSpecification.addBooleanColumnSplit("has_boris", "is_true", "is_false");
+                            test.strictEqual(4, pivotSpecification.columns.length);
 
-                            col = pivotSpec.columns[pivotSpec.columns.length - 1];
+                            col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
                             test.ok(col.hasOwnProperty("fieldName"));
                             test.ok(col.hasOwnProperty("owner"));
                             test.ok(col.hasOwnProperty("type"));
@@ -2754,14 +2747,14 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             // Test error handling on timestamp column split
                             try {
-                                pivotSpec.addTimestampColumnSplit("epsilon", "Wrong type here");
+                                pivotSpecification.addTimestampColumnSplit("epsilon", "Wrong type here");
                             }
                             catch (e) {
                                 test.ok(e);
                                 test.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected timestamp.");
                             }
                             try {
-                                pivotSpec.addTimestampColumnSplit(field, "Break Me!");
+                                pivotSpecification.addTimestampColumnSplit(field, "Break Me!");
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2769,19 +2762,19 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.strictEqual(e.message, "Did not find field " + field);
                             }
                             try {
-                                pivotSpec.addTimestampColumnSplit("_time", "Bogus binning value");
+                                pivotSpecification.addTimestampColumnSplit("_time", "Bogus binning value");
                                 test.ok(false);
                             }
                             catch (e) {
                                 test.ok(e);
-                                test.strictEqual(e.message, "Invalid binning Bogus binning value found. Valid values are: " + pivotSpec._binning.join(", "));
+                                test.strictEqual(e.message, "Invalid binning Bogus binning value found. Valid values are: " + pivotSpecification._binning.join(", "));
                             }
 
                             // Test timestamp column split
-                            pivotSpec.addTimestampColumnSplit("_time", "day");
-                            test.strictEqual(5, pivotSpec.columns.length);
+                            pivotSpecification.addTimestampColumnSplit("_time", "day");
+                            test.strictEqual(5, pivotSpecification.columns.length);
 
-                            col = pivotSpec.columns[pivotSpec.columns.length - 1];
+                            col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
                             test.ok(col.hasOwnProperty("fieldName"));
                             test.ok(col.hasOwnProperty("owner"));
                             test.ok(col.hasOwnProperty("type"));
@@ -2819,11 +2812,11 @@ exports.setup = function(svc, loggedOutSvc) {
                             var obj = dataModel.objectByName("test_data");
                             test.ok(obj);
 
-                            var pivotSpec = obj.createPivotSpec();
+                            var pivotSpecification = obj.createPivotSpecification();
 
                             // Test error handling for cell value, string
                             try {
-                                pivotSpec.addCellValue("iDontExist", "Break Me!", "explosion");
+                                pivotSpecification.addCellValue("iDontExist", "Break Me!", "explosion");
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2831,7 +2824,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                 test.strictEqual(e.message, "Did not find field iDontExist");
                             }
                             try {
-                                pivotSpec.addCellValue("source", "Wrong Stats Function", "stdev");
+                                pivotSpecification.addCellValue("source", "Wrong Stats Function", "stdev");
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2841,10 +2834,10 @@ exports.setup = function(svc, loggedOutSvc) {
                             }
 
                             // Add cell value, string
-                            pivotSpec.addCellValue("source", "Source Value", "dc");
-                            test.strictEqual(1, pivotSpec.cells.length);
+                            pivotSpecification.addCellValue("source", "Source Value", "dc");
+                            test.strictEqual(1, pivotSpecification.cells.length);
 
-                            var cell = pivotSpec.cells[pivotSpec.cells.length - 1];
+                            var cell = pivotSpecification.cells[pivotSpecification.cells.length - 1];
                             test.ok(cell.hasOwnProperty("fieldName"));
                             test.ok(cell.hasOwnProperty("owner"));
                             test.ok(cell.hasOwnProperty("type"));
@@ -2869,7 +2862,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             // Test error handling for cell value, IPv4
                             try {
-                                pivotSpec.addCellValue("hostip", "Wrong Stats Function", "stdev");
+                                pivotSpecification.addCellValue("hostip", "Wrong Stats Function", "stdev");
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2879,10 +2872,10 @@ exports.setup = function(svc, loggedOutSvc) {
                             }
 
                             // Add cell value, IPv4
-                            pivotSpec.addCellValue("hostip", "Source Value", "dc");
-                            test.strictEqual(2, pivotSpec.cells.length);
+                            pivotSpecification.addCellValue("hostip", "Source Value", "dc");
+                            test.strictEqual(2, pivotSpecification.cells.length);
 
-                            cell = pivotSpec.cells[pivotSpec.cells.length - 1];
+                            cell = pivotSpecification.cells[pivotSpecification.cells.length - 1];
                             test.ok(cell.hasOwnProperty("fieldName"));
                             test.ok(cell.hasOwnProperty("owner"));
                             test.ok(cell.hasOwnProperty("type"));
@@ -2907,7 +2900,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             // Test error handling for cell value, boolean
                             try {
-                                pivotSpec.addCellValue("has_boris", "Booleans not allowed", "sum");
+                                pivotSpecification.addCellValue("has_boris", "Booleans not allowed", "sum");
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2917,7 +2910,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             // Test error handling for cell value, number
                             try {
-                                pivotSpec.addCellValue("epsilon", "Wrong Stats Function", "latest");
+                                pivotSpecification.addCellValue("epsilon", "Wrong Stats Function", "latest");
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2927,10 +2920,10 @@ exports.setup = function(svc, loggedOutSvc) {
                             }
 
                             // Add cell value, number
-                            pivotSpec.addCellValue("epsilon", "Source Value", "average");
-                            test.strictEqual(3, pivotSpec.cells.length);
+                            pivotSpecification.addCellValue("epsilon", "Source Value", "average");
+                            test.strictEqual(3, pivotSpecification.cells.length);
 
-                            cell = pivotSpec.cells[pivotSpec.cells.length - 1];
+                            cell = pivotSpecification.cells[pivotSpecification.cells.length - 1];
                             test.ok(cell.hasOwnProperty("fieldName"));
                             test.ok(cell.hasOwnProperty("owner"));
                             test.ok(cell.hasOwnProperty("type"));
@@ -2955,7 +2948,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             // Test error handling for cell value, timestamp
                             try {
-                                pivotSpec.addCellValue("_time", "Wrong Stats Function", "max");
+                                pivotSpecification.addCellValue("_time", "Wrong Stats Function", "max");
                                 test.ok(false);
                             }
                             catch (e) {
@@ -2965,10 +2958,10 @@ exports.setup = function(svc, loggedOutSvc) {
                             }
 
                             // Add cell value, timestamp
-                            pivotSpec.addCellValue("_time", "Source Value", "earliest");
-                            test.strictEqual(4, pivotSpec.cells.length);
+                            pivotSpecification.addCellValue("_time", "Source Value", "earliest");
+                            test.strictEqual(4, pivotSpecification.cells.length);
 
-                            cell = pivotSpec.cells[pivotSpec.cells.length - 1];
+                            cell = pivotSpecification.cells[pivotSpecification.cells.length - 1];
                             test.ok(cell.hasOwnProperty("fieldName"));
                             test.ok(cell.hasOwnProperty("owner"));
                             test.ok(cell.hasOwnProperty("type"));
@@ -2993,7 +2986,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
                             // Test error handling for cell value, count
                             try {
-                                pivotSpec.addCellValue("test_data", "Wrong Stats Function", "min");
+                                pivotSpecification.addCellValue("test_data", "Wrong Stats Function", "min");
                                 test.ok(false);
                             }
                             catch (e) {
@@ -3003,10 +2996,10 @@ exports.setup = function(svc, loggedOutSvc) {
                             }
                             
                             // Add cell value, count
-                            pivotSpec.addCellValue("test_data", "Source Value", "count");
-                            test.strictEqual(5, pivotSpec.cells.length);
+                            pivotSpecification.addCellValue("test_data", "Source Value", "count");
+                            test.strictEqual(5, pivotSpecification.cells.length);
 
-                            cell = pivotSpec.cells[pivotSpec.cells.length - 1];
+                            cell = pivotSpecification.cells[pivotSpecification.cells.length - 1];
                             test.ok(cell.hasOwnProperty("fieldName"));
                             test.ok(cell.hasOwnProperty("owner"));
                             test.ok(cell.hasOwnProperty("type"));
@@ -3050,7 +3043,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             var obj = dataModel.objectByName("test_data");
                             test.ok(obj);
 
-                            obj.createPivotSpec().pivot(done);
+                            obj.createPivotSpecification().pivot(done);
                         },
                         function(pivot, done) {
                             done();
@@ -3073,12 +3066,12 @@ exports.setup = function(svc, loggedOutSvc) {
                         function(dataModel, done) {
                             var obj = dataModel.objectByName("test_data");
                             test.ok(obj);
-                            var pivotSpec = obj.createPivotSpec();
+                            var pivotSpecification = obj.createPivotSpecification();
                             
-                            pivotSpec.addBooleanRowSplit("has_boris", "Has Boris", "meep", "hilda");
-                            pivotSpec.addCellValue("hostip", "Distinct IPs", "count");
+                            pivotSpecification.addBooleanRowSplit("has_boris", "Has Boris", "meep", "hilda");
+                            pivotSpecification.addCellValue("hostip", "Distinct IPs", "count");
 
-                            pivotSpec.pivot(done);
+                            pivotSpecification.pivot(done);
                         },
                         function(pivot, done) {
                             test.strictEqual(null, pivot.tstatsSearch);
@@ -3118,7 +3111,7 @@ exports.setup = function(svc, loggedOutSvc) {
                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                var that = this;
                var obj;
-               var pivotSpec;
+               var pivotSpecification;
                var adhocjob;
                Async.chain([
                         function(done) {
@@ -3132,17 +3125,22 @@ exports.setup = function(svc, loggedOutSvc) {
                         function(job, done) {
                             adhocjob = job;
                             test.ok(job);
-                            pivotSpec = obj.createPivotSpec();
+                            pivotSpecification = obj.createPivotSpecification();
                             
-                            pivotSpec.addBooleanRowSplit("has_boris", "Has Boris", "meep", "hilda");
-                            pivotSpec.addCellValue("hostip", "Distinct IPs", "count");
+                            pivotSpecification.addBooleanRowSplit("has_boris", "Has Boris", "meep", "hilda");
+                            pivotSpecification.addCellValue("hostip", "Distinct IPs", "count");
 
-                            pivotSpec.setAccelerationJob(job);
-                            test.ok(typeof pivotSpec.accelerationNamespace === "string");
-                            pivotSpec.setAccelerationJob(job.sid);
-                            test.ok(typeof pivotSpec.accelerationNamespace === "string");
+                            // Test setting a job
+                            pivotSpecification.setAccelerationJob(job);
+                            test.strictEqual("string", typeof pivotSpecification.accelerationNamespace);
+                            test.strictEqual("sid=" + job.sid, pivotSpecification.accelerationNamespace);
+
+                            // Test setting a job's SID
+                            pivotSpecification.setAccelerationJob(job.sid);
+                            test.strictEqual("string", typeof pivotSpecification.accelerationNamespace);
+                            test.strictEqual("sid=" + job.sid, pivotSpecification.accelerationNamespace);
                             
-                            pivotSpec.pivot(done);
+                            pivotSpecification.pivot(done);
                         },
                         function(pivot, done) {
                             test.ok(pivot.tstatsSearch);
@@ -3151,6 +3149,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             // This test won't work with utils.startsWith due to the regex escaping
                             test.strictEqual("| tstats", pivot.tstatsSearch.match("^\\| tstats")[0]);
                             test.strictEqual(1, pivot.tstatsSearch.match("^\\| tstats").length);
+
                             pivot.run(done);
                         },
                         function(job, done) {
@@ -3168,6 +3167,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             // This test won't work with utils.startsWith due to the regex escaping
                             test.strictEqual("| tstats", job.properties().request.search.match("^\\| tstats")[0]);
                             test.strictEqual(1, job.properties().request.search.match("^\\| tstats").length);
+
                             adhocjob.cancel(done);
                         }
                     ],
@@ -3192,13 +3192,12 @@ exports.setup = function(svc, loggedOutSvc) {
                         function(dataModels, done) {
                             var dm = dataModels.item("internal_audit_logs");
                             var obj = dm.objectByName("searches");
-                            var pivotSpec = obj.createPivotSpec();
+                            var pivotSpecification = obj.createPivotSpecification();
                             
-                            pivotSpec.addRowSplit("user", "Executing user");
-                            // pivotSpec.addRangeColumnSplit("exec_time", 0, 12, 5, 4);
-                            pivotSpec.addRangeColumnSplit("exec_time", {start: 0, end: 12, step:5, limit:4});
-                            pivotSpec.addCellValue("search", "Search Query", "values");
-                            pivotSpec.pivot(done);
+                            pivotSpecification.addRowSplit("user", "Executing user");
+                            pivotSpecification.addRangeColumnSplit("exec_time", {start: 0, end: 12, step:5, limit:4});
+                            pivotSpecification.addCellValue("search", "Search Query", "values");
+                            pivotSpecification.pivot(done);
                         },
                         function(pivot, done) {
                             // If tstats is undefined, use pivotSearch

@@ -50,33 +50,23 @@ exports.main = function(opts, callback) {
                     done("Error logging in");
                 }
 
-                // Now that we're logged in, let's get the data model we're concerned with.
+                // Now that we're logged in, let's get the data models collection
                 service.dataModels().fetch(done);
             },
             function(dataModels, done) {
+                // ...and the specific data model we're concerned with
                 var dm = dataModels.item("internal_audit_logs");
-                // Get the "searches" object out of the "internal_audit_logs" data model.
+                // Get the "searches" object out of the "internal_audit_logs" data model
                 searches = dm.objectByName("searches");
 
-                console.log(
-                    "Working with object",
-                    searches.displayName,
-                    "in model",
-                    dm.displayName
-                    );
+                console.log("Working with object", searches.displayName,
+                    "in model", dm.displayName);
 
-                var lineageString = "\t Lineage:"; // TODO: append searches.lineage().join(" -> ");
-
-                // TODO: remove loop
-                for (var i = 0; i < searches.lineage.length; i++) {
-                    lineageString += " -> " + searches.lineage[i];
-                }
-                console.log(lineageString);
-
+                console.log("\t Lineage:", searches.lineage.join(" -> "));
                 console.log("\t Internal name: " + searches.name);
 
                 // Run a data model search query, getting the first 5 results
-                searches.runQuery({}, "| head 5", done);
+                searches.startSearch({}, "| head 5", done);
             },
             function(job, done) {
                 // Wait until the job is done
@@ -120,17 +110,17 @@ exports.main = function(opts, callback) {
                     console.log("------------------------------");
                 }
                 
-                var pivotSpec = searches.createPivotSpec();
+                var pivotSpecification = searches.createPivotSpecification();
                 // Each function call here returns a pivotSpecification so we can chain them
-                pivotSpec
+                pivotSpecification
                     .addRowSplit("user", "Executing user")
-                    .addRangeColumnSplit("exec_time", null, null, null, 4)
-                    .addCellValue("search", "Search Query", pivotSpec.statsFunctions.DISTINCT_VALUES)
+                    .addRangeColumnSplit("exec_time", {limit: 4})
+                    .addCellValue("search", "Search Query", "values")
                     .pivot(done);
             },
             function(pivot, done) {
                 console.log("Query for binning search queries by execution time and executing user:");
-                console.log("\t", pivot.prettyQuery());
+                console.log("\t", pivot.prettyQuery);
                 pivot.run({}, done);
             },
             function(job, done) {
@@ -174,7 +164,7 @@ exports.main = function(opts, callback) {
                     console.log(rowString);
                     console.log("------------------------------");
                 }
-                done();
+                job.cancel(done);
             }
         ],
         function(err) {
