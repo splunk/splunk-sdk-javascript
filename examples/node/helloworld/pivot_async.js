@@ -22,7 +22,7 @@ exports.main = function(opts, callback) {
     opts = opts || {};
     
     var username = opts.username    || "admin";
-    var password = opts.password    || "1"; // TODO: change to "changeme"
+    var password = opts.password    || "changeme";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";

@@ -38,6 +38,11 @@ exports.setup = function(svc, opts) {
                 main(opts, test.done);
             },
 
+            "Pivot#Async": function(test) {
+                var main = require("../examples/node/helloworld/pivot_async").main;
+                main(opts, test.done);
+            },
+
             "Fired Alerts": function(test) {
                 var main = require("../examples/node/helloworld/firedalerts").main;
                 main(opts, test.done);
