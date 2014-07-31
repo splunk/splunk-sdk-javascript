@@ -12,7 +12,14 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-// TODO: add a description of this example.
+// This example will login to Splunk, and then retrieve the list of data models,
+// get the "internal_audit_logs", then get the "searches" data model object.
+// Then start a search on the "searches" data model object, poll the search
+// job for results, and print out the results.
+// Then create a pivot specification and retrieve the pivot searches from
+// the Splunk server, run the search job for that pivot report, poll
+// the job for results, then print them out.
+// At the end, the search job is cancelled.
 
 var splunkjs = require('../../../index');
 var Async  = splunkjs.Async;

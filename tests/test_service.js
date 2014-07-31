@@ -1549,7 +1549,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.ok(obj.hasField("has_boris"));
                             test.ok(obj.fieldByName("_time"));
                             test.ok(obj.hasField("_time"));
-
+                            
                             done();
                         }
                     ],
