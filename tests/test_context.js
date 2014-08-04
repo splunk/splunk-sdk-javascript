@@ -668,7 +668,7 @@ exports.setup = function(svc) {
             req.abort();
         },
 
-        "Callback#timeout test": function(test){
+        "Callback#timeout default test": function(test){
             var service = new splunkjs.Service(
                 this.service.http,
                 {
@@ -678,29 +678,81 @@ exports.setup = function(svc) {
                     username: this.service.username,
                     password: this.service.password,
                     version: svc.version,
+                    version: svc.version
                 }
             );
 
             test.strictEqual(0, service.timeout);
-
-            // With a timeout of 1ms, the timeout error is expected.
-            service.timeout = 1;
-            service.request("search/jobs", "GET", {count:1}, null, null, {"X-TestHeader":1}, function(err, res){
-                test.strictEqual(600, err.status);
-                test.strictEqual("ETIMEDOUT", err.error.code);
-            });
-
-            service.timeout = 10000;
             service.request("search/jobs", "GET", {count:1}, null, null, {"X-TestHeader":1}, function(err, res){
                 test.ok(res);
+                test.done();
             });
+        },
 
-            service.timeout = 0;
+        "Callback#timeout timed test": function(test){
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    version: svc.version,
+                    timeout: 10000
+                }
+            );
+
+            test.strictEqual(service.timeout, 10000);
             service.request("search/jobs", "GET", {count:1}, null, null, {"X-TestHeader":1}, function(err, res){
                 test.ok(res);
+                test.done();
             });
+        },
 
-            test.done();
+        "Callback#timeout 1ms fail": function(test){
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    version: svc.version,
+                    timeout: 1
+                }
+            );
+
+            // With a timeout of 1ms, timeout error is expected.
+            test.strictEqual(service.timeout, 1);
+            service.request("search/jobs", "GET", {count:1}, null, null, {"X-TestHeader":1}, function(err, res){
+                test.ok(err);
+                test.strictEqual(err.status, 600);
+                test.done();
+            });
+        },
+
+        "Callback#timeout fail": function(test){
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    version: svc.version,
+                    timeout: 3000
+                }
+            );
+
+            // Having a timeout of 3 seconds, a max_time of 5 seconds with a blocking mode and searching realtime should involve a timeout error.
+            service.get("search/jobs/export", {search:"search index=_internal", timeout:2, max_time:5, search_mode:"realtime", exec_mode:"blocking"}, function(err, res){
+                test.ok(err);
+                test.strictEqual(err.status, 600);
+                test.done();
+            });
         },
 
         "Cancel test search": function(test) {
