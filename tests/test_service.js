@@ -1636,7 +1636,11 @@ exports.setup = function(svc, loggedOutSvc) {
                             if (month <= 9) {
                                 month = "0" + month;
                             }
-                            var expectedDate = yesterday.getFullYear() + "-" + month + "-" + yesterday.getDate();
+                            var date = yesterday.getDate();
+                            if (date <= 9) {
+                                date = "0" + date;
+                            }
+                            var expectedDate = yesterday.getFullYear() + "-" + month + "-" + date;
                             test.ok(utils.startsWith(job._state.content.earliestTime, expectedDate));
 
                             job.cancel(done);
@@ -1733,10 +1737,10 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.ok(!lookupCalculation.isRegexp());
                             test.strictEqual(null, lookupCalculation.comment);
                             test.strictEqual(true, lookupCalculation.isEditable());
-                            test.same([{lookupField: "a_lookup_field", inputField: "host"}], lookupCalculation.inputFieldMappings);
-                            test.strictEqual(1, lookupCalculation.inputFieldMappings.length);
-                            test.strictEqual("a_lookup_field", lookupCalculation.inputFieldMappings[0].lookupField);
-                            test.strictEqual("host", lookupCalculation.inputFieldMappings[0].inputField);
+                            test.same({lookupField: "a_lookup_field", inputField: "host"}, lookupCalculation.inputFieldMappings);
+                            test.strictEqual(2, Object.keys(lookupCalculation.inputFieldMappings).length);
+                            test.strictEqual("a_lookup_field", lookupCalculation.inputFieldMappings.lookupField);
+                            test.strictEqual("host", lookupCalculation.inputFieldMappings.inputField);
                             test.strictEqual("dnslookup", lookupCalculation.lookupName);
                             
                             var regexpCalculation = calculations["a5v1k82ymic"];
@@ -1843,7 +1847,6 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual("BaseSearch", obj.parentName);
                             test.ok(obj.isBaseSearch());
                             test.ok(!obj.isBaseTransaction());
-                            test.ok(!obj.isBaseEvent());
                             test.strictEqual("search index=_internal | head 10", obj.baseSearch);
                             done();
                         }
@@ -1872,7 +1875,6 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual("BaseTransaction", obj.parentName);
                             test.ok(obj.isBaseTransaction());
                             test.ok(!obj.isBaseSearch());
-                            test.ok(!obj.isBaseEvent());
                             test.same(["event1"], obj.objectsToGroup);
                             test.same(["host", "from"], obj.groupByFields);
                             test.strictEqual("25s", obj.maxPause);
