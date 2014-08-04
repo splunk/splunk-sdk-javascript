@@ -18,18 +18,6 @@ You can get the SDK by [downloading it][zip] from GitHub, or by cloning it:
 
     git clone https://github.com/splunk/splunk-sdk-javascript.git
 
-### Install the XML to JSON Splunk app
-
-The XML to JSON Splunk app (<i>xml2json</i>) converts XML output to JSON, and is
-required if:
-
-* You are using Splunk 4.2.x or 4.3.x. 
-* You want to run the unit tests (with any Splunk version). 
-
-To install the XML to JSON app, copy the xml2json app directory 
-(<b>/splunk-sdk-javascript/xml2json</b>) to the Splunk apps directory 
-(<b>$SPLUNK_HOME/etc/apps</b>), then restart Splunk.
-
 ### Use the Splunk SDK for JavaScript components on your web page
 
 To use the components from the Splunk SDK for JavaScript on your web page, copy the 
@@ -216,7 +204,7 @@ searches need to be running in your splunkd instance. You can start some
 searches by logging into Splunk Web and opening the Search app, which will run a
 few searches to populate its dashboard.
 
-**Note**: The xml2json app is required for running unit tests.
+**Note**: The 'sdk-app-collection' app is required for running unit tests.
 
 To run the unit tests, open a command prompt in the **splunk-sdk-javascript** 
 directory. To run all tests, enter:
@@ -277,11 +265,6 @@ To run the browser tests, enter:
 <tr>
 <td><b>/tests</b></td>
 <td>Unit tests</td>
-</tr>
-
-<tr>
-<td><b>/xml2json</b></td>
-<td>Source for the XML to JSON app</td>
 </tr>
 
 
@@ -437,7 +420,6 @@ of embedded libraries and their licenses:
 [event-license]:            https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-BASE64
 
 [json2]:                    http://www.json.org/js.html
-[xml2json]:                 https://github.com/splunk/splunk-sdk-javascript/tree/master/xml2json
 [splunkrc]:                 https://github.com/splunk/splunk-sdk-javascript/blob/master/splunkrc.spec
 [node_examples_dir]:        https://github.com/splunk/splunk-sdk-javascript/blob/master/examples/node
 [browser_examples_dir]:     https://github.com/splunk/splunk-sdk-javascript/blob/master/examples/browser
