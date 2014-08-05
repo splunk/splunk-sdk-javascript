@@ -1714,7 +1714,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.ok(evalCalculation.isEval());
                             test.ok(!evalCalculation.isLookup());
                             test.ok(!evalCalculation.isGeoIP());
-                            test.ok(!evalCalculation.isRegexp());
+                            test.ok(!evalCalculation.isRex());
                             test.strictEqual(null, evalCalculation.comment);
                             test.strictEqual(true, evalCalculation.isEditable());
                             test.strictEqual("if(cidrmatch(\"192.0.0.0/16\", clientip), \"local\", \"other\")", evalCalculation.expression);
@@ -1734,7 +1734,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.ok(lookupCalculation.isLookup());
                             test.ok(!lookupCalculation.isEval());
                             test.ok(!lookupCalculation.isGeoIP());
-                            test.ok(!lookupCalculation.isRegexp());
+                            test.ok(!lookupCalculation.isRex());
                             test.strictEqual(null, lookupCalculation.comment);
                             test.strictEqual(true, lookupCalculation.isEditable());
                             test.same({lookupField: "a_lookup_field", inputField: "host"}, lookupCalculation.inputFieldMappings);
@@ -1748,7 +1748,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual("event1", regexpCalculation.owner);
                             test.same(["event1"], regexpCalculation.lineage);
                             test.strictEqual("Rex", regexpCalculation.type);
-                            test.ok(regexpCalculation.isRegexp());
+                            test.ok(regexpCalculation.isRex());
                             test.ok(!regexpCalculation.isLookup());
                             test.ok(!regexpCalculation.isEval());
                             test.ok(!regexpCalculation.isGeoIP());
@@ -1764,7 +1764,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.ok(geoIPCalculation.isGeoIP());
                             test.ok(!geoIPCalculation.isLookup());
                             test.ok(!geoIPCalculation.isEval());
-                            test.ok(!geoIPCalculation.isRegexp());
+                            test.ok(!geoIPCalculation.isRex());
                             test.strictEqual("·Ä©·öô‡Øµ comment of pbe9bd0rp4", geoIPCalculation.comment);
                             test.strictEqual(5, geoIPCalculation.outputFieldNames().length);
                             test.strictEqual("output_from_reverse_hostname", geoIPCalculation.inputField);
