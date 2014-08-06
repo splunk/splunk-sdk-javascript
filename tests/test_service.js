@@ -26,1084 +26,1084 @@ exports.setup = function(svc, loggedOutSvc) {
     };
 
     var suite = {
-        // "Namespace Tests": {
-        //     setUp: function(finished) {
-        //         this.service = svc;
-        //         var that = this;
+        "Namespace Tests": {
+            setUp: function(finished) {
+                this.service = svc;
+                var that = this;
                                 
-        //         var appName1 = "jssdk_testapp_" + getNextId();
-        //         var appName2 = "jssdk_testapp_" + getNextId();
+                var appName1 = "jssdk_testapp_" + getNextId();
+                var appName2 = "jssdk_testapp_" + getNextId();
                 
-        //         var userName1 = "jssdk_testuser_" + getNextId();
-        //         var userName2 = "jssdk_testuser_" + getNextId();
+                var userName1 = "jssdk_testuser_" + getNextId();
+                var userName2 = "jssdk_testuser_" + getNextId();
                 
-        //         var apps = this.service.apps();
-        //         var users = this.service.users();
+                var apps = this.service.apps();
+                var users = this.service.users();
                 
-        //         this.namespace11 = {owner: userName1, app: appName1};
-        //         this.namespace12 = {owner: userName1, app: appName2};
-        //         this.namespace21 = {owner: userName2, app: appName1};
-        //         this.namespace22 = {owner: userName2, app: appName2};
+                this.namespace11 = {owner: userName1, app: appName1};
+                this.namespace12 = {owner: userName1, app: appName2};
+                this.namespace21 = {owner: userName2, app: appName1};
+                this.namespace22 = {owner: userName2, app: appName2};
                 
-        //         Async.chain([
-        //                 function(done) {
-        //                     apps.create({name: appName1}, done);
-        //                 },
-        //                 function(app1, done) {
-        //                     that.app1 = app1;
-        //                     that.appName1 = appName1;
-        //                     apps.create({name: appName2}, done);
-        //                 },
-        //                 function(app2, done) {
-        //                     that.app2 = app2;
-        //                     that.appName2 = appName2;
-        //                     users.create({name: userName1, password: "abc", roles: ["user"]}, done);
-        //                 },
-        //                 function(user1, done) {
-        //                     that.user1 = user1;
-        //                     that.userName1 = userName1;
-        //                     users.create({name: userName2, password: "abc", roles: ["user"]}, done);
-        //                 },
-        //                 function(user2, done) {
-        //                     that.user2 = user2;
-        //                     that.userName2 = userName2;
+                Async.chain([
+                        function(done) {
+                            apps.create({name: appName1}, done);
+                        },
+                        function(app1, done) {
+                            that.app1 = app1;
+                            that.appName1 = appName1;
+                            apps.create({name: appName2}, done);
+                        },
+                        function(app2, done) {
+                            that.app2 = app2;
+                            that.appName2 = appName2;
+                            users.create({name: userName1, password: "abc", roles: ["user"]}, done);
+                        },
+                        function(user1, done) {
+                            that.user1 = user1;
+                            that.userName1 = userName1;
+                            users.create({name: userName2, password: "abc", roles: ["user"]}, done);
+                        },
+                        function(user2, done) {
+                            that.user2 = user2;
+                            that.userName2 = userName2;
                             
-        //                     done();
-        //                 }
-        //             ],
-        //             function(err) {
-        //                 finished(); 
-        //             }
-        //         );
-        //     },        
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        finished(); 
+                    }
+                );
+            },        
             
-        //     "Callback#Namespace protection": function(test) {    
-        //         var searchName = "jssdk_search_" + getNextId();
-        //         var search = "search *";
-        //         var service = this.service;
+            "Callback#Namespace protection": function(test) {    
+                var searchName = "jssdk_search_" + getNextId();
+                var search = "search *";
+                var service = this.service;
                 
-        //         var savedSearches11 = service.savedSearches(this.namespace11);
-        //         var savedSearches21 = service.savedSearches(this.namespace21);
+                var savedSearches11 = service.savedSearches(this.namespace11);
+                var savedSearches21 = service.savedSearches(this.namespace21);
                 
-        //         var that = this;
-        //         Async.chain([
-        //                 function(done) {
-        //                     // Create the saved search only in the 11 namespace
-        //                     savedSearches11.create({name: searchName, search: search}, done);
-        //                 },
-        //                 function(savedSearch, done) {
-        //                     // Refresh the 11 saved searches
-        //                     savedSearches11.fetch(done);
-        //                 },
-        //                 function(savedSearches, done) {
-        //                     // Refresh the 21 saved searches
-        //                     savedSearches21.fetch(done);
-        //                 },
-        //                 function(savedSearches, done) {                            
-        //                     var entity11 = savedSearches11.item(searchName);
-        //                     var entity21 = savedSearches21.item(searchName);
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            // Create the saved search only in the 11 namespace
+                            savedSearches11.create({name: searchName, search: search}, done);
+                        },
+                        function(savedSearch, done) {
+                            // Refresh the 11 saved searches
+                            savedSearches11.fetch(done);
+                        },
+                        function(savedSearches, done) {
+                            // Refresh the 21 saved searches
+                            savedSearches21.fetch(done);
+                        },
+                        function(savedSearches, done) {                            
+                            var entity11 = savedSearches11.item(searchName);
+                            var entity21 = savedSearches21.item(searchName);
                             
-        //                     // Make sure the saved search exists in the 11 namespace
-        //                     test.ok(entity11);
-        //                     test.strictEqual(entity11.name, searchName);
-        //                     test.strictEqual(entity11.properties().search, search);
+                            // Make sure the saved search exists in the 11 namespace
+                            test.ok(entity11);
+                            test.strictEqual(entity11.name, searchName);
+                            test.strictEqual(entity11.properties().search, search);
                             
-        //                     // Make sure the saved search doesn't exist in the 11 namespace
-        //                     test.ok(!entity21);
-        //                     done();
-        //                 }
-        //             ],
-        //             function(err) {
-        //                 test.ok(!err);
-        //                 test.done();
-        //             }
-        //         );
-        //     },    
+                            // Make sure the saved search doesn't exist in the 11 namespace
+                            test.ok(!entity21);
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },    
             
-        //     "Callback#Namespace item": function(test) {    
-        //         var searchName = "jssdk_search_" + getNextId();
-        //         var search = "search *";
-        //         var service = this.service;
+            "Callback#Namespace item": function(test) {    
+                var searchName = "jssdk_search_" + getNextId();
+                var search = "search *";
+                var service = this.service;
                 
-        //         var namespace_1 = {owner: "-", app: this.appName1};
-        //         var namespace_nobody1 = {owner: "nobody", app: this.appName1};
+                var namespace_1 = {owner: "-", app: this.appName1};
+                var namespace_nobody1 = {owner: "nobody", app: this.appName1};
                 
-        //         var savedSearches11 = service.savedSearches(this.namespace11);
-        //         var savedSearches21 = service.savedSearches(this.namespace21);
-        //         var savedSearches_1 = service.savedSearches(namespace_1);
-        //         var savedSearches_nobody1 = service.savedSearches(namespace_nobody1);
+                var savedSearches11 = service.savedSearches(this.namespace11);
+                var savedSearches21 = service.savedSearches(this.namespace21);
+                var savedSearches_1 = service.savedSearches(namespace_1);
+                var savedSearches_nobody1 = service.savedSearches(namespace_nobody1);
                 
-        //         var that = this;
-        //         Async.chain([
-        //                 function(done) {
-        //                     // Create a saved search in the 11 namespace
-        //                     savedSearches11.create({name: searchName, search: search}, done);
-        //                 },
-        //                 function(savedSearch, done) {
-        //                     // Create a saved search in the 21 namespace
-        //                     savedSearches21.create({name: searchName, search: search}, done);
-        //                 },
-        //                 function(savedSearch, done) {
-        //                     // Refresh the -/1 namespace
-        //                     savedSearches_1.fetch(done);
-        //                 },
-        //                 function(savedSearches, done) {
-        //                     // Refresh the 1/1 namespace
-        //                     savedSearches11.fetch(done);
-        //                 },
-        //                 function(savedSearches, done) {
-        //                     // Refresh the 2/1 namespace
-        //                     savedSearches21.fetch(done);
-        //                 },
-        //                 function(savedSearches, done) {                            
-        //                     var entity11 = savedSearches11.item(searchName, that.namespace11);
-        //                     var entity21 = savedSearches21.item(searchName, that.namespace21);
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            // Create a saved search in the 11 namespace
+                            savedSearches11.create({name: searchName, search: search}, done);
+                        },
+                        function(savedSearch, done) {
+                            // Create a saved search in the 21 namespace
+                            savedSearches21.create({name: searchName, search: search}, done);
+                        },
+                        function(savedSearch, done) {
+                            // Refresh the -/1 namespace
+                            savedSearches_1.fetch(done);
+                        },
+                        function(savedSearches, done) {
+                            // Refresh the 1/1 namespace
+                            savedSearches11.fetch(done);
+                        },
+                        function(savedSearches, done) {
+                            // Refresh the 2/1 namespace
+                            savedSearches21.fetch(done);
+                        },
+                        function(savedSearches, done) {                            
+                            var entity11 = savedSearches11.item(searchName, that.namespace11);
+                            var entity21 = savedSearches21.item(searchName, that.namespace21);
                             
-        //                     // Ensure that the saved search exists in the 11 namespace
-        //                     test.ok(entity11);
-        //                     test.strictEqual(entity11.name, searchName);
-        //                     test.strictEqual(entity11.properties().search, search);
-        //                     test.strictEqual(entity11.namespace.owner, that.namespace11.owner);
-        //                     test.strictEqual(entity11.namespace.app, that.namespace11.app);
+                            // Ensure that the saved search exists in the 11 namespace
+                            test.ok(entity11);
+                            test.strictEqual(entity11.name, searchName);
+                            test.strictEqual(entity11.properties().search, search);
+                            test.strictEqual(entity11.namespace.owner, that.namespace11.owner);
+                            test.strictEqual(entity11.namespace.app, that.namespace11.app);
                             
-        //                     // Ensure that the saved search exists in the 21 namespace
-        //                     test.ok(entity21);
-        //                     test.strictEqual(entity21.name, searchName);
-        //                     test.strictEqual(entity21.properties().search, search);
-        //                     test.strictEqual(entity21.namespace.owner, that.namespace21.owner);
-        //                     test.strictEqual(entity21.namespace.app, that.namespace21.app);
+                            // Ensure that the saved search exists in the 21 namespace
+                            test.ok(entity21);
+                            test.strictEqual(entity21.name, searchName);
+                            test.strictEqual(entity21.properties().search, search);
+                            test.strictEqual(entity21.namespace.owner, that.namespace21.owner);
+                            test.strictEqual(entity21.namespace.app, that.namespace21.app);
                             
-        //                     done();
-        //                 },
-        //                 function(done) {
-        //                     // Create a saved search in the nobody/1 namespace
-        //                     savedSearches_nobody1.create({name: searchName, search: search}, done);
-        //                 },
-        //                 function(savedSearch, done) {
-        //                     // Refresh the 1/1 namespace
-        //                     savedSearches11.fetch(done);
-        //                 },
-        //                 function(savedSearches, done) {
-        //                     // Refresh the 2/1 namespace
-        //                     savedSearches21.fetch(done);
-        //                 },
-        //                 function(savedSearches, done) {  
-        //                     // Ensure that we can't get the item from the generic
-        //                     // namespace without specifying a namespace
-        //                     var thrown = false;
-        //                     try {
-        //                         var entity = savedSearches_1.item(searchName);
-        //                     }
-        //                     catch(ex) {
-        //                         thrown = true;
-        //                     }
+                            done();
+                        },
+                        function(done) {
+                            // Create a saved search in the nobody/1 namespace
+                            savedSearches_nobody1.create({name: searchName, search: search}, done);
+                        },
+                        function(savedSearch, done) {
+                            // Refresh the 1/1 namespace
+                            savedSearches11.fetch(done);
+                        },
+                        function(savedSearches, done) {
+                            // Refresh the 2/1 namespace
+                            savedSearches21.fetch(done);
+                        },
+                        function(savedSearches, done) {  
+                            // Ensure that we can't get the item from the generic
+                            // namespace without specifying a namespace
+                            var thrown = false;
+                            try {
+                                var entity = savedSearches_1.item(searchName);
+                            }
+                            catch(ex) {
+                                thrown = true;
+                            }
                             
-        //                     test.ok(thrown);
+                            test.ok(thrown);
                                                     
-        //                     // Ensure we get the right entities from the -/1 namespace when we
-        //                     // specify it.  
-        //                     var entity11 = savedSearches_1.item(searchName, that.namespace11);
-        //                     var entity21 = savedSearches_1.item(searchName, that.namespace21);
+                            // Ensure we get the right entities from the -/1 namespace when we
+                            // specify it.  
+                            var entity11 = savedSearches_1.item(searchName, that.namespace11);
+                            var entity21 = savedSearches_1.item(searchName, that.namespace21);
                             
-        //                     test.ok(entity11);
-        //                     test.strictEqual(entity11.name, searchName);
-        //                     test.strictEqual(entity11.properties().search, search);
-        //                     test.strictEqual(entity11.namespace.owner, that.namespace11.owner);
-        //                     test.strictEqual(entity11.namespace.app, that.namespace11.app);
+                            test.ok(entity11);
+                            test.strictEqual(entity11.name, searchName);
+                            test.strictEqual(entity11.properties().search, search);
+                            test.strictEqual(entity11.namespace.owner, that.namespace11.owner);
+                            test.strictEqual(entity11.namespace.app, that.namespace11.app);
                             
-        //                     test.ok(entity21);
-        //                     test.strictEqual(entity21.name, searchName);
-        //                     test.strictEqual(entity21.properties().search, search);
-        //                     test.strictEqual(entity21.namespace.owner, that.namespace21.owner);
-        //                     test.strictEqual(entity21.namespace.app, that.namespace21.app);
+                            test.ok(entity21);
+                            test.strictEqual(entity21.name, searchName);
+                            test.strictEqual(entity21.properties().search, search);
+                            test.strictEqual(entity21.namespace.owner, that.namespace21.owner);
+                            test.strictEqual(entity21.namespace.app, that.namespace21.app);
                             
-        //                     done();
-        //                 }
-        //             ],
-        //             function(err) {
-        //                 test.ok(!err);
-        //                 test.done();
-        //             }
-        //         );
-        //     },
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
             
-        //     "Callback#delete test applications": function(test) {
-        //         var apps = this.service.apps();
-        //         apps.fetch(function(err, apps) {
-        //             test.ok(!err);
-        //             test.ok(apps);
-        //             var appList = apps.list();
+            "Callback#delete test applications": function(test) {
+                var apps = this.service.apps();
+                apps.fetch(function(err, apps) {
+                    test.ok(!err);
+                    test.ok(apps);
+                    var appList = apps.list();
                     
-        //             Async.parallelEach(
-        //                 appList,
-        //                 function(app, idx, callback) {
-        //                     if (utils.startsWith(app.name, "jssdk_")) {
-        //                         app.remove(callback);
-        //                     }
-        //                     else {
-        //                         callback();
-        //                     }
-        //                 }, function(err) {
-        //                     test.ok(!err);
-        //                     test.done();
-        //                 }
-        //             );
-        //         });
-        //     },
+                    Async.parallelEach(
+                        appList,
+                        function(app, idx, callback) {
+                            if (utils.startsWith(app.name, "jssdk_")) {
+                                app.remove(callback);
+                            }
+                            else {
+                                callback();
+                            }
+                        }, function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
+                });
+            },
             
-        //     "Callback#delete test users": function(test) {
-        //         var users = this.service.users();
-        //         users.fetch(function(err, users) {
-        //             var userList = users.list();
+            "Callback#delete test users": function(test) {
+                var users = this.service.users();
+                users.fetch(function(err, users) {
+                    var userList = users.list();
                     
-        //             Async.parallelEach(
-        //                 userList,
-        //                 function(user, idx, callback) {
-        //                     if (utils.startsWith(user.name, "jssdk_")) {
-        //                         user.remove(callback);
-        //                     }
-        //                     else {
-        //                         callback();
-        //                     }
-        //                 }, function(err) {
-        //                     test.ok(!err);
-        //                     test.done();
-        //                 }
-        //             );
-        //         });
-        //     }
-        // },
+                    Async.parallelEach(
+                        userList,
+                        function(user, idx, callback) {
+                            if (utils.startsWith(user.name, "jssdk_")) {
+                                user.remove(callback);
+                            }
+                            else {
+                                callback();
+                            }
+                        }, function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
+                });
+            }
+        },
         
-        // "Job Tests": {
-        //     setUp: function(done) {
-        //         this.service = svc;
-        //         done();
-        //     },
+        "Job Tests": {
+            setUp: function(done) {
+                this.service = svc;
+                done();
+            },
             
-        //     "Callback#Create+abort job": function(test) {
-        //         var sid = getNextId();
-        //         var options = {id: sid};
-        //         var jobs = this.service.jobs({app: "xml2json"});
-        //         var req = jobs.oneshotSearch('search index=_internal |  head 1 | sleep 10', options, function(err, job) {   
-        //             test.ok(err);
-        //             test.ok(!job);
-        //             test.strictEqual(err.error, "abort");
-        //             test.done();
-        //         }); 
+            "Callback#Create+abort job": function(test) {
+                var sid = getNextId();
+                var options = {id: sid};
+                var jobs = this.service.jobs({app: "xml2json"});
+                var req = jobs.oneshotSearch('search index=_internal |  head 1 | sleep 10', options, function(err, job) {   
+                    test.ok(err);
+                    test.ok(!job);
+                    test.strictEqual(err.error, "abort");
+                    test.done();
+                }); 
                 
-        //         splunkjs.Async.sleep(1000, function() {
-        //             req.abort();
-        //         });
-        //     },
+                splunkjs.Async.sleep(1000, function() {
+                    req.abort();
+                });
+            },
 
-        //     "Callback#Create+cancel job": function(test) {
-        //         var sid = getNextId();
-        //         this.service.jobs().search('search index=_internal | head 1', {id: sid}, function(err, job) {   
-        //             test.ok(job);
-        //             test.strictEqual(job.sid, sid);
+            "Callback#Create+cancel job": function(test) {
+                var sid = getNextId();
+                this.service.jobs().search('search index=_internal | head 1', {id: sid}, function(err, job) {   
+                    test.ok(job);
+                    test.strictEqual(job.sid, sid);
 
-        //             job.cancel(function() {
-        //                 test.done();
-        //             });
-        //         }); 
-        //     },
+                    job.cancel(function() {
+                        test.done();
+                    });
+                }); 
+            },
 
-        //     "Callback#Create job error": function(test) {
-        //         var sid = getNextId();
-        //         this.service.jobs().search({search: 'index=_internal | head 1', id: sid}, function(err) { 
-        //             test.ok(!!err);
-        //             test.done(); 
-        //         });
-        //     },
+            "Callback#Create job error": function(test) {
+                var sid = getNextId();
+                this.service.jobs().search({search: 'index=_internal | head 1', id: sid}, function(err) { 
+                    test.ok(!!err);
+                    test.done(); 
+                });
+            },
 
-        //     "Callback#List jobs": function(test) {
-        //         this.service.jobs().fetch(function(err, jobs) {
-        //             test.ok(!err);
-        //             test.ok(jobs);
+            "Callback#List jobs": function(test) {
+                this.service.jobs().fetch(function(err, jobs) {
+                    test.ok(!err);
+                    test.ok(jobs);
                     
-        //             var jobsList = jobs.list();
-        //             test.ok(jobsList.length > 0);
+                    var jobsList = jobs.list();
+                    test.ok(jobsList.length > 0);
                     
-        //             for(var i = 0; i < jobsList.length; i++) {
-        //                 test.ok(jobsList[i]);
-        //             }
+                    for(var i = 0; i < jobsList.length; i++) {
+                        test.ok(jobsList[i]);
+                    }
                     
-        //             test.done();
-        //         });
-        //     },
+                    test.done();
+                });
+            },
 
-        //     "Callback#Contains job": function(test) {
-        //         var that = this;
-        //         var sid = getNextId();
-        //         var jobs = this.service.jobs();
+            "Callback#Contains job": function(test) {
+                var that = this;
+                var sid = getNextId();
+                var jobs = this.service.jobs();
                 
-        //         jobs.search('search index=_internal | head 1', {id: sid}, function(err, job) {   
-        //             test.ok(!err);
-        //             test.ok(job);
-        //             test.strictEqual(job.sid, sid);
+                jobs.search('search index=_internal | head 1', {id: sid}, function(err, job) {   
+                    test.ok(!err);
+                    test.ok(job);
+                    test.strictEqual(job.sid, sid);
 
-        //             jobs.fetch(function(err, jobs) {
-        //                 test.ok(!err);
-        //                 var job = jobs.item(sid);
-        //                 test.ok(job);
+                    jobs.fetch(function(err, jobs) {
+                        test.ok(!err);
+                        var job = jobs.item(sid);
+                        test.ok(job);
 
-        //                 job.cancel(function() {
-        //                     test.done();
-        //                 });
-        //             });
-        //         }); 
-        //     },
+                        job.cancel(function() {
+                            test.done();
+                        });
+                    });
+                }); 
+            },
 
-        //     "Callback#job results": function(test) {
-        //         var sid = getNextId();
-        //         var service = this.service;
-        //         var that = this;
+            "Callback#job results": function(test) {
+                var sid = getNextId();
+                var service = this.service;
+                var that = this;
                 
-        //         Async.chain([
-        //                 function(done) {
-        //                     that.service.jobs().search('search index=_internal | head 1 | stats count', {id: sid}, done);
-        //                 },
-        //                 function(job, done) {
-        //                     test.strictEqual(job.sid, sid);
-        //                     tutils.pollUntil(
-        //                         job,
-        //                         function(j) {
-        //                             return job.properties()["isDone"];
-        //                         },
-        //                         10,
-        //                         done
-        //                     );
-        //                 },
-        //                 function(job, done) {
-        //                     job.results({}, done);
-        //                 },
-        //                 function(results, job, done) {
-        //                     test.strictEqual(results.rows.length, 1);
-        //                     test.strictEqual(results.fields.length, 1);
-        //                     test.strictEqual(results.fields[0], "count");
-        //                     test.strictEqual(results.rows[0][0], "1");
-        //                     job.cancel(done);
-        //                 }
-        //             ],
-        //             function(err) {
-        //                 test.ok(!err);
-        //                 test.done();
-        //             }
-        //         );
-        //     },
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().search('search index=_internal | head 1 | stats count', {id: sid}, done);
+                        },
+                        function(job, done) {
+                            test.strictEqual(job.sid, sid);
+                            tutils.pollUntil(
+                                job,
+                                function(j) {
+                                    return job.properties()["isDone"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            job.results({}, done);
+                        },
+                        function(results, job, done) {
+                            test.strictEqual(results.rows.length, 1);
+                            test.strictEqual(results.fields.length, 1);
+                            test.strictEqual(results.fields[0], "count");
+                            test.strictEqual(results.rows[0][0], "1");
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
 
-        //     "Callback#job events": function(test) {
-        //         var sid = getNextId();
-        //         var service = this.service;
-        //         var that = this;
+            "Callback#job events": function(test) {
+                var sid = getNextId();
+                var service = this.service;
+                var that = this;
                 
-        //         Async.chain([
-        //                 function(done) {
-        //                     that.service.jobs().search('search index=_internal | head 1', {id: sid}, done);
-        //                 },
-        //                 function(job, done) {
-        //                     test.strictEqual(job.sid, sid);
-        //                     tutils.pollUntil(
-        //                         job,
-        //                         function(j) {
-        //                             return job.properties()["isDone"];
-        //                         },
-        //                         10,
-        //                         done
-        //                     );
-        //                 },
-        //                 function(job, done) {
-        //                     job.events({}, done);
-        //                 },
-        //                 function(results, job, done) {
-        //                     test.strictEqual(results.rows.length, 1);
-        //                     test.strictEqual(results.fields.length, results.rows[0].length);
-        //                     job.cancel(done);
-        //                 }
-        //             ],
-        //             function(err) {
-        //                 test.ok(!err);
-        //                 test.done();
-        //             }
-        //         );
-        //     },
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().search('search index=_internal | head 1', {id: sid}, done);
+                        },
+                        function(job, done) {
+                            test.strictEqual(job.sid, sid);
+                            tutils.pollUntil(
+                                job,
+                                function(j) {
+                                    return job.properties()["isDone"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            job.events({}, done);
+                        },
+                        function(results, job, done) {
+                            test.strictEqual(results.rows.length, 1);
+                            test.strictEqual(results.fields.length, results.rows[0].length);
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
 
-        //     "Callback#job results preview": function(test) {
-        //         var sid = getNextId();
-        //         var service = this.service;
-        //         var that = this;
+            "Callback#job results preview": function(test) {
+                var sid = getNextId();
+                var service = this.service;
+                var that = this;
                 
-        //         Async.chain([
-        //                 function(done) {
-        //                     that.service.jobs().search('search index=_internal | head 1 | stats count', {id: sid}, done);
-        //                 },
-        //                 function(job, done) {
-        //                     test.strictEqual(job.sid, sid);
-        //                     tutils.pollUntil(
-        //                         job,
-        //                         function(j) {
-        //                             return job.properties()["isDone"];
-        //                         },
-        //                         10,
-        //                         done
-        //                     );
-        //                 },
-        //                 function(job, done) {
-        //                     job.preview({}, done);
-        //                 },
-        //                 function(results, job, done) {
-        //                     test.strictEqual(results.rows.length, 1);
-        //                     test.strictEqual(results.fields.length, 1);
-        //                     test.strictEqual(results.fields[0], "count");
-        //                     test.strictEqual(results.rows[0][0], "1");
-        //                     job.cancel(done);
-        //                 }
-        //             ],
-        //             function(err) {
-        //                 test.ok(!err);
-        //                 test.done();
-        //             }
-        //         );
-        //     },
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().search('search index=_internal | head 1 | stats count', {id: sid}, done);
+                        },
+                        function(job, done) {
+                            test.strictEqual(job.sid, sid);
+                            tutils.pollUntil(
+                                job,
+                                function(j) {
+                                    return job.properties()["isDone"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            job.preview({}, done);
+                        },
+                        function(results, job, done) {
+                            test.strictEqual(results.rows.length, 1);
+                            test.strictEqual(results.fields.length, 1);
+                            test.strictEqual(results.fields[0], "count");
+                            test.strictEqual(results.rows[0][0], "1");
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
             
-        //     "Callback#job results iterator": function(test) {
-        //         var that = this;
+            "Callback#job results iterator": function(test) {
+                var that = this;
                 
-        //         Async.chain([
-        //                 function(done) {
-        //                     that.service.jobs().search('search index=_internal | head 10', {}, done);
-        //                 },
-        //                 function(job, done) {
-        //                     tutils.pollUntil(
-        //                         job,
-        //                         function(j) {
-        //                             return job.properties()["isDone"];
-        //                         },
-        //                         10,
-        //                         done
-        //                     );
-        //                 },
-        //                 function(job, done) {
-        //                     var iterator = job.iterator("results", { pagesize: 4 });
-        //                     var hasMore = true;
-        //                     var numElements = 0;
-        //                     var pageSizes = [];
-        //                     Async.whilst(
-        //                         function() { return hasMore; },
-        //                         function(nextIteration) {
-        //                             iterator.next(function(err, results, _hasMore) {
-        //                                 if (err) {
-        //                                     nextIteration(err);
-        //                                     return;
-        //                                 }
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().search('search index=_internal | head 10', {}, done);
+                        },
+                        function(job, done) {
+                            tutils.pollUntil(
+                                job,
+                                function(j) {
+                                    return job.properties()["isDone"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            var iterator = job.iterator("results", { pagesize: 4 });
+                            var hasMore = true;
+                            var numElements = 0;
+                            var pageSizes = [];
+                            Async.whilst(
+                                function() { return hasMore; },
+                                function(nextIteration) {
+                                    iterator.next(function(err, results, _hasMore) {
+                                        if (err) {
+                                            nextIteration(err);
+                                            return;
+                                        }
                                         
-        //                                 hasMore = _hasMore;
-        //                                 if (hasMore) {
-        //                                     pageSizes.push(results.rows.length);
-        //                                 }
-        //                                 nextIteration();
-        //                             });
-        //                         },
-        //                         function(err) {
-        //                             test.deepEqual(pageSizes, [4,4,2]);
-        //                             done(err);
-        //                         }
-        //                     );
-        //                 }
-        //             ],
-        //             function(err) {
-        //                 test.ok(!err);
-        //                 test.done();
-        //             }
-        //         );
-        //     },
+                                        hasMore = _hasMore;
+                                        if (hasMore) {
+                                            pageSizes.push(results.rows.length);
+                                        }
+                                        nextIteration();
+                                    });
+                                },
+                                function(err) {
+                                    test.deepEqual(pageSizes, [4,4,2]);
+                                    done(err);
+                                }
+                            );
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
 
-        //     "Callback#Enable + disable preview": function(test) {
-        //         var that = this;
-        //         var sid = getNextId();
+            "Callback#Enable + disable preview": function(test) {
+                var that = this;
+                var sid = getNextId();
                 
-        //         var service = this.service.specialize("nobody", "xml2json");
+                var service = this.service.specialize("nobody", "xml2json");
                 
-        //         Async.chain([
-        //                 function(done) {
-        //                     service.jobs().search('search index=_internal | head 1 | sleep 60', {id: sid}, done);
-        //                 },
-        //                 function(job, done) {
-        //                     job.enablePreview(done);
+                Async.chain([
+                        function(done) {
+                            service.jobs().search('search index=_internal | head 1 | sleep 60', {id: sid}, done);
+                        },
+                        function(job, done) {
+                            job.enablePreview(done);
                             
-        //                 },
-        //                 function(job, done) {
-        //                     job.disablePreview(done);
-        //                 },
-        //                 function(job, done) {
-        //                     job.cancel(done);
-        //                 }
-        //             ],
-        //             function(err) {
-        //                 test.ok(!err);
-        //                 test.done();
-        //             }
-        //         ); 
-        //     },
+                        },
+                        function(job, done) {
+                            job.disablePreview(done);
+                        },
+                        function(job, done) {
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
 
-        //     "Callback#Pause + unpause + finalize preview": function(test) {
-        //         var that = this;
-        //         var sid = getNextId();
+            "Callback#Pause + unpause + finalize preview": function(test) {
+                var that = this;
+                var sid = getNextId();
                 
-        //         var service = this.service.specialize("nobody", "xml2json");
+                var service = this.service.specialize("nobody", "xml2json");
                 
-        //         Async.chain([
-        //                 function(done) {
-        //                     service.jobs().search('search index=_internal | head 1 | sleep 5', {id: sid}, done);
-        //                 },
-        //                 function(job, done) {
-        //                     job.pause(done);
-        //                 },
-        //                 function(job, done) {
-        //                     tutils.pollUntil(
-        //                         job, 
-        //                         function(j) {
-        //                             return j.properties()["isPaused"];
-        //                         },
-        //                         10,
-        //                         done
-        //                     );
-        //                 },
-        //                 function(job, done) {
-        //                     test.ok(job.properties()["isPaused"]);
-        //                     job.unpause(done);
-        //                 },
-        //                 function(job, done) {
-        //                     tutils.pollUntil(
-        //                         job, 
-        //                         function(j) {
-        //                             return !j.properties()["isPaused"];
-        //                         },
-        //                         10,
-        //                         done
-        //                     );
-        //                 },
-        //                 function(job, done) {
-        //                     test.ok(!job.properties()["isPaused"]);
-        //                     job.finalize(done);
-        //                 },
-        //                 function(job, done) {
-        //                     job.cancel(done);
-        //                 }
-        //             ],
-        //             function(err) {
-        //                 test.ok(!err);
-        //                 test.done();
-        //             }
-        //         ); 
-        //     },
+                Async.chain([
+                        function(done) {
+                            service.jobs().search('search index=_internal | head 1 | sleep 5', {id: sid}, done);
+                        },
+                        function(job, done) {
+                            job.pause(done);
+                        },
+                        function(job, done) {
+                            tutils.pollUntil(
+                                job, 
+                                function(j) {
+                                    return j.properties()["isPaused"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            test.ok(job.properties()["isPaused"]);
+                            job.unpause(done);
+                        },
+                        function(job, done) {
+                            tutils.pollUntil(
+                                job, 
+                                function(j) {
+                                    return !j.properties()["isPaused"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            test.ok(!job.properties()["isPaused"]);
+                            job.finalize(done);
+                        },
+                        function(job, done) {
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
 
-        //     "Callback#Set TTL": function(test) {
-        //         var sid = getNextId();
-        //         var originalTTL = 0;
-        //         var that = this;
+            "Callback#Set TTL": function(test) {
+                var sid = getNextId();
+                var originalTTL = 0;
+                var that = this;
                 
-        //         Async.chain([
-        //                 function(done) {
-        //                     that.service.jobs().search('search index=_internal | head 1', {id: sid}, done);
-        //                 },
-        //                 function(job, done) {
-        //                     job.fetch(done);
-        //                 },
-        //                 function(job, done) {
-        //                     var ttl = job.properties()["ttl"];
-        //                     originalTTL = ttl;
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().search('search index=_internal | head 1', {id: sid}, done);
+                        },
+                        function(job, done) {
+                            job.fetch(done);
+                        },
+                        function(job, done) {
+                            var ttl = job.properties()["ttl"];
+                            originalTTL = ttl;
                             
-        //                     job.setTTL(ttl*2, done);
-        //                 },
-        //                 function(job, done) {
-        //                     job.fetch(done);
-        //                 },
-        //                 function(job, done) {
-        //                     var ttl = job.properties()["ttl"];
-        //                     test.ok(ttl > originalTTL);
-        //                     test.ok(ttl <= (originalTTL*2));
-        //                     job.cancel(done);
-        //                 }
-        //             ],
-        //             function(err) {
-        //                 test.ok(!err);
-        //                 test.done();
-        //             }
-        //         ); 
-        //     },
+                            job.setTTL(ttl*2, done);
+                        },
+                        function(job, done) {
+                            job.fetch(done);
+                        },
+                        function(job, done) {
+                            var ttl = job.properties()["ttl"];
+                            test.ok(ttl > originalTTL);
+                            test.ok(ttl <= (originalTTL*2));
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
 
-        //     "Callback#Set priority": function(test) {
-        //         var sid = getNextId();
-        //         var originalPriority = 0;
-        //         var that = this;
+            "Callback#Set priority": function(test) {
+                var sid = getNextId();
+                var originalPriority = 0;
+                var that = this;
                 
-        //         var service = this.service.specialize("nobody", "xml2json");
+                var service = this.service.specialize("nobody", "xml2json");
                 
-        //         Async.chain([
-        //                 function(done) {
-        //                     service.jobs().search('search index=_internal | head 1 | sleep 5', {id: sid}, done);
-        //                 },
-        //                 function(job, done) {
-        //                     job.track({}, {
-        //                         ready: function(job) {
-        //                             done(null, job);       
-        //                         }
-        //                     });
-        //                 },
-        //                 function(job, done) {
-        //                     var priority = job.properties()["priority"];
-        //                     test.ok(priority, 5);
-        //                     job.setPriority(priority + 1, done);
-        //                 },
-        //                 function(job, done) {
-        //                     job.fetch(done);
-        //                 },
-        //                 function(job, done) {
-        //                     job.cancel(done);
-        //                 }
-        //             ],
-        //             function(err) {
-        //                 test.ok(!err);
-        //                 test.done();
-        //             }
-        //         ); 
-        //     },
+                Async.chain([
+                        function(done) {
+                            service.jobs().search('search index=_internal | head 1 | sleep 5', {id: sid}, done);
+                        },
+                        function(job, done) {
+                            job.track({}, {
+                                ready: function(job) {
+                                    done(null, job);       
+                                }
+                            });
+                        },
+                        function(job, done) {
+                            var priority = job.properties()["priority"];
+                            test.ok(priority, 5);
+                            job.setPriority(priority + 1, done);
+                        },
+                        function(job, done) {
+                            job.fetch(done);
+                        },
+                        function(job, done) {
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
 
-        //     "Callback#Search log": function(test) {
-        //         var sid = getNextId();
-        //         var that = this;
+            "Callback#Search log": function(test) {
+                var sid = getNextId();
+                var that = this;
                 
-        //         Async.chain([
-        //                 function(done) {
-        //                     that.service.jobs().search('search index=_internal | head 1', {id: sid, exec_mode: "blocking"}, done);
-        //                 },
-        //                 function(job, done) {
-        //                     job.searchlog(done);
-        //                 },
-        //                 function(log, job, done) {
-        //                     test.ok(job);
-        //                     test.ok(log);
-        //                     test.ok(log.length > 0);
-        //                     test.ok(log.split("\r\n").length > 0);
-        //                     job.cancel(done);
-        //                 }
-        //             ],
-        //             function(err) {
-        //                 test.ok(!err);
-        //                 test.done();
-        //             }
-        //         ); 
-        //     },
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().search('search index=_internal | head 1', {id: sid, exec_mode: "blocking"}, done);
+                        },
+                        function(job, done) {
+                            job.searchlog(done);
+                        },
+                        function(log, job, done) {
+                            test.ok(job);
+                            test.ok(log);
+                            test.ok(log.length > 0);
+                            test.ok(log.split("\r\n").length > 0);
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
 
-        //     "Callback#Search summary": function(test) {
-        //         var sid = getNextId();
-        //         var that = this;
+            "Callback#Search summary": function(test) {
+                var sid = getNextId();
+                var that = this;
                 
-        //         Async.chain([
-        //                 function(done) {
-        //                     that.service.jobs().search(
-        //                         'search index=_internal | head 1 | eval foo="bar" | fields foo', 
-        //                         {
-        //                             id: sid,
-        //                             status_buckets: 300,
-        //                             rf: ["foo"]
-        //                         }, 
-        //                         done);
-        //                 },
-        //                 function(job, done) {
-        //                     // Let's sleep for 2 second so
-        //                     // we let the server catch up
-        //                     Async.sleep(2000, function() {
-        //                         job.summary({}, done);
-        //                     });
-        //                 },
-        //                 function(summary, job, done) {
-        //                     test.ok(job);
-        //                     test.ok(summary);
-        //                     test.strictEqual(summary.event_count, 1);
-        //                     test.strictEqual(summary.fields.foo.count, 1);
-        //                     test.strictEqual(summary.fields.foo.distinct_count, 1);
-        //                     test.ok(summary.fields.foo.is_exact, 1);
-        //                     test.strictEqual(summary.fields.foo.modes.length, 1);
-        //                     test.strictEqual(summary.fields.foo.modes[0].count, 1);
-        //                     test.strictEqual(summary.fields.foo.modes[0].value, "bar");
-        //                     test.ok(summary.fields.foo.modes[0].is_exact);
-        //                     job.cancel(done);
-        //                 }
-        //             ],
-        //             function(err) {
-        //                 test.ok(!err);
-        //                 test.done();
-        //             }
-        //         ); 
-        //     },
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().search(
+                                'search index=_internal | head 1 | eval foo="bar" | fields foo', 
+                                {
+                                    id: sid,
+                                    status_buckets: 300,
+                                    rf: ["foo"]
+                                }, 
+                                done);
+                        },
+                        function(job, done) {
+                            // Let's sleep for 2 second so
+                            // we let the server catch up
+                            Async.sleep(2000, function() {
+                                job.summary({}, done);
+                            });
+                        },
+                        function(summary, job, done) {
+                            test.ok(job);
+                            test.ok(summary);
+                            test.strictEqual(summary.event_count, 1);
+                            test.strictEqual(summary.fields.foo.count, 1);
+                            test.strictEqual(summary.fields.foo.distinct_count, 1);
+                            test.ok(summary.fields.foo.is_exact, 1);
+                            test.strictEqual(summary.fields.foo.modes.length, 1);
+                            test.strictEqual(summary.fields.foo.modes[0].count, 1);
+                            test.strictEqual(summary.fields.foo.modes[0].value, "bar");
+                            test.ok(summary.fields.foo.modes[0].is_exact);
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
 
-        //     "Callback#Search timeline": function(test) {
-        //         var sid = getNextId();
-        //         var that = this;
+            "Callback#Search timeline": function(test) {
+                var sid = getNextId();
+                var that = this;
                 
-        //         Async.chain([
-        //                 function(done) {
-        //                     that.service.jobs().search(
-        //                         'search index=_internal | head 1 | eval foo="bar" | fields foo', 
-        //                         {
-        //                             id: sid,
-        //                             status_buckets: 300,
-        //                             rf: ["foo"],
-        //                             exec_mode: "blocking"
-        //                         }, 
-        //                         done);
-        //                 },
-        //                 function(job, done) {
-        //                     job.timeline({}, done);
-        //                 },
-        //                 function(timeline, job, done) {
-        //                     test.ok(job);
-        //                     test.ok(timeline);
-        //                     test.strictEqual(timeline.buckets.length, 1);
-        //                     test.strictEqual(timeline.event_count, 1);
-        //                     test.strictEqual(timeline.buckets[0].available_count, 1);
-        //                     test.strictEqual(timeline.buckets[0].duration, 0.001);
-        //                     test.strictEqual(timeline.buckets[0].earliest_time_offset, timeline.buckets[0].latest_time_offset);
-        //                     test.strictEqual(timeline.buckets[0].total_count, 1);
-        //                     test.ok(timeline.buckets[0].is_finalized);
-        //                     job.cancel(done);
-        //                 }
-        //             ],
-        //             function(err) {
-        //                 test.ok(!err);
-        //                 test.done();
-        //             }
-        //         ); 
-        //     },
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().search(
+                                'search index=_internal | head 1 | eval foo="bar" | fields foo', 
+                                {
+                                    id: sid,
+                                    status_buckets: 300,
+                                    rf: ["foo"],
+                                    exec_mode: "blocking"
+                                }, 
+                                done);
+                        },
+                        function(job, done) {
+                            job.timeline({}, done);
+                        },
+                        function(timeline, job, done) {
+                            test.ok(job);
+                            test.ok(timeline);
+                            test.strictEqual(timeline.buckets.length, 1);
+                            test.strictEqual(timeline.event_count, 1);
+                            test.strictEqual(timeline.buckets[0].available_count, 1);
+                            test.strictEqual(timeline.buckets[0].duration, 0.001);
+                            test.strictEqual(timeline.buckets[0].earliest_time_offset, timeline.buckets[0].latest_time_offset);
+                            test.strictEqual(timeline.buckets[0].total_count, 1);
+                            test.ok(timeline.buckets[0].is_finalized);
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
 
-        //     "Callback#Touch": function(test) {
-        //         var sid = getNextId();
-        //         var that = this;
-        //         var originalTime = "";
+            "Callback#Touch": function(test) {
+                var sid = getNextId();
+                var that = this;
+                var originalTime = "";
                 
-        //         Async.chain([
-        //                 function(done) {
-        //                     that.service.jobs().search('search index=_internal | head 1', {id: sid}, done);
-        //                 },
-        //                 function(job, done) {
-        //                     job.fetch(done);
-        //                 },
-        //                 function(job, done) {
-        //                     test.ok(job);
-        //                     originalTime = job.properties().updated;
-        //                     Async.sleep(1200, function() { job.touch(done); });
-        //                 },
-        //                 function(job, done) {
-        //                     job.fetch(done);
-        //                 },
-        //                 function(job, done) {
-        //                     test.ok(originalTime !== job.updated());
-        //                     job.cancel(done);
-        //                 }
-        //             ],
-        //             function(err) {
-        //                 test.ok(!err);
-        //                 test.done();
-        //             }
-        //         ); 
-        //     },
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().search('search index=_internal | head 1', {id: sid}, done);
+                        },
+                        function(job, done) {
+                            job.fetch(done);
+                        },
+                        function(job, done) {
+                            test.ok(job);
+                            originalTime = job.properties().updated;
+                            Async.sleep(1200, function() { job.touch(done); });
+                        },
+                        function(job, done) {
+                            job.fetch(done);
+                        },
+                        function(job, done) {
+                            test.ok(originalTime !== job.updated());
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
 
-        //     "Callback#Create failure": function(test) {
-        //         var name = "jssdk_savedsearch_" + getNextId();
-        //         var originalSearch = "search index=_internal | head 1";
+            "Callback#Create failure": function(test) {
+                var name = "jssdk_savedsearch_" + getNextId();
+                var originalSearch = "search index=_internal | head 1";
             
-        //         var jobs = this.service.jobs();
-        //         test.throws(function() {jobs.create({search: originalSearch, name: name, exec_mode: "oneshot"}, function() {});});
-        //         test.done();
-        //     },
+                var jobs = this.service.jobs();
+                test.throws(function() {jobs.create({search: originalSearch, name: name, exec_mode: "oneshot"}, function() {});});
+                test.done();
+            },
 
-        //     "Callback#Create fails with no search string": function(test) {
-        //         var jobs = this.service.jobs();
-        //         jobs.create(
-        //             "", {},
-        //             function(err) { 
-        //                 test.ok(err);
-        //                 test.done();
-        //             }
-        //         );
-        //     },
+            "Callback#Create fails with no search string": function(test) {
+                var jobs = this.service.jobs();
+                jobs.create(
+                    "", {},
+                    function(err) { 
+                        test.ok(err);
+                        test.done();
+                    }
+                );
+            },
 
-        //     "Callback#Oneshot search": function(test) {
-        //         var sid = getNextId();
-        //         var that = this;
-        //         var originalTime = "";
+            "Callback#Oneshot search": function(test) {
+                var sid = getNextId();
+                var that = this;
+                var originalTime = "";
                 
-        //         Async.chain([
-        //                 function(done) {
-        //                     that.service.jobs().oneshotSearch('search index=_internal | head 1 | stats count', {id: sid}, done);
-        //                 },
-        //                 function(results, done) {
-        //                     test.ok(results);
-        //                     test.ok(results.fields);
-        //                     test.strictEqual(results.fields.length, 1);
-        //                     test.strictEqual(results.fields[0], "count");
-        //                     test.ok(results.rows);
-        //                     test.strictEqual(results.rows.length, 1);
-        //                     test.strictEqual(results.rows[0].length, 1);
-        //                     test.strictEqual(results.rows[0][0], "1");
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().oneshotSearch('search index=_internal | head 1 | stats count', {id: sid}, done);
+                        },
+                        function(results, done) {
+                            test.ok(results);
+                            test.ok(results.fields);
+                            test.strictEqual(results.fields.length, 1);
+                            test.strictEqual(results.fields[0], "count");
+                            test.ok(results.rows);
+                            test.strictEqual(results.rows.length, 1);
+                            test.strictEqual(results.rows[0].length, 1);
+                            test.strictEqual(results.rows[0][0], "1");
                             
-        //                     done();
-        //                 }
-        //             ],
-        //             function(err) {
-        //                 test.ok(!err);
-        //                 test.done();
-        //             }
-        //         ); 
-        //     },
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
 
-        //     "Callback#Oneshot search with no results": function(test) {
-        //         var sid = getNextId();
-        //         var that = this;
-        //         var originalTime = "";
+            "Callback#Oneshot search with no results": function(test) {
+                var sid = getNextId();
+                var that = this;
+                var originalTime = "";
                 
-        //         Async.chain([
-        //                 function(done) {
-        //                     var query = 'search index=history MUST_NOT_EXISTABCDEF';
-        //                     that.service.jobs().oneshotSearch(query, {id: sid}, done);
-        //                 },
-        //                 function(results, done) {
-        //                     test.ok(results);
-        //                     test.strictEqual(results.fields.length, 0);
-        //                     test.strictEqual(results.rows.length, 0);
-        //                     test.ok(!results.preview);
+                Async.chain([
+                        function(done) {
+                            var query = 'search index=history MUST_NOT_EXISTABCDEF';
+                            that.service.jobs().oneshotSearch(query, {id: sid}, done);
+                        },
+                        function(results, done) {
+                            test.ok(results);
+                            test.strictEqual(results.fields.length, 0);
+                            test.strictEqual(results.rows.length, 0);
+                            test.ok(!results.preview);
                             
-        //                     done();
-        //                 }
-        //             ],
-        //             function(err) {
-        //                 test.ok(!err);
-        //                 test.done();
-        //             }
-        //         ); 
-        //     },
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
 
-        //     "Callback#Service oneshot search": function(test) {
-        //         var sid = getNextId();
-        //         var that = this;
-        //         var originalTime = "";
+            "Callback#Service oneshot search": function(test) {
+                var sid = getNextId();
+                var that = this;
+                var originalTime = "";
                 
-        //         Async.chain([
-        //                 function(done) {
-        //                     that.service.oneshotSearch('search index=_internal | head 1 | stats count', {id: sid}, done);
-        //                 },
-        //                 function(results, done) {
-        //                     test.ok(results);
-        //                     test.ok(results.fields);
-        //                     test.strictEqual(results.fields.length, 1);
-        //                     test.strictEqual(results.fields[0], "count");
-        //                     test.ok(results.rows);
-        //                     test.strictEqual(results.rows.length, 1);
-        //                     test.strictEqual(results.rows[0].length, 1);
-        //                     test.strictEqual(results.rows[0][0], "1");
+                Async.chain([
+                        function(done) {
+                            that.service.oneshotSearch('search index=_internal | head 1 | stats count', {id: sid}, done);
+                        },
+                        function(results, done) {
+                            test.ok(results);
+                            test.ok(results.fields);
+                            test.strictEqual(results.fields.length, 1);
+                            test.strictEqual(results.fields[0], "count");
+                            test.ok(results.rows);
+                            test.strictEqual(results.rows.length, 1);
+                            test.strictEqual(results.rows[0].length, 1);
+                            test.strictEqual(results.rows[0][0], "1");
                             
-        //                     done();
-        //                 }
-        //             ],
-        //             function(err) {
-        //                 test.ok(!err);
-        //                 test.done();
-        //             }
-        //         ); 
-        //     },
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
                         
-        //     "Callback#Service search": function(test) {
-        //         var sid = getNextId();
-        //         var service = this.service;
-        //         var that = this;
+            "Callback#Service search": function(test) {
+                var sid = getNextId();
+                var service = this.service;
+                var that = this;
                 
-        //         Async.chain([
-        //                 function(done) {
-        //                     that.service.search('search index=_internal | head 1 | stats count', {id: sid}, done);
-        //                 },
-        //                 function(job, done) {
-        //                     test.strictEqual(job.sid, sid);
-        //                     tutils.pollUntil(
-        //                         job,
-        //                         function(j) {
-        //                             return job.properties()["isDone"];
-        //                         },
-        //                         10,
-        //                         done
-        //                     );
-        //                 },
-        //                 function(job, done) {
-        //                     job.results({}, done);
-        //                 },
-        //                 function(results, job, done) {
-        //                     test.strictEqual(results.rows.length, 1);
-        //                     test.strictEqual(results.fields.length, 1);
-        //                     test.strictEqual(results.fields[0], "count");
-        //                     test.strictEqual(results.rows[0][0], "1");
-        //                     job.cancel(done);
-        //                 }
-        //             ],
-        //             function(err) {
-        //                 test.ok(!err);
-        //                 test.done();
-        //             }
-        //         );
-        //     },
+                Async.chain([
+                        function(done) {
+                            that.service.search('search index=_internal | head 1 | stats count', {id: sid}, done);
+                        },
+                        function(job, done) {
+                            test.strictEqual(job.sid, sid);
+                            tutils.pollUntil(
+                                job,
+                                function(j) {
+                                    return job.properties()["isDone"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            job.results({}, done);
+                        },
+                        function(results, job, done) {
+                            test.strictEqual(results.rows.length, 1);
+                            test.strictEqual(results.fields.length, 1);
+                            test.strictEqual(results.fields[0], "count");
+                            test.strictEqual(results.rows[0][0], "1");
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
             
-        //     "Callback#Wait until job done": function(test) {
-        //         this.service.search('search index=_internal | head 1000', {}, function(err, job) {
-        //             test.ok(!err);
+            "Callback#Wait until job done": function(test) {
+                this.service.search('search index=_internal | head 1000', {}, function(err, job) {
+                    test.ok(!err);
                     
-        //             var numReadyEvents = 0;
-        //             var numProgressEvents = 0;
-        //             job.track({ period: 200 }, {
-        //                 ready: function(job) {
-        //                     test.ok(job);
+                    var numReadyEvents = 0;
+                    var numProgressEvents = 0;
+                    job.track({ period: 200 }, {
+                        ready: function(job) {
+                            test.ok(job);
                             
-        //                     numReadyEvents++;
-        //                 },
-        //                 progress: function(job) {
-        //                     test.ok(job);
+                            numReadyEvents++;
+                        },
+                        progress: function(job) {
+                            test.ok(job);
                             
-        //                     numProgressEvents++;
-        //                 },
-        //                 done: function(job) {
-        //                     test.ok(job);
+                            numProgressEvents++;
+                        },
+                        done: function(job) {
+                            test.ok(job);
                             
-        //                     test.ok(numReadyEvents === 1);      // all done jobs must have become ready
-        //                     test.ok(numProgressEvents >= 1);    // a job that becomes ready has progress
-        //                     test.done();
-        //                 },
-        //                 failed: function(job) {
-        //                     test.ok(job);
+                            test.ok(numReadyEvents === 1);      // all done jobs must have become ready
+                            test.ok(numProgressEvents >= 1);    // a job that becomes ready has progress
+                            test.done();
+                        },
+                        failed: function(job) {
+                            test.ok(job);
                             
-        //                     test.ok(false, "Job failed unexpectedly.");
-        //                     test.done();
-        //                 },
-        //                 error: function(err) {
-        //                     test.ok(err);
+                            test.ok(false, "Job failed unexpectedly.");
+                            test.done();
+                        },
+                        error: function(err) {
+                            test.ok(err);
                             
-        //                     test.ok(false, "Error while tracking job.");
-        //                     test.done();
-        //                 }
-        //             });
-        //         });
-        //     },
+                            test.ok(false, "Error while tracking job.");
+                            test.done();
+                        }
+                    });
+                });
+            },
             
-        //     "Callback#Wait until job failed": function(test) {
-        //         this.service.search('search index=_internal | head bogusarg', {}, function(err, job) {
-        //             if (err) {
-        //                 test.ok(!err);
-        //                 test.done();
-        //                 return;
-        //             }
+            "Callback#Wait until job failed": function(test) {
+                this.service.search('search index=_internal | head bogusarg', {}, function(err, job) {
+                    if (err) {
+                        test.ok(!err);
+                        test.done();
+                        return;
+                    }
                     
-        //             var numReadyEvents = 0;
-        //             var numProgressEvents = 0;
-        //             job.track({ period: 200 }, {
-        //                 ready: function(job) {
-        //                     test.ok(job);
+                    var numReadyEvents = 0;
+                    var numProgressEvents = 0;
+                    job.track({ period: 200 }, {
+                        ready: function(job) {
+                            test.ok(job);
                             
-        //                     numReadyEvents++;
-        //                 },
-        //                 progress: function(job) {
-        //                     test.ok(job);
+                            numReadyEvents++;
+                        },
+                        progress: function(job) {
+                            test.ok(job);
                             
-        //                     numProgressEvents++;
-        //                 },
-        //                 done: function(job) {
-        //                     test.ok(job);
+                            numProgressEvents++;
+                        },
+                        done: function(job) {
+                            test.ok(job);
                             
-        //                     test.ok(false, "Job became done unexpectedly.");
-        //                     test.done();
-        //                 },
-        //                 failed: function(job) {
-        //                     test.ok(job);
+                            test.ok(false, "Job became done unexpectedly.");
+                            test.done();
+                        },
+                        failed: function(job) {
+                            test.ok(job);
                             
-        //                     test.ok(numReadyEvents === 1);      // even failed jobs become ready
-        //                     test.ok(numProgressEvents >= 1);    // a job that becomes ready has progress
-        //                     test.done();
-        //                 },
-        //                 error: function(err) {
-        //                     test.ok(err);
+                            test.ok(numReadyEvents === 1);      // even failed jobs become ready
+                            test.ok(numProgressEvents >= 1);    // a job that becomes ready has progress
+                            test.done();
+                        },
+                        error: function(err) {
+                            test.ok(err);
                             
-        //                     test.ok(false, "Error while tracking job.");
-        //                     test.done();
-        //                 }
-        //             });
-        //         });
-        //     },
+                            test.ok(false, "Error while tracking job.");
+                            test.done();
+                        }
+                    });
+                });
+            },
             
-        //     "Callback#track() with default params and one function": function(test) {
-        //         this.service.search('search index=_internal | head 1', {}, function(err, job) {
-        //             if (err) {
-        //                 test.ok(!err);
-        //                 test.done();
-        //                 return;
-        //             }
+            "Callback#track() with default params and one function": function(test) {
+                this.service.search('search index=_internal | head 1', {}, function(err, job) {
+                    if (err) {
+                        test.ok(!err);
+                        test.done();
+                        return;
+                    }
                     
-        //             job.track({}, function(job) {
-        //                 test.ok(job);
-        //                 test.done();
-        //             });
-        //         });
-        //     },
+                    job.track({}, function(job) {
+                        test.ok(job);
+                        test.done();
+                    });
+                });
+            },
             
-        //     "Callback#track() should stop polling if only the ready callback is specified": function(test) {
-        //         this.service.search('search index=_internal | head 1', {}, function(err, job) {
-        //             if (err) {
-        //                 test.ok(!err);
-        //                 test.done();
-        //                 return;
-        //             }
+            "Callback#track() should stop polling if only the ready callback is specified": function(test) {
+                this.service.search('search index=_internal | head 1', {}, function(err, job) {
+                    if (err) {
+                        test.ok(!err);
+                        test.done();
+                        return;
+                    }
                     
-        //             job.track({}, {
-        //                 ready: function(job) {
-        //                     test.ok(job);
-        //                 },
+                    job.track({}, {
+                        ready: function(job) {
+                            test.ok(job);
+                        },
                         
-        //                 _stoppedAfterReady: function(job) {
-        //                     test.done();
-        //                 }
-        //             });
-        //         });
-        //     },
+                        _stoppedAfterReady: function(job) {
+                            test.done();
+                        }
+                    });
+                });
+            },
             
-        //     "Callback#track() a job that is not immediately ready": function(test) {
-        //         /*jshint loopfunc:true */
-        //         var numJobs = 20;
-        //         var numJobsLeft = numJobs;
-        //         var gotJobNotImmediatelyReady = false;
-        //         for (var i = 0; i < numJobs; i++) {
-        //             this.service.search('search index=_internal | head 10000', {}, function(err, job) {
-        //                 if (err) {
-        //                     test.ok(!err);
-        //                     test.done();
-        //                     return;
-        //                 }
+            "Callback#track() a job that is not immediately ready": function(test) {
+                /*jshint loopfunc:true */
+                var numJobs = 20;
+                var numJobsLeft = numJobs;
+                var gotJobNotImmediatelyReady = false;
+                for (var i = 0; i < numJobs; i++) {
+                    this.service.search('search index=_internal | head 10000', {}, function(err, job) {
+                        if (err) {
+                            test.ok(!err);
+                            test.done();
+                            return;
+                        }
                         
-        //                 job.track({}, {
-        //                     _preready: function(job) {
-        //                         gotJobNotImmediatelyReady = true;
-        //                     },
+                        job.track({}, {
+                            _preready: function(job) {
+                                gotJobNotImmediatelyReady = true;
+                            },
                             
-        //                     ready: function(job) {
-        //                         numJobsLeft--;
+                            ready: function(job) {
+                                numJobsLeft--;
                                 
-        //                         if (numJobsLeft === 0) {
-        //                             if (!gotJobNotImmediatelyReady) {
-        //                                 console.log("WARNING: Couldn't test code path in track() where job wasn't ready immediately.");
-        //                             }
-        //                             test.done();
-        //                         }
-        //                     }
-        //                 });
-        //             });
-        //         }
-        //     }
-        // },
+                                if (numJobsLeft === 0) {
+                                    if (!gotJobNotImmediatelyReady) {
+                                        console.log("WARNING: Couldn't test code path in track() where job wasn't ready immediately.");
+                                    }
+                                    test.done();
+                                }
+                            }
+                        });
+                    });
+                }
+            }
+        },
 
         "Data Model tests": {
             setUp: function(done) {
@@ -3255,7 +3255,6 @@ exports.setup = function(svc, loggedOutSvc) {
             }
         },
 
-        /*
         "App Tests": {
             setUp: function(done) {
                 this.service = svc;
@@ -5130,7 +5129,6 @@ exports.setup = function(svc, loggedOutSvc) {
                 test.done();
             }
         }
-        */
     };
     return suite;
 };
