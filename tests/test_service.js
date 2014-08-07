@@ -277,6 +277,7 @@ exports.setup = function(svc, loggedOutSvc) {
         "Job Tests": {
             setUp: function(done) {
                 this.service = svc;
+                this.service.post("app/appinstall", {update:1, name:'/bin/splunk/etc/apps/sdk-app-collection/build/sleep_command.tar'});
                 done();
             },
             
@@ -284,12 +285,12 @@ exports.setup = function(svc, loggedOutSvc) {
                 var sid = getNextId();
                 var options = {id: sid};
                 var jobs = this.service.jobs({app: "sdk-app-collection"});
-                var req = jobs.oneshotSearch('search index=_internal |  head 1 | sleep 10', options, function(err, job) {   
+                var req = jobs.oneshotSearch('search index=_internal | head 1 | sleep 10', options, function(err, job) {
                     test.ok(err);
                     test.ok(!job);
                     test.strictEqual(err.error, "abort");
                     test.done();
-                }); 
+                });
                 
                 splunkjs.Async.sleep(1000, function() {
                     req.abort();
