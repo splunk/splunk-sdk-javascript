@@ -300,19 +300,20 @@ exports.setup = function(svc, loggedOutSvc) {
         "Job Tests": {
             setUp: function(done) {
                 this.service = svc;
+                this.service.post("app/appinstall", {update:1, name:'/bin/splunk/etc/apps/sdk-app-collection/build/sleep_command.tar'});
                 done();
             },
             
             "Callback#Create+abort job": function(test) {
                 var sid = getNextId();
                 var options = {id: sid};
-                var jobs = this.service.jobs({app: "xml2json"});
-                var req = jobs.oneshotSearch('search index=_internal |  head 1 | sleep 10', options, function(err, job) {   
+                var jobs = this.service.jobs({app: "sdk-app-collection"});
+                var req = jobs.oneshotSearch('search index=_internal | head 1 | sleep 10', options, function(err, job) {
                     test.ok(err);
                     test.ok(!job);
                     test.strictEqual(err.error, "abort");
                     test.done();
-                }); 
+                });
                 
                 splunkjs.Async.sleep(1000, function() {
                     req.abort();
@@ -545,7 +546,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var that = this;
                 var sid = getNextId();
                 
-                var service = this.service.specialize("nobody", "xml2json");
+                var service = this.service.specialize("nobody", "sdk-app-collection");
                 
                 Async.chain([
                         function(done) {
@@ -573,7 +574,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var that = this;
                 var sid = getNextId();
                 
-                var service = this.service.specialize("nobody", "xml2json");
+                var service = this.service.specialize("nobody", "sdk-app-collection");
                 
                 Async.chain([
                         function(done) {
@@ -661,7 +662,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var originalPriority = 0;
                 var that = this;
                 
-                var service = this.service.specialize("nobody", "xml2json");
+                var service = this.service.specialize("nobody", "sdk-app-collection");
                 
                 Async.chain([
                         function(done) {
@@ -1327,7 +1328,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var updatedSearch = "search * | head 10";
                 var updatedDescription = "description";
             
-                var searches = this.service.savedSearches({owner: this.service.username, app: "xml2json"});
+                var searches = this.service.savedSearches({owner: this.service.username, app: "sdk-app-collection"});
                 
                 Async.chain([
                         function(done) {
@@ -1395,7 +1396,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var name = "jssdk_savedsearch_" + getNextId();
                 var originalSearch = "search index=_internal | head 1";
             
-                var searches = this.service.savedSearches({owner: this.service.username, app: "xml2json"});
+                var searches = this.service.savedSearches({owner: this.service.username, app: "sdk-app-collection"});
                 
                 Async.chain(
                     [function(done) {
@@ -1457,7 +1458,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var name = "jssdk_savedsearch_" + getNextId();
                 var originalSearch = "search index=_internal | head 1";
             
-                var searches = this.service.savedSearches({owner: this.service.username, app: "xml2json"});
+                var searches = this.service.savedSearches({owner: this.service.username, app: "sdk-app-collection"});
                 
                 Async.chain(
                     function(done) {
@@ -1575,7 +1576,7 @@ exports.setup = function(svc, loggedOutSvc) {
             },
             
             "Callback#delete test saved searches": function(test) {
-                var searches = this.service.savedSearches({owner: this.service.username, app: "xml2json"});
+                var searches = this.service.savedSearches({owner: this.service.username, app: "sdk-app-collection"});
                 searches.fetch(function(err, searches) {
                     var searchList = searches.list();
                     Async.parallelEach(
@@ -1604,9 +1605,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#setupInfo succeeds": function(test) {
-                var app = new splunkjs.Service.Application(this.service, "xml2json");
+                var app = new splunkjs.Service.Application(this.service, "sdk-app-collection");
                 app.setupInfo(function(err, content, search) {
                     test.ok(err.data.messages[0].text.match("Setup configuration file does not"));
+                    console.log("ERR ---", err.data.messages[0].text)
                     test.done();
                 });
             },
@@ -1622,7 +1624,7 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#updateInfo failure": function(test) {
-                var app = new splunkjs.Service.Application(this.loggedOutService, "xml2json");
+                var app = new splunkjs.Service.Application(this.loggedOutService, "sdk-app-collection");
                 app.updateInfo(function(err, info, app) {
                     test.ok(err);
                     test.done();
@@ -2735,7 +2737,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 
                 Async.chain([
                         function(done) {
-                            service.views({owner: "admin", app: "xml2json"}).create({name: name, "eai:data": originalData}, done);
+                            service.views({owner: "admin", app: "sdk-app-collection"}).create({name: name, "eai:data": originalData}, done);
                         },
                         function(view, done) {
                             test.ok(view);
