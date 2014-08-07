@@ -189,17 +189,40 @@ exports.setup = function(svc, loggedOutSvc) {
                         },
                         function(savedSearches, done) {  
                             // Ensure that we can't get the item from the generic
-                            // namespace without specifying a namespace
-                            var thrown = false;
+                            // namespace without specifying a namespace                            
                             try {
-                                var entity = savedSearches_1.item(searchName);
+                                savedSearches_1.item(searchName);
+                                test.ok(false);
                             }
-                            catch(ex) {
-                                thrown = true;
+                            catch(err) {
+                                test.ok(err);
+                            }                            
+
+                            // Ensure that we can't get the item using wildcard namespaces.
+                            try{
+                                savedSearches_1.item(searchName, {owner:'-'});
+                                test.ok(false);
                             }
-                            
-                            test.ok(thrown);
-                                                    
+                            catch(err){
+                                test.ok(err);
+                            }
+
+                            try{
+                                savedSearches_1.item(searchName, {app:'-'});
+                                test.ok(false);
+                            }
+                            catch(err){
+                                test.ok(err);
+                            }
+
+                            try{
+                                savedSearches_1.item(searchName, {app:'-', owner:'-'});
+                                test.ok(false);
+                            }      
+                            catch(err){
+                                test.ok(err);
+                            }
+
                             // Ensure we get the right entities from the -/1 namespace when we
                             // specify it.  
                             var entity11 = savedSearches_1.item(searchName, that.namespace11);
