@@ -847,7 +847,7 @@ if (module === require.main) {
         port: cmdline.opts.port,
         username: cmdline.opts.username,
         password: cmdline.opts.password,
-        version: cmdline.opts.version,
+        version: cmdline.opts.version
     });
 
     var suite = exports.setup(svc);
