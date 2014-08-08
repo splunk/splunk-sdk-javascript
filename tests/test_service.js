@@ -3081,7 +3081,6 @@ exports.setup = function(svc, loggedOutSvc) {
                 ); 
             },
             "Callback#Pivot - test pivot on already accelerated data model": function(test) {
-                var expectedTstatsSearch = '| tstats count AS "count(searches)"  from datamodel=internal_audit_logs where (nodename = Audit.searches) groupby "Audit.user"  prestats=true | stats dedup_splitvals=t count AS "count(searches)"  by "Audit.user" | rename "Audit.user" AS "User Is Admin"  | fillnull "count(searches)" | fields "User Is Admin", "count(searches)"';
                 var that = this;
                 Async.chain([
                         function(done) {
@@ -3099,7 +3098,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                 .pivot(done);
                         },
                         function(pivot, done) {
-                            test.strictEqual(expectedTstatsSearch, pivot.tstatsSearch);
+                            test.strictEqual("| tstats", pivot.tstatsSearch.match("^\\| tstats")[0]);
                             test.strictEqual(0, pivot.pivotSearch.indexOf("| pivot"));
                             // This test won't work with utils.startsWith due to the regex escaping
                             test.strictEqual("| pivot", pivot.pivotSearch.match("^\\| pivot")[0]);

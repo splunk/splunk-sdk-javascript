@@ -79,10 +79,8 @@ exports.main = function(opts, callback) {
                 searches.startSearch({}, "| head 5", done);
             },
             function(job, done) {
-                job.track({}, {
-                    done: function(job) {
-                        job.results({}, done);
-                    }
+                job.track({}, function(job) {
+                    job.results({}, done);
                 });
             },
             function(results, job, done) {
