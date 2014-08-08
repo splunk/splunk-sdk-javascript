@@ -1176,6 +1176,27 @@ exports.setup = function(svc, loggedOutSvc) {
                 );
             },
 
+            "Callback#DataModels - create a data model with spaces in the name, which are swapped for -'s": function(test) {
+                var args = JSON.parse(utils.readFile(__filename, "../data/empty_data_model.json"));
+                var name = "delete-me- " + getNextId();
+
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            test.strictEqual(name.replace(" ", "_"), dataModel.name);
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
             "Callback#DataModels - create a data model with 0 objects": function(test) {
                 var args = JSON.parse(utils.readFile(__filename, "../data/empty_data_model.json"));
                 var name = "delete-me-" + getNextId();
@@ -1589,7 +1610,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             );
                         },
                         function(job, done) {
-                            test.strictEqual("| datamodel " + name + " level_2 search | tscollect", job.properties().request.search);
+                            test.strictEqual("| datamodel \"" + name + "\" level_2 search | tscollect", job.properties().request.search);
                             job.cancel(done);
                         }
                     ],
@@ -1628,7 +1649,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             );
                         },
                         function(job, done) {
-                            test.strictEqual("| datamodel " + name + " level_2 search | tscollect", job.properties().request.search);
+                            test.strictEqual("| datamodel \"" + name + "\" level_2 search | tscollect", job.properties().request.search);
 
                             // Make sure the earliest time is 1 day behind
                             var yesterday = new Date(Date.now() - (1000 * 60 * 60 * 24));
@@ -3048,35 +3069,37 @@ exports.setup = function(svc, loggedOutSvc) {
                             obj.createPivotSpecification().pivot(done);
                         },
                         function(pivot, done) {
-                            done();
+                            test.ok(false);
                         }
                     ],
                     function(err) {
                         test.ok(err);
+                        var expectedErr = "In handler 'datamodelpivot': Error in 'PivotReport': Must have non-empty cells or non-empty rows.";
+                        test.ok(utils.endsWith(err.message, expectedErr));
                         test.done();
                     }
                 ); 
             },
-            "Callback#Pivot - test pivot without namespace": function(test) {
-               var name = "delete-me-" + getNextId();
-               var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
-               var that = this;
-               Async.chain([
+            "Callback#Pivot - test pivot on already accelerated data model": function(test) {
+                var expectedTstatsSearch = '| tstats count AS "count(searches)"  from datamodel=internal_audit_logs where (nodename = Audit.searches) groupby "Audit.user"  prestats=true | stats dedup_splitvals=t count AS "count(searches)"  by "Audit.user" | rename "Audit.user" AS "User Is Admin"  | fillnull "count(searches)" | fields "User Is Admin", "count(searches)"';
+                var that = this;
+                Async.chain([
                         function(done) {
-                           that.dataModels.create(name, args, done);
+                           that.dataModels.fetch(done);
                         },
-                        function(dataModel, done) {
-                            var obj = dataModel.objectByName("test_data");
+                        function(dataModels, done) {
+                            var dataModel = dataModels.item("internal_audit_logs");
+                            var obj = dataModel.objectByName("searches");
                             test.ok(obj);
+                            test.ok(obj.fieldByName("user"));
+
                             var pivotSpecification = obj.createPivotSpecification();
                             
-                            pivotSpecification.addBooleanRowSplit("has_boris", "Has Boris", "meep", "hilda");
-                            pivotSpecification.addCellValue("hostip", "Distinct IPs", "count");
-
-                            pivotSpecification.pivot(done);
+                            pivotSpecification.addRowSplit("user", "User Is Admin", "meep", "hilda")
+                                .pivot(done);
                         },
                         function(pivot, done) {
-                            test.strictEqual(null, pivot.tstatsSearch);
+                            test.strictEqual(expectedTstatsSearch, pivot.tstatsSearch);
                             test.strictEqual(0, pivot.pivotSearch.indexOf("| pivot"));
                             // This test won't work with utils.startsWith due to the regex escaping
                             test.strictEqual("| pivot", pivot.pivotSearch.match("^\\| pivot")[0]);
@@ -3095,10 +3118,12 @@ exports.setup = function(svc, loggedOutSvc) {
                             );
                         },
                         function(job, done) {
-                            test.strictEqual(0, job.properties().request.search.indexOf("| pivot"));
+                            test.notStrictEqual("FAILED", job.properties().dispatchState);
+                            test.strictEqual(0, job.properties().request.search.indexOf("| tstats"));
+
                             // This test won't work with utils.startsWith due to the regex escaping
-                            test.strictEqual("| pivot", job.properties().request.search.match("^\\| pivot")[0]);
-                            test.strictEqual(1, job.properties().request.search.match("^\\| pivot").length);
+                            test.strictEqual("| tstats", job.properties().request.search.match("^\\| tstats")[0]);
+                            test.strictEqual(1, job.properties().request.search.match("^\\| tstats").length);
                             job.cancel(done);
                         }
                     ],
@@ -3158,13 +3183,15 @@ exports.setup = function(svc, loggedOutSvc) {
                             tutils.pollUntil(
                                 job,
                                 function(j) {
-                                    return job.properties()["isDone"];
+                                    return job.properties().isDone;
                                 },
                                 10,
                                 done
                             );
                         },
                         function(job, done) {
+                            test.ok("FAILED" !== job.properties().dispatchState);
+                            
                             test.strictEqual(0, job.properties().request.search.indexOf("| tstats"));
                             // This test won't work with utils.startsWith due to the regex escaping
                             test.strictEqual("| tstats", job.properties().request.search.match("^\\| tstats")[0]);
@@ -3183,11 +3210,10 @@ exports.setup = function(svc, loggedOutSvc) {
                 // This test is here because we had a problem with fields that were supposed to be
                 // numbers being expected as strings in Splunk 6.0. This was fixed in Splunk 6.1, and accepts
                 // either strings or numbers.
-               var name = "delete-me-" + getNextId();
-               var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
-               var that = this;
-               var search;
-               Async.chain([
+
+                var that = this;
+                var search;
+                Async.chain([
                         function(done) {
                             that.dataModels.fetch(done);
                         },
@@ -3197,7 +3223,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             var pivotSpecification = obj.createPivotSpecification();
                             
                             pivotSpecification.addRowSplit("user", "Executing user");
-                            pivotSpecification.addRangeColumnSplit("exec_time", {start: 0, end: 12, step:5, limit:4});
+                            pivotSpecification.addRangeColumnSplit("exec_time", {start: 0, end: 12, step: 5, limit: 4});
                             pivotSpecification.addCellValue("search", "Search Query", "values");
                             pivotSpecification.pivot(done);
                         },
@@ -3210,13 +3236,14 @@ exports.setup = function(svc, loggedOutSvc) {
                             tutils.pollUntil(
                                 job,
                                 function(j) {
-                                    return job.properties()["isDone"];
+                                    return job.properties().isDone;
                                 },
                                 10,
                                 done
                             );
                         },
                         function(job, done) {
+                            test.notStrictEqual("FAILED", job.properties().dispatchState);
                             // Make sure the job is run with the correct search query
                             test.strictEqual(search, job.properties().request.search);
                             job.cancel(done);
@@ -3227,6 +3254,40 @@ exports.setup = function(svc, loggedOutSvc) {
                         test.done();
                     }
                 ); 
+            },
+            "Callback#Pivot - test pivot with PivotSpecification.run and Job.track": function(test) {
+                var that = this;
+                Async.chain([
+                    function(done) {
+                            that.dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            var dm = dataModels.item("internal_audit_logs");
+                            var obj = dm.objectByName("searches");
+                            var pivotSpecification = obj.createPivotSpecification();
+                            
+                            pivotSpecification.addRowSplit("user", "Executing user");
+                            pivotSpecification.addRangeColumnSplit("exec_time", {start: 0, end: 12, step: 5, limit: 4});
+                            pivotSpecification.addCellValue("search", "Search Query", "values");
+                            
+                            pivotSpecification.run({}, done);
+                        },
+                        function(job, pivot, done) {
+                            job.track({}, function(job) {
+                                test.strictEqual(pivot.tstatsSearch || pivot.pivotSearch, job.properties().request.search);
+                                done(null, job);
+                            });
+                        },
+                        function(job, done) {
+                            test.notStrictEqual("FAILED", job.properties().dispatchState);
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
             },
             "Callback#DataModels - delete any remaining data models created by the SDK tests": function(test) {
                 svc.dataModels().fetch(function(err, dataModels) {
