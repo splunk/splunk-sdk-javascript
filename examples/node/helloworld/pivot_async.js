@@ -12,14 +12,17 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-// This example will login to Splunk, and then retrieve the list of data models,
-// get the "internal_audit_logs", then get the "searches" data model object.
-// Then start a search on the "searches" data model object, poll the search
-// job for results, and print out the results.
-// Then create a pivot specification and retrieve the pivot searches from
-// the Splunk server, run the search job for that pivot report, poll
-// the job for results, then print them out.
-// At the end, the search job is cancelled.
+/* 
+ * This example will login to Splunk, and then retrieve the list of data models,
+ * get the "internal_audit_logs", then get the "searches" data model object.
+ * Then start a search on the "searches" data model object, track the
+ * job until it's done. Then get and print out the results.
+ * 
+ * Then create a pivot specification and retrieve the pivot searches from
+ * the Splunk server, run the search job for that pivot report, track
+ * the job until it's done. Then get and print out the results.
+ * At the end, the search job is cancelled.
+ */
 
 var splunkjs = require('../../../index');
 var Async  = splunkjs.Async;
@@ -29,7 +32,7 @@ exports.main = function(opts, callback) {
     opts = opts || {};
     
     var username = opts.username    || "admin";
-    var password = opts.password    || "changeme";
+    var password = opts.password    || "1"; // TODO: revert
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
@@ -76,31 +79,11 @@ exports.main = function(opts, callback) {
                 searches.startSearch({}, "| head 5", done);
             },
             function(job, done) {
-                // Wait until the job is done
-                Async.whilst(
-                    function() {
-                        if (job.properties().isDone) {
-                            console.log("The search job is done!");
-                        }
-                        return !job.properties().isDone;
-                    },
-                    function(innerDone) {
-                        Async.sleep(100, function(err) {
-                            if (err) {
-                                innerDone(err);
-                            }
-                            else {
-                                job.fetch(innerDone);
-                            }
-                        });
-                    },
-                    function(err) {
-                        done(null, job);
+                job.track({}, {
+                    done: function(job) {
+                        job.results({}, done);
                     }
-                );
-            },
-            function(job, done) {
-                job.results({}, done);
+                });
             },
             function(results, job, done) {
                 // Print out the results
@@ -123,39 +106,16 @@ exports.main = function(opts, callback) {
                     .addRowSplit("user", "Executing user")
                     .addRangeColumnSplit("exec_time", {limit: 4})
                     .addCellValue("search", "Search Query", "values")
-                    .pivot(done);
+                    .run(done);
             },
-            function(pivot, done) {
+            function(job, pivot, done) {
                 console.log("Query for binning search queries by execution time and executing user:");
                 console.log("\t", pivot.prettyQuery);
-                pivot.run({}, done);
-            },
-            function(job, done) {
-                // Wait until the job is done
-                Async.whilst(
-                    function() {
-                        if (job.properties().isDone) {
-                            console.log("The search job is done!");
-                        }
-                        return !job.properties().isDone;
-                    },
-                    function(innerDone) {
-                        Async.sleep(100, function(err) {
-                            if (err) {
-                                innerDone(err);
-                            }
-                            else {
-                                job.fetch(innerDone);
-                            }
-                        });
-                    },
-                    function(err) {
-                        done(null, job);
+                job.track({}, {
+                    done: function(job) {
+                        job.results({}, done);
                     }
-                );
-            },
-            function(job, done) {
-                job.results({}, done);
+                });
             },
             function(results, job, done) {
                 // Print out the results
