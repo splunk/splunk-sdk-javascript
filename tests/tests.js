@@ -16,13 +16,30 @@
     var path        = require('path');
     var fs          = require('fs');
     var test        = require('../contrib/nodeunit/test_reporter');
+    var junit       = require('../contrib/nodeunit/junit_reporter');
     var options     = require('../examples/node/cmdline');
     var splunkjs    = require('../index');
+    var utils       = require('../lib/utils');
     var NodeHttp    = splunkjs.NodeHttp;
     
     var parser = new options.create();
+
+    var reporterArgs = [];
+    var reporterIndex = utils.keyOf("--reporter", process.argv);
+    var junitIndex = utils.keyOf("junit", process.argv);
+
+    if (junitIndex && reporterIndex && (junitIndex - reporterIndex === 1)) {
+        reporterArgs.push(process.argv[reporterIndex]);
+        reporterArgs.push(process.argv[junitIndex]);
+        process.argv.splice(2, reporterIndex);
+    }    
+
     var cmdline = parser.parse(process.argv);
-    
+
+    if (reporterArgs.length === 2) {
+        cmdline.opts[reporterArgs[0].replace(/-/g, "")] = reporterArgs[1];
+    }
+
     var nonSplunkHttp = new NodeHttp(false);
     var svc = new splunkjs.Service({ 
         scheme: cmdline.opts.scheme,
@@ -63,6 +80,12 @@
     splunkjs.Logger.setLevel("ALL");
     
     svc.login(function(err, success) {
-        test.run([exports]);
+        if (cmdline && cmdline.opts && cmdline.opts.reporter === "junit") {
+            // Run all tests under one test suite
+            junit.run({"junit_test_results": exports}, {output: "test_logs"});
+        }
+        else {
+            test.run([exports]);
+        }
     });
 })();
