@@ -109,10 +109,8 @@ exports.main = function(opts, callback) {
             function(job, pivot, done) {
                 console.log("Query for binning search queries by execution time and executing user:");
                 console.log("\t", pivot.prettyQuery);
-                job.track({}, {
-                    done: function(job) {
-                        job.results({}, done);
-                    }
+                job.track({}, function(job) {
+                    job.results({}, done);
                 });
             },
             function(results, job, done) {
