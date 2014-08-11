@@ -1939,7 +1939,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 );
             },
 
-            "Callback#Pivot - test acceleration": function(test) {
+            "Callback#Pivot - test acceleration, then pivot": function(test) {
                 var name = "delete-me-" + getNextId();
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                 var that = this;
@@ -1977,6 +1977,27 @@ exports.setup = function(svc, loggedOutSvc) {
                             pivotSpecification.accelerationNamespace = namespaceTemp;
                             test.strictEqual(namespaceTemp, pivotSpecification.accelerationNamespace);
 
+                            pivotSpecification
+                                .addCellValue("test_data", "Source Value", "count")
+                                .run(done);
+                        },
+                        function(job, pivot, done) {
+                            test.ok(job);
+                            test.ok(pivot);
+                            test.notStrictEqual("FAILED", job.properties().dispatchState);                            
+                            
+                            job.track({}, function(job) {
+                                test.ok(pivot.tstatsSearch);
+                                test.strictEqual(0, job.properties().request.search.indexOf("| tstats"));
+                                test.strictEqual("| tstats", job.properties().request.search.match("^\\| tstats")[0]);
+                                test.strictEqual(1, job.properties().request.search.match("^\\| tstats").length);
+
+                                test.strictEqual(pivot.tstatsSearch, job.properties().request.search);
+                                done(null, job);
+                            });
+                        },
+                        function(job, done) {
+                            test.ok(job);
                             done();
                         }
                     ],
@@ -3076,58 +3097,6 @@ exports.setup = function(svc, loggedOutSvc) {
                         test.ok(err);
                         var expectedErr = "In handler 'datamodelpivot': Error in 'PivotReport': Must have non-empty cells or non-empty rows.";
                         test.ok(utils.endsWith(err.message, expectedErr));
-                        test.done();
-                    }
-                ); 
-            },
-            "Callback#Pivot - test pivot on already accelerated data model": function(test) {
-                var that = this;
-                Async.chain([
-                        function(done) {
-                           that.dataModels.fetch(done);
-                        },
-                        function(dataModels, done) {
-                            var dataModel = dataModels.item("internal_audit_logs");
-                            var obj = dataModel.objectByName("searches");
-                            test.ok(obj);
-                            test.ok(obj.fieldByName("user"));
-
-                            var pivotSpecification = obj.createPivotSpecification();
-                            
-                            pivotSpecification.addRowSplit("user", "User Is Admin", "meep", "hilda")
-                                .pivot(done);
-                        },
-                        function(pivot, done) {
-                            test.strictEqual("| tstats", pivot.tstatsSearch.match("^\\| tstats")[0]);
-                            test.strictEqual(0, pivot.pivotSearch.indexOf("| pivot"));
-                            // This test won't work with utils.startsWith due to the regex escaping
-                            test.strictEqual("| pivot", pivot.pivotSearch.match("^\\| pivot")[0]);
-                            test.strictEqual(1, pivot.pivotSearch.match("^\\| pivot").length);
-
-                            pivot.run(done);
-                        },
-                        function(job, done) {
-                            tutils.pollUntil(
-                                job,
-                                function(j) {
-                                    return job.properties().isDone;
-                                },
-                                10,
-                                done
-                            );
-                        },
-                        function(job, done) {
-                            test.notStrictEqual("FAILED", job.properties().dispatchState);
-                            test.strictEqual(0, job.properties().request.search.indexOf("| tstats"));
-
-                            // This test won't work with utils.startsWith due to the regex escaping
-                            test.strictEqual("| tstats", job.properties().request.search.match("^\\| tstats")[0]);
-                            test.strictEqual(1, job.properties().request.search.match("^\\| tstats").length);
-                            job.cancel(done);
-                        }
-                    ],
-                    function(err) {
-                        test.ok(!err);
                         test.done();
                     }
                 ); 
