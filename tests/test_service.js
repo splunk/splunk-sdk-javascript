@@ -300,23 +300,35 @@ exports.setup = function(svc, loggedOutSvc) {
         "Job Tests": {
             setUp: function(done) {
                 this.service = svc;
-                this.service.post("app/appinstall", {update:1, name:'/bin/splunk/etc/apps/sdk-app-collection/build/sleep_command.tar'});
                 done();
             },
             
             "Callback#Create+abort job": function(test) {
-                var sid = getNextId();
-                var options = {id: sid};
-                var jobs = this.service.jobs({app: "sdk-app-collection"});
-                var req = jobs.oneshotSearch('search index=_internal | head 1 | sleep 10', options, function(err, job) {
-                    test.ok(err);
-                    test.ok(!job);
-                    test.strictEqual(err.error, "abort");
+                var service = this.service;
+                Async.chain([
+                    function(done){
+                        var app_name = process.env.SPLUNK_HOME + '/etc/apps/sdk-app-collection/build/sleep_command.tar';
+                        service.post("apps/appinstall", {update:1, name:app_name}, done);
+                    },
+                    function(done){
+                        var sid = getNextId();
+                        var options = {id: sid};
+                        var jobs = service.jobs({app: "sdk-app-collection"});
+                        var req = jobs.oneshotSearch('search index=_internal | head 1 | sleep 10', options, function(err, job) {
+                            test.ok(err);
+                            test.ok(!job);
+                            test.strictEqual(err.error, "abort");
+                            test.done();
+                        });
+
+                        Async.sleep(1000, function(){
+                            req.abort();
+                        });                     
+                    }
+                ],
+                function(err){
+                    test.ok(!err);
                     test.done();
-                });
-                
-                splunkjs.Async.sleep(1000, function() {
-                    req.abort();
                 });
             },
 
@@ -1203,12 +1215,11 @@ exports.setup = function(svc, loggedOutSvc) {
                         test.strictEqual(properties.version, VERSION);
                         
                         app.remove(callback);
-                    },
-                    function(callback) {
-                        test.done();
-                        callback();
                     }
-                ]);
+                ], function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
             },
             
             "Callback#delete test applications": function(test) {
@@ -1681,9 +1692,6 @@ exports.setup = function(svc, loggedOutSvc) {
                         }
                     ],
                     function(err) {
-                        if (err) {
-                            console.log(err);
-                        }
                         test.ok(!err);
                         test.done();
                     }
@@ -1862,9 +1870,6 @@ exports.setup = function(svc, loggedOutSvc) {
                         }
                     ],
                     function(err) {
-                        if (err) {
-                            console.log(err);
-                        }
                         test.ok(!err);
                         test.done();
                     }
@@ -1879,7 +1884,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     alertList,
                     function(alert, idx, callback) {
                         if (utils.startsWith(alert.name, namePrefix)) {
-                            console.log(alert.name);
+                            console.log("ALERT ---", alert.name);
                             alert.remove(callback);
                         }
                         else {
@@ -1904,7 +1909,9 @@ exports.setup = function(svc, loggedOutSvc) {
                 var namespace = {owner: "admin", app: "search"};
                 
                 Async.chain([
-                    function(done) { that.service.configurations(namespace).fetch(done); },
+                    function(done) { 
+                        that.service.configurations(namespace).fetch(done); 
+                    },
                     function(props, done) { 
                         var files = props.list();
                         test.ok(files.length > 0);
@@ -3024,7 +3031,12 @@ if (module === require.main) {
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
-    
+    if(!process.env.SPLUNK_HOME){
+        throw new Error("$PATH variable SPLUNK_HOME is not set. Please export SPLUNK_HOME to the splunk instance.");
+    }
+
+
+
     var svc = new splunkjs.Service({ 
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
