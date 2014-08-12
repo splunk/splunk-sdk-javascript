@@ -20,7 +20,7 @@ var nodeunit = require('nodeunit'),
     path = require('path'),
     AssertionError = nodeunit.assert.AssertionError,
     child_process = require('child_process');
-    ejs = require('nodeunit/deps/ejs'); // TODO: Windows testing
+    ejs = require('nodeunit/deps/ejs');
 
 
 /**
