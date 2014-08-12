@@ -487,7 +487,7 @@
     };
     
     var outOfDate = function(dependencies, compiled, compiledMin) {
-        if (!path.existsSync(compiled) || !path.existsSync(compiledMin)) {
+        if (!fs.existsSync(compiled) || !fs.existsSync(compiledMin)) {
             return true;
         }
         
@@ -501,7 +501,7 @@
     };
     
     var ensureDirectoryExists = function(dir) {
-        if (!path.existsSync(dir)) {
+        if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, "755");  
         }
     };
@@ -585,7 +585,7 @@
     };
     
     var launchBrowser = function(file, port) {
-        if (!path.existsSync(file)) {
+        if (!fs.existsSync(file)) {
             throw new Error("File does not exist: " + file);
         } 
         
@@ -681,7 +681,7 @@
                 git.switchBranch("gh-pages", done);
             },
             function(done) {
-                if (path.existsSync(GENERATED_DOCS_DIR)) {
+                if (fs.existsSync(GENERATED_DOCS_DIR)) {
                     rmdirRecursiveSync(GENERATED_DOCS_DIR);
                 }
                 
@@ -722,7 +722,7 @@
         var files = args.map(function(arg) {
             return path.join(TEST_DIRECTORY, TEST_PREFIX + arg + ".js");
         }).filter(function(file) {
-            return path.existsSync(file);
+            return fs.existsSync(file);
         });
         
         if (files.length === 0) {
