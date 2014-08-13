@@ -1,0 +1,22 @@
+{
+  "displayName": "·Ä©·öô‡Øµ 2",
+  "description": "‡Øµ‡Ø±‡Ø∞‡ØØ",
+  "objects": [
+    {
+      "objectName": "search1",
+      "displayName": "‡Øµ‡Ø±‡Ø∞‡ØØ - search 1",
+      "parentName": "BaseEvent",
+      "fields": [],
+      "calculations": [],
+      "constraints": []
+    },
+    {
+      "objectName": "search2",
+      "displayName": "‡Øµ‡Ø±‡Ø∞‡ØØ - search 2",
+      "parentName": "BaseEvent",
+      "fields": [],
+      "calculations": [],
+      "constraints": []
+    }
+  ]
+}
