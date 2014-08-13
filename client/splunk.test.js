@@ -855,7 +855,9 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
 
 (function() {
     "use strict";
-    
+
+    var fs   = require("fs");
+    var path = require("path");
     var root = exports || this;
 
     /**
@@ -1290,7 +1292,30 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     root.isUndefined = function (obj) {
         return (typeof obj === "undefined");
     };
+
+    /**
+     * Read files in a way that makes unit tests work as well.
+     *
+     * @example
+     *
+     *      // To read `splunk-sdk-javascript/tests/data/empty_data_model.json`  
+     *      // from    `splunk-sdk-javascript/tests/test_service.js`
+     *      var fileContents = utils.readFile(__filename, "../data/empty_data_model.json");
+     *      
+     * @param {String} __filename of the script calling this function.
+     * @param {String} a path relative to the script calling this function.
+     * @return {String} The contents of the file.
+     */
+    root.readFile = function(filename, relativePath) {
+        return fs.readFileSync(path.resolve(filename, relativePath)).toString();
+    };
+
 })();
+});
+
+require.define("fs", function (require, module, exports, __dirname, __filename) {
+// nothing to see here... no file methods for the browser
+
 });
 
 require.define("/lib/context.js", function (require, module, exports, __dirname, __filename) {
@@ -1350,6 +1375,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
          *    - `app` (_string_): The app component of the namespace.
          *    - `sessionKey` (_string_): The current session token.
          *    - `autologin` (_boolean_): `true` to automatically try to log in again if the session terminates, `false` if not (`true` by default).
+         *    - 'timeout' (_integer): The connection timeout in milliseconds. ('0' by default).
          *    - `version` (_string_): The version string for Splunk, for example "4.3.2" (the default is "5.0").
          * @return {splunkjs.Context} A new `splunkjs.Context` instance.
          *
@@ -1375,6 +1401,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
             this.authorization = params.authorization || "Splunk";
             this.paths         = params.paths || Paths;
             this.version       = params.version || "default";
+            this.timeout       = params.timeout || 0;
             this.autologin     = true;
 
             // Initialize autologin
@@ -1612,7 +1639,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
                 this.urlify(url),
                 this._headers(),
                 params,
-                0,
+                this.timeout,
                 wrappedCallback
             );
         },
@@ -1633,7 +1660,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
                     that.urlify(path),
                     that._headers(),
                     params,
-                    0,
+                    that.timeout,
                     callback
                 );
             };
@@ -1657,7 +1684,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
                     that.urlify(path),
                     that._headers(),
                     params,
-                    0,
+                    that.timeout,
                     callback
                 );
             };
@@ -1681,7 +1708,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
                     that.urlify(path),
                     that._headers(),
                     params,
-                    0,
+                    that.timeout,
                     callback
                 );
             };
@@ -1713,7 +1740,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
                         query: query,
                         post: post,
                         body: body,
-                        timeout: 0
+                        timeout: that.timeout
                     },
                     callback
                 );
@@ -1791,6 +1818,7 @@ require.define("/lib/paths.js", function (require, module, exports, __dirname, _
         apps: "/services/apps/local",
         capabilities: "authorization/capabilities",
         configurations: "configs",
+        dataModels: "datamodel/model",
         deploymentClient: "deployment/client",
         deploymentServers: "deployment/server",
         deploymentServerClasses: "deployment/serverclass",
@@ -1812,6 +1840,7 @@ require.define("/lib/paths.js", function (require, module, exports, __dirname, _
         messages: "messages",
         passwords: "admin/passwords",
         parser: "search/parser",
+        pivot: "datamodel/pivot",
         properties: "properties",
         roles: "authorization/roles",
         savedSearches: "saved/searches",
@@ -1993,7 +2022,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
          * @param {String} url The URL of the GET request.
          * @param {Object} headers An object of headers for this request.
          * @param {Object} params Parameters for this request.
-         * @param {Number} timeout A timeout period. This parameter is not used.
+         * @param {Number} timeout A timeout period.
          * @param {Function} callback The function to call when the request is complete: `(err, response)`.
          *
          * @method splunkjs.Http
@@ -2015,7 +2044,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
          * @param {String} url The URL of the POST request.
          * @param {Object} headers  An object of headers for this request.
          * @param {Object} params Parameters for this request.
-         * @param {Number} timeout A timeout period. This parameter is not used.
+         * @param {Number} timeout A timeout period.
          * @param {Function} callback The function to call when the request is complete: `(err, response)`.
          *
          * @method splunkjs.Http
@@ -2038,7 +2067,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
          * @param {String} url The URL of the DELETE request.
          * @param {Object} headers An object of headers for this request.
          * @param {Object} params Query parameters for this request.
-         * @param {Number} timeout A timeout period. This parameter is not used.
+         * @param {Number} timeout A timeout period.
          * @param {Function} callback The function to call when the request is complete: `(err, response)`.
          *
          * @method splunkjs.Http
@@ -2078,6 +2107,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
                     callback(response);
                 }
             };
+
 
             var query = utils.getWithVersion(this.version, queryBuilderMap)(message);
             var post = message.post || {};
@@ -2164,7 +2194,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
                 data: json,
                 error: error
             };
-
+            
             return complete_response;
         }
     });
@@ -2258,14 +2288,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     var root = exports || this;
     var Service = null;
     
-    // /**
-    //  * Contains functionality common to Splunk Enterprise and Splunk Storm.
-    //  * 
-    //  * This class is an implementation detail and is therefore SDK-private.
-    //  * 
-    //  * @class splunkjs.private.BaseService
-    //  * @extends splunkjs.Context
-    //  */
+    /**
+     * Contains functionality common to Splunk Enterprise and Splunk Storm.
+     * 
+     * This class is an implementation detail and is therefore SDK-private.
+     * 
+     * @class splunkjs.private.BaseService
+     * @extends splunkjs.Context
+     */
     var BaseService = Context.extend({
         init: function() {
             this._super.apply(this, arguments);
@@ -2316,6 +2346,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.currentUser        = utils.bind(this, this.currentUser);
             this.views              = utils.bind(this, this.views);
             this.firedAlertGroups   = utils.bind(this, this.firedAlertGroups);
+            this.dataModels         = utils.bind(this, this.dataModels);
         },
         
         /**
@@ -2506,6 +2537,18 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
         
         /**
+         * Gets the `DataModels` collection, which lets you create, list,
+         * and retrieve data models.
+         *
+         * @endpoint datamodel/model
+         * @method splunkjs.Service
+         * @see splunkjs.Service.DataModels
+         */
+        dataModels: function(namespace) {
+            return new root.DataModels(this, namespace);
+        },
+
+        /**
          * Gets the `Users` collection, which lets you create, 
          * list, and retrieve users. 
          *
@@ -2592,7 +2635,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 namespace = null;
             }
             
-            var jobs = new root.Jobs(this, {}, namespace);
+            var jobs = new root.Jobs(this, namespace);
             return jobs.search(query, params, callback);
         },
         
@@ -2626,7 +2669,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 namespace = null;
             }
             
-            var jobs = new root.Jobs(this, {}, namespace);
+            var jobs = new root.Jobs(this, namespace);
             return jobs.oneshotSearch(query, params, callback);
         },
         
@@ -3580,8 +3623,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @param {String} id The name of the entity to retrieve.
          * @param {Object} namespace Namespace information:
-         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
-         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The wildcard value "-", is not acceptable when searching for an entity.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The wildcard value "-" is unacceptable when searching for an entity.
          *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
          * @returns {splunkjs.Service.Entity} The entity, or `null` if one is not found.
          *
@@ -3594,6 +3637,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             
             if (!id) {
                 throw new Error("Must suply a non-empty name.");
+            }
+
+            if (namespace && (namespace.app === '-' || namespace.owner === '-')) {
+                throw new Error("When searching for an entity, wildcards are not allowed in the namespace. Please refine your search.");
             }
             
             var fullPath = null;
@@ -4182,7 +4229,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      *
      * @endpoint alerts/fired_alerts/{name}
      * @class splunkjs.Service.FiredAlertGroup
-     * @extends splunkjs.Service.Collection
+     * @extends splunkjs.Service.Entity
      */
     root.FiredAlertGroup = root.Entity.extend({
         /**
@@ -4241,7 +4288,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 
                 var firedAlerts = [];
                 var data = response.data.entry || [];
-                for(var i = 0; i < data.length; i++) {
+                for (var i = 0; i < data.length; i++) {
                     var firedAlertData = response.data.entry[i];
                     var namespace = utils.namespaceFromProperties(firedAlertData);
                     var firedAlert = new root.FiredAlert(that.service, firedAlertData.name, namespace);
@@ -5833,7 +5880,6 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 callback("Must provide a query to create a search job");
                 return;
             } 
-
             var that = this;
             return this.post("", params, function(err, response) {
                 if (err) {
@@ -5943,7 +5989,1758 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             return req;
         }
     });
+     
+    /**
+     * Represents a field of a data model object.
+     * This is a helper class for `DataModelCalculation`
+     * and `DataModelObject`.
+     *
+     * Has these properties:
+     *    - `fieldName` (_string_): The name of this field.
+     *    - `displayName` (_string_):  A human readable name for this field.
+     *    - `type` (_string_): The type of this field.
+     *    - `multivalued` (_boolean_): Whether this field is multivalued.
+     *    - `required` (_boolean_): Whether this field is required.
+     *    - `hidden` (_boolean_): Whether this field should be displayed in a data model UI.
+     *    - `editable` (_boolean_): Whether this field can be edited.
+     *    - `comment` (_string_): A comment for this field, or `null` if there isn't one.
+     *    - `fieldSearch` (_string_): A search query fragment for this field.
+     *    - `lineage` (_array_): An array of strings of the lineage of the data model
+     *          on which this field is defined.
+     *    - `owner` (_string_): The name of the data model object on which this field is defined.
+     *
+     * Possible types for a data model field:
+     *    - `string`
+     *    - `boolean`
+     *    - `number`
+     *    - `timestamp`
+     *    - `objectCount`
+     *    - `childCount`
+     *    - `ipv4`
+     *
+     * @class splunkjs.Service.DataModelField
+     */
+    root.DataModelField = Class.extend({
+        _types: [ "string", "number", "timestamp", "objectCount", "childCount", "ipv4", "boolean"],
+
+        /**
+         * Constructor for a data model field.
+         * SDK users are not expected to invoke this constructor directly.
+         *
+         * @constructor
+         * @param {Object} props A dictionary of properties to set:
+         *     - `fieldName` (_string_): The name of this field.
+         *     - `displayName` (_string_): A human readable name for this field.
+         *     - `type` (_string_): The type of this field, see valid types in class docs.
+         *     - `multivalue` (_boolean_): Whether this field is multivalued.
+         *     - `required` (_boolean_): Whether this field is required on events in the object
+         *     - `hidden` (_boolean_): Whether this field should be displayed in a data model UI.
+         *     - `editable` (_boolean_): Whether this field can be edited.
+         *     - `comment` (_string_): A comment for this field, or `null` if there isn't one.
+         *     - `fieldSearch` (_string_): A search query fragment for this field.
+         *     - `lineage` (_string_): The lineage of the data model object on which this field
+         *          is defined, items are delimited by a dot. This is converted into an array of
+         *          strings upon construction.
+         *
+         * @method splunkjs.Service.DataModelField
+         */
+        init: function(props) {
+            props = props || {};
+            props.owner = props.owner || "";
+
+            this.name           = props.fieldName;
+            this.displayName    = props.displayName;
+            this.type           = props.type;
+            this.multivalued    = props.multivalue;
+            this.required       = props.required;
+            this.hidden         = props.hidden;
+            this.editable       = props.editable;
+            this.comment        = props.comment || null;
+            this.fieldSearch    = props.fieldSearch;
+            this.lineage        = props.owner.split(".");
+            this.owner          = this.lineage[this.lineage.length - 1];
+        },
+
+        /**
+         * Is this data model field of type string?
+         *
+         * @return {Boolean} True if this data model field is of type string.
+         *
+         * @method splunkjs.Service.DataModelField
+         */
+        isString: function() {
+            return "string" === this.type;
+        },
+
+        /**
+         * Is this data model field of type number?
+         *
+         * @return {Boolean} True if this data model field is of type number.
+         *
+         * @method splunkjs.Service.DataModelField
+         */
+        isNumber: function() {
+            return "number" === this.type;
+        },
+
+        /**
+         * Is this data model field of type timestamp?
+         *
+         * @return {Boolean} True if this data model field is of type timestamp.
+         *
+         * @method splunkjs.Service.DataModelField
+         */
+        isTimestamp: function() {
+            return "timestamp" === this.type;
+        },
+
+        /**
+         * Is this data model field of type object count?
+         *
+         * @return {Boolean} True if this data model field is of type object count.
+         *
+         * @method splunkjs.Service.DataModelField
+         */
+        isObjectcount: function() {
+            return "objectCount" === this.type;
+        },
+
+        /**
+         * Is this data model field of type child count?
+         *
+         * @return {Boolean} True if this data model field is of type child count.
+         *
+         * @method splunkjs.Service.DataModelField
+         */
+        isChildcount: function() {
+            return "childCount" === this.type;
+        },
+
+        /**
+         * Is this data model field of type ipv4?
+         *
+         * @return {Boolean} True if this data model field is of type ipv4.
+         *
+         * @method splunkjs.Service.DataModelField
+         */
+        isIPv4: function() {
+            return "ipv4" === this.type;
+        },
+
+        /**
+         * Is this data model field of type boolean?
+         *
+         * @return {Boolean} True if this data model field is of type boolean.
+         *
+         * @method splunkjs.Service.DataModelField
+         */
+        isBoolean: function() {
+            return "boolean" === this.type;
+        }
+    });
     
+    /**
+     * Represents a constraint on a `DataModelObject` or a `DataModelField`.
+     *
+     * Has these properties:
+     *    - `query` (_string_): The search query defining this data model constraint.
+     *    - `lineage` (_array_): The lineage of this data model constraint.
+     *    - `owner` (_string_): The name of the data model object that owns
+     *          this data model constraint.
+     *
+     * @class splunkjs.Service.DataModelConstraint
+     */
+    root.DataModelConstraint = Class.extend({
+        /**
+         * Constructor for a data model constraint.
+         * SDK users are not expected to invoke this constructor directly.
+         *
+         * @constructor
+         * @param {Object} props A dictionary of properties to set:
+         *     - `search` (_string_): The Splunk search query this constraint specifies.
+         *     - `owner` (_string_): The lineage of the data model object that owns this
+         *          constraint, items are delimited by a dot. This is converted into
+         *          an array of strings upon construction.
+         *
+         * @method splunkjs.Service.DataModelConstraint
+         */
+        init: function(props) {
+            props = props || {};
+            props.owner = props.owner || "";
+
+            this.query   = props.search;
+            this.lineage = props.owner.split(".");
+            this.owner   = this.lineage[this.lineage.length - 1];
+        }
+    });
+    
+    /**
+     * Used for specifying a calculation on a `DataModelObject`.
+     *
+     * Has these properties:
+     *    - `id` (_string_): The ID for this data model calculation.
+     *    - `type` (_string_): The type of this data model calculation.
+     *    - `comment` (_string_|_null_): The comment for this data model calculation, or `null`.
+     *    - `editable` (_boolean_): True if this calculation can be edited, false otherwise.
+     *    - `lineage` (_array_): The lineage of the data model object on which this calculation
+     *          is defined in an array of strings.
+     *    - `owner` (_string_): The data model that this calculation belongs to.
+     *    - `outputFields` (_array_): The fields output by this calculation.
+     *
+     * The Rex and Eval types have an additional property:
+     *    - `expression` (_string_): The expression to use for this calculation.
+     *
+     * The Rex and GeoIP types have an additional property:
+     *    - `inputField` (_string_): The field to use for calculation.
+     *
+     * The Lookup type has additional properties:
+     *    - `lookupName` (_string_): The name of the lookup to perform.
+     *    - `inputFieldMappings` (_object_): The mappings from fields in the events to fields in the lookup.
+     *
+     * Valid types of calculations are:
+     *    - `Lookup`
+     *    - `Eval`
+     *    - `GeoIP`
+     *    - `Rex`
+     *
+     * @class splunkjs.Service.DataModelCalculation
+     */
+    root.DataModelCalculation = Class.extend({
+        _types: ["Lookup", "Eval", "GeoIP", "Rex"],
+
+        /**
+         * Constructor for a data model calculation.
+         * SDK users are not expected to invoke this constructor directly.
+         *
+         * @constructor
+         * @param {Object} props A dictionary of properties to set:
+         *     - `calculationID` (_string_): The ID of this calculation.
+         *     - `calculationType` (_string_): The type of this calculation, see class docs for valid types.
+         *     - `editable` (_boolean_): Whether this calculation can be edited.
+         *     - `comment` (_string_): A comment for this calculation, or `null` if there isn't one.
+         *     - `owner` (_string_): The lineage of the data model object on which this calculation
+         *          is defined, items are delimited by a dot. This is converted into an array of
+         *          strings upon construction.
+         *     - `outputFields` (_array_): An array of the fields this calculation generates.
+         *     - `expression` (_string_): The expression to use for this calculation; exclusive to `Eval` and `Rex` calculations (optional)
+         *     - `inputField` (_string_): The field to use for calculation; exclusive to `GeoIP` and `Rex` calculations (optional)
+         *     - `lookupName` (_string_): The name of the lookup to perform; exclusive to `Lookup` calculations (optional)
+         *     - `inputFieldMappings` (_array_): One element array containing an object with the mappings from fields in the events to fields
+         *         in the lookup; exclusive to `Lookup` calculations (optional)
+         *
+         * @method splunkjs.Service.DataModelCalculation
+         */
+        init: function(props) {
+            props = props || {};
+            props.owner = props.owner || "";
+
+            this.id             = props.calculationID;
+            this.type           = props.calculationType;
+            this.comment        = props.comment || null;
+            this.editable       = props.editable;
+            this.lineage        = props.owner.split(".");
+            this.owner          = this.lineage[this.lineage.length - 1];
+
+            this.outputFields = [];
+            for (var i = 0; i < props.outputFields.length; i++) {
+                this.outputFields[props.outputFields[i].fieldName] = new root.DataModelField(props.outputFields[i]);
+            }
+
+            if ("Eval" === this.type || "Rex" === this.type) {
+                this.expression = props.expression;
+            }
+            if ("GeoIP" === this.type || "Rex" === this.type) {
+                this.inputField = props.inputField;
+            }
+            if ("Lookup" === this.type) {
+                this.lookupName = props.lookupName;
+                this.inputFieldMappings = props.lookupInputs[0];
+            }
+        },
+
+        /**
+         * Returns an array of strings of output field names.
+         *
+         * @return {Array} An array of strings of output field names.
+         *
+         * @method splunkjs.Service.DataModelCalculation
+         */
+        outputFieldNames: function() {
+            return Object.keys(this.outputFields);
+        },
+
+        /**
+         * Is this data model calculation editable?
+         *
+         * @return {Boolean} True if this data model calculation is editable.
+         *
+         * @method splunkjs.Service.DataModelCalculation
+         */
+        isEditable: function() {
+            return !!this.editable;
+        },
+
+        /**
+         * Is this data model calculation of type lookup?
+         *
+         * @return {Boolean} True if this data model calculation is of type lookup.
+         *
+         * @method splunkjs.Service.DataModelCalculation
+         */
+        isLookup: function() {
+            return "Lookup" === this.type;
+        },
+
+        /**
+         * Is this data model calculation of type eval?
+         *
+         * @return {Boolean} True if this data model calculation is of type eval.
+         *
+         * @method splunkjs.Service.DataModelCalculation
+         */
+        isEval: function() {
+            return "Eval" === this.type;
+        },
+        
+        /**
+         * Is this data model calculation of type Rex?
+         *
+         * @return {Boolean} True if this data model calculation is of type Rex.
+         *
+         * @method splunkjs.Service.DataModelCalculation
+         */
+        isRex: function() {
+            return "Rex" === this.type;
+        },
+
+        /**
+         * Is this data model calculation of type GeoIP?
+         *
+         * @return {Boolean} True if this data model calculation is of type GeoIP.
+         *
+         * @method splunkjs.Service.DataModelCalculation
+         */
+        isGeoIP: function() {
+            return "GeoIP" === this.type;
+        }
+    });
+    
+    /**
+     * Pivot represents data about a pivot report returned by the Splunk Server.
+     *
+     * Has these properties:
+     *    - `service` (_splunkjs.Service_): A `Service` instance.
+     *    - `search` (_string_): The search string for running the pivot report.
+     *    - `drilldownSearch` (_string_): The search for running this pivot report using drilldown.
+     *    - `openInSearch` (_string_): Equivalent to search parameter, but listed more simply.
+     *    - `prettyQuery` (_string_): Equivalent to `openInSearch`.
+     *    - `pivotSearch` (_string_): A pivot search command based on the named data model.
+     *    - `tstatsSearch` (_string_): The search for running this pivot report using tstats.
+     *
+     * @class splunkjs.Service.Pivot
+     */
+    root.Pivot = Class.extend({
+        /**
+         * Constructor for a pivot.
+         * SDK users are not expected to invoke this constructor directly.
+         *
+         * @constructor
+         * @param {splunkjs.Service} service A `Service` instance.
+         * @param {Object} props A dictionary of properties to set:
+         *    - `search` (_string_): The search string for running the pivot report.
+         *    - `drilldown_search` (_string_): The search for running this pivot report using drilldown.
+         *    - `open_in_search` (_string_): Equivalent to search parameter, but listed more simply.
+         *    - `pivot_search` (_string_): A pivot search command based on the named data model.
+         *    - `tstats_search` (_string_|_null_): The search for running this pivot report using tstats, null if acceleration is disabled.
+         *
+         * @method splunkjs.Service.Pivot
+         */
+        init: function(service, props) {
+            this.service = service;
+            this.search = props.search;
+            this.drilldownSearch = props.drilldown_search;
+            this.prettyQuery = this.openInSearch = props.open_in_search;
+            this.pivotSearch = props.pivot_search;
+            this.tstatsSearch = props.tstats_search || null;
+
+            this.run = utils.bind(this, this.run);
+        },
+
+        /**
+         * Starts a search job running this pivot, accelerated if possible.
+         *
+         * @param {Object} args A dictionary of properties for the search job (optional). For a list of available parameters, see <a href="http://dev.splunk.com/view/SP-CAAAEFA#searchjobparams" target="_blank">Search job parameters</a> on Splunk Developer Portal.
+         *        **Note:** This method throws an error if the `exec_mode=oneshot` parameter is passed in with the properties dictionary.
+         * @param {Function} callback A function to call when done creating the search job: `(err, job)`.
+         * @method splunkjs.Service.Pivot
+         */
+        run: function(args, callback) {
+            if (utils.isUndefined(callback)) {
+                callback = args;
+                args = {};
+            }
+            if (!args || Object.keys(args).length === 0) {
+                args = {};
+            }
+
+            // If tstats is undefined, use pivotSearch (try to run an accelerated search if possible)
+            this.service.search(this.tstatsSearch || this.pivotSearch, args, callback);
+        }
+    });
+
+    /**
+     * PivotSpecification represents a pivot to be done on a particular data model object.
+     * The user creates a PivotSpecification on some data model object, adds filters, row splits,
+     * column splits, and cell values, then calls the pivot method to query splunkd and
+     * get a set of SPL queries corresponding to this specification.
+     *
+     * Call the `pivot` method to query Splunk for SPL queries corresponding to this pivot.
+     *
+     * This class supports a fluent API, each function except `init`, `toJsonObject` & `pivot`
+     * return the modified `splunkjs.Service.PivotSpecification` instance.
+     *
+     * @example
+     *     service.dataModels().fetch(function(err, dataModels) {
+     *         var searches = dataModels.item("internal_audit_logs").objectByName("searches");
+     *         var pivotSpecification = searches.createPivotSpecification();
+     *         pivotSpecification
+     *             .addRowSplit("user", "Executing user")
+     *             .addRangeColumnSplit("exec_time", {limit: 4})
+     *             .addCellValue("search", "Search Query", "values")
+     *             .pivot(function(err, pivot) {
+     *                 console.log("Got a Pivot object from the Splunk server!");
+     *             });
+     *     });
+     *
+     * Has these properties:
+     *    - `dataModelObject` (_splunkjs.Service.DataModelObject_): The `DataModelObject` from which
+     *        this `PivotSpecification` was created.
+     *    - `columns` (_array_): The column splits on this `PivotSpecification`.
+     *    - `rows` (_array_): The row splits on this `PivotSpecification`.
+     *    - `filters` (_array_): The filters on this `PivotSpecification`.
+     *    - `cells` (_array_): The cell aggregations for this`PivotSpecification`.
+     *    - `accelerationNamespace` (_string_|_null_): The name of the `DataModel` that owns the `DataModelObject`
+     *        on which this `PivotSpecification` was created if the `DataModel` is accelerated. Alternatively,
+     *        you can set this property manually to the sid of an acceleration job in the format `sid=<sid>`.
+     *
+     * Valid comparison types are:
+     *    - `boolean`
+     *    - `string`
+     *    - `number`
+     *    - `ipv4`
+     *
+     * Valid boolean comparisons are:
+     *    - `=`
+     *    - `is`
+     *    - `isNull`
+     *    - `isNotNull`
+     *
+     * Valid string comparisons are:
+     *    - `=`
+     *    - `is`
+     *    - `isNull`
+     *    - `isNotNull`
+     *    - `contains`
+     *    - `doesNotContain`
+     *    - `startsWith`
+     *    - `endsWith`
+     *    - `regex`
+     *
+     * Valid number comparisons are:
+     *    - `=`
+     *    - `!=`
+     *    - `<`
+     *    - `>`
+     *    - `<=`
+     *    - `>=`
+     *    - `is`
+     *    - `isNull`
+     *    - `isNotNull`
+     *
+     * Valid ipv4 comparisons are:
+     *    - `is`
+     *    - `isNull`
+     *    - `isNotNull`
+     *    - `contains`
+     *    - `doesNotContain`
+     *    - `startsWith`
+     *
+     * Valid binning values are:
+     *    - `auto`
+     *    - `year`
+     *    - `month`
+     *    - `day`
+     *    - `hour`
+     *    - `minute`
+     *    - `second`
+     *
+     * Valid sort directions are:
+     *    - `ASCENDING`
+     *    - `DECENDING`
+     *    - `DEFAULT`
+     *
+     * Valid stats functions are:
+     *    - `list`
+     *    - `values`
+     *    - `first`
+     *    - `last`
+     *    - `count`
+     *    - `dc`
+     *    - `sum`
+     *    - `average`
+     *    - `max`
+     *    - `min`
+     *    - `stdev`
+     *    - `duration`
+     *    - `earliest`
+     *    - `latest`
+     *
+     * @class splunkjs.Service.PivotSpecification
+     */
+    root.PivotSpecification = Class.extend({
+        _comparisons: {
+            boolean: ["=", "is", "isNull", "isNotNull"],
+            string: ["=", "is", "isNull", "isNotNull", "contains", "doesNotContain", "startsWith", "endsWith", "regex"],
+            number: ["=", "!=", "<", ">", "<=", ">=", "is", "isNull", "isNotNull"],
+            ipv4: ["is", "isNull", "isNotNull", "contains", "doesNotContain", "startsWith"]
+        },
+        _binning: ["auto", "year", "month", "day", "hour", "minute", "second"],
+        _sortDirection: ["ASCENDING", "DESCENDING", "DEFAULT"],
+        _statsFunctions: ["list", "values", "first", "last", "count", "dc", "sum", "average", "max", "min", "stdev", "duration", "earliest", "latest"],
+
+        /**
+         * Constructor for a pivot specification.
+         *
+         * @constructor
+         * @param {splunkjs.Service.DataModel} parentDataModel The `DataModel` that owns this data model object.
+         *
+         * @method splunkjs.Service.PivotSpecification
+         */
+        init: function(dataModelObject) {
+            this.dataModelObject = dataModelObject;
+            this.columns = [];
+            this.rows = [];
+            this.filters = [];
+            this.cells = [];
+
+            this.accelerationNamespace = dataModelObject.dataModel.isAccelerated() ? 
+                dataModelObject.dataModel.name : null;
+
+            this.run   = utils.bind(this, this.run);
+            this.pivot = utils.bind(this, this.pivot);
+        },
+        
+        /**
+         * Set the acceleration cache for this pivot specification to a job,
+         * usually generated by createLocalAccelerationJob on a DataModelObject
+         * instance, as the acceleration cache for this pivot specification.
+         *
+         * @param {String|splunkjs.Service.Job} sid The sid of an acceleration job,
+         *     or, a `splunkjs.Service.Job` instance.
+         * @return {splunkjs.Service.PivotSpecification} The updated pivot specification.
+         *
+         * @method splunkjs.Service.PivotSpecification
+         */
+        setAccelerationJob: function(sid) {
+            // If a search object is passed in, get its sid
+            if (sid && sid instanceof Service.Job) {
+                sid = sid.sid;
+            }
+            
+            if (!sid) {
+                throw new Error("Sid to use for acceleration must not be null.");
+            }
+
+            this.accelerationNamespace = "sid=" + sid;
+            return this;
+        },
+
+        /**
+         * Add a filter on a boolean valued field. The filter will be a constraint of the form
+         * `field `comparison` compareTo`, for example: `is_remote = false`.
+         *
+         * @param {String} fieldName The name of field to filter on
+         * @param {String} comparisonType The type of comparison, see class docs for valid types.
+         * @param {String} comparisonOp The comparison, see class docs for valid comparisons, based on type.
+         * @param {String} compareTo The value to compare the field to.
+         * @return {splunkjs.Service.PivotSpecification} The updated pivot specification.
+         *
+         * @method splunkjs.Service.PivotSpecification
+         */
+        addFilter: function(fieldName, comparisonType, comparisonOp, compareTo) {
+            if (!this.dataModelObject.hasField(fieldName)) {
+                throw new Error("Cannot add filter on a nonexistent field.");
+            }
+            if (comparisonType !== this.dataModelObject.fieldByName(fieldName).type) {
+                throw new Error(
+                    "Cannot add " + comparisonType +  
+                    " filter on " + fieldName + 
+                    " because it is of type " +
+                    this.dataModelObject.fieldByName(fieldName).type);
+            }
+            if (!utils.contains(this._comparisons[comparisonType], comparisonOp)) {
+                throw new Error(
+                    "Cannot add " + comparisonType + 
+                    " filter because " + comparisonOp +
+                    " is not a valid comparison operator");
+            }
+
+            var ret = {
+                fieldName: fieldName,
+                owner: this.dataModelObject.fieldByName(fieldName).lineage.join("."),
+                type: comparisonType
+            };
+            // These fields are type dependent
+            if (utils.contains(["boolean", "string", "ipv4", "number"], ret.type)) {
+                ret.comparator = comparisonOp;
+                ret.compareTo = compareTo;
+            }
+            this.filters.push(ret);
+    
+            return this;
+        },
+
+        /**
+         * Add a limit on the events shown in a pivot by sorting them according to some field, then taking
+         * the specified number from the beginning or end of the list.
+         *
+         * @param {String} fieldName The name of field to filter on.
+         * @param {String} sortAttribute The name of the field to use for sorting.
+         * @param {String} sortDirection The direction to sort events, see class docs for valid types.
+         * @param {String} limit The number of values from the sorted list to allow through this filter.
+         * @param {String} statsFunction The stats function to use for aggregation before sorting, see class docs for valid types.
+         * @return {splunkjs.Service.PivotSpecification} The updated pivot specification.
+         *
+         * @method splunkjs.Service.PivotSpecification
+         */
+        addLimitFilter: function(fieldName, sortAttribute, sortDirection, limit, statsFunction) {
+            if (!this.dataModelObject.hasField(fieldName)) {
+                throw new Error("Cannot add limit filter on a nonexistent field.");
+            }
+
+            var f = this.dataModelObject.fieldByName(fieldName);
+
+            if (!utils.contains(["string", "number", "objectCount"], f.type)) {
+                throw new Error("Cannot add limit filter on " + fieldName + " because it is of type " + f.type);
+            }
+
+            if ("string" === f.type && !utils.contains(["count", "dc"], statsFunction)) {
+                throw new Error("Stats function for fields of type string must be COUNT or DISTINCT_COUNT; found " +
+                    statsFunction);
+            }
+
+            if ("number" === f.type && !utils.contains(["count", "dc", "average", "sum"], statsFunction)) {
+                throw new Error("Stats function for fields of type number must be one of COUNT, DISTINCT_COUNT, SUM, or AVERAGE; found " +
+                    statsFunction);
+            }
+
+            if ("objectCount" === f.type && !utils.contains(["count"], statsFunction)) {
+                throw new Error("Stats function for fields of type object count must be COUNT; found " + statsFunction);
+            }
+
+            var filter = {
+                fieldName: fieldName,
+                owner: f.lineage.join("."),
+                type: f.type,
+                attributeName: sortAttribute,
+                attributeOwner: this.dataModelObject.fieldByName(sortAttribute).lineage.join("."),
+                sortDirection: sortDirection,
+                limitAmount: limit,
+                statsFn: statsFunction
+            };
+            // Assumed "highest" is preferred for when sortDirection is "DEFAULT"
+            filter.limitType = "ASCENDING" === sortDirection ? "lowest" : "highest";
+            this.filters.push(filter);
+
+            return this;
+        },
+
+        /**
+         * Add a row split on a numeric or string valued field, splitting on each distinct value of the field.
+         *
+         * @param {String} fieldName The name of field to split on.
+         * @param {String} label A human readable name for this set of rows.
+         * @return {splunkjs.Service.PivotSpecification} The updated pivot specification.
+         *
+         * @method splunkjs.Service.PivotSpecification
+         */
+        addRowSplit: function(fieldName, label) {
+            if (!this.dataModelObject.hasField(fieldName)) {
+                throw new Error("Did not find field " + fieldName);
+            }
+            var f = this.dataModelObject.fieldByName(fieldName);
+            if (!utils.contains(["number", "string"], f.type)) {
+                throw new Error("Field was of type " + f.type + ", expected number or string.");
+            }
+
+            var row = {
+                fieldName: fieldName,
+                owner: f.owner,
+                type: f.type,
+                label: label
+            };
+
+            if ("number" === f.type) {
+                row.display = "all";
+            }
+
+            this.rows.push(row);
+
+            return this;
+        },
+
+        /**
+         * Add a row split on a numeric field, splitting into numeric ranges.
+         *
+         * This split generates bins with edges equivalent to the
+         * classic loop 'for i in <start> to <end> by <step>' but with a maximum
+         * number of bins <limit>. This dispatches to the stats and xyseries search commands.
+         * See their documentation for more details.
+         *
+         * @param {String} fieldName The field to split on.
+         * @param {String} label A human readable name for this set of rows.
+         * @param {Object} options An optional dictionary of collection filtering and pagination options:
+         *    - `start` (_integer_): The value of the start of the first range, or null to take the lowest value in the events.
+         *    - `end` (_integer_): The value for the end of the last range, or null to take the highest value in the events.
+         *    - `step` (_integer_): The the width of each range, or null to have Splunk calculate it.
+         *    - `limit` (_integer_): The maximum number of ranges to split into, or null for no limit.
+         * @return {splunkjs.Service.PivotSpecification} The updated pivot specification.
+         *
+         * @method splunkjs.Service.PivotSpecification
+         */
+        addRangeRowSplit: function(field, label, ranges) {
+            if (!this.dataModelObject.hasField(field)) {
+                throw new Error("Did not find field " + field);
+            }
+            var f = this.dataModelObject.fieldByName(field);
+            if ("number" !== f.type) {
+                throw new Error("Field was of type " + f.type + ", expected number.");
+            }
+            var updateRanges = {};
+            if (!utils.isUndefined(ranges.start) && ranges.start !== null) {
+                updateRanges.start = ranges.start;
+            }
+            if (!utils.isUndefined(ranges.end) && ranges.end !== null) {
+                updateRanges.end = ranges.end;
+            }
+            if (!utils.isUndefined(ranges.step) && ranges.step !== null) {
+                updateRanges.size = ranges.step;
+            }
+            if (!utils.isUndefined(ranges.limit) && ranges.limit !== null) {
+                updateRanges.maxNumberOf = ranges.limit;
+            }
+
+            this.rows.push({
+                fieldName: field,
+                owner: f.owner,
+                type: f.type,
+                label: label,
+                display: "ranges",
+                ranges: updateRanges
+            });
+
+            return this;
+        },
+
+        /**
+         * Add a row split on a boolean valued field.
+         *
+         * @param {String} fieldName The name of field to split on.
+         * @param {String} label A human readable name for this set of rows.
+         * @param {String} trueDisplayValue A string to display in the true valued row label.
+         * @param {String} falseDisplayValue A string to display in the false valued row label.
+         * @return {splunkjs.Service.PivotSpecification} The updated pivot specification.
+         *
+         * @method splunkjs.Service.PivotSpecification
+         */
+        addBooleanRowSplit: function(field, label, trueDisplayValue, falseDisplayValue) {
+            if (!this.dataModelObject.fieldByName(field)) {
+                throw new Error("Did not find field " + field);
+            }
+            var f = this.dataModelObject.fieldByName(field);
+            if ("boolean" !== f.type) {
+                throw new Error("Field was of type " + f.type + ", expected boolean.");
+            }
+
+            this.rows.push({
+                fieldName: field,
+                owner: f.owner,
+                type: f.type,
+                label: label,
+                trueLabel: trueDisplayValue,
+                falseLabel: falseDisplayValue
+            });
+
+            return this;
+        },
+
+        /**
+         * Add a row split on a timestamp valued field, binned by the specified bucket size.
+         *
+         * @param {String} fieldName The name of field to split on.
+         * @param {String} label A human readable name for this set of rows.
+         * @param {String} binning The size of bins to use, see class docs for valid types.
+         * @return {splunkjs.Service.PivotSpecification} The updated pivot specification.
+         *
+         * @method splunkjs.Service.PivotSpecification
+         */
+        addTimestampRowSplit: function(field, label, binning) {
+            if (!this.dataModelObject.hasField(field)) {
+                throw new Error("Did not find field " + field);
+            }
+            var f = this.dataModelObject.fieldByName(field);
+            if ("timestamp" !== f.type) {
+                throw new Error("Field was of type " + f.type + ", expected timestamp.");
+            }
+            if (!utils.contains(this._binning, binning)) {
+                throw new Error("Invalid binning " + binning + " found. Valid values are: " + this._binning.join(", "));
+            }
+
+            this.rows.push({
+                fieldName: field,
+                owner: f.owner,
+                type: f.type,
+                label: label,
+                period: binning
+            });
+
+            return this;            
+        },
+        
+        /**
+         * Add a column split on a string or number valued field, producing a column for
+         * each distinct value of the field.
+         *
+         * @param {String} fieldName The name of field to split on.
+         * @return {splunkjs.Service.PivotSpecification} The updated pivot specification.
+         *
+         * @method splunkjs.Service.PivotSpecification
+         */
+        addColumnSplit: function(fieldName) {
+            if (!this.dataModelObject.hasField(fieldName)) {
+                throw new Error("Did not find field " + fieldName);
+            }
+            var f = this.dataModelObject.fieldByName(fieldName);
+            if (!utils.contains(["number", "string"], f.type)) {
+                throw new Error("Field was of type " + f.type + ", expected number or string.");
+            }
+
+            var col = {
+                fieldName: fieldName,
+                owner: f.owner,
+                type: f.type
+            };
+
+            if ("number" === f.type) {
+                col.display = "all";
+            }
+
+            this.columns.push(col);
+
+            return this;
+        },
+
+        /**
+         * Add a column split on a numeric field, splitting the values into ranges.
+         *
+         * @param {String} fieldName The field to split on.
+         * @param {Object} options An optional dictionary of collection filtering and pagination options:
+         *    - `start` (_integer_): The value of the start of the first range, or null to take the lowest value in the events.
+         *    - `end` (_integer_): The value for the end of the last range, or null to take the highest value in the events.
+         *    - `step` (_integer_): The the width of each range, or null to have Splunk calculate it.
+         *    - `limit` (_integer_): The maximum number of ranges to split into, or null for no limit.
+         * @return {splunkjs.Service.PivotSpecification} The updated pivot specification.
+         *
+         * @method splunkjs.Service.PivotSpecification
+         */
+        addRangeColumnSplit: function(fieldName, ranges) {
+            if (!this.dataModelObject.hasField(fieldName)) {
+                throw new Error("Did not find field " + fieldName);
+            }
+            var f = this.dataModelObject.fieldByName(fieldName);
+            if ("number" !== f.type) {
+                throw new Error("Field was of type " + f.type + ", expected number.");
+            }
+
+            // In Splunk 6.0.1.1, data models incorrectly expect strings for these fields
+            // instead of numbers. In 6.1, this is fixed and both are accepted.
+            var updatedRanges = {};
+            if (!utils.isUndefined(ranges.start) && ranges.start !== null) {
+                updatedRanges.start = ranges.start;
+            }
+            if (!utils.isUndefined(ranges.end) && ranges.end !== null) {
+                updatedRanges.end = ranges.end;
+            }
+            if (!utils.isUndefined(ranges.step) && ranges.step !== null) {
+                updatedRanges.size = ranges.step;
+            }
+            if (!utils.isUndefined(ranges.limit) && ranges.limit !== null) {
+                updatedRanges.maxNumberOf = ranges.limit;
+            }
+
+            this.columns.push({
+                fieldName: fieldName,
+                owner: f.owner,
+                type: f.type,
+                display: "ranges",
+                ranges: updatedRanges
+            });
+
+            return this;
+        },
+        
+        /**
+         * Add a column split on a boolean valued field.
+         *
+         * @param {String} fieldName The name of field to split on.
+         * @param {String} trueDisplayValue A string to display in the true valued column label.
+         * @param {String} falseDisplayValue A string to display in the false valued column label.
+         * @return {splunkjs.Service.PivotSpecification} The updated pivot specification.
+         *
+         * @method splunkjs.Service.PivotSpecification
+         */
+        addBooleanColumnSplit: function(fieldName, trueDisplayValue, falseDisplayValue) {
+            if (!this.dataModelObject.fieldByName(fieldName)) {
+                throw new Error("Did not find field " + fieldName);
+            }
+            var f = this.dataModelObject.fieldByName(fieldName);
+            if ("boolean" !== f.type) {
+                throw new Error("Field was of type " + f.type + ", expected boolean.");
+            }
+
+            this.columns.push({
+                fieldName: fieldName,
+                owner: f.owner,
+                type: f.type,
+                trueLabel: trueDisplayValue,
+                falseLabel: falseDisplayValue
+            });
+
+            return this;
+        },
+        
+        /**
+         * Add a column split on a timestamp valued field, binned by the specified bucket size.
+         *
+         * @param {String} fieldName The name of field to split on.
+         * @param {String} binning The size of bins to use, see class docs for valid types.
+         * @return {splunkjs.Service.PivotSpecification} The updated pivot specification.
+         *
+         * @method splunkjs.Service.PivotSpecification
+         */
+        addTimestampColumnSplit: function(field, binning) {
+            if (!this.dataModelObject.hasField(field)) {
+                throw new Error("Did not find field " + field);
+            }
+            var f = this.dataModelObject.fieldByName(field);
+            if ("timestamp" !== f.type) {
+                throw new Error("Field was of type " + f.type + ", expected timestamp.");
+            }
+            if (!utils.contains(this._binning, binning)) {
+                throw new Error("Invalid binning " + binning + " found. Valid values are: " + this._binning.join(", "));
+            }
+
+            this.columns.push({
+                fieldName: field,
+                owner: f.owner,
+                type: f.type,
+                period: binning
+            });
+
+            return this;            
+        },
+        
+        /**
+         * Add an aggregate to each cell of the pivot.
+         *
+         * @param {String} fieldName The name of field to aggregate.
+         * @param {String} label a human readable name for this aggregate.
+         * @param {String} statsFunction The function to use for aggregation, see class docs for valid stats functions.
+         * @return {splunkjs.Service.PivotSpecification} The updated pivot specification.
+         *
+         * @method splunkjs.Service.PivotSpecification
+         */
+        addCellValue: function(fieldName, label, statsFunction) {
+            if (!this.dataModelObject.hasField(fieldName)) {
+                throw new Error("Did not find field " + fieldName);
+            }
+
+            var f = this.dataModelObject.fieldByName(fieldName);
+            if (utils.contains(["string", "ipv4"], f.type) &&
+                !utils.contains([
+                    "list",
+                    "values",
+                    "first",
+                    "last",
+                    "count",
+                    "dc"], statsFunction)
+                ) {
+                throw new Error("Stats function on string and IPv4 fields must be one of:" +
+                    " list, distinct_values, first, last, count, or distinct_count; found " +
+                    statsFunction);
+            }
+            else if ("number" === f.type && 
+                !utils.contains([
+                    "sum",
+                    "count",
+                    "average",
+                    "min",
+                    "max",
+                    "stdev",
+                    "list",
+                    "values"
+                    ], statsFunction)
+                ) {
+                throw new Error("Stats function on number field must be must be one of:" +
+                    " sum, count, average, max, min, stdev, list, or distinct_values; found " +
+                    statsFunction
+                    );
+            }
+            else if ("timestamp" === f.type &&
+                !utils.contains([
+                    "duration",
+                    "earliest",
+                    "latest",
+                    "list",
+                    "values"
+                    ], statsFunction)
+                ) {
+                throw new Error("Stats function on timestamp field must be one of:" +
+                    " duration, earliest, latest, list, or distinct values; found " +
+                    statsFunction
+                    );
+            }
+            else if (utils.contains(["objectCount", "childCount"], f.type) &&
+                "count" !== statsFunction
+                ) {
+                throw new Error("Stats function on childcount and objectcount fields must be count; " +
+                    "found " + statsFunction);
+            }
+            else if ("boolean" === f.type) {
+                throw new Error("Cannot use boolean valued fields as cell values.");
+            }
+
+            this.cells.push({
+                fieldName: fieldName,
+                owner: f.lineage.join("."),
+                type: f.type,
+                label: label,
+                sparkline: false, // Not properly implemented in core yet.
+                value: statsFunction
+            });
+
+            return this;
+        },
+        
+        /**
+         * Returns a JSON ready object representation of this pivot specification.
+         *
+         * @return {Object} The JSON ready object representation of this pivot specification.
+         *
+         * @method splunkjs.Service.PivotSpecification
+         */
+        toJsonObject: function() {
+            return {
+                dataModel: this.dataModelObject.dataModel.name,
+                baseClass: this.dataModelObject.name,
+                rows: this.rows,
+                columns: this.columns,
+                cells: this.cells,
+                filters: this.filters
+            };
+        },
+
+        /**
+         * Query Splunk for SPL queries corresponding to a pivot report
+         * for this data model, defined by this `PivotSpecification`.
+         *
+         * @example
+         *
+         *      service.dataModels().fetch(function(err, dataModels) {
+         *          var searches = dataModels.item("internal_audit_logs").objectByName("searches");
+         *          var pivotSpec = searches.createPivotSpecification();
+         *          // Use of the fluent API
+         *          pivotSpec.addRowSplit("user", "Executing user")
+         *              .addRangeColumnSplit("exec_time", {start: 0, end: 12, step: 5, limit: 4})
+         *              .addCellValue("search", "Search Query", "values")
+         *              .pivot(function(pivotErr, pivot) {
+         *                  console.log("Pivot search is:", pivot.search);
+         *              });
+         *      });
+         *
+         * @param {Function} callback A function to call when done getting the pivot: `(err, pivot)`.
+         *
+         * @method splunkjs.Service.PivotSpecification
+         */
+        pivot: function(callback) {
+            var svc = this.dataModelObject.dataModel.service;
+
+            var args = {
+                pivot_json: JSON.stringify(this.toJsonObject())
+            };
+
+            if (!utils.isUndefined(this.accelerationNamespace)) {
+                args.namespace = this.accelerationNamespace;
+            }
+            
+            return svc.get(Paths.pivot + "/" + encodeURIComponent(this.dataModelObject.dataModel.name), args, function(err, response) {
+                if (err) {
+                    callback(new Error(err.data.messages[0].text), response);
+                    return;
+                }
+
+                if (response.data.entry && response.data.entry[0]) {
+                    callback(null, new root.Pivot(svc, response.data.entry[0].content));
+                }
+                else {
+                    callback(new Error("Didn't get a Pivot report back from Splunk"), response);
+                }
+            });
+        },
+
+        /**
+         * Convenience method to wrap up the `PivotSpecification.pivot()` and
+         * `Pivot.run()` function calls.
+         *
+         * Query Splunk for SPL queries corresponding to a pivot report
+         * for this data model, defined by this `PivotSpecification`; then,
+         * starts a search job running this pivot, accelerated if possible.
+         *
+         *      service.dataModels().fetch(function(fetchErr, dataModels) {
+         *          var searches = dataModels.item("internal_audit_logs").objectByName("searches");
+         *          var pivotSpec = searches.createPivotSpecification();
+         *          // Use of the fluent API
+         *          pivotSpec.addRowSplit("user", "Executing user")
+         *              .addRangeColumnSplit("exec_time", {start: 0, end: 12, step: 5, limit: 4})
+         *              .addCellValue("search", "Search Query", "values")
+         *              .run(function(err, job, pivot) {
+         *                  console.log("Job SID is:", job.sid);
+         *                  console.log("Pivot search is:", pivot.search);
+         *              });
+         *      });
+         * @param {Object} args A dictionary of properties for the search job (optional). For a list of available parameters, see <a href="http://dev.splunk.com/view/SP-CAAAEFA#searchjobparams" target="_blank">Search job parameters</a> on Splunk Developer Portal.
+         *        **Note:** This method throws an error if the `exec_mode=oneshot` parameter is passed in with the properties dictionary.
+         * @param {Function} callback A function to call when done getting the pivot: `(err, job, pivot)`.
+         *
+         * @method splunkjs.Service.PivotSpecification
+         */
+        run: function(args, callback) {
+            if (!callback) {
+                callback = args;
+                args = {};
+            }
+            args = args || {};
+
+            this.pivot(function(err, pivot) {
+                if (err) {
+                    callback(err, null, null);
+                }
+                else {
+                    pivot.run(args, Async.augment(callback, pivot));
+                }
+            });
+        }
+    });
+
+    /**
+     * Represents one of the structured views in a `DataModel`.
+     *
+     * Has these properties:
+     *    - `dataModel` (_splunkjs.Service.DataModel_): The `DataModel` to which this `DataModelObject` belongs.
+     *    - `name` (_string_): The name of this `DataModelObject`.
+     *    - `displayName` (_string_): The human readable name of this `DataModelObject`.
+     *    - `parentName` (_string_): The name of the parent `DataModelObject` to this one.
+     *    - `lineage` (_array_): An array of strings of the lineage of the data model
+     *          on which this field is defined.
+     *    - `fields` (_object_): A dictionary of `DataModelField` objects, accessible by name.
+     *    - `constraints` (_array_): An array of `DataModelConstraint` objects.
+     *    - `calculations` (_object_): A dictionary of `DataModelCalculation` objects, accessible by ID.
+     *
+     * BaseSearch has an additional property:
+     *    - `baseSearch` (_string_): The search query wrapped by this data model object.
+     *
+     * BaseTransaction has additional properties:
+     *    - `groupByFields` (_string_): The fields that will be used to group events into transactions.
+     *    - `objectsToGroup` (_array_): Names of the data model objects that should be unioned
+     *        and split into transactions.
+     *    - `maxSpan` (_string_): The maximum time span of a transaction.
+     *    - `maxPause` (_string_): The maximum pause time of a transaction.
+     *
+     * @class splunkjs.Service.DataModelObject
+     */
+    root.DataModelObject = Class.extend({
+        /**
+         * Constructor for a data model object.
+         * SDK users are not expected to invoke this constructor directly.
+         *
+         * @constructor
+         * @param {Object} props A dictionary of properties to set:
+         *     - `objectName` (_string_): The name for this data model object.
+         *     - `displayName` (_string_): A human readable name for this data model object.
+         *     - `parentName` (_string_): The name of the data model that owns this data model object.
+         *     - `lineage` (_string_): The lineage of the data model that owns this data model object,
+         *          items are delimited by a dot. This is converted into an array of
+         *          strings upon construction.
+         *     - `fields` (_array_): An array of data model fields.
+         *     - `constraints` (_array_): An array of data model constraints.
+         *     - `calculations` (_array_): An array of data model calculations.
+         *     - `baseSearch` (_string_): The search query wrapped by this data model object; exclusive to BaseSearch (optional)
+         *     - `groupByFields` (_array_): The fields that will be used to group events into transactions; exclusive to BaseTransaction (optional)
+         *     - `objectsToGroup` (_array_): Names of the data model objects that should be unioned
+         *         and split into transactions; exclusive to BaseTransaction (optional)
+         *     - `maxSpan` (_string_): The maximum time span of a transaction; exclusive to BaseTransaction (optional)
+         *     - `maxPause` (_string_): The maximum pause time of a transaction; exclusive to BaseTransaction (optional)
+         *
+         * @param {splunkjs.Service.DataModel} parentDataModel The `DataModel` that owns this data model object.
+         *
+         * @method splunkjs.Service.DataModelObject
+         */
+        init: function(props, parentDataModel) {
+            props = props || {};
+            props.owner = props.owner || "";
+
+            this.dataModel              = parentDataModel;
+            this.name                   = props.objectName;
+            this.displayName            = props.displayName;
+            this.parentName             = props.parentName;
+            this.lineage                = props.lineage.split(".");
+
+            // Properties exclusive to BaseTransaction
+            if (props.hasOwnProperty("groupByFields")) {
+                this.groupByFields = props.groupByFields;
+            }
+            if (props.hasOwnProperty("objectsToGroup")) {
+                this.objectsToGroup = props.objectsToGroup;
+            }
+            if (props.hasOwnProperty("transactionMaxTimeSpan")) {
+                this.maxSpan = props.transactionMaxTimeSpan;
+            }
+            if (props.hasOwnProperty("transactionMaxPause")) {
+                this.maxPause = props.transactionMaxPause;
+            }
+
+            // Property exclusive to BaseSearch
+            if (props.hasOwnProperty("baseSearch")) {
+                this.baseSearch = props.baseSearch;
+            }
+
+            // Parse fields
+            this.fields = {};
+            for (var i = 0; i < props.fields.length; i++) {
+                this.fields[props.fields[i].fieldName] = new root.DataModelField(props.fields[i]);
+            }
+
+            // Parse constraints
+            this.constraints = [];
+            for (var j = 0; j < props.constraints.length; j++) {
+                this.constraints.push(new root.DataModelConstraint(props.constraints[j]));
+            }
+
+            // Parse calculations
+            this.calculations = [];
+            for (var k = 0; k < props.calculations.length; k++) {
+                this.calculations[props.calculations[k].calculationID] = new root.DataModelCalculation(props.calculations[k]);
+            }
+        },
+
+        /**
+         * Is this data model object is a BaseSearch?
+         *
+         * @return {Boolean} Whether this data model object is the root type, BaseSearch.
+         *
+         * @method splunkjs.Service.DataModelObject
+         */
+        isBaseSearch: function() {
+            return !utils.isUndefined(this.baseSearch);
+        },
+
+        /**
+         * Is this data model object is a BaseTransaction?
+         *
+         * @return {Boolean} Whether this data model object is the root type, BaseTransaction.
+         *
+         * @method splunkjs.Service.DataModelObject
+         */
+        isBaseTransaction: function() {
+            return !utils.isUndefined(this.maxSpan);
+        },
+
+        /**
+         * Returns a string array of the names of this data model object's fields.
+         *
+         * @return {Array} An array of strings with the field names of this 
+         * data model object.
+         *
+         * @method splunkjs.Service.DataModelObject
+         */
+        fieldNames: function() {
+            return Object.keys(this.fields);
+        },
+
+        /**
+         * Returns a data model field instance, representing a field on this
+         * data model object. 
+         *
+         * @return {splunkjs.Service.DataModelField|null} The data model field
+         * from this data model object with the specified name, null if it the 
+         * field by that name doesn't exist.
+         *
+         * @method splunkjs.Service.DataModelObject
+         */
+        fieldByName: function(name) {
+            return this.calculatedFields()[name] || this.fields[name] || null;
+        },
+        
+        /**
+         * Returns an array of data model fields from this data model object's
+         * calculations, and this data model object's fields.
+         *
+         * @return {Array} An array of `splunk.Service.DataModelField` objects
+         * which includes this data model object's fields, and the fields from
+         * this data model object's calculations.
+         *
+         * @method splunkjs.Service.DataModelObject
+         */
+        allFields: function() {
+            // merge fields and calculatedFields()
+            var combinedFields = [];
+
+            for (var f in this.fields) {
+                if (this.fields.hasOwnProperty(f)) {
+                    combinedFields[f] = this.fields[f];
+                }
+            }
+
+            var calculatedFields = this.calculatedFields();
+            for (var cf in calculatedFields) {
+                if (calculatedFields.hasOwnProperty(cf)) {
+                    combinedFields[cf] = calculatedFields[cf];
+                }
+            }
+
+            return combinedFields;
+        },
+
+        /**
+         * Returns a string array of the field names of this data model object's
+         * calculations, and the names of this data model object's fields.
+         *
+         * @return {Array} An array of strings with the field names of this 
+         * data model object's calculations, and the names of fields on 
+         * this data model object.
+         *
+         * @method splunkjs.Service.DataModelObject
+         */
+        allFieldNames: function() {
+            return Object.keys(this.allFields());
+        },
+
+        /**
+         * Returns an array of data model fields from this data model object's
+         * calculations.
+         *
+         * @return {Array} An array of `splunk.Service.DataModelField` objects
+         * of the fields from this data model object's calculations.
+         *
+         * @method splunkjs.Service.DataModelObject
+         */
+        calculatedFields: function(){
+            var fields = {};
+            // Iterate over the calculations, get their fields
+            var keys = this.calculationIDs();
+            var calculations = this.calculations;
+            for (var i = 0; i < keys.length; i++) {
+                var calculation = calculations[keys[i]];
+                for (var f = 0; f < calculation.outputFieldNames().length; f++) {
+                    fields[calculation.outputFieldNames()[f]] = calculation.outputFields[calculation.outputFieldNames()[f]];
+                }
+            }
+            return fields;
+        },
+
+        /**
+         * Returns a string array of the field names of this data model object's
+         * calculations.
+         *
+         * @return {Array} An array of strings with the field names of this 
+         * data model object's calculations.
+         *
+         * @method splunkjs.Service.DataModelObject
+         */
+        calculatedFieldNames: function() {
+            return Object.keys(this.calculatedFields());
+        },
+
+        /**
+         * Returns whether this data model object contains the field with the
+         * name passed in the `fieldName` parameter.
+         *
+         * @param {String} fieldName The name of the field to look for.
+         * @return {Boolean} True if this data model contains the field by name.
+         *
+         * @method splunkjs.Service.DataModelObject
+         */
+        hasField: function(fieldName) {
+            return utils.contains(this.allFieldNames(), fieldName);
+        },
+
+        /**
+         * Returns a string array of the IDs of this data model object's
+         * calculations.
+         *
+         * @return {Array} An array of strings with the IDs of this data model
+         * object's calculations.
+         *
+         * @method splunkjs.Service.DataModelObject
+         */
+        calculationIDs: function() {
+            return Object.keys(this.calculations);
+        },
+
+        /**
+         * Local acceleration is tsidx acceleration of a data model object that is handled
+         * manually by a user. You create a job which generates an index, and then use that
+         * index in your pivots on the data model object.
+         *
+         * The namespace created by the job is 'sid={sid}' where {sid} is the job's sid. You
+         * would use it in another job by starting your search query with `| tstats ... from sid={sid} | ...`
+         *
+         * The tsidx index created by this job is deleted when the job is garbage collected by Splunk.
+         *
+         * It is the user's responsibility to manage this job, including cancelling it.
+         *
+         * @example
+         *
+         *      service.dataModels().fetch(function(err, dataModels) {
+         *          var object = dataModels.item("some_data_model").objectByName("some_object");
+         *          object.createLocalAccelerationJob("-1d", function(err, accelerationJob) {
+         *              console.log("The job has name:", accelerationJob.name);
+         *          });
+         *      });
+         *
+         * @param {String} earliestTime A time modifier (e.g., "-2w") setting the earliest time to index.
+         * @param {Function} callback A function to call with the search job: `(err, accelerationJob)`.
+         *
+         * @method splunkjs.Service.DataModelObject
+         */
+        createLocalAccelerationJob: function(earliestTime, callback) {
+            // If earliestTime parameter is not specified, then set callback to its value
+            if (!callback && utils.isFunction(earliestTime)) {
+                callback = earliestTime;
+                earliestTime = undefined;
+            }
+
+            var query = "| datamodel \"" + this.dataModel.name + "\" " + this.name + " search | tscollect";
+            var args = earliestTime ? {earliest_time: earliestTime} : {};
+
+            this.dataModel.service.search(query, args, callback);
+        },
+
+        /**
+         * Start a search job that applies querySuffix to all the events in this data model object.
+         *
+         * @example
+         *
+         *      service.dataModels().fetch(function(err, dataModels) {
+         *          var object = dataModels.item("internal_audit_logs").objectByName("searches");
+         *          object.startSearch({}, "| head 5", function(err, job) {
+         *              console.log("The job has name:", job.name);
+         *          });
+         *      });
+         *
+         * @param {Object} params A dictionary of properties for the search job. For a list of available parameters, see <a href="http://dev.splunk.com/view/SP-CAAAEFA#searchjobparams" target="_blank">Search job parameters</a> on Splunk Developer Portal.
+         *        **Note:** This method throws an error if the `exec_mode=oneshot` parameter is passed in with the properties dictionary.
+         * @param {String} querySuffix A search query, starting with a '|' that will be appended to the command to fetch the contents of this data model object (e.g., "| head 3").
+         * @param {Function} callback A function to call with the search job: `(err, job)`.
+         *
+         * @method splunkjs.Service.DataModelObject
+         */
+        startSearch: function(params, querySuffix, callback) {
+            var query = "| datamodel " + this.dataModel.name + " " + this.name + " search";
+            // Prepend a space to the querySuffix, or set it to an empty string if null or undefined
+            querySuffix = (querySuffix) ? (" " + querySuffix) : ("");
+            this.dataModel.service.search(query + querySuffix, params, callback);
+        },
+        
+        /**
+         * Returns the data model object this one inherits from if it is a user defined,
+         * otherwise return null.
+         *
+         * @return {splunkjs.Service.DataModelObject|null} This data model object's parent
+         *     or null if this is not a user defined data model object.
+         *
+         * @method splunkjs.Service.DataModelObject
+         */
+        parent: function() {
+            return this.dataModel.objectByName(this.parentName);
+        },
+        
+        /**
+         * Returns a new Pivot Specification, accepts no parameters.
+         *
+         * @return {splunkjs.Service.PivotSpecification} A new pivot specification.
+         *
+         * @method splunkjs.Service.DataModelObject
+         */
+        createPivotSpecification: function() {
+            // Pass in this DataModelObject to create a PivotSpecification
+            return new root.PivotSpecification(this);
+        }
+    });
+    
+    /**
+     * Represents a data model on the server. Data models
+     * contain `DataModelObject` instances, which specify structured
+     * views on Splunk data.
+     *
+     * @endpoint datamodel/model/{name}
+     * @class splunkjs.Service.DataModel
+     * @extends splunkjs.Service.Entity
+     */
+    root.DataModel = Service.Entity.extend({
+        /**
+         * Retrieves the REST endpoint path for this resource (with no namespace).
+         *
+         * @method splunkjs.Service.DataModel
+         */
+        path: function() {
+            return Paths.dataModels + "/" + encodeURIComponent(this.name);
+        },
+
+        /**
+         * Constructor for `splunkjs.Service.DataModel`.
+         *
+         * @constructor
+         * @param {splunkjs.Service} service A `Service` instance.
+         * @param {String} name The name for the new data model.
+         * @param {Object} namespace (Optional) namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
+         * @param {Object} props Properties of this data model:
+         *    - `acceleration` (_string_): A JSON object with an `enabled` key, representing if acceleration is enabled or not.
+         *    - `concise` (_string_): Indicates whether to list a concise JSON description of the data model, should always be "0".
+         *    - `description` (_string_): The JSON describing the data model.
+         *    - `displayName` (_string_): The name displayed for the data model in Splunk Web.
+         *
+         * @method splunkjs.Service.DataModel
+         */
+        init: function(service, name, namespace, props) {
+            // If not given a 4th arg, assume the namespace was omitted
+            if (!props) {
+                props = namespace;
+                namespace = {};
+            }
+
+            this.name = name;
+            this._super(service, this.path(), namespace);
+
+            this.acceleration = JSON.parse(props.content.acceleration) || {};
+            if (this.acceleration.hasOwnProperty("enabled")) {
+                // convert the enabled property to a boolean
+                this.acceleration.enabled = !!this.acceleration.enabled;
+            }
+
+            // concise=0 (false) forces the server to return all details of the newly created data model.
+            // we do not want a summary of this data model
+            if (!props.hasOwnProperty("concise") || utils.isUndefined(props.concise)) {
+                this.concise = "0";
+            }
+
+            var dataModelDefinition = JSON.parse(props.content.description);
+
+            this.objectNames = dataModelDefinition.objectNameList;
+            this.displayName = dataModelDefinition.displayName;
+            this.description = dataModelDefinition.description;
+
+            // Parse the objects for this data model           
+            var objs = dataModelDefinition.objects;
+            this.objects = [];
+            for (var i = 0; i < objs.length; i++) {
+                this.objects.push(new root.DataModelObject(objs[i], this));
+            }
+
+            this.remove = utils.bind(this, this.remove);
+            this.update = utils.bind(this, this.update);
+        },
+
+        /**
+         * Returns a boolean indicating whether acceleration is enabled or not.
+         *
+         * @return {Boolean} true if acceleration is enabled, false otherwise.
+         *
+         * @method splunkjs.Service.DataModel
+         */
+        isAccelerated: function() {
+            return !!this.acceleration.enabled;
+        },
+
+        /**
+         * Returns a data model object from this data model
+         * with the specified name if it exists, null otherwise.
+         *
+         * @return {Object|null} a data model object.
+         *
+         * @method splunkjs.Service.DataModel
+         */
+        objectByName: function(name) {
+            for (var i = 0; i < this.objects.length; i++) {
+                if (this.objects[i].name === name) {
+                    return this.objects[i];
+                }
+            }
+            return null;
+        },
+
+        /**
+         * Returns a boolean of whether this exists in this data model or not.
+         *
+         * @return {Boolean} Returns true if this data model has object with specified name, false otherwise.
+         *
+         * @method splunkjs.Service.DataModel
+         */
+        hasObject: function(name) {
+            return utils.contains(this.objectNames, name);
+        },
+
+        /**
+         * Updates the data model on the server, used to update acceleration settings.
+         *
+         * @param {Object} props A dictionary of properties to update the object with:
+         *     - `acceleration` (_object_): The acceleration settings for the data model.
+         *         Valid keys are: `enabled`, `earliestTime`, `cronSchedule`.
+         *         Any keys not set will be pulled from the acceleration settings already
+         *         set on this data model.
+         * @param {Function} callback A function to call when the data model is updated: `(err, dataModel)`.
+         *
+         * @method splunkjs.Service.DataModel
+         */
+        update: function(props, callback) {
+            if (utils.isUndefined(callback)) {
+                callback = props;
+                props = {};
+            }
+            callback = callback || function() {};
+
+            if (!props) {
+                callback(new Error("Must specify a props argument to update a data model."));
+                return; // Exit if props isn't set, to avoid calling the callback twice.
+            }
+            if (props.hasOwnProperty("name")) {
+                callback(new Error("Cannot set 'name' field in 'update'"), this);
+                return; // Exit if the name is set, to avoid calling the callback twice.
+            }
+
+            var updatedProps = {
+                acceleration: JSON.stringify({
+                    enabled: props.accceleration && props.acceleration.enabled || this.acceleration.enabled,
+                    earliest_time: props.accceleration && props.acceleration.earliestTime || this.acceleration.earliestTime,
+                    cron_schedule: props.accceleration && props.acceleration.cronSchedule || this.acceleration.cronSchedule
+                })
+            };
+
+            var that = this;
+            return this.post("", updatedProps, function(err, response) {
+                if (err) {
+                    callback(err, that);
+                }
+                else {
+                    var dataModelNamespace = utils.namespaceFromProperties(response.data.entry[0]);
+                    callback(null, new root.DataModel(that.service, response.data.entry[0].name, dataModelNamespace, response.data.entry[0]));
+                }
+            });
+        }
+    });
+    
+    /**
+     * Represents a collection of data models. You can create and
+     * list data models using this collection container, or
+     * get a specific data model.
+     *
+     * @endpoint datamodel/model
+     * @class splunkjs.Service.DataModels
+     * @extends splunkjs.Service.Collection
+     */
+    root.DataModels = Service.Collection.extend({
+        /**
+         * Retrieves the REST endpoint path for this resource (with no namespace).
+         *
+         * @method splunkjs.Service.DataModels
+         */
+        path: function() {
+            return Paths.dataModels;
+        },
+
+        /**
+         * Constructor for `splunkjs.Service.DataModels`.
+         * 
+         * @constructor
+         * @param {splunkjs.Service} service A `Service` instance.
+         * @param {Object} namespace (Optional) namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
+         * 
+         * @method splunkjs.Service.DataModels
+         */
+        init: function(service, namespace) {
+            namespace = namespace || {};
+            this._super(service, this.path(), namespace);
+            this.create = utils.bind(this, this.create);
+        },
+
+        /**
+         * Creates a new `DataModel` object with the given name and parameters.
+         * It is preferred that you create data models through the Splunk
+         * Enterprise with a browser.
+         *
+         * @param {String} name The name of the data model to create. If it contains spaces they will be replaced
+         *     with underscores.
+         * @param {Object} params A dictionary of properties.
+         * @param {Function} callback A function to call with the new `DataModel` object: `(err, createdDataModel)`.
+         *
+         * @method splunkjs.Service.DataModels
+         */
+        create: function(name, params, callback) {
+            // If we get (name, callback) instead of (name, params, callback)
+            // do the necessary variable swap
+            if (utils.isFunction(params) && !callback) {
+                callback = params;
+                params = {};
+            }
+
+            params = params || {};
+            callback = callback || function(){};
+            name = name.replace(/ /g, "_");
+
+            var that = this;
+            return this.post("", {name: name, description: JSON.stringify(params)}, function(err, response) {
+                if (err) {
+                    callback(err);
+                }
+                else {
+                    var dataModel = new root.DataModel(that.service, response.data.entry[0].name, that.namespace, response.data.entry[0]);
+                    callback(null, dataModel);
+                }
+            });
+        },
+
+        /**
+         * Constructor for `splunkjs.Service.DataModel`.
+         *
+         * @constructor
+         * @param {Object} props A dictionary of properties used to create a 
+         * `DataModel` instance.
+         * @return {splunkjs.Service.DataModel} A new `DataModel` instance.
+         *
+         * @method splunkjs.Service.DataModels
+         */
+        instantiateEntity: function(props) {
+            var entityNamespace = utils.namespaceFromProperties(props);
+            return new root.DataModel(this.service, props.name, entityNamespace, props);
+        }
+    });
+
     /*!*/
     // Iterates over an endpoint's results.
     root.PaginatedEndpointIterator = Class.extend({
@@ -6617,7 +8414,7 @@ module.exports = ModularInputs;
 });
 
 require.define("/lib/modularinputs/utils.js", function (require, module, exports, __dirname, __filename) {
-
+/*!*/
 // Copyright 2014 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -6633,8 +8430,6 @@ require.define("/lib/modularinputs/utils.js", function (require, module, exports
 // under the License.
 
 var utils   = require('../utils'); // Get all of the existing utils
-var fs      = require('fs');
-var path    = require('path');
 
 /**
  * Parse the parameters from an `InputDefinition` or `ValidationDefinition`.
@@ -6716,34 +8511,12 @@ utils.parseXMLData = function(parentNode, childNodeTag) {
     return data;
 };
 
-/**
- * Read files in a way that makes unit tests work as well.
- *
- * @example
- *
- *      // To read `splunk-sdk-javascript/tests/modularinput/data/validation.xml`  
- *      // from    `splunk-sdk-javascript/tests/modularinput/test_validation_definition.js`
- *      var fileContents = utils.readFile(__filename, "../data/validation.xml");
- *      
- * @param {String} __filename of the script calling this function.
- * @param {String} a path relative to the script calling this function.
- * @return {String} The contents of the file.
- */
-utils.readFile = function(filename, relativePath) {
-    return fs.readFileSync(path.resolve(filename, relativePath)).toString();
-};
-
 module.exports = utils;
 
 });
 
-require.define("fs", function (require, module, exports, __dirname, __filename) {
-// nothing to see here... no file methods for the browser
-
-});
-
 require.define("/lib/modularinputs/validationdefinition.js", function (require, module, exports, __dirname, __filename) {
-
+/*!*/
 // Copyright 2014 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -6802,7 +8575,7 @@ require.define("/lib/modularinputs/validationdefinition.js", function (require, 
      *
      * @param {String} str A string containing XML to parse.
      *
-     * @class splunkjs.ModularInputs.ValidationDefinition
+     * @function splunkjs.ModularInputs.ValidationDefinition
      */
     ValidationDefinition.parse = function(str) {
         var definition = new ValidationDefinition();
@@ -9811,7 +11584,7 @@ exports.DEFAULT_PARSER = DEFAULT_PARSER;
 });
 
 require.define("/lib/modularinputs/inputdefinition.js", function (require, module, exports, __dirname, __filename) {
-
+/*!*/
 // Copyright 2014 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -9884,7 +11657,7 @@ require.define("/lib/modularinputs/inputdefinition.js", function (require, modul
      *
      * @param {String} str A string containing XML to parse.
      * @return {Object} An InputDefiniion object.
-     * @class splunkjs.ModularInputs.InputDefinition
+     * @function splunkjs.ModularInputs.InputDefinition
      */
     InputDefinition.parse = function(str) {
         var definition = new InputDefinition();
@@ -9906,7 +11679,7 @@ require.define("/lib/modularinputs/inputdefinition.js", function (require, modul
 });
 
 require.define("/lib/modularinputs/event.js", function (require, module, exports, __dirname, __filename) {
-
+/*!*/
 // Copyright 2014 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -9993,7 +11766,7 @@ require.define("/lib/modularinputs/event.js", function (require, module, exports
     *
     * @param {Anything} time The unformatted time in seconds or milliseconds, typically a String, Number, or `Date` Object.
     * @return {Number} The formatted time in seconds.
-    * @class splunkjs.ModularInputs.Event
+    * @function splunkjs.ModularInputs.Event
     */
     Event.formatTime = function(time) {
         var cleanTime;
@@ -10050,7 +11823,7 @@ require.define("/lib/modularinputs/event.js", function (require, module, exports
     * an error will be thrown.
     *
     * @param {Object} stream A `Stream` object to write this `Event` to.
-    * @class splunkjs.ModularInputs.Event
+    * @function splunkjs.ModularInputs.Event
     */
     Event.prototype._writeTo = function(stream) {
         if (!this.data) {
@@ -10099,7 +11872,7 @@ require.define("/lib/modularinputs/event.js", function (require, module, exports
 });
 
 require.define("/lib/modularinputs/eventwriter.js", function (require, module, exports, __dirname, __filename) {
-
+/*!*/
 // Copyright 2014 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -10143,7 +11916,7 @@ require.define("/lib/modularinputs/eventwriter.js", function (require, module, e
     * in the constructor.
     *
     * @param {Object} event An `Event` Object.
-    * @class splunkjs.ModularInputs.EventWriter
+    * @function splunkjs.ModularInputs.EventWriter
     */
     EventWriter.prototype.writeEvent = function(event) {        
         if (!this._headerWritten) {
@@ -10173,7 +11946,7 @@ require.define("/lib/modularinputs/eventwriter.js", function (require, module, e
     * while writing the string created from `xmlDocument`.
     *
     * @param {Object} xmlDocument An `Elementtree` Object representing an XML document.
-    * @class splunkjs.ModularInputs.EventWriter
+    * @function splunkjs.ModularInputs.EventWriter
     */
     EventWriter.prototype.writeXMLDocument = function(xmlDocument) {
         var xmlString = ET.tostring(xmlDocument, {"xml_declaration": false});
@@ -10183,7 +11956,7 @@ require.define("/lib/modularinputs/eventwriter.js", function (require, module, e
     /**
     * Writes the closing </stream> tag to make the XML well formed.
     *
-    * @class splunkjs.ModularInputs.EventWriter
+    * @function splunkjs.ModularInputs.EventWriter
     */
     EventWriter.prototype.close = function() {
         this._out.write("</stream>");
@@ -10195,7 +11968,7 @@ require.define("/lib/modularinputs/eventwriter.js", function (require, module, e
 });
 
 require.define("/lib/modularinputs/logger.js", function (require, module, exports, __dirname, __filename) {
-
+/*!*/
 // Copyright 2014 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -10248,7 +12021,7 @@ require.define("/lib/modularinputs/logger.js", function (require, module, export
      * @param {String} name The name of this modular input.
      * @param {String} message The message to log.
      * @param {Object} stream (Optional) A stream to write log messages to, defaults to process.stderr.
-     * @class splunkjs.ModularInputs.Logger
+     * @function splunkjs.ModularInputs.Logger
      */
     root.debug = function (name, message, stream) {
         try {
@@ -10266,7 +12039,7 @@ require.define("/lib/modularinputs/logger.js", function (require, module, export
      * @param {String} name The name of this modular input.
      * @param {String} message The message to log.
      * @param {Object} stream (Optional) A stream to write log messages to, defaults to process.stderr.
-     * @class splunkjs.ModularInputs.Logger
+     * @function splunkjs.ModularInputs.Logger
      */
     root.info = function (name, message, stream) {
         try {
@@ -10284,7 +12057,7 @@ require.define("/lib/modularinputs/logger.js", function (require, module, export
      * @param {String} name The name of this modular input.
      * @param {String} message The message to log.
      * @param {Object} stream (Optional) A stream to write log messages to, defaults to process.stderr.
-     * @class splunkjs.ModularInputs.Logger
+     * @function splunkjs.ModularInputs.Logger
      */
     root.warn = function (name, message, stream) {
         try {
@@ -10302,7 +12075,7 @@ require.define("/lib/modularinputs/logger.js", function (require, module, export
      * @param {String} name The name of this modular input.
      * @param {String} message The message to log.
      * @param {Object} stream (Optional) A stream to write log messages to, defaults to process.stderr.
-     * @class splunkjs.ModularInputs.Logger
+     * @function splunkjs.ModularInputs.Logger
      */
     root.error = function (name, message, stream) {
         try {
@@ -10320,7 +12093,7 @@ require.define("/lib/modularinputs/logger.js", function (require, module, export
      * @param {String} name The name of this modular input.
      * @param {String} message The message to log.
      * @param {Object} stream (Optional) A stream to write log messages to, defaults to process.stderr.
-     * @class splunkjs.ModularInputs.Logger
+     * @function splunkjs.ModularInputs.Logger
      */
     root.fatal = function (name, message, stream) {
         try {
@@ -10337,7 +12110,7 @@ require.define("/lib/modularinputs/logger.js", function (require, module, export
 });
 
 require.define("/lib/modularinputs/argument.js", function (require, module, exports, __dirname, __filename) {
-
+/*!*/
 // Copyright 2014 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -10409,7 +12182,7 @@ require.define("/lib/modularinputs/argument.js", function (require, module, expo
      *
      * @param {Object} parent An elementtree element object to be the parent of a new <arg> subelement
      * @return {Object} An elementtree element object representing this argument.
-     * @class splunkjs.ModularInputs.Argument
+     * @function splunkjs.ModularInputs.Argument
      */
     Argument.prototype.addToDocument = function (parent) {
         var arg = ET.SubElement(parent, "arg");
@@ -10442,7 +12215,7 @@ require.define("/lib/modularinputs/argument.js", function (require, module, expo
 });
 
 require.define("/lib/modularinputs/scheme.js", function (require, module, exports, __dirname, __filename) {
-
+/*!*/
 // Copyright 2014 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -10506,7 +12279,7 @@ require.define("/lib/modularinputs/scheme.js", function (require, module, export
      * Add the provided argument, `arg`, to the `this.arguments` Array.
      *
      * @param {Object} arg An Argument object to add to this Scheme's argument list.
-     * @class splunkjs.ModularInputs.Scheme
+     * @function splunkjs.ModularInputs.Scheme
      */
     Scheme.prototype.addArgument = function (arg) {
         if (arg) {
@@ -10518,7 +12291,7 @@ require.define("/lib/modularinputs/scheme.js", function (require, module, export
      * Creates an elementtree Element representing this Scheme, then returns it.
      *
      * @return {Object} An elementtree Element object representing this Scheme.
-     * @class splunkjs.ModularInputs.Scheme
+     * @function splunkjs.ModularInputs.Scheme
      */
     Scheme.prototype.toXML = function () {
         var root = ET.Element("scheme");
@@ -10557,7 +12330,7 @@ require.define("/lib/modularinputs/scheme.js", function (require, module, export
 });
 
 require.define("/lib/modularinputs/modularinput.js", function (require, module, exports, __dirname, __filename) {
-
+/*!*/
 // Copyright 2014 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -10608,7 +12381,7 @@ require.define("/lib/modularinputs/modularinput.js", function (require, module, 
      * @param {Object} eventWriter An `EventWriter` object for writing event.
      * @param {Object} inputStream A `Stream` object for reading inputs.
      * @param {Function} callback The function to call after running this script: `(err, status)`.
-     * @class splunkjs.ModularInputs.ModularInput
+     * @function splunkjs.ModularInputs.ModularInput
      */
     ModularInput.runScript = function(exports, args, eventWriter, inputStream, callback) {
         // Default empty functions for life cycle events, this is mostly used for the unit tests
@@ -10771,7 +12544,7 @@ require.define("/lib/modularinputs/modularinput.js", function (require, module, 
      * available as soon as the `ModularInput.streamEvents` function is called.
      *
      * @return {Object} A `Splunkjs.Service` Object, or null if you call this function before the `ModularInput.streamEvents` function is called.
-     * @class splunkjs.ModularInputs.ModularInput
+     * @function splunkjs.ModularInputs.ModularInput
      */
     ModularInput.service = function() {
         if (this._service) {
@@ -10808,7 +12581,7 @@ require.define("/lib/modularinputs/modularinput.js", function (require, module, 
      * Runs before streaming begins.
      *
      * @param {Function} done The function to call when done: `(err)`.
-     * @class splunkjs.ModularInputs.ModularInput
+     * @function splunkjs.ModularInputs.ModularInput
      */
     ModularInput.prototype.setup = function(done) {
         done();
@@ -10819,7 +12592,7 @@ require.define("/lib/modularinputs/modularinput.js", function (require, module, 
      * @param {String} name The name of this modular input.
      * @param {Object} definition An InputDefinition object.
      * @param {Function} done The function to call when done: `(err)`.
-     * @class splunkjs.ModularInputs.ModularInput
+     * @function splunkjs.ModularInputs.ModularInput
      */
     ModularInput.prototype.start = function(name, definition, done) {
         done();
@@ -10830,7 +12603,7 @@ require.define("/lib/modularinputs/modularinput.js", function (require, module, 
      * @param {String} name The name of this modular input.
      * @param {Object} definition An InputDefinition object.
      * @param {Function} done The function to call when done: `(err)`.
-     * @class splunkjs.ModularInputs.ModularInput
+     * @function splunkjs.ModularInputs.ModularInput
      */
     ModularInput.prototype.end = function(name, definition, done) {
         done();
@@ -10839,7 +12612,7 @@ require.define("/lib/modularinputs/modularinput.js", function (require, module, 
      * Runs after all streaming is done for all inputs definitions.
      *
      * @param {Function} done The function to call when done: `(err)`.
-     * @class splunkjs.ModularInputs.ModularInput
+     * @function splunkjs.ModularInputs.ModularInput
      */
     ModularInput.prototype.teardown = function(done) {
         done();
@@ -13218,6 +14991,70 @@ exports.setup = function(svc) {
             req.abort();
         },
 
+        "Callback#timeout default test": function(test){
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    version: svc.version,
+                    version: svc.version
+                }
+            );
+
+            test.strictEqual(0, service.timeout);
+            service.request("search/jobs", "GET", {count:1}, null, null, {"X-TestHeader":1}, function(err, res){
+                test.ok(res);
+                test.done();
+            });
+        },
+
+        "Callback#timeout timed test": function(test){
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    version: svc.version,
+                    timeout: 10000
+                }
+            );
+
+            test.strictEqual(service.timeout, 10000);
+            service.request("search/jobs", "GET", {count:1}, null, null, {"X-TestHeader":1}, function(err, res){
+                test.ok(res);
+                test.done();
+            });
+        },
+
+        "Callback#timeout fail": function(test){
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    version: svc.version,
+                    timeout: 3000
+                }
+            );
+
+            // Having a timeout of 3 seconds, a max_time of 5 seconds with a blocking mode and searching realtime should involve a timeout error.
+            service.get("search/jobs/export", {search:"search index=_internal", timeout:2, max_time:5, search_mode:"realtime", exec_mode:"blocking"}, function(err, res){
+                test.ok(err);
+                test.strictEqual(err.status, 600);
+                test.done();
+            });
+        },
+
         "Cancel test search": function(test) {
             // Here, the search created for several of the previous tests is terminated, it is no longer necessary
             var endpoint = "search/jobs/DELETEME_JSSDK_UNITTEST/control";
@@ -13419,7 +15256,7 @@ require.define("/examples/node/cmdline.js", function (require, module, exports, 
         var defaults = {};
         for(var i = 0; i < DEFAULTS_PATHS.length; i++) {
             var defaultsPath = path.join(DEFAULTS_PATHS[i], ".splunkrc");
-            if (path.existsSync(defaultsPath)) {
+            if (fs.existsSync(defaultsPath)) {
                 readDefaultsFile(defaultsPath, defaults);
             }
         }
@@ -13677,17 +15514,40 @@ exports.setup = function(svc, loggedOutSvc) {
                         },
                         function(savedSearches, done) {  
                             // Ensure that we can't get the item from the generic
-                            // namespace without specifying a namespace
-                            var thrown = false;
+                            // namespace without specifying a namespace                            
                             try {
-                                var entity = savedSearches_1.item(searchName);
+                                savedSearches_1.item(searchName);
+                                test.ok(false);
                             }
-                            catch(ex) {
-                                thrown = true;
+                            catch(err) {
+                                test.ok(err);
+                            }                            
+
+                            // Ensure that we can't get the item using wildcard namespaces.
+                            try{
+                                savedSearches_1.item(searchName, {owner:'-'});
+                                test.ok(false);
                             }
-                            
-                            test.ok(thrown);
-                                                    
+                            catch(err){
+                                test.ok(err);
+                            }
+
+                            try{
+                                savedSearches_1.item(searchName, {app:'-'});
+                                test.ok(false);
+                            }
+                            catch(err){
+                                test.ok(err);
+                            }
+
+                            try{
+                                savedSearches_1.item(searchName, {app:'-', owner:'-'});
+                                test.ok(false);
+                            }      
+                            catch(err){
+                                test.ok(err);
+                            }
+
                             // Ensure we get the right entities from the -/1 namespace when we
                             // specify it.  
                             var entity11 = savedSearches_1.item(searchName, that.namespace11);
@@ -13769,18 +15629,31 @@ exports.setup = function(svc, loggedOutSvc) {
             },
             
             "Callback#Create+abort job": function(test) {
-                var sid = getNextId();
-                var options = {id: sid};
-                var jobs = this.service.jobs({app: "xml2json"});
-                var req = jobs.oneshotSearch('search index=_internal |  head 1 | sleep 10', options, function(err, job) {   
-                    test.ok(err);
-                    test.ok(!job);
-                    test.strictEqual(err.error, "abort");
+                var service = this.service;
+                Async.chain([
+                    function(done){
+                        var app_name = process.env.SPLUNK_HOME + '/etc/apps/sdk-app-collection/build/sleep_command.tar';
+                        service.post("apps/appinstall", {update:1, name:app_name}, done);
+                    },
+                    function(done){
+                        var sid = getNextId();
+                        var options = {id: sid};
+                        var jobs = service.jobs({app: "sdk-app-collection"});
+                        var req = jobs.oneshotSearch('search index=_internal | head 1 | sleep 10', options, function(err, job) {
+                            test.ok(err);
+                            test.ok(!job);
+                            test.strictEqual(err.error, "abort");
+                            test.done();
+                        });
+
+                        Async.sleep(1000, function(){
+                            req.abort();
+                        });                     
+                    }
+                ],
+                function(err){
+                    test.ok(!err);
                     test.done();
-                }); 
-                
-                splunkjs.Async.sleep(1000, function() {
-                    req.abort();
                 });
             },
 
@@ -14010,7 +15883,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var that = this;
                 var sid = getNextId();
                 
-                var service = this.service.specialize("nobody", "xml2json");
+                var service = this.service.specialize("nobody", "sdk-app-collection");
                 
                 Async.chain([
                         function(done) {
@@ -14038,7 +15911,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var that = this;
                 var sid = getNextId();
                 
-                var service = this.service.specialize("nobody", "xml2json");
+                var service = this.service.specialize("nobody", "sdk-app-collection");
                 
                 Async.chain([
                         function(done) {
@@ -14126,7 +15999,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var originalPriority = 0;
                 var that = this;
                 
-                var service = this.service.specialize("nobody", "xml2json");
+                var service = this.service.specialize("nobody", "sdk-app-collection");
                 
                 Async.chain([
                         function(done) {
@@ -14376,11 +16249,11 @@ exports.setup = function(svc, loggedOutSvc) {
             "Callback#Service oneshot search": function(test) {
                 var sid = getNextId();
                 var that = this;
-                var originalTime = "";
+                var namespace = {owner: "admin", app: "search"};
                 
                 Async.chain([
                         function(done) {
-                            that.service.oneshotSearch('search index=_internal | head 1 | stats count', {id: sid}, done);
+                            that.service.oneshotSearch('search index=_internal | head 1 | stats count', {id: sid}, namespace, done);
                         },
                         function(results, done) {
                             test.ok(results);
@@ -14391,7 +16264,9 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual(results.rows.length, 1);
                             test.strictEqual(results.rows[0].length, 1);
                             test.strictEqual(results.rows[0][0], "1");
-                            
+                            test.ok(results.messages[1].text.indexOf('owner="admin"'));
+                            test.ok(results.messages[1].text.indexOf('app="search"'));
+
                             done();
                         }
                     ],
@@ -14406,13 +16281,15 @@ exports.setup = function(svc, loggedOutSvc) {
                 var sid = getNextId();
                 var service = this.service;
                 var that = this;
+                var namespace = {owner: "admin", app: "search"};
                 
                 Async.chain([
                         function(done) {
-                            that.service.search('search index=_internal | head 1 | stats count', {id: sid}, done);
+                            that.service.search('search index=_internal | head 1 | stats count', {id: sid}, namespace, done);
                         },
                         function(job, done) {
                             test.strictEqual(job.sid, sid);
+                            test.strictEqual(job.namespace, namespace);
                             tutils.pollUntil(
                                 job,
                                 function(j) {
@@ -14592,7 +16469,2186 @@ exports.setup = function(svc, loggedOutSvc) {
                 }
             }
         },
-        
+
+        "Data Model tests": {
+            setUp: function(done) {
+                this.service = svc;
+                this.dataModels = svc.dataModels();
+                done();
+            },
+
+            "Callback#DataModels - fetch a built-in data model": function(test) {                
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            var dm = dataModels.item("internal_audit_logs");
+                            // Check for the 3 objects we expect
+                            test.ok(dm.objectByName("Audit"));
+                            test.ok(dm.objectByName("searches"));
+                            test.ok(dm.objectByName("modify"));
+
+                            // Check for an object that shouldn't exist
+                            test.strictEqual(null, dm.objectByName(getNextId()));
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#DataModels - create & delete an empty data model": function(test) {
+                var args = JSON.parse(utils.readFile(__filename, "../data/empty_data_model.json"));
+                var name = "delete-me-" + getNextId();
+
+                var initialSize;
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            initialSize = dataModels.list().length;
+                            dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            that.dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            // Make sure we have 1 more data model than we started with
+                            test.strictEqual(initialSize + 1, dataModels.list().length);
+                            // Delete the data model we just created, by name.
+                            dataModels.item(name).remove(done);
+                        },
+                        function(done) {
+                            that.dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            // Make sure we have as many data models as we started with
+                            test.strictEqual(initialSize, dataModels.list().length);
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#DataModels - create a data model with spaces in the name, which are swapped for -'s": function(test) {
+                var args = JSON.parse(utils.readFile(__filename, "../data/empty_data_model.json"));
+                var name = "delete-me- " + getNextId();
+
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            test.strictEqual(name.replace(" ", "_"), dataModel.name);
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#DataModels - create a data model with 0 objects": function(test) {
+                var args = JSON.parse(utils.readFile(__filename, "../data/empty_data_model.json"));
+                var name = "delete-me-" + getNextId();
+
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            // Check for 0 objects before fetch
+                            test.strictEqual(0, dataModel.objects.length);
+                            that.dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            // Check for 0 objects after fetch
+                            test.strictEqual(0, dataModels.item(name).objects.length);
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#DataModels - create a data model with 1 search object": function(test) {
+                var dataModels = this.service.dataModels();
+
+                var args = JSON.parse(utils.readFile(__filename, "../data/object_with_one_search.json"));
+                var name = "delete-me-" + getNextId();
+
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            // Check for 1 object before fetch
+                            test.strictEqual(1, dataModel.objects.length);
+                            that.dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            // Check for 1 object after fetch
+                            test.strictEqual(1, dataModels.item(name).objects.length);
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#DataModels - create a data model with 2 search objects": function(test) {
+                var args = JSON.parse(utils.readFile(__filename, "../data/object_with_two_searches.json"));
+                var name = "delete-me-" + getNextId();
+
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            // Check for 2 objects before fetch
+                            test.strictEqual(2, dataModel.objects.length);
+                            that.dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            // Check for 2 objects after fetch
+                            test.strictEqual(2, dataModels.item(name).objects.length);
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#DataModels - data model objects are created correctly": function(test) {
+                var args = JSON.parse(utils.readFile(__filename, "../data/object_with_two_searches.json"));
+                var name = "delete-me-" + getNextId();
+
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            test.ok(dataModel.hasObject("search1"));
+                            test.ok(dataModel.hasObject("search2"));
+                            
+                            var search1 = dataModel.objectByName("search1");
+                            test.ok(search1);
+                            test.strictEqual("‡Øµ‡Ø±‡Ø∞‡ØØ - search 1", search1.displayName);
+
+                            var search2 = dataModel.objectByName("search2");
+                            test.ok(search2);
+                            test.strictEqual("‡Øµ‡Ø±‡Ø∞‡ØØ - search 2", search2.displayName);
+
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#DataModels - data model handles unicode characters": function(test) {
+                var args = JSON.parse(utils.readFile(__filename, "../data/model_with_unicode_headers.json"));
+                var name = "delete-me-" + getNextId();
+
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            test.strictEqual(name, dataModel.name);
+                            test.strictEqual("·Ä©·öô‡Øµ", dataModel.displayName);
+                            test.strictEqual("‡Øµ‡Ø±‡Ø∞‡ØØ", dataModel.description);
+
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#DataModels - create data model with empty headers": function(test) {
+                var args = JSON.parse(utils.readFile(__filename, "../data/model_with_empty_headers.json"));
+                var name = "delete-me-" + getNextId();
+
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            test.strictEqual(name, dataModel.name);
+                            test.strictEqual("", dataModel.displayName);
+                            test.strictEqual("", dataModel.description);
+
+                            // Make sure we're not getting a summary of the data model
+                            test.strictEqual("0", dataModel.concise);
+
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#DataModels - test acceleration settings": function(test) {
+                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
+                var name = "delete-me-" + getNextId();
+
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {                            
+                            dataModel.acceleration.enabled = true;
+                            dataModel.acceleration.earliestTime = "-2mon";
+                            dataModel.acceleration.cronSchedule = "5/* * * * *";
+
+                            test.strictEqual(true, dataModel.isAccelerated());
+                            test.strictEqual(true, dataModel.acceleration.enabled);
+                            test.strictEqual("-2mon", dataModel.acceleration.earliestTime);
+                            test.strictEqual("5/* * * * *", dataModel.acceleration.cronSchedule);
+                            test.same({enabled: true, earliestTime: "-2mon", cronSchedule: "5/* * * * *"}, dataModel.acceleration);
+
+                            dataModel.acceleration.enabled = false;
+                            dataModel.acceleration.earliestTime = "-1mon";
+                            dataModel.acceleration.cronSchedule = "* * * * *";
+
+                            test.strictEqual(false, dataModel.isAccelerated());
+                            test.strictEqual(false, dataModel.acceleration.enabled);
+                            test.strictEqual("-1mon", dataModel.acceleration.earliestTime);
+                            test.strictEqual("* * * * *", dataModel.acceleration.cronSchedule);
+                            test.same({enabled: false, earliestTime: "-1mon", cronSchedule: "* * * * *"}, dataModel.acceleration);
+
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#DataModels - test data model object metadata": function(test) {
+                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
+                var name = "delete-me-" + getNextId();
+
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            var obj = dataModel.objectByName("event1");
+                            test.ok(obj);
+
+                            test.strictEqual("event1 ·Ä©·öô", obj.displayName);
+                            test.strictEqual("event1", obj.name);
+                            test.same(dataModel, obj.dataModel);
+
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#DataModels - test data model object parent": function(test) {
+                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
+                var name = "delete-me-" + getNextId();
+
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            var obj = dataModel.objectByName("event1");
+                            test.ok(obj);
+                            test.ok(!obj.parent());
+
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#DataModels - test data model object lineage": function(test) {
+                var args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
+                var name = "delete-me-" + getNextId();
+
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            var obj = dataModel.objectByName("level_0");
+                            test.ok(obj);
+                            test.strictEqual(1, obj.lineage.length);
+                            test.strictEqual("level_0", obj.lineage[0]);
+                            test.strictEqual("BaseEvent", obj.parentName);
+
+                            obj = dataModel.objectByName("level_1");
+                            test.ok(obj);
+                            test.strictEqual(2, obj.lineage.length);
+                            test.same(["level_0", "level_1"], obj.lineage);
+                            test.strictEqual("level_0", obj.parentName);
+
+                            obj = dataModel.objectByName("level_2");
+                            test.ok(obj);
+                            test.strictEqual(3, obj.lineage.length);
+                            test.same(["level_0", "level_1", "level_2"], obj.lineage);
+                            test.strictEqual("level_1", obj.parentName);
+
+                            // Make sure there's no extra children
+                            test.ok(!dataModel.objectByName("level_3"));
+
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#DataModels - test data model object fields": function(test) {
+                var args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
+                var name = "delete-me-" + getNextId();
+
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            var obj = dataModel.objectByName("level_2");
+                            test.ok(obj);
+
+                            var timeField = obj.fieldByName("_time");
+                            test.ok(timeField);
+                            test.strictEqual("timestamp", timeField.type);
+                            test.ok(timeField.isTimestamp());
+                            test.ok(!timeField.isNumber());
+                            test.ok(!timeField.isString());
+                            test.ok(!timeField.isObjectcount());
+                            test.ok(!timeField.isChildcount());
+                            test.ok(!timeField.isIPv4());
+                            test.same(["BaseEvent"], timeField.lineage);
+                            test.strictEqual("_time", timeField.name);
+                            test.strictEqual(false, timeField.required);
+                            test.strictEqual(false, timeField.multivalued);
+                            test.strictEqual(false, timeField.hidden);
+                            test.strictEqual(false, timeField.editable);
+                            test.strictEqual(null, timeField.comment);
+
+                            var lvl2 = obj.fieldByName("level_2");
+                            test.strictEqual("level_2", lvl2.owner);
+                            test.same(["level_0", "level_1", "level_2"], lvl2.lineage);
+                            test.strictEqual("objectCount", lvl2.type);
+                            test.ok(!lvl2.isTimestamp());
+                            test.ok(!lvl2.isNumber());
+                            test.ok(!lvl2.isString());
+                            test.ok(lvl2.isObjectcount());
+                            test.ok(!lvl2.isChildcount());
+                            test.ok(!lvl2.isIPv4());
+                            test.strictEqual("level_2", lvl2.name);
+                            test.strictEqual("level 2", lvl2.displayName);
+                            test.strictEqual(false, lvl2.required);
+                            test.strictEqual(false, lvl2.multivalued);
+                            test.strictEqual(false, lvl2.hidden);
+                            test.strictEqual(false, lvl2.editable);
+                            test.strictEqual(null, lvl2.comment);
+
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#DataModels - test data model object properties": function(test) {
+                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                var name = "delete-me-" + getNextId();
+
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            var obj = dataModel.objectByName("test_data");
+                            test.ok(obj);
+                            test.strictEqual(5, obj.fieldNames().length);
+                            test.strictEqual(10, obj.allFieldNames().length);
+                            test.ok(obj.fieldByName("has_boris"));
+                            test.ok(obj.hasField("has_boris"));
+                            test.ok(obj.fieldByName("_time"));
+                            test.ok(obj.hasField("_time"));
+                            
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#DataModels - create local acceleration job": function(test) {
+                var args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
+                var name = "delete-me-" + getNextId();
+
+                var obj;
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            obj = dataModel.objectByName("level_2");
+                            test.ok(obj);
+
+                            obj.createLocalAccelerationJob(null, done);
+                        },
+                        function(job, done) {
+                            test.ok(job);
+
+                            tutils.pollUntil(
+                                job,
+                                function(j) {
+                                    return job.properties()["isDone"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            test.strictEqual("| datamodel \"" + name + "\" level_2 search | tscollect", job.properties().request.search);
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#DataModels - create local acceleration job with earliest time": function(test) {
+                var args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
+                var name = "delete-me-" + getNextId();
+
+                var obj;
+                var oldNow = Date.now();
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            obj = dataModel.objectByName("level_2");
+                            test.ok(obj);
+                            obj.createLocalAccelerationJob("-1d", done);
+                        },
+                        function(job, done) {
+                            test.ok(job);
+                            tutils.pollUntil(
+                                job,
+                                function(j) {
+                                    return job.properties()["isDone"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            test.strictEqual("| datamodel \"" + name + "\" level_2 search | tscollect", job.properties().request.search);
+
+                            // Make sure the earliest time is 1 day behind
+                            var yesterday = new Date(Date.now() - (1000 * 60 * 60 * 24));
+                            var month = (yesterday.getMonth() + 1);
+                            if (month <= 9) {
+                                month = "0" + month;
+                            }
+                            var date = yesterday.getDate();
+                            if (date <= 9) {
+                                date = "0" + date;
+                            }
+                            var expectedDate = yesterday.getFullYear() + "-" + month + "-" + date;
+                            test.ok(utils.startsWith(job._state.content.earliestTime, expectedDate));
+
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#DataModels - test data model constraints": function(test) {
+                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
+                var name = "delete-me-" + getNextId();
+
+                var obj;
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            obj = dataModel.objectByName("event1");
+                            test.ok(obj);
+                            var constraints = obj.constraints;
+                            test.ok(constraints);
+                            var onlyOne = true;
+
+                            for (var i = 0; i < constraints.length; i++) {
+                                var constraint = constraints[i];
+                                test.ok(!!onlyOne);
+
+                                test.strictEqual("event1", constraint.owner);
+                                test.strictEqual("uri=\"*.php\" OR uri=\"*.py\"\nNOT (referer=null OR referer=\"-\")", constraint.query);
+                            }
+
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#DataModels - test data model calculations, and the different types": function(test) {
+                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
+                var name = "delete-me-" + getNextId();
+
+                var obj;
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            obj = dataModel.objectByName("event1");
+                            test.ok(obj);
+
+                            var calculations = obj.calculations;
+                            test.strictEqual(4, Object.keys(calculations).length);
+                            test.strictEqual(4, obj.calculationIDs().length);
+
+                            var evalCalculation = calculations["93fzsv03wa7"];
+                            test.ok(evalCalculation);
+                            test.strictEqual("event1", evalCalculation.owner);
+                            test.same(["event1"], evalCalculation.lineage);
+                            test.strictEqual("Eval", evalCalculation.type);
+                            test.ok(evalCalculation.isEval());
+                            test.ok(!evalCalculation.isLookup());
+                            test.ok(!evalCalculation.isGeoIP());
+                            test.ok(!evalCalculation.isRex());
+                            test.strictEqual(null, evalCalculation.comment);
+                            test.strictEqual(true, evalCalculation.isEditable());
+                            test.strictEqual("if(cidrmatch(\"192.0.0.0/16\", clientip), \"local\", \"other\")", evalCalculation.expression);
+
+                            test.strictEqual(1, Object.keys(evalCalculation.outputFields).length);
+                            test.strictEqual(1, evalCalculation.outputFieldNames().length);
+
+                            var field = evalCalculation.outputFields["new_field"];
+                            test.ok(field);
+                            test.strictEqual("My New Field", field.displayName);
+
+                            var lookupCalculation = calculations["sr3mc8o3mjr"];
+                            test.ok(lookupCalculation);
+                            test.strictEqual("event1", lookupCalculation.owner);
+                            test.same(["event1"], lookupCalculation.lineage);
+                            test.strictEqual("Lookup", lookupCalculation.type);
+                            test.ok(lookupCalculation.isLookup());
+                            test.ok(!lookupCalculation.isEval());
+                            test.ok(!lookupCalculation.isGeoIP());
+                            test.ok(!lookupCalculation.isRex());
+                            test.strictEqual(null, lookupCalculation.comment);
+                            test.strictEqual(true, lookupCalculation.isEditable());
+                            test.same({lookupField: "a_lookup_field", inputField: "host"}, lookupCalculation.inputFieldMappings);
+                            test.strictEqual(2, Object.keys(lookupCalculation.inputFieldMappings).length);
+                            test.strictEqual("a_lookup_field", lookupCalculation.inputFieldMappings.lookupField);
+                            test.strictEqual("host", lookupCalculation.inputFieldMappings.inputField);
+                            test.strictEqual("dnslookup", lookupCalculation.lookupName);
+                            
+                            var regexpCalculation = calculations["a5v1k82ymic"];
+                            test.ok(regexpCalculation);
+                            test.strictEqual("event1", regexpCalculation.owner);
+                            test.same(["event1"], regexpCalculation.lineage);
+                            test.strictEqual("Rex", regexpCalculation.type);
+                            test.ok(regexpCalculation.isRex());
+                            test.ok(!regexpCalculation.isLookup());
+                            test.ok(!regexpCalculation.isEval());
+                            test.ok(!regexpCalculation.isGeoIP());
+                            test.strictEqual(2, regexpCalculation.outputFieldNames().length);
+                            test.strictEqual("_raw", regexpCalculation.inputField);
+                            test.strictEqual(" From: (?<from>.*) To: (?<to>.*) ", regexpCalculation.expression);
+
+                            var geoIPCalculation = calculations["pbe9bd0rp4"];
+                            test.ok(geoIPCalculation);
+                            test.strictEqual("event1", geoIPCalculation.owner);
+                            test.same(["event1"], geoIPCalculation.lineage);
+                            test.strictEqual("GeoIP", geoIPCalculation.type);
+                            test.ok(geoIPCalculation.isGeoIP());
+                            test.ok(!geoIPCalculation.isLookup());
+                            test.ok(!geoIPCalculation.isEval());
+                            test.ok(!geoIPCalculation.isRex());
+                            test.strictEqual("·Ä©·öô‡Øµ comment of pbe9bd0rp4", geoIPCalculation.comment);
+                            test.strictEqual(5, geoIPCalculation.outputFieldNames().length);
+                            test.strictEqual("output_from_reverse_hostname", geoIPCalculation.inputField);
+
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#DataModels - run queries": function(test) {
+                var obj;
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            var dm = dataModels.item("internal_audit_logs");
+                            obj = dm.objectByName("searches");
+                            obj.startSearch({}, "", done);
+                        },
+                        function(job, done) {
+                            tutils.pollUntil(
+                                job,
+                                function(j) {
+                                    return job.properties()["isDone"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            test.strictEqual("| datamodel internal_audit_logs searches search", job.properties().request.search);
+                            job.cancel(done);
+                        },
+                        function(response, done) {
+                            obj.startSearch({status_buckets: 5, enable_lookups: false}, "| head 3", done);
+                        },
+                        function(job, done) {
+                            tutils.pollUntil(
+                                job,
+                                function(j) {
+                                    return job.properties()["isDone"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            test.strictEqual("| datamodel internal_audit_logs searches search | head 3", job.properties().request.search);
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#DataModels - baseSearch is parsed correctly": function(test) {
+                var args = JSON.parse(utils.readFile(__filename, "../data/model_with_multiple_types.json"));
+                var name = "delete-me-" + getNextId();
+
+                var obj;
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            obj = dataModel.objectByName("search1");
+                            test.ok(obj);
+                            test.ok(obj instanceof splunkjs.Service.DataModelObject);
+                            test.strictEqual("BaseSearch", obj.parentName);
+                            test.ok(obj.isBaseSearch());
+                            test.ok(!obj.isBaseTransaction());
+                            test.strictEqual("search index=_internal | head 10", obj.baseSearch);
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#DataModels - baseTransaction is parsed correctly": function(test) {
+                var args = JSON.parse(utils.readFile(__filename, "../data/model_with_multiple_types.json"));
+                var name = "delete-me-" + getNextId();
+
+                var obj;
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            obj = dataModel.objectByName("transaction1");
+                            test.ok(obj);
+                            test.ok(obj instanceof splunkjs.Service.DataModelObject);
+                            test.strictEqual("BaseTransaction", obj.parentName);
+                            test.ok(obj.isBaseTransaction());
+                            test.ok(!obj.isBaseSearch());
+                            test.same(["event1"], obj.objectsToGroup);
+                            test.same(["host", "from"], obj.groupByFields);
+                            test.strictEqual("25s", obj.maxPause);
+                            test.strictEqual("100m", obj.maxSpan);
+
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            }
+        },
+
+        "Pivot tests": {
+            setUp: function(done) {
+                this.service = svc;
+                this.dataModels = svc.dataModels({owner: "nobody", app: "search"});
+                done();
+            },
+
+            "Callback#Pivot - test constructor args": function(test) {
+                var name = "delete-me-" + getNextId();
+                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            test.ok(dataModel.objectByName("test_data"));
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#Pivot - test acceleration, then pivot": function(test) {
+                var name = "delete-me-" + getNextId();
+                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            dataModel.objectByName("test_data");
+                            test.ok(dataModel);
+                            
+                            dataModel.acceleration.enabled = true;
+                            dataModel.acceleration.earliestTime = "-2mon";
+                            dataModel.acceleration.cronSchedule = "0 */12 * * *";
+                            dataModel.update(done);
+                        },
+                        function(dataModel, done) {
+                            var props = dataModel.properties();
+
+                            test.strictEqual(true, dataModel.isAccelerated());
+                            test.strictEqual(true, !!dataModel.acceleration.enabled);
+                            test.strictEqual("-2mon", dataModel.acceleration.earliest_time);
+                            test.strictEqual("0 */12 * * *", dataModel.acceleration.cron_schedule);
+
+                            var dataModelObject = dataModel.objectByName("test_data");
+                            var pivotSpecification = dataModelObject.createPivotSpecification();
+
+                            test.strictEqual(dataModelObject.dataModel.name, pivotSpecification.accelerationNamespace);
+
+                            var name1 = "delete-me-" + getNextId();
+                            pivotSpecification.setAccelerationJob(name1);
+                            test.strictEqual("sid=" + name1, pivotSpecification.accelerationNamespace);
+
+                            var namespaceTemp = "delete-me-" + getNextId();
+                            pivotSpecification.accelerationNamespace = namespaceTemp;
+                            test.strictEqual(namespaceTemp, pivotSpecification.accelerationNamespace);
+
+                            pivotSpecification
+                                .addCellValue("test_data", "Source Value", "count")
+                                .run(done);
+                        },
+                        function(job, pivot, done) {
+                            test.ok(job);
+                            test.ok(pivot);
+                            test.notStrictEqual("FAILED", job.properties().dispatchState);                            
+                            
+                            job.track({}, function(job) {
+                                test.ok(pivot.tstatsSearch);
+                                test.strictEqual(0, job.properties().request.search.indexOf("| tstats"));
+                                test.strictEqual("| tstats", job.properties().request.search.match("^\\| tstats")[0]);
+                                test.strictEqual(1, job.properties().request.search.match("^\\| tstats").length);
+
+                                test.strictEqual(pivot.tstatsSearch, job.properties().request.search);
+                                done(null, job);
+                            });
+                        },
+                        function(job, done) {
+                            test.ok(job);
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#Pivot - test illegal filtering (all types)": function(test) {
+                var name = "delete-me-" + getNextId();
+                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                var that = this;
+                Async.chain([
+                        function(done) {
+                           that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            var obj = dataModel.objectByName("test_data");
+                            test.ok(obj);
+
+                            var pivotSpecification = obj.createPivotSpecification();
+
+                            // Boolean comparisons
+                            try {
+                                pivotSpecification.addFilter(getNextId(), "boolean", "=", true);
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Cannot add filter on a nonexistent field.");
+                            }
+                            try {
+                                pivotSpecification.addFilter("_time", "boolean", "=", true);
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Cannot add boolean filter on _time because it is of type timestamp");
+                            }
+
+                            // String comparisons
+                            try {
+                                pivotSpecification.addFilter("has_boris", "string", "contains", "abc");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Cannot add string filter on has_boris because it is of type boolean");
+                            }
+                            try {
+                                pivotSpecification.addFilter(getNextId(), "string", "contains", "abc");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Cannot add filter on a nonexistent field.");
+                            }
+
+                            // IPv4 comparisons
+                            try {
+                                pivotSpecification.addFilter("has_boris", "ipv4", "startsWith", "192.168");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Cannot add ipv4 filter on has_boris because it is of type boolean");
+                            }
+                            try {
+                                pivotSpecification.addFilter(getNextId(), "ipv4", "startsWith", "192.168");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Cannot add filter on a nonexistent field.");
+                            }
+
+                            // Number comparisons
+                            try {
+                                pivotSpecification.addFilter("has_boris", "number", "atLeast", 2.3);
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Cannot add number filter on has_boris because it is of type boolean");
+                            }
+                            try {
+                                pivotSpecification.addFilter(getNextId(), "number", "atLeast", 2.3);
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Cannot add filter on a nonexistent field.");
+                            }
+
+                            // Limit filter
+                            try {
+                                pivotSpecification.addLimitFilter("has_boris", "host", "DEFAULT", 50, "count");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Cannot add limit filter on has_boris because it is of type boolean");
+                            }
+                            try {
+                                pivotSpecification.addLimitFilter(getNextId(), "host", "DEFAULT", 50, "count");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Cannot add limit filter on a nonexistent field.");
+                            }
+                            try {
+                                pivotSpecification.addLimitFilter("source", "host", "DEFAULT", 50, "sum");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message,
+                                    "Stats function for fields of type string must be COUNT or DISTINCT_COUNT; found sum");
+                            }
+                            try {
+                                pivotSpecification.addLimitFilter("epsilon", "host", "DEFAULT", 50, "duration");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message,
+                                    "Stats function for fields of type number must be one of COUNT, DISTINCT_COUNT, SUM, or AVERAGE; found duration");
+                            }
+                            try {
+                                pivotSpecification.addLimitFilter("test_data", "host", "DEFAULT", 50, "list");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message,
+                                    "Stats function for fields of type object count must be COUNT; found list");
+                            }
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#Pivot - test boolean filtering": function(test) {
+               var name = "delete-me-" + getNextId();
+               var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+               var that = this;
+               Async.chain([
+                        function(done) {
+                           that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            var obj = dataModel.objectByName("test_data");
+                            test.ok(obj);
+
+                            var pivotSpecification = obj.createPivotSpecification();
+                            try {
+                                pivotSpecification.addFilter("has_boris", "boolean", "=", true);
+                                test.strictEqual(1, pivotSpecification.filters.length);
+
+                                //Test the individual parts of the filter
+                                var filter = pivotSpecification.filters[0];
+
+                                test.ok(filter.hasOwnProperty("fieldName"));
+                                test.ok(filter.hasOwnProperty("type"));
+                                test.ok(filter.hasOwnProperty("comparator"));
+                                test.ok(filter.hasOwnProperty("compareTo"));
+                                test.ok(filter.hasOwnProperty("owner"));
+
+                                test.strictEqual("has_boris", filter.fieldName);
+                                test.strictEqual("boolean", filter.type);
+                                test.strictEqual("=", filter.comparator);
+                                test.strictEqual(true, filter.compareTo);
+                                test.strictEqual("test_data", filter.owner);
+                            }
+                            catch (e) {
+                                test.ok(false);
+                            }
+                            
+                            done();
+                        }
+                    ],
+                    function(err) {
+                       test.ok(!err);
+                       test.done();
+                    }
+                ); 
+            },
+
+            "Callback#Pivot - test string filtering": function(test) {
+               var name = "delete-me-" + getNextId();
+               var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+               var that = this;
+               Async.chain([
+                        function(done) {
+                           that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            var obj = dataModel.objectByName("test_data");
+                            test.ok(obj);
+
+                            var pivotSpecification = obj.createPivotSpecification();
+                            try {
+                                pivotSpecification.addFilter("host", "string", "contains", "abc");
+                                test.strictEqual(1, pivotSpecification.filters.length);
+
+                                //Test the individual parts of the filter
+                                var filter = pivotSpecification.filters[0];
+
+                                test.ok(filter.hasOwnProperty("fieldName"));
+                                test.ok(filter.hasOwnProperty("type"));
+                                test.ok(filter.hasOwnProperty("comparator"));
+                                test.ok(filter.hasOwnProperty("compareTo"));
+                                test.ok(filter.hasOwnProperty("owner"));
+
+                                test.strictEqual("host", filter.fieldName);
+                                test.strictEqual("string", filter.type);
+                                test.strictEqual("contains", filter.comparator);
+                                test.strictEqual("abc", filter.compareTo);
+                                test.strictEqual("BaseEvent", filter.owner);
+                            }
+                            catch (e) {
+                                test.ok(false);
+                            }
+                            
+                            done();
+                        }
+                    ],
+                    function(err) {
+                       test.ok(!err);
+                       test.done();
+                    }
+                ); 
+            },
+
+            "Callback#Pivot - test IPv4 filtering": function(test) {
+               var name = "delete-me-" + getNextId();
+               var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+               var that = this;
+               Async.chain([
+                        function(done) {
+                           that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            var obj = dataModel.objectByName("test_data");
+                            test.ok(obj);
+
+                            var pivotSpecification = obj.createPivotSpecification();
+                            try {
+                                pivotSpecification.addFilter("hostip", "ipv4", "startsWith", "192.168");
+                                test.strictEqual(1, pivotSpecification.filters.length);
+
+                                //Test the individual parts of the filter
+                                var filter = pivotSpecification.filters[0];                                
+
+                                test.ok(filter.hasOwnProperty("fieldName"));
+                                test.ok(filter.hasOwnProperty("type"));
+                                test.ok(filter.hasOwnProperty("comparator"));
+                                test.ok(filter.hasOwnProperty("compareTo"));
+                                test.ok(filter.hasOwnProperty("owner"));
+
+                                test.strictEqual("hostip", filter.fieldName);
+                                test.strictEqual("ipv4", filter.type);
+                                test.strictEqual("startsWith", filter.comparator);
+                                test.strictEqual("192.168", filter.compareTo);
+                                test.strictEqual("test_data", filter.owner);
+                            }
+                            catch (e) {
+                                test.ok(false);
+                            }
+                            
+                            done();
+                        }
+                    ],
+                    function(err) {
+                       test.ok(!err);
+                       test.done();
+                    }
+                ); 
+            },
+
+            "Callback#Pivot - test number filtering": function(test) {
+               var name = "delete-me-" + getNextId();
+               var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+               var that = this;
+               Async.chain([
+                        function(done) {
+                           that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            var obj = dataModel.objectByName("test_data");
+                            test.ok(obj);
+
+                            var pivotSpecification = obj.createPivotSpecification();
+                            try {
+                                pivotSpecification.addFilter("epsilon", "number", ">=", 2.3);
+                                test.strictEqual(1, pivotSpecification.filters.length);
+
+                                //Test the individual parts of the filter
+                                var filter = pivotSpecification.filters[0];
+                                
+                                test.ok(filter.hasOwnProperty("fieldName"));
+                                test.ok(filter.hasOwnProperty("type"));
+                                test.ok(filter.hasOwnProperty("comparator"));
+                                test.ok(filter.hasOwnProperty("compareTo"));
+                                test.ok(filter.hasOwnProperty("owner"));
+
+                                test.strictEqual("epsilon", filter.fieldName);
+                                test.strictEqual("number", filter.type);
+                                test.strictEqual(">=", filter.comparator);
+                                test.strictEqual(2.3, filter.compareTo);
+                                test.strictEqual("test_data", filter.owner);
+                            }
+                            catch (e) {
+                                test.ok(false);
+                            }
+                            
+                            done();
+                        }
+                    ],
+                    function(err) {
+                       test.ok(!err);
+                       test.done();
+                    }
+                ); 
+            },
+            "Callback#Pivot - test limit filtering": function(test) {
+               var name = "delete-me-" + getNextId();
+               var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+               var that = this;
+               Async.chain([
+                        function(done) {
+                           that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            var obj = dataModel.objectByName("test_data");
+                            test.ok(obj);
+
+                            var pivotSpecification = obj.createPivotSpecification();
+                            try {
+                                pivotSpecification.addLimitFilter("epsilon", "host", "ASCENDING", 500, "average");
+                                test.strictEqual(1, pivotSpecification.filters.length);
+
+                                //Test the individual parts of the filter
+                                var filter = pivotSpecification.filters[0];
+
+                                test.ok(filter.hasOwnProperty("fieldName"));
+                                test.ok(filter.hasOwnProperty("type"));
+                                test.ok(filter.hasOwnProperty("owner"));
+                                test.ok(filter.hasOwnProperty("attributeName"));
+                                test.ok(filter.hasOwnProperty("attributeOwner"));
+                                test.ok(filter.hasOwnProperty("limitType"));
+                                test.ok(filter.hasOwnProperty("limitAmount"));
+                                test.ok(filter.hasOwnProperty("statsFn"));
+
+                                test.strictEqual("epsilon", filter.fieldName);
+                                test.strictEqual("number", filter.type);
+                                test.strictEqual("test_data", filter.owner);
+                                test.strictEqual("host", filter.attributeName);
+                                test.strictEqual("BaseEvent", filter.attributeOwner);
+                                test.strictEqual("lowest", filter.limitType);
+                                test.strictEqual(500, filter.limitAmount);
+                                test.strictEqual("average", filter.statsFn);
+                            }
+                            catch (e) {
+                                test.ok(false);
+                            }
+                            
+                            done();
+                        }
+                    ],
+                    function(err) {
+                       test.ok(!err);
+                       test.done();
+                    }
+                ); 
+            },
+            "Callback#Pivot - test row split": function(test) {
+                var name = "delete-me-" + getNextId();
+                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                var that = this;
+                Async.chain([
+                        function(done) {
+                           that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            var obj = dataModel.objectByName("test_data");
+                            test.ok(obj);
+
+                            var pivotSpecification = obj.createPivotSpecification();
+
+                            // Test error handling for row split
+                            try {
+                                pivotSpecification.addRowSplit("has_boris", "Wrong type here");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number or string.");
+                            }
+                            var field = getNextId();
+                            try {
+
+                                pivotSpecification.addRowSplit(field, "Break Me!");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Did not find field " + field);
+                            }
+
+                            // Test row split, number
+                            pivotSpecification.addRowSplit("epsilon", "My Label");
+                            test.strictEqual(1, pivotSpecification.rows.length);
+                            
+                            var row = pivotSpecification.rows[0];
+                            test.ok(row.hasOwnProperty("fieldName"));
+                            test.ok(row.hasOwnProperty("owner"));
+                            test.ok(row.hasOwnProperty("type"));
+                            test.ok(row.hasOwnProperty("label"));
+                            test.ok(row.hasOwnProperty("display"));
+
+                            test.strictEqual("epsilon", row.fieldName);
+                            test.strictEqual("test_data", row.owner);
+                            test.strictEqual("number", row.type);
+                            test.strictEqual("My Label", row.label);
+                            test.strictEqual("all", row.display);
+                            test.same({
+                                    fieldName: "epsilon",
+                                    owner: "test_data",
+                                    type: "number",
+                                    label: "My Label",
+                                    display: "all"
+                                },
+                                row);
+                            
+                            // Test row split, string
+                            pivotSpecification.addRowSplit("host", "My Label");
+                            test.strictEqual(2, pivotSpecification.rows.length);
+
+                            row = pivotSpecification.rows[pivotSpecification.rows.length - 1];
+                            test.ok(row.hasOwnProperty("fieldName"));
+                            test.ok(row.hasOwnProperty("owner"));
+                            test.ok(row.hasOwnProperty("type"));
+                            test.ok(row.hasOwnProperty("label"));
+                            test.ok(!row.hasOwnProperty("display"));
+
+                            test.strictEqual("host", row.fieldName);
+                            test.strictEqual("BaseEvent", row.owner);
+                            test.strictEqual("string", row.type);
+                            test.strictEqual("My Label", row.label);
+                            test.same({
+                                    fieldName: "host",
+                                    owner: "BaseEvent",
+                                    type: "string",
+                                    label: "My Label"
+                                },
+                                row);
+
+                            // Test error handling on range row split
+                            try {
+                                pivotSpecification.addRangeRowSplit("has_boris", "Wrong type here", {start: 0, end: 100, step:20, limit:5});
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number.");
+                            }
+                            try {
+                                pivotSpecification.addRangeRowSplit(field, "Break Me!", {start: 0, end: 100, step:20, limit:5});
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Did not find field " + field);
+                            }
+
+                            // Test range row split
+                            pivotSpecification.addRangeRowSplit("epsilon", "My Label", {start: 0, end: 100, step:20, limit:5});
+                            test.strictEqual(3, pivotSpecification.rows.length);
+
+                            row = pivotSpecification.rows[pivotSpecification.rows.length - 1];
+                            test.ok(row.hasOwnProperty("fieldName"));
+                            test.ok(row.hasOwnProperty("owner"));
+                            test.ok(row.hasOwnProperty("type"));
+                            test.ok(row.hasOwnProperty("label"));
+                            test.ok(row.hasOwnProperty("display"));
+                            test.ok(row.hasOwnProperty("ranges"));
+
+                            test.strictEqual("epsilon", row.fieldName);
+                            test.strictEqual("test_data", row.owner);
+                            test.strictEqual("number", row.type);
+                            test.strictEqual("My Label", row.label);
+                            test.strictEqual("ranges", row.display);
+
+                            var ranges = {
+                                start: 0,
+                                end: 100,
+                                size: 20,
+                                maxNumberOf: 5
+                            };
+                            test.same(ranges, row.ranges);
+                            test.same({
+                                    fieldName: "epsilon",
+                                    owner: "test_data",
+                                    type: "number",
+                                    label: "My Label",
+                                    display: "ranges",
+                                    ranges: ranges
+                                },
+                                row);
+
+                            // Test error handling on boolean row split
+                            try {
+                                pivotSpecification.addBooleanRowSplit("epsilon", "Wrong type here", "t", "f");
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected boolean.");
+                            }
+                            try {
+                                pivotSpecification.addBooleanRowSplit(field, "Break Me!", "t", "f");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Did not find field " + field);
+                            }
+
+                            // Test boolean row split
+                            pivotSpecification.addBooleanRowSplit("has_boris", "My Label", "is_true", "is_false");
+                            test.strictEqual(4, pivotSpecification.rows.length);
+
+                            row = pivotSpecification.rows[pivotSpecification.rows.length - 1];
+                            test.ok(row.hasOwnProperty("fieldName"));
+                            test.ok(row.hasOwnProperty("owner"));
+                            test.ok(row.hasOwnProperty("type"));
+                            test.ok(row.hasOwnProperty("label"));
+                            test.ok(row.hasOwnProperty("trueLabel"));
+                            test.ok(row.hasOwnProperty("falseLabel"));
+
+                            test.strictEqual("has_boris", row.fieldName);
+                            test.strictEqual("My Label", row.label);
+                            test.strictEqual("test_data", row.owner);
+                            test.strictEqual("boolean", row.type);
+                            test.strictEqual("is_true", row.trueLabel);
+                            test.strictEqual("is_false", row.falseLabel);
+                            test.same({
+                                    fieldName: "has_boris",
+                                    label: "My Label",
+                                    owner: "test_data",
+                                    type: "boolean",
+                                    trueLabel: "is_true",
+                                    falseLabel: "is_false"
+                                },
+                                row);
+
+                            // Test error handling on timestamp row split
+                            try {
+                                pivotSpecification.addTimestampRowSplit("epsilon", "Wrong type here", "some binning");
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected timestamp.");
+                            }
+                            try {
+                                pivotSpecification.addTimestampRowSplit(field, "Break Me!", "some binning");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Did not find field " + field);
+                            }
+                            try {
+                                pivotSpecification.addTimestampRowSplit("_time", "some label", "Bogus binning value");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Invalid binning Bogus binning value found. Valid values are: " + pivotSpecification._binning.join(", "));
+                            }
+
+                            // Test timestamp row split
+                            pivotSpecification.addTimestampRowSplit("_time", "My Label", "day");
+                            test.strictEqual(5, pivotSpecification.rows.length);
+
+                            row = pivotSpecification.rows[pivotSpecification.rows.length - 1];
+                            test.ok(row.hasOwnProperty("fieldName"));
+                            test.ok(row.hasOwnProperty("owner"));
+                            test.ok(row.hasOwnProperty("type"));
+                            test.ok(row.hasOwnProperty("label"));
+                            test.ok(row.hasOwnProperty("period"));
+
+                            test.strictEqual("_time", row.fieldName);
+                            test.strictEqual("My Label", row.label);
+                            test.strictEqual("BaseEvent", row.owner);
+                            test.strictEqual("timestamp", row.type);
+                            test.strictEqual("day", row.period);
+                            test.same({
+                                    fieldName: "_time",
+                                    label: "My Label",
+                                    owner: "BaseEvent",
+                                    type: "timestamp",
+                                    period: "day"
+                                },
+                                row);
+
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            "Callback#Pivot - test column split": function(test) {
+                var name = "delete-me-" + getNextId();
+                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                var that = this;
+                Async.chain([
+                        function(done) {
+                           that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            var obj = dataModel.objectByName("test_data");
+                            test.ok(obj);
+
+                            var pivotSpecification = obj.createPivotSpecification();
+
+                            // Test error handling for column split
+                            try {
+                                pivotSpecification.addColumnSplit("has_boris", "Wrong type here");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number or string.");
+                            }
+                            var field = getNextId();
+                            try {
+
+                                pivotSpecification.addColumnSplit(field, "Break Me!");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Did not find field " + field);
+                            }
+
+                            // Test column split, number
+                            pivotSpecification.addColumnSplit("epsilon");
+                            test.strictEqual(1, pivotSpecification.columns.length);
+
+                            var col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
+                            test.ok(col.hasOwnProperty("fieldName"));
+                            test.ok(col.hasOwnProperty("owner"));
+                            test.ok(col.hasOwnProperty("type"));
+                            test.ok(col.hasOwnProperty("display"));
+
+                            test.strictEqual("epsilon", col.fieldName);
+                            test.strictEqual("test_data", col.owner);
+                            test.strictEqual("number", col.type);
+                            test.strictEqual("all", col.display);
+                            test.same({
+                                    fieldName: "epsilon",
+                                    owner: "test_data",
+                                    type: "number",
+                                    display: "all"
+                                }, 
+                                col);
+
+                            // Test column split, string
+                            pivotSpecification.addColumnSplit("host");
+                            test.strictEqual(2, pivotSpecification.columns.length);
+
+                            col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
+                            test.ok(col.hasOwnProperty("fieldName"));
+                            test.ok(col.hasOwnProperty("owner"));
+                            test.ok(col.hasOwnProperty("type"));
+                            test.ok(!col.hasOwnProperty("display"));
+
+                            test.strictEqual("host", col.fieldName);
+                            test.strictEqual("BaseEvent", col.owner);
+                            test.strictEqual("string", col.type);
+                            test.same({
+                                    fieldName: "host",
+                                    owner: "BaseEvent",
+                                    type: "string"
+                                }, 
+                                col);
+
+                            done();
+
+                            // Test error handling for range column split
+                            try {
+                                pivotSpecification.addRangeColumnSplit("has_boris", "Wrong type here", {start: 0, end: 100, step:20, limit:5});
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number.");
+                            }
+                            try {
+                                pivotSpecification.addRangeColumnSplit(field, {start: 0, end: 100, step:20, limit:5});
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Did not find field " + field);
+                            }
+
+                            // Test range column split
+                            pivotSpecification.addRangeColumnSplit("epsilon", {start: 0, end: 100, step:20, limit:5});
+                            test.strictEqual(3, pivotSpecification.columns.length);
+
+                            col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
+                            test.ok(col.hasOwnProperty("fieldName"));
+                            test.ok(col.hasOwnProperty("owner"));
+                            test.ok(col.hasOwnProperty("type"));
+                            test.ok(col.hasOwnProperty("display"));
+                            test.ok(col.hasOwnProperty("ranges"));
+
+                            test.strictEqual("epsilon", col.fieldName);
+                            test.strictEqual("test_data", col.owner);
+                            test.strictEqual("number", col.type);
+                            test.strictEqual("ranges", col.display);
+                            var ranges = {
+                                start: "0",
+                                end: "100",
+                                size: "20",
+                                maxNumberOf: "5"
+                            };
+                            test.same(ranges, col.ranges);
+                            test.same({
+                                    fieldName: "epsilon",
+                                    owner: "test_data",
+                                    type: "number",
+                                    display: "ranges",
+                                    ranges: ranges
+                                },
+                                col);
+                            
+                            // Test error handling on boolean column split
+                            try {
+                                pivotSpecification.addBooleanColumnSplit("epsilon", "t", "f");
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected boolean.");
+                            }
+                            try {
+                                pivotSpecification.addBooleanColumnSplit(field, "t", "f");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Did not find field " + field);
+                            }
+
+                            // Test boolean column split
+                            pivotSpecification.addBooleanColumnSplit("has_boris", "is_true", "is_false");
+                            test.strictEqual(4, pivotSpecification.columns.length);
+
+                            col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
+                            test.ok(col.hasOwnProperty("fieldName"));
+                            test.ok(col.hasOwnProperty("owner"));
+                            test.ok(col.hasOwnProperty("type"));
+                            test.ok(!col.hasOwnProperty("label"));
+                            test.ok(col.hasOwnProperty("trueLabel"));
+                            test.ok(col.hasOwnProperty("falseLabel"));
+
+                            test.strictEqual("has_boris", col.fieldName);
+                            test.strictEqual("test_data", col.owner);
+                            test.strictEqual("boolean", col.type);
+                            test.strictEqual("is_true", col.trueLabel);
+                            test.strictEqual("is_false", col.falseLabel);
+                            test.same({
+                                    fieldName: "has_boris",
+                                    owner: "test_data",
+                                    type: "boolean",
+                                    trueLabel: "is_true",
+                                    falseLabel: "is_false"
+                                },
+                                col);
+
+                            // Test error handling on timestamp column split
+                            try {
+                                pivotSpecification.addTimestampColumnSplit("epsilon", "Wrong type here");
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected timestamp.");
+                            }
+                            try {
+                                pivotSpecification.addTimestampColumnSplit(field, "Break Me!");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Did not find field " + field);
+                            }
+                            try {
+                                pivotSpecification.addTimestampColumnSplit("_time", "Bogus binning value");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Invalid binning Bogus binning value found. Valid values are: " + pivotSpecification._binning.join(", "));
+                            }
+
+                            // Test timestamp column split
+                            pivotSpecification.addTimestampColumnSplit("_time", "day");
+                            test.strictEqual(5, pivotSpecification.columns.length);
+
+                            col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
+                            test.ok(col.hasOwnProperty("fieldName"));
+                            test.ok(col.hasOwnProperty("owner"));
+                            test.ok(col.hasOwnProperty("type"));
+                            test.ok(!col.hasOwnProperty("label"));
+                            test.ok(col.hasOwnProperty("period"));
+
+                            test.strictEqual("_time", col.fieldName);
+                            test.strictEqual("BaseEvent", col.owner);
+                            test.strictEqual("timestamp", col.type);
+                            test.strictEqual("day", col.period);
+                            test.same({
+                                    fieldName: "_time",
+                                    owner: "BaseEvent",
+                                    type: "timestamp",
+                                    period: "day"
+                                },
+                                col);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            "Callback#Pivot - test cell value": function(test) {
+                var name = "delete-me-" + getNextId();
+                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                var that = this;
+                Async.chain([
+                        function(done) {
+                           that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            var obj = dataModel.objectByName("test_data");
+                            test.ok(obj);
+
+                            var pivotSpecification = obj.createPivotSpecification();
+
+                            // Test error handling for cell value, string
+                            try {
+                                pivotSpecification.addCellValue("iDontExist", "Break Me!", "explosion");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Did not find field iDontExist");
+                            }
+                            try {
+                                pivotSpecification.addCellValue("source", "Wrong Stats Function", "stdev");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Stats function on string and IPv4 fields must be one of:" + 
+                                    " list, distinct_values, first, last, count, or distinct_count; found stdev");
+                            }
+
+                            // Add cell value, string
+                            pivotSpecification.addCellValue("source", "Source Value", "dc");
+                            test.strictEqual(1, pivotSpecification.cells.length);
+
+                            var cell = pivotSpecification.cells[pivotSpecification.cells.length - 1];
+                            test.ok(cell.hasOwnProperty("fieldName"));
+                            test.ok(cell.hasOwnProperty("owner"));
+                            test.ok(cell.hasOwnProperty("type"));
+                            test.ok(cell.hasOwnProperty("label"));
+                            test.ok(cell.hasOwnProperty("value"));
+                            test.ok(cell.hasOwnProperty("sparkline"));
+
+                            test.strictEqual("source", cell.fieldName);
+                            test.strictEqual("BaseEvent", cell.owner);
+                            test.strictEqual("string", cell.type);
+                            test.strictEqual("Source Value", cell.label);
+                            test.strictEqual("dc", cell.value);
+                            test.strictEqual(false, cell.sparkline);
+                            test.same({
+                                    fieldName: "source",
+                                    owner: "BaseEvent",
+                                    type: "string",
+                                    label: "Source Value",
+                                    value: "dc",
+                                    sparkline: false
+                                }, cell);
+
+                            // Test error handling for cell value, IPv4
+                            try {
+                                pivotSpecification.addCellValue("hostip", "Wrong Stats Function", "stdev");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Stats function on string and IPv4 fields must be one of:" + 
+                                    " list, distinct_values, first, last, count, or distinct_count; found stdev");
+                            }
+
+                            // Add cell value, IPv4
+                            pivotSpecification.addCellValue("hostip", "Source Value", "dc");
+                            test.strictEqual(2, pivotSpecification.cells.length);
+
+                            cell = pivotSpecification.cells[pivotSpecification.cells.length - 1];
+                            test.ok(cell.hasOwnProperty("fieldName"));
+                            test.ok(cell.hasOwnProperty("owner"));
+                            test.ok(cell.hasOwnProperty("type"));
+                            test.ok(cell.hasOwnProperty("label"));
+                            test.ok(cell.hasOwnProperty("value"));
+                            test.ok(cell.hasOwnProperty("sparkline"));
+
+                            test.strictEqual("hostip", cell.fieldName);
+                            test.strictEqual("test_data", cell.owner);
+                            test.strictEqual("ipv4", cell.type);
+                            test.strictEqual("Source Value", cell.label);
+                            test.strictEqual("dc", cell.value);
+                            test.strictEqual(false, cell.sparkline);
+                            test.same({
+                                    fieldName: "hostip",
+                                    owner: "test_data",
+                                    type: "ipv4",
+                                    label: "Source Value",
+                                    value: "dc",
+                                    sparkline: false
+                                }, cell);
+
+                            // Test error handling for cell value, boolean
+                            try {
+                                pivotSpecification.addCellValue("has_boris", "Booleans not allowed", "sum");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Cannot use boolean valued fields as cell values.");
+                            }
+
+                            // Test error handling for cell value, number
+                            try {
+                                pivotSpecification.addCellValue("epsilon", "Wrong Stats Function", "latest");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Stats function on number field must be must be one of:" +
+                                    " sum, count, average, max, min, stdev, list, or distinct_values; found latest");
+                            }
+
+                            // Add cell value, number
+                            pivotSpecification.addCellValue("epsilon", "Source Value", "average");
+                            test.strictEqual(3, pivotSpecification.cells.length);
+
+                            cell = pivotSpecification.cells[pivotSpecification.cells.length - 1];
+                            test.ok(cell.hasOwnProperty("fieldName"));
+                            test.ok(cell.hasOwnProperty("owner"));
+                            test.ok(cell.hasOwnProperty("type"));
+                            test.ok(cell.hasOwnProperty("label"));
+                            test.ok(cell.hasOwnProperty("value"));
+                            test.ok(cell.hasOwnProperty("sparkline"));
+
+                            test.strictEqual("epsilon", cell.fieldName);
+                            test.strictEqual("test_data", cell.owner);
+                            test.strictEqual("number", cell.type);
+                            test.strictEqual("Source Value", cell.label);
+                            test.strictEqual("average", cell.value);
+                            test.strictEqual(false, cell.sparkline);
+                            test.same({
+                                    fieldName: "epsilon",
+                                    owner: "test_data",
+                                    type: "number",
+                                    label: "Source Value",
+                                    value: "average",
+                                    sparkline: false
+                                }, cell);
+
+                            // Test error handling for cell value, timestamp
+                            try {
+                                pivotSpecification.addCellValue("_time", "Wrong Stats Function", "max");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Stats function on timestamp field must be one of:" +
+                                    " duration, earliest, latest, list, or distinct values; found max");
+                            }
+
+                            // Add cell value, timestamp
+                            pivotSpecification.addCellValue("_time", "Source Value", "earliest");
+                            test.strictEqual(4, pivotSpecification.cells.length);
+
+                            cell = pivotSpecification.cells[pivotSpecification.cells.length - 1];
+                            test.ok(cell.hasOwnProperty("fieldName"));
+                            test.ok(cell.hasOwnProperty("owner"));
+                            test.ok(cell.hasOwnProperty("type"));
+                            test.ok(cell.hasOwnProperty("label"));
+                            test.ok(cell.hasOwnProperty("value"));
+                            test.ok(cell.hasOwnProperty("sparkline"));
+
+                            test.strictEqual("_time", cell.fieldName);
+                            test.strictEqual("BaseEvent", cell.owner);
+                            test.strictEqual("timestamp", cell.type);
+                            test.strictEqual("Source Value", cell.label);
+                            test.strictEqual("earliest", cell.value);
+                            test.strictEqual(false, cell.sparkline);
+                            test.same({
+                                    fieldName: "_time",
+                                    owner: "BaseEvent",
+                                    type: "timestamp",
+                                    label: "Source Value",
+                                    value: "earliest",
+                                    sparkline: false
+                                }, cell);
+
+                            // Test error handling for cell value, count
+                            try {
+                                pivotSpecification.addCellValue("test_data", "Wrong Stats Function", "min");
+                                test.ok(false);
+                            }
+                            catch (e) {
+                                test.ok(e);
+                                test.strictEqual(e.message, "Stats function on childcount and objectcount fields " +
+                                    "must be count; found " + "min");
+                            }
+                            
+                            // Add cell value, count
+                            pivotSpecification.addCellValue("test_data", "Source Value", "count");
+                            test.strictEqual(5, pivotSpecification.cells.length);
+
+                            cell = pivotSpecification.cells[pivotSpecification.cells.length - 1];
+                            test.ok(cell.hasOwnProperty("fieldName"));
+                            test.ok(cell.hasOwnProperty("owner"));
+                            test.ok(cell.hasOwnProperty("type"));
+                            test.ok(cell.hasOwnProperty("label"));
+                            test.ok(cell.hasOwnProperty("value"));
+                            test.ok(cell.hasOwnProperty("sparkline"));
+
+                            test.strictEqual("test_data", cell.fieldName);
+                            test.strictEqual("test_data", cell.owner);
+                            test.strictEqual("objectCount", cell.type);
+                            test.strictEqual("Source Value", cell.label);
+                            test.strictEqual("count", cell.value);
+                            test.strictEqual(false, cell.sparkline);
+                            test.same({
+                                    fieldName: "test_data",
+                                    owner: "test_data",
+                                    type: "objectCount",
+                                    label: "Source Value",
+                                    value: "count",
+                                    sparkline: false
+                                }, cell);
+
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            "Callback#Pivot - test pivot throws HTTP exception": function(test) {
+               var name = "delete-me-" + getNextId();
+               var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+               var that = this;
+               Async.chain([
+                        function(done) {
+                           that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            var obj = dataModel.objectByName("test_data");
+                            test.ok(obj);
+
+                            obj.createPivotSpecification().pivot(done);
+                        },
+                        function(pivot, done) {
+                            test.ok(false);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(err);
+                        var expectedErr = "In handler 'datamodelpivot': Error in 'PivotReport': Must have non-empty cells or non-empty rows.";
+                        test.ok(utils.endsWith(err.message, expectedErr));
+                        test.done();
+                    }
+                ); 
+            },
+            "Callback#Pivot - test pivot with simple namespace": function(test) {
+               var name = "delete-me-" + getNextId();
+               var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+               var that = this;
+               var obj;
+               var pivotSpecification;
+               var adhocjob;
+               Async.chain([
+                        function(done) {
+                           that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            obj = dataModel.objectByName("test_data");
+                            test.ok(obj);
+                            obj.createLocalAccelerationJob(null, done);
+                        },
+                        function(job, done) {
+                            adhocjob = job;
+                            test.ok(job);
+                            pivotSpecification = obj.createPivotSpecification();
+                            
+                            pivotSpecification.addBooleanRowSplit("has_boris", "Has Boris", "meep", "hilda");
+                            pivotSpecification.addCellValue("hostip", "Distinct IPs", "count");
+
+                            // Test setting a job
+                            pivotSpecification.setAccelerationJob(job);
+                            test.strictEqual("string", typeof pivotSpecification.accelerationNamespace);
+                            test.strictEqual("sid=" + job.sid, pivotSpecification.accelerationNamespace);
+
+                            // Test setting a job's SID
+                            pivotSpecification.setAccelerationJob(job.sid);
+                            test.strictEqual("string", typeof pivotSpecification.accelerationNamespace);
+                            test.strictEqual("sid=" + job.sid, pivotSpecification.accelerationNamespace);
+                            
+                            pivotSpecification.pivot(done);
+                        },
+                        function(pivot, done) {
+                            test.ok(pivot.tstatsSearch);
+                            test.ok(pivot.tstatsSearch.length > 0);
+                            test.strictEqual(0, pivot.tstatsSearch.indexOf("| tstats"));
+                            // This test won't work with utils.startsWith due to the regex escaping
+                            test.strictEqual("| tstats", pivot.tstatsSearch.match("^\\| tstats")[0]);
+                            test.strictEqual(1, pivot.tstatsSearch.match("^\\| tstats").length);
+
+                            pivot.run(done);
+                        },
+                        function(job, done) {
+                            tutils.pollUntil(
+                                job,
+                                function(j) {
+                                    return job.properties().isDone;
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            test.ok("FAILED" !== job.properties().dispatchState);
+                            
+                            test.strictEqual(0, job.properties().request.search.indexOf("| tstats"));
+                            // This test won't work with utils.startsWith due to the regex escaping
+                            test.strictEqual("| tstats", job.properties().request.search.match("^\\| tstats")[0]);
+                            test.strictEqual(1, job.properties().request.search.match("^\\| tstats").length);
+
+                            adhocjob.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
+            "Callback#Pivot - test pivot column range split": function(test) {
+                // This test is here because we had a problem with fields that were supposed to be
+                // numbers being expected as strings in Splunk 6.0. This was fixed in Splunk 6.1, and accepts
+                // either strings or numbers.
+
+                var that = this;
+                var search;
+                Async.chain([
+                        function(done) {
+                            that.dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            var dm = dataModels.item("internal_audit_logs");
+                            var obj = dm.objectByName("searches");
+                            var pivotSpecification = obj.createPivotSpecification();
+                            
+                            pivotSpecification.addRowSplit("user", "Executing user");
+                            pivotSpecification.addRangeColumnSplit("exec_time", {start: 0, end: 12, step: 5, limit: 4});
+                            pivotSpecification.addCellValue("search", "Search Query", "values");
+                            pivotSpecification.pivot(done);
+                        },
+                        function(pivot, done) {
+                            // If tstats is undefined, use pivotSearch
+                            search = pivot.tstatsSearch || pivot.pivotSearch;
+                            pivot.run(done);
+                        },
+                        function(job, done) {
+                            tutils.pollUntil(
+                                job,
+                                function(j) {
+                                    return job.properties().isDone;
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            test.notStrictEqual("FAILED", job.properties().dispatchState);
+                            // Make sure the job is run with the correct search query
+                            test.strictEqual(search, job.properties().request.search);
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                ); 
+            },
+            "Callback#Pivot - test pivot with PivotSpecification.run and Job.track": function(test) {
+                var that = this;
+                Async.chain([
+                    function(done) {
+                            that.dataModels.fetch(done);
+                        },
+                        function(dataModels, done) {
+                            var dm = dataModels.item("internal_audit_logs");
+                            var obj = dm.objectByName("searches");
+                            var pivotSpecification = obj.createPivotSpecification();
+                            
+                            pivotSpecification.addRowSplit("user", "Executing user");
+                            pivotSpecification.addRangeColumnSplit("exec_time", {start: 0, end: 12, step: 5, limit: 4});
+                            pivotSpecification.addCellValue("search", "Search Query", "values");
+                            
+                            pivotSpecification.run({}, done);
+                        },
+                        function(job, pivot, done) {
+                            job.track({}, function(job) {
+                                test.strictEqual(pivot.tstatsSearch || pivot.pivotSearch, job.properties().request.search);
+                                done(null, job);
+                            });
+                        },
+                        function(job, done) {
+                            test.notStrictEqual("FAILED", job.properties().dispatchState);
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+            "Callback#DataModels - delete any remaining data models created by the SDK tests": function(test) {
+                svc.dataModels().fetch(function(err, dataModels) {
+                    if (err) {
+                        test.ok(!err);
+                    }
+
+                    var dms = dataModels.list();
+                    Async.seriesEach(
+                        dms,
+                        function(datamodel, i, done) {
+                            // Delete any test data models that we created
+                            if (utils.startsWith(datamodel.name, "delete-me")) {
+                                datamodel.remove(done);
+                            }
+                            else {
+                                done();
+                            }
+                        }, 
+                        function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
+                });
+            }
+        },
+
         "App Tests": {
             setUp: function(done) {
                 this.service = svc;
@@ -14662,12 +18718,11 @@ exports.setup = function(svc, loggedOutSvc) {
                         test.strictEqual(properties.version, VERSION);
                         
                         app.remove(callback);
-                    },
-                    function(callback) {
-                        test.done();
-                        callback();
                     }
-                ]);
+                ], function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
             },
             
             "Callback#delete test applications": function(test) {
@@ -14787,7 +18842,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var updatedSearch = "search * | head 10";
                 var updatedDescription = "description";
             
-                var searches = this.service.savedSearches({owner: this.service.username, app: "xml2json"});
+                var searches = this.service.savedSearches({owner: this.service.username, app: "sdk-app-collection"});
                 
                 Async.chain([
                         function(done) {
@@ -14855,7 +18910,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var name = "jssdk_savedsearch_" + getNextId();
                 var originalSearch = "search index=_internal | head 1";
             
-                var searches = this.service.savedSearches({owner: this.service.username, app: "xml2json"});
+                var searches = this.service.savedSearches({owner: this.service.username, app: "sdk-app-collection"});
                 
                 Async.chain(
                     [function(done) {
@@ -14917,7 +18972,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var name = "jssdk_savedsearch_" + getNextId();
                 var originalSearch = "search index=_internal | head 1";
             
-                var searches = this.service.savedSearches({owner: this.service.username, app: "xml2json"});
+                var searches = this.service.savedSearches({owner: this.service.username, app: "sdk-app-collection"});
                 
                 Async.chain(
                     function(done) {
@@ -15035,7 +19090,7 @@ exports.setup = function(svc, loggedOutSvc) {
             },
             
             "Callback#delete test saved searches": function(test) {
-                var searches = this.service.savedSearches({owner: this.service.username, app: "xml2json"});
+                var searches = this.service.savedSearches({owner: this.service.username, app: "sdk-app-collection"});
                 searches.fetch(function(err, searches) {
                     var searchList = searches.list();
                     Async.parallelEach(
@@ -15064,9 +19119,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#setupInfo succeeds": function(test) {
-                var app = new splunkjs.Service.Application(this.service, "xml2json");
+                var app = new splunkjs.Service.Application(this.service, "sdk-app-collection");
                 app.setupInfo(function(err, content, search) {
                     test.ok(err.data.messages[0].text.match("Setup configuration file does not"));
+                    console.log("ERR ---", err.data.messages[0].text)
                     test.done();
                 });
             },
@@ -15082,7 +19138,7 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#updateInfo failure": function(test) {
-                var app = new splunkjs.Service.Application(this.loggedOutService, "xml2json");
+                var app = new splunkjs.Service.Application(this.loggedOutService, "sdk-app-collection");
                 app.updateInfo(function(err, info, app) {
                     test.ok(err);
                     test.done();
@@ -15139,9 +19195,6 @@ exports.setup = function(svc, loggedOutSvc) {
                         }
                     ],
                     function(err) {
-                        if (err) {
-                            console.log(err);
-                        }
                         test.ok(!err);
                         test.done();
                     }
@@ -15287,7 +19340,6 @@ exports.setup = function(svc, loggedOutSvc) {
                                                     firedAlert.triggerTime();
                                                     firedAlert.triggerTimeRendered();
                                                     firedAlert.triggeredAlertCount();
-                                                    console.log();
                                                 }
                                                 insideChainCallback(null);
                                             }
@@ -15321,9 +19373,6 @@ exports.setup = function(svc, loggedOutSvc) {
                         }
                     ],
                     function(err) {
-                        if (err) {
-                            console.log(err);
-                        }
                         test.ok(!err);
                         test.done();
                     }
@@ -15338,7 +19387,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     alertList,
                     function(alert, idx, callback) {
                         if (utils.startsWith(alert.name, namePrefix)) {
-                            console.log(alert.name);
+                            console.log("ALERT ---", alert.name);
                             alert.remove(callback);
                         }
                         else {
@@ -15363,7 +19412,9 @@ exports.setup = function(svc, loggedOutSvc) {
                 var namespace = {owner: "admin", app: "search"};
                 
                 Async.chain([
-                    function(done) { that.service.configurations(namespace).fetch(done); },
+                    function(done) { 
+                        that.service.configurations(namespace).fetch(done); 
+                    },
                     function(props, done) { 
                         var files = props.list();
                         test.ok(files.length > 0);
@@ -16196,7 +20247,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 
                 Async.chain([
                         function(done) {
-                            service.views({owner: "admin", app: "xml2json"}).create({name: name, "eai:data": originalData}, done);
+                            service.views({owner: "admin", app: "sdk-app-collection"}).create({name: name, "eai:data": originalData}, done);
                         },
                         function(view, done) {
                             test.ok(view);
@@ -16483,7 +20534,12 @@ if (module === require.main) {
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
-    
+    if(!process.env.SPLUNK_HOME){
+        throw new Error("$PATH variable SPLUNK_HOME is not set. Please export SPLUNK_HOME to the splunk instance.");
+    }
+
+
+
     var svc = new splunkjs.Service({ 
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
@@ -16551,6 +20607,11 @@ exports.setup = function(svc, opts) {
             
             "Apps#Async": function(test) {
                 var main = require("../examples/node/helloworld/apps_async").main;
+                main(opts, test.done);
+            },
+
+            "Pivot#Async": function(test) {
+                var main = require("../examples/node/helloworld/pivot_async").main;
                 main(opts, test.done);
             },
 
@@ -17157,6 +21218,155 @@ exports.main = function(opts, callback) {
 if (module === require.main) {
     exports.main({}, function() {});
 }
+});
+
+require.define("/examples/node/helloworld/pivot_async.js", function (require, module, exports, __dirname, __filename) {
+// Copyright 2014 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+/* 
+ * This example will login to Splunk, and then retrieve the list of data models,
+ * get the "internal_audit_logs", then get the "searches" data model object.
+ * Then start a search on the "searches" data model object, track the
+ * job until it's done. Then get and print out the results.
+ * 
+ * Then create a pivot specification and retrieve the pivot searches from
+ * the Splunk server, run the search job for that pivot report, track
+ * the job until it's done. Then get and print out the results.
+ * At the end, the search job is cancelled.
+ */
+
+var splunkjs = require('../../../index');
+var Async  = splunkjs.Async;
+
+exports.main = function(opts, callback) {
+    // This is just for testing - ignore it.
+    opts = opts || {};
+    
+    var username = opts.username    || "admin";
+    var password = opts.password    || "changeme";
+    var scheme   = opts.scheme      || "https";
+    var host     = opts.host        || "localhost";
+    var port     = opts.port        || "8089";
+    var version  = opts.version     || "default";
+    
+    var service = new splunkjs.Service({
+        username: username,
+        password: password,
+        scheme: scheme,
+        host: host,
+        port: port,
+        version: version
+    });
+
+    var searches; // We'll use this later
+
+    Async.chain([
+            // First, we log in.
+            function(done) {
+                service.login(done);
+            },
+            
+            function(success, done) {
+                if (!success) {
+                    done("Error logging in");
+                }
+
+                // Now that we're logged in, let's get the data models collection
+                service.dataModels().fetch(done);
+            },
+            function(dataModels, done) {
+                // ...and the specific data model we're concerned with
+                var dm = dataModels.item("internal_audit_logs");
+                // Get the "searches" object out of the "internal_audit_logs" data model
+                searches = dm.objectByName("searches");
+
+                console.log("Working with object", searches.displayName,
+                    "in model", dm.displayName);
+
+                console.log("\t Lineage:", searches.lineage.join(" -> "));
+                console.log("\t Internal name: " + searches.name);
+
+                // Run a data model search query, getting the first 5 results
+                searches.startSearch({}, "| head 5", done);
+            },
+            function(job, done) {
+                job.track({}, function(job) {
+                    job.results({}, done);
+                });
+            },
+            function(results, job, done) {
+                // Print out the results
+                console.log("Results:");
+                for (var i = 0; i < results.rows.length; i++) {
+                    var rowString = " result " + i + ":  ";
+                    var row = results.rows[i];
+                    for (var j = 0; j < results.fields.length; j++) {
+                        if (row[j] !== null && row[j] !== undefined) {
+                            rowString += results.fields[j] + "=" + row[j] + ", ";
+                        }
+                    }
+                    console.log(rowString);
+                    console.log("------------------------------");
+                }
+                
+                var pivotSpecification = searches.createPivotSpecification();
+                // Each function call here returns a pivotSpecification so we can chain them
+                pivotSpecification
+                    .addRowSplit("user", "Executing user")
+                    .addRangeColumnSplit("exec_time", {limit: 4})
+                    .addCellValue("search", "Search Query", "values")
+                    .run(done);
+            },
+            function(job, pivot, done) {
+                console.log("Query for binning search queries by execution time and executing user:");
+                console.log("\t", pivot.prettyQuery);
+                job.track({}, function(job) {
+                    job.results({}, done);
+                });
+            },
+            function(results, job, done) {
+                // Print out the results
+                console.log("Results:");
+                for (var i = 0; i < results.rows.length; i++) {
+                    var rowString = " result " + i + ":  ";
+                    var row = results.rows[i];
+                    for (var j = 0; j < results.fields.length; j++) {
+                        if (row[j] !== null && row[j] !== undefined) {
+                            rowString += results.fields[j] + "=" + row[j] + ", ";
+                        }
+                    }
+                    console.log(rowString);
+                    console.log("------------------------------");
+                }
+                job.cancel(done);
+            }
+        ],
+        function(err) {
+            if (err) {
+                console.log("ERROR", err);
+                callback(err);
+            }
+            callback(err);
+        }
+    );
+};
+
+if (module === require.main) {
+    exports.main({}, function() {});
+}
+
 });
 
 require.define("/examples/node/helloworld/firedalerts.js", function (require, module, exports, __dirname, __filename) {
