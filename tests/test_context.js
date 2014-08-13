@@ -710,29 +710,6 @@ exports.setup = function(svc) {
             });
         },
 
-        "Callback#timeout 1ms fail": function(test){
-            var service = new splunkjs.Service(
-                this.service.http,
-                {
-                    scheme: this.service.scheme,
-                    host: this.service.host,
-                    port: this.service.port,
-                    username: this.service.username,
-                    password: this.service.password,
-                    version: svc.version,
-                    timeout: 1
-                }
-            );
-
-            // With a timeout of 1ms, timeout error is expected.
-            test.strictEqual(service.timeout, 1);
-            service.request("search/jobs", "GET", {count:1}, null, null, {"X-TestHeader":1}, function(err, res){
-                test.ok(err);
-                test.strictEqual(err.status, 600);
-                test.done();
-            });
-        },
-
         "Callback#timeout fail": function(test){
             var service = new splunkjs.Service(
                 this.service.http,
