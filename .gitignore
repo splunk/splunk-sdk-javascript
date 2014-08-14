@@ -16,3 +16,4 @@ cover_html
 *.swp
 .splunkrc
 *.zip
+test_logs/*

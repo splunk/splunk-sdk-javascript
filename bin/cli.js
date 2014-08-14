@@ -44,7 +44,8 @@
     var BUILD_CACHE_FILE    = ".buildcache";
     var SDK_VERSION         = JSON.parse(fs.readFileSync(path.resolve(__dirname, "../package.json")).toString("utf-8")).version;
     var IGNORED_MODULES     = [
-        "../contrib/nodeunit/test_reporter", 
+        "../contrib/nodeunit/test_reporter",
+        "../contrib/nodeunit/junit_reporter",
         "../contrib/commander", 
         "../../contrib/commander",
         "./platform/node/node_http",
@@ -401,10 +402,10 @@
         args = args || [];
         args = args.slice();
         args.unshift(file);
-        
+
         // Spawn
         var program = spawn("node", args);
-        
+
         program.stdout.on("data", function(data) {
             var str = data.toString("utf-8");
             process.stdout.write(str); 
@@ -487,7 +488,7 @@
     };
     
     var outOfDate = function(dependencies, compiled, compiledMin) {
-        if (!path.existsSync(compiled) || !path.existsSync(compiledMin)) {
+        if (!fs.existsSync(compiled) || !fs.existsSync(compiledMin)) {
             return true;
         }
         
@@ -501,7 +502,7 @@
     };
     
     var ensureDirectoryExists = function(dir) {
-        if (!path.existsSync(dir)) {
+        if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, "755");  
         }
     };
@@ -585,7 +586,7 @@
     };
     
     var launchBrowser = function(file, port) {
-        if (!path.existsSync(file)) {
+        if (!fs.existsSync(file)) {
             throw new Error("File does not exist: " + file);
         } 
         
@@ -625,7 +626,7 @@
             "lib/modularinputs/modularinput.js",
             "lib/modularinputs/scheme.js",
             "lib/modularinputs/utils.js",
-            "lib/modularinputs/validationdefinition.js",
+            "lib/modularinputs/validationdefinition.js"
         ];
         
         var comments = [];
@@ -681,7 +682,7 @@
                 git.switchBranch("gh-pages", done);
             },
             function(done) {
-                if (path.existsSync(GENERATED_DOCS_DIR)) {
+                if (fs.existsSync(GENERATED_DOCS_DIR)) {
                     rmdirRecursiveSync(GENERATED_DOCS_DIR);
                 }
                 
@@ -722,13 +723,12 @@
         var files = args.map(function(arg) {
             return path.join(TEST_DIRECTORY, TEST_PREFIX + arg + ".js");
         }).filter(function(file) {
-            return path.existsSync(file);
+            return fs.existsSync(file);
         });
         
         if (files.length === 0) {
             files.push(path.join(TEST_DIRECTORY, ALL_TESTS));
         }
-        
         var cmdlineArgs = []
             .concat(cmdline.opts.username  ?   makeOption("username",  cmdline.opts.username)  : "")
             .concat(cmdline.opts.scheme    ?   makeOption("scheme",    cmdline.opts.scheme)    : "")
@@ -736,8 +736,9 @@
             .concat(cmdline.opts.port      ?   makeOption("port",      cmdline.opts.port)      : "")
             .concat(cmdline.opts.app       ?   makeOption("app",       cmdline.opts.app)       : "")
             .concat(cmdline.opts.version   ?   makeOption("version",   cmdline.opts.version)   : "")
-            .concat(cmdline.opts.password  ?   makeOption("password",  cmdline.opts.password)  : "");
-        
+            .concat(cmdline.opts.password  ?   makeOption("password",  cmdline.opts.password)  : "")
+            .concat(cmdline.opts.reporter  ?   makeOption("reporter",  cmdline.opts.reporter.toLowerCase())  : "");
+
         var testFunctions = files.map(function(file) {
             return function(done) {
                 launch(file, cmdlineArgs, done);
@@ -800,6 +801,7 @@
         .option('--port <port>', 'Splunk port')
         .option('--version <version>', 'Splunk version')
         .option('--namespace <namespace>', 'Splunk namespace (in the form of owner:app)')
+        .option('--reporter <reporter>', '(optional) How to report results, currently "junit" is a valid reporter.')
         .action(runTests);
     
     program

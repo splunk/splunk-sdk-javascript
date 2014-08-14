@@ -10949,7 +10949,9 @@ require.define("/utils.js", function (require, module, exports, __dirname, __fil
 
 (function() {
     "use strict";
-    
+
+    var fs   = require("fs");
+    var path = require("path");
     var root = exports || this;
 
     /**
@@ -11384,7 +11386,30 @@ require.define("/utils.js", function (require, module, exports, __dirname, __fil
     root.isUndefined = function (obj) {
         return (typeof obj === "undefined");
     };
+
+    /**
+     * Read files in a way that makes unit tests work as well.
+     *
+     * @example
+     *
+     *      // To read `splunk-sdk-javascript/tests/data/empty_data_model.json`  
+     *      // from    `splunk-sdk-javascript/tests/test_service.js`
+     *      var fileContents = utils.readFile(__filename, "../data/empty_data_model.json");
+     *      
+     * @param {String} __filename of the script calling this function.
+     * @param {String} a path relative to the script calling this function.
+     * @return {String} The contents of the file.
+     */
+    root.readFile = function(filename, relativePath) {
+        return fs.readFileSync(path.resolve(filename, relativePath)).toString();
+    };
+
 })();
+});
+
+require.define("fs", function (require, module, exports, __dirname, __filename) {
+// nothing to see here... no file methods for the browser
+
 });
 
 require.define("/browser.ui.timeline.entry.js", function (require, module, exports, __dirname, __filename) {

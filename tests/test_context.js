@@ -668,6 +668,70 @@ exports.setup = function(svc) {
             req.abort();
         },
 
+        "Callback#timeout default test": function(test){
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    version: svc.version,
+                    version: svc.version
+                }
+            );
+
+            test.strictEqual(0, service.timeout);
+            service.request("search/jobs", "GET", {count:1}, null, null, {"X-TestHeader":1}, function(err, res){
+                test.ok(res);
+                test.done();
+            });
+        },
+
+        "Callback#timeout timed test": function(test){
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    version: svc.version,
+                    timeout: 10000
+                }
+            );
+
+            test.strictEqual(service.timeout, 10000);
+            service.request("search/jobs", "GET", {count:1}, null, null, {"X-TestHeader":1}, function(err, res){
+                test.ok(res);
+                test.done();
+            });
+        },
+
+        "Callback#timeout fail": function(test){
+            var service = new splunkjs.Service(
+                this.service.http,
+                {
+                    scheme: this.service.scheme,
+                    host: this.service.host,
+                    port: this.service.port,
+                    username: this.service.username,
+                    password: this.service.password,
+                    version: svc.version,
+                    timeout: 3000
+                }
+            );
+
+            // Having a timeout of 3 seconds, a max_time of 5 seconds with a blocking mode and searching realtime should involve a timeout error.
+            service.get("search/jobs/export", {search:"search index=_internal", timeout:2, max_time:5, search_mode:"realtime", exec_mode:"blocking"}, function(err, res){
+                test.ok(err);
+                test.strictEqual(err.status, 600);
+                test.done();
+            });
+        },
+
         "Cancel test search": function(test) {
             // Here, the search created for several of the previous tests is terminated, it is no longer necessary
             var endpoint = "search/jobs/DELETEME_JSSDK_UNITTEST/control";
