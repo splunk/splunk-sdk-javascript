@@ -1,5 +1,27 @@
 # Splunk SDK for JavaScript Changelog
 
+## v1.5.0
+
+### New features and APIs
+
+* Added support for data models and pivots.
+
+### Breaking changes
+
+* Removed the `xml2json` Splunk app, which was previously bundled with the SDK.
+
+### Bug fixes
+
+* Fixed namespace parameter handling for `Jobs.oneshotSearch` and `Jobs.search` functions.
+* Disallow the wildcard operator `-` when retrieving an entity from a `Service` object.
+
+### Minor changes
+
+* Added a timeout parameter to the `Context` class.
+* Added a junit test runner, used for running the unit tests.
+* Replaced all references of the deprecated `path.existsSync` with `fs.existsSync`.
+* Removed the template `splunkrc.spec` file.
+
 ## v1.4.0
 
 ### New features and APIs
