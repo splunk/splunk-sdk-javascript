@@ -18,7 +18,7 @@
 ### Minor changes
 
 * Added a timeout parameter to the `Context` class.
-* Added a junit test runner, used for running the unit tests.
+* Test suite can now emit JUnit compatible XML
 * Replaced all references of the deprecated `path.existsSync` with `fs.existsSync`.
 * Removed the template `splunkrc.spec` file.
 

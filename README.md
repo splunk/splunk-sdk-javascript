@@ -219,7 +219,7 @@ To run the browser tests, enter:
 
     node sdkdo tests-browser
 
-To run all the tests and generate a junit XML file to `splunk-sdk-javascript/test_logs/junit_test_results.xml`, enter:
+To run all the tests and generate JUnit compatible XML in `splunk-sdk-javascript/test_logs/junit_test_results.xml`, enter:
 
     `node skdo tests --reporter junit`
 
