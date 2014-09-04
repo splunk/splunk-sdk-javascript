@@ -218,7 +218,7 @@
                                 catch (e) {
                                     errorFound = true;
                                     working = false; // Stop streaming if we get an error.
-                                    Logger.error(name, e.message, eventWriter._err);
+                                    Logger.error(name, e.message);
                                     fs.appendFileSync(checkpointFilePath, checkpointFileNewContents); // Write to the checkpoint file
                                     done(e);
 
