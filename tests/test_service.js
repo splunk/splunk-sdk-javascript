@@ -4367,7 +4367,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 );
             },
 
-            "Callback#Create with slashes": function(test) {
+            "Callback#Create with backslashes": function(test) {
                 var startcount = -1;
                 var name = "\\delete-me-" + getNextId();
                 var realm = "\\delete-me-" + getNextId();
@@ -4383,6 +4383,45 @@ exports.setup = function(svc, loggedOutSvc) {
                         function(storagePassword, done) {
                             test.strictEqual(name, storagePassword.properties().username);
                             test.strictEqual("\\" + realm + ":\\" + name + ":", storagePassword.name);
+                            test.strictEqual("changeme", storagePassword.properties().clear_password);
+                            test.strictEqual(realm, storagePassword.properties().realm);
+                            that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
+                        },
+                        function(storagePasswords, storagePassword, done) {
+                            test.strictEqual(startcount + 1, storagePasswords.list().length);
+                            storagePassword.remove(done);
+                        },
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            test.strictEqual(startcount, storagePasswords.list().length);
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#Create with slashes": function(test) {
+                var startcount = -1;
+                var name = "/delete-me-" + getNextId();
+                var realm = "/delete-me-" + getNextId();
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            startcount = storagePasswords.list().length;
+                            storagePasswords.create({name: name, realm: realm, password: "changeme"}, done);
+                        },
+                        function(storagePassword, done) {
+                            test.strictEqual(name, storagePassword.properties().username);
+                            test.strictEqual(realm + ":" + name + ":", storagePassword.name);
                             test.strictEqual("changeme", storagePassword.properties().clear_password);
                             test.strictEqual(realm, storagePassword.properties().realm);
                             that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
@@ -4530,6 +4569,62 @@ exports.setup = function(svc, loggedOutSvc) {
                 var startcount = -1;
                 var name = "delete-me-" + getNextId();
                 var realm = "delete-me-" + getNextId();
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            startcount = storagePasswords.list().length;
+                            storagePasswords.create({name: name, realm: realm, password: "changeme"}, done);
+                        },
+                        function(storagePassword, done) {
+                            test.strictEqual(name, storagePassword.properties().username);
+                            test.strictEqual(realm + ":" + name + ":", storagePassword.name);
+                            test.strictEqual("changeme", storagePassword.properties().clear_password);
+                            test.strictEqual(realm, storagePassword.properties().realm);
+                            that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
+                        },
+                        function(storagePasswords, storagePassword, done) {
+                            try {
+                                test.ok(!!storagePasswords.item(realm + ":" + name + ":"));
+                            }
+                            catch (e) {
+                                test.ok(false);
+                            }
+
+                            var list = storagePasswords.list();
+                            var found = false;
+
+                            test.strictEqual(startcount + 1, list.length);
+                            for (var i = 0; i < list.length; i ++) {
+                                if (realm + ":" + name + ":" === list[i].name) {
+                                    found = true;
+                                }
+                            }
+                            test.ok(found);
+
+                            storagePassword.remove(done);
+                        },
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            test.strictEqual(startcount, storagePasswords.list().length);
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#Read with slashes": function(test) {
+                var startcount = -1;
+                var name = "/delete-me-" + getNextId();
+                var realm = "/delete-me-" + getNextId();
                 var that = this;
                 Async.chain([
                         function(done) {
