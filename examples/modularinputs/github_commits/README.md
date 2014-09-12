@@ -11,3 +11,15 @@
     * Rename this copied folder as `splunk-sdk`.
     * Run `npm install github`.
 * Restart Splunk
+
+# Adding an input
+
+1. From Splunk Home, click the Settings menu. Under **Data**, click **Data inputs**, and find `Github commits`, the input you just added. **Click Add new on that row**.
+* Click **Add new** and fill in:
+    * `name` (whatever name you want to give this input)
+    * `owner` (the owner of the Github repository, this is a Github username or org name)
+    * `repository` (the name of the Github repository)
+    * (optional) `token` if using a private repository and/or to avoid Github's API limits. To get a Github API token visit the [Github settings page](https://github.com/settings/tokens/new) and make sure the `repo` and `public_repo` scopes are selected.
+* Save your input, and navigate back to Splunk Home.
+* Do a search for `sourcetype=github_commits` and you should see some commits indexed, if your repository has a large number of commits indexing them may take a few moments.
+
