@@ -939,8 +939,6 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual(results.rows.length, 1);
                             test.strictEqual(results.rows[0].length, 1);
                             test.strictEqual(results.rows[0][0], "1");
-                            test.ok(results.messages[1].text.indexOf('owner="admin"'));
-                            test.ok(results.messages[1].text.indexOf('app="search"'));
 
                             done();
                         }
