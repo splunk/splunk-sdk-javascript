@@ -4483,6 +4483,57 @@ exports.setup = function(svc, loggedOutSvc) {
                 );
             },
 
+            "Callback#Create should fail without user, or realm": function(test) {
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            storagePasswords.create({name: null, password: "changeme"}, done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#Create should fail without password": function(test) {
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            storagePasswords.create({name: "something", password: null}, done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#Create should fail without user, realm, or password": function(test) {
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            storagePasswords.create({name: null, password: null}, done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(err);
+                        test.done();
+                    }
+                );
+            },
+
             "Callback#Create with colons": function(test) {
                 var startcount = -1;
                 var name = ":delete-me-" + getNextId();
@@ -4544,6 +4595,49 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual("\\:start\\:\\:!@#$%^&*()_+{}\\:|<>?" + realm + ":" + name + "\\:end!@#$%^&*()_+{}\\:|<>?:", storagePassword.name);
                             test.strictEqual("changeme", storagePassword.properties().clear_password);
                             test.strictEqual(":start::!@#$%^&*()_+{}:|<>?" + realm, storagePassword.properties().realm);
+                            that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
+                        },
+                        function(storagePasswords, storagePassword, done) {
+                            test.strictEqual(startcount + 1, storagePasswords.list().length);
+                            storagePassword.remove(done);
+                        },
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            test.strictEqual(startcount, storagePasswords.list().length);
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#Create with unicode chars": function(test) {
+                var startcount = -1;
+                var name = "delete-me-" + getNextId();
+                var realm = "delete-me-" + getNextId();
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            startcount = storagePasswords.list().length;
+                            storagePasswords.create({
+                                    name: name + ":end!@#$%^&*()_+{}:|<>?쎼 and 쎶 and &lt;&amp;&gt; für",
+                                    realm: ":start::!@#$%^&*()_+{}:|<>?" + escape("쎼 and 쎶 and &lt;&amp;&gt; für") + realm,
+                                    password: unescape(escape("쎼 and 쎶 and &lt;&amp;&gt; für"))},
+                                done);
+                        },
+                        function(storagePassword, done) {
+                            test.strictEqual(name + ":end!@#$%^&*()_+{}:|<>?쎼 and 쎶 and &lt;&amp;&gt; für", storagePassword.properties().username);
+                            test.strictEqual("\\:start\\:\\:!@#$%^&*()_+{}\\:|<>?" + escape("쎼 and 쎶 and &lt;&amp;&gt; für") + realm + ":" + name + "\\:end!@#$%^&*()_+{}\\:|<>?쎼 and 쎶 and &lt;&amp;&gt; für:", storagePassword.name);
+                            test.strictEqual(unescape(escape("쎼 and 쎶 and &lt;&amp;&gt; für")), storagePassword.properties().clear_password);
+                            test.strictEqual(":start::!@#$%^&*()_+{}:|<>?" + escape("쎼 and 쎶 and &lt;&amp;&gt; für") + realm, storagePassword.properties().realm);
                             that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                         },
                         function(storagePasswords, storagePassword, done) {
