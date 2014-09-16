@@ -925,7 +925,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var sid = getNextId();
                 var that = this;
                 var namespace = {owner: "admin", app: "search"};
-                var splunkVersion;
+                var splunkVersion = 6.1; // Default to pre-6.2 version
                 var originalLoggerLevel = "DEBUG";
 
                 Async.chain([
