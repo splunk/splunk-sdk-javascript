@@ -925,8 +925,8 @@ exports.setup = function(svc, loggedOutSvc) {
                 var sid = getNextId();
                 var that = this;
                 var namespace = {owner: "admin", app: "search"};
-                var splunkVersion = "6.1"; // Default to non-6.2 version
-                var loggerLevel = "DEBUG";
+                var splunkVersion;
+                var originalLoggerLevel = "DEBUG";
 
                 Async.chain([
                         function(done) {
@@ -958,7 +958,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                     function(conf, done1) {
                                         var searchInfo = conf.item("search_info");
                                         // Save this so it can be restored later
-                                        loggerLevel = searchInfo.properties()["infocsv_log_level"];
+                                        originalLoggerLevel = searchInfo.properties()["infocsv_log_level"];
                                         searchInfo.update({"infocsv_log_level": "DEBUG"}, done1);
                                     },
                                     function(conf, done1) {
@@ -1013,10 +1013,10 @@ exports.setup = function(svc, loggedOutSvc) {
                                     function(conf, done1) {
                                         var searchInfo = conf.item("search_info");
                                         // Restore the logger level from before
-                                        searchInfo.update({"infocsv_log_level": loggerLevel}, done1);
+                                        searchInfo.update({"infocsv_log_level": originalLoggerLevel}, done1);
                                     },
                                     function(conf, done1) {
-                                        test.strictEqual(loggerLevel, conf.properties()["infocsv_log_level"]);
+                                        test.strictEqual(originalLoggerLevel, conf.properties()["infocsv_log_level"]);
                                         done1();
                                     }
                                 ],
