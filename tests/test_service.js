@@ -925,8 +925,53 @@ exports.setup = function(svc, loggedOutSvc) {
                 var sid = getNextId();
                 var that = this;
                 var namespace = {owner: "admin", app: "search"};
-                
+                var splunkVersion = "6.1"; // Default to non-6.2 version
+                var loggerLevel = "DEBUG";
+
                 Async.chain([
+                        function(done) {
+                            // If running on Splunk 6.2+, first set the search logger level to DEBUG
+                            Async.chain([
+                                    function(done1) {
+                                        that.service.serverInfo(done1);
+                                    },
+                                    function(info, done1) {
+                                        splunkVersion = parseFloat(info.properties().version);
+                                        if (splunkVersion < 6.2) {
+                                            done(); // Exit the inner Async.chain
+                                        }
+                                        else {
+                                            done1();
+                                        }
+                                    },
+                                    function(done1) {
+                                        that.service.configurations({owner: "admin", app: "search"}).fetch(done1);
+                                    },
+                                    function(confs, done1) {
+                                        try {
+                                            confs.item("limits").fetch(done1);
+                                        }
+                                        catch(e) {
+                                            done1(e);
+                                        }
+                                    },
+                                    function(conf, done1) {
+                                        var searchInfo = conf.item("search_info");
+                                        // Save this so it can be restored later
+                                        loggerLevel = searchInfo.properties()["infocsv_log_level"];
+                                        searchInfo.update({"infocsv_log_level": "DEBUG"}, done1);
+                                    },
+                                    function(conf, done1) {
+                                        test.strictEqual("DEBUG", conf.properties()["infocsv_log_level"]);
+                                        done1();
+                                    }
+                                ],
+                                function(err) {
+                                    test.ok(!err);
+                                    done();
+                                }
+                            );
+                        },
                         function(done) {
                             that.service.oneshotSearch('search index=_internal | head 1 | stats count', {id: sid}, namespace, done);
                         },
@@ -939,8 +984,47 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual(results.rows.length, 1);
                             test.strictEqual(results.rows[0].length, 1);
                             test.strictEqual(results.rows[0][0], "1");
+                            test.ok(results.messages[1].text.indexOf('owner="admin"'));     
+                            test.ok(results.messages[1].text.indexOf('app="search"'));
 
                             done();
+                        },
+                        function(done) {
+                            Async.chain([
+                                    function(done1) {
+                                        if (splunkVersion < 6.2) {
+                                            done(); // Exit the inner Async.chain
+                                        }
+                                        else {
+                                            done1();
+                                        }
+                                    },
+                                    function(done1) {
+                                        that.service.configurations({owner: "admin", app: "search"}).fetch(done1);
+                                    },
+                                    function(confs, done1) {
+                                        try {
+                                            confs.item("limits").fetch(done1);
+                                        }
+                                        catch(e) {
+                                            done1(e);
+                                        }
+                                    },
+                                    function(conf, done1) {
+                                        var searchInfo = conf.item("search_info");
+                                        // Restore the logger level from before
+                                        searchInfo.update({"infocsv_log_level": loggerLevel}, done1);
+                                    },
+                                    function(conf, done1) {
+                                        test.strictEqual(loggerLevel, conf.properties()["infocsv_log_level"]);
+                                        done1();
+                                    }
+                                ],
+                                function(err) {
+                                    test.ok(!err);
+                                    done();
+                                }
+                            );
                         }
                     ],
                     function(err) {
