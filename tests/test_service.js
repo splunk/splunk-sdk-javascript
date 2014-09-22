@@ -4699,6 +4699,7 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#Create with unicode chars": function(test) {
+                /*global escape: true, unescape: true */
                 var startcount = -1;
                 var name = "delete-me-" + getNextId();
                 var realm = "delete-me-" + getNextId();
@@ -4998,7 +4999,7 @@ exports.setup = function(svc, loggedOutSvc) {
                         test.done();
                     }
                 );
-            },
+            }
         },
         
         "Index Tests": {
