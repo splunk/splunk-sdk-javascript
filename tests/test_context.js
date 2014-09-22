@@ -677,7 +677,6 @@ exports.setup = function(svc) {
                     port: this.service.port,
                     username: this.service.username,
                     password: this.service.password,
-                    version: svc.version,
                     version: svc.version
                 }
             );
