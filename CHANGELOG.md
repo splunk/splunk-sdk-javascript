@@ -1,5 +1,17 @@
 # Splunk SDK for JavaScript Changelog
 
+## v1.6.0
+
+### New features and APIs
+
+* Added support for storage passwords.
+* 
+
+### Minor changes
+
+* Added "Adding an input" instructions for modular input examples in their respective `readme.md`.
+* Clean up various code examples
+
 ## v1.5.0
 
 ### New features and APIs
