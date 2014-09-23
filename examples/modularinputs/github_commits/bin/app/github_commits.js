@@ -26,7 +26,7 @@
     var utils           = ModularInputs.utils;
 
     // The version number should be updated every time a new version of the JavaScript SDK is released.
-    var SDK_UA_STRING = "splunk-sdk-javascript/1.5.0";
+    var SDK_UA_STRING = "splunk-sdk-javascript/1.6.0";
 
     // Create easy to read date format.
     function getDisplayDate(date) {
@@ -218,7 +218,7 @@
                                 catch (e) {
                                     errorFound = true;
                                     working = false; // Stop streaming if we get an error.
-                                    Logger.error(name, e.message, eventWriter._err);
+                                    Logger.error(name, e.message);
                                     fs.appendFileSync(checkpointFilePath, checkpointFileNewContents); // Write to the checkpoint file
                                     done(e);
 

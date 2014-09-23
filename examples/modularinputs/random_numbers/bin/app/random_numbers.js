@@ -93,7 +93,7 @@
             }
             catch (e) {
                 errorFound = true;
-                Logger.error(name, e.message, eventWriter._err);
+                Logger.error(name, e.message);
                 done(e);
 
                 // We had an error, die
