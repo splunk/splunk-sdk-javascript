@@ -5,7 +5,6 @@
 ### New features and APIs
 
 * Added support for storage passwords.
-* 
 
 ### Minor changes
 
