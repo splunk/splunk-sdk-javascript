@@ -1588,6 +1588,7 @@ require.define("/lib/paths.js", function (require, module, exports, __dirname, _
         roles: "authorization/roles",
         savedSearches: "saved/searches",
         settings: "server/settings",
+        storagePasswords: "storage/passwords",
         users: "/services/authentication/users",
         typeahead: "search/typeahead",
         views: "data/ui/views",
@@ -2176,7 +2177,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @example
          *
          *      // Check if we have an _internal index
-         *      var indexes = svc.configurations();
+         *      var indexes = svc.indexes();
          *      indexes.fetch(function(err, indexes) {
          *          var index = indexes.item("_internal");
          *          console.log("Was index found: " + !!index);
@@ -2223,6 +2224,32 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             return new root.SavedSearches(this, namespace);
         },
         
+        /**
+         * Gets the `StoragePasswords` collection, which lets you
+         * create, list, and update storage passwords. 
+         *
+         * @example
+         *
+         *      // List all # of storage passwords
+         *      var storagePasswords = svc.storagePasswords();
+         *      storagePasswords.fetch(function(err, storagePasswords) {
+         *          console.log("# of Storage Passwords: " + storagePasswords.list().length);
+         *      });
+         *
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
+         * @return {splunkjs.Service.StoragePasswords} The `StoragePasswords` collection.
+         *
+         * @endpoint storage/passwords
+         * @method splunkjs.Service
+         * @see splunkjs.Service.StoragePasswords
+         */
+        storagePasswords: function(namespace) {
+            return new root.StoragePasswords(this, namespace);
+        },
+
         /**
          * Gets the `FiredAlertGroupCollection` collection, which lets you
          * list alert groups.
@@ -3548,7 +3575,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.suppressInfo = utils.bind(this, this.suppressInfo);
         },
 
-        /** 
+        /**
          * Gets the count of triggered alerts for this savedSearch,
          * defaulting to 0 when undefined.
          *
@@ -3812,7 +3839,96 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this._super(service, this.path(), namespace);
         }
     });
-    
+
+    /**
+     * Represents a specific storage password, which you can then view, modify, and
+     * remove.
+     *
+     * @endpoint storage/passwords/{name}
+     * @class splunkjs.Service.StoragePassword
+     * @extends splunkjs.Service.Entity
+     */
+    root.StoragePassword = root.Entity.extend({
+        /**
+         * Retrieves the REST endpoint path for this resource (with no namespace).
+         *
+         * @method splunkjs.Service.StoragePassword
+         */
+        path: function () {
+            return Paths.storagePasswords + "/" + encodeURIComponent(this.name);
+        },
+
+        /**
+         * Constructor for `splunkjs.Service.StoragePassword`.
+         *
+         * @constructor
+         * @param {splunkjs.Service} service A `Service` instance.
+         * @param {String} name The name for the new storage password.
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
+         * @return {splunkjs.Service.StoragePassword} A new `splunkjs.Service.StoragePassword` instance.
+         *
+         * @method splunkjs.Service.StoragePassword
+         */
+        init: function (service, name, namespace) {
+            this.name = name;
+            this._super(service, this.path(), namespace);
+        }
+    });
+
+    /**
+     * Represents a collection of storage passwords. You can create and list storage 
+     * passwords using this collection container, or get a specific storage password.
+     *
+     * @endpoint storage/passwords
+     * @class splunkjs.Service.StoragePasswords
+     * @extends splunkjs.Service.Collection
+     */
+    root.StoragePasswords = root.Collection.extend({
+        /**
+         * Retrieves the REST endpoint path for this resource (with no namespace).
+         *
+         * @method splunkjs.Service.StoragePasswords
+         */
+        path: function() {
+            return Paths.storagePasswords;
+        },
+        
+        /**
+         * Creates a local instance of a storage password.
+         *
+         * @param {Object} props The properties for the new storage password. For a list of available parameters,
+         * see <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTaccess#POST_storage.2Fpasswords" target="_blank">
+         * POST storage/passwords</a> on Splunk Developer Portal.
+         * @return {splunkjs.Service.SavedSearch} A new `splunkjs.Service.StoragePassword` instance.
+         *
+         * @method splunkjs.Service.StoragePasswords
+         */
+        instantiateEntity: function(props) {
+            var entityNamespace = utils.namespaceFromProperties(props);
+            return new root.StoragePassword(this.service, props.name, entityNamespace);
+        },
+        
+        /**
+         * Constructor for `splunkjs.Service.StoragePasswords`. 
+         *
+         * @constructor
+         * @param {splunkjs.Service} service A `Service` instance.
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
+         * @return {splunkjs.Service.StoragePasswords} A new `splunkjs.Service.StoragePasswords` instance.
+         *
+         * @method splunkjs.Service.StoragePasswords
+         */     
+        init: function(service, namespace) {
+            this._super(service, this.path(), namespace);
+        }
+    });
+
     /**
      * Represents a fired alert. 
      * You can retrieve several of the fired alert's properties by
@@ -4889,7 +5005,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @example
          *
-         *      var properties = service.configurations();
+         *      var configurations = service.configurations();
          *      configurations.create("myprops", function(err, newFile) {
          *          console.log("CREATED");
          *      });

@@ -1845,6 +1845,7 @@ require.define("/lib/paths.js", function (require, module, exports, __dirname, _
         roles: "authorization/roles",
         savedSearches: "saved/searches",
         settings: "server/settings",
+        storagePasswords: "storage/passwords",
         users: "/services/authentication/users",
         typeahead: "search/typeahead",
         views: "data/ui/views",
@@ -2433,7 +2434,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @example
          *
          *      // Check if we have an _internal index
-         *      var indexes = svc.configurations();
+         *      var indexes = svc.indexes();
          *      indexes.fetch(function(err, indexes) {
          *          var index = indexes.item("_internal");
          *          console.log("Was index found: " + !!index);
@@ -2480,6 +2481,32 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             return new root.SavedSearches(this, namespace);
         },
         
+        /**
+         * Gets the `StoragePasswords` collection, which lets you
+         * create, list, and update storage passwords. 
+         *
+         * @example
+         *
+         *      // List all # of storage passwords
+         *      var storagePasswords = svc.storagePasswords();
+         *      storagePasswords.fetch(function(err, storagePasswords) {
+         *          console.log("# of Storage Passwords: " + storagePasswords.list().length);
+         *      });
+         *
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
+         * @return {splunkjs.Service.StoragePasswords} The `StoragePasswords` collection.
+         *
+         * @endpoint storage/passwords
+         * @method splunkjs.Service
+         * @see splunkjs.Service.StoragePasswords
+         */
+        storagePasswords: function(namespace) {
+            return new root.StoragePasswords(this, namespace);
+        },
+
         /**
          * Gets the `FiredAlertGroupCollection` collection, which lets you
          * list alert groups.
@@ -3805,7 +3832,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.suppressInfo = utils.bind(this, this.suppressInfo);
         },
 
-        /** 
+        /**
          * Gets the count of triggered alerts for this savedSearch,
          * defaulting to 0 when undefined.
          *
@@ -4069,7 +4096,96 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this._super(service, this.path(), namespace);
         }
     });
-    
+
+    /**
+     * Represents a specific storage password, which you can then view, modify, and
+     * remove.
+     *
+     * @endpoint storage/passwords/{name}
+     * @class splunkjs.Service.StoragePassword
+     * @extends splunkjs.Service.Entity
+     */
+    root.StoragePassword = root.Entity.extend({
+        /**
+         * Retrieves the REST endpoint path for this resource (with no namespace).
+         *
+         * @method splunkjs.Service.StoragePassword
+         */
+        path: function () {
+            return Paths.storagePasswords + "/" + encodeURIComponent(this.name);
+        },
+
+        /**
+         * Constructor for `splunkjs.Service.StoragePassword`.
+         *
+         * @constructor
+         * @param {splunkjs.Service} service A `Service` instance.
+         * @param {String} name The name for the new storage password.
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
+         * @return {splunkjs.Service.StoragePassword} A new `splunkjs.Service.StoragePassword` instance.
+         *
+         * @method splunkjs.Service.StoragePassword
+         */
+        init: function (service, name, namespace) {
+            this.name = name;
+            this._super(service, this.path(), namespace);
+        }
+    });
+
+    /**
+     * Represents a collection of storage passwords. You can create and list storage 
+     * passwords using this collection container, or get a specific storage password.
+     *
+     * @endpoint storage/passwords
+     * @class splunkjs.Service.StoragePasswords
+     * @extends splunkjs.Service.Collection
+     */
+    root.StoragePasswords = root.Collection.extend({
+        /**
+         * Retrieves the REST endpoint path for this resource (with no namespace).
+         *
+         * @method splunkjs.Service.StoragePasswords
+         */
+        path: function() {
+            return Paths.storagePasswords;
+        },
+        
+        /**
+         * Creates a local instance of a storage password.
+         *
+         * @param {Object} props The properties for the new storage password. For a list of available parameters,
+         * see <a href="http://docs.splunk.com/Documentation/Splunk/latest/RESTAPI/RESTaccess#POST_storage.2Fpasswords" target="_blank">
+         * POST storage/passwords</a> on Splunk Developer Portal.
+         * @return {splunkjs.Service.SavedSearch} A new `splunkjs.Service.StoragePassword` instance.
+         *
+         * @method splunkjs.Service.StoragePasswords
+         */
+        instantiateEntity: function(props) {
+            var entityNamespace = utils.namespaceFromProperties(props);
+            return new root.StoragePassword(this.service, props.name, entityNamespace);
+        },
+        
+        /**
+         * Constructor for `splunkjs.Service.StoragePasswords`. 
+         *
+         * @constructor
+         * @param {splunkjs.Service} service A `Service` instance.
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
+         * @return {splunkjs.Service.StoragePasswords} A new `splunkjs.Service.StoragePasswords` instance.
+         *
+         * @method splunkjs.Service.StoragePasswords
+         */     
+        init: function(service, namespace) {
+            this._super(service, this.path(), namespace);
+        }
+    });
+
     /**
      * Represents a fired alert. 
      * You can retrieve several of the fired alert's properties by
@@ -5146,7 +5262,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @example
          *
-         *      var properties = service.configurations();
+         *      var configurations = service.configurations();
          *      configurations.create("myprops", function(err, newFile) {
          *          console.log("CREATED");
          *      });
@@ -15000,7 +15116,6 @@ exports.setup = function(svc) {
                     port: this.service.port,
                     username: this.service.username,
                     password: this.service.password,
-                    version: svc.version,
                     version: svc.version
                 }
             );
@@ -16250,8 +16365,53 @@ exports.setup = function(svc, loggedOutSvc) {
                 var sid = getNextId();
                 var that = this;
                 var namespace = {owner: "admin", app: "search"};
-                
+                var splunkVersion = 6.1; // Default to pre-6.2 version
+                var originalLoggerLevel = "DEBUG";
+
                 Async.chain([
+                        function(done) {
+                            // If running on Splunk 6.2+, first set the search logger level to DEBUG
+                            Async.chain([
+                                    function(done1) {
+                                        that.service.serverInfo(done1);
+                                    },
+                                    function(info, done1) {
+                                        splunkVersion = parseFloat(info.properties().version);
+                                        if (splunkVersion < 6.2) {
+                                            done(); // Exit the inner Async.chain
+                                        }
+                                        else {
+                                            done1();
+                                        }
+                                    },
+                                    function(done1) {
+                                        that.service.configurations({owner: "admin", app: "search"}).fetch(done1);
+                                    },
+                                    function(confs, done1) {
+                                        try {
+                                            confs.item("limits").fetch(done1);
+                                        }
+                                        catch(e) {
+                                            done1(e);
+                                        }
+                                    },
+                                    function(conf, done1) {
+                                        var searchInfo = conf.item("search_info");
+                                        // Save this so it can be restored later
+                                        originalLoggerLevel = searchInfo.properties()["infocsv_log_level"];
+                                        searchInfo.update({"infocsv_log_level": "DEBUG"}, done1);
+                                    },
+                                    function(conf, done1) {
+                                        test.strictEqual("DEBUG", conf.properties()["infocsv_log_level"]);
+                                        done1();
+                                    }
+                                ],
+                                function(err) {
+                                    test.ok(!err);
+                                    done();
+                                }
+                            );
+                        },
                         function(done) {
                             that.service.oneshotSearch('search index=_internal | head 1 | stats count', {id: sid}, namespace, done);
                         },
@@ -16264,10 +16424,47 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual(results.rows.length, 1);
                             test.strictEqual(results.rows[0].length, 1);
                             test.strictEqual(results.rows[0][0], "1");
-                            test.ok(results.messages[1].text.indexOf('owner="admin"'));
+                            test.ok(results.messages[1].text.indexOf('owner="admin"'));     
                             test.ok(results.messages[1].text.indexOf('app="search"'));
 
                             done();
+                        },
+                        function(done) {
+                            Async.chain([
+                                    function(done1) {
+                                        if (splunkVersion < 6.2) {
+                                            done(); // Exit the inner Async.chain
+                                        }
+                                        else {
+                                            done1();
+                                        }
+                                    },
+                                    function(done1) {
+                                        that.service.configurations({owner: "admin", app: "search"}).fetch(done1);
+                                    },
+                                    function(confs, done1) {
+                                        try {
+                                            confs.item("limits").fetch(done1);
+                                        }
+                                        catch(e) {
+                                            done1(e);
+                                        }
+                                    },
+                                    function(conf, done1) {
+                                        var searchInfo = conf.item("search_info");
+                                        // Restore the logger level from before
+                                        searchInfo.update({"infocsv_log_level": originalLoggerLevel}, done1);
+                                    },
+                                    function(conf, done1) {
+                                        test.strictEqual(originalLoggerLevel, conf.properties()["infocsv_log_level"]);
+                                        done1();
+                                    }
+                                ],
+                                function(err) {
+                                    test.ok(!err);
+                                    done();
+                                }
+                            );
                         }
                     ],
                     function(err) {
@@ -19122,7 +19319,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var app = new splunkjs.Service.Application(this.service, "sdk-app-collection");
                 app.setupInfo(function(err, content, search) {
                     test.ok(err.data.messages[0].text.match("Setup configuration file does not"));
-                    console.log("ERR ---", err.data.messages[0].text)
+                    console.log("ERR ---", err.data.messages[0].text);
                     test.done();
                 });
             },
@@ -19644,6 +19841,603 @@ exports.setup = function(svc, loggedOutSvc) {
                     test.ok(!err);
                     test.done();
                 });
+            }
+        },
+
+        "Storage Passwords Tests": {
+            setUp: function(done) {
+                this.service = svc;
+                done();
+            },
+
+            "Callback#Create": function(test) {
+                var startcount = -1;
+                var name = "delete-me-" + getNextId();
+                var realm = "delete-me-" + getNextId();
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            startcount = storagePasswords.list().length;
+                            storagePasswords.create({name: name, realm: realm, password: "changeme"}, done);
+                        },
+                        function(storagePassword, done) {
+                            test.strictEqual(name, storagePassword.properties().username);
+                            test.strictEqual(realm + ":" + name + ":", storagePassword.name);
+                            test.strictEqual("changeme", storagePassword.properties().clear_password);
+                            test.strictEqual(realm, storagePassword.properties().realm);
+                            that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
+                        },
+                        function(storagePasswords, storagePassword, done) {
+                            test.strictEqual(startcount + 1, storagePasswords.list().length);
+                            storagePassword.remove(done);
+                        },
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            test.strictEqual(startcount, storagePasswords.list().length);
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#Create with backslashes": function(test) {
+                var startcount = -1;
+                var name = "\\delete-me-" + getNextId();
+                var realm = "\\delete-me-" + getNextId();
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            startcount = storagePasswords.list().length;
+                            storagePasswords.create({name: name, realm: realm, password: "changeme"}, done);
+                        },
+                        function(storagePassword, done) {
+                            test.strictEqual(name, storagePassword.properties().username);
+                            test.strictEqual("\\" + realm + ":\\" + name + ":", storagePassword.name);
+                            test.strictEqual("changeme", storagePassword.properties().clear_password);
+                            test.strictEqual(realm, storagePassword.properties().realm);
+                            that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
+                        },
+                        function(storagePasswords, storagePassword, done) {
+                            test.strictEqual(startcount + 1, storagePasswords.list().length);
+                            storagePassword.remove(done);
+                        },
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            test.strictEqual(startcount, storagePasswords.list().length);
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#Create with slashes": function(test) {
+                var startcount = -1;
+                var name = "/delete-me-" + getNextId();
+                var realm = "/delete-me-" + getNextId();
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            startcount = storagePasswords.list().length;
+                            storagePasswords.create({name: name, realm: realm, password: "changeme"}, done);
+                        },
+                        function(storagePassword, done) {
+                            test.strictEqual(name, storagePassword.properties().username);
+                            test.strictEqual(realm + ":" + name + ":", storagePassword.name);
+                            test.strictEqual("changeme", storagePassword.properties().clear_password);
+                            test.strictEqual(realm, storagePassword.properties().realm);
+                            that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
+                        },
+                        function(storagePasswords, storagePassword, done) {
+                            test.strictEqual(startcount + 1, storagePasswords.list().length);
+                            storagePassword.remove(done);
+                        },
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            test.strictEqual(startcount, storagePasswords.list().length);
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#Create without realm": function(test) {
+                var startcount = -1;
+                var name = "delete-me-" + getNextId();
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            startcount = storagePasswords.list().length;
+                            storagePasswords.create({name: name, password: "changeme"}, done);
+                        },
+                        function(storagePassword, done) {
+                            test.strictEqual(name, storagePassword.properties().username);
+                            test.strictEqual(":" + name + ":", storagePassword.name);
+                            test.strictEqual("changeme", storagePassword.properties().clear_password);
+                            test.strictEqual("", storagePassword.properties().realm);
+                            that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
+                        },
+                        function(storagePasswords, storagePassword, done) {
+                            test.strictEqual(startcount + 1, storagePasswords.list().length);
+                            storagePassword.remove(done);
+                        },
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            test.strictEqual(startcount, storagePasswords.list().length);
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#Create should fail without user, or realm": function(test) {
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            storagePasswords.create({name: null, password: "changeme"}, done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#Create should fail without password": function(test) {
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            storagePasswords.create({name: "something", password: null}, done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#Create should fail without user, realm, or password": function(test) {
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            storagePasswords.create({name: null, password: null}, done);
+                        }
+                    ],
+                    function(err) {
+                        test.ok(err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#Create with colons": function(test) {
+                var startcount = -1;
+                var name = ":delete-me-" + getNextId();
+                var realm = ":delete-me-" + getNextId();
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            startcount = storagePasswords.list().length;
+                            storagePasswords.create({name: name, realm: realm, password: "changeme"}, done);
+                        },
+                        function(storagePassword, done) {
+                            test.strictEqual(name, storagePassword.properties().username);
+                            test.strictEqual("\\" + realm + ":\\" + name + ":", storagePassword.name);
+                            test.strictEqual("changeme", storagePassword.properties().clear_password);
+                            test.strictEqual(realm, storagePassword.properties().realm);
+                            that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
+                        },
+                        function(storagePasswords, storagePassword, done) {
+                            test.strictEqual(startcount + 1, storagePasswords.list().length);
+                            storagePassword.remove(done);
+                        },
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            test.strictEqual(startcount, storagePasswords.list().length);
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#Create crazy": function(test) {
+                var startcount = -1;
+                var name = "delete-me-" + getNextId();
+                var realm = "delete-me-" + getNextId();
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            startcount = storagePasswords.list().length;
+                            storagePasswords.create({
+                                    name: name + ":end!@#$%^&*()_+{}:|<>?",
+                                    realm: ":start::!@#$%^&*()_+{}:|<>?" + realm,
+                                    password: "changeme"},
+                                done);
+                        },
+                        function(storagePassword, done) {
+                            test.strictEqual(name + ":end!@#$%^&*()_+{}:|<>?", storagePassword.properties().username);
+                            test.strictEqual("\\:start\\:\\:!@#$%^&*()_+{}\\:|<>?" + realm + ":" + name + "\\:end!@#$%^&*()_+{}\\:|<>?:", storagePassword.name);
+                            test.strictEqual("changeme", storagePassword.properties().clear_password);
+                            test.strictEqual(":start::!@#$%^&*()_+{}:|<>?" + realm, storagePassword.properties().realm);
+                            that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
+                        },
+                        function(storagePasswords, storagePassword, done) {
+                            test.strictEqual(startcount + 1, storagePasswords.list().length);
+                            storagePassword.remove(done);
+                        },
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            test.strictEqual(startcount, storagePasswords.list().length);
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#Create with unicode chars": function(test) {
+                var startcount = -1;
+                var name = "delete-me-" + getNextId();
+                var realm = "delete-me-" + getNextId();
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            startcount = storagePasswords.list().length;
+                            storagePasswords.create({
+                                    name: name + ":end!@#$%^&*()_+{}:|<>?쎼 and 쎶 and &lt;&amp;&gt; für",
+                                    realm: ":start::!@#$%^&*()_+{}:|<>?" + encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für") + realm,
+                                    password: decodeURIComponent(encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für"))},
+                                done);
+                        },
+                        function(storagePassword, done) {
+                            test.strictEqual(name + ":end!@#$%^&*()_+{}:|<>?쎼 and 쎶 and &lt;&amp;&gt; für", storagePassword.properties().username);
+                            test.strictEqual("\\:start\\:\\:!@#$%^&*()_+{}\\:|<>?" + encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für") + realm + ":" + name + "\\:end!@#$%^&*()_+{}\\:|<>?쎼 and 쎶 and &lt;&amp;&gt; für:", storagePassword.name);
+                            test.strictEqual(decodeURIComponent(encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für")), storagePassword.properties().clear_password);
+                            test.strictEqual(":start::!@#$%^&*()_+{}:|<>?" + encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für") + realm, storagePassword.properties().realm);
+                            that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
+                        },
+                        function(storagePasswords, storagePassword, done) {
+                            test.strictEqual(startcount + 1, storagePasswords.list().length);
+                            storagePassword.remove(done);
+                        },
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            test.strictEqual(startcount, storagePasswords.list().length);
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#Read": function(test) {
+                var startcount = -1;
+                var name = "delete-me-" + getNextId();
+                var realm = "delete-me-" + getNextId();
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            startcount = storagePasswords.list().length;
+                            storagePasswords.create({name: name, realm: realm, password: "changeme"}, done);
+                        },
+                        function(storagePassword, done) {
+                            test.strictEqual(name, storagePassword.properties().username);
+                            test.strictEqual(realm + ":" + name + ":", storagePassword.name);
+                            test.strictEqual("changeme", storagePassword.properties().clear_password);
+                            test.strictEqual(realm, storagePassword.properties().realm);
+                            that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
+                        },
+                        function(storagePasswords, storagePassword, done) {
+                            try {
+                                test.ok(!!storagePasswords.item(realm + ":" + name + ":"));
+                            }
+                            catch (e) {
+                                test.ok(false);
+                            }
+
+                            var list = storagePasswords.list();
+                            var found = false;
+
+                            test.strictEqual(startcount + 1, list.length);
+                            for (var i = 0; i < list.length; i ++) {
+                                if (realm + ":" + name + ":" === list[i].name) {
+                                    found = true;
+                                }
+                            }
+                            test.ok(found);
+
+                            storagePassword.remove(done);
+                        },
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            test.strictEqual(startcount, storagePasswords.list().length);
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#Read with slashes": function(test) {
+                var startcount = -1;
+                var name = "/delete-me-" + getNextId();
+                var realm = "/delete-me-" + getNextId();
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            startcount = storagePasswords.list().length;
+                            storagePasswords.create({name: name, realm: realm, password: "changeme"}, done);
+                        },
+                        function(storagePassword, done) {
+                            test.strictEqual(name, storagePassword.properties().username);
+                            test.strictEqual(realm + ":" + name + ":", storagePassword.name);
+                            test.strictEqual("changeme", storagePassword.properties().clear_password);
+                            test.strictEqual(realm, storagePassword.properties().realm);
+                            that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
+                        },
+                        function(storagePasswords, storagePassword, done) {
+                            try {
+                                test.ok(!!storagePasswords.item(realm + ":" + name + ":"));
+                            }
+                            catch (e) {
+                                test.ok(false);
+                            }
+
+                            var list = storagePasswords.list();
+                            var found = false;
+
+                            test.strictEqual(startcount + 1, list.length);
+                            for (var i = 0; i < list.length; i ++) {
+                                if (realm + ":" + name + ":" === list[i].name) {
+                                    found = true;
+                                }
+                            }
+                            test.ok(found);
+
+                            storagePassword.remove(done);
+                        },
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            test.strictEqual(startcount, storagePasswords.list().length);
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#Update": function(test) {
+                var startcount = -1;
+                var name = "delete-me-" + getNextId();
+                var realm = "delete-me-" + getNextId();
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            startcount = storagePasswords.list().length;
+                            storagePasswords.create({name: name, realm: realm, password: "changeme"}, done);
+                        },
+                        function(storagePassword, done) {
+                            test.strictEqual(name, storagePassword.properties().username);
+                            test.strictEqual(realm + ":" + name + ":", storagePassword.name);
+                            test.strictEqual("changeme", storagePassword.properties().clear_password);
+                            test.strictEqual(realm, storagePassword.properties().realm);
+                            that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
+                        },
+                        function(storagePasswords, storagePassword, done) {
+                            test.strictEqual(startcount + 1, storagePasswords.list().length);
+                            storagePassword.update({password: "changed"}, done);
+                        },
+                        function(storagePassword, done) {
+                            test.strictEqual(name, storagePassword.properties().username);
+                            test.strictEqual(realm + ":" + name + ":", storagePassword.name);
+                            test.strictEqual("changed", storagePassword.properties().clear_password);
+                            test.strictEqual(realm, storagePassword.properties().realm);
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            var list = storagePasswords.list();
+                            var found = false;
+                            var index = -1;
+
+                            test.strictEqual(startcount + 1, list.length);
+                            for (var i = 0; i < list.length; i ++) {
+                                if (realm + ":" + name + ":" === list[i].name) {
+                                    found = true;
+                                    index = i;
+                                    test.strictEqual(name, list[i].properties().username);
+                                    test.strictEqual(realm + ":" + name + ":", list[i].name);
+                                    test.strictEqual("changed", list[i].properties().clear_password);
+                                    test.strictEqual(realm, list[i].properties().realm);
+                                }
+                            }
+                            test.ok(found);
+
+                            if (!found) {
+                                done(new Error("Didn't find the created password"));
+                            }
+                            else {
+                                list[index].remove(done);
+                            }
+                        },
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            test.strictEqual(startcount, storagePasswords.list().length);
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "Callback#Delete": function(test) {
+                var startcount = -1;
+                var name = "delete-me-" + getNextId();
+                var realm = "delete-me-" + getNextId();
+                var that = this;
+                Async.chain([
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            startcount = storagePasswords.list().length;
+                            storagePasswords.create({name: name, realm: realm, password: "changeme"}, done);
+                        },
+                        function(storagePassword, done) {
+                            test.strictEqual(name, storagePassword.properties().username);
+                            test.strictEqual(realm + ":" + name + ":", storagePassword.name);
+                            test.strictEqual("changeme", storagePassword.properties().clear_password);
+                            test.strictEqual(realm, storagePassword.properties().realm);
+                            that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
+                        },
+                        function(storagePasswords, storagePassword, done) {
+                            test.strictEqual(startcount + 1, storagePasswords.list().length);
+                            storagePassword.remove(done);
+                        },
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            test.strictEqual(startcount, storagePasswords.list().length);
+                            storagePasswords.create({name: name, realm: realm, password: "changeme"}, done);
+                        },
+                        function(storagePassword, done) {
+                            test.strictEqual(name, storagePassword.properties().username);
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            test.strictEqual(startcount + 1, storagePasswords.list().length);
+                            var list = storagePasswords.list();
+                            var found = false;
+                            var index = -1;
+
+                            test.strictEqual(startcount + 1, list.length);
+                            for (var i = 0; i < list.length; i ++) {
+                                if (realm + ":" + name + ":" === list[i].name) {
+                                    found = true;
+                                    index = i;
+                                    test.strictEqual(name, list[i].properties().username);
+                                    test.strictEqual(realm + ":" + name + ":", list[i].name);
+                                    test.strictEqual("changeme", list[i].properties().clear_password);
+                                    test.strictEqual(realm, list[i].properties().realm);
+                                }
+                            }
+                            test.ok(found);
+
+                            if (!found) {
+                                done(new Error("Didn't find the created password"));
+                            }
+                            else {
+                                list[index].remove(done);
+                            }
+                        },
+                        function(done) {
+                            that.service.storagePasswords().fetch(done);
+                        },
+                        function(storagePasswords, done) {
+                            test.strictEqual(startcount, storagePasswords.list().length);
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
             }
         },
         

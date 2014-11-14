@@ -4699,7 +4699,6 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#Create with unicode chars": function(test) {
-                /*global escape: true, unescape: true */
                 var startcount = -1;
                 var name = "delete-me-" + getNextId();
                 var realm = "delete-me-" + getNextId();
@@ -4712,15 +4711,15 @@ exports.setup = function(svc, loggedOutSvc) {
                             startcount = storagePasswords.list().length;
                             storagePasswords.create({
                                     name: name + ":end!@#$%^&*()_+{}:|<>?쎼 and 쎶 and &lt;&amp;&gt; für",
-                                    realm: ":start::!@#$%^&*()_+{}:|<>?" + escape("쎼 and 쎶 and &lt;&amp;&gt; für") + realm,
-                                    password: unescape(escape("쎼 and 쎶 and &lt;&amp;&gt; für"))},
+                                    realm: ":start::!@#$%^&*()_+{}:|<>?" + encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für") + realm,
+                                    password: decodeURIComponent(encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für"))},
                                 done);
                         },
                         function(storagePassword, done) {
                             test.strictEqual(name + ":end!@#$%^&*()_+{}:|<>?쎼 and 쎶 and &lt;&amp;&gt; für", storagePassword.properties().username);
-                            test.strictEqual("\\:start\\:\\:!@#$%^&*()_+{}\\:|<>?" + escape("쎼 and 쎶 and &lt;&amp;&gt; für") + realm + ":" + name + "\\:end!@#$%^&*()_+{}\\:|<>?쎼 and 쎶 and &lt;&amp;&gt; für:", storagePassword.name);
-                            test.strictEqual(unescape(escape("쎼 and 쎶 and &lt;&amp;&gt; für")), storagePassword.properties().clear_password);
-                            test.strictEqual(":start::!@#$%^&*()_+{}:|<>?" + escape("쎼 and 쎶 and &lt;&amp;&gt; für") + realm, storagePassword.properties().realm);
+                            test.strictEqual("\\:start\\:\\:!@#$%^&*()_+{}\\:|<>?" + encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für") + realm + ":" + name + "\\:end!@#$%^&*()_+{}\\:|<>?쎼 and 쎶 and &lt;&amp;&gt; für:", storagePassword.name);
+                            test.strictEqual(decodeURIComponent(encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für")), storagePassword.properties().clear_password);
+                            test.strictEqual(":start::!@#$%^&*()_+{}:|<>?" + encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für") + realm, storagePassword.properties().realm);
                             that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                         },
                         function(storagePasswords, storagePassword, done) {
