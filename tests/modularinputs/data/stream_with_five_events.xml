@@ -5,7 +5,7 @@
         <sourcetype>misc</sourcetype>
         <index>main</index>
         <host>localhost</host>
-        <data>This is a test of the emergency broadcast system.</data>
+        <data>This is a test of the emergency broadcast system. 1</data>
         <done/>
     </event>
     <event stanza="fubar" unbroken="1">
@@ -14,7 +14,7 @@
         <sourcetype>misc</sourcetype>
         <index>main</index>
         <host>localhost</host>
-        <data>This is a test of the emergency broadcast system.</data>
+        <data>This is a test of the emergency broadcast system. 2</data>
         <done/>
     </event>
     <event stanza="fubar" unbroken="1">
@@ -23,7 +23,7 @@
         <sourcetype>misc</sourcetype>
         <index>main</index>
         <host>localhost</host>
-        <data>This is a test of the emergency broadcast system.</data>
+        <data>This is a test of the emergency broadcast system. 3</data>
         <done/>
     </event>
     <event stanza="fubar" unbroken="1">
@@ -32,7 +32,7 @@
         <sourcetype>misc</sourcetype>
         <index>main</index>
         <host>localhost</host>
-        <data>This is a test of the emergency broadcast system.</data>
+        <data>This is a test of the emergency broadcast system. 4</data>
         <done/>
     </event>
     <event stanza="fubar" unbroken="1">
@@ -41,7 +41,7 @@
         <sourcetype>misc</sourcetype>
         <index>main</index>
         <host>localhost</host>
-        <data>This is a test of the emergency broadcast system.</data>
+        <data>This is a test of the emergency broadcast system. 5</data>
         <done/>
     </event>
 </stream>

@@ -57,6 +57,37 @@
 
     /**
      * Takes two XML documents represented by `Elementtree` objects and 
+     * checks whether their children are equal.
+     *
+     * @param {Object} an `Elementtree` object.
+     * @param {Object} an `Elementtree` object.
+     * @return {Boolean} true if their children are equal, else false 
+     */
+    root.XMLCompareChildren = function(expected, found) {
+        if (expected.len !== found.len) {
+            return false;
+        }
+
+        // If there's no children to compare, we're done
+        if (!expected._children && !found._children) {
+            return true;
+        }
+
+        var expectedChildren = expected.getchildren().sort();
+        var foundChildren = found.getchildren().sort();
+
+        // Check if all of expected's children are equal to all of found's children
+        for (var i = 0; i < expectedChildren.length; i++) {
+            if (!root.XMLCompare(expectedChildren[i], foundChildren[i])) {
+                return false;
+            }
+        }
+
+        return true;
+    };
+
+    /**
+     * Takes two XML documents represented by `Elementtree` objects and 
      * checks whether they are equal.
      *
      * @param {Object} an `Elementtree` object.
@@ -76,6 +107,7 @@
         if (found.items && expected.items) {
             var expectedItems = expected.items().sort();
             var foundItems = expected.items().sort();
+
             if (expectedItems.length !== foundItems.length) {
                 return false;    
             }
@@ -95,12 +127,11 @@
                         return false;
                     }
                 }
-                return true;
             }
         }
 
-        // Do they have the same number of children?
-        if (expected.len !== found.len) {
+        // Compare their children
+        if (!root.XMLCompareChildren(expected, found)) {
             return false;
         }
 
