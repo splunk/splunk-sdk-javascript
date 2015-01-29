@@ -166,8 +166,9 @@
                             callback(err);
                             return;
                         }
-                        // When res.meta.link doesn't contain "next", we should stop the loop after streaming commits on this page.
-                        if (res.meta.link.indexOf("rel=\"next\"") < 0) {
+                        // When res.meta doesn't have a "link" property or res.meta.link doesn't contain "next",
+                        // we should stop the loop after streaming commits on this page.
+                        if (!res.meta.hasOwnProperty("link") || res.meta.link.indexOf("rel=\"next\"") < 0) {
                             working = false;
                         }
 
