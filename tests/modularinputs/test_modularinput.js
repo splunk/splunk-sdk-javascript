@@ -309,6 +309,10 @@ exports.setup = function() {
             },
 
             "ModularInput Input Validation fails": function(test) {
+                // Make logger noop so testoutput is cleaner
+                var loggerErrorBackup = Logger.error;
+                Logger.error = function(){};
+
                 exports.getScheme = function() {
                     return null;
                 };
@@ -484,6 +488,7 @@ exports.setup = function() {
                     test.equal(5, expectedChildren.length);
                     test.equal(expectedChildren.length, foundChildren.length);
 
+                    test.ok(asObject);
                     test.ok(testUtils.XMLCompare(ET.parse(expected).getroot(), ET.parse(found).getroot()));
                     test.strictEqual(0, scriptStatus);
                     test.done();
