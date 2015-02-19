@@ -542,6 +542,7 @@ exports.setup = function() {
                     var expected = utils.readFile(__filename, "../data/stream_with_two_json_events.xml");
                     var found = ew._out._read() + "</stream>";
 
+                    test.ok(asObject);
                     test.ok(testUtils.XMLCompare(ET.parse(expected).getroot(), ET.parse(found).getroot()));
                     test.strictEqual(0, scriptStatus);
                     test.done();
