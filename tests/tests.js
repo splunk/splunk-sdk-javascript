@@ -86,7 +86,7 @@
     exports.Tests.Examples = require('./test_examples').setup(svc, cmdline.opts);
 
 
-    splunkjs.Logger.setLevel("ALL");
+    splunkjs.Logger.setLevel("NONE");
     
     svc.login(function(err, success) {
         // If we determined that we have the "--reporter" and "junit"
