@@ -487,7 +487,6 @@ exports.setup = function() {
                     test.equal(5, expectedChildren.length);
                     test.equal(expectedChildren.length, foundChildren.length);
 
-                    test.ok(asObject);
                     test.ok(testUtils.XMLCompare(ET.parse(expected).getroot(), ET.parse(found).getroot()));
                     test.strictEqual(0, scriptStatus);
                     test.done();
