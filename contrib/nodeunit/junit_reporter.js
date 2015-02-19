@@ -157,6 +157,12 @@ exports.run = function (files, opts, callback) {
                         );
                         console.log('\nWriting ' + filename);
                         fs.writeFileSync(filename, rendered, 'utf8');
+
+                        var summaryStr = "\nSummary: ";
+                        summaryStr += module.errorCount + " errors, ";
+                        summaryStr += module.failureCount + " failures, ";
+                        summaryStr += module.tests + " tests. Duration: " + duration + "ms";
+                        console.log(summaryStr);
                     }
                     
                     if (callback) callback(assertions.failures() ? new Error('We have got test failures.') : undefined);
