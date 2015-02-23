@@ -62,6 +62,11 @@ exports.setup = function(svc, opts) {
                 var main = require("../examples/node/helloworld/firedalerts_delete").main;
                 main(opts, test.done);
             },
+
+            "Endpoint Instantiation": function(test) {
+                var main = require("../examples/node/helloworld/endpoint_instantiation").main;
+                main(opts, test.done);
+            },
             
             "Saved Searches": function(test) {
                 var main = require("../examples/node/helloworld/savedsearches").main;
