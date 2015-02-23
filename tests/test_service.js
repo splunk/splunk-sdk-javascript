@@ -5823,7 +5823,7 @@ exports.setup = function(svc, loggedOutSvc) {
             }
         },
         
-        "Collections": {
+        "Collection tests": {
             setUp: function(done) {
                 this.service = svc;
                 this.loggedOutService = loggedOutSvc;
