@@ -1224,6 +1224,35 @@ exports.setup = function(svc, loggedOutSvc) {
                         });
                     });
                 }
+            },
+
+            "Callback#Service.getJob() works": function(test) {
+                var that = this;
+                var sidsMatch = false;
+                this.service.search('search index=_internal | head 1', {}, function(err, job){
+                    if (err) {
+                        test.ok(!err);
+                        test.done();
+                        return;
+                    }
+                    var sid = job.sid;
+                    return Async.chain([
+                            function(done) {
+                                that.service.getJob(sid, done);
+                            },
+                            function(innerJob, done) {
+                                test.strictEqual(sid, innerJob.sid);
+                                sidsMatch = sid === innerJob.sid;
+                                done();
+                            }
+                        ],
+                        function(err) {
+                            test.ok(!err);
+                            test.ok(sidsMatch);
+                            test.done();
+                        }
+                    );
+                });
             }
         },
 
