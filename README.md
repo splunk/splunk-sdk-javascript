@@ -219,6 +219,10 @@ To run the browser tests, enter:
 
     node sdkdo tests-browser
 
+To run all unit tests without log messages from splunk, enter:
+
+    `node skdo tests --quiet`
+
 To run all the tests and generate JUnit compatible XML in `splunk-sdk-javascript/test_logs/junit_test_results.xml`, enter:
 
     `node skdo tests --reporter junit`

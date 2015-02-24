@@ -737,7 +737,8 @@
             .concat(cmdline.opts.app       ?   makeOption("app",       cmdline.opts.app)       : "")
             .concat(cmdline.opts.version   ?   makeOption("version",   cmdline.opts.version)   : "")
             .concat(cmdline.opts.password  ?   makeOption("password",  cmdline.opts.password)  : "")
-            .concat(cmdline.opts.reporter  ?   makeOption("reporter",  cmdline.opts.reporter.toLowerCase())  : "");
+            .concat(cmdline.opts.reporter  ?   makeOption("reporter",  cmdline.opts.reporter.toLowerCase())  : "")
+            .concat(cmdline.opts.quiet     ?   "--quiet" : "");
 
         var testFunctions = files.map(function(file) {
             return function(done) {
@@ -802,6 +803,7 @@
         .option('--version <version>', 'Splunk version')
         .option('--namespace <namespace>', 'Splunk namespace (in the form of owner:app)')
         .option('--reporter <reporter>', '(optional) How to report results, currently "junit" is a valid reporter.')
+        .option('--quiet', '(optional) Hides splunkd output.')
         .action(runTests);
     
     program

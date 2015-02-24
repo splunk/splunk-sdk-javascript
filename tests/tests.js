@@ -24,6 +24,13 @@
     
     var parser = new options.create();
 
+    // If we found the --quiet flag, remove it
+    var quiet = utils.contains(process.argv, "--quiet");
+    if (quiet) {
+        var quietIndex = utils.keyOf("--quiet", process.argv);
+        process.argv.splice(quietIndex, 1);
+    }
+
     // Extract the "--reporter" and "junit" components
     // from the command line arguments, so they can be
     // appended to the arguments returned from the
@@ -85,8 +92,19 @@
     exports.Tests.Service  = require('./test_service').setup(svc, loggedOutSvc);
     exports.Tests.Examples = require('./test_examples').setup(svc, cmdline.opts);
 
+    // If the --quiet flag is passed, don't show splunkd output
+    if (quiet) {
+        splunkjs.Logger.setLevel("NONE");
+    }
+    else {
+        splunkjs.Logger.setLevel("ALL");   
+    }
 
-    splunkjs.Logger.setLevel("NONE");
+    // If $SPLUNK_HOME isn't set, abort the tests
+    if (!process.env.hasOwnProperty("SPLUNK_HOME")) {
+        console.log("$SPLUNK_HOME is not set, aborting tests.");
+        return;
+    }
     
     svc.login(function(err, success) {
         // If we determined that we have the "--reporter" and "junit"
