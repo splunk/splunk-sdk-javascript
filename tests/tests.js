@@ -37,7 +37,7 @@
     if (junitIndex && reporterIndex && (junitIndex - reporterIndex === 1)) {
         reporterArgs.push(process.argv[reporterIndex]);
         reporterArgs.push(process.argv[junitIndex]);
-        process.argv.splice(2, reporterIndex);
+        process.argv.splice(reporterIndex, 2);
     }    
 
     // Do the normal parsing
