@@ -212,7 +212,7 @@ exports.setup = function() {
                     compareEvents(test, expected, found);
                 }
                 catch (e) {
-                    console.log(e);
+                    Logger.error("", "Something happened!", e);
                     test.ok(false);
                 }
                 test.done();
