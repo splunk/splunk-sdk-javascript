@@ -1,5 +1,5 @@
 
-// Copyright 2011 Splunk, Inc.
+// Copyright 2015 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
 // not use this file except in compliance with the License. You may obtain
@@ -57,6 +57,7 @@ exports.main = function(opts, callback) {
                 service.search("search index=_internal | head 1", {}, done);
             },
             function(job, done) {
+                // Store the sid for later use
                 sid = job.sid;
                 console.log("Created a search job with sid: " + job.sid);
                 done();
