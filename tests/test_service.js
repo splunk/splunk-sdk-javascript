@@ -1260,10 +1260,22 @@ exports.setup = function(svc, loggedOutSvc) {
             setUp: function(done) {
                 this.service = svc;
                 this.dataModels = svc.dataModels();
-                done();
+                this.skip = false;
+                var that = this;
+                this.service.serverInfo(function(err, info) {
+                    if (parseInt(info.properties().version.split(".")[0]) < 6) {
+                        that.skip = true;
+                        splunkjs.Logger.log("Skipping data model tests...");
+                    }
+                    done(err);
+                });
             },
 
-            "Callback#DataModels - fetch a built-in data model": function(test) {                
+            "Callback#DataModels - fetch a built-in data model": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var that = this;
                 Async.chain([
                         function(done) {
@@ -1289,6 +1301,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - create & delete an empty data model": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/empty_data_model.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -1328,6 +1344,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - create a data model with spaces in the name, which are swapped for -'s": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/empty_data_model.json"));
                 var name = "delete-me- " + getNextId();
 
@@ -1349,6 +1369,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - create a data model with 0 objects": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/empty_data_model.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -1376,6 +1400,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - create a data model with 1 search object": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var dataModels = this.service.dataModels();
 
                 var args = JSON.parse(utils.readFile(__filename, "../data/object_with_one_search.json"));
@@ -1405,6 +1433,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - create a data model with 2 search objects": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/object_with_two_searches.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -1432,6 +1464,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - data model objects are created correctly": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/object_with_two_searches.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -1463,6 +1499,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - data model handles unicode characters": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/model_with_unicode_headers.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -1487,6 +1527,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - create data model with empty headers": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/model_with_empty_headers.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -1514,6 +1558,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - test acceleration settings": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -1554,6 +1602,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - test data model object metadata": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -1581,6 +1633,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - test data model object parent": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -1605,6 +1661,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - test data model object lineage": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -1646,6 +1706,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - test data model object fields": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -1704,6 +1768,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - test data model object properties": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -1733,6 +1801,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - create local acceleration job": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -1773,6 +1845,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - create local acceleration job with earliest time": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -1826,6 +1902,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - test data model constraints": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -1861,6 +1941,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - test data model calculations, and the different types": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -1952,6 +2036,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - run queries": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var obj;
                 var that = this;
                 Async.chain([
@@ -2003,6 +2091,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - baseSearch is parsed correctly": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/model_with_multiple_types.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -2031,6 +2123,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - baseTransaction is parsed correctly": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/model_with_multiple_types.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -2067,10 +2163,22 @@ exports.setup = function(svc, loggedOutSvc) {
             setUp: function(done) {
                 this.service = svc;
                 this.dataModels = svc.dataModels({owner: "nobody", app: "search"});
-                done();
+                this.skip = false;
+                var that = this;
+                this.service.serverInfo(function(err, info) {
+                    if (parseInt(info.properties().version.split(".")[0]) < 6) {
+                        that.skip = true;
+                        splunkjs.Logger.log("Skipping pivot tests...");
+                    }
+                    done(err);
+                });
             },
 
             "Callback#Pivot - test constructor args": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var name = "delete-me-" + getNextId();
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                 var that = this;
@@ -2091,6 +2199,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#Pivot - test acceleration, then pivot": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var name = "delete-me-" + getNextId();
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                 var that = this;
@@ -2160,6 +2272,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#Pivot - test illegal filtering (all types)": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var name = "delete-me-" + getNextId();
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                 var that = this;
@@ -2300,6 +2416,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#Pivot - test boolean filtering": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                var name = "delete-me-" + getNextId();
                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                var that = this;
@@ -2346,6 +2466,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#Pivot - test string filtering": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                var name = "delete-me-" + getNextId();
                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                var that = this;
@@ -2392,6 +2516,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#Pivot - test IPv4 filtering": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                var name = "delete-me-" + getNextId();
                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                var that = this;
@@ -2438,6 +2566,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#Pivot - test number filtering": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                var name = "delete-me-" + getNextId();
                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                var that = this;
@@ -2483,6 +2615,10 @@ exports.setup = function(svc, loggedOutSvc) {
                 ); 
             },
             "Callback#Pivot - test limit filtering": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                var name = "delete-me-" + getNextId();
                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                var that = this;
@@ -2534,6 +2670,10 @@ exports.setup = function(svc, loggedOutSvc) {
                 ); 
             },
             "Callback#Pivot - test row split": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var name = "delete-me-" + getNextId();
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                 var that = this;
@@ -2772,6 +2912,10 @@ exports.setup = function(svc, loggedOutSvc) {
                 );
             },
             "Callback#Pivot - test column split": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var name = "delete-me-" + getNextId();
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                 var that = this;
@@ -2996,6 +3140,10 @@ exports.setup = function(svc, loggedOutSvc) {
                 );
             },
             "Callback#Pivot - test cell value": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var name = "delete-me-" + getNextId();
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                 var that = this;
@@ -3227,6 +3375,10 @@ exports.setup = function(svc, loggedOutSvc) {
                 );
             },
             "Callback#Pivot - test pivot throws HTTP exception": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                var name = "delete-me-" + getNextId();
                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                var that = this;
@@ -3253,6 +3405,10 @@ exports.setup = function(svc, loggedOutSvc) {
                 ); 
             },
             "Callback#Pivot - test pivot with simple namespace": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                var name = "delete-me-" + getNextId();
                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                var that = this;
@@ -3330,6 +3486,10 @@ exports.setup = function(svc, loggedOutSvc) {
                 // numbers being expected as strings in Splunk 6.0. This was fixed in Splunk 6.1, and accepts
                 // either strings or numbers.
 
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var that = this;
                 var search;
                 Async.chain([
@@ -3375,6 +3535,10 @@ exports.setup = function(svc, loggedOutSvc) {
                 ); 
             },
             "Callback#Pivot - test pivot with PivotSpecification.run and Job.track": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var that = this;
                 Async.chain([
                     function(done) {
@@ -3409,6 +3573,10 @@ exports.setup = function(svc, loggedOutSvc) {
                 );
             },
             "Callback#DataModels - delete any remaining data models created by the SDK tests": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 svc.dataModels().fetch(function(err, dataModels) {
                     if (err) {
                         test.ok(!err);
