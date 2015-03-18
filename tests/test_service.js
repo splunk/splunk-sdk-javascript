@@ -1263,7 +1263,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 this.skip = false;
                 var that = this;
                 this.service.serverInfo(function(err, info) {
-                    if (parseInt(info.properties().version.split(".")[0]) < 6) {
+                    if (parseInt(info.properties().version.split(".")[0], 10) < 6) {
                         that.skip = true;
                         splunkjs.Logger.log("Skipping data model tests...");
                     }
@@ -2166,7 +2166,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 this.skip = false;
                 var that = this;
                 this.service.serverInfo(function(err, info) {
-                    if (parseInt(info.properties().version.split(".")[0]) < 6) {
+                    if (parseInt(info.properties().version.split(".")[0], 10) < 6) {
                         that.skip = true;
                         splunkjs.Logger.log("Skipping pivot tests...");
                     }
