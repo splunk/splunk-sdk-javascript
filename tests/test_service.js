@@ -4517,6 +4517,34 @@ exports.setup = function(svc, loggedOutSvc) {
                     test.done();
                 });
             },
+
+            "Callback#can get default stanza": function(test) {
+                var that = this;
+                var namespace = {owner: "admin", app: "search"};
+                
+                Async.chain([
+                    function(done) { that.service.configurations(namespace).fetch(done); },
+                    function(props, done) { 
+                        var file = props.item("alert_actions");
+                        test.strictEqual(namespace, file.namespace);
+                        test.ok(file);
+                        file.fetch(done);
+                    },
+                    function(file, done) {
+                        test.strictEqual(namespace, file.namespace);
+                        file.getDefaultStanza().fetch(done);
+                    },
+                    function(stanza, done) {
+                        test.strictEqual(stanza.name, "default");
+                        test.strictEqual(namespace, stanza.namespace);
+                        done();
+                    }
+                ],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
                    
             "Callback#contains stanza": function(test) {
                 var that = this;
