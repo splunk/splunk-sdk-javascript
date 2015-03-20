@@ -41,6 +41,7 @@ splunkjs.Service.Role = splunkjs.Service.Entity.extend({
     path: function() {
         return splunkjs.Paths.roles + "/" + encodeURIComponent(this.name);
     },
+
     init: function(service, name) {
         this.name = name;
         this._super(service, this.path(), {});
@@ -52,12 +53,15 @@ splunkjs.Service.Role = splunkjs.Service.Entity.extend({
 // See the `instantiateEntity()` function.
 splunkjs.Service.Roles = splunkjs.Service.Collection.extend({
     fetchOnEntityCreation: true,
+    
     path: function() {
         return splunkjs.Paths.roles;
     },
+
     instantiateEntity: function(props) {
         return new splunkjs.Service.Role(this.service, props.name, {});
     },
+
     init: function(service) {
         this._super(service, this.path(), {});
     }
