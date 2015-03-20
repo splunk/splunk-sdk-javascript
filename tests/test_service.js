@@ -4650,6 +4650,12 @@ exports.setup = function(svc, loggedOutSvc) {
                         stanza.update({"jssdk_foobar": "tests"}, done);
                     },
                     function(stanza, done) {
+                        console.log(stanza);
+                        test.ok(stanza.properties().hasOwnProperty("jssdk_foobar"));
+                        test.strictEqual(stanza.properties()["jssdk_foobar"], "tests");
+                        stanza.fetch(done);
+                    },
+                    function(stanza, done) {
                         test.ok(stanza.properties().hasOwnProperty("jssdk_foobar"));
                         test.strictEqual(stanza.properties()["jssdk_foobar"], "tests");
                         done();
