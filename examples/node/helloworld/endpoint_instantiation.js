@@ -42,9 +42,9 @@ splunkjs.Service.Role = splunkjs.Service.Entity.extend({
         return splunkjs.Paths.roles + "/" + encodeURIComponent(this.name);
     },
 
-    init: function(service, name) {
+    init: function(service, name, namespace) {
         this.name = name;
-        this._super(service, this.path(), {});
+        this._super(service, this.path(), namespace);
     }
 });
 
@@ -59,19 +59,20 @@ splunkjs.Service.Roles = splunkjs.Service.Collection.extend({
     },
 
     instantiateEntity: function(props) {
-        return new splunkjs.Service.Role(this.service, props.name, {});
+        var entityNamespace = splunkjs.Utils.namespaceFromProperties(props);
+        return new splunkjs.Service.Role(this.service, props.name, entityNamespace);
     },
 
-    init: function(service) {
-        this._super(service, this.path(), {});
+    init: function(service, namespace) {
+        this._super(service, this.path(), namespace);
     }
 });
 
 // To finish off integrating the new endpoint,
 // we need to add a function to the service object
 // which will retrieve the Roles collection.
-splunkjs.Service.prototype.roles = function() {
-    return new splunkjs.Service.Roles(this);
+splunkjs.Service.prototype.roles = function(namespace) {
+    return new splunkjs.Service.Roles(this, namespace);
 };
 
 exports.main = function(opts, done) {
@@ -105,7 +106,7 @@ exports.main = function(opts, done) {
         }
 
         // Now that we're logged in, we can just retrieve system roles!
-        service.roles().fetch(function(rolesErr, roles) {
+        service.roles({user:"admin", app: "search"}).fetch(function(rolesErr, roles) {
             if (rolesErr) {
                 console.log("There was an error retrieving the list of roles:", err);
                 done(err);
