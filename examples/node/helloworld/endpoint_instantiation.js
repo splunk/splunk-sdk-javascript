@@ -67,6 +67,12 @@ splunkjs.Service.Roles = splunkjs.Service.Collection.extend({
     }
 });
 
+// To finish off integrating the new endpoint,
+// we need to add a function to the service object
+// which will retrieve the Roles collection.
+splunkjs.Service.prototype.roles = function() {
+    return new splunkjs.Service.Roles(this);
+};
 
 exports.main = function(opts, done) {
     // This is just for testing - ignore it
@@ -87,13 +93,6 @@ exports.main = function(opts, done) {
         port: port,
         version: version
     });
-
-    // To finish off integrating the new endpoint,
-    // we need to add a function to the service object
-    // which will retrieve the Roles collection.
-    service.roles = function() {
-        return new splunkjs.Service.Roles(this);
-    };
 
     // First, we log in
     service.login(function(err, success) {
