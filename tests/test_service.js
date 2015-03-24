@@ -4628,13 +4628,15 @@ exports.setup = function(svc, loggedOutSvc) {
                 });
             },
 
-            "Callback#can update default stanza": function(test) {
+            "Callback#updating default stanza is noop": function(test) {
                 var that = this;
                 var namespace = {owner: "admin", app: "search"};
-                
+                var backup = null;
+                var invalid = "this won't work";
+
                 Async.chain([
                     function(done) { that.service.configurations(namespace).fetch(done); },
-                    function(props, done) { 
+                    function(props, done) {
                         var file = props.item("alert_actions");
                         test.strictEqual(namespace, file.namespace);
                         test.ok(file);
@@ -4645,19 +4647,21 @@ exports.setup = function(svc, loggedOutSvc) {
                         file.getDefaultStanza().fetch(done);
                     },
                     function(stanza, done) {
-                        test.strictEqual(stanza.name, "default");
+                        test.ok(stanza._properties.hasOwnProperty("maxresults"));
                         test.strictEqual(namespace, stanza.namespace);
-                        stanza.update({"jssdk_foobar": "tests"}, done);
+                        backup = stanza._properties.maxresults;
+                        stanza.update({"maxresults": invalid}, done);
                     },
                     function(stanza, done) {
-                        console.log(stanza);
-                        test.ok(stanza.properties().hasOwnProperty("jssdk_foobar"));
-                        test.strictEqual(stanza.properties()["jssdk_foobar"], "tests");
+                        test.ok(stanza.properties().hasOwnProperty("maxresults"));
+                        test.strictEqual(stanza.properties()["maxresults"], backup);
+                        test.notStrictEqual(stanza.properties()["maxresults"], invalid);
                         stanza.fetch(done);
                     },
                     function(stanza, done) {
-                        test.ok(stanza.properties().hasOwnProperty("jssdk_foobar"));
-                        test.strictEqual(stanza.properties()["jssdk_foobar"], "tests");
+                        test.ok(stanza.properties().hasOwnProperty("maxresults"));
+                        test.strictEqual(stanza.properties()["maxresults"], backup);
+                        test.notStrictEqual(stanza.properties()["maxresults"], invalid);
                         done();
                     }
                 ],
