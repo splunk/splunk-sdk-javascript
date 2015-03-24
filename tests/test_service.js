@@ -1216,7 +1216,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                 
                                 if (numJobsLeft === 0) {
                                     if (!gotJobNotImmediatelyReady) {
-                                        console.log("WARNING: Couldn't test code path in track() where job wasn't ready immediately.");
+                                        splunkjs.Logger.error("", "WARNING: Couldn't test code path in track() where job wasn't ready immediately.");
                                     }
                                     test.done();
                                 }
@@ -4076,7 +4076,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var app = new splunkjs.Service.Application(this.service, "sdk-app-collection");
                 app.setupInfo(function(err, content, search) {
                     test.ok(err.data.messages[0].text.match("Setup configuration file does not"));
-                    console.log("ERR ---", err.data.messages[0].text);
+                    splunkjs.Logger.log("ERR ---", err.data.messages[0].text);
                     test.done();
                 });
             },
@@ -4242,13 +4242,13 @@ exports.setup = function(svc, loggedOutSvc) {
                             originalSearch.fetch(Async.augment(done, index));
                         },
                         function(originalSearch, index, done) {
-                            console.log("\tAlert count pre-fetch", originalSearch.alertCount());
+                            splunkjs.Logger.log("\tAlert count pre-fetch", originalSearch.alertCount());
                             var attemptNum = 1;
                             var maxAttempts = 20;
                             Async.whilst(
                                 function() {
                                     // When this returns false, it hits the final function in the chain
-                                    console.log("\tFetch attempt", attemptNum, "of", maxAttempts, "alertCount", originalSearch.alertCount());
+                                    splunkjs.Logger.log("\tFetch attempt", attemptNum, "of", maxAttempts, "alertCount", originalSearch.alertCount());
                                     if (originalSearch.alertCount() !== 0) {
                                         return false;
                                     }
@@ -4263,14 +4263,14 @@ exports.setup = function(svc, loggedOutSvc) {
                                     });
                                 },
                                 function(err) {
-                                    console.log("Attempted fetching", attemptNum, "of", maxAttempts, "result is", originalSearch.alertCount() !== 0);
+                                    splunkjs.Logger.log("Attempted fetching", attemptNum, "of", maxAttempts, "result is", originalSearch.alertCount() !== 0);
                                     originalSearch.fetch(Async.augment(done, index));
                                 }
                             );
                         },
                         function(originalSearch, index, done) {
-                            console.log("about to fetch");
-                            console.log("SavedSearch name was", originalSearch.name);
+                            splunkjs.Logger.log("about to fetch");
+                            splunkjs.Logger.log("SavedSearch name was: " + originalSearch.name);
                             svc.firedAlertGroups({username: svc.username}).fetch(Async.augment(done, index, originalSearch));
                         },
                         function(firedAlertGroups, index, originalSearch, done) {
@@ -4341,7 +4341,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     alertList,
                     function(alert, idx, callback) {
                         if (utils.startsWith(alert.name, namePrefix)) {
-                            console.log("ALERT ---", alert.name);
+                            splunkjs.Logger.log("ALERT ---", alert.name);
                             alert.remove(callback);
                         }
                         else {
@@ -5307,7 +5307,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var myIndexName = this.indexName + '-' + salt;
                 
                 if (this.service.versionCompare("5.0") < 0) {
-                    console.log("Must be running Splunk 5.0+ for this test to work.");
+                    splunkjs.Logger.info("", "Must be running Splunk 5.0+ for this test to work.");
                     test.done();
                     return;
                 }

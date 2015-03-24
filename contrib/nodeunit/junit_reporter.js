@@ -155,8 +155,14 @@ exports.run = function (files, opts, callback) {
                             opts.output,
                             module.name + '.xml'
                         );
-                        console.log('\nWriting ' + filename);
+                        console.log('\n\nWriting log file to: ' + filename);
                         fs.writeFileSync(filename, rendered, 'utf8');
+
+                        var summaryStr = "\nSummary: ";
+                        summaryStr += module.errorCount + " errors, ";
+                        summaryStr += module.failureCount + " failures, ";
+                        summaryStr += module.tests + " tests. Duration: " + duration + "ms";
+                        console.log(summaryStr);
                     }
                     
                     if (callback) callback(assertions.failures() ? new Error('We have got test failures.') : undefined);
