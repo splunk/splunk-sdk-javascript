@@ -2408,6 +2408,28 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var jobs = new root.Jobs(this, namespace);
             return jobs.search(query, params, callback);
         },
+
+        /**
+         * A convenience method to get a `Job` by its sid.
+         *
+         * @param {String} sid The search ID for a search job.
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
+         * @param {Function} callback A function to call with the created job: `(err, job)`.
+         *
+         * @endpoint search/jobs
+         * @method splunkjs.Service
+         */
+        getJob: function(sid, namespace, callback) {
+            if (!callback && utils.isFunction(namespace)) {
+                callback = namespace;
+                namespace = null;
+            }
+            var job = new root.Job(this, sid, namespace);
+            return job.fetch({}, callback);
+        },
         
         /**
          * Creates a oneshot search from a given search query and optional parameters.
@@ -4826,7 +4848,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @method splunkjs.Service.ConfigurationStanza
          */
         path: function() {
-            return Paths.configurations + "/conf-" + encodeURIComponent(this.file) + "/" + encodeURIComponent(this.name);
+            var name = this.name === "default" ? "_new" : this.name;
+            return Paths.configurations + "/conf-" + encodeURIComponent(this.file) + "/" + encodeURIComponent(name);
         },
         
         /**
@@ -4848,7 +4871,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.name = name;
             this.file = file;
             this._super(service, this.path(), namespace);
-        } 
+        }
     });
     
     /**
@@ -4869,7 +4892,21 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         path: function() {
             return Paths.configurations + "/conf-" + encodeURIComponent(this.name);
         },
-        
+
+        /**
+         * Creates a local instance of the default stanza in a configuration file.
+         * You cannot directly update the `ConfigurationStanza` returned by this function.
+         *
+         * This is equivalent to viewing `configs/conf-{file}/_new`.
+         *
+         * @return {splunkjs.Service.ConfigurationStanza} A new `splunkjs.Service.ConfigurationStanza` instance.
+         *
+         * @method splunkjs.Service.ConfigurationFile
+         */
+        getDefaultStanza: function() {
+            return new root.ConfigurationStanza(this.service, this.name, "default", this.namespace);
+        },
+
         /**
          * Creates a local instance of a stanza in a configuration file.
          *
@@ -4896,7 +4933,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @return {splunkjs.Service.ConfigurationFile} A new `splunkjs.Service.ConfigurationFile` instance.
          *
          * @method splunkjs.Service.ConfigurationFile
-         */  
+         */
         init: function(service, name, namespace) {
             this.name = name;
             this._super(service, this.path(), namespace);
@@ -7103,7 +7140,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
 
         /**
-         * Is this data model object is a BaseSearch?
+         * Is this data model object a BaseSearch?
          *
          * @return {Boolean} Whether this data model object is the root type, BaseSearch.
          *
@@ -11701,6 +11738,11 @@ require.define("/lib/modularinputs/event.js", function (require, module, exports
             ET.SubElement(xmlEvent, "time").text = Event.formatTime(this.time).toString();
         }
 
+        // If this.data is a JS object, stringify it
+        if (typeof this.data === "object") {
+            this.data = JSON.stringify(this.data);
+        }
+
         var subElements = [
             {tag: "source", text: this.source},
             {tag: "sourcetype", text: this.sourcetype},
@@ -12279,31 +12321,43 @@ require.define("/lib/modularinputs/modularinput.js", function (require, module, 
                     var found = InputDefinition.parse(bufferString);
                     exports._inputDefinition = found;
                     that._inputDefinition = found;
-                    
-                    Async.parallelEach(
-                        Object.keys(exports._inputDefinition.inputs),
-                        function (name, index, doneEach) {
-                            var input = exports._inputDefinition.inputs[name];
 
-                            Async.chain([
-                                    function(innerDone) {
-                                        exports.start(name, input, innerDone);
-                                    },
-                                    function(innerDone) {
-                                        exports.streamEvents(name, input, eventWriter, innerDone);
-                                    },
-                                    function(innerDone) {
-                                        // end() will only be called if streamEvents doesn't fail.
-                                        exports.end(name, input, innerDone);
+                    Async.chain([
+                            function(done) {
+                                Async.parallelEach(
+                                    Object.keys(exports._inputDefinition.inputs),
+                                    function (name, index, doneEach) {
+                                        var input = exports._inputDefinition.inputs[name];
+                                        
+                                        Async.chain([
+                                                function(innerDone) {
+                                                    exports.start(name, input, innerDone);
+                                                },
+                                                function(innerDone) {
+                                                    exports.streamEvents(name, input, eventWriter, innerDone);
+                                                },
+                                                function(innerDone) {
+                                                    // end() will only be called if streamEvents doesn't fail.
+                                                    exports.end(name, input, innerDone);
+                                                }
+                                            ],
+                                            function(innerErr) {
+                                                doneEach(innerErr, innerErr ? 1 : 0);
+                                            }
+                                        );
+                                    }, 
+                                    function (streamErr) {
+                                        done(streamErr, streamErr ? 1 : 0);
                                     }
-                                ],
-                                function(innerErr) {
-                                    doneEach(innerErr, innerErr ? 1 : 0);
-                                }
-                            );
-                        }, 
-                        function (streamErr) {
-                            callback(streamErr, streamErr ? 1 : 0);
+                                );
+                            }
+                        ],
+                        function(err) {
+                            // Write the closing </stream> tag.
+                            if (eventWriter._headerWritten) {
+                                eventWriter.close();
+                            }
+                            callback(err, err ? 1 : 0);
                         }
                     );
                 }
