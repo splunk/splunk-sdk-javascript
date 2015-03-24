@@ -1216,7 +1216,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                 
                                 if (numJobsLeft === 0) {
                                     if (!gotJobNotImmediatelyReady) {
-                                        Logger.error("", "WARNING: Couldn't test code path in track() where job wasn't ready immediately.");
+                                        splunkjs.Logger.error("", "WARNING: Couldn't test code path in track() where job wasn't ready immediately.");
                                     }
                                     test.done();
                                 }
@@ -5039,7 +5039,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var myIndexName = this.indexName + '-' + salt;
                 
                 if (this.service.versionCompare("5.0") < 0) {
-                    Logger.info("", "Must be running Splunk 5.0+ for this test to work.");
+                    splunkjs.Logger.info("", "Must be running Splunk 5.0+ for this test to work.");
                     test.done();
                     return;
                 }

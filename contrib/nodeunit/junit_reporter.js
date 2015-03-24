@@ -155,7 +155,7 @@ exports.run = function (files, opts, callback) {
                             opts.output,
                             module.name + '.xml'
                         );
-                        console.log('\nWriting ' + filename);
+                        console.log('\n\nWriting log file to: ' + filename);
                         fs.writeFileSync(filename, rendered, 'utf8');
 
                         var summaryStr = "\nSummary: ";
