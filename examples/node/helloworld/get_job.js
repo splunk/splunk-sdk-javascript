@@ -13,10 +13,8 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-// This example will login to Splunk, perform a oneshot search, and then print 
-// out the raw results and some key-value pairs. A one search is one that 
-// won't return until the search is complete and return all the search
-// results in the response.
+// This example will show how to get a `Job` by it's sid without
+// fetching a collection of `Job`s.
 
 var splunkjs = require('../../../index');
 var Async  = splunkjs.Async;

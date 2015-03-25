@@ -2665,6 +2665,28 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var jobs = new root.Jobs(this, namespace);
             return jobs.search(query, params, callback);
         },
+
+        /**
+         * A convenience method to get a `Job` by its sid.
+         *
+         * @param {String} sid The search ID for a search job.
+         * @param {Object} namespace Namespace information:
+         *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
+         *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
+         *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
+         * @param {Function} callback A function to call with the created job: `(err, job)`.
+         *
+         * @endpoint search/jobs
+         * @method splunkjs.Service
+         */
+        getJob: function(sid, namespace, callback) {
+            if (!callback && utils.isFunction(namespace)) {
+                callback = namespace;
+                namespace = null;
+            }
+            var job = new root.Job(this, sid, namespace);
+            return job.fetch({}, callback);
+        },
         
         /**
          * Creates a oneshot search from a given search query and optional parameters.
@@ -5083,7 +5105,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @method splunkjs.Service.ConfigurationStanza
          */
         path: function() {
-            return Paths.configurations + "/conf-" + encodeURIComponent(this.file) + "/" + encodeURIComponent(this.name);
+            var name = this.name === "default" ? "_new" : this.name;
+            return Paths.configurations + "/conf-" + encodeURIComponent(this.file) + "/" + encodeURIComponent(name);
         },
         
         /**
@@ -5105,7 +5128,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.name = name;
             this.file = file;
             this._super(service, this.path(), namespace);
-        } 
+        }
     });
     
     /**
@@ -5126,7 +5149,21 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         path: function() {
             return Paths.configurations + "/conf-" + encodeURIComponent(this.name);
         },
-        
+
+        /**
+         * Creates a local instance of the default stanza in a configuration file.
+         * You cannot directly update the `ConfigurationStanza` returned by this function.
+         *
+         * This is equivalent to viewing `configs/conf-{file}/_new`.
+         *
+         * @return {splunkjs.Service.ConfigurationStanza} A new `splunkjs.Service.ConfigurationStanza` instance.
+         *
+         * @method splunkjs.Service.ConfigurationFile
+         */
+        getDefaultStanza: function() {
+            return new root.ConfigurationStanza(this.service, this.name, "default", this.namespace);
+        },
+
         /**
          * Creates a local instance of a stanza in a configuration file.
          *
@@ -5153,7 +5190,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @return {splunkjs.Service.ConfigurationFile} A new `splunkjs.Service.ConfigurationFile` instance.
          *
          * @method splunkjs.Service.ConfigurationFile
-         */  
+         */
         init: function(service, name, namespace) {
             this.name = name;
             this._super(service, this.path(), namespace);
@@ -7360,7 +7397,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
 
         /**
-         * Is this data model object is a BaseSearch?
+         * Is this data model object a BaseSearch?
          *
          * @return {Boolean} Whether this data model object is the root type, BaseSearch.
          *
@@ -11958,6 +11995,11 @@ require.define("/lib/modularinputs/event.js", function (require, module, exports
             ET.SubElement(xmlEvent, "time").text = Event.formatTime(this.time).toString();
         }
 
+        // If this.data is a JS object, stringify it
+        if (typeof this.data === "object") {
+            this.data = JSON.stringify(this.data);
+        }
+
         var subElements = [
             {tag: "source", text: this.source},
             {tag: "sourcetype", text: this.sourcetype},
@@ -12536,31 +12578,43 @@ require.define("/lib/modularinputs/modularinput.js", function (require, module, 
                     var found = InputDefinition.parse(bufferString);
                     exports._inputDefinition = found;
                     that._inputDefinition = found;
-                    
-                    Async.parallelEach(
-                        Object.keys(exports._inputDefinition.inputs),
-                        function (name, index, doneEach) {
-                            var input = exports._inputDefinition.inputs[name];
 
-                            Async.chain([
-                                    function(innerDone) {
-                                        exports.start(name, input, innerDone);
-                                    },
-                                    function(innerDone) {
-                                        exports.streamEvents(name, input, eventWriter, innerDone);
-                                    },
-                                    function(innerDone) {
-                                        // end() will only be called if streamEvents doesn't fail.
-                                        exports.end(name, input, innerDone);
+                    Async.chain([
+                            function(done) {
+                                Async.parallelEach(
+                                    Object.keys(exports._inputDefinition.inputs),
+                                    function (name, index, doneEach) {
+                                        var input = exports._inputDefinition.inputs[name];
+                                        
+                                        Async.chain([
+                                                function(innerDone) {
+                                                    exports.start(name, input, innerDone);
+                                                },
+                                                function(innerDone) {
+                                                    exports.streamEvents(name, input, eventWriter, innerDone);
+                                                },
+                                                function(innerDone) {
+                                                    // end() will only be called if streamEvents doesn't fail.
+                                                    exports.end(name, input, innerDone);
+                                                }
+                                            ],
+                                            function(innerErr) {
+                                                doneEach(innerErr, innerErr ? 1 : 0);
+                                            }
+                                        );
+                                    }, 
+                                    function (streamErr) {
+                                        done(streamErr, streamErr ? 1 : 0);
                                     }
-                                ],
-                                function(innerErr) {
-                                    doneEach(innerErr, innerErr ? 1 : 0);
-                                }
-                            );
-                        }, 
-                        function (streamErr) {
-                            callback(streamErr, streamErr ? 1 : 0);
+                                );
+                            }
+                        ],
+                        function(err) {
+                            // Write the closing </stream> tag.
+                            if (eventWriter._headerWritten) {
+                                eventWriter.close();
+                            }
+                            callback(err, err ? 1 : 0);
                         }
                     );
                 }
@@ -16656,7 +16710,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                 
                                 if (numJobsLeft === 0) {
                                     if (!gotJobNotImmediatelyReady) {
-                                        console.log("WARNING: Couldn't test code path in track() where job wasn't ready immediately.");
+                                        splunkjs.Logger.error("", "WARNING: Couldn't test code path in track() where job wasn't ready immediately.");
                                     }
                                     test.done();
                                 }
@@ -16664,6 +16718,35 @@ exports.setup = function(svc, loggedOutSvc) {
                         });
                     });
                 }
+            },
+
+            "Callback#Service.getJob() works": function(test) {
+                var that = this;
+                var sidsMatch = false;
+                this.service.search('search index=_internal | head 1', {}, function(err, job){
+                    if (err) {
+                        test.ok(!err);
+                        test.done();
+                        return;
+                    }
+                    var sid = job.sid;
+                    return Async.chain([
+                            function(done) {
+                                that.service.getJob(sid, done);
+                            },
+                            function(innerJob, done) {
+                                test.strictEqual(sid, innerJob.sid);
+                                sidsMatch = sid === innerJob.sid;
+                                done();
+                            }
+                        ],
+                        function(err) {
+                            test.ok(!err);
+                            test.ok(sidsMatch);
+                            test.done();
+                        }
+                    );
+                });
             }
         },
 
@@ -16671,10 +16754,22 @@ exports.setup = function(svc, loggedOutSvc) {
             setUp: function(done) {
                 this.service = svc;
                 this.dataModels = svc.dataModels();
-                done();
+                this.skip = false;
+                var that = this;
+                this.service.serverInfo(function(err, info) {
+                    if (parseInt(info.properties().version.split(".")[0], 10) < 6) {
+                        that.skip = true;
+                        splunkjs.Logger.log("Skipping data model tests...");
+                    }
+                    done(err);
+                });
             },
 
-            "Callback#DataModels - fetch a built-in data model": function(test) {                
+            "Callback#DataModels - fetch a built-in data model": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var that = this;
                 Async.chain([
                         function(done) {
@@ -16700,6 +16795,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - create & delete an empty data model": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/empty_data_model.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -16739,6 +16838,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - create a data model with spaces in the name, which are swapped for -'s": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/empty_data_model.json"));
                 var name = "delete-me- " + getNextId();
 
@@ -16760,6 +16863,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - create a data model with 0 objects": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/empty_data_model.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -16787,6 +16894,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - create a data model with 1 search object": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var dataModels = this.service.dataModels();
 
                 var args = JSON.parse(utils.readFile(__filename, "../data/object_with_one_search.json"));
@@ -16816,6 +16927,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - create a data model with 2 search objects": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/object_with_two_searches.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -16843,6 +16958,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - data model objects are created correctly": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/object_with_two_searches.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -16874,6 +16993,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - data model handles unicode characters": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/model_with_unicode_headers.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -16898,6 +17021,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - create data model with empty headers": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/model_with_empty_headers.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -16925,6 +17052,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - test acceleration settings": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -16965,6 +17096,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - test data model object metadata": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -16992,6 +17127,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - test data model object parent": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -17016,6 +17155,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - test data model object lineage": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -17057,6 +17200,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - test data model object fields": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -17115,6 +17262,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - test data model object properties": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -17144,6 +17295,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - create local acceleration job": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -17184,6 +17339,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - create local acceleration job with earliest time": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -17237,6 +17396,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - test data model constraints": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -17272,6 +17435,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - test data model calculations, and the different types": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -17363,6 +17530,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - run queries": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var obj;
                 var that = this;
                 Async.chain([
@@ -17414,6 +17585,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - baseSearch is parsed correctly": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/model_with_multiple_types.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -17442,6 +17617,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#DataModels - baseTransaction is parsed correctly": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var args = JSON.parse(utils.readFile(__filename, "../data/model_with_multiple_types.json"));
                 var name = "delete-me-" + getNextId();
 
@@ -17478,10 +17657,22 @@ exports.setup = function(svc, loggedOutSvc) {
             setUp: function(done) {
                 this.service = svc;
                 this.dataModels = svc.dataModels({owner: "nobody", app: "search"});
-                done();
+                this.skip = false;
+                var that = this;
+                this.service.serverInfo(function(err, info) {
+                    if (parseInt(info.properties().version.split(".")[0], 10) < 6) {
+                        that.skip = true;
+                        splunkjs.Logger.log("Skipping pivot tests...");
+                    }
+                    done(err);
+                });
             },
 
             "Callback#Pivot - test constructor args": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var name = "delete-me-" + getNextId();
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                 var that = this;
@@ -17502,6 +17693,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#Pivot - test acceleration, then pivot": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var name = "delete-me-" + getNextId();
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                 var that = this;
@@ -17571,6 +17766,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#Pivot - test illegal filtering (all types)": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var name = "delete-me-" + getNextId();
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                 var that = this;
@@ -17711,6 +17910,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#Pivot - test boolean filtering": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                var name = "delete-me-" + getNextId();
                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                var that = this;
@@ -17757,6 +17960,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#Pivot - test string filtering": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                var name = "delete-me-" + getNextId();
                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                var that = this;
@@ -17803,6 +18010,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#Pivot - test IPv4 filtering": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                var name = "delete-me-" + getNextId();
                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                var that = this;
@@ -17849,6 +18060,10 @@ exports.setup = function(svc, loggedOutSvc) {
             },
 
             "Callback#Pivot - test number filtering": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                var name = "delete-me-" + getNextId();
                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                var that = this;
@@ -17894,6 +18109,10 @@ exports.setup = function(svc, loggedOutSvc) {
                 ); 
             },
             "Callback#Pivot - test limit filtering": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                var name = "delete-me-" + getNextId();
                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                var that = this;
@@ -17945,6 +18164,10 @@ exports.setup = function(svc, loggedOutSvc) {
                 ); 
             },
             "Callback#Pivot - test row split": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var name = "delete-me-" + getNextId();
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                 var that = this;
@@ -18183,6 +18406,10 @@ exports.setup = function(svc, loggedOutSvc) {
                 );
             },
             "Callback#Pivot - test column split": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var name = "delete-me-" + getNextId();
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                 var that = this;
@@ -18407,6 +18634,10 @@ exports.setup = function(svc, loggedOutSvc) {
                 );
             },
             "Callback#Pivot - test cell value": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var name = "delete-me-" + getNextId();
                 var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                 var that = this;
@@ -18638,6 +18869,10 @@ exports.setup = function(svc, loggedOutSvc) {
                 );
             },
             "Callback#Pivot - test pivot throws HTTP exception": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                var name = "delete-me-" + getNextId();
                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                var that = this;
@@ -18664,6 +18899,10 @@ exports.setup = function(svc, loggedOutSvc) {
                 ); 
             },
             "Callback#Pivot - test pivot with simple namespace": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                var name = "delete-me-" + getNextId();
                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                var that = this;
@@ -18741,6 +18980,10 @@ exports.setup = function(svc, loggedOutSvc) {
                 // numbers being expected as strings in Splunk 6.0. This was fixed in Splunk 6.1, and accepts
                 // either strings or numbers.
 
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var that = this;
                 var search;
                 Async.chain([
@@ -18786,6 +19029,10 @@ exports.setup = function(svc, loggedOutSvc) {
                 ); 
             },
             "Callback#Pivot - test pivot with PivotSpecification.run and Job.track": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 var that = this;
                 Async.chain([
                     function(done) {
@@ -18820,6 +19067,10 @@ exports.setup = function(svc, loggedOutSvc) {
                 );
             },
             "Callback#DataModels - delete any remaining data models created by the SDK tests": function(test) {
+                if (this.skip) {
+                    test.done();
+                    return;
+                }
                 svc.dataModels().fetch(function(err, dataModels) {
                     if (err) {
                         test.ok(!err);
@@ -19319,7 +19570,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var app = new splunkjs.Service.Application(this.service, "sdk-app-collection");
                 app.setupInfo(function(err, content, search) {
                     test.ok(err.data.messages[0].text.match("Setup configuration file does not"));
-                    console.log("ERR ---", err.data.messages[0].text);
+                    splunkjs.Logger.log("ERR ---", err.data.messages[0].text);
                     test.done();
                 });
             },
@@ -19485,13 +19736,13 @@ exports.setup = function(svc, loggedOutSvc) {
                             originalSearch.fetch(Async.augment(done, index));
                         },
                         function(originalSearch, index, done) {
-                            console.log("\tAlert count pre-fetch", originalSearch.alertCount());
+                            splunkjs.Logger.log("\tAlert count pre-fetch", originalSearch.alertCount());
                             var attemptNum = 1;
                             var maxAttempts = 20;
                             Async.whilst(
                                 function() {
                                     // When this returns false, it hits the final function in the chain
-                                    console.log("\tFetch attempt", attemptNum, "of", maxAttempts, "alertCount", originalSearch.alertCount());
+                                    splunkjs.Logger.log("\tFetch attempt", attemptNum, "of", maxAttempts, "alertCount", originalSearch.alertCount());
                                     if (originalSearch.alertCount() !== 0) {
                                         return false;
                                     }
@@ -19506,14 +19757,14 @@ exports.setup = function(svc, loggedOutSvc) {
                                     });
                                 },
                                 function(err) {
-                                    console.log("Attempted fetching", attemptNum, "of", maxAttempts, "result is", originalSearch.alertCount() !== 0);
+                                    splunkjs.Logger.log("Attempted fetching", attemptNum, "of", maxAttempts, "result is", originalSearch.alertCount() !== 0);
                                     originalSearch.fetch(Async.augment(done, index));
                                 }
                             );
                         },
                         function(originalSearch, index, done) {
-                            console.log("about to fetch");
-                            console.log("SavedSearch name was", originalSearch.name);
+                            splunkjs.Logger.log("about to fetch");
+                            splunkjs.Logger.log("SavedSearch name was: " + originalSearch.name);
                             svc.firedAlertGroups({username: svc.username}).fetch(Async.augment(done, index, originalSearch));
                         },
                         function(firedAlertGroups, index, originalSearch, done) {
@@ -19584,7 +19835,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     alertList,
                     function(alert, idx, callback) {
                         if (utils.startsWith(alert.name, namePrefix)) {
-                            console.log("ALERT ---", alert.name);
+                            splunkjs.Logger.log("ALERT ---", alert.name);
                             alert.remove(callback);
                         }
                         else {
@@ -19841,7 +20092,78 @@ exports.setup = function(svc, loggedOutSvc) {
                     test.ok(!err);
                     test.done();
                 });
-            }
+            },
+
+            "Callback#can get default stanza": function(test) {
+                var that = this;
+                var namespace = {owner: "admin", app: "search"};
+                
+                Async.chain([
+                    function(done) { that.service.configurations(namespace).fetch(done); },
+                    function(props, done) { 
+                        var file = props.item("alert_actions");
+                        test.strictEqual(namespace, file.namespace);
+                        test.ok(file);
+                        file.fetch(done);
+                    },
+                    function(file, done) {
+                        test.strictEqual(namespace, file.namespace);
+                        file.getDefaultStanza().fetch(done);
+                    },
+                    function(stanza, done) {
+                        test.strictEqual(stanza.name, "default");
+                        test.strictEqual(namespace, stanza.namespace);
+                        done();
+                    }
+                ],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
+
+            "Callback#updating default stanza is noop": function(test) {
+                var that = this;
+                var namespace = {owner: "admin", app: "search"};
+                var backup = null;
+                var invalid = "this won't work";
+
+                Async.chain([
+                    function(done) { that.service.configurations(namespace).fetch(done); },
+                    function(props, done) {
+                        var file = props.item("alert_actions");
+                        test.strictEqual(namespace, file.namespace);
+                        test.ok(file);
+                        file.fetch(done);
+                    },
+                    function(file, done) {
+                        test.strictEqual(namespace, file.namespace);
+                        file.getDefaultStanza().fetch(done);
+                    },
+                    function(stanza, done) {
+                        test.ok(stanza._properties.hasOwnProperty("maxresults"));
+                        test.strictEqual(namespace, stanza.namespace);
+                        backup = stanza._properties.maxresults;
+                        stanza.update({"maxresults": invalid}, done);
+                    },
+                    function(stanza, done) {
+                        test.ok(stanza.properties().hasOwnProperty("maxresults"));
+                        test.strictEqual(stanza.properties()["maxresults"], backup);
+                        test.notStrictEqual(stanza.properties()["maxresults"], invalid);
+                        stanza.fetch(done);
+                    },
+                    function(stanza, done) {
+                        test.ok(stanza.properties().hasOwnProperty("maxresults"));
+                        test.strictEqual(stanza.properties()["maxresults"], backup);
+                        test.notStrictEqual(stanza.properties()["maxresults"], invalid);
+                        done();
+                    }
+                ],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                });
+            },
         },
 
         "Storage Passwords Tests": {
@@ -20479,7 +20801,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var myIndexName = this.indexName + '-' + salt;
                 
                 if (this.service.versionCompare("5.0") < 0) {
-                    console.log("Must be running Splunk 5.0+ for this test to work.");
+                    splunkjs.Logger.info("", "Must be running Splunk 5.0+ for this test to work.");
                     test.done();
                     return;
                 }
@@ -21263,7 +21585,7 @@ exports.setup = function(svc, loggedOutSvc) {
             }
         },
         
-        "Collections": {
+        "Collection tests": {
             setUp: function(done) {
                 this.service = svc;
                 this.loggedOutService = loggedOutSvc;
@@ -21426,6 +21748,16 @@ exports.setup = function(svc, opts) {
 
             "Fired Alerts#Delete": function(test) {
                 var main = require("../examples/node/helloworld/firedalerts_delete").main;
+                main(opts, test.done);
+            },
+
+            "Get Job by sid": function(test) {
+                var main = require("../examples/node/helloworld/get_job").main;
+                main(opts, test.done);
+            },
+
+            "Endpoint Instantiation": function(test) {
+                var main = require("../examples/node/helloworld/endpoint_instantiation").main;
                 main(opts, test.done);
             },
             
@@ -22533,6 +22865,239 @@ if (module === require.main) {
 
 });
 
+require.define("/examples/node/helloworld/get_job.js", function (require, module, exports, __dirname, __filename) {
+
+// Copyright 2015 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+// This example will show how to get a `Job` by it's sid without
+// fetching a collection of `Job`s.
+
+var splunkjs = require('../../../index');
+var Async  = splunkjs.Async;
+
+exports.main = function(opts, callback) {
+    // This is just for testing - ignore it
+    opts = opts || {};
+    
+    var username = opts.username    || "admin";
+    var password = opts.password    || "changeme";
+    var scheme   = opts.scheme      || "https";
+    var host     = opts.host        || "localhost";
+    var port     = opts.port        || "8089";
+    var version  = opts.version     || "default";
+    
+    var service = new splunkjs.Service({
+        username: username,
+        password: password,
+        scheme: scheme,
+        host: host,
+        port: port,
+        version: version
+    });
+
+    var sid;
+
+    Async.chain([
+            // First, we log in
+            function(done) {
+                service.login(done);
+            },
+            // Perform the search
+            function(success, done) {
+                if (!success) {
+                    done("Error logging in");
+                }
+                
+                service.search("search index=_internal | head 1", {}, done);
+            },
+            function(job, done) {
+                // Store the sid for later use
+                sid = job.sid;
+                console.log("Created a search job with sid: " + job.sid);
+                done();
+            }
+        ],
+        function(err) {
+            if (err || !sid) {
+                if (err.hasOwnProperty("data") && err.data.hasOwnProperty("messages")) {
+                    console.log(err.data.messages[0].text);
+                }
+                else {
+                    console.log(err);
+                }
+                if (!sid) {
+                    console.log("Couldn't create search.");
+                }
+                callback(err);
+            }
+            else {
+                Async.chain([
+                        function(done) {
+                            // Since we have the job sid, we can get that job directly
+                            service.getJob(sid, done);
+                        },
+                        function(job, done) {
+                            console.log("Got the job with sid: " + job.sid);
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        callback(err);
+                    }
+                );
+            }
+        }
+    );
+};
+
+if (module === require.main) {
+    exports.main({}, function() {});
+}
+});
+
+require.define("/examples/node/helloworld/endpoint_instantiation.js", function (require, module, exports, __dirname, __filename) {
+
+// Copyright 2015 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+var splunkjs = require('../../../index');
+
+// This example will show you how to add a new REST API endpoint
+// to the Splunk SDK for JavaScript.
+//
+// The JavaScript SDK has the authorization roles REST API endpoint
+// path defined, but doesn't implement it.
+// To add a new path, we would add the following:
+//
+// `splunkjs.Paths.roles = "authorization/roles";`
+//
+// Be sure to avoid naming collisions!
+//
+// Depending on the endpoint, you may need to prepend `/services/`
+// when defining the path.
+// For example the server info REST API endpoint path is defined as:
+//
+// `"/services/server/info"`
+//
+// For more information, please refer to the REST API documentation
+// at http://docs.splunk.com/Documentation/Splunk/latest/RESTREF/RESTprolog
+
+// Here we're adding a new entity to splunkjs, which will be
+// used by the collection we'll add below.
+splunkjs.Service.Role = splunkjs.Service.Entity.extend({
+    path: function() {
+        return splunkjs.Paths.roles + "/" + encodeURIComponent(this.name);
+    },
+
+    init: function(service, name, namespace) {
+        this.name = name;
+        this._super(service, this.path(), namespace);
+    }
+});
+
+// Here we're adding a new collection to splunkjs, which
+// uses the Role entity we just defined.
+// See the `instantiateEntity()` function.
+splunkjs.Service.Roles = splunkjs.Service.Collection.extend({
+    fetchOnEntityCreation: true,
+    
+    path: function() {
+        return splunkjs.Paths.roles;
+    },
+
+    instantiateEntity: function(props) {
+        var entityNamespace = splunkjs.Utils.namespaceFromProperties(props);
+        return new splunkjs.Service.Role(this.service, props.name, entityNamespace);
+    },
+
+    init: function(service, namespace) {
+        this._super(service, this.path(), namespace);
+    }
+});
+
+// To finish off integrating the new endpoint,
+// we need to add a function to the service object
+// which will retrieve the Roles collection.
+splunkjs.Service.prototype.roles = function(namespace) {
+    return new splunkjs.Service.Roles(this, namespace);
+};
+
+exports.main = function(opts, done) {
+    // This is just for testing - ignore it
+    opts = opts || {};
+    
+    var username = opts.username    || "admin";
+    var password = opts.password    || "changeme";
+    var scheme   = opts.scheme      || "https";
+    var host     = opts.host        || "localhost";
+    var port     = opts.port        || "8089";
+    var version  = opts.version     || "default";
+    
+    var service = new splunkjs.Service({
+        username: username,
+        password: password,
+        scheme: scheme,
+        host: host,
+        port: port,
+        version: version
+    });
+
+    // First, we log in
+    service.login(function(err, success) {
+        // We check for both errors in the connection as well
+        // as if the login itself failed.
+        if (err || !success) {
+            console.log("Error in logging in");
+            done(err || "Login failed");
+            return;
+        }
+
+        // Now that we're logged in, we can just retrieve system roles!
+        service.roles({user:"admin", app: "search"}).fetch(function(rolesErr, roles) {
+            if (rolesErr) {
+                console.log("There was an error retrieving the list of roles:", err);
+                done(err);
+                return;
+            }
+
+            console.log("System roles:");
+            var rolesList = roles.list();
+            for (var i = 0; i < rolesList.length; i++) {
+                console.log("  " + i + " " + rolesList[i].name);
+            }
+            done();
+        });
+    });
+};
+
+if (module === require.main) {
+    exports.main({}, function() {});
+}
+});
+
 require.define("/examples/node/helloworld/savedsearches.js", function (require, module, exports, __dirname, __filename) {
 
 // Copyright 2011 Splunk, Inc.
@@ -22906,39 +23471,19 @@ exports.main = function(opts, callback) {
             },
             // Wait until the job is done
             function(job, done) {
-                Async.whilst(
-                    // Loop until it is done
-                    function() { return !job.properties().isDone; },
-                    // Refresh the job on every iteration, but sleep for 1 second
-                    function(iterationDone) {
-                        Async.sleep(1000, function() {
-                            // Refresh the job and note how many events we've looked at so far
-                            job.fetch(function(err) {
-                                console.log("-- fetching, " + (job.properties().eventCount || 0) + " events so far");
-                                iterationDone();
-                            });
-                        });
-                    },
-                    // When we're done, just pass the job forward
-                    function(err) {
-                        console.log("-- job done --");
-                        done(err, job);
-                    }
-                );
+                job.track({}, function(job) {
+                    // Ask the server for the results
+                    job.results({}, done);
+                });
             },
             // Print out the statistics and get the results
-            function(job, done) {
+            function(results, job, done) {
                 // Print out the statics
                 console.log("Job Statistics: ");
                 console.log("  Event Count: " + job.properties().eventCount);
                 console.log("  Disk Usage: " + job.properties().diskUsage + " bytes");
                 console.log("  Priority: " + job.properties().priority);
-                
-                // Ask the server for the results
-                job.results({}, done);
-            },
-            // Print the raw results out
-            function(results, job, done) {
+
                 // Find the index of the fields we want
                 var rawIndex = results.fields.indexOf("_raw");
                 var sourcetypeIndex = results.fields.indexOf("sourcetype");

@@ -1,5 +1,26 @@
 # Splunk SDK for JavaScript Changelog
 
+## v1.7.0
+
+### New features and APIs
+
+* Added support for Node.js v0.12.x and io.js.
+* Added `Service.getJob()` method for getting a `Job` by its sid.
+* Added `Service.ConfigurationFile.getDefaultStanza()` method for getting the `[default]` stanza of a conf file.
+* Can now stream JavaScript objects with modular inputs by passing an object as the `data` parameter to the `Event` constructor; that object will then be passed to `JSON.stringify()`.
+  * Updated the GitHub commits example to show this functionality.
+
+### New Examples
+
+* The `node/helloworld/get_job.js` example shows how to get a `Job` by its sid.
+* The `node/helloworld/endpoint_instantiation.js` example shows how to access an unsupported REST API endpoint.
+
+### Minor changes
+
+* Added a `--quiet` option for running the tests without printing log messages prefixed with `[SPLUNKD]`.
+* Update `nodeunit` dependency to v0.9.1.
+* Skip data model and pivot tests for older version of Splunk.
+
 ## v1.6.0
 
 ### New features and APIs
