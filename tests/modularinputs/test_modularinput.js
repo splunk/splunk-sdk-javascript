@@ -309,6 +309,10 @@ exports.setup = function() {
             },
 
             "ModularInput Input Validation fails": function(test) {
+                // Make logger noop so testoutput is cleaner
+                var loggerErrorBackup = Logger.error;
+                Logger.error = function(){};
+
                 exports.getScheme = function() {
                     return null;
                 };
@@ -401,8 +405,7 @@ exports.setup = function() {
                     test.ok(!err);
 
                     var expected = utils.readFile(__filename, "../data/stream_with_two_events.xml");
-                    var found = ew._out._read() + "</stream>";
-                    
+                    var found = ew._out._read();
                     test.ok(testUtils.XMLCompare(ET.parse(expected).getroot(), ET.parse(found).getroot()));
                     test.strictEqual(0, scriptStatus);
                     test.done();
@@ -452,7 +455,7 @@ exports.setup = function() {
                     test.ok(!err);
 
                     var expected = utils.readFile(__filename, "../data/stream_with_five_events.xml");
-                    var found = ew._out._read() + "</stream>";
+                    var found = ew._out._read();
 
                     var expectedChildren = ET.parse(expected).getroot().getchildren();
                     var foundChildren = ET.parse(found).getroot().getchildren();
@@ -483,7 +486,63 @@ exports.setup = function() {
                     test.equal(5, totalFound); // Did we find as many events as we expected?
                     test.equal(5, expectedChildren.length);
                     test.equal(expectedChildren.length, foundChildren.length);
+    
+                    test.ok(testUtils.XMLCompare(ET.parse(expected).getroot(), ET.parse(found).getroot()));
+                    test.strictEqual(0, scriptStatus);
+                    test.done();
+                });
+                inStream.emit("data", new Buffer(inputConfiguration));
+            },
 
+            "ModularInput streaming events works - as object": function(test) {
+                exports.getScheme = function() {
+                    return null;
+                };
+
+                var asObject = false;
+                exports.streamEvents = function(name, input, eventWriter, callback) {
+                    var myEvent = new Event({
+                        data: "{\"some\":\"json\"}",
+                        stanza: "fubar",
+                        time: 1372275124.466,
+                        host: "localhost",
+                        index: "main",
+                        source: "hilda",
+                        sourcetype: "misc",
+                        done: true,
+                        unbroken: true
+                    });
+
+                    if (asObject) {
+                        myEvent.data = {some:"json object"}; // Write a JS object
+                    }
+
+                    try {
+                        eventWriter.writeEvent(myEvent);
+                        asObject = true;
+                        callback(null);    
+                    }
+                    catch (e) {
+                        callback(e);    
+                    }
+                };
+
+                var out = testUtils.getDuplexStream();
+                var err = testUtils.getDuplexStream();
+                var ew = new EventWriter(out, err);
+
+                var inStream = testUtils.getReadableStream();
+
+                var inputConfiguration = utils.readFile(__filename, "../data/conf_with_2_inputs.xml");
+
+                var args = [TEST_SCRIPT_PATH];
+                ModularInput.runScript(exports, args, ew, inStream, function(err, scriptStatus) {
+                    test.ok(!err);
+
+                    var expected = utils.readFile(__filename, "../data/stream_with_two_json_events.xml");
+                    var found = ew._out._read();
+
+                    test.ok(asObject);
                     test.ok(testUtils.XMLCompare(ET.parse(expected).getroot(), ET.parse(found).getroot()));
                     test.strictEqual(0, scriptStatus);
                     test.done();

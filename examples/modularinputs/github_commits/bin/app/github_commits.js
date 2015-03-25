@@ -26,7 +26,7 @@
     var utils           = ModularInputs.utils;
 
     // The version number should be updated every time a new version of the JavaScript SDK is released.
-    var SDK_UA_STRING = "splunk-sdk-javascript/1.6.0";
+    var SDK_UA_STRING = "splunk-sdk-javascript/1.7.0";
 
     // Create easy to read date format.
     function getDisplayDate(date) {
@@ -166,8 +166,9 @@
                             callback(err);
                             return;
                         }
-                        // When res.meta.link doesn't contain "next", we should stop the loop after streaming commits on this page.
-                        if (res.meta.link.indexOf("rel=\"next\"") < 0) {
+                        // When res.meta doesn't have a "link" property or res.meta.link doesn't contain "next",
+                        // we should stop the loop after streaming commits on this page.
+                        if (!res.meta.hasOwnProperty("link") || res.meta.link.indexOf("rel=\"next\"") < 0) {
                             working = false;
                         }
 
@@ -207,7 +208,7 @@
                                     var event = new Event({
                                         stanza: repository,
                                         sourcetype: "github_commits",
-                                        data: JSON.stringify(json), // Have Splunk index our event data as JSON.
+                                        data: json, // Have Splunk index our event data as JSON, if data is an object it will be passed through JSON.stringify()
                                         time: Date.parse(json.rawdate) // Set the event timestamp to the time of the commit.
                                     });
                                     eventWriter.writeEvent(event);

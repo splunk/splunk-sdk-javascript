@@ -54,39 +54,19 @@ exports.main = function(opts, callback) {
             },
             // Wait until the job is done
             function(job, done) {
-                Async.whilst(
-                    // Loop until it is done
-                    function() { return !job.properties().isDone; },
-                    // Refresh the job on every iteration, but sleep for 1 second
-                    function(iterationDone) {
-                        Async.sleep(1000, function() {
-                            // Refresh the job and note how many events we've looked at so far
-                            job.fetch(function(err) {
-                                console.log("-- fetching, " + (job.properties().eventCount || 0) + " events so far");
-                                iterationDone();
-                            });
-                        });
-                    },
-                    // When we're done, just pass the job forward
-                    function(err) {
-                        console.log("-- job done --");
-                        done(err, job);
-                    }
-                );
+                job.track({}, function(job) {
+                    // Ask the server for the results
+                    job.results({}, done);
+                });
             },
             // Print out the statistics and get the results
-            function(job, done) {
+            function(results, job, done) {
                 // Print out the statics
                 console.log("Job Statistics: ");
                 console.log("  Event Count: " + job.properties().eventCount);
                 console.log("  Disk Usage: " + job.properties().diskUsage + " bytes");
                 console.log("  Priority: " + job.properties().priority);
-                
-                // Ask the server for the results
-                job.results({}, done);
-            },
-            // Print the raw results out
-            function(results, job, done) {
+
                 // Find the index of the fields we want
                 var rawIndex = results.fields.indexOf("_raw");
                 var sourcetypeIndex = results.fields.indexOf("sourcetype");

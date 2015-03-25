@@ -1,6 +1,6 @@
 {
     "name" : "splunk-sdk",
-    "version" : "1.6.0",
+    "version" : "1.7.0",
     "description" : "SDK for usage with the Splunk REST API",
     "homepage": "http://dev.splunk.com",
     "main" : "index.js",
@@ -27,7 +27,7 @@
     "devDependencies" : {
         "browserify" : "https://github.com/itay/node-browserify/tarball/master",
         "uglify-js" : "1.1.x",
-        "nodeunit" : "0.6.x",
+        "nodeunit" : "0.9.x",
         "jshint" : "0.5.x >= 0.5.4",
         "mustache": "0.3.x",
         "readable-stream" : "1.1.13-1"

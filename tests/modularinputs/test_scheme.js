@@ -78,7 +78,7 @@ exports.setup = function() {
                     validation: "is_pos_int('some_name')",
                     dataType: Argument.dataTypeNumber,
                     requiredOnEdit: true,
-                    requiredOnCreate: false
+                    requiredOnCreate: true
                 });
                 myScheme.addArgument(arg2);
 
