@@ -5507,6 +5507,62 @@ exports.setup = function(svc, loggedOutSvc) {
                 );
             },
 
+            "Callback#Service submit events with multi-byte chars": function(test) {
+                var service = this.service;
+                var messages = [
+                    "Ummelner Straße 6",
+                    "Ümmelner Straße 6",
+                    "Iԉｔéｒԉáｔíòлåɭìƶåｔｉòл",
+                    "Iｎｔéｒｎâｔì߀лàɭíƶɑｔïòл",
+                    "ãϻéｔ ｄòｎｅｒ ｔｕｒƙëｙ ѵ߀ｌù",
+                    "ｐｔãｔｅ ìԉ ｒëρｒèｈëｎԁéｒｉｔ ",
+                    "ϻ߀ｌɭｉｔ ｆìɭèｔ ϻìǥｎｏԉ ɭäｂ߀ｒíѕ",
+                    " êӽ ｃɦùｃｋ ｃüｐïᏧåｔåｔ Ꮷèѕëｒｕлｔ. ",
+                    "D߀ɭｏｒ ѵéｌíｔ ìｒｕｒè, ｓèᏧ ѕｈòｒ",
+                    "ｔ ｒｉƅѕ ｃ߀ɰ ɭãｎԁյàéɢêｒ ｄｒúｍｓｔ",
+                    "íｃƙ. Mｉｎïｍ ƃàɭｌ ｔｉｐ ѕհòｒｔ ｒìƃѕ,",
+                    " ïԁ ａɭïｑúìρ ѕɦàｎƙ ρ߀ｒｃɦéｔｔɑ. Pìǥ",
+                    " ｈãｍ ɦòｃｋ ìлｃíｄíԁùԉｔ ｓéԁ ｃüｐïϻ ",
+                    "ƙèｖｉл ｌáｂｏｒê. Eｔ ｔａｉɭ ѕｔｒｉρ",
+                    " ｓｔｅáｋ úｔ üｌｌãϻｃ߀ ｒｕｍｐ ｄ߀ɭｏｒｅ.",
+                    "٩(͡๏̯͡๏)۶ ٩(-̮̮̃•̃).",
+                    "Lɑƅòｒé ƃｒëｓãòｌá ｄ߀лèｒ ѕâｌáｍí ",
+                    "ｃíｌｌûｍ ìｎ ѕɯìлｅ ϻêàｔɭ߀àｆ ｄûìｓ ",
+                    "ρãｎｃｅｔｔä ƅｒìｓƙéｔ ԁèｓêｒûлｔ áúｔè",
+                    " յòɰɭ. Lɑｂòｒìѕ ƙìêɭ",
+                    "ｂáｓá ԁòｌòｒé ｆａｔƃɑｃｋ ƅêéｆ. Pɑѕｔｒ",
+                    "äｍì ｐｉɢ ѕհàлƙ ùɭɭａｍｃò ѕａû",
+                    "ѕäǥë ｓɦàｎƙｌë.",
+                    " Cúｐíｍ ɭäƃｏｒｕｍ ｄｒｕｍｓｔïｃƙ ｊｅｒｋϒ ｖｅｌｉ",
+                    " ｐïｃåԉɦɑ ƙíéɭƅãｓａ. Aｌïｑû",
+                    "ｉρ íｒüｒë ｃûｐíϻ, äɭìɋｕâ ǥｒòûлｄ ",
+                    "ｒｏúлᏧ ｔｏԉｇüè ρàｒìãｔùｒ ",
+                    "ｂｒｉѕｋèｔ ԉｏｓｔｒｕᏧ ｃûɭｐɑ",
+                    " ìｄ ｃòлѕèｑûâｔ ｌàƅ߀ｒìｓ."
+                ];
+
+                var counter = 0;
+                Async.seriesMap(
+                    messages,
+                    function(val, idx, done) { 
+                        counter++;
+                        service.log(val, done)
+                    },
+                    function(err, vals) {
+                        test.ok(!err);
+                        test.strictEqual(counter, messages.length);
+
+                        // Verify that the full byte-length was sent for each message
+                        for (var m in messages) {
+                            test.notStrictEqual(messages[m].length, vals[m].bytes);
+                            test.strictEqual(Buffer.byteLength(messages[m]), vals[m].bytes);
+                        }
+
+                        test.done();
+                    }
+                );
+            },
+
             "Callback#Service submit event, failure": function(test) {
                 var message = "Hello World -- " + getNextId();
                 var sourcetype = "sdk-tests";
