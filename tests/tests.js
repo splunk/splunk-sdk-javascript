@@ -101,7 +101,7 @@
     }
 
     // If $SPLUNK_HOME isn't set, abort the tests
-    if (!process.env.hasOwnProperty("SPLUNK_HOME")) {
+    if (!Object.prototype.hasOwnProperty.call(process.env, "SPLUNK_HOME")) {
         console.log("$SPLUNK_HOME is not set, aborting tests.");
         return;
     }
