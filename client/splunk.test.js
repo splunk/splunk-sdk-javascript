@@ -1459,7 +1459,9 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
          */
         _headers: function (headers) {
             headers = headers || {};
-            headers["Authorization"] = this.authorization + " " + this.sessionKey;
+            if (this.sesssionKey !== "") {
+                headers["Authorization"] = this.authorization + " " + this.sessionKey;
+            }
             return headers;
         },
 
