@@ -308,7 +308,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 Async.chain([
                     function(done){
                         var app_name = process.env.SPLUNK_HOME + ('/etc/apps/sdk-app-collection/build/sleep_command.tar');
-                        // Strange hack required on Windows if $SPLUNK_HOME contains a space (ex: C:/Program%20Files/Splunk)
+                        // Fix path on Windows if $SPLUNK_HOME contains a space (ex: C:/Program%20Files/Splunk)
                         app_name = app_name.replace("%20", " ");
                         service.post("apps/appinstall", {update:1, name:app_name}, done);
                     },
@@ -1307,7 +1307,15 @@ exports.setup = function(svc, loggedOutSvc) {
                     test.done();
                     return;
                 }
-                var args = JSON.parse(utils.readFile(__filename, "../data/empty_data_model.json"));
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../data/empty_data_model.json"));
+                }
+                catch(err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    test.ok(!err);
+                    test.done();
+                }
                 var name = "delete-me-" + getNextId();
 
                 var initialSize;
@@ -1350,7 +1358,15 @@ exports.setup = function(svc, loggedOutSvc) {
                     test.done();
                     return;
                 }
-                var args = JSON.parse(utils.readFile(__filename, "../data/empty_data_model.json"));
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../data/empty_data_model.json"));
+                }
+                catch(err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    test.ok(!err);
+                    test.done();
+                }
                 var name = "delete-me- " + getNextId();
 
                 var that = this;
@@ -1375,7 +1391,15 @@ exports.setup = function(svc, loggedOutSvc) {
                     test.done();
                     return;
                 }
-                var args = JSON.parse(utils.readFile(__filename, "../data/empty_data_model.json"));
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../data/empty_data_model.json"));
+                }
+                catch(err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    test.ok(!err);
+                    test.done();
+                }
                 var name = "delete-me-" + getNextId();
 
                 var that = this;
@@ -1408,7 +1432,16 @@ exports.setup = function(svc, loggedOutSvc) {
                 }
                 var dataModels = this.service.dataModels();
 
-                var args = JSON.parse(utils.readFile(__filename, "../data/object_with_one_search.json"));
+                
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../data/object_with_one_search.json"));
+                }
+                catch(err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    test.ok(!err);
+                    test.done();
+                }
                 var name = "delete-me-" + getNextId();
 
                 var that = this;
@@ -1439,7 +1472,15 @@ exports.setup = function(svc, loggedOutSvc) {
                     test.done();
                     return;
                 }
-                var args = JSON.parse(utils.readFile(__filename, "../data/object_with_two_searches.json"));
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../data/object_with_two_searches.json"));
+                }
+                catch(err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    test.ok(!err);
+                    test.done();
+                }
                 var name = "delete-me-" + getNextId();
 
                 var that = this;
@@ -1470,7 +1511,15 @@ exports.setup = function(svc, loggedOutSvc) {
                     test.done();
                     return;
                 }
-                var args = JSON.parse(utils.readFile(__filename, "../data/object_with_two_searches.json"));
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../data/object_with_two_searches.json"));
+                }
+                catch(err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    test.ok(!err);
+                    test.done();
+                }
                 var name = "delete-me-" + getNextId();
 
                 var that = this;
@@ -1505,7 +1554,15 @@ exports.setup = function(svc, loggedOutSvc) {
                     test.done();
                     return;
                 }
-                var args = JSON.parse(utils.readFile(__filename, "../data/model_with_unicode_headers.json"));
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../data/model_with_unicode_headers.json"));
+                }
+                catch(err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    test.ok(!err);
+                    test.done();
+                }
                 var name = "delete-me-" + getNextId();
 
                 var that = this;
@@ -1533,7 +1590,15 @@ exports.setup = function(svc, loggedOutSvc) {
                     test.done();
                     return;
                 }
-                var args = JSON.parse(utils.readFile(__filename, "../data/model_with_empty_headers.json"));
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../data/model_with_empty_headers.json"));
+                }
+                catch(err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    test.ok(!err);
+                    test.done();
+                }
                 var name = "delete-me-" + getNextId();
 
                 var that = this;
@@ -1564,7 +1629,15 @@ exports.setup = function(svc, loggedOutSvc) {
                     test.done();
                     return;
                 }
-                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
+                }
+                catch(err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    test.ok(!err);
+                    test.done();
+                }
                 var name = "delete-me-" + getNextId();
 
                 var that = this;
@@ -1608,7 +1681,15 @@ exports.setup = function(svc, loggedOutSvc) {
                     test.done();
                     return;
                 }
-                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
+                }
+                catch(err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    test.ok(!err);
+                    test.done();
+                }
                 var name = "delete-me-" + getNextId();
 
                 var that = this;
@@ -1639,7 +1720,15 @@ exports.setup = function(svc, loggedOutSvc) {
                     test.done();
                     return;
                 }
-                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
+                }
+                catch(err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    test.ok(!err);
+                    test.done();
+                }
                 var name = "delete-me-" + getNextId();
 
                 var that = this;
@@ -1667,7 +1756,15 @@ exports.setup = function(svc, loggedOutSvc) {
                     test.done();
                     return;
                 }
-                var args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
+                }
+                catch(err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    test.ok(!err);
+                    test.done();
+                }
                 var name = "delete-me-" + getNextId();
 
                 var that = this;
@@ -1712,7 +1809,15 @@ exports.setup = function(svc, loggedOutSvc) {
                     test.done();
                     return;
                 }
-                var args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
+                }
+                catch(err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    test.ok(!err);
+                    test.done();
+                }
                 var name = "delete-me-" + getNextId();
 
                 var that = this;
@@ -1774,7 +1879,15 @@ exports.setup = function(svc, loggedOutSvc) {
                     test.done();
                     return;
                 }
-                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                }
+                catch(err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    test.ok(!err);
+                    test.done();
+                }
                 var name = "delete-me-" + getNextId();
 
                 var that = this;
@@ -1807,7 +1920,15 @@ exports.setup = function(svc, loggedOutSvc) {
                     test.done();
                     return;
                 }
-                var args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
+                }
+                catch(err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    test.ok(!err);
+                    test.done();
+                }
                 var name = "delete-me-" + getNextId();
 
                 var obj;
@@ -1851,7 +1972,15 @@ exports.setup = function(svc, loggedOutSvc) {
                     test.done();
                     return;
                 }
-                var args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
+                }
+                catch(err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    test.ok(!err);
+                    test.done();
+                }
                 var name = "delete-me-" + getNextId();
 
                 var obj;
@@ -1908,7 +2037,15 @@ exports.setup = function(svc, loggedOutSvc) {
                     test.done();
                     return;
                 }
-                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
+                }
+                catch(err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    test.ok(!err);
+                    test.done();
+                }
                 var name = "delete-me-" + getNextId();
 
                 var obj;
@@ -1947,7 +2084,15 @@ exports.setup = function(svc, loggedOutSvc) {
                     test.done();
                     return;
                 }
-                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
+                }
+                catch(err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    test.ok(!err);
+                    test.done();
+                }
                 var name = "delete-me-" + getNextId();
 
                 var obj;
@@ -2097,7 +2242,15 @@ exports.setup = function(svc, loggedOutSvc) {
                     test.done();
                     return;
                 }
-                var args = JSON.parse(utils.readFile(__filename, "../data/model_with_multiple_types.json"));
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../data/model_with_multiple_types.json"));
+                }
+                catch(err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    test.ok(!err);
+                    test.done();
+                }
                 var name = "delete-me-" + getNextId();
 
                 var obj;
@@ -2129,7 +2282,15 @@ exports.setup = function(svc, loggedOutSvc) {
                     test.done();
                     return;
                 }
-                var args = JSON.parse(utils.readFile(__filename, "../data/model_with_multiple_types.json"));
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../data/model_with_multiple_types.json"));
+                }
+                catch(err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    test.ok(!err);
+                    test.done();
+                }
                 var name = "delete-me-" + getNextId();
 
                 var obj;
@@ -2182,7 +2343,15 @@ exports.setup = function(svc, loggedOutSvc) {
                     return;
                 }
                 var name = "delete-me-" + getNextId();
-                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                }
+                catch(err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    test.ok(!err);
+                    test.done();
+                }
                 var that = this;
                 Async.chain([
                         function(done) {
@@ -2206,7 +2375,15 @@ exports.setup = function(svc, loggedOutSvc) {
                     return;
                 }
                 var name = "delete-me-" + getNextId();
-                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                }
+                catch(err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    test.ok(!err);
+                    test.done();
+                }
                 var that = this;
                 Async.chain([
                         function(done) {
@@ -2279,7 +2456,15 @@ exports.setup = function(svc, loggedOutSvc) {
                     return;
                 }
                 var name = "delete-me-" + getNextId();
-                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                }
+                catch(err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    test.ok(!err);
+                    test.done();
+                }
                 var that = this;
                 Async.chain([
                         function(done) {
@@ -2422,10 +2607,18 @@ exports.setup = function(svc, loggedOutSvc) {
                     test.done();
                     return;
                 }
-               var name = "delete-me-" + getNextId();
-               var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
-               var that = this;
-               Async.chain([
+                var name = "delete-me-" + getNextId();
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                }
+                catch(err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    test.ok(!err);
+                    test.done();
+                }
+                var that = this;
+                Async.chain([
                         function(done) {
                            that.dataModels.create(name, args, done);
                         },
@@ -2472,10 +2665,18 @@ exports.setup = function(svc, loggedOutSvc) {
                     test.done();
                     return;
                 }
-               var name = "delete-me-" + getNextId();
-               var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
-               var that = this;
-               Async.chain([
+                var name = "delete-me-" + getNextId();
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                }
+                catch(err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    test.ok(!err);
+                    test.done();
+                }
+                var that = this;
+                Async.chain([
                         function(done) {
                            that.dataModels.create(name, args, done);
                         },
@@ -2522,10 +2723,18 @@ exports.setup = function(svc, loggedOutSvc) {
                     test.done();
                     return;
                 }
-               var name = "delete-me-" + getNextId();
-               var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
-               var that = this;
-               Async.chain([
+                var name = "delete-me-" + getNextId();
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                }
+                catch(err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    test.ok(!err);
+                    test.done();
+                }
+                var that = this;
+                Async.chain([
                         function(done) {
                            that.dataModels.create(name, args, done);
                         },
@@ -2572,10 +2781,18 @@ exports.setup = function(svc, loggedOutSvc) {
                     test.done();
                     return;
                 }
-               var name = "delete-me-" + getNextId();
-               var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
-               var that = this;
-               Async.chain([
+                var name = "delete-me-" + getNextId();
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                }
+                catch(err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    test.ok(!err);
+                    test.done();
+                }
+                var that = this;
+                Async.chain([
                         function(done) {
                            that.dataModels.create(name, args, done);
                         },
@@ -2621,10 +2838,18 @@ exports.setup = function(svc, loggedOutSvc) {
                     test.done();
                     return;
                 }
-               var name = "delete-me-" + getNextId();
-               var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
-               var that = this;
-               Async.chain([
+                var name = "delete-me-" + getNextId();
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                }
+                catch(err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    test.ok(!err);
+                    test.done();
+                }
+                var that = this;
+                Async.chain([
                         function(done) {
                            that.dataModels.create(name, args, done);
                         },
@@ -2669,7 +2894,7 @@ exports.setup = function(svc, loggedOutSvc) {
                        test.ok(!err);
                        test.done();
                     }
-                ); 
+                );
             },
             "Callback#Pivot - test row split": function(test) {
                 if (this.skip) {
@@ -2677,11 +2902,19 @@ exports.setup = function(svc, loggedOutSvc) {
                     return;
                 }
                 var name = "delete-me-" + getNextId();
-                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                }
+                catch(err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    test.ok(!err);
+                    test.done();
+                }
                 var that = this;
                 Async.chain([
                         function(done) {
-                           that.dataModels.create(name, args, done);
+                            that.dataModels.create(name, args, done);
                         },
                         function(dataModel, done) {
                             var obj = dataModel.objectByName("test_data");
@@ -2919,7 +3152,15 @@ exports.setup = function(svc, loggedOutSvc) {
                     return;
                 }
                 var name = "delete-me-" + getNextId();
-                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                }
+                catch(err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    test.ok(!err);
+                    test.done();
+                }
                 var that = this;
                 Async.chain([
                         function(done) {
@@ -3147,7 +3388,15 @@ exports.setup = function(svc, loggedOutSvc) {
                     return;
                 }
                 var name = "delete-me-" + getNextId();
-                var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                }
+                catch(err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    test.ok(!err);
+                    test.done();
+                }
                 var that = this;
                 Async.chain([
                         function(done) {
@@ -3381,10 +3630,18 @@ exports.setup = function(svc, loggedOutSvc) {
                     test.done();
                     return;
                 }
-               var name = "delete-me-" + getNextId();
-               var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
-               var that = this;
-               Async.chain([
+                var name = "delete-me-" + getNextId();
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                }
+                catch(err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    test.ok(!err);
+                    test.done();
+                }
+                var that = this;
+                Async.chain([
                         function(done) {
                            that.dataModels.create(name, args, done);
                         },
@@ -3411,13 +3668,21 @@ exports.setup = function(svc, loggedOutSvc) {
                     test.done();
                     return;
                 }
-               var name = "delete-me-" + getNextId();
-               var args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
-               var that = this;
-               var obj;
-               var pivotSpecification;
-               var adhocjob;
-               Async.chain([
+                var name = "delete-me-" + getNextId();
+                var args;
+                try {
+                    args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                }
+                catch(err) {
+                    // Fail if we can't read the file, likely to occur in the browser
+                    test.ok(!err);
+                    test.done();
+                }
+                var that = this;
+                var obj;
+                var pivotSpecification;
+                var adhocjob;
+                Async.chain([
                         function(done) {
                            that.dataModels.create(name, args, done);
                         },
@@ -4671,7 +4936,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     test.ok(!err);
                     test.done();
                 });
-            },
+            }
         },
 
         "Storage Passwords Tests": {
@@ -5548,7 +5813,7 @@ exports.setup = function(svc, loggedOutSvc) {
                     messages,
                     function(val, idx, done) { 
                         counter++;
-                        service.log(val, done)
+                        service.log(val, done);
                     },
                     function(err, vals) {
                         test.ok(!err);
@@ -5557,7 +5822,13 @@ exports.setup = function(svc, loggedOutSvc) {
                         // Verify that the full byte-length was sent for each message
                         for (var m in messages) {
                             test.notStrictEqual(messages[m].length, vals[m].bytes);
-                            test.strictEqual(Buffer.byteLength(messages[m]), vals[m].bytes);
+                            try {
+                                test.strictEqual(Buffer.byteLength(messages[m]), vals[m].bytes);
+                            }
+                            catch (err) {
+                                // Assume Buffer isn't defined, we're probably in the browser
+                                test.strictEqual(decodeURI(encodeURIComponent(messages[m])).length, vals[m].bytes);
+                            }
                         }
 
                         test.done();
