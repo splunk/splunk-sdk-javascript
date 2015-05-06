@@ -1,5 +1,17 @@
 # Splunk SDK for JavaScript Changelog
 
+## v1.7.1
+
+### Bug Fixes
+
+* Fixed an issue with data being truncated by `node_http` with multi-byte characters (see [GitHub issue #36](https://github.com/splunk/splunk-sdk-javascript/issues/36)).
+* Updated request module to version `2.55.0` to include a [bug fix](https://github.com/request/request/issues/1522) for Node.js v0.12.x (see [GitHub issue #38](https://github.com/splunk/splunk-sdk-javascript/issues/38)).
+* Fixed a bug in Chrome authorization header handling.
+
+### Minor changes
+
+* Updated mustache dependency to version `0.4.0`.
+
 ## v1.7.0
 
 ### New features and APIs
