@@ -15804,7 +15804,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 Async.chain([
                     function(done){
                         var app_name = process.env.SPLUNK_HOME + ('/etc/apps/sdk-app-collection/build/sleep_command.tar');
-                        // Strange hack required on Windows if $SPLUNK_HOME contains a space (ex: C:/Program%20Files/Splunk)
+                        // Fix path on Windows if $SPLUNK_HOME contains a space (ex: C:/Program%20Files/Splunk)
                         app_name = app_name.replace("%20", " ");
                         service.post("apps/appinstall", {update:1, name:app_name}, done);
                     },
