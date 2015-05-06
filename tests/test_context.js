@@ -726,7 +726,10 @@ exports.setup = function(svc) {
             // Having a timeout of 3 seconds, a max_time of 5 seconds with a blocking mode and searching realtime should involve a timeout error.
             service.get("search/jobs/export", {search:"search index=_internal", timeout:2, max_time:5, search_mode:"realtime", exec_mode:"blocking"}, function(err, res){
                 test.ok(err);
-                test.strictEqual(err.status, 600);
+                // Prevent test suite from erroring out if `err` is null, just fail the test
+                if (err) {
+                    test.strictEqual(err.status, 600);
+                }
                 test.done();
             });
         },
