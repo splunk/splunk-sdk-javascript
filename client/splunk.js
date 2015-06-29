@@ -975,6 +975,13 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @function splunkjs.Utils
      */
     root.namespaceFromProperties = function(props) {
+        if (root.isUndefined(props) || root.isUndefined(props.acl)) {
+            return {
+                owner: '',
+                app: '',
+                sharing: ''
+            };
+        }
         return {
             owner: props.acl.owner,
             app: props.acl.app,
@@ -1202,7 +1209,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
          */
         _headers: function (headers) {
             headers = headers || {};
-            if (this.sesssionKey !== "") {
+            if (this.sessionKey) {
                 headers["Authorization"] = this.authorization + " " + this.sessionKey;
             }
             return headers;

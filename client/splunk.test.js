@@ -570,7 +570,6 @@ exports.setup = function() {
         },
 
         "namespaceFromProperties": function(test) {
-            test.throws(function() { splunkjs.Utils.namespaceFromProperties({}); });
             var a = splunkjs.Utils.namespaceFromProperties(
                 {acl: {owner: "boris",
                        app: "factory",
@@ -588,8 +587,22 @@ exports.setup = function() {
             );
             test.done();
             
+        },
+
+        "namespaceFromProperties - bad data": function(test) {
+            var undefinedProps;
+            var a = splunkjs.Utils.namespaceFromProperties(undefinedProps);
+            test.strictEqual(a.owner, '');
+            test.strictEqual(a.app, '');
+            test.strictEqual(a.sharing, '');
+
+            var undefinedAcl = {};
+            var b = splunkjs.Utils.namespaceFromProperties(undefinedProps);
+            test.strictEqual(b.owner, '');
+            test.strictEqual(b.app, '');
+            test.strictEqual(b.sharing, '');
+            test.done();
         }
-        
     };
 };
 
@@ -1232,6 +1245,13 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @function splunkjs.Utils
      */
     root.namespaceFromProperties = function(props) {
+        if (root.isUndefined(props) || root.isUndefined(props.acl)) {
+            return {
+                owner: '',
+                app: '',
+                sharing: ''
+            };
+        }
         return {
             owner: props.acl.owner,
             app: props.acl.app,
@@ -1459,7 +1479,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
          */
         _headers: function (headers) {
             headers = headers || {};
-            if (this.sesssionKey !== "") {
+            if (this.sessionKey) {
                 headers["Authorization"] = this.authorization + " " + this.sessionKey;
             }
             return headers;
