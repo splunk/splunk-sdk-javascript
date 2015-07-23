@@ -1,42 +1,45 @@
 {
-    "name" : "splunk-sdk",
-    "version" : "1.7.1",
-    "description" : "SDK for usage with the Splunk REST API",
-    "homepage": "http://dev.splunk.com",
-    "main" : "index.js",
-    "directories" : {
-        "example" : "examples",
-        "lib" : "lib",
-        "test" : "tests"
-    },
-    "repository" : {
-        "type" : "git",
-        "url" : "http://github.com/splunk/splunk-sdk-javascript.git"
-    },
-    "keywords" : [
-        "splunk",
-        "data",
-        "search",
-        "logs",
-        "javascript"
-    ],
-    "dependencies" : {
-        "request" : "2.55.x",
-        "elementtree" : "0.1.6"
-    },
-    "devDependencies" : {
-        "browserify" : "https://github.com/itay/node-browserify/tarball/master",
-        "uglify-js" : "1.1.x",
-        "nodeunit" : "0.9.x",
-        "jshint" : "0.5.x >= 0.5.4",
-        "mustache": "0.4.x",
-        "readable-stream" : "1.1.13-1"
-    },
-    "author" : {
-        "name" : "Splunk",
-        "email" : "devinfo@splunk.com",
-        "url" : "http://dev.splunk.com"
-    },
-    "license" : "Apache 2.0",
-    "engine" : { "node" : ">=0.8.0" }
+  "name": "splunk-sdk",
+  "version": "1.7.1",
+  "description": "SDK for usage with the Splunk REST API",
+  "homepage": "http://dev.splunk.com",
+  "main": "index.js",
+  "directories": {
+    "example": "examples",
+    "lib": "lib",
+    "test": "tests"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://github.com/splunk/splunk-sdk-javascript.git"
+  },
+  "keywords": [
+    "splunk",
+    "data",
+    "search",
+    "logs",
+    "javascript"
+  ],
+  "dependencies": {
+    "elementtree": "0.1.6",
+    "request": "2.55.x",
+    "tough-cookie": "^2.0.0"
+  },
+  "devDependencies": {
+    "browserify": "https://github.com/itay/node-browserify/tarball/master",
+    "uglify-js": "1.1.x",
+    "nodeunit": "0.9.x",
+    "jshint": "0.5.x >= 0.5.4",
+    "mustache": "0.4.x",
+    "readable-stream": "1.1.13-1"
+  },
+  "author": {
+    "name": "Splunk",
+    "email": "devinfo@splunk.com",
+    "url": "http://dev.splunk.com"
+  },
+  "license": "Apache 2.0",
+  "engine": {
+    "node": ">=0.8.0"
+  }
 }
