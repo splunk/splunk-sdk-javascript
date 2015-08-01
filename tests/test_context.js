@@ -97,7 +97,6 @@ exports.setup = function(svc) {
 
         "Callback#get autologin - success": function(test) {
             var service = new splunkjs.Service(
-                new splunkjs.Service().http,
                 {
                     scheme: this.service.scheme,
                     host: this.service.host,
@@ -119,7 +118,6 @@ exports.setup = function(svc) {
 
         "Callback#get autologin - error": function(test) {
             var service = new splunkjs.Service(
-                new splunkjs.Service().http,
                 {
                     scheme: this.service.scheme,
                     host: this.service.host,
@@ -140,7 +138,6 @@ exports.setup = function(svc) {
 
         "Callback#get autologin - disabled": function(test) {
             var service = new splunkjs.Service(
-                new splunkjs.Service().http,
                 {
                     scheme: this.service.scheme,
                     host: this.service.host,
@@ -161,7 +158,6 @@ exports.setup = function(svc) {
 
         "Callback#get relogin - success": function(test) {
             var service = new splunkjs.Service(
-                new splunkjs.Service().http,
                 {
                     scheme: this.service.scheme,
                     host: this.service.host,
@@ -185,7 +181,6 @@ exports.setup = function(svc) {
 
         "Callback#get relogin - error": function(test) {
             var service = new splunkjs.Service(
-                new splunkjs.Service().http,
                 {
                     scheme: this.service.scheme,
                     host: this.service.host,
@@ -229,7 +224,6 @@ exports.setup = function(svc) {
 
         "Callback#post autologin - success": function(test) {
             var service = new splunkjs.Service(
-                new splunkjs.Service().http,
                 {
                     scheme: this.service.scheme,
                     host: this.service.host,
@@ -255,7 +249,6 @@ exports.setup = function(svc) {
 
         "Callback#post autologin - error": function(test) {
             var service = new splunkjs.Service(
-                new splunkjs.Service().http,
                 {
                     scheme: this.service.scheme,
                     host: this.service.host,
@@ -275,7 +268,6 @@ exports.setup = function(svc) {
 
         "Callback#post autologin - disabled": function(test) {
             var service = new splunkjs.Service(
-                new splunkjs.Service().http,
                 {
                     scheme: this.service.scheme,
                     host: this.service.host,
@@ -296,7 +288,6 @@ exports.setup = function(svc) {
 
         "Callback#post relogin - success": function(test) {
             var service = new splunkjs.Service(
-                new splunkjs.Service().http,
                 {
                     scheme: this.service.scheme,
                     host: this.service.host,
@@ -323,7 +314,6 @@ exports.setup = function(svc) {
 
         "Callback#post relogin - error": function(test) {
             var service = new splunkjs.Service(
-                new splunkjs.Service().http,
                 {
                     scheme: this.service.scheme,
                     host: this.service.host,
@@ -365,7 +355,6 @@ exports.setup = function(svc) {
 
         "Callback#delete autologin - success": function(test) {
             var service = new splunkjs.Service(
-                new splunkjs.Service().http,
                 {
                     scheme: this.service.scheme,
                     host: this.service.host,
@@ -390,7 +379,6 @@ exports.setup = function(svc) {
 
         "Callback#delete autologin - error": function(test) {
             var service = new splunkjs.Service(
-                new splunkjs.Service().http,
                 {
                     scheme: this.service.scheme,
                     host: this.service.host,
@@ -410,7 +398,6 @@ exports.setup = function(svc) {
 
         "Callback#delete autologin - disabled": function(test) {
             var service = new splunkjs.Service(
-                new splunkjs.Service().http,
                 {
                     scheme: this.service.scheme,
                     host: this.service.host,
@@ -431,7 +418,6 @@ exports.setup = function(svc) {
 
         "Callback#delete relogin - success": function(test) {
             var service = new splunkjs.Service(
-                new splunkjs.Service().http,
                 {
                     scheme: this.service.scheme,
                     host: this.service.host,
@@ -457,7 +443,6 @@ exports.setup = function(svc) {
 
         "Callback#delete relogin - error": function(test) {
             var service = new splunkjs.Service(
-                new splunkjs.Service().http,
                 {
                     scheme: this.service.scheme,
                     host: this.service.host,
@@ -526,7 +511,6 @@ exports.setup = function(svc) {
 
         "Callback#request autologin - success": function(test) {
             var service = new splunkjs.Service(
-                new splunkjs.Service().http,
                 {
                     scheme: this.service.scheme,
                     host: this.service.host,
@@ -556,7 +540,6 @@ exports.setup = function(svc) {
 
         "Callback#request autologin - error": function(test) {
             var service = new splunkjs.Service(
-                new splunkjs.Service().http,
                 {
                     scheme: this.service.scheme,
                     host: this.service.host,
@@ -579,7 +562,6 @@ exports.setup = function(svc) {
 
         "Callback#request autologin - disabled": function(test) {
             var service = new splunkjs.Service(
-                new splunkjs.Service().http,
                 {
                     scheme: this.service.scheme,
                     host: this.service.host,
@@ -603,7 +585,6 @@ exports.setup = function(svc) {
 
         "Callback#request relogin - success": function(test) {
             var service = new splunkjs.Service(
-                new splunkjs.Service().http,
                 {
                     scheme: this.service.scheme,
                     host: this.service.host,
@@ -634,7 +615,6 @@ exports.setup = function(svc) {
 
         "Callback#request relogin - error": function(test) {
             var service = new splunkjs.Service(
-                new splunkjs.Service().http,
                 {
                     scheme: this.service.scheme,
                     host: this.service.host,
@@ -670,7 +650,6 @@ exports.setup = function(svc) {
 
         "Callback#timeout default test": function(test){
             var service = new splunkjs.Service(
-                new splunkjs.Service().http,
                 {
                     scheme: this.service.scheme,
                     host: this.service.host,
@@ -690,7 +669,6 @@ exports.setup = function(svc) {
 
         "Callback#timeout timed test": function(test){
             var service = new splunkjs.Service(
-                new splunkjs.Service().http,
                 {
                     scheme: this.service.scheme,
                     host: this.service.host,
@@ -711,7 +689,6 @@ exports.setup = function(svc) {
 
         "Callback#timeout fail": function(test){
             var service = new splunkjs.Service(
-                new splunkjs.Service().http,
                 {
                     scheme: this.service.scheme,
                     host: this.service.host,
