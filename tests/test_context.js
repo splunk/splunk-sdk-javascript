@@ -16,12 +16,12 @@
 exports.setup = function(svc) {
     var splunkjs    = require('../index');
     var tutils      = require('./utils');
+    var utils       = splunkjs.Utils;
 
     splunkjs.Logger.setLevel("ALL");
     var isBrowser = typeof window !== "undefined";
 
     var suite = {
-
         "General Context Test": {
             setUp: function(done) {
                 this.service = svc;
@@ -804,7 +804,7 @@ exports.setup = function(svc) {
                     return;
                 }
                 var service = new splunkjs.Service(
-                 {
+                {
                     scheme: svc.scheme,
                     host: svc.host, port: svc.port,
                     username: svc.username,
@@ -812,10 +812,118 @@ exports.setup = function(svc) {
                     version: svc.version
                 });
 
-                test.ok(splunkjs.Utils.isEmpty(service.http._cookieStore));
+                // Check that there are no cookies
+                test.ok(utils.isEmpty(service.http._cookieStore));
+
 
                 service.login(function(err, success) {
-                    test.ok(!splunkjs.Utils.isEmpty(service.http._cookieStore));
+                    // Check that cookies were saved
+                    test.ok(!utils.isEmpty(service.http._cookieStore));
+                    test.done();
+                });
+            },
+
+            "#request with cookie": function(test) {
+                if(this.skip){
+                    test.done();
+                    return;
+                }
+                var service = new splunkjs.Service(
+                {
+                    scheme: svc.scheme,
+                    host: svc.host, port: svc.port,
+                    username: svc.username,
+                    password: svc.password,
+                    version: svc.version
+                });
+
+                // Login to service to get a valid cookie
+                service.login(function(err, success) {
+                    // Save valid cookie
+                    var cookieStore = service.http._cookieStore;
+
+                    // Create another service to put valid cookie into, give no other authentication information
+                    var service2 = new splunkjs.Service(
+                    {
+                            scheme: svc.scheme,
+                            host: svc.host, port: svc.port,
+                            version: svc.version
+                    });
+
+                    // Put valid cookie into the service
+                    service2.http._cookieStore = cookieStore;
+
+                    // Try requesting something that requires authentication
+                    service2.get("search/jobs", {count: 1}, function(err, res) {
+                        // Test if a response is returned
+                        test.ok(res);
+                        test.done();
+                    });
+                });
+
+            },
+
+            "#request fails with bad cookie": function(test) {
+                if(this.skip){
+                    test.done();
+                    return;
+                }
+                // Create a service with no login information
+                var service = new splunkjs.Service(
+                {
+                    scheme: svc.scheme,
+                    host: svc.host, port: svc.port,
+                    version: svc.version
+                });
+
+                // Put a bad cookie into the service
+                service.http._cookieStore = { "bad" : "cookie" };
+
+                // Try requesting something that requires authentication
+                service.get("search/jobs", {count: 1}, function(err, res) {
+                    // Test if an error is returned
+                    test.ok(err);
+                    test.done();
+                });
+            },
+
+            "#autologin with cookie": function(test) {
+                var service = new splunkjs.Service(
+                {
+                    scheme: svc.scheme,
+                    host: svc.host, port: svc.port,
+                    username: svc.username,
+                    password: svc.password,
+                    version: svc.version
+                });
+
+                // Test if service has no cookies
+                test.ok(utils.isEmpty(service.http._cookieStore));
+
+                service.get("search/jobs", {count: 1}, function(err, res) {
+                    // Test if service now has a cookie
+                    test.ok(service.http._cookieStore);
+                    test.done();
+                });
+            },
+
+            "#login fails with no cookie and no sessionKey": function(test) {
+                var service = new splunkjs.Service(
+                {
+                    scheme: svc.scheme,
+                    host: svc.host, port: svc.port,
+                    version: svc.version
+                });
+
+                // Test there is no authentication information
+                test.ok(utils.isEmpty(service.http._cookieStore));
+                test.ok(service.sessionKey == '');
+                test.ok(!service.password && !service.username);
+
+
+                service.get("search/jobs", {count: 1}, function(err, res) {
+                    // Test if an error is returned
+                    test.ok(err);
                     test.done();
                 });
             }
