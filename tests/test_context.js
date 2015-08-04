@@ -16,6 +16,7 @@
 exports.setup = function(svc) {
     var splunkjs    = require('../index');
     var tutils      = require('./utils');
+    var Async       = splunkjs.Async;
     var utils       = splunkjs.Utils;
 
     splunkjs.Logger.setLevel("ALL");
@@ -45,7 +46,8 @@ exports.setup = function(svc) {
             "Callback#login": function(test) {
                 var newService = new splunkjs.Service(svc.http, {
                     scheme: svc.scheme,
-                    host: svc.host, port: svc.port,
+                    host: svc.host,
+                    port: svc.port,
                     username: svc.username,
                     password: svc.password,
                     version: svc.version
@@ -786,19 +788,20 @@ exports.setup = function(svc) {
             setUp: function(done) {
                 this.service = svc;
                 this.skip = false;
-                if (svc.version < 6.2)
-                {
-                    this.skip = true;
-                    splunkjs.Logger.log("Skipping cookie tests...");
-                }
-                done();
+                svc.serverInfo(function(err, info) {
+                    if(info.properties().version < 6.2) {
+                        this.skip = true;
+                        splunkjs.Logger.log("Skipping cookie tests...");
+                    }
+                    done();
+                });
             },
 
             tearDown: function(done) {
                 this.service.logout(done);
             },
 
-            "#login and store cookie": function(test){
+            "login and store cookie": function(test){
                 if(this.skip){
                     test.done();
                     return;
@@ -823,7 +826,7 @@ exports.setup = function(svc) {
                 });
             },
 
-            "#request with cookie": function(test) {
+            "request with cookie": function(test) {
                 if(this.skip){
                     test.done();
                     return;
@@ -836,34 +839,44 @@ exports.setup = function(svc) {
                     password: svc.password,
                     version: svc.version
                 });
-
-                // Login to service to get a valid cookie
-                service.login(function(err, success) {
-                    // Save valid cookie
-                    var cookieStore = service.http._cookieStore;
-
                     // Create another service to put valid cookie into, give no other authentication information
-                    var service2 = new splunkjs.Service(
-                    {
-                            scheme: svc.scheme,
-                            host: svc.host, port: svc.port,
-                            version: svc.version
-                    });
-
-                    // Put valid cookie into the service
-                    service2.http._cookieStore = cookieStore;
-
-                    // Try requesting something that requires authentication
-                    service2.get("search/jobs", {count: 1}, function(err, res) {
-                        // Test if a response is returned
-                        test.ok(res);
-                        test.done();
-                    });
+                var service2 = new splunkjs.Service(
+                {
+                    scheme: svc.scheme,
+                    host: svc.host, port: svc.port,
+                    version: svc.version
                 });
 
+                // Login to service to get a valid cookie
+                Async.chain([
+                        function (done) {
+                            service.login(done);
+                        },
+                        function (job, done) {
+                            // Save the cookie store
+                            var cookieStore = service.http._cookieStore;
+                            // Test that there are cookies
+                            test.ok(!utils.isEmpty(cookieStore));
+                            // Add the cookies to a service with no other authenitcation information
+                            service2.http._cookieStore = cookieStore;
+                            // Make a request that requires authentication
+                            service2.get("search/jobs", {count: 1}, done);
+                        },
+                        function (res, done) {
+                            // Test that a response was returned
+                            test.ok(res);
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        // Test that no errors were returned
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
             },
 
-            "#request fails with bad cookie": function(test) {
+            "request fails with bad cookie": function(test) {
                 if(this.skip){
                     test.done();
                     return;
@@ -883,11 +896,17 @@ exports.setup = function(svc) {
                 service.get("search/jobs", {count: 1}, function(err, res) {
                     // Test if an error is returned
                     test.ok(err);
+                    // Check that it is an unauthorized error
+                    test.strictEqual(err.status, 401);
                     test.done();
                 });
             },
 
-            "#autologin with cookie": function(test) {
+            "autologin with cookie": function(test) {
+                if(this.skip){
+                    test.done();
+                    return;
+                }
                 var service = new splunkjs.Service(
                 {
                     scheme: svc.scheme,
@@ -907,7 +926,11 @@ exports.setup = function(svc) {
                 });
             },
 
-            "#login fails with no cookie and no sessionKey": function(test) {
+            "login fails with no cookie and no sessionKey": function(test) {
+                if(this.skip){
+                    test.done();
+                    return;
+                }
                 var service = new splunkjs.Service(
                 {
                     scheme: svc.scheme,
@@ -917,9 +940,9 @@ exports.setup = function(svc) {
 
                 // Test there is no authentication information
                 test.ok(utils.isEmpty(service.http._cookieStore));
-                test.ok(service.sessionKey == '');
-                test.ok(!service.password && !service.username);
-
+                test.strictEqual(service.sessionKey, '');
+                test.ok(!service.username);
+                test.ok(!service.password);
 
                 service.get("search/jobs", {count: 1}, function(err, res) {
                     // Test if an error is returned
