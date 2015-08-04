@@ -4422,7 +4422,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 );
             },
 
-            "Callback#alert is triggered + test firedAlert entity": function(test) {
+            "Callback#alert is triggered + test firedAlert entity -- FAILS INTERMITTENTLY": function(test) {
                 var searches = this.service.savedSearches({owner: this.service.username});
                 var indexName = "sdk-tests-alerts";
                 var name = "jssdk_savedsearch_alert_" + getNextId();
