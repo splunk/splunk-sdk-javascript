@@ -809,7 +809,8 @@ exports.setup = function(svc) {
                 var service = new splunkjs.Service(
                 {
                     scheme: svc.scheme,
-                    host: svc.host, port: svc.port,
+                    host: svc.host,
+                    port: svc.port,
                     username: svc.username,
                     password: svc.password,
                     version: svc.version
@@ -822,6 +823,7 @@ exports.setup = function(svc) {
                 service.login(function(err, success) {
                     // Check that cookies were saved
                     test.ok(!utils.isEmpty(service.http._cookieStore));
+                    test.notStrictEqual(service.http._getCookieString(), '');
                     test.done();
                 });
             },
@@ -834,7 +836,8 @@ exports.setup = function(svc) {
                 var service = new splunkjs.Service(
                 {
                     scheme: svc.scheme,
-                    host: svc.host, port: svc.port,
+                    host: svc.host,
+                    port: svc.port,
                     username: svc.username,
                     password: svc.password,
                     version: svc.version
@@ -843,7 +846,8 @@ exports.setup = function(svc) {
                 var service2 = new splunkjs.Service(
                 {
                     scheme: svc.scheme,
-                    host: svc.host, port: svc.port,
+                    host: svc.host,
+                    port: svc.port,
                     version: svc.version
                 });
 
@@ -885,7 +889,8 @@ exports.setup = function(svc) {
                 var service = new splunkjs.Service(
                 {
                     scheme: svc.scheme,
-                    host: svc.host, port: svc.port,
+                    host: svc.host,
+                    port: svc.port,
                     version: svc.version
                 });
 
@@ -910,7 +915,8 @@ exports.setup = function(svc) {
                 var service = new splunkjs.Service(
                 {
                     scheme: svc.scheme,
-                    host: svc.host, port: svc.port,
+                    host: svc.host,
+                    port: svc.port,
                     username: svc.username,
                     password: svc.password,
                     version: svc.version
@@ -934,7 +940,8 @@ exports.setup = function(svc) {
                 var service = new splunkjs.Service(
                 {
                     scheme: svc.scheme,
-                    host: svc.host, port: svc.port,
+                    host: svc.host,
+                    port: svc.port,
                     version: svc.version
                 });
 
@@ -949,7 +956,89 @@ exports.setup = function(svc) {
                     test.ok(err);
                     test.done();
                 });
-            }
+            },
+
+            "login with multiple cookies": function(test) {
+                if(this.skip){
+                    test.done();
+                    return;
+                }
+                var service = new splunkjs.Service(
+                {
+                    scheme: svc.scheme,
+                    host: svc.host,
+                    port: svc.port,
+                    username: svc.username,
+                    password: svc.password,
+                    version: svc.version
+                });
+                    // Create another service to put valid cookie into, give no other authentication information
+                var service2 = new splunkjs.Service(
+                {
+                    scheme: svc.scheme,
+                    host: svc.host,
+                    port: svc.port,
+                    version: svc.version
+                });
+
+                // Login to service to get a valid cookie
+                Async.chain([
+                        function (done) {
+                            service.login(done);
+                        },
+                        function (job, done) {
+                            // Save the cookie store
+                            var cookieStore = service.http._cookieStore;
+                            // Test that there are cookies
+                            test.ok(!utils.isEmpty(cookieStore));
+
+                            // Add a bad cookie to the cookieStore
+                            cookieStore['bad'] = 'cookie';
+
+                            // Add the cookies to a service with no other authenitcation information
+                            service2.http._cookieStore = cookieStore;
+
+                            // Make a request that requires authentication
+                            service2.get("search/jobs", {count: 1}, done);
+                        },
+                        function (res, done) {
+                            // Test that a response was returned
+                            test.ok(res);
+                            done();
+                        }
+                    ],
+                    function(err) {
+                        // Test that no errors were returned
+                        test.ok(!err);
+                        test.done();
+                    }
+                );
+            },
+
+            "autologin with cookie and bad sessionKey": function(test) {
+                if(this.skip){
+                    test.done();
+                    return;
+                }
+                var service = new splunkjs.Service(
+                {
+                    scheme: svc.scheme,
+                    host: svc.host, port: svc.port,
+                    username: svc.username,
+                    password: svc.password,
+                    sessionKey: 'ABC-BADKEY',
+                    version: svc.version
+                });
+
+                // Test if service has no cookies
+                test.ok(utils.isEmpty(service.http._cookieStore));
+
+                service.get("search/jobs", {count: 1}, function(err, res) {
+                    // Test if service now has a cookie
+                    test.ok(service.http._cookieStore);
+                    test.done();
+                });
+             }
         }
     };
     return suite;
