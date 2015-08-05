@@ -801,6 +801,29 @@ exports.setup = function(svc) {
                 this.service.logout(done);
             },
 
+            "_getCookieString works as expected": function(test){
+                var service = new splunkjs.Service(
+                {
+                    scheme: svc.scheme,
+                    host: svc.host,
+                    port: svc.port,
+                });
+
+                service.http._cookieStore = {
+                    'cookie'  : 'format',
+                    'another' : 'one'
+                };
+
+                var expectedCookieString = 'cookie=format; another=one; ';
+
+                var cookieString = service.http._getCookieString();
+
+                test.strictEqual(cookieString, expectedCookieString);
+
+                test.done();
+
+            },
+
             "login and store cookie": function(test){
                 if(this.skip){
                     test.done();
