@@ -3970,59 +3970,59 @@ exports.setup = function(svc, loggedOutSvc) {
 
             "list applications with cookies as authentication": function(test) {
                 this.service.serverInfo(function (err, info) {
-                // Cookie authentication was added in splunk 6.2
-                if(info.properties().version < 6.2) {
-                    splunkjs.Logger.log("Skipping cookie test...");
-                    test.done();
-                    return;
-                }
-
-                var service = new splunkjs.Service(
-                {
-                    scheme: svc.scheme,
-                    host: svc.host,
-                    port: svc.port,
-                    username: svc.username,
-                    password: svc.password,
-                    version: svc.version
-                });
-
-                var service2 = new splunkjs.Service(
-                {
-                    scheme: svc.scheme,
-                    host: svc.host,
-                    port: svc.port,
-                    version: svc.version
-                });
-
-                Async.chain([
-                        function (done) {
-                            service.login(done);
-                        },
-                        function (job, done) {
-                            // Save the cookie store
-                            var cookieStore = service.http._cookieStore;
-                            // Test that there are cookies
-                            test.ok(!utils.isEmpty(cookieStore));
-
-                            // Add the cookies to a service with no other authenitcation information
-                            service2.http._cookieStore = cookieStore;
-
-                            var apps = service2.apps();
-                            apps.fetch(done);
-                        },
-                        function (apps, done) {
-                            var appList = apps.list();
-                            test.ok(appList.length > 0);
-                            test.ok(!utils.isEmpty(service2.http._cookieStore));
-                            done();
-                        }
-                    ],
-                    function(err) {
-                        // Test that no errors were returned
-                        test.ok(!err);
+                    // Cookie authentication was added in splunk 6.2
+                    if(info.properties().version < 6.2) {
+                        splunkjs.Logger.log("Skipping cookie test...");
                         test.done();
+                        return;
+                    }
+
+                    var service = new splunkjs.Service(
+                    {
+                        scheme: svc.scheme,
+                        host: svc.host,
+                        port: svc.port,
+                        username: svc.username,
+                        password: svc.password,
+                        version: svc.version
                     });
+
+                    var service2 = new splunkjs.Service(
+                    {
+                        scheme: svc.scheme,
+                        host: svc.host,
+                        port: svc.port,
+                        version: svc.version
+                    });
+
+                    Async.chain([
+                            function (done) {
+                                service.login(done);
+                            },
+                            function (job, done) {
+                                // Save the cookie store
+                                var cookieStore = service.http._cookieStore;
+                                // Test that there are cookies
+                                test.ok(!utils.isEmpty(cookieStore));
+
+                                // Add the cookies to a service with no other authenitcation information
+                                service2.http._cookieStore = cookieStore;
+
+                                var apps = service2.apps();
+                                apps.fetch(done);
+                            },
+                            function (apps, done) {
+                                var appList = apps.list();
+                                test.ok(appList.length > 0);
+                                test.ok(!utils.isEmpty(service2.http._cookieStore));
+                                done();
+                            }
+                        ],
+                        function(err) {
+                            // Test that no errors were returned
+                            test.ok(!err);
+                            test.done();
+                        });
                 });
             }
         },
