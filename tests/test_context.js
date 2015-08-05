@@ -806,7 +806,7 @@ exports.setup = function(svc) {
                 {
                     scheme: svc.scheme,
                     host: svc.host,
-                    port: svc.port,
+                    port: svc.port
                 });
 
                 service.http._cookieStore = {
@@ -815,13 +815,10 @@ exports.setup = function(svc) {
                 };
 
                 var expectedCookieString = 'cookie=format; another=one; ';
-
                 var cookieString = service.http._getCookieString();
 
                 test.strictEqual(cookieString, expectedCookieString);
-
                 test.done();
-
             },
 
             "login and store cookie": function(test){
