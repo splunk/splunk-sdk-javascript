@@ -788,9 +788,10 @@ exports.setup = function(svc) {
             setUp: function(done) {
                 this.service = svc;
                 this.skip = false;
+                var that = this;
                 svc.serverInfo(function(err, info) {
-                    if(info.properties().version < 6.2) {
-                        this.skip = true;
+                    if(parseInt(info.properties().version.replace(".", ""), 10) < 620) {
+                        that.skip = true;
                         splunkjs.Logger.log("Skipping cookie tests...");
                     }
                     done();
@@ -881,7 +882,7 @@ exports.setup = function(svc) {
                             var cookieStore = service.http._cookieStore;
                             // Test that there are cookies
                             test.ok(!utils.isEmpty(cookieStore));
-                            // Add the cookies to a service with no other authenitcation information
+                            // Add the cookies to a service with no other authentication information
                             service2.http._cookieStore = cookieStore;
                             // Make a request that requires authentication
                             service2.get("search/jobs", {count: 1}, done);
