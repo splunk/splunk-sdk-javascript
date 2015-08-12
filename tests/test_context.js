@@ -790,7 +790,10 @@ exports.setup = function(svc) {
                 this.skip = false;
                 var that = this;
                 svc.serverInfo(function(err, info) {
-                    if(parseInt(info.properties().version.replace(".", ""), 10) < 620) {
+                    var majorVersion = parseInt(info.properties().version.split(".")[0], 10);
+                    var minorVersion = parseInt(info.properties().version.split(".")[1], 10);
+                    // Skip cookie tests if Splunk older than 6.2
+                    if(majorVersion < 6 || (majorVersion === 6 && minorVersion < 2)) {
                         that.skip = true;
                         splunkjs.Logger.log("Skipping cookie tests...");
                     }

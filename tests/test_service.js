@@ -3971,7 +3971,10 @@ exports.setup = function(svc, loggedOutSvc) {
             "list applications with cookies as authentication": function(test) {
                 this.service.serverInfo(function (err, info) {
                     // Cookie authentication was added in splunk 6.2
-                    if(info.properties().version < 6.2) {
+                    var majorVersion = parseInt(info.properties().version.split(".")[0], 10);
+                    var minorVersion = parseInt(info.properties().version.split(".")[1], 10);
+                    // Skip cookie test if Splunk older than 6.2
+                    if(majorVersion < 6 || (majorVersion === 6 && minorVersion < 2)) {
                         splunkjs.Logger.log("Skipping cookie test...");
                         test.done();
                         return;
