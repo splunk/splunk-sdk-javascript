@@ -23,7 +23,7 @@
     "dependencies" : {
         "request" : "2.55.x",
         "elementtree" : "0.1.6",
-        "tough-cookie" : "2.0.0"
+        "cookie" : "0.2.0"
     },
     "devDependencies" : {
         "browserify" : "https://github.com/itay/node-browserify/tarball/master",

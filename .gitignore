@@ -17,4 +17,3 @@ cover_html
 .splunkrc
 *.zip
 test_logs/*
-node_modules/tough-cookie/test/
