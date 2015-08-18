@@ -1,5 +1,21 @@
 # Splunk SDK for JavaScript Changelog
 
+## v1.8.0
+
+### New features and APIs
+
+* Added support for cookie-based authentication, for Splunk 6.2+.
+
+### Bug Fixes
+
+* Fixed `Authorization` header always being added to request even when not authenticated.
+
+### Minor changes
+
+* `utils.namespaceFromProperties()` now returns an empty object when given undefined required parameters.
+* Added multiple formats of `Content-Type` headers that will be read from a `http` response.
+* Added `logout()` method to `context.js`.
+
 ## v1.7.1
 
 ### Bug Fixes
@@ -79,7 +95,7 @@
 
 ### New features and APIs
 
-* Added support for Splunk alerts through the `service.FiredAlertGroupCollection` collection, 
+* Added support for Splunk alerts through the `service.FiredAlertGroupCollection` collection,
 and the `service.FiredAlertGroup` and `service.FiredAlert` entities.
 
 * Added test to verify that URL encoding of serviceNS/ URLs works.
@@ -101,7 +117,7 @@ across all versions of Splunk.
 
 ## v1.2.2
 
-* Fixed a bug in the examples that prevented them from running on Splunk 6.0.0 
+* Fixed a bug in the examples that prevented them from running on Splunk 6.0.0
 (due to a HTTP 413 error).
 
 ## v1.2.1
@@ -128,19 +144,19 @@ across all versions of Splunk.
 
 ### New features and APIs
 
-* The `Service.log` method now auto-encodes any JSON objects passed to it. For 
+* The `Service.log` method now auto-encodes any JSON objects passed to it. For
   example, the following code is now valid:
 
   ```
   service.log({hello: "world"});
   ```
 
-* The new `Job.track` function allows you to track the progress of a job by 
-  receiving notifications about the job status, such as 'ready', 'done', 
-  'failed', and 'error', as well as a progress event while the job is still 
-  running. You can request one or more of these events. For example, this code 
-  sample shows how to determine when a job is done: 
-  
+* The new `Job.track` function allows you to track the progress of a job by
+  receiving notifications about the job status, such as 'ready', 'done',
+  'failed', and 'error', as well as a progress event while the job is still
+  running. You can request one or more of these events. For example, this code
+  sample shows how to determine when a job is done:
+
   ```
   job.track({ period: 200 }, {
       done: function(job) {
@@ -149,11 +165,11 @@ across all versions of Splunk.
   });
   ```
 
-  For more about this function, see the 
+  For more about this function, see the
   [**splunkjs.Service.Job.track** function](http://docs.splunk.com/DocumentationStatic/JavaScriptSDK/1.0/splunkjs.Service.Job.html#splunkjs.Service.Job-track),
-  see code examples on the 
-  [How to search your data](http://dev.splunk.com/view/SP-CAAAEFA) 
-  page on the Developer Portal, or see the Timeline UI example in the 
+  see code examples on the
+  [How to search your data](http://dev.splunk.com/view/SP-CAAAEFA)
+  page on the Developer Portal, or see the Timeline UI example in the
   **/splunk-sdk-javascript/examples/browser/ui** directory.
 
   This feature replaces the old `splunkjs.JobManager` class.
@@ -161,7 +177,7 @@ across all versions of Splunk.
 * The new `Job.iterator` function allows you to get an iterator over the
   results, events, and preview results of a search job. For example, you can
   iterate over all the results as follows:
-  
+
   ```
   var iterator = job.iterator("results", { pagesize: 4 });
   var shouldContinue = true;
@@ -185,28 +201,28 @@ across all versions of Splunk.
   );
   ```
 
-  This feature replaces the old 
+  This feature replaces the old
   `splunkjs.JobManager.{events|results|preview}Iterator` methods.
 
-* A new "hello-world"-style code example, `log.js`, has been added to show how 
+* A new "hello-world"-style code example, `log.js`, has been added to show how
   to do simple application logging using the Splunk SDK for JavaScript.
 
 ### Breaking changes
 
-* The easyXDM library is no longer included with the Splunk SDK for JavaScript 
-  because this library was not being used, and could not work with a Splunk 
+* The easyXDM library is no longer included with the Splunk SDK for JavaScript
+  because this library was not being used, and could not work with a Splunk
   instance that had a self-signed SSL certificate.
 
 * The default Splunk version is now 5.0 instead of 4.3. If you previously
   connected to a Splunk 4.3 instance, you must specify `version: "4.3"` when
-  you construct your `splunkjs.Service` instance. If you are using the 
-  **.splunkrc** file with the code examples, include `"version=5.0"`. For more 
-  about the **.splunkrc** file, see the 
-  [Utilities](http://dev.splunk.com/view/SP-CAAAEFM) page on the Developer 
-  Portal. 
+  you construct your `splunkjs.Service` instance. If you are using the
+  **.splunkrc** file with the code examples, include `"version=5.0"`. For more
+  about the **.splunkrc** file, see the
+  [Utilities](http://dev.splunk.com/view/SP-CAAAEFM) page on the Developer
+  Portal.
 
-* The `splunkjs.JobManager` class has been removed, and its functionality has 
-  been replaced by two functions: `Job.track` and `Job.iterator` (see "New 
+* The `splunkjs.JobManager` class has been removed, and its functionality has
+  been replaced by two functions: `Job.track` and `Job.iterator` (see "New
   features and APIs" above).
 
 * Support for Splunk Storm has been removed, and will be added back once the
@@ -252,7 +268,7 @@ Several bugs in the charting component have been fixed.
 #### Change to `search/typeahead` endpoint
 
 In the next version of Splunk, with native JSON support, the output for the
-`search/typeahead` endpoint has changed. Instead of a top level array with 
+`search/typeahead` endpoint has changed. Instead of a top level array with
 completions, it now returns a top-level object:
 
   {
