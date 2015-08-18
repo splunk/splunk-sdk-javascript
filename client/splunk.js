@@ -975,6 +975,13 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * @function splunkjs.Utils
      */
     root.namespaceFromProperties = function(props) {
+        if (root.isUndefined(props) || root.isUndefined(props.acl)) {
+            return {
+                owner: '',
+                app: '',
+                sharing: ''
+            };
+        }
         return {
             owner: props.acl.owner,
             app: props.acl.app,
@@ -1202,7 +1209,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
          */
         _headers: function (headers) {
             headers = headers || {};
-            if (this.sesssionKey !== "") {
+            if (this.sessionKey) {
                 headers["Authorization"] = this.authorization + " " + this.sessionKey;
             }
             return headers;
@@ -1363,7 +1370,11 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
         login: function(callback) {
             var that = this;
             var url = this.paths.login;
-            var params = { username: this.username, password: this.password };
+            var params = {
+                username: this.username,
+                password: this.password,
+                cookie  : '1'
+            };
 
             callback = callback || function() {};
             var wrappedCallback = function(err, response) {
@@ -1387,6 +1398,24 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
                 this.timeout,
                 wrappedCallback
             );
+        },
+
+
+        /**
+         * Logs the session out resulting in the removal of all cookies and the
+         * session key.
+         *
+         * @param {Function} callback The function to call when logout has finished: `()`.
+         *
+         * @method splunkjs.Context
+         * @private
+         */
+        logout: function(callback) {
+            callback = callback || function() {};
+
+            this.sessionKey = null;
+            this.http._cookieStore = {};
+            callback();
         },
 
         /**
@@ -1535,6 +1564,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
         SYSTEM: "system"
     };
 })();
+
 });
 
 require.define("/lib/paths.js", function (require, module, exports, __dirname, __filename) {
@@ -1693,6 +1723,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
     var Class           = require('./jquery.class').Class;
     var logger          = require('./log').Logger;
     var utils           = require('./utils');
+    var CookieHandler   = require('cookie');
 
     var root = exports || this;
     var Http = null;
@@ -1724,7 +1755,6 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
         }
     };
 
-
     /**
      * A base class for HTTP abstraction that provides the basic functionality
      * for performing GET, POST, DELETE, and REQUEST operations, and provides
@@ -1755,11 +1785,51 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
 
             // Set our default version to "none"
             this._setSplunkVersion("none");
+
+            // Cookie store for cookie based authentication.
+            this._cookieStore = {};
         },
 
         /*!*/
         _setSplunkVersion: function(version) {
             this.version = version;
+        },
+
+        /**
+         * Returns all cookies formatted as a string to be put into the Cookie Header.
+         */
+        _getCookieString: function() {
+            var cookieString = "";
+
+            utils.forEach(this._cookieStore, function (cookieValue, cookieKey) {
+                cookieString += cookieKey;
+                cookieString += '=';
+                cookieString += cookieValue;
+                cookieString += '; ';
+            });
+
+            return cookieString;
+
+        },
+
+        /**
+         * Takes a cookie header and returns an object of form { key: $cookieKey value: $cookieValue }
+         */
+        _parseCookieHeader: function(cookieHeader) {
+            // Returns an object of form { $cookieKey: $cookieValue, $optionalCookieAttributeName: $""value, ... }
+            var parsedCookieObject = CookieHandler.parse(cookieHeader);
+            var cookie = {};
+
+            // This gets the first key value pair into an object and just repeatedly returns thereafter
+            utils.forEach(parsedCookieObject, function(cookieValue, cookieKey) {
+                if(cookie.key) {
+                    return;
+                }
+                cookie.key = cookieKey;
+                cookie.value = cookieValue;
+            });
+
+            return cookie;
         },
 
         /**
@@ -1843,8 +1913,21 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
          * @see makeRequest
          */
         request: function(url, message, callback) {
+            var that = this;
             var wrappedCallback = function(response) {
                 callback = callback || function() {};
+
+                // Handle cookies if 'set-cookie' header is in the response
+
+                var cookieHeaders = response.response.headers['set-cookie'];
+                if (cookieHeaders) {
+                    utils.forEach(cookieHeaders, function (cookieHeader) {
+                        var cookie = that._parseCookieHeader(cookieHeader);
+                        that._cookieStore[cookie.key] = cookie.value;
+                    });
+                }
+
+                // Handle callback
 
                 if (response.status < 400 && response.status !== "abort") {
                     callback(null, response);
@@ -1854,12 +1937,21 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
                 }
             };
 
-
             var query = utils.getWithVersion(this.version, queryBuilderMap)(message);
             var post = message.post || {};
 
             var encodedUrl = url + "?" + Http.encode(query);
             var body = message.body ? message.body : Http.encode(post);
+
+            var cookieString = that._getCookieString();
+
+            if (cookieString.length !== 0) {
+                message.headers["Cookie"] = cookieString;
+
+                // Remove Authorization header
+                // Splunk will use Authorization header and ignore Cookies if Authorization header is sent
+                delete message.headers["Authorization"];
+            }
 
             var options = {
                 method: message.method,
@@ -1914,7 +2006,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
 
             var contentType = null;
             if (response && response.headers) {
-                contentType = utils.trim(response.headers["content-type"] || response.headers["Content-Type"]);
+                contentType = utils.trim(response.headers["content-type"] || response.headers["Content-Type"] || response.headers["Content-type"] || response.headers["contentType"]);
             }
 
             if (utils.startsWith(contentType, "application/json") && data) {
@@ -1940,7 +2032,7 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
                 data: json,
                 error: error
             };
-            
+
             return complete_response;
         }
     });
@@ -2003,6 +2095,131 @@ require.define("/lib/http.js", function (require, module, exports, __dirname, __
         return encodedStr;
     };
 })();
+
+});
+
+require.define("/node_modules/cookie/package.json", function (require, module, exports, __dirname, __filename) {
+module.exports = {}
+});
+
+require.define("/node_modules/cookie/index.js", function (require, module, exports, __dirname, __filename) {
+/*!
+ * cookie
+ * Copyright(c) 2012-2014 Roman Shtylman
+ * MIT Licensed
+ */
+
+/**
+ * Module exports.
+ * @public
+ */
+
+exports.parse = parse;
+exports.serialize = serialize;
+
+/**
+ * Module variables.
+ * @private
+ */
+
+var decode = decodeURIComponent;
+var encode = encodeURIComponent;
+
+/**
+ * Parse a cookie header.
+ *
+ * Parse the given cookie header string into an object
+ * The object has the various cookies as keys(names) => values
+ *
+ * @param {string} str
+ * @param {object} [options]
+ * @return {string}
+ * @public
+ */
+
+function parse(str, options) {
+  var obj = {}
+  var opt = options || {};
+  var pairs = str.split(/; */);
+  var dec = opt.decode || decode;
+
+  pairs.forEach(function(pair) {
+    var eq_idx = pair.indexOf('=')
+
+    // skip things that don't look like key=value
+    if (eq_idx < 0) {
+      return;
+    }
+
+    var key = pair.substr(0, eq_idx).trim()
+    var val = pair.substr(++eq_idx, pair.length).trim();
+
+    // quoted values
+    if ('"' == val[0]) {
+      val = val.slice(1, -1);
+    }
+
+    // only assign once
+    if (undefined == obj[key]) {
+      obj[key] = tryDecode(val, dec);
+    }
+  });
+
+  return obj;
+}
+
+/**
+ * Serialize data into a cookie header.
+ *
+ * Serialize the a name value pair into a cookie string suitable for
+ * http headers. An optional options object specified cookie parameters.
+ *
+ * serialize('foo', 'bar', { httpOnly: true })
+ *   => "foo=bar; httpOnly"
+ *
+ * @param {string} name
+ * @param {string} val
+ * @param {object} [options]
+ * @return {string}
+ * @public
+ */
+
+function serialize(name, val, options) {
+  var opt = options || {};
+  var enc = opt.encode || encode;
+  var pairs = [name + '=' + enc(val)];
+
+  if (null != opt.maxAge) {
+    var maxAge = opt.maxAge - 0;
+    if (isNaN(maxAge)) throw new Error('maxAge should be a Number');
+    pairs.push('Max-Age=' + maxAge);
+  }
+
+  if (opt.domain) pairs.push('Domain=' + opt.domain);
+  if (opt.path) pairs.push('Path=' + opt.path);
+  if (opt.expires) pairs.push('Expires=' + opt.expires.toUTCString());
+  if (opt.httpOnly) pairs.push('HttpOnly');
+  if (opt.secure) pairs.push('Secure');
+
+  return pairs.join('; ');
+}
+
+/**
+ * Try decoding a string using a decoding function.
+ *
+ * @param {string} str
+ * @param {function} decode
+ * @private
+ */
+
+function tryDecode(str, decode) {
+  try {
+    return decode(str);
+  } catch (e) {
+    return str;
+  }
+}
+
 });
 
 require.define("/lib/service.js", function (require, module, exports, __dirname, __filename) {

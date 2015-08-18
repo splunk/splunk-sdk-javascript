@@ -11326,6 +11326,13 @@ require.define("/utils.js", function (require, module, exports, __dirname, __fil
      * @function splunkjs.Utils
      */
     root.namespaceFromProperties = function(props) {
+        if (root.isUndefined(props) || root.isUndefined(props.acl)) {
+            return {
+                owner: '',
+                app: '',
+                sharing: ''
+            };
+        }
         return {
             owner: props.acl.owner,
             app: props.acl.app,
