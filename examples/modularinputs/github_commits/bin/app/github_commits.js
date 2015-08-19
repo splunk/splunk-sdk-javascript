@@ -26,7 +26,7 @@
     var utils           = ModularInputs.utils;
 
     // The version number should be updated every time a new version of the JavaScript SDK is released.
-    var SDK_UA_STRING = "splunk-sdk-javascript/1.7.1";
+    var SDK_UA_STRING = "splunk-sdk-javascript/1.8.0";
 
     // Create easy to read date format.
     function getDisplayDate(date) {
@@ -193,7 +193,7 @@
                                 api_url: res[i].url,
                                 url: "https://github.com/" + owner + "/" + repository + "/commit/" + res[i].sha
                             };
-                                                
+
                             // If the file exists and doesn't contain the sha, or if the file doesn't exist.
                             if (checkpointFileContents.indexOf(res[i].sha + "\n") < 0) {
                                 var commit = res[i].commit;
@@ -212,7 +212,7 @@
                                         time: Date.parse(json.rawdate) // Set the event timestamp to the time of the commit.
                                     });
                                     eventWriter.writeEvent(event);
-                                    
+
                                     checkpointFileNewContents += res[i].sha + "\n"; // Append this commit to the string we'll write at the end
                                     Logger.info(name, "Indexed a Github commit with sha: " + res[i].sha);
                                 }
@@ -234,11 +234,11 @@
                         }
 
                         fs.appendFileSync(checkpointFilePath, checkpointFileNewContents); // Write to the checkpoint file
-                        
+
                         if (alreadyIndexed > 0) {
                             Logger.info(name, "Skipped " + alreadyIndexed.toString() + " already indexed Github commits from " + owner + "/" + repository);
                         }
-                        
+
                         page++;
                         alreadyIndexed = 0;
                         callback();
