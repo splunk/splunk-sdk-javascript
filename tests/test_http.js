@@ -193,7 +193,22 @@ exports.setup = function(http) {
                     test.done();
                 });
             },
-            
+
+            "Callback#headers Content-Type": function(test) {
+                var headers = { "Content-Type": "application/json" };
+
+                this.http.post("http://httpbin.org/post", { "Content-Type": "application/json" }, {}, 0, function(err, res) {
+                    var returnedHeaders = res.data.headers;
+                    for(var headerName in headers) {
+                        if (headers.hasOwnProperty(headerName)) {
+                            test.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
+                        }
+                    }
+                    test.strictEqual(res.data.url, "http://httpbin.org/post");
+                    test.done();
+                });
+            },
+
             "Callback#all": function(test) {
                 var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
