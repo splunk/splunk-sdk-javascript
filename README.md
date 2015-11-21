@@ -1,3 +1,4 @@
+[![Build Status](https://travis-ci.org/splunk/splunk-sdk-javascript.svg?branch=master)](https://travis-ci.org/splunk/splunk-sdk-javascript)
 # The Splunk Software Development Kit for JavaScript
 
 #### Version 1.8.0

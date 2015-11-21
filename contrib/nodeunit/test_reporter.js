@@ -36,6 +36,7 @@ var track = {};
 track.createTracker = function (on_exit) {
     var names = {};
     var tracker = {
+        failed: 0,
         names: function () {
             var arr = [];
             for (var k in names) {
@@ -72,8 +73,10 @@ track.default_on_exit = function (tracker) {
         for (var i = 0; i < names.length; i += 1) {
             console.log(names[i]);
         }
-        process.reallyExit(tracker.unfinished());
+        process.reallyExit(tracker.unfinished() || tracker.failed);
     }
+    process.reallyExit(tracker.failed);
+
 };
 
 /**
@@ -126,8 +129,9 @@ exports.run = function (modules, options) {
             }
             console.log('');
             console.log('To fix this, make sure all tests call test.done()');
-            process.reallyExit(tracker.unfinished());
+            process.reallyExit(tracker.unfinished() || tracker.failed);
         }
+        process.reallyExit(tracker.failed);
     });
 
     // Object to hold status of each 'part' of the testCase/name array,
@@ -222,7 +226,7 @@ exports.run = function (modules, options) {
     var addToOutput = function(str) {
         output.push(str);
     };
-    
+
     var printAndAdd = function(str) {
         console.log(str);
         addToOutput(str);
@@ -236,11 +240,12 @@ exports.run = function (modules, options) {
         testDone: function (name, assertions) {
             tracker.remove(name);
 
+
             if (!assertions.failures()) {
                 addToOutput(get_status(name, 'pass'));
             } else {
                 printAndAdd(get_status(name, 'fail'));
-                
+                tracker.failed++;
                 assertions.forEach(function (a) {
                     if (a.failed()) {
                         a = utils.betterErrors(a);
@@ -259,7 +264,7 @@ exports.run = function (modules, options) {
             for(var i = 0; i < output.length; i++) {
                 console.log(output[i]);
             }
-            
+
             end = end || new Date().getTime();
             var duration = end - start;
             if (assertions.failures()) {
