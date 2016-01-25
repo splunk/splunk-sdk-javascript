@@ -21,17 +21,17 @@
         "javascript"
     ],
     "dependencies" : {
-        "request" : "2.55.x",
+        "request" : "2.67.x",
         "elementtree" : "0.1.6",
-        "cookie" : "0.2.0"
+        "cookie": "0.2.3"
     },
     "devDependencies" : {
         "browserify" : "https://github.com/itay/node-browserify/tarball/master",
-        "uglify-js" : "1.1.x",
+        "uglify-js": "2.6.x",
         "nodeunit" : "0.9.x",
-        "jshint" : "0.5.x >= 0.5.4",
-        "mustache": "0.4.x",
-        "readable-stream" : "1.1.13-1"
+        "jshint": "2.9.x",
+        "mustache": "2.2.x",
+        "readable-stream": "2.0.5"
     },
     "author" : {
         "name" : "Splunk",
