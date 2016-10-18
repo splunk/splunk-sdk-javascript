@@ -4,7 +4,7 @@
 
 ### Bug Fixes
 
-* Ensure modular input streams are flushed, avoid hanging processes GitHub pull request #48.
+* Ensure modular input streams are flushed, avoid hanging processes (see [GitHub pull request #48](https://github.com/splunk/splunk-sdk-javascript/pull/48)).
 
 ### Minor changes
 
