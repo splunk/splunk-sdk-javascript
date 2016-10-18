@@ -8476,12 +8476,8 @@ var ModularInputs = {
  */
 ModularInputs.execute = function(exports, module) {
     if (require.main === module) {
-        var args = process.argv;
-
-        // Trim the first argument, if it is the node.js executable.
-        if (args[0] === 'node' || ModularInputs.utils.contains(args[0], 'node.exe')) {
-            args = args.slice(1, args.length);
-        }
+        // Slice process.argv ignoring the first argument as it is the path to the node executable.
+        var args = process.argv.slice(1);
 
         // Default empty functions for life cycle events.
         exports.setup       = exports.setup     || ModularInputs.ModularInput.prototype.setup;
@@ -8496,6 +8492,13 @@ ModularInputs.execute = function(exports, module) {
         // We will call close() on this EventWriter after streaming events, which is handled internally
         // by ModularInput.runScript().
         var ew = new this.EventWriter();
+
+        // In order to ensure that everything that is written to stdout/stderr is flushed before we exit,
+        // set the file handles to blocking. This ensures we exit properly in a timely fashion.
+        // https://github.com/nodejs/node/issues/6456
+        [process.stdout, process.stderr].forEach(function(s) {
+          s && s.isTTY && s._handle && s._handle.setBlocking && s._handle.setBlocking(true);
+        });
 
         var scriptStatus;
         Async.chain([
@@ -8515,10 +8518,7 @@ ModularInputs.execute = function(exports, module) {
                     ModularInputs.Logger.error('', err, ew._err);
                 }
 
-                // Wait for process.stdout to drain before exiting the process.
-                process.stdout.once("drain", function() {
-                    process.exit(scriptStatus || err ? 1 : 0);
-                });
+                process.exit(scriptStatus || err ? 1 : 0);
             }
         );
     }
@@ -12513,7 +12513,8 @@ require.define("/lib/modularinputs/modularinput.js", function (require, module, 
         var that = this;
 
         // Resume streams before trying to read their data.
-        if (inputStream.resume) {
+        // If the inputStream is a TTY, we don't want to open the stream as it will hold the process open.
+        if (inputStream.resume && !inputStream.isTTY) {
             inputStream.resume();
         }
         var bigBuff = new Buffer(0);
