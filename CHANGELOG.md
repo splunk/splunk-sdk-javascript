@@ -1,5 +1,15 @@
 # Splunk SDK for JavaScript Changelog
 
+## v1.8.1
+
+### Bug Fixes
+
+* Ensure modular input streams are flushed, avoid hanging processes (see [GitHub pull request #48](https://github.com/splunk/splunk-sdk-javascript/pull/48)).
+
+### Minor changes
+
+* Add Travis CI configuration.
+
 ## v1.8.0
 
 ### New features and APIs
