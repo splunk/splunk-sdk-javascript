@@ -1,6 +1,6 @@
 {
     "name" : "splunk-sdk",
-    "version" : "1.8.0",
+    "version" : "1.8.1",
     "description" : "SDK for usage with the Splunk REST API",
     "homepage": "http://dev.splunk.com",
     "main" : "index.js",
