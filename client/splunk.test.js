@@ -2394,6 +2394,7 @@ exports.serialize = serialize;
 
 var decode = decodeURIComponent;
 var encode = encodeURIComponent;
+var pairSplitRegExp = /; */;
 
 /**
  * Parse a cookie header.
@@ -2403,14 +2404,18 @@ var encode = encodeURIComponent;
  *
  * @param {string} str
  * @param {object} [options]
- * @return {string}
+ * @return {object}
  * @public
  */
 
 function parse(str, options) {
+  if (typeof str !== 'string') {
+    throw new TypeError('argument str must be a string');
+  }
+
   var obj = {}
   var opt = options || {};
-  var pairs = str.split(/; */);
+  var pairs = str.split(pairSplitRegExp);
   var dec = opt.decode || decode;
 
   pairs.forEach(function(pair) {
@@ -2470,6 +2475,7 @@ function serialize(name, val, options) {
   if (opt.expires) pairs.push('Expires=' + opt.expires.toUTCString());
   if (opt.httpOnly) pairs.push('HttpOnly');
   if (opt.secure) pairs.push('Secure');
+  if (opt.firstPartyOnly) pairs.push('First-Party-Only');
 
   return pairs.join('; ');
 }
