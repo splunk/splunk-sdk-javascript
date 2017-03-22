@@ -1654,7 +1654,6 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual(true, dataModel.acceleration.enabled);
                             test.strictEqual("-2mon", dataModel.acceleration.earliestTime);
                             test.strictEqual("5/* * * * *", dataModel.acceleration.cronSchedule);
-                            test.same({enabled: true, earliestTime: "-2mon", cronSchedule: "5/* * * * *"}, dataModel.acceleration);
 
                             dataModel.acceleration.enabled = false;
                             dataModel.acceleration.earliestTime = "-1mon";
@@ -1664,7 +1663,6 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual(false, dataModel.acceleration.enabled);
                             test.strictEqual("-1mon", dataModel.acceleration.earliestTime);
                             test.strictEqual("* * * * *", dataModel.acceleration.cronSchedule);
-                            test.same({enabled: false, earliestTime: "-1mon", cronSchedule: "* * * * *"}, dataModel.acceleration);
 
                             done();
                         }
@@ -2636,14 +2634,13 @@ exports.setup = function(svc, loggedOutSvc) {
 
                                 test.ok(filter.hasOwnProperty("fieldName"));
                                 test.ok(filter.hasOwnProperty("type"));
-                                test.ok(filter.hasOwnProperty("comparator"));
-                                test.ok(filter.hasOwnProperty("compareTo"));
+                                test.ok(filter.hasOwnProperty("rule"));
                                 test.ok(filter.hasOwnProperty("owner"));
 
                                 test.strictEqual("has_boris", filter.fieldName);
                                 test.strictEqual("boolean", filter.type);
-                                test.strictEqual("=", filter.comparator);
-                                test.strictEqual(true, filter.compareTo);
+                                test.strictEqual("=", filter.rule.comparator);
+                                test.strictEqual(true, filter.rule.compareTo);
                                 test.strictEqual("test_data", filter.owner);
                             }
                             catch (e) {
@@ -2694,14 +2691,13 @@ exports.setup = function(svc, loggedOutSvc) {
 
                                 test.ok(filter.hasOwnProperty("fieldName"));
                                 test.ok(filter.hasOwnProperty("type"));
-                                test.ok(filter.hasOwnProperty("comparator"));
-                                test.ok(filter.hasOwnProperty("compareTo"));
+                                test.ok(filter.hasOwnProperty("rule"));
                                 test.ok(filter.hasOwnProperty("owner"));
 
                                 test.strictEqual("host", filter.fieldName);
                                 test.strictEqual("string", filter.type);
-                                test.strictEqual("contains", filter.comparator);
-                                test.strictEqual("abc", filter.compareTo);
+                                test.strictEqual("contains", filter.rule.comparator);
+                                test.strictEqual("abc", filter.rule.compareTo);
                                 test.strictEqual("BaseEvent", filter.owner);
                             }
                             catch (e) {
@@ -2752,14 +2748,13 @@ exports.setup = function(svc, loggedOutSvc) {
 
                                 test.ok(filter.hasOwnProperty("fieldName"));
                                 test.ok(filter.hasOwnProperty("type"));
-                                test.ok(filter.hasOwnProperty("comparator"));
-                                test.ok(filter.hasOwnProperty("compareTo"));
+                                test.ok(filter.hasOwnProperty("rule"));
                                 test.ok(filter.hasOwnProperty("owner"));
 
                                 test.strictEqual("hostip", filter.fieldName);
                                 test.strictEqual("ipv4", filter.type);
-                                test.strictEqual("startsWith", filter.comparator);
-                                test.strictEqual("192.168", filter.compareTo);
+                                test.strictEqual("startsWith", filter.rule.comparator);
+                                test.strictEqual("192.168", filter.rule.compareTo);
                                 test.strictEqual("test_data", filter.owner);
                             }
                             catch (e) {
@@ -2810,14 +2805,13 @@ exports.setup = function(svc, loggedOutSvc) {
 
                                 test.ok(filter.hasOwnProperty("fieldName"));
                                 test.ok(filter.hasOwnProperty("type"));
-                                test.ok(filter.hasOwnProperty("comparator"));
-                                test.ok(filter.hasOwnProperty("compareTo"));
+                                test.ok(filter.hasOwnProperty("rule"));
                                 test.ok(filter.hasOwnProperty("owner"));
 
                                 test.strictEqual("epsilon", filter.fieldName);
                                 test.strictEqual("number", filter.type);
-                                test.strictEqual(">=", filter.comparator);
-                                test.strictEqual(2.3, filter.compareTo);
+                                test.strictEqual(">=", filter.rule.comparator);
+                                test.strictEqual(2.3, filter.rule.compareTo);
                                 test.strictEqual("test_data", filter.owner);
                             }
                             catch (e) {
