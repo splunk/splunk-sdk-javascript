@@ -6713,8 +6713,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             };
             // These fields are type dependent
             if (utils.contains(["boolean", "string", "ipv4", "number"], ret.type)) {
-                ret.comparator = comparisonOp;
-                ret.compareTo = compareTo;
+                ret.rule = {
+                    comparator: comparisonOp,
+                    compareTo: compareTo
+                };
             }
             this.filters.push(ret);
     

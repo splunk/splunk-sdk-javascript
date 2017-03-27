@@ -6983,8 +6983,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             };
             // These fields are type dependent
             if (utils.contains(["boolean", "string", "ipv4", "number"], ret.type)) {
-                ret.comparator = comparisonOp;
-                ret.compareTo = compareTo;
+                ret.rule = {
+                    comparator: comparisonOp,
+                    compareTo: compareTo
+                };
             }
             this.filters.push(ret);
     
@@ -16016,6 +16018,7 @@ exports.setup = function(svc, loggedOutSvc) {
     var utils       = splunkjs.Utils;
     var Async       = splunkjs.Async;
     var tutils      = require('./utils');
+    var path        = require("path");
 
     splunkjs.Logger.setLevel("ALL");
     var idCounter = 0;
@@ -16305,7 +16308,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var service = this.service;
                 Async.chain([
                     function(done){
-                        var app_name = process.env.SPLUNK_HOME + ('/etc/apps/sdk-app-collection/build/sleep_command.tar');
+                        var app_name = path.join(process.env.SPLUNK_HOME, ('/etc/apps/sdk-app-collection/build/sleep_command.tar'));
                         // Fix path on Windows if $SPLUNK_HOME contains a space (ex: C:/Program%20Files/Splunk)
                         app_name = app_name.replace("%20", " ");
                         service.post("apps/appinstall", {update:1, name:app_name}, done);
@@ -17652,7 +17655,6 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual(true, dataModel.acceleration.enabled);
                             test.strictEqual("-2mon", dataModel.acceleration.earliestTime);
                             test.strictEqual("5/* * * * *", dataModel.acceleration.cronSchedule);
-                            test.same({enabled: true, earliestTime: "-2mon", cronSchedule: "5/* * * * *"}, dataModel.acceleration);
 
                             dataModel.acceleration.enabled = false;
                             dataModel.acceleration.earliestTime = "-1mon";
@@ -17662,7 +17664,6 @@ exports.setup = function(svc, loggedOutSvc) {
                             test.strictEqual(false, dataModel.acceleration.enabled);
                             test.strictEqual("-1mon", dataModel.acceleration.earliestTime);
                             test.strictEqual("* * * * *", dataModel.acceleration.cronSchedule);
-                            test.same({enabled: false, earliestTime: "-1mon", cronSchedule: "* * * * *"}, dataModel.acceleration);
 
                             done();
                         }
@@ -18634,14 +18635,13 @@ exports.setup = function(svc, loggedOutSvc) {
 
                                 test.ok(filter.hasOwnProperty("fieldName"));
                                 test.ok(filter.hasOwnProperty("type"));
-                                test.ok(filter.hasOwnProperty("comparator"));
-                                test.ok(filter.hasOwnProperty("compareTo"));
+                                test.ok(filter.hasOwnProperty("rule"));
                                 test.ok(filter.hasOwnProperty("owner"));
 
                                 test.strictEqual("has_boris", filter.fieldName);
                                 test.strictEqual("boolean", filter.type);
-                                test.strictEqual("=", filter.comparator);
-                                test.strictEqual(true, filter.compareTo);
+                                test.strictEqual("=", filter.rule.comparator);
+                                test.strictEqual(true, filter.rule.compareTo);
                                 test.strictEqual("test_data", filter.owner);
                             }
                             catch (e) {
@@ -18692,14 +18692,13 @@ exports.setup = function(svc, loggedOutSvc) {
 
                                 test.ok(filter.hasOwnProperty("fieldName"));
                                 test.ok(filter.hasOwnProperty("type"));
-                                test.ok(filter.hasOwnProperty("comparator"));
-                                test.ok(filter.hasOwnProperty("compareTo"));
+                                test.ok(filter.hasOwnProperty("rule"));
                                 test.ok(filter.hasOwnProperty("owner"));
 
                                 test.strictEqual("host", filter.fieldName);
                                 test.strictEqual("string", filter.type);
-                                test.strictEqual("contains", filter.comparator);
-                                test.strictEqual("abc", filter.compareTo);
+                                test.strictEqual("contains", filter.rule.comparator);
+                                test.strictEqual("abc", filter.rule.compareTo);
                                 test.strictEqual("BaseEvent", filter.owner);
                             }
                             catch (e) {
@@ -18750,14 +18749,13 @@ exports.setup = function(svc, loggedOutSvc) {
 
                                 test.ok(filter.hasOwnProperty("fieldName"));
                                 test.ok(filter.hasOwnProperty("type"));
-                                test.ok(filter.hasOwnProperty("comparator"));
-                                test.ok(filter.hasOwnProperty("compareTo"));
+                                test.ok(filter.hasOwnProperty("rule"));
                                 test.ok(filter.hasOwnProperty("owner"));
 
                                 test.strictEqual("hostip", filter.fieldName);
                                 test.strictEqual("ipv4", filter.type);
-                                test.strictEqual("startsWith", filter.comparator);
-                                test.strictEqual("192.168", filter.compareTo);
+                                test.strictEqual("startsWith", filter.rule.comparator);
+                                test.strictEqual("192.168", filter.rule.compareTo);
                                 test.strictEqual("test_data", filter.owner);
                             }
                             catch (e) {
@@ -18808,14 +18806,13 @@ exports.setup = function(svc, loggedOutSvc) {
 
                                 test.ok(filter.hasOwnProperty("fieldName"));
                                 test.ok(filter.hasOwnProperty("type"));
-                                test.ok(filter.hasOwnProperty("comparator"));
-                                test.ok(filter.hasOwnProperty("compareTo"));
+                                test.ok(filter.hasOwnProperty("rule"));
                                 test.ok(filter.hasOwnProperty("owner"));
 
                                 test.strictEqual("epsilon", filter.fieldName);
                                 test.strictEqual("number", filter.type);
-                                test.strictEqual(">=", filter.comparator);
-                                test.strictEqual(2.3, filter.compareTo);
+                                test.strictEqual(">=", filter.rule.comparator);
+                                test.strictEqual(2.3, filter.rule.compareTo);
                                 test.strictEqual("test_data", filter.owner);
                             }
                             catch (e) {
@@ -20400,9 +20397,15 @@ exports.setup = function(svc, loggedOutSvc) {
 
             "Callback#setupInfo succeeds": function(test) {
                 var app = new splunkjs.Service.Application(this.service, "sdk-app-collection");
-                app.setupInfo(function(err, content, search) {
-                    test.ok(err.data.messages[0].text.match("Setup configuration file does not"));
-                    splunkjs.Logger.log("ERR ---", err.data.messages[0].text);
+                app.setupInfo(function(err, content, app) {
+                    // This error message was removed in modern versions of Splunk
+                    if (err) {
+                        test.ok(err.data.messages[0].text.match("Setup configuration file does not"));
+                        splunkjs.Logger.log("ERR ---", err.data.messages[0].text);
+                    }
+                    else {
+                        test.ok(app);
+                    }
                     test.done();
                 });
             },
