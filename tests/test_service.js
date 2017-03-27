@@ -18,6 +18,7 @@ exports.setup = function(svc, loggedOutSvc) {
     var utils       = splunkjs.Utils;
     var Async       = splunkjs.Async;
     var tutils      = require('./utils');
+    var path        = require("path");
 
     splunkjs.Logger.setLevel("ALL");
     var idCounter = 0;
@@ -307,7 +308,7 @@ exports.setup = function(svc, loggedOutSvc) {
                 var service = this.service;
                 Async.chain([
                     function(done){
-                        var app_name = process.env.SPLUNK_HOME + ('/etc/apps/sdk-app-collection/build/sleep_command.tar');
+                        var app_name = path.join(process.env.SPLUNK_HOME, ('/etc/apps/sdk-app-collection/build/sleep_command.tar'));
                         // Fix path on Windows if $SPLUNK_HOME contains a space (ex: C:/Program%20Files/Splunk)
                         app_name = app_name.replace("%20", " ");
                         service.post("apps/appinstall", {update:1, name:app_name}, done);
@@ -4396,9 +4397,15 @@ exports.setup = function(svc, loggedOutSvc) {
 
             "Callback#setupInfo succeeds": function(test) {
                 var app = new splunkjs.Service.Application(this.service, "sdk-app-collection");
-                app.setupInfo(function(err, content, search) {
-                    test.ok(err.data.messages[0].text.match("Setup configuration file does not"));
-                    splunkjs.Logger.log("ERR ---", err.data.messages[0].text);
+                app.setupInfo(function(err, content, app) {
+                    // This error message was removed in modern versions of Splunk
+                    if (err) {
+                        test.ok(err.data.messages[0].text.match("Setup configuration file does not"));
+                        splunkjs.Logger.log("ERR ---", err.data.messages[0].text);
+                    }
+                    else {
+                        test.ok(app);
+                    }
                     test.done();
                 });
             },
