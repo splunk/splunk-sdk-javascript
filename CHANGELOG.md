@@ -1,5 +1,15 @@
 # Splunk SDK for JavaScript Changelog
 
+## v1.8.2
+
+### Bug Fixes
+
+* Correct the JSON for `boolean`, `string`, `ipv4`, & `number` pivot filter types.
+
+### Minor changes
+
+* Updated some dependencies.
+
 ## v1.8.1
 
 ### Bug Fixes
