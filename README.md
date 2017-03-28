@@ -394,16 +394,16 @@ License 2.0. Details can be found in the LICENSE file.
 The embedded third-party libraries may have different licenses. Here is a list
 of embedded libraries and their licenses:
 
-* [dox]: [MIT][dox-license]
+* [dox RESTful degradable JavaScript routing][dox]: [MIT][dox-license]
 * [davis.js Documentation Generator][davis.js]: [MIT][davis-license]
-* [jquery.class.js]: [MIT][jquery.class-license]
-* [nodeunit]: [MIT][nodeunit-license]
-* [showdown.js]: [BSD][showdown-license]
-* [staticresource]: [MIT][staticresource-license]
-* [webapp2]: [Apache][webapp2-license]
-* [commander]: [MIT][commander-license]
-* [script.js]: [Apache][scriptjs-license]
-* [base64.js]: [MIT][base64-license]
+* [jquery.class.js Create custom class with jquery][jquery.class.js]: [MIT][jquery.class-license]
+* [nodeunit Unit testing in node.js and the browser][nodeunit]: [MIT][nodeunit-license]
+* [showdown.js Markdown to HTML converter][showdown.js]: [BSD][showdown-license]
+* [staticresource Static resource handling][staticresource]: [MIT][staticresource-license]
+* [webapp2 A framework for Google App Engine][webapp2]: [Apache][webapp2-license]
+* [commander Node.js command-line interfaces][commander]: [MIT][commander-license]
+* [script.js Asyncronous JavaScript loader and dependency manager][script.js]: [Apache][scriptjs-license]
+* [base64.js Fast base64 encoding/decoding][base64.js]: [MIT][base64-license]
 
 
 [dox]:                      https://github.com/visionmedia/dox
