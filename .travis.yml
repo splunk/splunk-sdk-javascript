@@ -29,12 +29,11 @@ node_js:
     - "4.2"
     - "0.12"
     - "0.10"
-    - "0.8"
 
 #Splunk versions can be set here
 env:
-    - SPLUNK_VERSION=6.4-sdk
-    - SPLUNK_VERSION=6.5-sdk
+    - SPLUNK_VERSION=6.6-sdk
+    - SPLUNK_VERSION=7.0-sdk
 
 # Test script, should return non 0 exit status if a test fails
 script:

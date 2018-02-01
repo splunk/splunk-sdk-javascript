@@ -40,7 +40,7 @@ controls. These UI component files (<b>splunk.ui.timeline</b> and
 directory.
 
 ### Install the Splunk SDK for JavaScript for Node.js
-> **Note:** The Splunk SDK for JavaScript v1.7.0 requires Node.js version 0.8.x, 0.10.x, or 0.12.x. IO.js is not formally supported, but it should work as of `v1.7.0` of the SDK.
+> **Note:** The Splunk SDK for JavaScript v1.7.0 requires Node.js version 0.10.x, or 0.12.x or 4+.
 
 If you want to use the Splunk SDK for JavaScript with your Node.js programs, install
 the SDK by running `npm` in *your* project's directory as follows:
@@ -394,16 +394,16 @@ License 2.0. Details can be found in the LICENSE file.
 The embedded third-party libraries may have different licenses. Here is a list
 of embedded libraries and their licenses:
 
-* [dox]: [MIT][dox-license]
+* [dox RESTful degradable JavaScript routing][dox]: [MIT][dox-license]
 * [davis.js Documentation Generator][davis.js]: [MIT][davis-license]
-* [jquery.class.js]: [MIT][jquery.class-license]
-* [nodeunit]: [MIT][nodeunit-license]
-* [showdown.js]: [BSD][showdown-license]
-* [staticresource]: [MIT][staticresource-license]
-* [webapp2]: [Apache][webapp2-license]
-* [commander]: [MIT][commander-license]
-* [script.js]: [Apache][scriptjs-license]
-* [base64.js]: [MIT][base64-license]
+* [jquery.class.js Create custom class with jquery][jquery.class.js]: [MIT][jquery.class-license]
+* [nodeunit Unit testing in node.js and the browser][nodeunit]: [MIT][nodeunit-license]
+* [showdown.js Markdown to HTML converter][showdown.js]: [BSD][showdown-license]
+* [staticresource Static resource handling][staticresource]: [MIT][staticresource-license]
+* [webapp2 A framework for Google App Engine][webapp2]: [Apache][webapp2-license]
+* [commander Node.js command-line interfaces][commander]: [MIT][commander-license]
+* [script.js Asyncronous JavaScript loader and dependency manager][script.js]: [Apache][scriptjs-license]
+* [base64.js Fast base64 encoding/decoding][base64.js]: [MIT][base64-license]
 
 
 [dox]:                      https://github.com/visionmedia/dox

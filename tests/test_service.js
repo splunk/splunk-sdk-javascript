@@ -4049,7 +4049,7 @@ exports.setup = function(svc, loggedOutSvc) {
             "Callback#contains": function(test) {
                 var searches = this.service.savedSearches();
                 searches.fetch(function(err, searches) {
-                    var search = searches.item("Indexing workload");
+                    var search = searches.item("Errors in the last hour");
                     test.ok(search);
 
                     test.done();
@@ -4059,7 +4059,7 @@ exports.setup = function(svc, loggedOutSvc) {
             "Callback#suppress": function(test) {
                 var searches = this.service.savedSearches();
                 searches.fetch(function(err, searches) {
-                    var search = searches.item("Indexing workload");
+                    var search = searches.item("Errors in the last hour");
                     test.ok(search);
 
                     search.suppressInfo(function(err, info, search) {
