@@ -21,7 +21,7 @@
         "javascript"
     ],
     "dependencies" : {
-        "request" : "2.55.x",
+        "request" : "2.73.x",
         "elementtree" : "0.1.6",
         "cookie" : "0.2.0"
     },
