@@ -1,4 +1,10 @@
 # Splunk SDK for JavaScript Changelog
+## v1.8.3
+
+### Bug Fixes
+
+* 
+
 
 ## v1.8.2
 
