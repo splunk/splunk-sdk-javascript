@@ -25,11 +25,10 @@ before_install:
 
 language: node_js
 node_js:
-    - "5.0"
+    - "6.0"
     - "4.2"
     - "0.12"
     - "0.10"
-    - "0.8"
 
 #Splunk versions can be set here
 env:

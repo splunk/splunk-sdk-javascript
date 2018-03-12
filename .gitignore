@@ -17,3 +17,4 @@ cover_html
 .splunkrc
 *.zip
 test_logs/*
+docs/

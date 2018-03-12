@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/splunk/splunk-sdk-javascript.svg?branch=master)](https://travis-ci.org/splunk/splunk-sdk-javascript)
 # The Splunk Software Development Kit for JavaScript
 
-#### Version 1.8.2
+#### Version 1.8.3
 
 The Splunk Software Development Kit (SDK) for JavaScript contains library code and
 examples designed to enable developers to build applications using Splunk and
@@ -40,7 +40,7 @@ controls. These UI component files (<b>splunk.ui.timeline</b> and
 directory.
 
 ### Install the Splunk SDK for JavaScript for Node.js
-> **Note:** The Splunk SDK for JavaScript v1.7.0 requires Node.js version 0.8.x, 0.10.x, or 0.12.x. IO.js is not formally supported, but it should work as of `v1.7.0` of the SDK.
+> **Note:** The Splunk SDK for JavaScript v1.7.0 requires Node.js version 0.10.x, or 0.12.x or 4+.
 
 If you want to use the Splunk SDK for JavaScript with your Node.js programs, install
 the SDK by running `npm` in *your* project's directory as follows:
