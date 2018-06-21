@@ -26,7 +26,7 @@
     var utils           = ModularInputs.utils;
 
     // The version number should be updated every time a new version of the JavaScript SDK is released.
-    var SDK_UA_STRING = "splunk-sdk-javascript/1.8.3";
+    var SDK_UA_STRING = "splunk-sdk-javascript/1.8.4";
 
     // Create easy to read date format.
     function getDisplayDate(date) {

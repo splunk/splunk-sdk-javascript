@@ -1,9 +1,17 @@
 # Splunk SDK for JavaScript Changelog
+
+## v1.8.4
+
+### Minor changes
+
+* Upgrade Node.js Request Module to v2.74.x to fix a security vulnerability (see [GitHub pull request #63](https://github.com/splunk/splunk-sdk-javascript/pull/63)).
+
+
 ## v1.8.3
 
 ### Minor changes
 
-* Upgrade Node.js Request Module to v2.73.x (see [GitHub pull request #48](https://github.com/splunk/splunk-sdk-javascript/pull/58)).
+* Upgrade Node.js Request Module to v2.73.x (see [GitHub pull request #58](https://github.com/splunk/splunk-sdk-javascript/pull/58)).
 * Add support for Node.js v6.0
 * Remove support for Node.js v0.8 
 
