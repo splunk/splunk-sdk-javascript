@@ -3907,7 +3907,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
             "Callback#create + modify app": function(test) {
                 var DESCRIPTION = "TEST DESCRIPTION";
-                var VERSION = "1.1";
+                var VERSION = "1.1.0";
 
                 var name = "jssdk_testapp_" + getNextId();
                 var apps = this.service.apps();
@@ -3919,7 +3919,9 @@ exports.setup = function(svc, loggedOutSvc) {
                     function(app, callback) {
                         test.ok(app);
                         test.strictEqual(app.name, name);
-                        test.strictEqual(app.properties().version, "1.0");
+                        var versionMatches = app.properties().version === "1.0" ||
+                            app.properties().version == "1.0.0";
+                        test.ok(versionMatches);
 
                         app.update({
                             description: DESCRIPTION,
