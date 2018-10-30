@@ -3943,27 +3943,27 @@ exports.setup = function(svc, loggedOutSvc) {
                 });
             },
 
-            "Callback#delete test applications": function(test) {
-                var apps = this.service.apps();
-                apps.fetch(function(err, apps) {
-                    var appList = apps.list();
+            // "Callback#delete test applications": function(test) {
+            //     var apps = this.service.apps();
+            //     apps.fetch(function(err, apps) {
+            //         var appList = apps.list();
 
-                    Async.parallelEach(
-                        appList,
-                        function(app, idx, callback) {
-                            if (utils.startsWith(app.name, "jssdk_")) {
-                                app.remove(callback);
-                            }
-                            else {
-                                callback();
-                            }
-                        }, function(err) {
-                            test.ok(!err);
-                            test.done();
-                        }
-                    );
-                });
-            },
+            //         Async.parallelEach(
+            //             appList,
+            //             function(app, idx, callback) {
+            //                 if (utils.startsWith(app.name, "jssdk_")) {
+            //                     app.remove(callback);
+            //                 }
+            //                 else {
+            //                     callback();
+            //                 }
+            //             }, function(err) {
+            //                 test.ok(!err);
+            //                 test.done();
+            //             }
+            //         );
+            //     });
+            // },
 
             "list applications with cookies as authentication": function(test) {
                 this.service.serverInfo(function (err, info) {
