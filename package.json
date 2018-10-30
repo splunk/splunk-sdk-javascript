@@ -38,7 +38,7 @@
         "email": "devinfo@splunk.com",
         "url": "http://dev.splunk.com"
     },
-    "license": "Apache 2.0",
+    "license": "Apache-2.0",
     "engine": {
         "node": ">=0.8.0"
     }
