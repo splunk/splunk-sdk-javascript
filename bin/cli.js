@@ -730,7 +730,7 @@
         });
 
         if (files.length === 0) {
-            if (args.length > 0) {
+            if (args.length > 0 && args[0].length !== 0) {
                 console.log("Unable to find test files for:", args.join(", "));
                 process.exit(1);
             }
