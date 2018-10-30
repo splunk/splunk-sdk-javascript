@@ -3920,7 +3920,7 @@ exports.setup = function(svc, loggedOutSvc) {
                         test.ok(app);
                         test.strictEqual(app.name, name);
                         var versionMatches = app.properties().version === "1.0" ||
-                            app.properties().version == "1.0.0";
+                            app.properties().version === "1.0.0";
                         test.ok(versionMatches);
 
                         app.update({

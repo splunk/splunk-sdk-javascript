@@ -35,6 +35,9 @@ env:
     - SPLUNK_VERSION=6.6-sdk
     - SPLUNK_VERSION=7.0-sdk
 
+before_script:
+    node sdkdo hint
+
 # Test script, should return non 0 exit status if a test fails
 script:
     node sdkdo tests
