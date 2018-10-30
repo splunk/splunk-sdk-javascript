@@ -27,11 +27,11 @@
     },
     "devDependencies": {
         "browserify": "https://github.com/itay/node-browserify/tarball/master",
-        "uglify-js": "1.1.x",
-        "nodeunit": "0.9.x",
         "jshint": "0.5.x >= 0.5.4",
-        "mustache": "0.4.x",
-        "readable-stream": "1.1.13-1"
+        "mustache": "^2.2.1",
+        "nodeunit": "0.9.x",
+        "readable-stream": "1.1.13-1",
+        "uglify-js": "1.1.x"
     },
     "author": {
         "name": "Splunk",
