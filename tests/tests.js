@@ -13,10 +13,7 @@
 // under the License.
 
 (function() {
-    var path        = require('path');
-    var fs          = require('fs');
     var test        = require('../contrib/nodeunit/test_reporter');
-    var junit       = require('../contrib/nodeunit/junit_reporter');
     var options     = require('../examples/node/cmdline');
     var splunkjs    = require('../index');
     var utils       = require('../lib/utils');
@@ -31,30 +28,8 @@
         process.argv.splice(quietIndex, 1);
     }
 
-    // Extract the "--reporter" and "junit" components
-    // from the command line arguments, so they can be
-    // appended to the arguments returned from the
-    // parsing function.
-    var reporterArgs = [];
-    var reporterIndex = utils.keyOf("--reporter", process.argv);
-    var junitIndex = utils.keyOf("junit", process.argv);
-
-    // If we find both "--reporter" and "junit" and they're
-    // exactly 1 position apart in the array of command line args
-    if (junitIndex && reporterIndex && (junitIndex - reporterIndex === 1)) {
-        reporterArgs.push(process.argv[reporterIndex]);
-        reporterArgs.push(process.argv[junitIndex]);
-        process.argv.splice(reporterIndex, 2);
-    }    
-
     // Do the normal parsing
     var cmdline = parser.parse(process.argv);
-
-    // If we find 2 extracted args, set cmdline.opts["reporter"] equal to "junit"
-    // The replace remove the dashes from "--reporter"
-    if (reporterArgs.length === 2) {
-        cmdline.opts[reporterArgs[0].replace(/-/g, "")] = reporterArgs[1];
-    }
 
     var nonSplunkHttp = new NodeHttp(false);
     var svc = new splunkjs.Service({ 
@@ -107,14 +82,10 @@
     }
     
     svc.login(function(err, success) {
-        // If we determined that we have the "--reporter" and "junit"
-        // command line args, use the junit runner instead.
-        if (cmdline && cmdline.opts && cmdline.opts.reporter === "junit") {
-            // Run all tests under one test suite
-            junit.run({"junit_test_results": exports}, {output: "test_logs"});
+        if (err) {
+            console.log(err);
+            return;
         }
-        else {
-            test.run([exports]);
-        }
+        test.run([exports]);
     });
 })();
