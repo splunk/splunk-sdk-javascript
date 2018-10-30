@@ -251,29 +251,29 @@ exports.setup = function(svc, loggedOutSvc) {
                 );
             },
 
-            "Callback#delete test applications": function(test) {
-                var apps = this.service.apps();
-                apps.fetch(function(err, apps) {
-                    test.ok(!err);
-                    test.ok(apps);
-                    var appList = apps.list();
+            // "Callback#delete test applications": function(test) {
+            //     var apps = this.service.apps();
+            //     apps.fetch(function(err, apps) {
+            //         test.ok(!err);
+            //         test.ok(apps);
+            //         var appList = apps.list();
 
-                    Async.parallelEach(
-                        appList,
-                        function(app, idx, callback) {
-                            if (utils.startsWith(app.name, "jssdk_")) {
-                                app.remove(callback);
-                            }
-                            else {
-                                callback();
-                            }
-                        }, function(err) {
-                            test.ok(!err);
-                            test.done();
-                        }
-                    );
-                });
-            },
+            //         Async.parallelEach(
+            //             appList,
+            //             function(app, idx, callback) {
+            //                 if (utils.startsWith(app.name, "jssdk_")) {
+            //                     app.remove(callback);
+            //                 }
+            //                 else {
+            //                     callback();
+            //                 }
+            //             }, function(err) {
+            //                 test.ok(!err);
+            //                 test.done();
+            //             }
+            //         );
+            //     });
+            // },
 
             "Callback#delete test users": function(test) {
                 var users = this.service.users();
