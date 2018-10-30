@@ -10545,11 +10545,11 @@ exports.XMLParser = XMLParser;
 
 });
 
-require.define("/node_modules/elementtree/node_modules/sax/package.json", function (require, module, exports, __dirname, __filename) {
+require.define("/node_modules/sax/package.json", function (require, module, exports, __dirname, __filename) {
 module.exports = {"main":"lib/sax.js"}
 });
 
-require.define("/node_modules/elementtree/node_modules/sax/lib/sax.js", function (require, module, exports, __dirname, __filename) {
+require.define("/node_modules/sax/lib/sax.js", function (require, module, exports, __dirname, __filename) {
 // wrapper for non-node envs
 ;(function (sax) {
 

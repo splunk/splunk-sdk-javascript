@@ -251,29 +251,29 @@ exports.setup = function(svc, loggedOutSvc) {
                 );
             },
 
-            "Callback#delete test applications": function(test) {
-                var apps = this.service.apps();
-                apps.fetch(function(err, apps) {
-                    test.ok(!err);
-                    test.ok(apps);
-                    var appList = apps.list();
+            // "Callback#delete test applications": function(test) {
+            //     var apps = this.service.apps();
+            //     apps.fetch(function(err, apps) {
+            //         test.ok(!err);
+            //         test.ok(apps);
+            //         var appList = apps.list();
 
-                    Async.parallelEach(
-                        appList,
-                        function(app, idx, callback) {
-                            if (utils.startsWith(app.name, "jssdk_")) {
-                                app.remove(callback);
-                            }
-                            else {
-                                callback();
-                            }
-                        }, function(err) {
-                            test.ok(!err);
-                            test.done();
-                        }
-                    );
-                });
-            },
+            //         Async.parallelEach(
+            //             appList,
+            //             function(app, idx, callback) {
+            //                 if (utils.startsWith(app.name, "jssdk_")) {
+            //                     app.remove(callback);
+            //                 }
+            //                 else {
+            //                     callback();
+            //                 }
+            //             }, function(err) {
+            //                 test.ok(!err);
+            //                 test.done();
+            //             }
+            //         );
+            //     });
+            // },
 
             "Callback#delete test users": function(test) {
                 var users = this.service.users();
@@ -3907,7 +3907,7 @@ exports.setup = function(svc, loggedOutSvc) {
 
             "Callback#create + modify app": function(test) {
                 var DESCRIPTION = "TEST DESCRIPTION";
-                var VERSION = "1.1";
+                var VERSION = "1.1.0";
 
                 var name = "jssdk_testapp_" + getNextId();
                 var apps = this.service.apps();
@@ -3919,7 +3919,9 @@ exports.setup = function(svc, loggedOutSvc) {
                     function(app, callback) {
                         test.ok(app);
                         test.strictEqual(app.name, name);
-                        test.strictEqual(app.properties().version, "1.0");
+                        var versionMatches = app.properties().version === "1.0" ||
+                            app.properties().version == "1.0.0";
+                        test.ok(versionMatches);
 
                         app.update({
                             description: DESCRIPTION,
@@ -3941,27 +3943,27 @@ exports.setup = function(svc, loggedOutSvc) {
                 });
             },
 
-            "Callback#delete test applications": function(test) {
-                var apps = this.service.apps();
-                apps.fetch(function(err, apps) {
-                    var appList = apps.list();
+            // "Callback#delete test applications": function(test) {
+            //     var apps = this.service.apps();
+            //     apps.fetch(function(err, apps) {
+            //         var appList = apps.list();
 
-                    Async.parallelEach(
-                        appList,
-                        function(app, idx, callback) {
-                            if (utils.startsWith(app.name, "jssdk_")) {
-                                app.remove(callback);
-                            }
-                            else {
-                                callback();
-                            }
-                        }, function(err) {
-                            test.ok(!err);
-                            test.done();
-                        }
-                    );
-                });
-            },
+            //         Async.parallelEach(
+            //             appList,
+            //             function(app, idx, callback) {
+            //                 if (utils.startsWith(app.name, "jssdk_")) {
+            //                     app.remove(callback);
+            //                 }
+            //                 else {
+            //                     callback();
+            //                 }
+            //             }, function(err) {
+            //                 test.ok(!err);
+            //                 test.done();
+            //             }
+            //         );
+            //     });
+            // },
 
             "list applications with cookies as authentication": function(test) {
                 this.service.serverInfo(function (err, info) {
