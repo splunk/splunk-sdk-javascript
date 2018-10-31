@@ -32,8 +32,8 @@ node_js:
 
 #Splunk versions can be set here
 env:
-    - SPLUNK_VERSION=6.6-sdk
     - SPLUNK_VERSION=7.0-sdk
+    - SPLUNK_VERSION=7.2-sdk
 
 before_script:
     node sdkdo hint
