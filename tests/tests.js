@@ -61,7 +61,7 @@
     exports.Tests.Async = require('./test_async').setup();
     exports.Tests.Http  = require('./test_http').setup(nonSplunkHttp);
     exports.Tests.Log   = require('./test_log').setup();
-    
+
     // Splunk-specific tests
     exports.Tests.Context  = require('./test_context').setup(svc);
     exports.Tests.Service  = require('./test_service').setup(svc, loggedOutSvc);
