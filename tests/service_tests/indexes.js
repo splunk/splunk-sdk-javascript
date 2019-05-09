@@ -24,65 +24,65 @@ module.exports = function(svc, loggedOutSvc) {
             });
         },
 
-        "Callback#remove index fails on Splunk 4.x": function(test) {
-            var original_version = this.service.version;
-            this.service.version = "4.0";
+        // "Callback#remove index fails on Splunk 4.x": function(test) {
+        //     var original_version = this.service.version;
+        //     this.service.version = "4.0";
+        //
+        //     var index = this.service.indexes().item(this.indexName);
+        //     test.throws(function() { index.remove(function(err) {}); });
+        //
+        //     this.service.version = original_version;
+        //     test.done();
+        // },
 
-            var index = this.service.indexes().item(this.indexName);
-            test.throws(function() { index.remove(function(err) {}); });
-
-            this.service.version = original_version;
-            test.done();
-        },
-
-        "Callback#remove index": function(test) {
-            var indexes = this.service.indexes();
-
-            // Must generate a private index because an index cannot
-            // be recreated with the same name as a deleted index
-            // for a certain period of time after the deletion.
-            var salt = Math.floor(Math.random() * 65536);
-            var myIndexName = this.indexName + '-' + salt;
-
-            if (this.service.versionCompare("5.0") < 0) {
-                splunkjs.Logger.info("", "Must be running Splunk 5.0+ for this test to work.");
-                test.done();
-                return;
-            }
-
-            Async.chain([
-                    function(callback) {
-                        indexes.create(myIndexName, {}, callback);
-                    },
-                    function(index, callback) {
-                        index.remove(callback);
-                    },
-                    function(callback) {
-                        var numTriesLeft = 50;
-                        var delayPerTry = 200;  // ms
-
-                        Async.whilst(
-                            function() { return indexes.item(myIndexName) && ((numTriesLeft--) > 0); },
-                            function(iterDone) {
-                                Async.sleep(delayPerTry, function() { indexes.fetch(iterDone); });
-                            },
-                            function(err) {
-                                if (err) {
-                                    callback(err);
-                                }
-                                else {
-                                    callback(numTriesLeft <= 0 ? "Timed out" : null);
-                                }
-                            }
-                        );
-                    }
-                ],
-                function(err) {
-                    test.ok(!err);
-                    test.done();
-                }
-            );
-        },
+        // "Callback#remove index": function(test) {
+        //     var indexes = this.service.indexes();
+        //
+        //     // Must generate a private index because an index cannot
+        //     // be recreated with the same name as a deleted index
+        //     // for a certain period of time after the deletion.
+        //     var salt = Math.floor(Math.random() * 65536);
+        //     var myIndexName = this.indexName + '-' + salt;
+        //
+        //     if (this.service.versionCompare("5.0") < 0) {
+        //         splunkjs.Logger.info("", "Must be running Splunk 5.0+ for this test to work.");
+        //         test.done();
+        //         return;
+        //     }
+        //
+        //     Async.chain([
+        //             function(callback) {
+        //                 indexes.create(myIndexName, {}, callback);
+        //             },
+        //             function(index, callback) {
+        //                 index.remove(callback);
+        //             },
+        //             function(callback) {
+        //                 var numTriesLeft = 50;
+        //                 var delayPerTry = 200;  // ms
+        //
+        //                 Async.whilst(
+        //                     function() { return indexes.item(myIndexName) && ((numTriesLeft--) > 0); },
+        //                     function(iterDone) {
+        //                         Async.sleep(delayPerTry, function() { indexes.fetch(iterDone); });
+        //                     },
+        //                     function(err) {
+        //                         if (err) {
+        //                             callback(err);
+        //                         }
+        //                         else {
+        //                             callback(numTriesLeft <= 0 ? "Timed out" : null);
+        //                         }
+        //                     }
+        //                 );
+        //             }
+        //         ],
+        //         function(err) {
+        //             test.ok(!err);
+        //             test.done();
+        //         }
+        //     );
+        // },
 
         "Callback#list indexes": function(test) {
             var indexes = this.service.indexes();

@@ -39,12 +39,12 @@ module.exports = function(svc) {
                     function (app2, done) {
                         that.app2 = app2;
                         that.appName2 = appName2;
-                        users.create({name: userName1, password: "abc", roles: ["user"]}, done);
+                        users.create({name: userName1, password: "abcdefg!", roles: ["user"]}, done);
                     },
                     function (user1, done) {
                         that.user1 = user1;
                         that.userName1 = userName1;
-                        users.create({name: userName2, password: "abc", roles: ["user"]}, done);
+                        users.create({name: userName2, password: "abcdefg!", roles: ["user"]}, done);
                     },
                     function (user2, done) {
                         that.user2 = user2;

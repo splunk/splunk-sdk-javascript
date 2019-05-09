@@ -55,7 +55,7 @@ module.exports = function (svc, loggedOutSvc) {
 
         "Callback#create user failure": function(test) {
             this.loggedOutService.users().create(
-                {name: "jssdk_testuser", password: "abc", roles: "user"},
+                {name: "jssdk_testuser", password: "abcdefg!", roles: "user"},
                 function(err, response) {
                     test.ok(err);
                     test.done();
@@ -69,7 +69,7 @@ module.exports = function (svc, loggedOutSvc) {
 
             Async.chain([
                     function(done) {
-                        service.users().create({name: "jssdk_testuser", password: "abc", roles: "user"}, done);
+                        service.users().create({name: "jssdk_testuser", password: "abcdefg!", roles: "user"}, done);
                     },
                     function(user, done) {
                         test.ok(user);
@@ -102,7 +102,7 @@ module.exports = function (svc, loggedOutSvc) {
 
             Async.chain([
                     function(done) {
-                        service.users().create({name: name, password: "abc", roles: "user"}, done);
+                        service.users().create({name: name, password: "abcdefg!", roles: "user"}, done);
                     },
                     function(user, done) {
                         test.ok(user);
@@ -141,10 +141,26 @@ module.exports = function (svc, loggedOutSvc) {
             var newService = null;
             var name = "jssdk_testuser_" + getNextId();
 
-            var firstPassword = "abc";
-            var secondPassword = "abc2";
+            var firstPassword = "abcdefg!";
+            var secondPassword = "hijklmn!";
+
+            var useOldPassword = false;
 
             Async.chain([
+                    function (done) {
+                        service.serverInfo(done);
+                    },
+                    function (info, done) {
+                        var versionParts = info.properties().version.split(".");
+
+                        var isDevBuild = versionParts.length === 1;
+                        var newerThan72 = (parseInt(versionParts[0], 10) >= 7 &&  parseInt(versionParts[1], 10) >= 2);
+
+                        if (isDevBuild || newerThan72) {
+                            useOldPassword = true;
+                        }
+                        done();
+                    },
                     function(done) {
                         service.users().create({name: name, password: firstPassword, roles: "user"}, done);
                     },
@@ -169,14 +185,28 @@ module.exports = function (svc, loggedOutSvc) {
                         test.ok(success);
                         test.ok(user);
 
-                        user.update({password: secondPassword, oldpassword: firstPassword}, done);
+                        var body = {
+                            password: secondPassword
+                        };
+                        if (useOldPassword) {
+                            body['oldpassword'] = firstPassword;
+                        }
+
+                        user.update(body, done);
                     },
                     function(user, done) {
                         newService.login(function(err, success) {
                             test.ok(err);
                             test.ok(!success);
 
-                            user.update({password: firstPassword, oldpassword: secondPassword}, done);
+                            var body = {
+                                password: firstPassword
+                            };
+                            if (useOldPassword) {
+                                body['oldpassword'] = secondPassword;
+                            }
+
+                            user.update(body, done);
                         });
                     },
                     function(user, done) {
