@@ -9,7 +9,7 @@ JavaScript. This SDK supports both server- and client-side JavaScript.
 
 ## Requirements
 
-* Node.js v0.10, v.0.12, or v4 or later. The Splunk SDK for Javascript is tested with Node.js v0.10, v.0.12, v4.2, and v10.0. 
+* Node.js v.0.12, or v4 or later. The Splunk SDK for Javascript is tested with Node.js v.0.12, v4.2, and v10.0. 
 * Splunk Enterprise 6.3.0 or later, or Splunk Cloud. The Splunk SDK for Javascript is tested with Splunk Enterprise 7.0 and 7.2. 
 
 ## Installation

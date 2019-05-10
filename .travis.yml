@@ -28,7 +28,6 @@ node_js:
     - "10.0"
     - "4.2"
     - "0.12"
-    - "0.10"
 
 #Splunk versions can be set here
 env:
