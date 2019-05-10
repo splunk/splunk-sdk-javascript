@@ -1,5 +1,15 @@
 # Splunk SDK for JavaScript Changelog
 
+## v1.9.0
+
+### Minor changes
+
+* Add support for Splunk Enterprise 7.2.
+* Update dependencies to address security vulnerabilities.
+
+### Breaking changes
+* Drop support for Node.js v0.10.
+
 ## v1.8.4
 
 ### Minor changes
