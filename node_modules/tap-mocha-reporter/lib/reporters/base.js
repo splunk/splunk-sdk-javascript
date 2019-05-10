@@ -392,8 +392,10 @@ function unifiedDiff(err, escape) {
   function notBlank(line) {
     return line != null;
   }
-  var msg = diff.createPatch('string', err.actual, err.expected);
-  var lines = msg.split('\n').splice(4);
+
+  var lines = (err.diff ? err.diff.split('\n').slice(2) :
+    diff.createPatch('string', err.actual, err.expected)
+     .split('\n').slice(4));
   return '\n      '
          + colorLines('diff added',   '+ expected') + ' '
          + colorLines('diff removed', '- actual')

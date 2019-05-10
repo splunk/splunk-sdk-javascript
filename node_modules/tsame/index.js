@@ -95,7 +95,11 @@ function deeper (a, b, ca, cb) {
     : isArguments(a) ?
       isArguments(b) && deeper(arrayFrom(a), arrayFrom(b), ca, cb)
     : isArguments(b) ? false
-    : a.constructor !== b.constructor ? false
+    : Array.isArray(a) !== Array.isArray(b) ? false
+    : a.constructor !== b.constructor &&
+      !(Array.isArray(b) && Array.isArray(b) &&
+        a.constructor.name === 'Array' && b.constructor.name === 'Array')
+      ? false
     : isSet(a) && isSet(b) ? setSame(a, b, ca, cb, deeper)
     : isMap(a) && isMap(b) ? mapSame(a, b, ca, cb, deeper)
     : deeperObj(a, b, Object.keys(a), Object.keys(b), ca, cb)
