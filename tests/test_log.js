@@ -16,7 +16,7 @@ exports.setup = function() {
 
     var unload = function(name) {
         for (var k in require.cache) {
-            if (require.cache.hasOwnProperty(k) && k.match(name + "$")) {
+            if (require.cache[k] && k.match(name + "$")) {
                 delete require.cache[k];
             }
         }

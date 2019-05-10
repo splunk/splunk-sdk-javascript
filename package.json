@@ -1,43 +1,45 @@
 {
-    "name" : "splunk-sdk",
-    "version" : "1.8.4",
-    "description" : "SDK for usage with the Splunk REST API",
+    "name": "splunk-sdk",
+    "version": "1.9.0",
+    "description": "SDK for usage with the Splunk REST API",
     "homepage": "http://dev.splunk.com",
-    "main" : "index.js",
-    "directories" : {
-        "example" : "examples",
-        "lib" : "lib",
-        "test" : "tests"
+    "main": "index.js",
+    "directories": {
+        "example": "examples",
+        "lib": "lib",
+        "test": "tests"
     },
-    "repository" : {
-        "type" : "git",
-        "url" : "http://github.com/splunk/splunk-sdk-javascript.git"
+    "repository": {
+        "type": "git",
+        "url": "http://github.com/splunk/splunk-sdk-javascript.git"
     },
-    "keywords" : [
+    "keywords": [
         "splunk",
         "data",
         "search",
         "logs",
         "javascript"
     ],
-    "dependencies" : {
-        "request" : "2.74.x",
-        "elementtree" : "0.1.6",
-        "cookie" : "0.2.0"
+    "dependencies": {
+        "cookie": "0.2.0",
+        "elementtree": "0.1.6",
+        "request": "^2.x.x"
     },
-    "devDependencies" : {
-        "browserify" : "https://github.com/itay/node-browserify/tarball/master",
-        "uglify-js" : "1.1.x",
-        "nodeunit" : "0.9.x",
-        "jshint" : "0.5.x >= 0.5.4",
-        "mustache": "0.4.x",
-        "readable-stream" : "1.1.13-1"
+    "devDependencies": {
+        "browserify": "^16.2.3",
+        "jshint": "0.5.x >= 0.5.4",
+        "mustache": "^2.2.1",
+        "nodeunit": "^0.11.3",
+        "readable-stream": "1.1.13-1",
+        "uglify-js": "^3.4.9"
     },
-    "author" : {
-        "name" : "Splunk",
-        "email" : "devinfo@splunk.com",
-        "url" : "http://dev.splunk.com"
+    "author": {
+        "name": "Splunk",
+        "email": "devinfo@splunk.com",
+        "url": "http://dev.splunk.com"
     },
-    "license" : "Apache 2.0",
-    "engine" : { "node" : ">=0.8.0" }
+    "license": "Apache-2.0",
+    "engine": {
+        "node": ">=0.8.0"
+    }
 }

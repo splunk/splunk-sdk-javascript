@@ -48,42 +48,42 @@ exports.setup = function(http) {
             },
             
             "Callback#no args": function(test) {
-                this.http.get("http://httpbin.org/get", [], {}, 0, function(err, res) {
-                    test.strictEqual(res.data.url, "http://httpbin.org/get");
+                this.http.get("https://httpbin.org/get", [], {}, 0, function(err, res) {
+                    test.strictEqual(res.data.url, "https://httpbin.org/get");
                     test.done();
                 });
             },
 
             "Callback#success success+error": function(test) {
-                this.http.get("http://httpbin.org/get", [], {}, 0, function(err, res) {
+                this.http.get("https://httpbin.org/get", [], {}, 0, function(err, res) {
                     test.ok(!err);
-                    test.strictEqual(res.data.url, "http://httpbin.org/get");
+                    test.strictEqual(res.data.url, "https://httpbin.org/get");
                     test.done();
                 });
             },
             
             "Callback#error all": function(test) {
-                this.http.get("http://httpbin.org/status/404", [], {}, 0, function(err, res) {
+                this.http.get("https://httpbin.org/status/404", [], {}, 0, function(err, res) {
                     test.strictEqual(err.status, 404);
                     test.done();
                 });
             },
             
             "Callback#args": function(test) {
-                this.http.get("http://httpbin.org/get", [], { a: 1, b: 2, c: [1,2,3], d: "a/b"}, 0, function(err, res) {
+                this.http.get("https://httpbin.org/get", [], { a: 1, b: 2, c: [1,2,3], d: "a/b"}, 0, function(err, res) {
                     var args = res.data.args;
                     test.strictEqual(args.a, "1");
                     test.strictEqual(args.b, "2");
                     test.same(args.c, ["1", "2", "3"]);
                     test.strictEqual(args.d, "a/b");
-                    test.strictEqual(res.data.url, "http://httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
+                    test.strictEqual(res.data.url, "https://httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
                     test.done();
                 });
             },
 
             "Callback#args with objects": function(test) {
                 this.http.get(
-                    "http://httpbin.org/get", [],
+                    "https://httpbin.org/get", [],
                     {a: 1, b: {c: "ab", d: 12}}, 0,
                     function(err, res) {
                         var args = res.data.args;
@@ -91,7 +91,7 @@ exports.setup = function(http) {
                         test.same(args.b, ["ab", "12"]);
                         test.strictEqual(
                             res.data.url,
-                            "http://httpbin.org/get?a=1&b=ab&b=12"
+                            "https://httpbin.org/get?a=1&b=ab&b=12"
                         );
                         test.done();
                     }
@@ -101,7 +101,7 @@ exports.setup = function(http) {
             "Callback#headers": function(test) {
                 var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
-                this.http.get("http://httpbin.org/get", {"X-Test1": 1, "X-Test2": "a/b/c"}, {}, 0, function(err, res) {
+                this.http.get("https://httpbin.org/get", {"X-Test1": 1, "X-Test2": "a/b/c"}, {}, 0, function(err, res) {
                     var returnedHeaders = res.data.headers;
                     for(var headerName in headers) {
                         if (headers.hasOwnProperty(headerName)) {
@@ -110,7 +110,7 @@ exports.setup = function(http) {
                         }
                     }
                     
-                    test.strictEqual(res.data.url, "http://httpbin.org/get");
+                    test.strictEqual(res.data.url, "https://httpbin.org/get");
                     test.done();
                 });
             },
@@ -118,7 +118,7 @@ exports.setup = function(http) {
             "Callback#all": function(test) {
                 var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
-                this.http.get("http://httpbin.org/get", { "X-Test1": 1, "X-Test2": "a/b/c" }, { a: 1, b: 2, c: [1,2,3], d: "a/b"}, 0, function(err, res) {
+                this.http.get("https://httpbin.org/get", { "X-Test1": 1, "X-Test2": "a/b/c" }, { a: 1, b: 2, c: [1,2,3], d: "a/b"}, 0, function(err, res) {
                     var returnedHeaders = res.data.headers;
                     for(var headerName in headers) {
                         if (headers.hasOwnProperty(headerName)) {
@@ -132,7 +132,7 @@ exports.setup = function(http) {
                     test.strictEqual(args.b, "2");
                     test.same(args.c, ["1", "2", "3"]);
                     test.strictEqual(args.d, "a/b");
-                    test.strictEqual(res.data.url, "http://httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
+                    test.strictEqual(res.data.url, "https://httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
                     test.done();
                 });
             }
@@ -145,35 +145,35 @@ exports.setup = function(http) {
             },
             
             "Callback#no args": function(test) {
-                this.http.post("http://httpbin.org/post", {}, {}, 0, function(err, res) {
-                    test.strictEqual(res.data.url, "http://httpbin.org/post");
+                this.http.post("https://httpbin.org/post", {}, {}, 0, function(err, res) {
+                    test.strictEqual(res.data.url, "https://httpbin.org/post");
                     test.done();
                 });
             },   
             
             "Callback#success success+error": function(test) {
-                this.http.post("http://httpbin.org/post", {}, {}, 0, function(err, res) {
+                this.http.post("https://httpbin.org/post", {}, {}, 0, function(err, res) {
                     test.ok(!err);
-                    test.strictEqual(res.data.url, "http://httpbin.org/post");
+                    test.strictEqual(res.data.url, "https://httpbin.org/post");
                     test.done();
                 });
             },
             
             "Callback#error all": function(test) {
-                this.http.post("http://httpbin.org/status/405", {}, {}, 0, function(err, res) {
+                this.http.post("https://httpbin.org/status/405", {}, {}, 0, function(err, res) {
                     test.strictEqual(err.status, 405);
                     test.done();
                 });
             },
             
             "Callback#args": function(test) {
-                this.http.post("http://httpbin.org/post", {}, { a: 1, b: 2, c: [1,2,3], d: "a/b"}, 0, function(err, res) {
+                this.http.post("https://httpbin.org/post", {}, { a: 1, b: 2, c: [1,2,3], d: "a/b"}, 0, function(err, res) {
                     var args = res.data.form;
                     test.strictEqual(args.a, "1");
                     test.strictEqual(args.b, "2");
                     test.deepEqual(args.c, ["1", "2", "3"]);
                     test.strictEqual(args.d, "a/b");
-                    test.strictEqual(res.data.url, "http://httpbin.org/post");
+                    test.strictEqual(res.data.url, "https://httpbin.org/post");
                     test.done();
                 });
             },
@@ -181,7 +181,7 @@ exports.setup = function(http) {
             "Callback#headers": function(test) {
                 var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
-                this.http.post("http://httpbin.org/post", { "X-Test1": 1, "X-Test2": "a/b/c" }, {}, 0, function(err, res) {
+                this.http.post("https://httpbin.org/post", { "X-Test1": 1, "X-Test2": "a/b/c" }, {}, 0, function(err, res) {
                     var returnedHeaders = res.data.headers;
                     for(var headerName in headers) {
                         if (headers.hasOwnProperty(headerName)) {
@@ -189,7 +189,7 @@ exports.setup = function(http) {
                             test.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
                         }
                     }
-                    test.strictEqual(res.data.url, "http://httpbin.org/post");
+                    test.strictEqual(res.data.url, "https://httpbin.org/post");
                     test.done();
                 });
             },
@@ -197,7 +197,7 @@ exports.setup = function(http) {
             "Callback#all": function(test) {
                 var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
-                this.http.post("http://httpbin.org/post", { "X-Test1": 1, "X-Test2": "a/b/c" }, { a: 1, b: 2, c: [1,2,3], d: "a/b"}, 0, function(err, res) {
+                this.http.post("https://httpbin.org/post", { "X-Test1": 1, "X-Test2": "a/b/c" }, { a: 1, b: 2, c: [1,2,3], d: "a/b"}, 0, function(err, res) {
                     var returnedHeaders = res.data.headers;
                     for(var headerName in headers) {
                         if (headers.hasOwnProperty(headerName)) {
@@ -211,7 +211,7 @@ exports.setup = function(http) {
                     test.strictEqual(args.b, "2");
                     test.deepEqual(args.c, ["1", "2", "3"]);
                     test.strictEqual(args.d, "a/b");
-                    test.strictEqual(res.data.url, "http://httpbin.org/post");
+                    test.strictEqual(res.data.url, "https://httpbin.org/post");
                     test.done();
                 });
             }
@@ -224,30 +224,30 @@ exports.setup = function(http) {
             },
         
             "Callback#no args": function(test) {
-                this.http.del("http://httpbin.org/delete", [], {}, 0, function(err, res) {
-                    test.strictEqual(res.data.url, "http://httpbin.org/delete");
+                this.http.del("https://httpbin.org/delete", [], {}, 0, function(err, res) {
+                    test.strictEqual(res.data.url, "https://httpbin.org/delete");
                     test.done();
                 });
             },        
 
             "Callback#success success+error": function(test) {
-                this.http.del("http://httpbin.org/delete", [], {}, 0, function(err, res) {
+                this.http.del("https://httpbin.org/delete", [], {}, 0, function(err, res) {
                     test.ok(!err);
-                    test.strictEqual(res.data.url, "http://httpbin.org/delete");
+                    test.strictEqual(res.data.url, "https://httpbin.org/delete");
                     test.done();
                 });
             },
             
             "Callback#error all": function(test) {
-                this.http.del("http://httpbin.org/status/405", [], {}, 0, function(err, res) {
+                this.http.del("https://httpbin.org/status/405", [], {}, 0, function(err, res) {
                     test.strictEqual(err.status, 405);
                     test.done();
                 });
             },
             
             "Callback#args": function(test) {
-                this.http.del("http://httpbin.org/delete", [], { a: 1, b: 2, c: [1,2,3], d: "a/b"}, 0, function(err, res) {
-                    test.strictEqual(res.data.url, "http://httpbin.org/delete?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
+                this.http.del("https://httpbin.org/delete", [], { a: 1, b: 2, c: [1,2,3], d: "a/b"}, 0, function(err, res) {
+                    test.strictEqual(res.data.url, "https://httpbin.org/delete?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
                     test.done();
                 });
             },
@@ -255,7 +255,7 @@ exports.setup = function(http) {
             "Callback#headers": function(test) {
                 var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
-                this.http.del("http://httpbin.org/delete", { "X-Test1": 1, "X-Test2": "a/b/c" }, {}, 0, function(err, res) {
+                this.http.del("https://httpbin.org/delete", { "X-Test1": 1, "X-Test2": "a/b/c" }, {}, 0, function(err, res) {
                     var returnedHeaders = res.data.headers;
                     for(var headerName in headers) {
                         if (headers.hasOwnProperty(headerName)) {
@@ -263,7 +263,7 @@ exports.setup = function(http) {
                             test.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
                         }
                     }
-                    test.strictEqual(res.data.url, "http://httpbin.org/delete");
+                    test.strictEqual(res.data.url, "https://httpbin.org/delete");
                     test.done();
                 });
             },
@@ -271,7 +271,7 @@ exports.setup = function(http) {
             "Callback#all": function(test) {
                 var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
-                this.http.del("http://httpbin.org/delete", { "X-Test1": 1, "X-Test2": "a/b/c" }, { a: 1, b: 2, c: [1,2,3], d: "a/b"}, 0, function(err, res) {
+                this.http.del("https://httpbin.org/delete", { "X-Test1": 1, "X-Test2": "a/b/c" }, { a: 1, b: 2, c: [1,2,3], d: "a/b"}, 0, function(err, res) {
                     var returnedHeaders = res.data.headers;
                     for(var headerName in headers) {
                         if (headers.hasOwnProperty(headerName)) {
@@ -279,7 +279,7 @@ exports.setup = function(http) {
                             test.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
                         }
                     }
-                    test.strictEqual(res.data.url, "http://httpbin.org/delete?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
+                    test.strictEqual(res.data.url, "https://httpbin.org/delete?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
                     test.done();
                 });
             },
