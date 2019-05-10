@@ -54,7 +54,7 @@ module.exports = function(svc) {
                     }
                 ],
                 function (err) {
-                    finished();
+                    finished(err);
                 }
             );
         },
@@ -95,7 +95,7 @@ module.exports = function(svc) {
                     }
                 ],
                 function (err) {
-                    test.ok(!err);
+                    test.ok(!err, JSON.stringify(err));
                     test.done();
                 }
             );
