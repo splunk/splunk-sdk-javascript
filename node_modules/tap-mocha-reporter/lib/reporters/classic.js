@@ -20,7 +20,7 @@ function hasOwnProperty (obj, key) {
   return Object.prototype.hasOwnProperty.call(obj, key)
 }
 
-function doDiff (found, wanted, palette) {
+function doDiff (found, wanted, patch) {
   // TODO: Make this a configurable thing or something?
   //
   // Choosing a palette for diffs in a test-runner context
@@ -50,7 +50,7 @@ function doDiff (found, wanted, palette) {
   // deficiency.
 
   // TODO: add a TrueColor one that looks nicer
-  palette = colorSupport.has256 ? 6 : 1
+  var palette = colorSupport.has256 ? 6 : 1
 
   var plain = ''
   var reset = '\u001b[m'
@@ -147,9 +147,12 @@ function doDiff (found, wanted, palette) {
     wanted = utils.stringify(wanted)
   }
 
-  var patch = diff.createPatch('', wanted, found)
-  //console.error(patch)
   var width = 0
+  patch = patch || (
+    ['--- wanted', '+++ found'].concat(
+      diff.createPatch('', wanted, found).split(/\n/).slice(5)
+    ).join('\n'))
+
   patch = patch.split('\n').map(function (line, index) {
     if (uclen(line) > width)
       width = Math.min(maxLen, uclen(line))
@@ -159,9 +162,9 @@ function doDiff (found, wanted, palette) {
     else
       return line
   }).filter(function (line, i) {
-    return line && i > 4
+    return line
   }).map(function (line) {
-    if (uclen(line) < width)
+    if (uclen(line) <= width)
       line += repeat(width - uclen(line) + 1, ' ')
     return line
   }).map(function (line) {
@@ -173,17 +176,7 @@ function doDiff (found, wanted, palette) {
       return bg + plain + line + reset
   }).join('\n')
 
-  var pref =
-    bg + added + '+++ found' +
-      (Base.useColors
-        ? repeat(width - '+++ found'.length + 1, ' ')
-        : '') +
-      reset + '\n' +
-    bg + removed + '--- wanted' +
-      (Base.useColors
-        ? repeat(width - '--- wanted'.length + 1, ' ')
-        : '') +
-      reset + '\n'
+  var pref =''
 
   return pref + patch
 }
@@ -277,18 +270,20 @@ function Classic (runner) {
         if (t.diag) {
           var printDiff = false
           if (hasOwnProperty(t.diag, 'found') &&
-              hasOwnProperty(t.diag, 'wanted')) {
+              hasOwnProperty(t.diag, 'wanted') ||
+              hasOwnProperty(t.diag, 'diff')) {
             printDiff = true
             var found = t.diag.found
             var wanted = t.diag.wanted
-            failMsg += indent(doDiff(found, wanted), 2) + '\n'
+            var diff = doDiff(found, wanted, t.diag.diff)
+            failMsg += indent(diff, 2) + '\n'
           }
 
           var o = {}
           var print = false
           for (var i in t.diag) {
             // Don't re-print what we already showed in the diff
-            if (printDiff && ( i === 'found' || i === 'wanted'))
+            if (printDiff && ( i === 'found' || i === 'wanted' || i === 'pattern' || i === 'diff'))
               continue
             o[i] = t.diag[i]
             print = true

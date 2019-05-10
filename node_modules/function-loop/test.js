@@ -105,3 +105,18 @@ t.test('cb err', function (t) {
     t.end()
   })
 })
+
+t.test('cb and also promise resolve', function (t) {
+  t.plan(1)
+  loop(obj, [
+    function (cb) {
+      return Promise.resolve('foo').then(function () {
+        cb()
+      })
+    }
+  ], function () {
+    t.pass('finished one time')
+  }, function (er) {
+    throw er
+  })
+})

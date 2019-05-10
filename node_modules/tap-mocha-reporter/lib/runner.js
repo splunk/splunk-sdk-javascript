@@ -331,6 +331,10 @@ function getError (result) {
   if (diag) {
     var hasFound = diag.hasOwnProperty('found')
     var hasWanted = diag.hasOwnProperty('wanted')
+    var hasDiff = diag.hasOwnProperty('diff')
+
+    if (hasDiff)
+      err.diff = diag.diff
 
     if (hasFound)
       err.actual = diag.found
@@ -338,7 +342,7 @@ function getError (result) {
     if (hasWanted)
       err.expected = diag.wanted
 
-    if (hasFound && hasWanted)
+    if (hasFound && hasWanted || hasDiff)
       err.showDiff = true
   }
 
