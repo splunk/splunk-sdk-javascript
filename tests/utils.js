@@ -43,4 +43,10 @@
             // nothing
         }
     };
+
+    var idCounter = 0;
+    root.getNextId = function() {
+        return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
+    };
+
 })();
