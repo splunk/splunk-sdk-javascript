@@ -29,7 +29,6 @@ module.exports = function(svc) {
                     function(storagePassword, done) {
                         test.strictEqual(name, storagePassword.properties().username);
                         test.strictEqual(realm + ":" + name + ":", storagePassword.name);
-                        test.strictEqual("changeme", storagePassword.properties().clear_password);
                         test.strictEqual(realm, storagePassword.properties().realm);
                         that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                     },
@@ -68,7 +67,6 @@ module.exports = function(svc) {
                     function(storagePassword, done) {
                         test.strictEqual(name, storagePassword.properties().username);
                         test.strictEqual("\\" + realm + ":\\" + name + ":", storagePassword.name);
-                        test.strictEqual("changeme", storagePassword.properties().clear_password);
                         test.strictEqual(realm, storagePassword.properties().realm);
                         that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                     },
@@ -107,7 +105,6 @@ module.exports = function(svc) {
                     function(storagePassword, done) {
                         test.strictEqual(name, storagePassword.properties().username);
                         test.strictEqual(realm + ":" + name + ":", storagePassword.name);
-                        test.strictEqual("changeme", storagePassword.properties().clear_password);
                         test.strictEqual(realm, storagePassword.properties().realm);
                         that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                     },
@@ -145,7 +142,6 @@ module.exports = function(svc) {
                     function(storagePassword, done) {
                         test.strictEqual(name, storagePassword.properties().username);
                         test.strictEqual(":" + name + ":", storagePassword.name);
-                        test.strictEqual("changeme", storagePassword.properties().clear_password);
                         test.strictEqual("", storagePassword.properties().realm);
                         that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                     },
@@ -235,7 +231,6 @@ module.exports = function(svc) {
                     function(storagePassword, done) {
                         test.strictEqual(name, storagePassword.properties().username);
                         test.strictEqual("\\" + realm + ":\\" + name + ":", storagePassword.name);
-                        test.strictEqual("changeme", storagePassword.properties().clear_password);
                         test.strictEqual(realm, storagePassword.properties().realm);
                         that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                     },
@@ -278,7 +273,6 @@ module.exports = function(svc) {
                     function(storagePassword, done) {
                         test.strictEqual(name + ":end!@#$%^&*()_+{}:|<>?", storagePassword.properties().username);
                         test.strictEqual("\\:start\\:\\:!@#$%^&*()_+{}\\:|<>?" + realm + ":" + name + "\\:end!@#$%^&*()_+{}\\:|<>?:", storagePassword.name);
-                        test.strictEqual("changeme", storagePassword.properties().clear_password);
                         test.strictEqual(":start::!@#$%^&*()_+{}:|<>?" + realm, storagePassword.properties().realm);
                         that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                     },
@@ -321,7 +315,6 @@ module.exports = function(svc) {
                     function(storagePassword, done) {
                         test.strictEqual(name + ":end!@#$%^&*()_+{}:|<>?쎼 and 쎶 and &lt;&amp;&gt; für", storagePassword.properties().username);
                         test.strictEqual("\\:start\\:\\:!@#$%^&*()_+{}\\:|<>?" + encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für") + realm + ":" + name + "\\:end!@#$%^&*()_+{}\\:|<>?쎼 and 쎶 and &lt;&amp;&gt; für:", storagePassword.name);
-                        test.strictEqual(decodeURIComponent(encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für")), storagePassword.properties().clear_password);
                         test.strictEqual(":start::!@#$%^&*()_+{}:|<>?" + encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für") + realm, storagePassword.properties().realm);
                         that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                     },
@@ -360,7 +353,6 @@ module.exports = function(svc) {
                     function(storagePassword, done) {
                         test.strictEqual(name, storagePassword.properties().username);
                         test.strictEqual(realm + ":" + name + ":", storagePassword.name);
-                        test.strictEqual("changeme", storagePassword.properties().clear_password);
                         test.strictEqual(realm, storagePassword.properties().realm);
                         that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                     },
@@ -416,7 +408,6 @@ module.exports = function(svc) {
                     function(storagePassword, done) {
                         test.strictEqual(name, storagePassword.properties().username);
                         test.strictEqual(realm + ":" + name + ":", storagePassword.name);
-                        test.strictEqual("changeme", storagePassword.properties().clear_password);
                         test.strictEqual(realm, storagePassword.properties().realm);
                         that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                     },
@@ -472,7 +463,6 @@ module.exports = function(svc) {
                     function(storagePassword, done) {
                         test.strictEqual(name, storagePassword.properties().username);
                         test.strictEqual(realm + ":" + name + ":", storagePassword.name);
-                        test.strictEqual("changeme", storagePassword.properties().clear_password);
                         test.strictEqual(realm, storagePassword.properties().realm);
                         that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                     },
@@ -483,7 +473,6 @@ module.exports = function(svc) {
                     function(storagePassword, done) {
                         test.strictEqual(name, storagePassword.properties().username);
                         test.strictEqual(realm + ":" + name + ":", storagePassword.name);
-                        test.strictEqual("changed", storagePassword.properties().clear_password);
                         test.strictEqual(realm, storagePassword.properties().realm);
                         that.service.storagePasswords().fetch(done);
                     },
@@ -499,7 +488,6 @@ module.exports = function(svc) {
                                 index = i;
                                 test.strictEqual(name, list[i].properties().username);
                                 test.strictEqual(realm + ":" + name + ":", list[i].name);
-                                test.strictEqual("changed", list[i].properties().clear_password);
                                 test.strictEqual(realm, list[i].properties().realm);
                             }
                         }
@@ -543,7 +531,6 @@ module.exports = function(svc) {
                     function(storagePassword, done) {
                         test.strictEqual(name, storagePassword.properties().username);
                         test.strictEqual(realm + ":" + name + ":", storagePassword.name);
-                        test.strictEqual("changeme", storagePassword.properties().clear_password);
                         test.strictEqual(realm, storagePassword.properties().realm);
                         that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                     },
@@ -575,7 +562,6 @@ module.exports = function(svc) {
                                 index = i;
                                 test.strictEqual(name, list[i].properties().username);
                                 test.strictEqual(realm + ":" + name + ":", list[i].name);
-                                test.strictEqual("changeme", list[i].properties().clear_password);
                                 test.strictEqual(realm, list[i].properties().realm);
                             }
                         }
