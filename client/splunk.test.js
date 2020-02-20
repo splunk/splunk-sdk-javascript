@@ -1512,7 +1512,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
             // We will only retry once.
             var reloginIfNecessary = function(err) {
                 // If we aborted, ignore it
-                if (req.wasAborted) {
+                if (req && req.wasAborted) {
                     return;
                 }
 
@@ -1523,7 +1523,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
                     that.login(function(err, success) {
                         // If we've already aborted the request,
                         // just do nothing
-                        if (req.wasAborted) {
+                        if (req && req.wasAborted) {
                             return;
                         }
 
@@ -1556,7 +1556,7 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
             req = this.login(function(err, success) {
                 // If we've already aborted the request,
                 // just do nothing
-                if (req.wasAborted) {
+                if (req && req.wasAborted) {
                     return;
                 }
 
@@ -2987,7 +2987,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     var username = response.data.entry[0].content.username;
                     var user = new root.User(that, username);
                     user.fetch(function() {
-                        if (req.wasAborted) {
+                        if (req && req.wasAborted) {
                             return; // aborted, so ignore
                         }
                         else {
@@ -3639,7 +3639,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 }
                 else if (!err && that.fetchOnUpdate) {
                     that.fetch(function() {
-                        if (req.wasAborted) {
+                        if (req && req.wasAborted) {
                             return; // aborted, so ignore
                         }
                         else {
@@ -4011,7 +4011,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     
                     if (that.fetchOnEntityCreation) {
                         entity.fetch(function() {
-                            if (req.wasAborted) {
+                            if (req && req.wasAborted) {
                                 return; // aborted, so ignore
                             }
                             else {
@@ -4289,7 +4289,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     else {
                         params.search = search.properties().search;
                         update.call(search, params, function() {
-                            if (req.wasAborted) {
+                            if (req && req.wasAborted) {
                                 return; // aborted, so ignore
                             }
                             else {
@@ -5059,7 +5059,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     
                     var entity = that.instantiateEntity(props);                    
                     entity.fetch(function() {
-                        if (req.wasAborted) {
+                        if (req && req.wasAborted) {
                             return; // aborted, so ignore
                         }
                         else {
@@ -5565,7 +5565,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 else {
                     var entity = new root.ConfigurationFile(that.service, filename);
                     entity.fetch(function() {
-                        if (req.wasAborted) {
+                        if (req && req.wasAborted) {
                             return; // aborted, so ignore
                         }
                         else {
