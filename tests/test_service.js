@@ -19,6 +19,7 @@ exports.setup = function(svc, loggedOutSvc) {
     splunkjs.Logger.setLevel("ALL");
 
     var suite = {
+        "Wrong URL test": require("./service_tests/wrongUrl")(),
         "Namespace Tests": require("./service_tests/namespace")(svc),
         "Job Tests": require("./service_tests/job")(svc),
         "Data Model tests": require("./service_tests/datamodels")(svc),
