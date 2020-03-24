@@ -364,7 +364,7 @@ If you would like to contribute to the SDK, go here for more information:
 ### Support
 
 1. You will be granted support if you or your company are already covered under an existing maintenance/support agreement. 
-   Send an email to support@splunk.com and include "Splunk SDK for JavaScript" in the subject line.    
+   Submit a new case in the [Support Portal][support] and include "Splunk SDK for JavaScript" in the subject line.    
  2. If you are not covered under an existing maintenance/support agreement, you 
     can find help through the broader community at:  
    <ul>    
@@ -380,6 +380,8 @@ If you would like to contribute to the SDK, go here for more information:
 4. File any issues on [GitHub](githubjsissues)
  
 ### Contact us
+
+You can [contact us][contact] if you have Splunk related questions.
 
 You can reach the Developer Platform team at _devinfo@splunk.com_.
 
@@ -451,3 +453,5 @@ of embedded libraries and their licenses:
 [indivcontrib]:             http://dev.splunk.com/goto/individualcontributions
 [companycontrib]:           http://dev.splunk.com/view/companycontributions/SP-CAAAEDR
 [githubjsissues]:           https://github.com/splunk/splunk-sdk-javascript/issues
+[contact]:                  https://www.splunk.com/en_us/about-splunk/contact-us.html#tabs/tab_parsys_tabs_CustomerSupport_4
+[support]:                  https://splunkcommunities.force.com/customers/home/home.jsp
