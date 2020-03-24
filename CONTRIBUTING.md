@@ -2,21 +2,17 @@
 
 ## How to contribute
 
-If you would like to contribute to this project, go here for more information:
-
-* [Splunk and open source][contributions]
-* [Individual contributions][indivcontrib]
-* [Company contributions][companycontrib]
+If you would like to contribute to this project, see [Contributions to Splunk][indivcontrib] for more information.
 
 ## Issues & Bug Reports
 
 If you're seeing some unexpected behavior with this project, please create an [issue on GitHub][issues] with the following information:
 
-0. Version of this project you're using (ex: 1.7.1)
-0. Platform version (ex: Windows Server 2012)
-0. Framework version (ex: Node.js 0.10.37) or Browser (ex: Chrome 43.0.2357.81)
-0. Splunk version (ex: 6.2.2)
-0. Other relevant information (ex: local/remote environment, Splunk network configuration)
+1. Version of this project you're using (ex: 1.7.1)
+1. Platform version (ex: Windows Server 2012)
+1. Framework version (ex: Node.js 0.10.37) or Browser (ex: Chrome 43.0.2357.81)
+1. Splunk version (ex: 6.2.2)
+1. Other relevant information (ex: local/remote environment, Splunk network configuration)
 
 Alternatively, if you have a Splunk question please ask on [Splunk Answers][answers]
 
@@ -26,10 +22,10 @@ We love to see pull requests!
 
 To create a pull request:
 
-0. Fill out the [Individual Contributor Agreement][indivcontrib].
-0. Fork [the repository][repo].
-0. Make changes to the **`develop`** branch, preferably with tests.
-0. Create a [pull request][pulls] against the **`develop`** branch.
+1. Fill out the [Individual Contributor Agreement][indivcontrib].
+1. Fork [the repository][repo].
+1. Make changes to the **`develop`** branch, preferably with tests.
+1. Create a [pull request][pulls] against the **`develop`** branch.
 
 ## Contact us
 
