@@ -29,7 +29,7 @@ To create a pull request:
 
 ## Contact us
 
-You can reach Splunk support at _support@splunk.com_ if you have Splunk related questions.
+You can [contact support][contact] if you have Splunk related questions.
 
 You can reach the Developer Platform team at _devinfo@splunk.com_.
 
@@ -40,3 +40,4 @@ You can reach the Developer Platform team at _devinfo@splunk.com_.
 [repo]:                     https://github.com/splunk/splunk-sdk-javascript
 [issues]:                   https://github.com/splunk/splunk-sdk-javascript/issues
 [pulls]:                    https://github.com/splunk/splunk-sdk-javascript/pulls
+[contact]:                  https://www.splunk.com/en_us/support-and-services.html
