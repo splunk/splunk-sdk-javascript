@@ -1,1 +1,1 @@
-export { Event };
+export default Event;

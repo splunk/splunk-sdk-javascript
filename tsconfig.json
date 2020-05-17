@@ -1,9 +1,7 @@
 {
-    "include": ["lib/**/*"],
-    "exclude": [
-        "**/tests",
-        "**/node_modules",
-        "**/.*/"
+    "include": [
+        "lib/**/*",
+        "!*.d.ts"
     ],
 
     "compilerOptions": {
@@ -18,6 +16,6 @@
         // Types should go into this directory.
         // Removing this would place the .d.ts files
         // next to the .js files
-        "outDir": "dist",
+        "outDir": "dist"
     }
 }

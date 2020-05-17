@@ -1,0 +1,21 @@
+export function setup(svc: any, loggedOutSvc: any): {
+    "Namespace Tests": any;
+    "Job Tests": any;
+    "Data Model tests": any;
+    "Pivot tests": any;
+    "App Tests": any;
+    "Saved Search Tests": any;
+    "Fired Alerts Tests": any;
+    "Properties Tests": any;
+    "Configuration Tests": any;
+    "Storage Passwords Tests": any;
+    "Index Tests": any;
+    "User Tests": any;
+    "Server Info Tests": any;
+    "View Tests": any;
+    "Parser Tests": any;
+    "Typeahead Tests": any;
+    "Endpoint Tests": any;
+    "Entity tests": any;
+    "Collection tests": any;
+};

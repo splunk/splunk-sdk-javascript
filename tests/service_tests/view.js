@@ -60,3 +60,5 @@ module.exports = function (svc) {
     }
 };
 };
+
+export { setUp };

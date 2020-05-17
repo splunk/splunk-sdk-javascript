@@ -413,3 +413,5 @@ module.exports = function (svc, loggedOutSvc) {
         }
     };
 };
+
+export { setUp };
