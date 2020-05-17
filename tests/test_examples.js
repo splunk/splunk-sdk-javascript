@@ -502,3 +502,5 @@ if (module === require.main) {
         test.run([{"Tests": suite}]);
     });
 }
+
+export { setUp };

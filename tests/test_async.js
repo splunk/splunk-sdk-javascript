@@ -533,3 +533,5 @@ if (module === require.main) {
     var suite = exports.setup();
     test.run([{"Tests": suite}]);
 }
+
+export { setUp };

@@ -4,6 +4,10 @@
     "description": "SDK for usage with the Splunk REST API",
     "homepage": "http://dev.splunk.com",
     "main": "index.js",
+    "scripts": {
+        "test": "tsc"
+    },
+    "types": "dist/index.d.ts",
     "directories": {
         "example": "examples",
         "lib": "lib",

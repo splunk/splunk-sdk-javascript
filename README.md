@@ -9,7 +9,7 @@ JavaScript. This SDK supports both server- and client-side JavaScript.
 
 ## Requirements
 
-* Node.js v.0.12, or v4 or later. The Splunk SDK for Javascript is tested with Node.js v.0.12, v4.2, and v10.0. 
+* Node.js v.0.12, or v4 or later. The Splunk SDK for Javascript is tested with Node.js v.0.12, v4.2, and v10.0, as well as with Typescript 3.8.
 * Splunk Enterprise 6.3.0 or later, or Splunk Cloud. The Splunk SDK for Javascript is tested with Splunk Enterprise 7.0 and 7.2. 
 
 ## Installation
@@ -56,6 +56,12 @@ Then, to include the Splunk SDK for JavaScript, use the `require` function in yo
 code:
 
     var splunkjs = require('splunk-sdk');
+
+Or, to include the Splunk SDK in your Typescript project, use the `import` function in your code:
+
+    ```typescript
+    import * as splunk from "splunk-sdk";
+    ```
 
 ## Usage
 
@@ -109,6 +115,47 @@ jobs:
             }
         });
     });
+
+### Typescript code example
+
+This example shows how to use the Splunk SDK for Javascript in a Typescript project:
+
+    ```typescript
+    import * as splunk from "splunk-sdk";
+
+    const service = new splunk.Service({username: "admin", password: "changeme"});
+
+    service.login((err, success) => {
+        if (err) {
+            throw err;
+        }
+
+        console.log("Login was successful: " + success);
+        service.jobs().fetch((err, jobs) => {
+            const jobList = jobs.list();
+            for(let i = 0; i < jobList.length; i++) {
+                console.log("Job " + i + ": " + jobList[i].sid);
+            }
+        });
+    });
+    ```
+
+Here is a good example of a `tslint.json` configuration that works well with this library and doesn't spit out too many errors, since these are basic Typescript definitions. Note that allowing the `var` keyword, as well as not using arrow functions makes typescript behave less predictably:
+
+    ```json
+    {
+    "defaultSeverity": "error",
+    "extends": [
+        "tslint:recommended"
+    ],
+    "jsRules": {},
+    "rules": {
+        "no-var-keyword": false,
+        "only-arrow-functions": false,
+        "no-console": false
+    },
+    "rulesDirectory": []
+    ```
 
 ## SDK examples
 
@@ -252,6 +299,11 @@ To run all the tests and generate JUnit compatible XML in `splunk-sdk-javascript
 </tr>
 
 <tr>
+<td><b>/dist</b></td>
+<td>Typescript Definition files</td>
+</tr>
+
+<tr>
 <td><b>/docs</b></td>
 <td>API reference documentation</td>
 </tr>
@@ -364,7 +416,7 @@ If you would like to contribute to the SDK, go here for more information:
 ### Support
 
 1. You will be granted support if you or your company are already covered under an existing maintenance/support agreement. 
-   Send an email to support@splunk.com and include "Splunk SDK for JavaScript" in the subject line.    
+   Submit a new case in the [Support Portal][contact] and include "Splunk SDK for JavaScript" in the subject line.    
  2. If you are not covered under an existing maintenance/support agreement, you 
     can find help through the broader community at:  
    <ul>    
@@ -380,6 +432,8 @@ If you would like to contribute to the SDK, go here for more information:
 4. File any issues on [GitHub](githubjsissues)
  
 ### Contact us
+
+You can [contact support][contact] if you have Splunk related questions.
 
 You can reach the Developer Platform team at _devinfo@splunk.com_.
 
@@ -403,6 +457,7 @@ of embedded libraries and their licenses:
 * [commander Node.js command-line interfaces][commander]: [MIT][commander-license]
 * [script.js Asyncronous JavaScript loader and dependency manager][script.js]: [Apache][scriptjs-license]
 * [base64.js Fast base64 encoding/decoding][base64.js]: [MIT][base64-license]
+* [Typescript Typed JavaScript at Any Scale](https://www.typescriptlang.org/): [Apache]
 
 
 [dox]:                      https://github.com/visionmedia/dox
@@ -451,3 +506,4 @@ of embedded libraries and their licenses:
 [indivcontrib]:             http://dev.splunk.com/goto/individualcontributions
 [companycontrib]:           http://dev.splunk.com/view/companycontributions/SP-CAAAEDR
 [githubjsissues]:           https://github.com/splunk/splunk-sdk-javascript/issues
+[contact]:                  https://www.splunk.com/en_us/support-and-services.html

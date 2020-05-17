@@ -1,0 +1,13 @@
+export function format_decimal(num: any, format: any): any;
+export function format_number(num: any, format: any): any;
+export function format_percent(num: any, format: any): any;
+export function format_scientific(num: any, format: any): any;
+export function format_date(date: any, format: any): any;
+export function format_datetime(datetime: any, date_format: any, time_format: any): any;
+export function format_time(time: any, format: any): any;
+export function format_datetime_microseconds(dt: any, date_base_format: any, time_base_format: any): any;
+export function format_time_microseconds(time: any, time_base_format: any): any;
+export function locale_name(): string;
+export function locale_uses_day_before_month(): boolean;
+export function split_number(value: any): any[];
+export function format_datetime_range(locale: any, earliestTime: any, latestTime: any): any;
