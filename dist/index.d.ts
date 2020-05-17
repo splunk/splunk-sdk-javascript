@@ -20,14 +20,4 @@ export declare const Utils: typeof import("./lib/utils");
 export declare const Async: typeof import("./lib/async");
 export declare const Paths: any;
 export declare const Class: any;
-export declare const ModularInputs: {
-    utils: typeof import("./lib/utils");
-    ValidationDefinition: typeof import("./lib/modularinputs/validationdefinition");
-    InputDefinition: typeof import("./lib/modularinputs/inputdefinition");
-    Event: typeof import("./lib/modularinputs/event");
-    EventWriter: typeof import("./lib/modularinputs/eventwriter");
-    Argument: typeof import("./lib/modularinputs/argument");
-    Scheme: typeof import("./lib/modularinputs/scheme");
-    ModularInput: typeof import("./lib/modularinputs/modularinput");
-    Logger: any;
-};
+export declare const ModularInputs: typeof import("./lib/modularinputs");
