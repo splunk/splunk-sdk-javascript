@@ -154,7 +154,8 @@ module.exports = function (svc, loggedOutSvc) {
                         var versionParts = info.properties().version.split(".");
 
                         var isDevBuild = versionParts.length === 1;
-                        var newerThan72 = (parseInt(versionParts[0], 10) >= 7 &&  parseInt(versionParts[1], 10) >= 2);
+                        var newerThan72 = (parseInt(versionParts[0], 10) > 7 ||
+                                           (parseInt(versionParts[0], 10) === 7 && parseInt(versionParts[1], 10) >= 2));
 
                         if (isDevBuild || newerThan72) {
                             useOldPassword = true;
