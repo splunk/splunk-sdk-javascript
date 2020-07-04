@@ -1,6 +1,6 @@
 import React from 'react';
 import './SplunkJsExample.css';
-import Login from './Login';
+import Inputs from './Inputs';
 import * as splunkjs from 'splunk-sdk';
 
 // jquery.ajax is used for the underlying http client in ProxyHttp
@@ -13,7 +13,7 @@ const clientHttp = require('splunk-sdk/lib/platform/client/proxy_http');
 class SplunkJsExample extends React.Component {
     constructor(props) {
       super(props);
-      // We define handlers here as well as Login.js in order to lift
+      // We define handlers here as well as Inputs.js in order to lift
       // the username and password states up so that they can be used
       // here to run and populate search results.
       // More info on lifting state: https://reactjs.org/docs/lifting-state-up.html
@@ -99,7 +99,7 @@ class SplunkJsExample extends React.Component {
       
       return (
         <div className='SplunkExample'>
-            <Login
+            <Inputs
                 username={this.state.username}
                 password={this.state.password}
                 query={this.state.query}
