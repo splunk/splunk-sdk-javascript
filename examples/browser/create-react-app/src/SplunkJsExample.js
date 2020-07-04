@@ -13,17 +13,18 @@ const clientHttp = require('splunk-sdk/lib/platform/client/proxy_http');
 class SplunkJsExample extends React.Component {
     constructor(props) {
       super(props);
-      // We define handlers here as well as LoginForm in order to lift
+      // We define handlers here as well as Login.js in order to lift
       // the username and password states up so that they can be used
       // here to run and populate search results.
       // More info on lifting state: https://reactjs.org/docs/lifting-state-up.html
       this.handleUsernameChange = this.handleUsernameChange.bind(this);
       this.handlePasswordChange = this.handlePasswordChange.bind(this);
+      this.handleQueryChange = this.handleQueryChange.bind(this);
       this.handleSearch = this.handleSearch.bind(this);
       this.state = {
-          username: '',
-          password: '',
-          query: 'index=_internal | head 3',
+          username: 'admin',
+          password: 'changeme',
+          query: 'search index=_internal | head 3',
           results: [],
       };
     }
@@ -34,6 +35,10 @@ class SplunkJsExample extends React.Component {
 
     handlePasswordChange(password) {
         this.setState({password: password});
+    }
+
+    handleQueryChange(query) {
+        this.setState({query: query});
     }
 
     handleSearch() {
@@ -58,7 +63,7 @@ class SplunkJsExample extends React.Component {
                 done('Error logging in');
             }
             
-            service.search('search index=_internal | head 3', {}, done);
+            service.search(`${that.state.query}`, {}, done);
         },
         // Wait until the job is done
         function(job, done) {
@@ -95,8 +100,12 @@ class SplunkJsExample extends React.Component {
       return (
         <div className='SplunkExample'>
             <Login
+                username={this.state.username}
+                password={this.state.password}
+                query={this.state.query}
                 onUsernameChange={this.handleUsernameChange} 
                 onPasswordChange={this.handlePasswordChange}
+                onQueryChange={this.handleQueryChange}
                 onClickSearch={this.handleSearch} />
             
             <h3>Results</h3>
