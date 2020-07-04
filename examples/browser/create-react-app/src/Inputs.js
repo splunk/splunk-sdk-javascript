@@ -1,7 +1,7 @@
 import React from 'react';
-import './Login.css';
+import './Inputs.css';
 
-class Login extends React.Component {
+class Inputs extends React.Component {
     constructor(props) {
       super(props);
       this.handleUsernameChange = this.handleUsernameChange.bind(this);
@@ -45,4 +45,4 @@ class Login extends React.Component {
     }
   }
 
-  export default Login;
+  export default Inputs;
