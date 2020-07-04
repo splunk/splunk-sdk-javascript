@@ -11,7 +11,7 @@ function App() {
         </p>
 
         <p>
-          2. Enter credentials below and click <code>Submit</code> to login, run a sample search, and display the results.
+          2. Enter credentials below and click <code>Search</code> to login, run a sample search, and display the results.
         </p>
 
         <SplunkJsExample />
