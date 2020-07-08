@@ -1,3 +1,9 @@
+# create-splunk-react-app
+
+Enter this directory and run `yarn start` to view the app:
+
+![create-splunk-react-app demo](create-splunk-react-app.gif)
+
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
 
 ## Available Scripts
