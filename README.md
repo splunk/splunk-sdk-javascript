@@ -141,7 +141,7 @@ Save the file as **.splunkrc** in the current user's home directory.
 
         C:\Users\currentusername\.splunkrc
 
-    You might get errors in Windows when you try to name the file because ".splunkrc" appears to be a nameless file with an extension. You can use the command line to create this file by going to the **C:\Users\**_username** directory and entering the following command:
+    You might get errors in Windows when you try to name the file because ".splunkrc" appears to be a nameless file with an extension. You can use the command line to create this file by going to the C:\Users\_<currentusername>_ directory and entering the following command:
 
         Notepad.exe .splunkrc
 
