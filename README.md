@@ -11,7 +11,7 @@ For more information, see [Splunk Enterprise SDK for JavaScript](https://dev.spl
 
 * Node.js v 0.12, or v4 or later
 
-    The Splunk Enterprise SDK for JavaScript is tested with Node.js v.0.12, v4.2, and v10.0. 
+    The Splunk Enterprise SDK for JavaScript was tested with Node.js v.0.12, v4.2, and v10.0. 
 
 * Splunk Enterprise 6.3.0 or later, or Splunk Cloud
 
@@ -42,7 +42,7 @@ Or:
 
     <script type="text/javascript" src="/yourpath/splunk.min.js"></script>
 
-You can also include the UI components, such as the Timeline and Charting controls. These UI component files (*8splunk.ui.timeline** and **splunk.ui.charting**) are also in the **/splunk-sdk-javascript/client** directory.
+You can also include the UI components, such as the Timeline and Charting controls. These UI component files (**splunk.ui.timeline** and **splunk.ui.charting**) are also in the **/splunk-sdk-javascript/client** directory.
 
 ### Install Node.js in your project
 
@@ -112,7 +112,7 @@ For details, see the [Splunk Enterprise SDK for JavaScript Examples](https://dev
 
 #### Create a .splunkrc convenience file
 
-To connect to Splunk, many of the SDK examples and unit tests take command-line arguments that specify values for the host, port, and login credentials for Splunk Enterprise. For convenience during development, you can store these arguments as key-value pairs in a text file named **.splunkrc**. Then, the SDK examples and unit tests use the values from the **.splunkrc** file when you don't specify them.
+To connect to Splunk Enterprise, many of the SDK examples and unit tests take command-line arguments that specify values for the host, port, and login credentials for Splunk Enterprise. For convenience during development, you can store these arguments as key-value pairs in a text file named **.splunkrc**. Then, the SDK examples and unit tests use the values from the **.splunkrc** file when you don't specify them.
 
 >**Note**: Storing login credentials in the **.splunkrc** file is only for convenience during development. This file isn't part of the Splunk platform and shouldn't be used for storing user credentials for production. And, if you're at all concerned about the security of your credentials, enter them at the command line rather than saving them in this file.
 
@@ -141,7 +141,7 @@ Save the file as **.splunkrc** in the current user's home directory.
 
         C:\Users\currentusername\.splunkrc
 
-    You might get errors in Windows when you try to name the file because ".splunkrc" appears to be a nameless file with an extension. You can use the command line to create this file by going to the **C:\Users\&lt;currentusername&gt;** directory and entering the following command:
+    You might get errors in Windows when you try to name the file because ".splunkrc" appears to be a nameless file with an extension. You can use the command line to create this file by going to the **C:\Users\\&lt;currentusername&gt;** directory and entering the following command:
 
         Notepad.exe .splunkrc
 
