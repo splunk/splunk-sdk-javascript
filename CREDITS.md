@@ -5,8 +5,8 @@ Some of the components included in the Splunk Enterprise SDK for JavaScript are 
 | Contributor | Description | License |
 |:----------- |:----------- |:------- |
 | [dox](https://github.com/visionmedia/dox) | RESTful degradable JavaScript routing | [MIT](https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-DOX) |
-| [davis.js](https://github.com/olivernn/davis.js) | Documentation Generator | [MIT](https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-DAVIS) |
-| [jquery.class.js](http://ejohn.org/blog/simple-javascript-inheritance/) | Create custom class with jquery | [MIT](https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-JQUERYCLASS) |
+| [davis.js](https://github.com/olivernn/davis.js) | Documentation generator | [MIT](https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-DAVIS) |
+| [jquery.class.js](http://ejohn.org/blog/simple-javascript-inheritance/) | Custom class creator | [MIT](https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-JQUERYCLASS) |
 | [nodeunit](https://github.com/caolan/nodeunit/) | Unit testing in node.js and the browser | [MIT](https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-NODEUNIT) |
 | [showdown.js](https://github.com/coreyti/showdown/) | Markdown to HTML converter | [BSD](https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-SHOWDOWN) |
 | [staticresource](https://github.com/atsuya/static-resource/) | Static resource handling | [MIT](https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-STATICRESOURCE) |
