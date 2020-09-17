@@ -11,8 +11,8 @@ If you're seeing some unexpected behavior with this project, please create an [i
 1. Version of this project you're using (ex: 1.7.1)
 2. Platform version (ex: Windows Server 2012)
 3. Framework version (ex: Node.js 0.10.37) or Browser (ex: Chrome 43.0.2357.81)
-4. Splunk version (ex: 6.2.2)
-5. Other relevant information (ex: local/remote environment, Splunk network configuration)
+4. Splunk Enterprise version (ex: 8.0)
+5. Other relevant information (ex: local/remote environment, Splunk network configuration, standalone or distributed deployment, are load balancers used)
 
 Alternatively, if you have a Splunk question please ask on [Splunk Answers](https://community.splunk.com/t5/Splunk-Development/ct-p/developer-tools).
 
@@ -23,13 +23,13 @@ We love to see pull requests!
 To create a pull request:
 
 1. Fill out the [Individual Contributor Agreement](https://www.splunk.com/en_us/form/contributions.html).
-1. Fork the [repository](https://github.com/splunk/splunk-sdk-javascript).
-1. Make changes to the **develop** branch, preferably with tests.
-1. Create a [pull request](https://github.com/splunk/splunk-sdk-javascript/pulls) against the **develop** branch.
+2. Fork the [repository](https://github.com/splunk/splunk-sdk-javascript).
+3. Make changes to the **develop** branch, preferably with tests.
+4. Create a [pull request](https://github.com/splunk/splunk-sdk-javascript/pulls) against the **develop** branch.
 
 ## Contact us
 
-Contact [Support](https://www.splunk.com/en_us/support-and-services.html) if you have questions.
+If you have a paid Splunk Enterprise or Splunk Cloud license, you can contact [Support](https://www.splunk.com/en_us/support-and-services.html) with questions.
 
 You can reach the Splunk Developer Platform team at _devinfo@splunk.com_.
 
