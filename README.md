@@ -118,18 +118,18 @@ To connect to Splunk Enterprise, many of the SDK examples and unit tests take co
 
 To use this convenience file, create a text file with the following format:
 
-    # Splunk host (default: localhost)
+    # Splunk Enterprise host (default: localhost)
     host=localhost
-    # Splunk admin port (default: 8089)
+    # Splunk Enterprise admin port (default: 8089)
     port=8089
-    # Splunk username
+    # Splunk Enterprise username
     username=admin
-    # Splunk password
+    # Splunk Enterprise password
     password=changeme
     # Access scheme (default: https)
     scheme=https
-    # Your version of Splunk
-    version=8.0
+    # Your version of Splunk Enterprise
+    version=7.2
 
 Save the file as **.splunkrc** in the current user's home directory.
 
