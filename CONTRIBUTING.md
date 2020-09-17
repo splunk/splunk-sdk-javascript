@@ -10,8 +10,8 @@ If you're seeing some unexpected behavior with this project, please create an [i
 
 1. Version of this project you're using (ex: 1.7.1)
 2. Platform version (ex: Windows Server 2012)
-3. Framework version (ex: Node.js 0.10.37) or Browser (ex: Chrome 43.0.2357.81)
-4. Splunk Enterprise version (ex: 8.0)
+3. Framework version (ex: Node.js v.0.12) or Browser (ex: Chrome 43.0.2357.81)
+4. Splunk Enterprise version (ex: 7.0)
 5. Other relevant information (ex: local/remote environment, Splunk network configuration, standalone or distributed deployment, are load balancers used)
 
 Alternatively, if you have a Splunk question please ask on [Splunk Answers](https://community.splunk.com/t5/Splunk-Development/ct-p/developer-tools).
