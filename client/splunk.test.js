@@ -27,34 +27,34 @@ require._core = {
 require.resolve = (function () {
     return function (x, cwd) {
         if (!cwd) cwd = '/';
-        
+
         if (require._core[x]) return x;
         var path = require.modules.path();
         cwd = path.resolve('/', cwd);
         var y = cwd || '/';
-        
+
         if (x.match(/^(?:\.\.?\/|\/)/)) {
             var m = loadAsFileSync(path.resolve(y, x))
                 || loadAsDirectorySync(path.resolve(y, x));
             if (m) return m;
         }
-        
+
         var n = loadNodeModulesSync(x, y);
         if (n) return n;
-        
+
         throw new Error("Cannot find module '" + x + "'");
-        
+
         function loadAsFileSync (x) {
             if (require.modules[x]) {
                 return x;
             }
-            
+
             for (var i = 0; i < require.extensions.length; i++) {
                 var ext = require.extensions[i];
                 if (require.modules[x + ext]) return x + ext;
             }
         }
-        
+
         function loadAsDirectorySync (x) {
             x = x.replace(/\/+$/, '');
             var pkgfile = x + '/package.json';
@@ -74,10 +74,10 @@ require.resolve = (function () {
                     if (m) return m;
                 }
             }
-            
+
             return loadAsFileSync(x + '/index');
         }
-        
+
         function loadNodeModulesSync (x, start) {
             var dirs = nodeModulesPathsSync(start);
             for (var i = 0; i < dirs.length; i++) {
@@ -87,23 +87,23 @@ require.resolve = (function () {
                 var n = loadAsDirectorySync(dir + '/' + x);
                 if (n) return n;
             }
-            
+
             var m = loadAsFileSync(x);
             if (m) return m;
         }
-        
+
         function nodeModulesPathsSync (start) {
             var parts;
             if (start === '/') parts = [ '' ];
             else parts = path.normalize(start).split('/');
-            
+
             var dirs = [];
             for (var i = parts.length - 1; i >= 0; i--) {
                 if (parts[i] === 'node_modules') continue;
                 var dir = parts.slice(0, i + 1).join('/') + '/node_modules';
                 dirs.push(dir);
             }
-            
+
             return dirs;
         }
     };
@@ -119,13 +119,13 @@ require.alias = function (from, to) {
         res = require.resolve(from, '/');
     }
     var basedir = path.dirname(res);
-    
+
     var keys = (Object.keys || function (obj) {
         var res = [];
         for (var key in obj) res.push(key)
         return res;
     })(require.modules);
-    
+
     for (var i = 0; i < keys.length; i++) {
         var key = keys[i];
         if (key.slice(0, basedir.length + 1) === basedir + '/') {
@@ -143,7 +143,7 @@ require.define = function (filename, fn) {
         ? ''
         : require.modules.path().dirname(filename)
     ;
-    
+
     var require_ = function (file) {
         return require(file, dirname)
     };
@@ -153,7 +153,7 @@ require.define = function (filename, fn) {
     require_.modules = require.modules;
     require_.define = require.define;
     var module_ = { exports : {} };
-    
+
     require.modules[filename] = function () {
         require.modules[filename]._cached = module_.exports;
         fn.call(
@@ -176,7 +176,7 @@ if (!process.nextTick) process.nextTick = (function () {
     var canPost = typeof window !== 'undefined'
         && window.postMessage && window.addEventListener
     ;
-    
+
     if (canPost) {
         window.addEventListener('message', function (ev) {
             if (ev.source === window && ev.data === 'browserify-tick') {
@@ -188,7 +188,7 @@ if (!process.nextTick) process.nextTick = (function () {
             }
         }, true);
     }
-    
+
     return function (fn) {
         if (canPost) {
             queue.push(fn);
@@ -298,7 +298,7 @@ path = normalizeArray(filter(path.split('/'), function(p) {
   if (path && trailingSlash) {
     path += '/';
   }
-  
+
   return (isAbsolute ? '/' : '') + path;
 };
 
@@ -365,39 +365,39 @@ exports.setup = function() {
     var splunkjs    = require('../index');
 
     splunkjs.Logger.setLevel("ALL");
-    return {        
+    return {
         "Callback#callback to object success": function(test) {
             var successfulFunction = function(callback) {
                 callback(null, "one", "two");
             };
-            
+
             successfulFunction(function(err, one, two) {
-                test.strictEqual(one, "one"); 
+                test.strictEqual(one, "one");
                 test.strictEqual(two, "two");
                 test.done();
             });
         },
-        
+
         "Callback#callback to object error - single argument": function(test) {
             var successfulFunction = function(callback) {
                 callback("one");
             };
-            
+
             successfulFunction(function(err, one, two) {
-                test.strictEqual(err, "one"); 
+                test.strictEqual(err, "one");
                 test.ok(!one);
                 test.ok(!two);
                 test.done();
             });
         },
-        
+
         "Callback#callback to object error - multi argument": function(test) {
             var successfulFunction = function(callback) {
                 callback(["one", "two"]);
             };
-            
+
             successfulFunction(function(err, one, two) {
-                test.strictEqual(err[0], "one"); 
+                test.strictEqual(err[0], "one");
                 test.strictEqual(err[1], "two");
                 test.ok(!one);
                 test.ok(!two);
@@ -413,9 +413,9 @@ exports.setup = function() {
 
         "bind": function(test) {
             var f;
-            (function() { 
-                f = function(a) { 
-                    this.a = a; 
+            (function() {
+                f = function(a) {
+                    this.a = a;
                 };
             })();
             var q = {};
@@ -424,7 +424,7 @@ exports.setup = function() {
             test.strictEqual(q.a, 12);
             test.done();
         },
-        
+
         "trim": function(test) {
             test.strictEqual(splunkjs.Utils.trim("  test of something  \n\r  \t"), "test of something");
 
@@ -586,7 +586,7 @@ exports.setup = function() {
                 }
             );
             test.done();
-            
+
         },
 
         "namespaceFromProperties - bad data": function(test) {
@@ -608,7 +608,7 @@ exports.setup = function() {
 
 if (module === require.main) {
     var test        = require('../contrib/nodeunit/test_reporter');
-    
+
     var suite = exports.setup();
     test.run([{"Tests": suite}]);
 }
@@ -653,7 +653,7 @@ require.define("/index.js", function (require, module, exports, __dirname, __fil
         Class           : require('./lib/jquery.class').Class,
         ModularInputs   : require('./lib/modularinputs')
     };
-    
+
     if (typeof(window) === 'undefined') {
         root.NodeHttp = require('./lib/platform/node/node_http').NodeHttp;
     }
@@ -679,7 +679,7 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
 (function() {
     "use strict";
     var utils = require('./utils');
-    
+
     var root = exports || this;
 
     var levels = {
@@ -694,22 +694,22 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
     // an integer (look up named levels like "ERROR" in levels above),
     // and default to "ERROR" if there is no value or an invalid value
     // set.
-    var setLevel = function(level) {    
+    var setLevel = function(level) {
         if (utils.isString(level) && levels.hasOwnProperty(level)) {
             process.env.LOG_LEVEL = levels[level];
-        } 
+        }
         else if (!isNaN(parseInt(level, 10)) &&
                    utils.keyOf(parseInt(level, 10), levels)) {
             process.env.LOG_LEVEL = level;
-        } 
+        }
         else {
-            process.env.LOG_LEVEL = levels["ERROR"];                
+            process.env.LOG_LEVEL = levels["ERROR"];
         }
     };
 
     if (process.env.LOG_LEVEL) {
         setLevel(process.env.LOG_LEVEL);
-    } 
+    }
     else {
         process.env.LOG_LEVEL = levels["ERROR"];
     }
@@ -723,10 +723,10 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
 
         var logAs = function(level) {
             return function(str) {
-                try { 
+                try {
                     console[level].apply(console, arguments);
                 }
-                catch(ex) { 
+                catch(ex) {
                     console[level](str);
                 }
             };
@@ -740,13 +740,13 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
 
     /**
      * A controllable logging module that lets you display different types of
-     * debugging information to the console.  
+     * debugging information to the console.
      *
      * @module splunkjs.Logger
      */
     exports.Logger = {
         /**
-         * Logs debug messages to the console. This function is the same as 
+         * Logs debug messages to the console. This function is the same as
          * `console.log`.
          *
          * @function splunkjs.Logger
@@ -756,9 +756,9 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
                 _log.apply(null, arguments);
             }
         },
-        
+
         /**
-         * Logs debug errors to the console. This function is the same as 
+         * Logs debug errors to the console. This function is the same as
          * `console.error`.
          *
          * @function splunkjs.Logger
@@ -768,9 +768,9 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
                 _error.apply(null, arguments);
             }
         },
-        
+
         /**
-         * Logs debug warnings to the console. This function is the same as 
+         * Logs debug warnings to the console. This function is the same as
          * `console.warn`.
          *
          * @function splunkjs.Logger
@@ -780,9 +780,9 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
                 _warn.apply(null, arguments);
             }
         },
-        
+
         /**
-         * Logs debug info to the console. This function is the same as 
+         * Logs debug info to the console. This function is the same as
          * `console.info`.
          *
          * @function splunkjs.Logger
@@ -792,7 +792,7 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
                 _info.apply(null, arguments);
             }
         },
-        
+
         /**
          * Prints all messages that are retrieved from the splunkd server to the
          * console.
@@ -801,7 +801,7 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
          */
         printMessages: function(allMessages) {
             allMessages = allMessages || [];
-            
+
             for(var i = 0; i < allMessages.length; i++) {
                 var message = allMessages[i];
                 var type = message["type"];
@@ -826,9 +826,9 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
                         this.info(msg);
                         break;
                 }
-            }  
+            }
         },
-        
+
         /**
          * Sets the global logging level to indicate which information to log.
          *
@@ -842,7 +842,7 @@ require.define("/lib/log.js", function (require, module, exports, __dirname, __f
          * @function splunkjs.Logger
          */
         setLevel: function(level) { setLevel.apply(this, arguments); },
-        
+
         /*!*/
         levels: levels
     };
@@ -874,7 +874,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     var root = exports || this;
 
     /**
-     * Provides various utility functions, which are mostly modeled after 
+     * Provides various utility functions, which are mostly modeled after
      * [Underscore.js](http://documentcloud.github.com/underscore/).
      *
      * @module splunkjs.Utils
@@ -884,7 +884,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * Binds a function to a specific object.
      *
      * @example
-     *      
+     *
      *      var obj = {a: 1, b: function() { console.log(a); }};
      *      var bound = splunkjs.Utils.bind(obj, obj.b);
      *      bound(); // prints 1
@@ -895,17 +895,17 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      *
      * @function splunkjs.Utils
      */
-    root.bind = function(me, fn) { 
-        return function() { 
-            return fn.apply(me, arguments); 
-        }; 
+    root.bind = function(me, fn) {
+        return function() {
+            return fn.apply(me, arguments);
+        };
     };
-    
+
     /**
      * Strips a string of all leading and trailing whitespace characters.
      *
      * @example
-     *      
+     *
      *      var a = " aaa ";
      *      var b = splunkjs.Utils.trim(a); //== "aaa"
      *
@@ -916,20 +916,20 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      */
     root.trim = function(str) {
         str = str || "";
-        
+
         if (String.prototype.trim) {
             return String.prototype.trim.call(str);
         }
         else {
-            return str.replace(/^\s\s*/, '').replace(/\s\s*$/, '');   
+            return str.replace(/^\s\s*/, '').replace(/\s\s*$/, '');
         }
     };
-    
+
     /**
      * Searches an array for a specific object and returns its location.
      *
      * @example
-     *      
+     *
      *      var a = ["a", "b', "c"];
      *      console.log(splunkjs.Utils.indexOf(a, "b")) //== 1
      *      console.log(splunkjs.Utils.indexOf(a, "d")) //== -1
@@ -953,7 +953,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * Indicates whether an array contains a specific object.
      *
      * @example
-     *      
+     *
      *      var a = {a: 3};
      *      var b = [{}, {c: 1}, {b: 1}, a];
      *      var contained = splunkjs.Utils.contains(b, a); // true
@@ -973,7 +973,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * Indicates whether a string starts with a specific prefix.
      *
      * @example
-     *      
+     *
      *      var starts = splunkjs.Utils.startsWith("splunk-foo", "splunk-");
      *
      * @param {String} original The string to search in.
@@ -984,14 +984,14 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      */
     root.startsWith = function(original, prefix) {
         var matches = original.match("^" + prefix);
-        return matches && matches.length > 0 && matches[0] === prefix;  
+        return matches && matches.length > 0 && matches[0] === prefix;
     };
 
     /**
      * Indicates whether a string ends with a specific suffix.
      *
      * @example
-     *      
+     *
      *      var ends = splunkjs.Utils.endsWith("foo-splunk", "-splunk");
      *
      * @param {String} original The string to search in.
@@ -1002,17 +1002,17 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      */
     root.endsWith = function(original, suffix) {
         var matches = original.match(suffix + "$");
-        return matches && matches.length > 0 && matches[0] === suffix;  
+        return matches && matches.length > 0 && matches[0] === suffix;
     };
-    
+
     var toString = Object.prototype.toString;
-    
+
     /**
      * Converts an iterable to an array.
      *
      * @example
-     *      
-     *      function() { 
+     *
+     *      function() {
      *          console.log(arguments instanceof Array); // false
      *          var arr = console.log(splunkjs.Utils.toArray(arguments) instanceof Array); // true
      *      }
@@ -1025,13 +1025,13 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     root.toArray = function(iterable) {
         return Array.prototype.slice.call(iterable);
     };
-    
+
     /**
      * Indicates whether an argument is an array.
      *
      * @example
-     *      
-     *      function() { 
+     *
+     *      function() {
      *          console.log(splunkjs.Utils.isArray(arguments)); // false
      *          console.log(splunkjs.Utils.isArray([1,2,3])); // true
      *      }
@@ -1049,8 +1049,8 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * Indicates whether an argument is a function.
      *
      * @example
-     *      
-     *      function() { 
+     *
+     *      function() {
      *          console.log(splunkjs.Utils.isFunction([1,2,3]); // false
      *          console.log(splunkjs.Utils.isFunction(function() {})); // true
      *      }
@@ -1068,8 +1068,8 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      * Indicates whether an argument is a number.
      *
      * @example
-     *      
-     *      function() { 
+     *
+     *      function() {
      *          console.log(splunkjs.Utils.isNumber(1); // true
      *          console.log(splunkjs.Utils.isNumber(function() {})); // false
      *      }
@@ -1082,13 +1082,13 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     root.isNumber = function(obj) {
         return !!(obj === 0 || (obj && obj.toExponential && obj.toFixed));
     };
-    
+
     /**
      * Indicates whether an argument is a string.
      *
      * @example
-     *      
-     *      function() { 
+     *
+     *      function() {
      *          console.log(splunkjs.Utils.isString("abc"); // true
      *          console.log(splunkjs.Utils.isString(function() {})); // false
      *      }
@@ -1101,13 +1101,13 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
     root.isString = function(obj) {
         return !!(obj === '' || (obj && obj.charCodeAt && obj.substr));
     };
-    
+
     /**
      * Indicates whether an argument is an object.
      *
      * @example
-     *      
-     *      function() { 
+     *
+     *      function() {
      *          console.log(splunkjs.Utils.isObject({abc: "abc"}); // true
      *          console.log(splunkjs.Utils.isObject("abc"); // false
      *      }
@@ -1121,13 +1121,13 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
         /*jslint newcap:false */
         return obj === Object(obj);
     };
-    
+
     /**
      * Indicates whether an argument is empty.
      *
      * @example
-     *      
-     *      function() { 
+     *
+     *      function() {
      *          console.log(splunkjs.Utils.isEmpty({})); // true
      *          console.log(splunkjs.Utils.isEmpty({a: 1})); // false
      *      }
@@ -1141,21 +1141,21 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
         if (root.isArray(obj) || root.isString(obj)) {
             return obj.length === 0;
         }
-        
+
         for (var key in obj) {
             if (this.hasOwnProperty.call(obj, key)) {
                 return false;
             }
         }
-        
+
         return true;
     };
-    
+
     /**
      * Applies an iterator function to each element in an object.
      *
      * @example
-     *      
+     *
      *      splunkjs.Utils.forEach([1,2,3], function(el) { console.log(el); }); // 1,2,3
      *
      * @param {Object|Array} obj An object or array.
@@ -1170,14 +1170,14 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
         }
         if (Array.prototype.forEach && obj.forEach === Array.prototype.forEach) {
             obj.forEach(iterator, context);
-        } 
+        }
         else if (obj.length === +obj.length) {
             for (var i = 0, l = obj.length; i < l; i++) {
                 if (i in obj && iterator.call(context, obj[i], i, obj) === {}) {
                     return;
                 }
             }
-        } 
+        }
         else {
             for (var key in obj) {
                 if (obj.hasOwnProperty(key)) {
@@ -1188,13 +1188,13 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
             }
         }
     };
-    
+
     /**
      * Extends a given object with all the properties from other source objects.
      *
      * @example
-     *      
-     *      function() { 
+     *
+     *      function() {
      *          console.log(splunkjs.Utils.extend({foo: "bar"}, {a: 2})); // {foo: "bar", a: 2}
      *      }
      *
@@ -1212,13 +1212,13 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
         });
         return obj;
     };
-  
+
     /**
      * Creates a shallow-cloned copy of an object or array.
      *
      * @example
-     *      
-     *      function() { 
+     *
+     *      function() {
      *          console.log(splunkjs.Utils.clone({foo: "bar"})); // {foo: "bar"}
      *          console.log(splunkjs.Utils.clone([1,2,3])); // [1,2,3]
      *      }
@@ -1234,7 +1234,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
         }
         return root.isArray(obj) ? obj.slice() : root.extend({}, obj);
     };
-    
+
     /**
      * Extracts namespace information from a dictionary of properties. Namespace
      * information includes values for _owner_, _app_, and _sharing_.
@@ -1257,7 +1257,7 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
             app: props.acl.app,
             sharing: props.acl.sharing
         };
-    };  
+    };
 
     /**
       * Tests whether a value appears in a given object.
@@ -1294,12 +1294,12 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
             }
             else {
                 currentVersion = currentVersion.slice(
-                    0, 
+                    0,
                     currentVersion.lastIndexOf(".")
                 );
             }
         }
-        
+
         return map["default"];
     };
 
@@ -1318,10 +1318,10 @@ require.define("/lib/utils.js", function (require, module, exports, __dirname, _
      *
      * @example
      *
-     *      // To read `splunk-sdk-javascript/tests/data/empty_data_model.json`  
+     *      // To read `splunk-sdk-javascript/tests/data/empty_data_model.json`
      *      // from    `splunk-sdk-javascript/tests/test_service.js`
      *      var fileContents = utils.readFile(__filename, "../data/empty_data_model.json");
-     *      
+     *
      * @param {String} __filename of the script calling this function.
      * @param {String} a path relative to the script calling this function.
      * @return {String} The contents of the file.
@@ -1650,13 +1650,17 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
             var wrappedCallback = function(err, response) {
                 // Let's make sure that not only did the request succeed, but
                 // we actually got a non-empty session key back.
-                var hasSessionKey = !!(!err && response.data && response.data.sessionKey);
-
+                var hasSessionKey;
+                var responseData;
+                if (!err && response.data) {
+                    responseData = JSON.parse(response.data);
+                    hasSessionKey = !!(responseData.sessionKey);
+                }
                 if (err || !hasSessionKey) {
                     callback(err || "No session key available", false);
                 }
                 else {
-                    that.sessionKey = response.data.sessionKey;
+                    that.sessionKey = responseData.sessionKey;
                     callback(null, true);
                 }
             };
@@ -1855,7 +1859,7 @@ require.define("/lib/paths.js", function (require, module, exports, __dirname, _
 
 (function() {
     "use strict";
-    
+
     var root = exports || this;
 
     // A list of the Splunk REST API endpoint paths
@@ -1894,7 +1898,7 @@ require.define("/lib/paths.js", function (require, module, exports, __dirname, _
         users: "/services/authentication/users",
         typeahead: "search/typeahead",
         views: "data/ui/views",
-        
+
         currentUser: "/services/authentication/current-context",
         submitEvent: "/services/receivers/simple"
     };
@@ -1915,57 +1919,57 @@ require.define("/lib/jquery.class.js", function (require, module, exports, __dir
     var fnTest = (/xyz/.test(function() { return xyz; }) ? /\b_super\b/ : /.*/);
     // The base Class implementation (does nothing)
     root.Class = function(){};
-    
+
     // Create a new Class that inherits from this class
     root.Class.extend = function(prop) {
       var _super = this.prototype;
-      
+
       // Instantiate a base class (but only create the instance,
       // don't run the init constructor)
       initializing = true;
       var prototype = new this();
       initializing = false;
-      
+
       // Copy the properties over onto the new prototype
       for (var name in prop) {
         // Check if we're overwriting an existing function
-        prototype[name] = typeof prop[name] == "function" && 
+        prototype[name] = typeof prop[name] == "function" &&
           typeof _super[name] == "function" && fnTest.test(prop[name]) ?
           (function(name, fn){
             return function() {
               var tmp = this._super;
-              
+
               // Add a new ._super() method that is the same method
               // but on the super-class
               this._super = _super[name];
-              
+
               // The method only need to be bound temporarily, so we
               // remove it when we're done executing
-              var ret = fn.apply(this, arguments);        
+              var ret = fn.apply(this, arguments);
               this._super = tmp;
-              
+
               return ret;
             };
           })(name, prop[name]) :
           prop[name];
       }
-      
+
       // The dummy class constructor
       function Class() {
         // All construction is actually done in the init method
         if ( !initializing && this.init )
           this.init.apply(this, arguments);
       }
-      
+
       // Populate our constructed prototype object
       Class.prototype = prototype;
-      
+
       // Enforce the constructor to be what we expect
       Class.constructor = Class;
 
       // And make this class extendable
       Class.extend = arguments.callee;
-       
+
       return Class;
     };
 })();
@@ -2516,22 +2520,22 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
 
 (function() {
     "use strict";
-    
+
     var Context     = require('./context');
     var Http        = require('./http');
     var Async       = require('./async');
     var Paths       = require('./paths').Paths;
     var Class       = require('./jquery.class').Class;
     var utils       = require('./utils');
-    
+
     var root = exports || this;
     var Service = null;
-    
+
     /**
      * Contains functionality common to Splunk Enterprise and Splunk Storm.
-     * 
+     *
      * This class is an implementation detail and is therefore SDK-private.
-     * 
+     *
      * @class splunkjs.private.BaseService
      * @extends splunkjs.Context
      */
@@ -2542,7 +2546,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
 
     /**
-     * Provides a root access point to Splunk functionality with typed access to 
+     * Provides a root access point to Splunk functionality with typed access to
      * Splunk resources such as searches, indexes, inputs, and more. Provides
      * methods to authenticate and create specialized instances of the service.
      *
@@ -2555,7 +2559,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @constructor
          * @param {splunkjs.Http} http An instance of a `splunkjs.Http` class.
-         * @param {Object} params A dictionary of optional parameters: 
+         * @param {Object} params A dictionary of optional parameters:
          *    - `scheme` (_string_): The scheme ("http" or "https") for accessing Splunk.
          *    - `host` (_string_): The host name (the default is "localhost").
          *    - `port` (_integer_): The port number (the default is 8089).
@@ -2573,7 +2577,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         init: function() {
             this._super.apply(this, arguments);
 
-            // We perform the bindings so that every function works 
+            // We perform the bindings so that every function works
             // properly when it is passed as a callback.
             this.specialize         = utils.bind(this, this.specialize);
             this.apps               = utils.bind(this, this.apps);
@@ -2587,10 +2591,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.firedAlertGroups   = utils.bind(this, this.firedAlertGroups);
             this.dataModels         = utils.bind(this, this.dataModels);
         },
-        
+
         /**
          * Creates a specialized version of the current `Service` instance for
-         * a specific namespace context. 
+         * a specific namespace context.
          *
          * @example
          *
@@ -2606,19 +2610,19 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         specialize: function(owner, app) {
             return new Service(this.http, {
                 scheme: this.scheme,
-                host: this.host,   
-                port: this.port,       
+                host: this.host,
+                port: this.port,
                 username: this.username,
                 password: this.password,
                 owner: owner,
-                app: app, 
+                app: app,
                 sessionKey: this.sessionKey,
                 version: this.version
             });
         },
-        
+
         /**
-         * Gets the `Applications` collection, which allows you to 
+         * Gets the `Applications` collection, which allows you to
          * list installed apps and retrieve information about them.
          *
          * @example
@@ -2636,9 +2640,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         apps: function() {
             return new root.Applications(this);
         },
-        
+
         /**
-         * Gets the `Configurations` collection, which lets you 
+         * Gets the `Configurations` collection, which lets you
          * create, list, and retrieve configuration (.conf) files.
          *
          * @example
@@ -2647,7 +2651,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      var files = svc.configurations();
          *      files.item("props", function(err, propsFile) {
          *          propsFile.fetch(function(err, props) {
-         *              console.log(props.properties()); 
+         *              console.log(props.properties());
          *          });
          *      });
          *
@@ -2664,10 +2668,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         configurations: function(namespace) {
             return new root.Configurations(this, namespace);
         },
-        
+
         /**
-         * Gets the `Indexes` collection, which lets you create, 
-         * list, and update indexes. 
+         * Gets the `Indexes` collection, which lets you create,
+         * list, and update indexes.
          *
          * @example
          *
@@ -2688,14 +2692,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @endpoint data/indexes
          * @method splunkjs.Service
          * @see splunkjs.Service.Indexes
-         */        
-        indexes: function(namespace) { 
+         */
+        indexes: function(namespace) {
             return new root.Indexes(this, namespace);
         },
-        
+
         /**
          * Gets the `SavedSearches` collection, which lets you
-         * create, list, and update saved searches. 
+         * create, list, and update saved searches.
          *
          * @example
          *
@@ -2718,10 +2722,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         savedSearches: function(namespace) {
             return new root.SavedSearches(this, namespace);
         },
-        
+
         /**
          * Gets the `StoragePasswords` collection, which lets you
-         * create, list, and update storage passwords. 
+         * create, list, and update storage passwords.
          *
          * @example
          *
@@ -2748,9 +2752,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Gets the `FiredAlertGroupCollection` collection, which lets you
          * list alert groups.
-         * 
+         *
          * @example
-         *      
+         *
          *      // List all # of fired alert groups
          *      var firedAlertGroups = svc.firedAlertGroups();
          *      firedAlertGroups.fetch(function(err, firedAlertGroups) {
@@ -2774,7 +2778,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
 
         /**
          * Gets the `Jobs` collection, which lets you create, list,
-         * and retrieve search jobs. 
+         * and retrieve search jobs.
          *
          * @example
          *
@@ -2798,9 +2802,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @see splunkjs.Service.Jobs
          */
         jobs: function(namespace) {
-            return new root.Jobs(this, namespace);  
+            return new root.Jobs(this, namespace);
         },
-        
+
         /**
          * Gets the `DataModels` collection, which lets you create, list,
          * and retrieve data models.
@@ -2814,8 +2818,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
 
         /**
-         * Gets the `Users` collection, which lets you create, 
-         * list, and retrieve users. 
+         * Gets the `Users` collection, which lets you create,
+         * list, and retrieve users.
          *
          * @example
          *
@@ -2835,12 +2839,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @see splunkjs.Service.Users
          */
         users: function() {
-            return new root.Users(this);  
+            return new root.Users(this);
         },
-        
+
         /**
          * Gets the `Views` collection, which lets you create,
-         * list, and retrieve views (custom UIs built in Splunk's app framework). 
+         * list, and retrieve views (custom UIs built in Splunk's app framework).
          *
          * @example
          *
@@ -2864,17 +2868,17 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @see splunkjs.Service.Views
          */
         views: function(namespace) {
-            return new root.Views(this, namespace);  
+            return new root.Views(this, namespace);
         },
-        
+
         /**
          * Creates a search job with a given search query and optional parameters, including `exec_mode` to specify the type of search:
          *
          *    - Use `exec_mode=normal` to return a search job ID immediately (default).
-         *      Poll for completion to find out when you can retrieve search results. 
+         *      Poll for completion to find out when you can retrieve search results.
          *
          *    - Use `exec_mode=blocking` to return the search job ID when the search has finished.
-         * 
+         *
          * To run a oneshot search, which does not create a job but rather returns the search results, use `Service.oneshotSearch`.
          *
          * @example
@@ -2899,7 +2903,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 callback = namespace;
                 namespace = null;
             }
-            
+
             var jobs = new root.Jobs(this, namespace);
             return jobs.search(query, params, callback);
         },
@@ -2925,7 +2929,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var job = new root.Job(this, sid, namespace);
             return job.fetch({}, callback);
         },
-        
+
         /**
          * Creates a oneshot search from a given search query and optional parameters.
          *
@@ -2955,11 +2959,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 callback = namespace;
                 namespace = null;
             }
-            
+
             var jobs = new root.Jobs(this, namespace);
             return jobs.oneshotSearch(query, params, callback);
         },
-        
+
         /**
          * Gets the user that is currently logged in.
          *
@@ -2977,12 +2981,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         currentUser: function(callback) {
             callback = callback || function() {};
-            
+
             var that = this;
             var req = this.get(Paths.currentUser, {}, function(err, response) {
                 if (err) {
                     callback(err);
-                } 
+                }
                 else {
                     var username = response.data.entry[0].content.username;
                     var user = new root.User(that, username);
@@ -2996,10 +3000,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     });
                 }
             });
-            
+
             return req;
         },
-        
+
         /**
          * Gets configuration information about the server.
          *
@@ -3016,11 +3020,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         serverInfo: function(callback) {
             callback = callback || function() {};
-            
+
             var serverInfo = new root.ServerInfo(this);
             return serverInfo.fetch(callback);
         },
-        
+
         /**
          * Parses a search query.
          *
@@ -3046,22 +3050,22 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 callback = params;
                 params = {};
             }
-            
+
             callback = callback || function() {};
             params = params || {};
-            
+
             params.q = query;
-            
+
             return this.get(Paths.parser, params, function(err, response) {
                 if (err) {
                     callback(err);
-                } 
-                else {                    
+                }
+                else {
                     callback(null, response.data);
                 }
             });
         },
-        
+
         /**
          * Provides auto-complete suggestions for search queries.
          *
@@ -3083,13 +3087,13 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 callback = count;
                 count = 10;
             }
-            
+
             callback = callback || function() {};
             var params = {
                 count: count || 10,
                 prefix: prefix
             };
-            
+
             return this.get(Paths.typeahead, params, function(err, response) {
                 if (err) {
                     callback(err);
@@ -3100,7 +3104,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 }
             });
         },
-        
+
         /**
          * Logs an event to Splunk.
          *
@@ -3111,10 +3115,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      });
          *
          * @param {String|Object} event The text for this event, or a JSON object.
-         * @param {Object} params A dictionary of parameters for indexing: 
+         * @param {Object} params A dictionary of parameters for indexing:
          *    - `index` (_string_): The index to send events from this input to.
-         *    - `host` (_string_): The value to populate in the Host field for events from this data input. 
-         *    - `host_regex` (_string_): A regular expression used to extract the host value from each event. 
+         *    - `host` (_string_): The value to populate in the Host field for events from this data input.
+         *    - `host_regex` (_string_): A regular expression used to extract the host value from each event.
          *    - `source` (_string_): The value to populate in the Source field for events from this data input.
          *    - `sourcetype` (_string_): The value to populate in the Sourcetype field for events from this data input.
          * @param {Function} callback A function to call when the event is submitted: `(err, result)`.
@@ -3127,39 +3131,39 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 callback = params;
                 params = {};
             }
-            
+
             callback = callback || function() {};
             params = params || {};
-            
+
             // If the event is a JSON object, convert it to a string.
             if (utils.isObject(event)) {
                 event = JSON.stringify(event);
             }
-            
+
             var path = this.paths.submitEvent;
             var method = "POST";
             var headers = {"Content-Type": "text/plain"};
             var body = event;
             var get = params;
             var post = {};
-            
+
             var req = this.request(
-                path, 
-                method, 
-                get, 
-                post, 
-                body, 
-                headers, 
+                path,
+                method,
+                get,
+                post,
+                body,
+                headers,
                 function(err, response) {
                     if (err) {
                         callback(err);
-                    } 
+                    }
                     else {
                         callback(null, response.data);
                     }
                 }
             );
-            
+
             return req;
         }
     });
@@ -3195,7 +3199,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.service = service;
             this.qualifiedPath = qualifiedPath;
 
-            // We perform the bindings so that every function works 
+            // We perform the bindings so that every function works
             // properly when it is passed as a callback.
             this.get    = utils.bind(this, this.get);
             this.post   = utils.bind(this, this.post);
@@ -3224,7 +3228,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             // If we have a relative path, we will append it with a preceding
             // slash.
             if (relpath) {
-                url = url + "/" + relpath;    
+                url = url + "/" + relpath;
             }
 
             return this.service.get(
@@ -3256,7 +3260,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             // If we have a relative path, we will append it with a preceding
             // slash.
             if (relpath) {
-                url = url + "/" + relpath;    
+                url = url + "/" + relpath;
             }
 
             return this.service.post(
@@ -3288,7 +3292,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             // If we have a relative path, we will append it with a preceding
             // slash.
             if (relpath) {
-                url = url + "/" + relpath;    
+                url = url + "/" + relpath;
             }
 
             return this.service.del(
@@ -3298,12 +3302,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             );
         }
     });
-    
+
     /**
-     * Provides a base definition for a Splunk resource (for example, an entity 
-     * such as an index or search job, or a collection of entities). Provides 
-     * basic methods for handling Splunk resources, such as validation and 
-     * accessing properties. 
+     * Provides a base definition for a Splunk resource (for example, an entity
+     * such as an index or search job, or a collection of entities). Provides
+     * basic methods for handling Splunk resources, such as validation and
+     * accessing properties.
      *
      * This class should not be used directly because most methods are meant to be overridden.
      *
@@ -3327,13 +3331,13 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         init: function(service, path, namespace) {
             var fullpath = service.fullpath(path, namespace);
-            
+
             this._super(service, fullpath);
             this.namespace = namespace;
             this._properties = {};
             this._state = {};
-            
-            // We perform the bindings so that every function works 
+
+            // We perform the bindings so that every function works
             // properly when it is passed as a callback.
             this._load       = utils.bind(this, this._load);
             this.fetch       = utils.bind(this, this.fetch);
@@ -3341,7 +3345,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.state       = utils.bind(this, this.state);
             this.path        = utils.bind(this, this.path);
         },
-        
+
         /**
          * Retrieves the REST endpoint path for this resource (with no namespace).
          *
@@ -3350,7 +3354,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         path: function() {
             throw new Error("MUST BE OVERRIDDEN");
         },
-        
+
         /**
          * Loads the resource and stores the properties.
          *
@@ -3363,7 +3367,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this._properties = properties || {};
             this._state = properties || {};
         },
-        
+
         /**
          * Refreshes the resource by fetching the object from the server
          * and loading it.
@@ -3376,7 +3380,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         fetch: function(callback) {
             throw new Error("MUST BE OVERRIDDEN");
         },
-        
+
         /**
          * Retrieves the current properties for this resource.
          *
@@ -3387,7 +3391,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         properties: function() {
             return this._properties;
         },
-        
+
         /**
          * Retrieves the current full state (properties and metadata) of this resource.
          *
@@ -3399,11 +3403,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             return this._state;
         }
     });
-    
+
     /**
      * Defines a base class for a Splunk entity, which is a well-defined construct
-     * with certain operations (such as "properties", "update", and "delete"). 
-     * Entities include search jobs, indexes, inputs, apps, and more. 
+     * with certain operations (such as "properties", "update", and "delete").
+     * Entities include search jobs, indexes, inputs, apps, and more.
      *
      * Provides basic methods for working with Splunk entities, such as fetching and
      * updating them.
@@ -3413,14 +3417,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      */
     root.Entity = root.Resource.extend({
         /**
-         * A static property that indicates whether to call `fetch` after an 
-         * update to get the updated entity. By default, the entity is not 
+         * A static property that indicates whether to call `fetch` after an
+         * update to get the updated entity. By default, the entity is not
          * fetched because the endpoint returns (echoes) the updated entity.
          *
          * @method splunkjs.Service.Entity
          */
         fetchOnUpdate: false,
-        
+
         /**
          * Constructor for `splunkjs.Service.Entity`.
          *
@@ -3437,8 +3441,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         init: function(service, path, namespace) {
             this._super(service, path, namespace);
-            
-            // We perform the bindings so that every function works 
+
+            // We perform the bindings so that every function works
             // properly when it is passed as a callback.
             this._load     = utils.bind(this, this._load);
             this.fetch     = utils.bind(this, this.fetch);
@@ -3453,14 +3457,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.enable    = utils.bind(this, this.enable);
             this.disable   = utils.bind(this, this.disable);
             this.reload    = utils.bind(this, this.reload);
-            
+
             // Initial values
             this._properties = {};
             this._fields     = {};
             this._acl        = {};
             this._links      = {};
         },
-        
+
         /**
          * Loads the entity and stores the properties.
          *
@@ -3471,7 +3475,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         _load: function(properties) {
             properties = utils.isArray(properties) ? properties[0] : properties;
-            
+
             // Initialize the properties to
             // empty values
             properties = properties || {
@@ -3480,9 +3484,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 acl: {},
                 links: {}
             };
-            
+
             this._super(properties);
-            
+
             // Take out the entity-specific content
             this._properties = properties.content   || {};
             this._fields     = properties.fields    || this._fields || {};
@@ -3492,9 +3496,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this._updated    = properties.updated   || null;
             this._published  = properties.published || null;
         },
-        
+
         /**
-         * Retrieves the fields information for this entity, indicating which 
+         * Retrieves the fields information for this entity, indicating which
          * fields are wildcards, required, and optional.
          *
          * @return {Object} The fields information.
@@ -3504,7 +3508,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         fields: function() {
             return this._fields;
         },
-        
+
         /**
          * Retrieves the access control list (ACL) information for this entity,
          * which contains the permissions for accessing the entity.
@@ -3516,7 +3520,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         acl: function() {
             return this._acl;
         },
-        
+
         /**
          * Retrieves the links information for this entity, which is the URI of
          * the entity relative to the management port of a Splunk instance.
@@ -3528,7 +3532,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         links: function() {
             return this._links;
         },
-        
+
         /**
          * Retrieves the author information for this entity.
          *
@@ -3539,7 +3543,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         author: function() {
             return this._author;
         },
-        
+
         /**
          * Retrieves the updated time for this entity.
          *
@@ -3550,7 +3554,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         updated: function() {
             return this._updated;
         },
-        
+
         /**
          * Retrieves the published time for this entity.
          *
@@ -3561,9 +3565,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         published: function() {
             return this._published;
         },
-        
+
         /**
-         * Refreshes the entity by fetching the object from the server and 
+         * Refreshes the entity by fetching the object from the server and
          * loading it.
          *
          * @param {Object} options An optional dictionary of collection filtering and pagination options:
@@ -3583,21 +3587,21 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 options = {};
             }
             callback = callback || function() {};
-            
+
             options = options || {};
-            
+
             var that = this;
             return this.get("", options, function(err, response) {
                 if (err) {
                     callback(err);
-                } 
+                }
                 else {
                     that._load(response.data ? response.data.entry : null);
                     callback(null, that);
                 }
             });
         },
-        
+
         /**
          * Deletes the entity from the server.
          *
@@ -3608,13 +3612,13 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         remove: function(callback) {
             callback = callback || function() {};
-            
+
             var that = this;
             return this.del("", {}, function(err) {
                 callback(err);
             });
         },
-        
+
         /**
          * Updates the entity on the server.
          *
@@ -3626,11 +3630,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         update: function(props, callback) {
             callback = callback || function() {};
-            
+
             if (props.hasOwnProperty("name")) {
                 throw new Error("Cannot set 'name' field in 'update'");
             }
-            
+
             var that = this;
             var req = this.post("", props, function(err, response) {
                 if (!err && !that.fetchOnUpdate) {
@@ -3651,10 +3655,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err, that);
                 }
             });
-            
+
             return req;
         },
-        
+
         /**
          * Disables the entity on the server.
          *
@@ -3665,7 +3669,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         disable: function(callback) {
             callback = callback || function() {};
-            
+
             var that = this;
             this.post("disable", {}, function(err, response) {
                 if (err) {
@@ -3676,7 +3680,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 }
             });
         },
-        
+
         /**
          * Enables the entity on the server.
          *
@@ -3687,7 +3691,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         enable: function(callback) {
             callback = callback || function() {};
-            
+
             var that = this;
             this.post("enable", {}, function(err, response) {
                 if (err) {
@@ -3698,7 +3702,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 }
             });
         },
-        
+
         /**
          * Reloads the entity on the server.
          *
@@ -3709,7 +3713,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         reload: function(callback) {
             callback = callback || function() {};
-            
+
             var that = this;
             this.post("_reload", {}, function(err, response) {
                 if (err) {
@@ -3724,7 +3728,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
 
     /**
      * Defines a base class for a Splunk collection, which is a well-defined construct
-     * that provides basic methods for working with collections of entities, such as 
+     * that provides basic methods for working with collections of entities, such as
      * creating and listing entities.
      *
      * @class splunkjs.Service.Collection
@@ -3732,14 +3736,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      */
     root.Collection = root.Resource.extend({
         /**
-         * A static property that indicates whether to call `fetch` after an 
-         * entity has been created. By default, the entity is not fetched 
+         * A static property that indicates whether to call `fetch` after an
+         * entity has been created. By default, the entity is not fetched
          * because the endpoint returns (echoes) the new entity.
 
          * @method splunkjs.Service.Collection
          */
         fetchOnEntityCreation: false,
-        
+
         /**
          * Constructor for `splunkjs.Service.Collection`.
          *
@@ -3753,11 +3757,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @return {splunkjs.Service.Collection} A new `splunkjs.Service.Collection` instance.
          *
          * @method splunkjs.Service.Collection
-         */     
+         */
         init: function(service, path, namespace) {
             this._super(service, path, namespace);
-            
-            // We perform the bindings so that every function works 
+
+            // We perform the bindings so that every function works
             // properly when it is passed as a callback.
             this._load             = utils.bind(this, this._load);
             this.fetch             = utils.bind(this, this.fetch);
@@ -3765,17 +3769,17 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.list              = utils.bind(this, this.list);
             this.item              = utils.bind(this, this.item);
             this.instantiateEntity = utils.bind(this, this.instantiateEntity);
-            
+
             // Initial values
             this._entities       = [];
-            this._entitiesByName = {};    
+            this._entitiesByName = {};
             this._properties     = {};
             this._paging         = {};
-            this._links          = {}; 
+            this._links          = {};
         },
-        
+
         /**
-         * Creates a local instance of an entity. 
+         * Creates a local instance of an entity.
          *
          * @param {Object} props The properties for this entity.
          * @return {splunkjs.Service.Entity} A new `splunkjs.Service.Entity` instance.
@@ -3785,7 +3789,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         instantiateEntity: function(props) {
             throw new Error("MUST BE OVERRIDDEN");
         },
-        
+
         /**
          * Loads the collection and properties, and creates a map of entity
          * names to entity IDs (for retrieval purposes).
@@ -3797,7 +3801,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         _load: function(properties) {
             this._super(properties);
-            
+
             var entities = [];
             var entitiesByName = {};
             var entityPropertyList = properties.entry || [];
@@ -3806,7 +3810,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 var entity = this.instantiateEntity(props);
                 entity._load(props);
                 entities.push(entity);
-                
+
                 if (entitiesByName.hasOwnProperty(entity.name)) {
                     entitiesByName[entity.name].push(entity);
                 }
@@ -3820,7 +3824,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this._links          = properties.links     || {};
             this._updated        = properties.updated   || null;
         },
-        
+
         /**
          * Retrieves the links information for this collection, which is the URI of
          * the resource relative to the management port of a Splunk instance.
@@ -3832,7 +3836,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         links: function() {
             return this._links;
         },
-        
+
         /**
          * Retrieves the author information for this collection.
          *
@@ -3843,7 +3847,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         paging: function() {
             return this._paging;
         },
-        
+
         /**
          * Retrieves the updated time for this collection.
          *
@@ -3854,9 +3858,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         updated: function() {
             return this._updated;
         },
-        
+
         /**
-         * Refreshes the resource by fetching the object from the server and 
+         * Refreshes the resource by fetching the object from the server and
          * loading it.
          *
          * @param {Object} options A dictionary of collection filtering and pagination options:
@@ -3876,12 +3880,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 options = {};
             }
             callback = callback || function() {};
-            
+
             options = options || {};
             if (!options.count) {
                 options.count = 0;
             }
-            
+
             var that = this;
             var req = that.get("", options, function(err, response) {
                 if (err) {
@@ -3892,10 +3896,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(null, that);
                 }
             });
-            
+
             return req;
         },
-        
+
         /**
          * Returns a specific entity from the collection.
          *
@@ -3917,11 +3921,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          * @method splunkjs.Service.Collection
          */
-        item: function(id, namespace) {                
+        item: function(id, namespace) {
             if (utils.isEmpty(namespace)) {
                 namespace = null;
-            }          
-            
+            }
+
             if (!id) {
                 throw new Error("Must suply a non-empty name.");
             }
@@ -3929,11 +3933,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             if (namespace && (namespace.app === '-' || namespace.owner === '-')) {
                 throw new Error("When searching for an entity, wildcards are not allowed in the namespace. Please refine your search.");
             }
-            
+
             var fullPath = null;
             if (this._entitiesByName.hasOwnProperty(id)) {
-                var entities = this._entitiesByName[id];                 
-                
+                var entities = this._entitiesByName[id];
+
                 if (entities.length === 1 && !namespace) {
                     // If there is only one entity with the
                     // specified name and the user did not
@@ -3942,7 +3946,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     return entities[0];
                 }
                 else if (entities.length === 1 && namespace) {
-                    // If we specified a namespace, then we 
+                    // If we specified a namespace, then we
                     // only return the entity if it matches
                     // the full path
                     fullPath = this.service.fullpath(entities[0].path(), namespace);
@@ -3968,14 +3972,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                         if (entity.qualifiedPath === fullPath) {
                             return entity;
                         }
-                    }                            
+                    }
                 }
             }
             else {
                 return null;
-            }    
+            }
         },
-        
+
         /**
          * Creates an entity on the server for this collection with the specified
          * parameters.
@@ -4005,10 +4009,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     if (utils.isArray(props)) {
                         props = props[0];
                     }
-                    
+
                     var entity = that.instantiateEntity(props);
-                    entity._load(props); 
-                    
+                    entity._load(props);
+
                     if (that.fetchOnEntityCreation) {
                         entity.fetch(function() {
                             if (req.wasAborted) {
@@ -4019,15 +4023,15 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                             }
                         });
                     }
-                    else {                   
+                    else {
                         callback(null, entity);
                     }
                 }
             });
-            
+
             return req;
         },
-        
+
         /**
          * Retrieves a list of all entities in the collection.
          *
@@ -4045,11 +4049,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         list: function(callback) {
             callback = callback || function() {};
-            
+
             return utils.clone(this._entities);
         }
     });
-    
+
     /**
      * Represents a specific saved search, which you can then view, modify, and
      * remove.
@@ -4067,7 +4071,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         path: function() {
             return Paths.savedSearches + "/" + encodeURIComponent(this.name);
         },
-        
+
         /**
          * Constructor for `splunkjs.Service.SavedSearch`.
          *
@@ -4081,11 +4085,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @return {splunkjs.Service.SavedSearch} A new `splunkjs.Service.SavedSearch` instance.
          *
          * @method splunkjs.Service.SavedSearch
-         */     
+         */
         init: function(service, name, namespace) {
             this.name = name;
             this._super(service, this.path(), namespace);
-            
+
             this.acknowledge  = utils.bind(this, this.acknowledge);
             this.dispatch     = utils.bind(this, this.dispatch);
             this.history      = utils.bind(this, this.history);
@@ -4100,7 +4104,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *
          *      var savedSearch = service.savedSearches().item("MySavedSearch");
          *      var alertCount = savedSearch.alertCount();
-         * 
+         *
          * @return {Number} The count of triggered alerts.
          *
          * @method splunkjs.Service.SavedSearch
@@ -4127,17 +4131,17 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         acknowledge: function(callback) {
             callback = callback || function() {};
-            
+
             var that = this;
             var req = this.post("acknowledge", {}, function(err) {
                 callback(err, that);
             });
-            
+
             return req;
         },
-        
+
         /**
-         * Dispatches a saved search, which creates a search job and returns a 
+         * Dispatches a saved search, which creates a search job and returns a
          * `splunkjs.Service.Job` instance in the callback function.
          *
          * @example
@@ -4162,27 +4166,27 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 callback = options;
                 options = {};
             }
-            
+
             callback = callback || function() {};
             options = options || {};
-            
+
             var that = this;
             var req = this.post("dispatch", options, function(err, response) {
                 if (err) {
                     callback(err);
                     return;
                 }
-                
+
                 var sid = response.data.sid;
                 var job = new root.Job(that.service, sid, that.namespace);
-                
+
                 callback(null, job, that);
             });
-            
+
             return req;
         },
 
-        /** 
+        /**
          * Gets the `splunkjs.Service.FiredAlertGroup` for firedAlerts associated with this saved search.
          *
          * @example
@@ -4199,7 +4203,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
 
         /**
-         * Retrieves the job history for a saved search, which is a list of 
+         * Retrieves the job history for a saved search, which is a list of
          * `splunkjs.Service.Job` instances.
          *
          * @example
@@ -4218,29 +4222,29 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         history: function(callback) {
             callback = callback || function() {};
-            
+
             var that = this;
             return this.get("history", {}, function(err, response) {
                 if (err) {
                     callback(err);
                     return;
                 }
-                
+
                 var jobs = [];
                 var data = response.data.entry || [];
                 for(var i = 0; i < data.length; i++) {
                     var jobData = response.data.entry[i];
                     var namespace = utils.namespaceFromProperties(jobData);
                     var job = new root.Job(that.service, jobData.name, namespace);
-                    
+
                     job._load(jobData);
                     jobs.push(job);
                 }
-                
+
                 callback(null, jobs, that);
             });
         },
-        
+
         /**
          * Retrieves the suppression state of a saved search.
          *
@@ -4258,19 +4262,19 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         suppressInfo: function(callback) {
             callback = callback || function() {};
-            
+
             var that = this;
             return this.get("suppress", {}, function(err, response) {
                 callback(err, response.data.entry.content, that);
             });
         },
-        
+
         /**
-         * Updates the saved search on the server. 
+         * Updates the saved search on the server.
          *
          * **Note:** The search query is required, even when it isn't being modified.
          * If you don't provide it, this method will fetch the search string from
-         * the server or from the local cache. 
+         * the server or from the local cache.
          *
          * @param {Object} props The properties to update the saved search with. For a list of available parameters, see <a href="http://dev.splunk.com/view/SP-CAAAEFA#savedsearchparams" target="_blank">Saved search parameters</a> on Splunk Developer Portal.
          * @param {Function} callback A function to call when the object is updated: `(err, entity)`.
@@ -4279,7 +4283,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         update: function(params, callback) {
             params = params || {};
-            
+
             if (!params.search) {
                 var update = this._super;
                 var req = this.fetch(function(err, search) {
@@ -4298,7 +4302,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                         });
                     }
                 });
-                
+
                 return req;
             }
             else {
@@ -4306,9 +4310,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             }
         }
     });
-    
+
     /**
-     * Represents a collection of saved searches. You can create and list saved 
+     * Represents a collection of saved searches. You can create and list saved
      * searches using this collection container, or get a specific saved search.
      *
      *
@@ -4325,7 +4329,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         path: function() {
             return Paths.savedSearches;
         },
-        
+
         /**
          * Creates a local instance of a saved search.
          *
@@ -4338,9 +4342,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var entityNamespace = utils.namespaceFromProperties(props);
             return new root.SavedSearch(this.service, props.name, entityNamespace);
         },
-        
+
         /**
-         * Constructor for `splunkjs.Service.SavedSearches`. 
+         * Constructor for `splunkjs.Service.SavedSearches`.
          *
          * @constructor
          * @param {splunkjs.Service} service A `Service` instance.
@@ -4351,7 +4355,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @return {splunkjs.Service.SavedSearches} A new `splunkjs.Service.SavedSearches` instance.
          *
          * @method splunkjs.Service.SavedSearches
-         */     
+         */
         init: function(service, namespace) {
             this._super(service, this.path(), namespace);
         }
@@ -4396,7 +4400,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     });
 
     /**
-     * Represents a collection of storage passwords. You can create and list storage 
+     * Represents a collection of storage passwords. You can create and list storage
      * passwords using this collection container, or get a specific storage password.
      *
      * @endpoint storage/passwords
@@ -4412,7 +4416,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         path: function() {
             return Paths.storagePasswords;
         },
-        
+
         /**
          * Creates a local instance of a storage password.
          *
@@ -4427,9 +4431,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var entityNamespace = utils.namespaceFromProperties(props);
             return new root.StoragePassword(this.service, props.name, entityNamespace);
         },
-        
+
         /**
-         * Constructor for `splunkjs.Service.StoragePasswords`. 
+         * Constructor for `splunkjs.Service.StoragePasswords`.
          *
          * @constructor
          * @param {splunkjs.Service} service A `Service` instance.
@@ -4440,14 +4444,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @return {splunkjs.Service.StoragePasswords} A new `splunkjs.Service.StoragePasswords` instance.
          *
          * @method splunkjs.Service.StoragePasswords
-         */     
+         */
         init: function(service, namespace) {
             this._super(service, this.path(), namespace);
         }
     });
 
     /**
-     * Represents a fired alert. 
+     * Represents a fired alert.
      * You can retrieve several of the fired alert's properties by
      * the corresponding function name.
      *
@@ -4466,9 +4470,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
 
         /**
-         * Returns this alert's actions (such as notifying by email, running a 
-         * script, adding to RSS, tracking in Alert Manager, and enabling 
-         * summary indexing). 
+         * Returns this alert's actions (such as notifying by email, running a
+         * script, adding to RSS, tracking in Alert Manager, and enabling
+         * summary indexing).
          *
          * @return {Array} of actions, an empty {Array} if no actions
          * @method splunkjs.Service.FiredAlert
@@ -4591,7 +4595,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @return {splunkjs.Service.FiredAlert} A new `splunkjs.Service.FiredAlert` instance.
          *
          * @method splunkjs.Service.FiredAlert
-         */     
+         */
         init: function(service, name, namespace) {
             this.name = name;
             this._super(service, this.path(), namespace);
@@ -4661,7 +4665,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     callback(err);
                     return;
                 }
-                
+
                 var firedAlerts = [];
                 var data = response.data.entry || [];
                 for (var i = 0; i < data.length; i++) {
@@ -4671,7 +4675,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     firedAlert._load(firedAlertData);
                     firedAlerts.push(firedAlert);
                 }
-                
+
                 callback(null, firedAlerts, that);
             });
         },
@@ -4701,7 +4705,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     /**
      * Represents a collection of fired alerts for a saved search. You can
      * create and list saved searches using this collection container, or
-     * get a specific alert group. 
+     * get a specific alert group.
      *
      *
      * @endpoint alerts/fired_alerts
@@ -4717,7 +4721,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         path: function() {
             return Paths.firedAlerts;
         },
-        
+
         /**
          * Creates a local instance of an alert group.
          *
@@ -4739,9 +4743,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         remove: function() {
             throw new Error("To remove an alert, remove the saved search with the same name.");
         },
-        
+
         /**
-         * Constructor for `splunkjs.Service.FiredAlertGroupCollection`. 
+         * Constructor for `splunkjs.Service.FiredAlertGroupCollection`.
          *
          * @constructor
          * @param {splunkjs.Service} service A `Service` instance.
@@ -4752,7 +4756,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @return {splunkjs.Service.FiredAlertGroupCollection} A new `splunkjs.Service.FiredAlertGroupCollection` instance.
          *
          * @method splunkjs.Service.FiredAlertGroupCollection
-         */     
+         */
         init: function(service, namespace) {
             this._super(service, this.path(), namespace);
 
@@ -4760,7 +4764,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.remove = utils.bind(this, this.remove);
         }
     });
-    
+
     /**
      * Represents a specific Splunk app that you can view, modify, and
      * remove.
@@ -4771,13 +4775,13 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
      */
     root.Application = root.Entity.extend({
         /**
-         * Indicates whether to call `fetch` after an update to get the updated 
+         * Indicates whether to call `fetch` after an update to get the updated
          * item.
          *
          * @method splunkjs.Service.Application
          */
         fetchOnUpdate: true,
-        
+
         /**
          * Retrieves the REST endpoint path for this resource (with no namespace).
          *
@@ -4786,7 +4790,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         path: function() {
             return Paths.apps + "/" + encodeURIComponent(this.name);
         },
-        
+
         /**
          * Constructor for `splunkjs.Service.Application`.
          *
@@ -4796,15 +4800,15 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @return {splunkjs.Service.Application} A new `splunkjs.Service.Application` instance.
          *
          * @method splunkjs.Service.Application
-         */ 
+         */
         init: function(service, name) {
             this.name = name;
             this._super(service, this.path(), {});
-            
+
             this.setupInfo  = utils.bind(this, this.setupInfo);
             this.updateInfo = utils.bind(this, this.updateInfo);
         },
-        
+
         /**
          * Retrieves the setup information for a Splunk app.
          *
@@ -4822,18 +4826,18 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         setupInfo: function(callback) {
             callback = callback || function() {};
-            
+
             var that = this;
             return this.get("setup", {}, function(err, response) {
                 if (err) {
                     callback(err);
-                } 
+                }
                 else {
                     callback(null, response.data.entry.content, that);
                 }
             });
         },
-        
+
         /**
          * Retrieves any information for an update to a locally-installed Splunk app.
          *
@@ -4851,37 +4855,37 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         updateInfo: function(callback) {
             callback = callback || function() {};
-            
+
             var that = this;
             return this.get("update", {}, function(err, response) {
                 if (err) {
                     callback(err);
-                } 
+                }
                 else {
                     callback(null, response.data.entry.content, that);
                 }
             });
         }
     });
-    
+
     /**
-     * Represents a collection of Splunk apps. You can create and list applications 
+     * Represents a collection of Splunk apps. You can create and list applications
      * using this collection container, or get a specific app.
      *
      * @endpoint apps/local
      * @class splunkjs.Service.Applications
      * @extends splunkjs.Service.Collection
-     */  
+     */
     root.Applications = root.Collection.extend({
         /**
-         * Indicates whether to call `fetch` after an entity has been created. By 
+         * Indicates whether to call `fetch` after an entity has been created. By
          * default, the entity is not fetched because the endpoint returns
          * (echoes) the new entity.
          *
          * @method splunkjs.Service.Applications
          */
         fetchOnEntityCreation: true,
-        
+
         /**
          * Retrieves the REST endpoint path for this resource (with no namespace).
          *
@@ -4890,7 +4894,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         path: function() {
             return Paths.apps;
         },
-        
+
         /**
          * Creates a local instance of an app.
          *
@@ -4902,7 +4906,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         instantiateEntity: function(props) {
             return new root.Application(this.service, props.name, {});
         },
-                
+
         /**
          * Constructor for `splunkjs.Service.Applications`.
          *
@@ -4911,12 +4915,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @return {splunkjs.Service.Applications} A new `splunkjs.Service.Applications` instance.
          *
          * @method splunkjs.Service.Applications
-         */  
+         */
         init: function(service) {
             this._super(service, this.path(), {});
         }
     });
-    
+
     /**
      * Provides access to configuration information about the server.
      *
@@ -4933,7 +4937,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         path: function() {
             return Paths.info;
         },
-        
+
         /**
          * Constructor for `splunkjs.Service.ServerInfo`.
          *
@@ -4942,13 +4946,13 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @return {splunkjs.Service.ServerInfo} A new `splunkjs.Service.ServerInfo` instance.
          *
          * @method splunkjs.Service.ServerInfo
-         */ 
+         */
         init: function(service) {
             this.name = "server-info";
             this._super(service, this.path(), {});
         }
     });
-    
+
     /**
      * Represents a specific Splunk user, which you can view, modify, and
      * remove.
@@ -4966,7 +4970,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         path: function() {
             return Paths.users + "/" + encodeURIComponent(this.name);
         },
-        
+
         /**
          * Constructor for `splunkjs.Service.User`.
          *
@@ -4976,31 +4980,31 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @return {splunkjs.Service.User} A new `splunkjs.Service.User` instance.
          *
          * @method splunkjs.Service.User
-         */ 
+         */
         init: function(service, name) {
             this.name = name;
             this._super(service, this.path(), {});
         }
     });
-    
+
     /**
-     * Represents a collection of users. You can create and list users using 
+     * Represents a collection of users. You can create and list users using
      * this collection container, or get a specific user.
      *
      * @endpoint authentication/users
      * @class splunkjs.Service.Users
      * @extends splunkjs.Service.Collection
-     */  
+     */
     root.Users = root.Collection.extend({
         /**
-         * Indicates whether to call `fetch` after an entity has been created. By 
+         * Indicates whether to call `fetch` after an entity has been created. By
          * default, the entity is not fetched because the endpoint returns
          * (echoes) the new entity.
          *
          * @method splunkjs.Service.Users
          */
         fetchOnEntityCreation: true,
-        
+
         /**
          * Retrieves the REST endpoint path for this resource (with no namespace).
          *
@@ -5009,7 +5013,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         path: function() {
             return Paths.users;
         },
-        
+
         /**
          * Creates a local instance of a user.
          *
@@ -5021,22 +5025,22 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         instantiateEntity: function(props) {
             return new root.User(this.service, props.name, {});
         },
-        
+
         /**
-         * Constructor for `splunkjs.Service.Users`. 
-         * 
+         * Constructor for `splunkjs.Service.Users`.
+         *
          * @constructor
          * @param {splunkjs.Service} service A `Service` instance.
          * @return {splunkjs.Service.Users} A new `splunkjs.Service.Users` instance.
          *
          * @method splunkjs.Service.Users
-         */  
+         */
         init: function(service) {
             this._super(service, this.path(), {});
         },
-        
+
         /**
-         * Creates a new user. 
+         * Creates a new user.
          *
          * **Note:** This endpoint requires a special implementation.
          *
@@ -5047,7 +5051,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         create: function(params, callback) {
             callback = callback || function() {};
-            
+
             var that = this;
             var req = this.post("", params, function(err, response) {
                 if (err) {
@@ -5056,8 +5060,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 else {
                     // This endpoint requires us to use the passed-in name
                     var props = {name: params.name};
-                    
-                    var entity = that.instantiateEntity(props);                    
+
+                    var entity = that.instantiateEntity(props);
                     entity.fetch(function() {
                         if (req.wasAborted) {
                             return; // aborted, so ignore
@@ -5068,11 +5072,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     });
                 }
             });
-            
+
             return req;
         }
     });
-    
+
     /**
      * Represents a specific Splunk view, which you can view, modify, and
      * remove.
@@ -5090,7 +5094,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         path: function() {
             return Paths.views + "/" + encodeURIComponent(this.name);
         },
-        
+
         /**
          * Constructor for `splunkjs.Service.View`.
          *
@@ -5104,21 +5108,21 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @return {splunkjs.Service.View} A new `splunkjs.Service.View` instance.
          *
          * @method splunkjs.Service.View
-         */ 
+         */
         init: function(service, name, namespace) {
             this.name = name;
             this._super(service, this.path(), namespace);
         }
     });
-    
+
     /**
-     * Represents a collection of views. You can create and list views using 
+     * Represents a collection of views. You can create and list views using
      * this collection container, or get a specific view.
      *
      * @endpoint data/ui/views
      * @class splunkjs.Service.Views
      * @extends splunkjs.Service.Collection
-     */  
+     */
     root.Views = root.Collection.extend({
         /**
          * Retrieves the REST endpoint path for this resource (with no namespace).
@@ -5128,7 +5132,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         path: function() {
             return Paths.views;
         },
-        
+
         /**
          * Creates a local instance of a view.
          *
@@ -5141,7 +5145,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var entityNamespace = utils.namespaceFromProperties(props);
             return new root.View(this.service, props.name, entityNamespace);
         },
-        
+
         /**
          * Constructor for `splunkjs.Service.Views`.
          *
@@ -5154,12 +5158,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @return {splunkjs.Service.Views} A new `splunkjs.Service.Views` instance.
          *
          * @method splunkjs.Service.Views
-         */  
+         */
         init: function(service, namespace) {
             this._super(service, this.path(), namespace);
         }
     });
-    
+
     /**
      * Represents an index, which you can update and submit events to.
      *
@@ -5176,7 +5180,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         path: function() {
             return Paths.indexes + "/" + encodeURIComponent(this.name);
         },
-        
+
         /**
          * Constructor for `splunkjs.Service.Index`.
          *
@@ -5190,14 +5194,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @return {splunkjs.Service.Index} A new `splunkjs.Service.Index` instance.
          *
          * @method splunkjs.Service.Index
-         */ 
+         */
         init: function(service, name, namespace) {
             this.name = name;
             this._super(service, this.path(), namespace);
-            
+
             this.submitEvent = utils.bind(this, this.submitEvent);
         },
-        
+
         /**
          * Submits an event to this index.
          *
@@ -5209,9 +5213,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *      });
          *
          * @param {String} event The text for this event.
-         * @param {Object} params A dictionary of parameters for indexing: 
-         *    - `host` (_string_): The value to populate in the host field for events from this data input. 
-         *    - `host_regex` (_string_): A regular expression used to extract the host value from each event. 
+         * @param {Object} params A dictionary of parameters for indexing:
+         *    - `host` (_string_): The value to populate in the host field for events from this data input.
+         *    - `host_regex` (_string_): A regular expression used to extract the host value from each event.
          *    - `source` (_string_): The source value to fill in the metadata for this input's events.
          *    - `sourcetype` (_string_): The sourcetype to apply to events from this input.
          * @param {Function} callback A function to call when the event is submitted: `(err, result, index)`.
@@ -5224,19 +5228,19 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 callback = params;
                 params = {};
             }
-            
+
             callback = callback || function() {};
             params = params || {};
-            
+
             // Add the index name
             params["index"] = this.name;
-            
+
             var that = this;
             return this.service.log(event, params, function(err, result) {
-                callback(err, result, that); 
+                callback(err, result, that);
             });
         },
-        
+
         remove: function(callback) {
             if (this.service.versionCompare("5.0") < 0) {
                 throw new Error("Indexes cannot be removed in Splunk 4.x");
@@ -5246,15 +5250,15 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             }
         }
     });
-        
+
     /**
-     * Represents a collection of indexes. You can create and list indexes using 
+     * Represents a collection of indexes. You can create and list indexes using
      * this collection container, or get a specific index.
      *
      * @endpoint data/indexes
      * @class splunkjs.Service.Indexes
      * @extends splunkjs.Service.Collection
-     */  
+     */
     root.Indexes = root.Collection.extend({
         /**
          * Retrieves the REST endpoint path for this resource (with no namespace).
@@ -5264,7 +5268,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         path: function() {
             return Paths.indexes;
         },
-        
+
         /**
          * Creates a local instance of an index.
          *
@@ -5277,7 +5281,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var entityNamespace = utils.namespaceFromProperties(props);
             return new root.Index(this.service, props.name, entityNamespace);
         },
-        
+
         /**
          * Constructor for `splunkjs.Service.Indexes`.
          *
@@ -5290,11 +5294,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @return {splunkjs.Service.Indexes} A new `splunkjs.Service.Indexes` instance.
          *
          * @method splunkjs.Service.Indexes
-         */  
+         */
         init: function(service, namespace) {
             this._super(service, this.path(), namespace);
         },
-        
+
         /**
          * Creates an index with the given name and parameters.
          *
@@ -5320,16 +5324,16 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 params = name;
                 name = params.name;
             }
-            
+
             params = params || {};
             params["name"] = name;
-            
+
             return this._super(params, callback);
         }
     });
-    
+
     /**
-     * Represents a specific stanza, which you can update and remove, from a 
+     * Represents a specific stanza, which you can update and remove, from a
      * configuration file.
      *
      * @endpoint configs/conf-{file}/{name}`
@@ -5346,7 +5350,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var name = this.name === "default" ? "_new" : this.name;
             return Paths.configurations + "/conf-" + encodeURIComponent(this.file) + "/" + encodeURIComponent(name);
         },
-        
+
         /**
          * Constructor for `splunkjs.Service.ConfigurationStanza`.
          *
@@ -5361,24 +5365,24 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @return {splunkjs.Service.ConfigurationStanza} A new `splunkjs.Service.ConfigurationStanza` instance.
          *
          * @method splunkjs.Service.ConfigurationStanza
-         */ 
+         */
         init: function(service, file, name, namespace) {
             this.name = name;
             this.file = file;
             this._super(service, this.path(), namespace);
         }
     });
-    
+
     /**
      * Represents a collection of stanzas for a specific property file. You can
-     * create and list stanzas using this collection container, or get a specific 
+     * create and list stanzas using this collection container, or get a specific
      * stanza.
      *
      * @endpoint configs/conf-{file}
      * @class splunkjs.Service.ConfigurationFile
      * @extends splunkjs.Service.Collection
-     */  
-    root.ConfigurationFile = root.Collection.extend({ 
+     */
+    root.ConfigurationFile = root.Collection.extend({
         /**
          * Retrieves the REST endpoint path for this resource (with no namespace).
          *
@@ -5405,7 +5409,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Creates a local instance of a stanza in a configuration file.
          *
-         * @param {Object} props The key-value properties for the new stanza. 
+         * @param {Object} props The key-value properties for the new stanza.
          * @return {splunkjs.Service.ConfigurationStanza} A new `splunkjs.Service.ConfigurationStanza` instance.
          *
          * @method splunkjs.Service.ConfigurationFile
@@ -5414,7 +5418,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var entityNamespace = utils.namespaceFromProperties(props);
             return new root.ConfigurationStanza(this.service, this.name, props.name, entityNamespace);
         },
-        
+
         /**
          * Constructor for `splunkjs.Service.ConfigurationFile`.
          *
@@ -5433,7 +5437,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.name = name;
             this._super(service, this.path(), namespace);
         },
-        
+
         /**
          * Creates a stanza in this configuration file.
          *
@@ -5459,37 +5463,37 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 values = stanzaName;
                 stanzaName = values.name;
             }
-            
+
             if (utils.isFunction(values) && !callback) {
                 callback = values;
                 values = {};
             }
-            
+
             values = values || {};
             values["name"] = stanzaName;
-            
+
             return this._super(values, callback);
         }
     });
-    
+
     /**
-     * Represents a collection of configuration files. You can create and list 
+     * Represents a collection of configuration files. You can create and list
      * configuration files using this collection container, or get a specific file.
      *
      * @endpoint properties
      * @class splunkjs.Service.Configurations
      * @extends splunkjs.Service.Collection
-     */  
+     */
     root.Configurations = root.Collection.extend({
         /**
-         * Indicates whether to call `fetch` after an entity has been created. By 
+         * Indicates whether to call `fetch` after an entity has been created. By
          * default, the entity is not fetched because the endpoint returns
          * (echoes) the new entity.
          *
          * @method splunkjs.Service.Configurations
          */
         fetchOnEntityCreation: true,
-        
+
         /**
          * Retrieves the REST endpoint path for this resource (with no namespace).
          *
@@ -5498,7 +5502,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         path: function() {
             return Paths.properties;
         },
-        
+
         /**
          * Creates a local instance of a configuration file.
          *
@@ -5510,7 +5514,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         instantiateEntity: function(props) {
             return new root.ConfigurationFile(this.service, props.name, this.namespace);
         },
-        
+
         /**
          * Constructor for `splunkjs.Service.Configurations`.
          *
@@ -5523,12 +5527,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @return {splunkjs.Service.Configurations} A new `splunkjs.Service.Configurations` instance.
          *
          * @method splunkjs.Service.Configurations
-         */  
+         */
         init: function(service, namespace) {
             if (!namespace || namespace.owner === "-" || namespace.app === "-") {
                 throw new Error("Configurations requires a non-wildcard owner/app");
             }
-            
+
             this._super(service, this.path(), namespace);
         },
 
@@ -5554,9 +5558,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             if (utils.isObject(filename)) {
                 filename = filename["__conf"];
             }
-            
+
             callback = callback || function() {};
-            
+
             var that = this;
             var req = this.post("", {__conf: filename}, function(err, response) {
                 if (err) {
@@ -5574,7 +5578,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     });
                 }
             });
-            
+
             return req;
         }
     });
@@ -5596,7 +5600,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         path: function() {
             return Paths.jobs + "/" + encodeURIComponent(this.name);
         },
-        
+
         /**
          * Constructor for `splunkjs.Service.Job`.
          *
@@ -5610,13 +5614,13 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @return {splunkjs.Service.Job} A new `splunkjs.Service.Job` instance.
          *
          * @method splunkjs.Service.Job
-         */ 
+         */
         init: function(service, sid, namespace) {
             this.name = sid;
             this._super(service, this.path(), namespace);
             this.sid = sid;
 
-            // We perform the bindings so that every function works 
+            // We perform the bindings so that every function works
             // properly when it is passed as a callback.
             this.cancel         = utils.bind(this, this.cancel);
             this.disablePreview = utils.bind(this, this.disablePreview);
@@ -5652,7 +5656,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         cancel: function(callback) {
             var req = this.post("control", {action: "cancel"}, callback);
-            
+
             return req;
         },
 
@@ -5673,17 +5677,17 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         disablePreview: function(callback) {
             callback = callback || function() {};
-            
+
             var that = this;
             var req = this.post("control", {action: "disablepreview"}, function(err) {
                 callback(err, that);
             });
-            
+
             return req;
         },
 
         /**
-         * Enables preview generation for a search job. 
+         * Enables preview generation for a search job.
          *
          * @example
          *
@@ -5699,12 +5703,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         enablePreview: function(callback) {
             callback = callback || function() {};
-            
+
             var that = this;
             var req = this.post("control", {action: "enablepreview"}, function(err) {
                 callback(err, that);
             });
-            
+
             return req;
         },
 
@@ -5727,8 +5731,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         events: function(params, callback) {
             callback = callback || function() {};
             params = params || {};
-            params.output_mode = params.output_mode || "json_rows"; 
-            
+            params.output_mode = params.output_mode || "json_rows";
+
             var that = this;
             return this.get("events", params, function(err, response) {
                 if (err) {
@@ -5757,15 +5761,15 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         finalize: function(callback) {
             callback = callback || function() {};
-            
+
             var that = this;
             var req = this.post("control", {action: "finalize"}, function(err) {
                 callback(err, that);
             });
-            
+
             return req;
         },
-        
+
         /**
          * Returns an iterator over this search job's events or results.
          *
@@ -5773,7 +5777,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @param {Object} params A dictionary of optional parameters:
          *    - `pagesize` (_integer_): The number of items to return on each request. Defaults to as many as possible.
          * @return {Object} An iterator object with a `next(callback)` method, where `callback` is of the form `(err, results, hasMoreResults)`.
-         * 
+         *
          * @endpoint search/jobs/{search_id}/results
          * @method splunkjs.Service.Job
          */
@@ -5798,12 +5802,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         pause: function(callback) {
             callback = callback || function() {};
-            
+
             var that = this;
             var req = this.post("control", {action: "pause"}, function(err) {
                 callback(err, that);
             });
-            
+
             return req;
         },
 
@@ -5826,8 +5830,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         preview: function(params, callback) {
             callback = callback || function() {};
             params = params || {};
-            params.output_mode = params.output_mode || "json_rows"; 
-            
+            params.output_mode = params.output_mode || "json_rows";
+
             var that = this;
             return this.get("results_preview", params, function(err, response) {
                 if (err) {
@@ -5841,12 +5845,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
 
         /**
          * Gets the results for a search job with given parameters.
-         * 
+         *
          * The callback can get `undefined` for its `results` parameter if the
          * job is not yet done. To avoid this, use the `Job.track()` method to
          * wait until the job is complete prior to fetching the results with
          * this method.
-         * 
+         *
          * @example
          *
          *      var job = service.jobs().item("mysid");
@@ -5864,7 +5868,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             callback = callback || function() {};
             params = params || {};
             params.output_mode = params.output_mode || "json_rows";
-            
+
             var that = this;
             return this.get("results", params, function(err, response) {
                 if (err) {
@@ -5893,7 +5897,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         searchlog: function(callback) {
             callback = callback || function() {};
-            
+
             var that = this;
             return this.get("search.log", {}, function(err, response) {
                 if (err) {
@@ -5923,12 +5927,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         setPriority: function(value, callback) {
             callback = callback || function() {};
-            
+
             var that = this;
             var req = this.post("control", {action: "setpriority", priority: value}, function(err) {
                 callback(err, that);
             });
-            
+
             return req;
         },
 
@@ -5943,7 +5947,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *          console.log("JOB TTL SET");
          *      });
          *
-         * @param {Number} value The time to live, in seconds. 
+         * @param {Number} value The time to live, in seconds.
          * @param {Function} callback A function to call with the search job: `(err, job)`.
          *
          * @endpoint search/jobs/{search_id}/control
@@ -5951,12 +5955,12 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         setTTL: function(value, callback) {
             callback = callback || function() {};
-            
+
             var that = this;
             var req = this.post("control", {action: "setttl", ttl: value}, function(err) {
                 callback(err, that);
             });
-            
+
             return req;
         },
 
@@ -5978,7 +5982,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         summary: function(params, callback) {
             callback = callback || function() {};
-            
+
             var that = this;
             return this.get("summary", params, function(err, response) {
                 if (err) {
@@ -6008,7 +6012,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         timeline: function(params, callback) {
             callback = callback || function() {};
-            
+
             var that = this;
             return this.get("timeline", params, function(err, response) {
                 if (err) {
@@ -6021,7 +6025,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         },
 
         /**
-         * Touches a search job, which means extending the expiration time of 
+         * Touches a search job, which means extending the expiration time of
          * the search to now plus the time to live (TTL).
          *
          * @example
@@ -6038,19 +6042,19 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         touch: function(callback) {
             callback = callback || function() {};
-            
+
             var that = this;
             var req = this.post("control", {action: "touch"}, function(err) {
                 callback(err, that);
             });
-            
+
             return req;
         },
-        
+
         /**
          * Starts polling the status of this search job, and fires callbacks
          * upon each status change.
-         * 
+         *
          * @param {Object} options A dictionary of optional parameters:
          *    - `period` (_integer_): The number of milliseconds to wait between each poll. Defaults to 500.
          * @param {Object|Function} callbacks A dictionary of optional callbacks:
@@ -6065,30 +6069,30 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         track: function(options, callbacks) {
             var period = options.period || 500; // ms
-            
+
             if (utils.isFunction(callbacks)) {
                 callbacks = {
                     done: callbacks
                 };
             }
-            
+
             var noCallbacksAfterReady = (
                 !callbacks.progress &&
                 !callbacks.done &&
                 !callbacks.failed &&
                 !callbacks.error
             );
-            
+
             callbacks.ready = callbacks.ready || function() {};
             callbacks.progress = callbacks.progress || function() {};
             callbacks.done = callbacks.done || function() {};
             callbacks.failed = callbacks.failed || function() {};
             callbacks.error = callbacks.error || function() {};
-            
+
             // For use by tests only
             callbacks._preready = callbacks._preready || function() {};
             callbacks._stoppedAfterReady = callbacks._stoppedAfterReady || function() {};
-            
+
             var that = this;
             var emittedReady = false;
             var doneLooping = false;
@@ -6100,7 +6104,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                             nextIteration(err);
                             return;
                         }
-                        
+
                         var dispatchState = job.properties().dispatchState;
                         var notReady = dispatchState === "QUEUED" || dispatchState === "PARSING";
                         if (notReady) {
@@ -6110,38 +6114,38 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                             if (!emittedReady) {
                                 callbacks.ready(job);
                                 emittedReady = true;
-                                
+
                                 // Optimization: Don't keep polling the job if the
                                 // caller only cares about the `ready` event.
                                 if (noCallbacksAfterReady) {
                                     callbacks._stoppedAfterReady(job);
-                                    
+
                                     doneLooping = true;
                                     nextIteration();
                                     return;
                                 }
                             }
-                            
+
                             callbacks.progress(job);
-                            
+
                             var props = job.properties();
-                            
+
                             if (dispatchState === "DONE" && props.isDone) {
                                 callbacks.done(job);
-                                
+
                                 doneLooping = true;
                                 nextIteration();
                                 return;
                             }
                             else if (dispatchState === "FAILED" && props.isFailed) {
                                 callbacks.failed(job);
-                                
+
                                 doneLooping = true;
                                 nextIteration();
                                 return;
                             }
                         }
-                        
+
                         Async.sleep(period, nextIteration);
                     });
                 },
@@ -6170,24 +6174,24 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          */
         unpause: function(callback) {
             callback = callback || function() {};
-            
+
             var that = this;
             var req = this.post("control", {action: "unpause"}, function(err) {
                 callback(err, that);
             });
-            
+
             return req;
         }
     });
 
     /**
-     * Represents a collection of search jobs. You can create and list search 
+     * Represents a collection of search jobs. You can create and list search
      * jobs using this collection container, or get a specific search job.
      *
      * @endpoint search/jobs
      * @class splunkjs.Service.Jobs
      * @extends splunkjs.Service.Collection
-     */  
+     */
     root.Jobs = root.Collection.extend({
         /**
          * Retrieves the REST endpoint path for this resource (with no namespace).
@@ -6197,7 +6201,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         path: function() {
             return Paths.jobs;
         },
-        
+
         /**
          * Creates a local instance of a job.
          *
@@ -6211,7 +6215,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             var entityNamespace = utils.namespaceFromProperties(props);
             return new root.Job(this.service, sid, entityNamespace);
         },
-        
+
         /**
          * Constructor for `splunkjs.Service.Jobs`.
          *
@@ -6224,11 +6228,11 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * @return {splunkjs.Service.Jobs} A new `splunkjs.Service.Jobs` instance.
          *
          * @method splunkjs.Service.Jobs
-         */  
+         */
         init: function(service, namespace) {
             this._super(service, this.path(), namespace);
 
-            // We perform the bindings so that every function works 
+            // We perform the bindings so that every function works
             // properly when it is passed as a callback.
             this.create     = utils.bind(this, this.create);
         },
@@ -6237,10 +6241,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * Creates a search job with a given search query and optional parameters, including `exec_mode` to specify the type of search:
          *
          *    - Use `exec_mode=normal` to return a search job ID immediately (default).
-         *      Poll for completion to find out when you can retrieve search results. 
+         *      Poll for completion to find out when you can retrieve search results.
          *
          *    - Use `exec_mode=blocking` to return the search job ID when the search has finished.
-         * 
+         *
          * To run a oneshot search, which does not create a job but rather returns the search results, use `Service.Jobs.oneshotSearch`.
          *
          * @param {String} query The search query.
@@ -6258,19 +6262,19 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 params = query;
                 query = params.search;
             }
-            
+
             callback = callback || function() {};
             params = params || {};
-            params.search = query; 
-            
+            params.search = query;
+
             if ((params.exec_mode || "").toLowerCase() === "oneshot") {
                 throw new Error("Please use splunkjs.Service.Jobs.oneshotSearch for exec_mode=oneshot");
             }
-            
+
             if (!params.search) {
                 callback("Must provide a query to create a search job");
                 return;
-            } 
+            }
             var that = this;
             return this.post("", params, function(err, response) {
                 if (err) {
@@ -6282,15 +6286,15 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 }
             });
         },
-                
+
         /**
          * Creates a search job with a given search query and optional parameters, including `exec_mode` to specify the type of search:
          *
          *    - Use `exec_mode=normal` to return a search job ID immediately (default).
-         *      Poll for completion to find out when you can retrieve search results. 
+         *      Poll for completion to find out when you can retrieve search results.
          *
          *    - Use `exec_mode=blocking` to return the search job ID when the search has finished.
-         * 
+         *
          * To run a oneshot search, which does not create a job but rather returns the search results, use `Service.Jobs.oneshotSearch`.
          *
          * @example
@@ -6311,7 +6315,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         search: function(query, params, callback) {
             return this.create(query, params, callback);
         },
-                
+
         /**
          * Creates a oneshot search from a given search query and parameters.
          *
@@ -6322,7 +6326,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          *          console.log("RESULT FIELDS": results.fields);
          *      });
          *
-         * @param {String} query The search query. 
+         * @param {String} query The search query.
          * @param {Object} params A dictionary of properties for the search:
          *    - `output_mode` (_string_): Specifies the output format of the results (XML, JSON, or CSV).
          *    - `earliest_time` (_string_): Specifies the earliest time in the time range to search. The time string can be a UTC time (with fractional seconds), a relative time specifier (to now), or a formatted time string.
@@ -6341,46 +6345,46 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 params = query;
                 query = params.search;
             }
-            
+
             callback = callback || function() {};
             params = params || {};
-            params.search = query; 
+            params.search = query;
             params.exec_mode = "oneshot";
-            
+
             if (!params.search) {
                 callback("Must provide a query to create a search job");
             }
-            
+
             var outputMode = params.output_mode || "json_rows";
-            
+
             var path = this.qualifiedPath;
             var method = "POST";
             var headers = {};
             var post = params;
             var get = {output_mode: outputMode};
             var body = null;
-            
+
             var req = this.service.request(
-                path, 
-                method, 
-                get, 
-                post, 
-                body, 
-                headers, 
+                path,
+                method,
+                get,
+                post,
+                body,
+                headers,
                 function(err, response) {
                     if (err) {
                         callback(err);
-                    } 
+                    }
                     else {
                         callback(null, response.data);
                     }
                 }
             );
-            
+
             return req;
         }
     });
-     
+
     /**
      * Represents a field of a data model object.
      * This is a helper class for `DataModelCalculation`
@@ -6529,7 +6533,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             return "boolean" === this.type;
         }
     });
-    
+
     /**
      * Represents a constraint on a `DataModelObject` or a `DataModelField`.
      *
@@ -6564,7 +6568,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.owner   = this.lineage[this.lineage.length - 1];
         }
     });
-    
+
     /**
      * Used for specifying a calculation on a `DataModelObject`.
      *
@@ -6692,7 +6696,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         isEval: function() {
             return "Eval" === this.type;
         },
-        
+
         /**
          * Is this data model calculation of type Rex?
          *
@@ -6715,7 +6719,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             return "GeoIP" === this.type;
         }
     });
-    
+
     /**
      * Pivot represents data about a pivot report returned by the Splunk Server.
      *
@@ -6914,13 +6918,13 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.filters = [];
             this.cells = [];
 
-            this.accelerationNamespace = dataModelObject.dataModel.isAccelerated() ? 
+            this.accelerationNamespace = dataModelObject.dataModel.isAccelerated() ?
                 dataModelObject.dataModel.name : null;
 
             this.run   = utils.bind(this, this.run);
             this.pivot = utils.bind(this, this.pivot);
         },
-        
+
         /**
          * Set the acceleration cache for this pivot specification to a job,
          * usually generated by createLocalAccelerationJob on a DataModelObject
@@ -6937,7 +6941,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             if (sid && sid instanceof Service.Job) {
                 sid = sid.sid;
             }
-            
+
             if (!sid) {
                 throw new Error("Sid to use for acceleration must not be null.");
             }
@@ -6964,14 +6968,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             }
             if (comparisonType !== this.dataModelObject.fieldByName(fieldName).type) {
                 throw new Error(
-                    "Cannot add " + comparisonType +  
-                    " filter on " + fieldName + 
+                    "Cannot add " + comparisonType +
+                    " filter on " + fieldName +
                     " because it is of type " +
                     this.dataModelObject.fieldByName(fieldName).type);
             }
             if (!utils.contains(this._comparisons[comparisonType], comparisonOp)) {
                 throw new Error(
-                    "Cannot add " + comparisonType + 
+                    "Cannot add " + comparisonType +
                     " filter because " + comparisonOp +
                     " is not a valid comparison operator");
             }
@@ -6989,7 +6993,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 };
             }
             this.filters.push(ret);
-    
+
             return this;
         },
 
@@ -7197,9 +7201,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 period: binning
             });
 
-            return this;            
+            return this;
         },
-        
+
         /**
          * Add a column split on a string or number valued field, producing a column for
          * each distinct value of the field.
@@ -7281,7 +7285,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
 
             return this;
         },
-        
+
         /**
          * Add a column split on a boolean valued field.
          *
@@ -7311,7 +7315,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
 
             return this;
         },
-        
+
         /**
          * Add a column split on a timestamp valued field, binned by the specified bucket size.
          *
@@ -7340,9 +7344,9 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 period: binning
             });
 
-            return this;            
+            return this;
         },
-        
+
         /**
          * Add an aggregate to each cell of the pivot.
          *
@@ -7372,7 +7376,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                     " list, distinct_values, first, last, count, or distinct_count; found " +
                     statsFunction);
             }
-            else if ("number" === f.type && 
+            else if ("number" === f.type &&
                 !utils.contains([
                     "sum",
                     "count",
@@ -7424,7 +7428,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
 
             return this;
         },
-        
+
         /**
          * Returns a JSON ready object representation of this pivot specification.
          *
@@ -7475,7 +7479,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             if (!utils.isUndefined(this.accelerationNamespace)) {
                 args.namespace = this.accelerationNamespace;
             }
-            
+
             return svc.get(Paths.pivot + "/" + encodeURIComponent(this.dataModelObject.dataModel.name), args, function(err, response) {
                 if (err) {
                     callback(new Error(err.data.messages[0].text), response);
@@ -7661,7 +7665,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         /**
          * Returns a string array of the names of this data model object's fields.
          *
-         * @return {Array} An array of strings with the field names of this 
+         * @return {Array} An array of strings with the field names of this
          * data model object.
          *
          * @method splunkjs.Service.DataModelObject
@@ -7672,10 +7676,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
 
         /**
          * Returns a data model field instance, representing a field on this
-         * data model object. 
+         * data model object.
          *
          * @return {splunkjs.Service.DataModelField|null} The data model field
-         * from this data model object with the specified name, null if it the 
+         * from this data model object with the specified name, null if it the
          * field by that name doesn't exist.
          *
          * @method splunkjs.Service.DataModelObject
@@ -7683,7 +7687,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         fieldByName: function(name) {
             return this.calculatedFields()[name] || this.fields[name] || null;
         },
-        
+
         /**
          * Returns an array of data model fields from this data model object's
          * calculations, and this data model object's fields.
@@ -7718,8 +7722,8 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * Returns a string array of the field names of this data model object's
          * calculations, and the names of this data model object's fields.
          *
-         * @return {Array} An array of strings with the field names of this 
-         * data model object's calculations, and the names of fields on 
+         * @return {Array} An array of strings with the field names of this
+         * data model object's calculations, and the names of fields on
          * this data model object.
          *
          * @method splunkjs.Service.DataModelObject
@@ -7755,7 +7759,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * Returns a string array of the field names of this data model object's
          * calculations.
          *
-         * @return {Array} An array of strings with the field names of this 
+         * @return {Array} An array of strings with the field names of this
          * data model object's calculations.
          *
          * @method splunkjs.Service.DataModelObject
@@ -7854,7 +7858,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             querySuffix = (querySuffix) ? (" " + querySuffix) : ("");
             this.dataModel.service.search(query + querySuffix, params, callback);
         },
-        
+
         /**
          * Returns the data model object this one inherits from if it is a user defined,
          * otherwise return null.
@@ -7867,7 +7871,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
         parent: function() {
             return this.dataModel.objectByName(this.parentName);
         },
-        
+
         /**
          * Returns a new Pivot Specification, accepts no parameters.
          *
@@ -7880,7 +7884,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             return new root.PivotSpecification(this);
         }
     });
-    
+
     /**
      * Represents a data model on the server. Data models
      * contain `DataModelObject` instances, which specify structured
@@ -7946,7 +7950,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             this.displayName = dataModelDefinition.displayName;
             this.description = dataModelDefinition.description;
 
-            // Parse the objects for this data model           
+            // Parse the objects for this data model
             var objs = dataModelDefinition.objects;
             this.objects = [];
             for (var i = 0; i < objs.length; i++) {
@@ -8044,7 +8048,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
             });
         }
     });
-    
+
     /**
      * Represents a collection of data models. You can create and
      * list data models using this collection container, or
@@ -8066,14 +8070,14 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
 
         /**
          * Constructor for `splunkjs.Service.DataModels`.
-         * 
+         *
          * @constructor
          * @param {splunkjs.Service} service A `Service` instance.
          * @param {Object} namespace (Optional) namespace information:
          *    - `owner` (_string_): The Splunk username, such as "admin". A value of "nobody" means no specific user. The "-" wildcard means all users.
          *    - `app` (_string_): The app context for this resource (such as "search"). The "-" wildcard means all apps.
          *    - `sharing` (_string_): A mode that indicates how the resource is shared. The sharing mode can be "user", "app", "global", or "system".
-         * 
+         *
          * @method splunkjs.Service.DataModels
          */
         init: function(service, namespace) {
@@ -8122,7 +8126,7 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
          * Constructor for `splunkjs.Service.DataModel`.
          *
          * @constructor
-         * @param {Object} props A dictionary of properties used to create a 
+         * @param {Object} props A dictionary of properties used to create a
          * `DataModel` instance.
          * @return {splunkjs.Service.DataModel} A new `DataModel` instance.
          *
@@ -8139,16 +8143,16 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
     root.PaginatedEndpointIterator = Class.extend({
         init: function(endpoint, params) {
             params = params || {};
-            
+
             this._endpoint = endpoint;
             this._pagesize = params.pagesize || 0;
             this._offset = 0;
         },
-        
+
         // Fetches the next page from the endpoint.
         next: function(callback) {
             callback = callback || function() {};
-            
+
             var that = this;
             var params = {
                 count: this._pagesize,
@@ -8158,10 +8162,10 @@ require.define("/lib/service.js", function (require, module, exports, __dirname,
                 if (err) {
                     callback(err);
                 }
-                else {                    
+                else {
                     var numResults = (results.rows ? results.rows.length : 0);
                     that._offset += numResults;
-                    
+
                     callback(null, results, numResults > 0);
                 }
             });
@@ -8189,7 +8193,7 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
 
 (function() {
     "use strict";
-    
+
     var utils = require('./utils');
     var root = exports || this;
 
@@ -8203,7 +8207,7 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      * Runs an asynchronous `while` loop.
      *
      * @example
-     *      
+     *
      *      var i = 0;
      *      Async.whilst(
      *          function() { return i++ < 3; },
@@ -8221,11 +8225,11 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      *
      * @function splunkjs.Async
      */
-    root.whilst = function(condition, body, callback) {  
+    root.whilst = function(condition, body, callback) {
         condition = condition || function() { return false; };
         body = body || function(done) { done(); };
         callback = callback || function() {};
-        
+
         var iterationDone = function(err) {
             if (err) {
                 callback(err);
@@ -8234,7 +8238,7 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
                 root.whilst(condition, body, callback);
             }
         };
-        
+
         if (condition()) {
             body(iterationDone);
         }
@@ -8242,18 +8246,18 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
             callback(null);
         }
     };
-    
+
     /**
-     * Runs multiple functions (tasks) in parallel. 
-     * Each task takes the callback function as a parameter. 
-     * When all tasks have been completed or if an error occurs, the callback 
-     * function is called with the combined results of all tasks. 
+     * Runs multiple functions (tasks) in parallel.
+     * Each task takes the callback function as a parameter.
+     * When all tasks have been completed or if an error occurs, the callback
+     * function is called with the combined results of all tasks.
      *
      * **Note**: Tasks might not be run in the same order as they appear in the array,
-     * but the results will be returned in that order. 
+     * but the results will be returned in that order.
      *
      * @example
-     *      
+     *
      *      Async.parallel([
      *          function(done) {
      *              done(null, 1);
@@ -8280,19 +8284,19 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
             tasks = args.slice(0, args.length - 1);
             callback = args[args.length - 1];
         }
-        
+
         tasks = tasks || [];
         callback = callback || function() {};
-        
+
         if (tasks.length === 0) {
             callback();
         }
-        
+
         var tasksLeft = tasks.length;
         var results = [];
         var doneCallback = function(idx) {
             return function(err) {
-                
+
                 if (err) {
                     if (callback) {
                         callback(err);
@@ -8300,14 +8304,14 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
                     callback = null;
                 }
                 else {
-                    var args = utils.toArray(arguments);  
+                    var args = utils.toArray(arguments);
                     args.shift();
-                    
+
                     if (args.length === 1) {
                         args = args[0];
                     }
                     results[idx] = args;
-                    
+
                     if ((--tasksLeft) === 0) {
                         results.unshift(null);
                         if (callback) {
@@ -8317,22 +8321,22 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
                 }
             };
         };
-        
+
         for(var i = 0; i < tasks.length; i++) {
             var task = tasks[i];
             task(doneCallback(i));
         }
     };
-    
+
     /**
-     * Runs multiple functions (tasks) in series. 
-     * Each task takes the callback function as a parameter. 
-     * When all tasks have been completed or if an error occurs, the callback 
+     * Runs multiple functions (tasks) in series.
+     * Each task takes the callback function as a parameter.
+     * When all tasks have been completed or if an error occurs, the callback
      * function is called with the combined results of all tasks in the order
-     * they were run. 
+     * they were run.
      *
      * @example
-     *      
+     *
      *      var keeper = 0;
      *      Async.series([
      *          function(done) {
@@ -8364,17 +8368,17 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
             tasks = args.slice(0, args.length - 1);
             callback = args[args.length - 1];
         }
-        
+
         tasks = tasks || [];
         callback = callback || function() {};
-        
+
         var innerSeries = function(task, restOfTasks, resultsSoFar, callback) {
             if (!task) {
                 resultsSoFar.unshift(null);
                 callback.apply(null, resultsSoFar);
                 return;
             }
-            
+
             task(function(err) {
                 if (err) {
                     if (callback) {
@@ -8389,27 +8393,27 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
                         args = args[0];
                     }
                     resultsSoFar.push(args);
-                    
+
                     innerSeries(restOfTasks[0], restOfTasks.slice(1), resultsSoFar, callback);
                 }
             });
         };
-        
+
         innerSeries(tasks[0], tasks.slice(1), [], callback);
     };
-    
+
     /**
      * Runs an asynchronous function (mapping it) over each element in an array, in parallel.
      * When all tasks have been completed or if an error occurs, a callback
      * function is called with the resulting array.
      *
      * @example
-     *      
+     *
      *      Async.parallelMap(
      *          [1, 2, 3],
-     *          function(val, idx, done) { 
+     *          function(val, idx, done) {
      *              if (val === 2) {
-     *                  Async.sleep(100, function() { done(null, val+1); });   
+     *                  Async.sleep(100, function() { done(null, val+1); });
      *              }
      *              else {
      *                  done(null, val + 1);
@@ -8421,24 +8425,24 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      *      );
      *
      * @param {Array} vals An array of values.
-     * @param {Function} fn A function (possibly asynchronous) to apply to each element: `(done)`. 
+     * @param {Function} fn A function (possibly asynchronous) to apply to each element: `(done)`.
      * @param {Function} callback The function to call when all tasks are done or if an error occurred: `(err, mappedVals)`.
      *
      * @function splunkjs.Async
      */
-    root.parallelMap = function(vals, fn, callback) {     
+    root.parallelMap = function(vals, fn, callback) {
         vals = vals || [];
         callback = callback || function() {};
-        
+
         var tasks = [];
         var createTask = function(val, idx) {
             return function(done) { fn(val, idx, done); };
         };
-        
+
         for(var i = 0; i < vals.length; i++) {
             tasks.push(createTask(vals[i], i));
         }
-        
+
         root.parallel(tasks, function(err) {
             if (err) {
                 if (callback) {
@@ -8453,18 +8457,18 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
             }
         });
     };
-    
+
     /**
      * Runs an asynchronous function (mapping it) over each element in an array, in series.
      * When all tasks have been completed or if an error occurs, a callback
      * function is called with the resulting array.
      *
      * @example
-     *      
+     *
      *      var keeper = 1;
      *      Async.seriesMap(
      *          [1, 2, 3],
-     *          function(val, idx, done) { 
+     *          function(val, idx, done) {
      *              console.log(keeper++); // == 1, then 2, then 3
      *              done(null, val + 1);
      *          },
@@ -8479,19 +8483,19 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      *
      * @function splunkjs.Async
      */
-    root.seriesMap = function(vals, fn, callback) {     
+    root.seriesMap = function(vals, fn, callback) {
         vals = vals || [];
         callback = callback || function() {};
-        
+
         var tasks = [];
         var createTask = function(val, idx) {
             return function(done) { fn(val, idx, done); };
         };
-        
+
         for(var i = 0; i < vals.length; i++) {
             tasks.push(createTask(vals[i], i));
         }
-        
+
         root.series(tasks, function(err) {
             if (err) {
                 if (callback) {
@@ -8505,25 +8509,25 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
             }
         });
     };
-    
+
     /**
      * Applies an asynchronous function over each element in an array, in parallel.
-     * A callback function is called when all tasks have been completed. If an 
+     * A callback function is called when all tasks have been completed. If an
      * error occurs, the callback function is called with an error parameter.
      *
      * @example
-     *      
+     *
      *      var total = 0;
      *      Async.parallelEach(
      *          [1, 2, 3],
-     *          function(val, idx, done) { 
+     *          function(val, idx, done) {
      *              var go = function() {
      *                  total += val;
      *                  done();
      *              };
-     *              
+     *
      *              if (idx === 1) {
-     *                  Async.sleep(100, go);    
+     *                  Async.sleep(100, go);
      *              }
      *              else {
      *                  go();
@@ -8540,27 +8544,27 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      *
      * @function splunkjs.Async
      */
-    root.parallelEach = function(vals, fn, callback) {  
-        vals = vals || [];   
+    root.parallelEach = function(vals, fn, callback) {
+        vals = vals || [];
         callback = callback || function() {};
-        
+
         root.parallelMap(vals, fn, function(err, result) {
-            callback(err); 
+            callback(err);
         });
     };
-    
+
     /**
      * Applies an asynchronous function over each element in an array, in series.
-     * A callback function is called when all tasks have been completed. If an 
+     * A callback function is called when all tasks have been completed. If an
      * error occurs, the callback function is called with an error parameter.
      *
      * @example
-     *      
+     *
      *      var results = [1, 3, 6];
      *      var total = 0;
      *      Async.seriesEach(
      *          [1, 2, 3],
-     *          function(val, idx, done) { 
+     *          function(val, idx, done) {
      *              total += val;
      *              console.log(total === results[idx]); //== true
      *              done();
@@ -8576,31 +8580,31 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      *
      * @function splunkjs.Async
      */
-    root.seriesEach = function(vals, fn, callback) {    
-        vals = vals || []; 
+    root.seriesEach = function(vals, fn, callback) {
+        vals = vals || [];
         callback = callback || function() {};
-        
+
         root.seriesMap(vals, fn, function(err, result) {
-            callback(err); 
+            callback(err);
         });
     };
-    
+
     /**
      * Chains asynchronous tasks together by running a function (task) and
-     * passing the results as arguments to the next task. When all tasks have 
-     * been completed or if an error occurs, a callback function is called with 
+     * passing the results as arguments to the next task. When all tasks have
+     * been completed or if an error occurs, a callback function is called with
      * the results of the final task.
      *
      * Each task takes one or more parameters, depending on the previous task in the chain.
      * The last parameter is always the function to run when the task is complete.
      *
-     * `err` arguments are not passed to individual tasks, but are are propagated 
+     * `err` arguments are not passed to individual tasks, but are are propagated
      * to the final callback function.
      *
      * @example
-     *      
+     *
      *     Async.chain(
-     *         function(callback) { 
+     *         function(callback) {
      *             callback(null, 1, 2);
      *         },
      *         function(val1, val2, callback) {
@@ -8614,7 +8618,7 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      *             console.log(val2); //== 5
      *         }
      *     );
-     *     
+     *
      * @param {Function} tasks An array of functions: `(done)`.
      * @param {Function} callback The function to call when all tasks are done or if an error occurred: `(err, ...)`.
      *
@@ -8627,10 +8631,10 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
             tasks = args.slice(0, args.length - 1);
             callback = args[args.length - 1];
         }
-        
+
         tasks = tasks || [];
         callback = callback || function() {};
-        
+
         if (!tasks.length) {
             callback();
         }
@@ -8647,7 +8651,7 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
                         innerChain(restOfTasks[0], restOfTasks.slice(1), args);
                     }
                 };
-                
+
                 var args = result;
                 if (!restOfTasks.length) {
                     args.push(callback);
@@ -8655,23 +8659,23 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
                 else {
                     args.push(chainCallback);
                 }
-                
+
                 task.apply(null, args);
             };
-            
+
             innerChain(tasks[0], tasks.slice(1), []);
         }
     };
-    
+
     /**
-     * Runs a function after a delay (a specified timeout period). 
-     * The main purpose of this function is to make `setTimeout` adhere to 
+     * Runs a function after a delay (a specified timeout period).
+     * The main purpose of this function is to make `setTimeout` adhere to
      * Node.js-style function signatures.
      *
      * @example
-     *      
+     *
      *     Async.sleep(1000, function() { console.log("TIMEOUT");});
-     *     
+     *
      * @param {Number} timeout The timeout period, in milliseconds.
      * @param {Function} callback The function to call when the timeout occurs.
      *
@@ -8679,13 +8683,13 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      */
     root.sleep = function(timeout, callback) {
         setTimeout(function() {
-            callback();   
+            callback();
         }, timeout);
     };
-    
+
     /**
      * Runs a callback function with additional parameters, which are appended to
-     * the parameter list. 
+     * the parameter list.
      *
      * @example
      *
@@ -8693,10 +8697,10 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
      *          console.log(a); //== 1
      *          console.log(b); //== 2
      *      };
-     *      
+     *
      *      var augmented = Async.augment(callback, 2);
      *      augmented(1);
-     *     
+     *
      * @param {Function} callback The callback function to augment.
      * @param {Anything...} rest The number of arguments to add.
      *
@@ -8709,7 +8713,7 @@ require.define("/lib/async.js", function (require, module, exports, __dirname, _
             for(var i = 0; i < args.length; i++) {
               augmentedArgs.push(args[i]);
             }
-            
+
             callback.apply(null, augmentedArgs);
         };
     };
@@ -8830,7 +8834,7 @@ var utils   = require('../utils'); // Get all of the existing utils
  * This is a helper function for `parseXMLData`.
  *
  * The XML typically will look like this:
- * 
+ *
  *   `<configuration>`
  *     `<stanza name="foobar://aaa">`
  *       `<param name="param1">value1</param>`
@@ -8950,7 +8954,7 @@ require.define("/lib/modularinputs/validationdefinition.js", function (require, 
      * contains unexpected XML.
      *
      * The XML typically will look like this:
-     * 
+     *
      * `<items>`
      * `   <server_host>myHost</server_host>`
      * `     <server_uri>https://127.0.0.1:8089</server_uri>`
@@ -8975,7 +8979,7 @@ require.define("/lib/modularinputs/validationdefinition.js", function (require, 
         var rootChildren = ET.parse(str).getroot().getchildren();
 
         for (var i = 0; i < rootChildren.length; i++) {
-            var node = rootChildren[i];            
+            var node = rootChildren[i];
             if (node.tag === "item") {
                 definition.metadata["name"] = node.get("name");
                 definition.parameters = utils.parseXMLData(node, "");
@@ -8986,7 +8990,7 @@ require.define("/lib/modularinputs/validationdefinition.js", function (require, 
         }
         return definition;
     };
-    
+
     module.exports = ValidationDefinition;
 })();
 });
@@ -12018,7 +12022,7 @@ require.define("/lib/modularinputs/inputdefinition.js", function (require, modul
      * contains unexpected XML.
      *
      * The XML typically will look like this:
-     * 
+     *
      * `<input>`
      *   `<server_host>tiny</server_host>`
      *   `<server_uri>https://127.0.0.1:8089</server_uri>`
@@ -12096,7 +12100,7 @@ require.define("/lib/modularinputs/event.js", function (require, module, exports
      * modular input to Splunk.
      *
      * @example
-     *      
+     *
      *      // Minimal configuration
      *      var myEvent =  new Event({
      *          data: "This is a test of my new event.",
@@ -12136,7 +12140,7 @@ require.define("/lib/modularinputs/event.js", function (require, module, exports
         this.time = utils.isUndefined(eventConfig.time) ? null : eventConfig.time;
     }
 
-    /** 
+    /**
     * Formats a time for Splunk, should be something like `1372187084.000`.
     *
     * @example
@@ -12163,7 +12167,7 @@ require.define("/lib/modularinputs/event.js", function (require, module, exports
     */
     Event.formatTime = function(time) {
         var cleanTime;
-        
+
         // If time is a Date object, return its value.
         if (time instanceof Date) {
             time = time.valueOf();
@@ -12208,7 +12212,7 @@ require.define("/lib/modularinputs/event.js", function (require, module, exports
         return cleanTime;
     };
 
-    /** 
+    /**
     * Writes an XML representation of this, and Event object to the provided `Stream`,
     * starting at the provided offset.
     *
@@ -12222,7 +12226,7 @@ require.define("/lib/modularinputs/event.js", function (require, module, exports
         if (!this.data) {
             throw new Error("Events must have at least the data field set to be written to XML.");
         }
-        
+
         var xmlEvent = ET.Element("event");
 
         if (this.stanza) {
@@ -12230,7 +12234,7 @@ require.define("/lib/modularinputs/event.js", function (require, module, exports
         }
         // Convert this.unbroken (a boolean) to a number (0 or 1), then to a string
         xmlEvent.set("unbroken", (+this.unbroken).toString());
-        
+
         if (!utils.isUndefined(this.time) && this.time !== null) {
             ET.SubElement(xmlEvent, "time").text = Event.formatTime(this.time).toString();
         }
@@ -12316,7 +12320,7 @@ require.define("/lib/modularinputs/eventwriter.js", function (require, module, e
     * @param {Object} event An `Event` Object.
     * @function splunkjs.ModularInputs.EventWriter
     */
-    EventWriter.prototype.writeEvent = function(event) {        
+    EventWriter.prototype.writeEvent = function(event) {
         if (!this._headerWritten) {
             this._out.write("<stream>");
             this._headerWritten = true;
@@ -12336,7 +12340,7 @@ require.define("/lib/modularinputs/eventwriter.js", function (require, module, e
     };
 
     /**
-    * Writes a string representation of an `Elementtree` Object to the 
+    * Writes a string representation of an `Elementtree` Object to the
     * output stream specified in the constructor.
     *
     * This function will throw an exception if there is an error
@@ -12530,13 +12534,13 @@ require.define("/lib/modularinputs/argument.js", function (require, module, expo
     /**
      * Class representing an argument to a modular input kind.
      *
-     * `Argument` is meant to be used with `Scheme` to generate an XML 
+     * `Argument` is meant to be used with `Scheme` to generate an XML
      * definition of the modular input kind that Splunk understands.
      *
      * `name` is the only required parameter for the constructor.
      *
      * @example
-     *      
+     *
      *      // Example with minimal parameters
      *      var myArg1 = new Argument({name: "arg1"});
      *
@@ -12574,7 +12578,7 @@ require.define("/lib/modularinputs/argument.js", function (require, module, expo
 
     /**
      * Adds an `Argument` object the passed in elementtree object.
-     * 
+     *
      * Adds an <arg> subelement to the parent element, typically <args>,
      * and sets up its subelements with their respective text.
      *
@@ -12606,8 +12610,8 @@ require.define("/lib/modularinputs/argument.js", function (require, module, expo
         }
 
         return arg;
-    }; 
-    
+    };
+
     module.exports = Argument;
 })();
 });
@@ -12636,7 +12640,7 @@ require.define("/lib/modularinputs/scheme.js", function (require, module, export
     /**
      * Class representing the metadata for a modular input kind.
      *
-     * A `Scheme` specifies a title, description, several options of how Splunk 
+     * A `Scheme` specifies a title, description, several options of how Splunk
      * should run modular inputs of this kind, and a set of arguments that define
      * a particular modular input's properties.
      * The primary use of `Scheme` is to abstract away the construction of XML
@@ -12706,7 +12710,7 @@ require.define("/lib/modularinputs/scheme.js", function (require, module, export
             {tag: "use_single_instance", value: this.useSingleInstance},
             {tag: "streaming_mode", value: this.streamingMode}
         ];
-        
+
         for (var i = 0; i < subElements.length; i++) {
             ET.SubElement(root, subElements[i].tag).text = subElements[i].value.toString().toLowerCase();
         }
@@ -12721,7 +12725,7 @@ require.define("/lib/modularinputs/scheme.js", function (require, module, export
 
         return root;
     };
-    
+
     module.exports = Scheme;
 })();
 
@@ -12759,9 +12763,9 @@ require.define("/lib/modularinputs/modularinput.js", function (require, module, 
      * A base class for implementing modular inputs.
      *
      * Subclasses should implement `getScheme` and `streamEvents`,
-     * and optionally `validateInput` if the modular input uses 
+     * and optionally `validateInput` if the modular input uses
      * external validation.
-     * 
+     *
      * The `run` function is used to run modular inputs; it typically
      * should not be overridden.
      * @class splunkjs.ModularInputs.ModularInput
@@ -12811,7 +12815,7 @@ require.define("/lib/modularinputs/modularinput.js", function (require, module, 
 
                 // Remove any trailing whitespace.
                 var bufferString = bigBuff.toString("utf8", 0, bigBuff.length).trim();
-                
+
                 if (utils.endsWith(bufferString, "</input>")) {
                     // If we've received all of the input definitions, clear the timeout timer
                     clearTimeout(inputDefintionsReceivedTimer);
@@ -12826,7 +12830,7 @@ require.define("/lib/modularinputs/modularinput.js", function (require, module, 
                                     Object.keys(exports._inputDefinition.inputs),
                                     function (name, index, doneEach) {
                                         var input = exports._inputDefinition.inputs[name];
-                                        
+
                                         Async.chain([
                                                 function(innerDone) {
                                                     exports.start(name, input, innerDone);
@@ -12843,7 +12847,7 @@ require.define("/lib/modularinputs/modularinput.js", function (require, module, 
                                                 doneEach(innerErr, innerErr ? 1 : 0);
                                             }
                                         );
-                                    }, 
+                                    },
                                     function (streamErr) {
                                         done(streamErr, streamErr ? 1 : 0);
                                     }
@@ -12890,7 +12894,7 @@ require.define("/lib/modularinputs/modularinput.js", function (require, module, 
             // Listen for data on inputStream.
             inputStream.on("data", function(chunk) {
                 bigBuff = Buffer.concat([bigBuff, chunk]);
-                
+
                 // Remove any trailing whitespace.
                 var bufferString = bigBuff.toString("utf8", 0, bigBuff.length).trim();
 
@@ -13682,7 +13686,7 @@ exports.parse = function(str){
   return String(str)
     .split('&')
     .reduce(function(ret, pair){
-      try{ 
+      try{
         pair = decodeURIComponent(pair.replace(/\+/g, ' '));
       } catch(e) {
         // ignore
@@ -13898,7 +13902,7 @@ exports.setup = function() {
     splunkjs.Logger.setLevel("ALL");
     var isBrowser = typeof "window" !== "undefined";
 
-    return {        
+    return {
         "While success": function(test) {
             var i = 0;
             Async.whilst(
@@ -13926,7 +13930,7 @@ exports.setup = function() {
                 }
             );
         },
-        
+
         "While error": function(test) {
             var i = 0;
             Async.whilst(
@@ -13945,7 +13949,7 @@ exports.setup = function() {
         "Whilst sans condition is never": function(test) {
             var i = false;
             Async.whilst(
-                undefined, 
+                undefined,
                 function(done) { i = true; done();},
                 function(err) {
                     test.strictEqual(i, false);
@@ -13957,11 +13961,11 @@ exports.setup = function() {
         "Whilst with empty body does nothing": function(test) {
             var i = true;
             Async.whilst(
-                function() { 
+                function() {
                     if (i) {
                         i = false;
                         return true;
-                    } 
+                    }
                     else {
                         return i;
                     }
@@ -13972,7 +13976,7 @@ exports.setup = function() {
                 }
             );
         },
-        
+
         "Parallel success": function(test) {
             Async.parallel([
                 function(done) {
@@ -14003,11 +14007,11 @@ exports.setup = function() {
                 test.done();
               });
         },
-        
+
         "Parallel success - no reordering": function(test) {
             Async.parallel([
                 function(done) {
-                    Async.sleep(1, function() { done(null, 1); });  
+                    Async.sleep(1, function() { done(null, 1); });
                 },
                 function(done) {
                     done(null, 2, 3);
@@ -14021,7 +14025,7 @@ exports.setup = function() {
                 }
             );
         },
-        
+
         "Parallel error": function(test) {
             Async.parallel([
                 function(done) {
@@ -14043,7 +14047,7 @@ exports.setup = function() {
                 }
             );
         },
-        
+
         "Parallel no tasks": function(test) {
             Async.parallel(
                 [],
@@ -14053,7 +14057,7 @@ exports.setup = function() {
                 }
             );
         },
-        
+
         "Series success": function(test) {
             Async.series([
                 function(done) {
@@ -14089,7 +14093,7 @@ exports.setup = function() {
                 }
             );
         },
-        
+
         "Series reordering success": function(test) {
             var keeper = 0;
             Async.series([
@@ -14113,7 +14117,7 @@ exports.setup = function() {
                 }
             );
         },
-        
+
         "Series error": function(test) {
             Async.series([
                 function(done) {
@@ -14130,7 +14134,7 @@ exports.setup = function() {
                 }
             );
         },
-        
+
         "Series no tasks": function(test) {
             Async.series(
                 [],
@@ -14140,11 +14144,11 @@ exports.setup = function() {
                 }
             );
         },
-        
+
         "Parallel map success": function(test) {
             Async.parallelMap(
                 [1, 2, 3],
-                function(val, idx, done) { 
+                function(val, idx, done) {
                     done(null, val + 1);
                 },
                 function(err, vals) {
@@ -14156,13 +14160,13 @@ exports.setup = function() {
                 }
             );
         },
-        
+
         "Parallel map reorder success": function(test) {
             Async.parallelMap(
                 [1, 2, 3],
-                function(val, idx, done) { 
+                function(val, idx, done) {
                     if (val === 2) {
-                        Async.sleep(100, function() { done(null, val+1); });   
+                        Async.sleep(100, function() { done(null, val+1); });
                     }
                     else {
                         done(null, val + 1);
@@ -14176,11 +14180,11 @@ exports.setup = function() {
                 }
             );
         },
-        
+
         "Parallel map error": function(test) {
             Async.parallelMap(
                 [1, 2, 3],
-                function(val, idx, done) { 
+                function(val, idx, done) {
                     if (val === 2) {
                         done(5);
                     }
@@ -14196,12 +14200,12 @@ exports.setup = function() {
                 }
             );
         },
-        
+
         "Series map success": function(test) {
             var keeper = 1;
             Async.seriesMap(
                 [1, 2, 3],
-                function(val, idx, done) { 
+                function(val, idx, done) {
                     test.strictEqual(keeper++, val);
                     done(null, val + 1);
                 },
@@ -14215,11 +14219,11 @@ exports.setup = function() {
                 }
             );
         },
-        
+
         "Series map error": function(test) {
             Async.seriesMap(
                 [1, 2, 3],
-                function(val, idx, done) { 
+                function(val, idx, done) {
                     if (val === 2) {
                         done(5);
                     }
@@ -14235,10 +14239,10 @@ exports.setup = function() {
                 }
             );
         },
-        
+
         "Chain single success": function(test) {
             Async.chain([
-                function(callback) { 
+                function(callback) {
                     callback(null, 1);
                 },
                 function(val, callback) {
@@ -14254,10 +14258,10 @@ exports.setup = function() {
                 }
             );
         },
-        
+
         "Chain flat single success": function(test) {
             Async.chain(
-                function(callback) { 
+                function(callback) {
                     callback(null, 1);
                 },
                 function(val, callback) {
@@ -14273,10 +14277,10 @@ exports.setup = function() {
                 }
             );
         },
-        
+
         "Chain flat multiple success": function(test) {
             Async.chain(
-                function(callback) { 
+                function(callback) {
                     callback(null, 1, 2);
                 },
                 function(val1, val2, callback) {
@@ -14293,10 +14297,10 @@ exports.setup = function() {
                 }
             );
         },
-        
+
         "Chain flat arity change success": function(test) {
             Async.chain(
-                function(callback) { 
+                function(callback) {
                     callback(null, 1, 2);
                 },
                 function(val1, val2, callback) {
@@ -14313,10 +14317,10 @@ exports.setup = function() {
                 }
             );
         },
-        
+
         "Chain error": function(test) {
             Async.chain([
-                function(callback) { 
+                function(callback) {
                     callback(null, 1, 2);
                 },
                 function(val1, val2, callback) {
@@ -14334,7 +14338,7 @@ exports.setup = function() {
                 }
             );
         },
-        
+
         "Chain no tasks": function(test) {
             Async.chain([],
                 function(err, val1, val2) {
@@ -14345,19 +14349,19 @@ exports.setup = function() {
                 }
             );
         },
-        
+
         "Parallel each reodrder success": function(test) {
             var total = 0;
             Async.parallelEach(
                 [1, 2, 3],
-                function(val, idx, done) { 
+                function(val, idx, done) {
                     var go = function() {
                         total += val;
                         done();
                     };
-                    
+
                     if (idx === 1) {
-                        Async.sleep(100, go);    
+                        Async.sleep(100, go);
                     }
                     else {
                         go();
@@ -14370,13 +14374,13 @@ exports.setup = function() {
                 }
             );
         },
-        
+
         "Series each success": function(test) {
             var results = [1, 3, 6];
             var total = 0;
             Async.seriesEach(
                 [1, 2, 3],
-                function(val, idx, done) { 
+                function(val, idx, done) {
                     total += val;
                     test.strictEqual(total, results[idx]);
                     done();
@@ -14388,17 +14392,17 @@ exports.setup = function() {
                 }
             );
         },
-        
+
         "Augment callback": function(test) {
-            var callback = function(a, b) { 
+            var callback = function(a, b) {
                 test.ok(a);
                 test.ok(b);
                 test.strictEqual(a, 1);
-                test.strictEqual(b, 2);  
-                
+                test.strictEqual(b, 2);
+
                 test.done();
             };
-            
+
             var augmented = Async.augment(callback, 2);
             augmented(1);
         }
@@ -14407,7 +14411,7 @@ exports.setup = function() {
 
 if (module === require.main) {
     var test        = require('../contrib/nodeunit/test_reporter');
-    
+
     var suite = exports.setup();
     test.run([{"Tests": suite}]);
 }
@@ -14447,23 +14451,23 @@ exports.setup = function(http) {
                     test.ok(err);
                     test.strictEqual(err.error, "abort");
                     test.done();
-                }); 
-                
+                });
+
                 req.abort();
             },
-            
+
             "Callback#abort delay": function(test) {
                 var req = this.http.get("https://httpbin.org/delay/20", {}, {}, 0, function(err, res) {
                     test.ok(err);
                     test.strictEqual(err.error, "abort");
                     test.done();
-                }); 
-                
+                });
+
                 splunkjs.Async.sleep(1000, function() {
                     req.abort();
                 });
             },
-            
+
             "Callback#no args": function(test) {
                 this.http.get("http://httpbin.org/get", [], {}, 0, function(err, res) {
                     test.strictEqual(res.data.url, "http://httpbin.org/get");
@@ -14478,14 +14482,14 @@ exports.setup = function(http) {
                     test.done();
                 });
             },
-            
+
             "Callback#error all": function(test) {
                 this.http.get("http://httpbin.org/status/404", [], {}, 0, function(err, res) {
                     test.strictEqual(err.status, 404);
                     test.done();
                 });
             },
-            
+
             "Callback#args": function(test) {
                 this.http.get("http://httpbin.org/get", [], { a: 1, b: 2, c: [1,2,3], d: "a/b"}, 0, function(err, res) {
                     var args = res.data.args;
@@ -14514,7 +14518,7 @@ exports.setup = function(http) {
                     }
                 );
             },
-            
+
             "Callback#headers": function(test) {
                 var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
@@ -14526,12 +14530,12 @@ exports.setup = function(http) {
                             test.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
                         }
                     }
-                    
+
                     test.strictEqual(res.data.url, "http://httpbin.org/get");
                     test.done();
                 });
             },
-            
+
             "Callback#all": function(test) {
                 var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
@@ -14543,7 +14547,7 @@ exports.setup = function(http) {
                             test.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
                         }
                     }
-                    
+
                     var args = res.data.args;
                     test.strictEqual(args.a, "1");
                     test.strictEqual(args.b, "2");
@@ -14560,14 +14564,14 @@ exports.setup = function(http) {
                 this.http = http;
                 done();
             },
-            
+
             "Callback#no args": function(test) {
                 this.http.post("http://httpbin.org/post", {}, {}, 0, function(err, res) {
                     test.strictEqual(res.data.url, "http://httpbin.org/post");
                     test.done();
                 });
-            },   
-            
+            },
+
             "Callback#success success+error": function(test) {
                 this.http.post("http://httpbin.org/post", {}, {}, 0, function(err, res) {
                     test.ok(!err);
@@ -14575,14 +14579,14 @@ exports.setup = function(http) {
                     test.done();
                 });
             },
-            
+
             "Callback#error all": function(test) {
                 this.http.post("http://httpbin.org/status/405", {}, {}, 0, function(err, res) {
                     test.strictEqual(err.status, 405);
                     test.done();
                 });
             },
-            
+
             "Callback#args": function(test) {
                 this.http.post("http://httpbin.org/post", {}, { a: 1, b: 2, c: [1,2,3], d: "a/b"}, 0, function(err, res) {
                     var args = res.data.form;
@@ -14594,7 +14598,7 @@ exports.setup = function(http) {
                     test.done();
                 });
             },
-            
+
             "Callback#headers": function(test) {
                 var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
@@ -14610,7 +14614,7 @@ exports.setup = function(http) {
                     test.done();
                 });
             },
-            
+
             "Callback#all": function(test) {
                 var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
@@ -14622,7 +14626,7 @@ exports.setup = function(http) {
                             test.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
                         }
                     }
-                    
+
                     var args = res.data.form;
                     test.strictEqual(args.a, "1");
                     test.strictEqual(args.b, "2");
@@ -14639,13 +14643,13 @@ exports.setup = function(http) {
                 this.http = http;
                 done();
             },
-        
+
             "Callback#no args": function(test) {
                 this.http.del("http://httpbin.org/delete", [], {}, 0, function(err, res) {
                     test.strictEqual(res.data.url, "http://httpbin.org/delete");
                     test.done();
                 });
-            },        
+            },
 
             "Callback#success success+error": function(test) {
                 this.http.del("http://httpbin.org/delete", [], {}, 0, function(err, res) {
@@ -14654,21 +14658,21 @@ exports.setup = function(http) {
                     test.done();
                 });
             },
-            
+
             "Callback#error all": function(test) {
                 this.http.del("http://httpbin.org/status/405", [], {}, 0, function(err, res) {
                     test.strictEqual(err.status, 405);
                     test.done();
                 });
             },
-            
+
             "Callback#args": function(test) {
                 this.http.del("http://httpbin.org/delete", [], { a: 1, b: 2, c: [1,2,3], d: "a/b"}, 0, function(err, res) {
                     test.strictEqual(res.data.url, "http://httpbin.org/delete?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
                     test.done();
                 });
             },
-            
+
             "Callback#headers": function(test) {
                 var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
@@ -14684,7 +14688,7 @@ exports.setup = function(http) {
                     test.done();
                 });
             },
-            
+
             "Callback#all": function(test) {
                 var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
@@ -14724,7 +14728,7 @@ if (module === require.main) {
     var test        = require('../contrib/nodeunit/test_reporter');
 
     var http = new NodeHttp();
-    
+
     var suite = exports.setup(http);
     test.run([{"Tests": suite}]);
 }
@@ -15855,18 +15859,18 @@ require.define("/tests/utils.js", function (require, module, exports, __dirname,
 (function() {
     "use strict";
     var Async = require('../lib/async');
-    
+
     var root = exports || this;
 
     root.pollUntil = function(obj, condition, iterations, callback) {
         callback = callback || function() {};
-        
+
         var i = 0;
         Async.whilst(
             function() { return !condition(obj) && (i++ < iterations); },
             function(done) {
                 Async.sleep(500, function() {
-                    obj.fetch(done); 
+                    obj.fetch(done);
                 });
             },
             function(err) {
@@ -15874,7 +15878,7 @@ require.define("/tests/utils.js", function (require, module, exports, __dirname,
             }
         );
     };
-    
+
     // Minimal Http implementation that is designed to pass the tests
     // done by Context.init(), but nothing more.
     root.DummyHttp = {
@@ -15906,16 +15910,16 @@ require.define("/examples/node/cmdline.js", function (require, module, exports, 
     var fs           = require('fs');
     var commander    = require('../../contrib/commander');
     var utils        = require('../../lib/utils');
-    
+
     var DEFAULTS_PATHS = [
         process.env.HOME || process.env.HOMEPATH,
         path.resolve(__dirname, "..")
     ];
-    
+
     var readDefaultsFile = function(path, defaults) {
         var contents = fs.readFileSync(path, "utf8") || "";
         var lines = contents.split("\n") || [];
-        
+
         for(var i = 0; i < lines.length; i++) {
             var line = lines[i].trim();
             if (line !== "" && !utils.startsWith(line, "#")) {
@@ -15926,7 +15930,7 @@ require.define("/examples/node/cmdline.js", function (require, module, exports, 
             }
         }
     };
-    
+
     var getDefaults = function() {
         var defaults = {};
         for(var i = 0; i < DEFAULTS_PATHS.length; i++) {
@@ -15935,16 +15939,16 @@ require.define("/examples/node/cmdline.js", function (require, module, exports, 
                 readDefaultsFile(defaultsPath, defaults);
             }
         }
-        
+
         return defaults;
     };
-    
+
     module.exports.create = function() {
         var parser = new commander.Command();
         var parse = parser.parse;
-    
+
         parser.password = undefined;
-    
+
         parser
             .option('-u, --username <username>', "Username to login with", undefined, true)
             .option('--password <password>', "Username to login with", undefined, false)
@@ -15952,7 +15956,7 @@ require.define("/examples/node/cmdline.js", function (require, module, exports, 
             .option('--host <host>', "Hostname to use", "localhost", false)
             .option('--port <port>', "Port to use", 8089, false)
             .option('--version <version>', "Which version to use", "4", false);
-        
+
         parser.parse = function(argv) {
             argv = (argv || []).slice(2);
             var defaults = getDefaults();
@@ -15963,35 +15967,35 @@ require.define("/examples/node/cmdline.js", function (require, module, exports, 
                     argv.unshift("--" + key.trim());
                 }
             }
-            
+
             argv.unshift("");
             argv.unshift("");
-            
+
             var cmdline = parse.call(parser, argv);
-            
+
             return cmdline;
         };
-        
+
         parser.add = function(commandName, description, args, flags, required_flags, onAction) {
             var opts = {};
             flags = flags || [];
-            
+
             var command = parser.command(commandName + (args ? " " + args : "")).description(description || "");
-            
+
             // For each of the flags, add an option to the parser
             for(var i = 0; i < flags.length; i++) {
                 var required = required_flags.indexOf(flags[i]) >= 0;
                 var option = "<" + flags[i] + ">";
                 command.option("--" + flags[i] + " " + option, "", undefined, required);
             }
-            
+
             command.action(function() {
                 var args = utils.toArray(arguments);
                 args.unshift(commandName);
                 onAction.apply(null, args);
             });
         };
-        
+
         return parser;
     };
 })();
@@ -22615,17 +22619,17 @@ exports.setup = function(svc, opts) {
     var getNextId = function() {
         return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
     };
-        
+
     // initialize it with some dummy values
-    var argv = ["program", "script"]; 
-      
-    return {  
+    var argv = ["program", "script"];
+
+    return {
         "Hello World Tests": {
             "Apps": function(test) {
                 var main = require("../examples/node/helloworld/apps").main;
                 main(opts, test.done);
             },
-            
+
             "Apps#Async": function(test) {
                 var main = require("../examples/node/helloworld/apps_async").main;
                 main(opts, test.done);
@@ -22665,75 +22669,75 @@ exports.setup = function(svc, opts) {
                 var main = require("../examples/node/helloworld/endpoint_instantiation").main;
                 main(opts, test.done);
             },
-            
+
             "Saved Searches": function(test) {
                 var main = require("../examples/node/helloworld/savedsearches").main;
                 main(opts, test.done);
             },
-            
+
             "Saved Searches#Async": function(test) {
                 var main = require("../examples/node/helloworld/savedsearches_async").main;
                 main(opts, test.done);
             },
-            
+
             "Saved Searches#Delete": function(test) {
                 var main = require("../examples/node/helloworld/savedsearches_delete").main;
                 main(opts, test.done);
             },
-            
+
             "Saved Searches#Create": function(test) {
                 var main = require("../examples/node/helloworld/savedsearches_create").main;
                 main(opts, test.done);
             },
-            
+
             "Saved Searches#Delete Again": function(test) {
                 var main = require("../examples/node/helloworld/savedsearches_delete").main;
                 main(opts, test.done);
             },
-            
+
             "Search#normal": function(test) {
                 var main = require("../examples/node/helloworld/search_normal").main;
                 main(opts, test.done);
             },
-            
+
             "Search#blocking": function(test) {
                 var main = require("../examples/node/helloworld/search_blocking").main;
                 main(opts, test.done);
             },
-            
+
             "Search#oneshot": function(test) {
                 var main = require("../examples/node/helloworld/search_oneshot").main;
                 main(opts, test.done);
             },
-            
+
             "Search#realtime": function(test) {
                 var main = require("../examples/node/helloworld/search_realtime").main;
                 main(opts, test.done);
             },
-                        
+
             "Logging": function(test) {
                 var main = require("../examples/node/helloworld/log").main;
                 main(opts, test.done);
             }
         },
-        
+
         "Jobs Example Tests": {
-            setUp: function(done) {   
+            setUp: function(done) {
                 var context = this;
-                
+
                 this.main = require("../examples/node/jobs").main;
-                this.run = function(command, args, options, callback) {                
+                this.run = function(command, args, options, callback) {
                     var combinedArgs = argv.slice();
                     if (command) {
                         combinedArgs.push(command);
                     }
-                    
+
                     if (args) {
                         for(var i = 0; i < args.length; i++) {
                             combinedArgs.push(args[i]);
                         }
                     }
-                    
+
                     if (options) {
                         for(var key in options) {
                             if (options.hasOwnProperty(key)) {
@@ -22742,33 +22746,33 @@ exports.setup = function(svc, opts) {
                             }
                         }
                     }
-              
+
                     return context.main(combinedArgs, callback);
                 };
-                
-                done(); 
+
+                done();
             },
-            
+
             "help": function(test) {
                 this.run(null, null, null, function(err) {
                     test.ok(!!err);
                     test.done();
                 });
             },
-            
+
             "List jobs": function(test) {
                 this.run("list", null, null, function(err) {
                     test.ok(!err);
                     test.done();
                 });
             },
-            
+
             "Create job": function(test) {
                 var create = {
                     search: "search index=_internal | head 1",
                     id: getNextId()
                 };
-                
+
                 var context = this;
                 context.run("create", [], create, function(err) {
                     test.ok(!err);
@@ -22778,13 +22782,13 @@ exports.setup = function(svc, opts) {
                     });
                 });
             },
-            
+
             "Cancel job": function(test) {
                 var create = {
                     search: "search index=_internal | head 1",
                     id: getNextId()
                 };
-                
+
                 var context = this;
                 context.run("create", [], create, function(err) {
                     test.ok(!err);
@@ -22794,13 +22798,13 @@ exports.setup = function(svc, opts) {
                     });
                 });
             },
-            
+
             "List job properties": function(test) {
                 var create = {
                     search: "search index=_internal | head 1",
                     id: getNextId()
                 };
-                  
+
                 var context = this;
                 context.run("create", [], create, function(err) {
                     test.ok(!err);
@@ -22813,13 +22817,13 @@ exports.setup = function(svc, opts) {
                     });
                 });
             },
-            
+
             "List job events": function(test) {
                 var create = {
                     search: "search index=_internal | head 1",
                     id: getNextId()
                 };
-                  
+
                 var context = this;
                 context.run("create", [], create, function(err) {
                     test.ok(!err);
@@ -22832,13 +22836,13 @@ exports.setup = function(svc, opts) {
                     });
                 });
             },
-            
+
             "List job preview": function(test) {
                 var create = {
                     search: "search index=_internal | head 1",
                     id: getNextId()
                 };
-                  
+
                 var context = this;
                 context.run("create", [], create, function(err) {
                     test.ok(!err);
@@ -22851,13 +22855,13 @@ exports.setup = function(svc, opts) {
                     });
                 });
             },
-            
+
             "List job results": function(test) {
                 var create = {
                     search: "search index=_internal | head 1",
                     id: getNextId()
                 };
-                  
+
                 var context = this;
                 context.run("create", [], create, function(err) {
                     test.ok(!err);
@@ -22870,13 +22874,13 @@ exports.setup = function(svc, opts) {
                     });
                 });
             },
-            
+
             "List job results, by column": function(test) {
                 var create = {
                     search: "search index=_internal | head 1",
                     id: getNextId()
                 };
-                  
+
                 var context = this;
                 context.run("create", [], create, function(err) {
                     test.ok(!err);
@@ -22889,7 +22893,7 @@ exports.setup = function(svc, opts) {
                     });
                 });
             },
-            
+
             "Create+list multiple jobs": function(test) {
                 var creates = [];
                 for(var i = 0; i < 3; i++) {
@@ -22899,7 +22903,7 @@ exports.setup = function(svc, opts) {
                     };
                 }
                 var sids = creates.map(function(create) { return create.id; });
-                
+
                 var context = this;
                 Async.parallelMap(
                     creates,
@@ -22915,7 +22919,7 @@ exports.setup = function(svc, opts) {
                         for(var i = 0; i < created.length; i++) {
                             test.strictEqual(creates[i].id, created[i].sid);
                         }
-                        
+
                         context.run("list", sids, null, function(err) {
                             test.ok(!err);
                             context.run("cancel", sids, null, function(err) {
@@ -22923,29 +22927,29 @@ exports.setup = function(svc, opts) {
                                 test.done();
                             });
                         });
-                        
+
                     }
                 );
             }
         },
-        
+
         "Search Example Tests": {
-            setUp: function(done) {   
+            setUp: function(done) {
                 var context = this;
-                
+
                 this.main = require("../examples/node/search").main;
-                this.run = function(command, args, options, callback) {                
+                this.run = function(command, args, options, callback) {
                     var combinedArgs = argv.slice();
                     if (command) {
                         combinedArgs.push(command);
                     }
-                    
+
                     if (args) {
                         for(var i = 0; i < args.length; i++) {
                             combinedArgs.push(args[i]);
                         }
                     }
-                    
+
                     if (options) {
                         for(var key in options) {
                             if (options.hasOwnProperty(key)) {
@@ -22954,70 +22958,70 @@ exports.setup = function(svc, opts) {
                             }
                         }
                     }
-              
+
                     return context.main(combinedArgs, callback);
                 };
-                
-                done(); 
+
+                done();
             },
-            
+
             "Create regular search": function(test) {
                 var options = {
                     search: "search index=_internal | head 5"
                 };
-                
+
                 this.run(null, null, options, function(err) {
                     test.ok(!err);
                     test.done();
                 });
             },
-            
+
             "Create regular search with verbose": function(test) {
                 var options = {
                     search: "search index=_internal | head 5"
                 };
-                
+
                 this.run(null, ["--verbose"], options, function(err) {
                     test.ok(!err);
                     test.done();
                 });
             },
-            
+
             "Create oneshot search": function(test) {
                 var options = {
                     search: "search index=_internal | head 5",
                     exec_mode: "oneshot"
                 };
-                
+
                 this.run(null, ["--verbose"], options, function(err) {
                     test.ok(!err);
                     test.done();
                 });
             },
-            
+
             "Create normal search with reduced count": function(test) {
                 var options = {
                     search: "search index=_internal | head 20",
                     count: 10
                 };
-                
+
                 this.run(null, ["--verbose"], options, function(err) {
                     test.ok(!err);
                     test.done();
                 });
             }
         }
-        
+
         // This test is commented out because it causes a failure/hang on
         // Node >0.6. We need to revisit this test, so disabling it for now.
         /*"Results Example Tests": {
-            
+
             "Parse row results": function(test) {
                 var main = require("../examples/node/results").main;
-                
+
                 svc.search(
-                    "search index=_internal | head 1 | stats count by sourcetype", 
-                    {exec_mode: "blocking"}, 
+                    "search index=_internal | head 1 | stats count by sourcetype",
+                    {exec_mode: "blocking"},
                     function(err, job) {
                         test.ok(!err);
                         job.results({output_mode: "json_rows"}, function(err, results) {
@@ -23027,35 +23031,35 @@ exports.setup = function(svc, opts) {
                         });
                     }
                 );
-                
+
                 main([], function(err) {
                     test.ok(!err);
                     test.done();
                 });
             },
-            
+
             "Parse column results": function(test) {
                 var main = require("../examples/node/results").main;
-                
+
                 svc.search(
-                    "search index=_internal | head 10 | stats count by sourcetype", 
-                    {exec_mode: "blocking"}, 
+                    "search index=_internal | head 10 | stats count by sourcetype",
+                    {exec_mode: "blocking"},
                     function(err, job) {
                         test.ok(!err);
                         job.results({output_mode: "json_cols"}, function(err, results) {
                             test.ok(!err);
                             process.stdin.emit("data", JSON.stringify(results));
                             process.stdin.emit("end");
-                        });    
+                        });
                     }
                 );
-                
+
                 main([], function(err) {
                     test.ok(!err);
                     test.done();
                 });
             },
-            
+
             "Close stdin": function(test) {
                 process.stdin.destroy();
                 test.done();
@@ -23067,17 +23071,17 @@ exports.setup = function(svc, opts) {
 if (module === require.main) {
     var splunkjs    = require('../index');
     var test        = require('../contrib/nodeunit/test_reporter');
-    
-    var options = require('../examples/node/cmdline');    
+
+    var options = require('../examples/node/cmdline');
     var parser  = options.create();
     var cmdline = parser.parse(process.argv);
-        
+
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
-    }    
-    
-    var svc = new splunkjs.Service({ 
+    }
+
+    var svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -23085,9 +23089,9 @@ if (module === require.main) {
         password: cmdline.opts.password,
         version: cmdline.opts.version
     });
-    
+
     var suite = exports.setup(svc, cmdline.opts);
-    
+
     svc.login(function(err, success) {
         if (err || !success) {
             throw new Error("Login failed - not running tests", err || "");
@@ -23121,14 +23125,14 @@ var splunkjs = require('../../../index');
 exports.main = function(opts, done) {
     // This is just for testing - ignore it
     opts = opts || {};
-    
+
     var username = opts.username    || "admin";
     var password = opts.password    || "changeme";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
     var version  = opts.version     || "default";
-    
+
     var service = new splunkjs.Service({
         username: username,
         password: password,
@@ -23146,8 +23150,8 @@ exports.main = function(opts, done) {
             console.log("Error in logging in");
             done(err || "Login failed");
             return;
-        } 
-        
+        }
+
         // Now that we're logged in, let's get a listing of all the apps.
         service.apps().fetch(function(err, apps) {
             if (err) {
@@ -23155,14 +23159,14 @@ exports.main = function(opts, done) {
                 done(err);
                 return;
             }
-            
+
             var appList = apps.list();
             console.log("Applications:");
             for(var i = 0; i < appList.length; i++) {
                 var app = appList[i];
                 console.log("  App " + i + ": " + app.name);
-            } 
-            
+            }
+
             done();
         });
     });
@@ -23190,7 +23194,7 @@ require.define("/examples/node/helloworld/apps_async.js", function (require, mod
 // under the License.
 
 // This example will login to Splunk, and then retrieve the list of applications,
-// printing each application's name. It is the same as apps.js, except that it 
+// printing each application's name. It is the same as apps.js, except that it
 // uses the Async library
 
 var splunkjs = require('../../../index');
@@ -23199,14 +23203,14 @@ var Async  = splunkjs.Async;
 exports.main = function(opts, callback) {
     // This is just for testing - ignore it
     opts = opts || {};
-    
+
     var username = opts.username    || "admin";
     var password = opts.password    || "changeme";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
     var version  = opts.version     || "default";
-    
+
     var service = new splunkjs.Service({
         username: username,
         password: password,
@@ -23226,22 +23230,22 @@ exports.main = function(opts, callback) {
                 if (!success) {
                     done("Error logging in");
                 }
-                
+
                 service.apps().fetch(done);
             },
             // Print them out
-            function(apps, done) {           
+            function(apps, done) {
                 var appList = apps.list();
                 console.log("Applications:");
                 for(var i = 0; i < appList.length; i++) {
                     var app = appList[i];
                     console.log("  App " + i + ": " + app.name);
-                } 
+                }
                 done();
             }
         ],
         function(err) {
-            callback(err);        
+            callback(err);
         }
     );
 };
@@ -23266,12 +23270,12 @@ require.define("/examples/node/helloworld/pivot_async.js", function (require, mo
 // License for the specific language governing permissions and limitations
 // under the License.
 
-/* 
+/*
  * This example will login to Splunk, and then retrieve the list of data models,
  * get the "internal_audit_logs", then get the "searches" data model object.
  * Then start a search on the "searches" data model object, track the
  * job until it's done. Then get and print out the results.
- * 
+ *
  * Then create a pivot specification and retrieve the pivot searches from
  * the Splunk server, run the search job for that pivot report, track
  * the job until it's done. Then get and print out the results.
@@ -23284,14 +23288,14 @@ var Async  = splunkjs.Async;
 exports.main = function(opts, callback) {
     // This is just for testing - ignore it.
     opts = opts || {};
-    
+
     var username = opts.username    || "admin";
     var password = opts.password    || "changeme";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
     var version  = opts.version     || "default";
-    
+
     var service = new splunkjs.Service({
         username: username,
         password: password,
@@ -23308,7 +23312,7 @@ exports.main = function(opts, callback) {
             function(done) {
                 service.login(done);
             },
-            
+
             function(success, done) {
                 if (!success) {
                     done("Error logging in");
@@ -23351,7 +23355,7 @@ exports.main = function(opts, callback) {
                     console.log(rowString);
                     console.log("------------------------------");
                 }
-                
+
                 var pivotSpecification = searches.createPivotSpecification();
                 // Each function call here returns a pivotSpecification so we can chain them
                 pivotSpecification
@@ -23423,14 +23427,14 @@ var splunkjs = require('../../../index');
 exports.main = function(opts, done) {
     // This is just for testing - ignore it
     opts = opts || {};
-    
+
     var username = opts.username    || "admin";
     var password = opts.password    || "changeme";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
     var version  = opts.version     || "default";
-    
+
     var service = new splunkjs.Service({
         username: username,
         password: password,
@@ -23448,7 +23452,7 @@ exports.main = function(opts, done) {
             console.log("Error in logging in");
             done(err || "Login failed");
             return;
-        } 
+        }
 
         // Now that we're logged in, let's get a listing of all the fired alert groups
         service.firedAlertGroups().fetch(function(err, firedAlertGroups) {
@@ -23512,7 +23516,7 @@ require.define("/examples/node/helloworld/firedalerts_async.js", function (requi
 // under the License.
 
 // This example will login to Splunk, and then retrieve the list of fired alerts,
-// printing each alert's name and properties. It is the same as firedalerts.js, 
+// printing each alert's name and properties. It is the same as firedalerts.js,
 // except that it uses the Async library
 
 var splunkjs = require('../../../index');
@@ -23521,14 +23525,14 @@ var Async  = splunkjs.Async;
 exports.main = function(opts, callback) {
     // This is just for testing - ignore it.
     opts = opts || {};
-    
+
     var username = opts.username    || "admin";
     var password = opts.password    || "changeme";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
     var version  = opts.version     || "default";
-    
+
     var service = new splunkjs.Service({
         username: username,
         password: password,
@@ -23543,7 +23547,7 @@ exports.main = function(opts, callback) {
             function(done) {
                 service.login(done);
             },
-            
+
             function(success, done) {
                 if (!success) {
                     done("Error logging in");
@@ -23625,14 +23629,14 @@ var splunkjs = require('../../../index');
 exports.main = function(opts, done) {
     // This is just for testing - ignore it.
     opts = opts || {};
-    
+
     var username = opts.username    || "admin";
     var password = opts.password    || "changeme";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
     var version  = opts.version     || "default";
-    
+
     var service = new splunkjs.Service({
         username: username,
         password: password,
@@ -23650,8 +23654,8 @@ exports.main = function(opts, done) {
             console.log("Error in logging in");
             done(err || "Login failed");
             return;
-        } 
-        
+        }
+
         var alertOptions = {
             name: "My Awesome Alert",
             search: "index=_internal error sourcetype=splunkd* | head 10",
@@ -23664,7 +23668,7 @@ exports.main = function(opts, done) {
             "is_scheduled": "1",
             "cron_schedule": "* * * * *"
         };
-        
+
         // Now that we're logged in, let's create a saved search.
         service.savedSearches().create(alertOptions, function(err, alert) {
             if (err && err.status === 409) {
@@ -23677,8 +23681,8 @@ exports.main = function(opts, done) {
                 done(err);
                 return;
             }
-            
-            console.log("Created saved search as alert: " + alert.name);            
+
+            console.log("Created saved search as alert: " + alert.name);
             done();
         });
     });
@@ -23713,14 +23717,14 @@ var splunkjs = require('../../../index');
 exports.main = function(opts, done) {
     // This is just for testing - ignore it.
     opts = opts || {};
-    
+
     var username = opts.username    || "admin";
     var password = opts.password    || "changeme";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
     var version  = opts.version     || "default";
-    
+
     var service = new splunkjs.Service({
         username: username,
         password: password,
@@ -23738,10 +23742,10 @@ exports.main = function(opts, done) {
             console.log("Error in logging in");
             done(err || "Login failed");
             return;
-        } 
-        
+        }
+
         var name = "My Awesome Alert";
-        
+
         // Now that we're logged in, let's delete the alert.
         service.savedSearches().fetch(function(err, firedAlertGroups) {
             if (err) {
@@ -23795,14 +23799,14 @@ var Async  = splunkjs.Async;
 exports.main = function(opts, callback) {
     // This is just for testing - ignore it
     opts = opts || {};
-    
+
     var username = opts.username    || "admin";
     var password = opts.password    || "changeme";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
     var version  = opts.version     || "default";
-    
+
     var service = new splunkjs.Service({
         username: username,
         password: password,
@@ -23824,7 +23828,7 @@ exports.main = function(opts, callback) {
                 if (!success) {
                     done("Error logging in");
                 }
-                
+
                 service.search("search index=_internal | head 1", {}, done);
             },
             function(job, done) {
@@ -23928,7 +23932,7 @@ splunkjs.Service.Role = splunkjs.Service.Entity.extend({
 // See the `instantiateEntity()` function.
 splunkjs.Service.Roles = splunkjs.Service.Collection.extend({
     fetchOnEntityCreation: true,
-    
+
     path: function() {
         return splunkjs.Paths.roles;
     },
@@ -23953,14 +23957,14 @@ splunkjs.Service.prototype.roles = function(namespace) {
 exports.main = function(opts, done) {
     // This is just for testing - ignore it
     opts = opts || {};
-    
+
     var username = opts.username    || "admin";
     var password = opts.password    || "changeme";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
     var version  = opts.version     || "default";
-    
+
     var service = new splunkjs.Service({
         username: username,
         password: password,
@@ -24027,14 +24031,14 @@ var splunkjs = require('../../../index');
 exports.main = function(opts, done) {
     // This is just for testing - ignore it
     opts = opts || {};
-    
+
     var username = opts.username    || "admin";
     var password = opts.password    || "changeme";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
     var version  = opts.version     || "default";
-    
+
     var service = new splunkjs.Service({
         username: username,
         password: password,
@@ -24053,7 +24057,7 @@ exports.main = function(opts, done) {
             done(err || "Login failed");
             return;
         }
-        
+
         // Now that we're logged in, let's get a listing of all the saved searches.
         service.savedSearches().fetch(function(err, searches) {
             if (err) {
@@ -24061,15 +24065,15 @@ exports.main = function(opts, done) {
                 done(err);
                 return;
             }
-            
+
             var searchList = searches.list();
             console.log("Saved searches:");
             for(var i = 0; i < searchList.length; i++) {
                 var search = searchList[i];
                 console.log("  Search " + i + ": " + search.name);
                 console.log("    " + search.properties().search);
-            } 
-            
+            }
+
             done();
         });
     });
@@ -24097,7 +24101,7 @@ require.define("/examples/node/helloworld/savedsearches_async.js", function (req
 // under the License.
 
 // This example will login to Splunk, and then retrieve the list of saved searchs,
-// printing each saved search's name and search query. It is the same as savedsearches.js, 
+// printing each saved search's name and search query. It is the same as savedsearches.js,
 // except that it uses the Async library
 
 var splunkjs = require('../../../index');
@@ -24106,14 +24110,14 @@ var Async  = splunkjs.Async;
 exports.main = function(opts, callback) {
     // This is just for testing - ignore it
     opts = opts || {};
-    
+
     var username = opts.username    || "admin";
     var password = opts.password    || "changeme";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
     var version  = opts.version     || "default";
-    
+
     var service = new splunkjs.Service({
         username: username,
         password: password,
@@ -24133,7 +24137,7 @@ exports.main = function(opts, callback) {
                 if (!success) {
                     done("Error logging in");
                 }
-                
+
                 service.savedSearches().fetch(done);
             },
             // Print them out
@@ -24145,12 +24149,12 @@ exports.main = function(opts, callback) {
                     console.log("  Search " + i + ": " + search.name);
                     console.log("    " + search.properties().search);
                 }
-                
+
                 done();
             }
         ],
         function(err) {
-            callback(err);        
+            callback(err);
         }
     );
 };
@@ -24176,7 +24180,7 @@ require.define("/examples/node/helloworld/savedsearches_delete.js", function (re
 // License for the specific language governing permissions and limitations
 // under the License.
 
-// This example will login to Splunk, and then try to delete the 
+// This example will login to Splunk, and then try to delete the
 // saved search that was created in savedsearches_create.js
 
 var splunkjs = require('../../../index');
@@ -24184,14 +24188,14 @@ var splunkjs = require('../../../index');
 exports.main = function(opts, done) {
     // This is just for testing - ignore it
     opts = opts || {};
-    
+
     var username = opts.username    || "admin";
     var password = opts.password    || "changeme";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
     var version  = opts.version     || "default";
-    
+
     var service = new splunkjs.Service({
         username: username,
         password: password,
@@ -24209,24 +24213,24 @@ exports.main = function(opts, done) {
             console.log("Error in logging in");
             done(err || "Login failed");
             return;
-        } 
-        
+        }
+
         var name = "My Awesome Saved Search";
-        
+
         // Now that we're logged in, Let's create a saved search
         service.savedSearches().fetch(function(err, savedSearches) {
             if (err) {
                 console.log("There was an error in fetching the saved searches");
                 done(err);
                 return;
-            } 
-            
+            }
+
             var savedSearchToDelete = savedSearches.item(name);
             if (!savedSearchToDelete) {
                 console.log("Can't delete '" + name + "' because it doesn't exist!");
                 done();
             }
-            else {                
+            else {
                 savedSearchToDelete.remove();
                 console.log("Deleted saved search: " + name + "");
                 done();
@@ -24263,14 +24267,14 @@ var splunkjs = require('../../../index');
 exports.main = function(opts, done) {
     // This is just for testing - ignore it
     opts = opts || {};
-    
+
     var username = opts.username    || "admin";
     var password = opts.password    || "changeme";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
     var version  = opts.version     || "default";
-    
+
     var service = new splunkjs.Service({
         username: username,
         password: password,
@@ -24288,13 +24292,13 @@ exports.main = function(opts, done) {
             console.log("Error in logging in");
             done(err || "Login failed");
             return;
-        } 
-        
+        }
+
         var savedSearchOptions = {
             name: "My Awesome Saved Search",
             search: "index=_internal error sourcetype=splunkd* | head 10"
         };
-        
+
         // Now that we're logged in, Let's create a saved search
         service.savedSearches().create(savedSearchOptions, function(err, savedSearch) {
             if (err && err.status === 409) {
@@ -24307,8 +24311,8 @@ exports.main = function(opts, done) {
                 done(err);
                 return;
             }
-            
-            console.log("Created saved search: " + savedSearch.name);            
+
+            console.log("Created saved search: " + savedSearch.name);
             done();
         });
     });
@@ -24344,14 +24348,14 @@ var Async  = splunkjs.Async;
 exports.main = function(opts, callback) {
     // This is just for testing - ignore it
     opts = opts || {};
-    
+
     var username = opts.username    || "admin";
     var password = opts.password    || "changeme";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
     var version  = opts.version     || "default";
-    
+
     var service = new splunkjs.Service({
         username: username,
         password: password,
@@ -24371,7 +24375,7 @@ exports.main = function(opts, callback) {
                 if (!success) {
                     done("Error logging in");
                 }
-                
+
                 service.search("search index=_internal | head 3", {}, done);
             },
             // Wait until the job is done
@@ -24393,7 +24397,7 @@ exports.main = function(opts, callback) {
                 var rawIndex = results.fields.indexOf("_raw");
                 var sourcetypeIndex = results.fields.indexOf("sourcetype");
                 var userIndex = results.fields.indexOf("user");
-                
+
                 // Print out each result and the key-value pairs we want
                 console.log("Results: ");
                 for(var i = 0; i < results.rows.length; i++) {
@@ -24402,13 +24406,13 @@ exports.main = function(opts, callback) {
                     console.log("    user: " + results.rows[i][userIndex]);
                     console.log("    _raw: " + results.rows[i][rawIndex]);
                 }
-                
+
                 // Once we're done, cancel the job.
                 job.cancel(done);
             }
         ],
         function(err) {
-            callback(err);        
+            callback(err);
         }
     );
 };
@@ -24434,8 +24438,8 @@ require.define("/examples/node/helloworld/search_blocking.js", function (require
 // License for the specific language governing permissions and limitations
 // under the License.
 
-// This example will login to Splunk, perform a blocking search, and then print 
-// out the raw results and some key-value pairs. A blocking search is one that 
+// This example will login to Splunk, perform a blocking search, and then print
+// out the raw results and some key-value pairs. A blocking search is one that
 // won't return until the search is complete.
 
 var splunkjs = require('../../../index');
@@ -24444,14 +24448,14 @@ var Async  = splunkjs.Async;
 exports.main = function(opts, callback) {
     // This is just for testing - ignore it
     opts = opts || {};
-    
+
     var username = opts.username    || "admin";
     var password = opts.password    || "changeme";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
     var version  = opts.version     || "default";
-    
+
     var service = new splunkjs.Service({
         username: username,
         password: password,
@@ -24471,7 +24475,7 @@ exports.main = function(opts, callback) {
                 if (!success) {
                     done("Error logging in");
                 }
-                
+
                 service.search("search index=_internal | head 3", {exec_mode: "blocking"}, done);
             },
             // The job is done, but let's some statistics from the server.
@@ -24485,7 +24489,7 @@ exports.main = function(opts, callback) {
                 console.log("  Event Count: " + job.properties().eventCount);
                 console.log("  Disk Usage: " + job.properties().diskUsage + " bytes");
                 console.log("  Priority: " + job.properties().priority);
-                
+
                 // Ask the server for the results
                 job.results({}, done);
             },
@@ -24495,7 +24499,7 @@ exports.main = function(opts, callback) {
                 var rawIndex = results.fields.indexOf("_raw");
                 var sourcetypeIndex = results.fields.indexOf("sourcetype");
                 var userIndex = results.fields.indexOf("user");
-                
+
                 // Print out each result and the key-value pairs we want
                 console.log("Results: ");
                 for(var i = 0; i < results.rows.length; i++) {
@@ -24504,13 +24508,13 @@ exports.main = function(opts, callback) {
                     console.log("    user: " + results.rows[i][userIndex]);
                     console.log("    _raw: " + results.rows[i][rawIndex]);
                 }
-                
+
                 // Once we're done, cancel the job.
                 job.cancel(done);
             }
         ],
         function(err) {
-            callback(err);        
+            callback(err);
         }
     );
 };
@@ -24536,8 +24540,8 @@ require.define("/examples/node/helloworld/search_oneshot.js", function (require,
 // License for the specific language governing permissions and limitations
 // under the License.
 
-// This example will login to Splunk, perform a oneshot search, and then print 
-// out the raw results and some key-value pairs. A one search is one that 
+// This example will login to Splunk, perform a oneshot search, and then print
+// out the raw results and some key-value pairs. A one search is one that
 // won't return until the search is complete and return all the search
 // results in the response.
 
@@ -24547,14 +24551,14 @@ var Async  = splunkjs.Async;
 exports.main = function(opts, callback) {
     // This is just for testing - ignore it
     opts = opts || {};
-    
+
     var username = opts.username    || "admin";
     var password = opts.password    || "changeme";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
     var version  = opts.version     || "default";
-    
+
     var service = new splunkjs.Service({
         username: username,
         password: password,
@@ -24574,7 +24578,7 @@ exports.main = function(opts, callback) {
                 if (!success) {
                     done("Error logging in");
                 }
-                
+
                 service.oneshotSearch("search index=_internal | head 3", {}, done);
             },
             // The job is done, and the results are returned inline
@@ -24583,7 +24587,7 @@ exports.main = function(opts, callback) {
                 var rawIndex = results.fields.indexOf("_raw");
                 var sourcetypeIndex = results.fields.indexOf("sourcetype");
                 var userIndex = results.fields.indexOf("user");
-                
+
                 // Print out each result and the key-value pairs we want
                 console.log("Results: ");
                 for(var i = 0; i < results.rows.length; i++) {
@@ -24592,12 +24596,12 @@ exports.main = function(opts, callback) {
                     console.log("    user: " + results.rows[i][userIndex]);
                     console.log("    _raw: " + results.rows[i][rawIndex]);
                 }
-                
+
                 done();
             }
         ],
         function(err) {
-            callback(err);        
+            callback(err);
         }
     );
 };
@@ -24633,14 +24637,14 @@ var Async  = splunkjs.Async;
 exports.main = function(opts, callback) {
     // This is just for testing - ignore it
     opts = opts || {};
-    
+
     var username = opts.username    || "admin";
     var password = opts.password    || "changeme";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
     var version  = opts.version     || "default";
-    
+
     var service = new splunkjs.Service({
         username: username,
         password: password,
@@ -24660,10 +24664,10 @@ exports.main = function(opts, callback) {
                 if (!success) {
                     done("Error logging in");
                 }
-                
+
                 service.search(
-                    "search index=_internal | stats count by sourcetype", 
-                    {earliest_time: "rt", latest_time: "rt"}, 
+                    "search index=_internal | stats count by sourcetype",
+                    {earliest_time: "rt", latest_time: "rt"},
                     done);
             },
             // The search is never going to be done, so we simply poll it every second to get
@@ -24671,7 +24675,7 @@ exports.main = function(opts, callback) {
             function(job, done) {
                 var MAX_COUNT = 5;
                 var count = 0;
-                
+
                 Async.whilst(
                     // Loop for N times
                     function() { return MAX_COUNT > count; },
@@ -24683,29 +24687,29 @@ exports.main = function(opts, callback) {
                                     iterationDone(err);
                                     return;
                                 }
-                                
+
                                 // Only do something if we have results
                                 if (results && results.rows) {
                                     // Up the iteration counter
                                     count++;
-                                    
+
                                     console.log("========== Iteration " + count + " ==========");
                                     var sourcetypeIndex = results.fields.indexOf("sourcetype");
                                     var countIndex = results.fields.indexOf("count");
-                                    
+
                                     for(var i = 0; i < results.rows.length; i++) {
                                         var row = results.rows[i];
-                                        
+
                                         // This is a hacky "padding" solution
                                         var stat = ("  " + row[sourcetypeIndex] + "                         ").slice(0, 30);
-                                        
+
                                         // Print out the sourcetype and the count of the sourcetype so far
-                                        console.log(stat + row[countIndex]);   
+                                        console.log(stat + row[countIndex]);
                                     }
-                                    
+
                                     console.log("=================================");
                                 }
-                                    
+
                                 // And we're done with this iteration
                                 iterationDone();
                             });
@@ -24719,7 +24723,7 @@ exports.main = function(opts, callback) {
             }
         ],
         function(err) {
-            callback(err);        
+            callback(err);
         }
     );
 };
@@ -24753,60 +24757,60 @@ var splunkjs = require('../../../index');
 var Logger = splunkjs.Class.extend({
     init: function(service, opts) {
         this.service = service;
-        
+
         opts = opts || {};
-        
+
         this.params = {};
         if (opts.index)      { this.params.index      = opts.index; }
         if (opts.host)       { this.params.host       = opts.host; }
         if (opts.source)     { this.params.source     = opts.source; }
         if (opts.sourcetype) { this.params.sourcetype = opts.sourcetype || "demo-logger"; }
-        
+
         if (!this.service) {
             throw new Error("Must supply a valid service");
         }
     },
-    
+
     log: function(data) {
         var message = {
             __time: (new Date()).toUTCString(),
             level: "LOG",
             data: data
         };
-        
+
         this.service.log(message, this.params);
         console.log(data);
     },
-    
+
     error: function(data) {
         var message = {
             __time: (new Date()).toUTCString(),
             level: "ERROR",
             data: data
         };
-        
+
         this.service.log(message, this.params);
         console.error(data);
     },
-    
+
     info: function(data) {
         var message = {
             __time: (new Date()).toUTCString(),
             level: "INFO",
             data: data
         };
-        
+
         this.service.log(message, this.params);
         console.info(data);
     },
-    
+
     warn: function(data) {
         var message = {
             __time: (new Date()).toUTCString(),
             level: "WARN",
             data: data
         };
-        
+
         this.service.log(message, this.params);
         console.warn(data);
     }
@@ -24815,14 +24819,14 @@ var Logger = splunkjs.Class.extend({
 exports.main = function(opts, done) {
     // This is just for testing - ignore it
     opts = opts || {};
-    
+
     var username = opts.username    || "admin";
     var password = opts.password    || "changeme";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
     var version  = opts.version     || "default";
-    
+
     var service = new splunkjs.Service({
         username: username,
         password: password,
@@ -24840,11 +24844,11 @@ exports.main = function(opts, done) {
             console.log("Error in logging in");
             done(err || "Login failed");
             return;
-        } 
-        
+        }
+
         // Create our logger
         var logger = new Logger(service, { sourcetype: "mylogger", source: "test" });
-        
+
         // Log the various types of messages. Note how we are sending
         // both strings and JSON objects, which will be auto-encoded and
         // understood by Splunk 4.3+
@@ -24852,7 +24856,7 @@ exports.main = function(opts, done) {
         logger.error("ERROR HAPPENED");
         logger.info(["useful", "info"]);
         logger.warn({"this": {"is": ["a", "warning"]}});
-        
+
         // Say we are done with this sample.
         done();
     });
@@ -24902,7 +24906,7 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
     var FLAGS_RESULTS = [
         "offset", "count", "search", "field_list", "f", "output_mode"
     ];
-    
+
     var printRows = function(data) {
         var fields = data.fields;
         var rows = data.rows;
@@ -24916,7 +24920,7 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
             }
         }
     };
-    
+
     var printCols = function(data) {
         var fields = data.fields;
         var columns = data.columns;
@@ -24939,15 +24943,15 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
 
     var Program = Class.extend({
         init: function(service) {
-            this.service = service; 
-            
+            this.service = service;
+
             this.run        = utils.bind(this, this.run);
             this.cancel     = utils.bind(this, this.cancel);
             this.create     = utils.bind(this, this.create);
             this.events     = utils.bind(this, this.events);
-            this.list       = utils.bind(this, this.list);   
-            this.preview    = utils.bind(this, this.preview);  
-            this.results    = utils.bind(this, this.results);   
+            this.list       = utils.bind(this, this.list);
+            this.preview    = utils.bind(this, this.preview);
+            this.results    = utils.bind(this, this.results);
         },
 
         _foreach: function(sids, fn, callback) {
@@ -24965,7 +24969,7 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
                         jobsList.push(job);
                     }
                 }
-                
+
                 Async.parallelMap(jobsList, fn, callback);
             });
         },
@@ -24988,7 +24992,7 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
                         console.error("  " + key);
                     }
                 }
-                
+
                 callback("No command was specified.");
                 return;
             }
@@ -25013,14 +25017,14 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
 
             // For each of the supplied sids, cancel the job.
             this._foreach(sids, function(job, idx, done) {
-                job.cancel(function (err) { 
+                job.cancel(function (err) {
                     if (err) {
                         done(err);
                         return;
                     }
-                    
-                    console.log("  Job " + job.sid + " cancelled"); 
-                    done(); 
+
+                    console.log("  Job " + job.sid + " cancelled");
+                    done();
                 });
             }, callback);
         },
@@ -25030,12 +25034,12 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
             // For each of the passed in sids, get the relevant events
             this._foreach(sids, function(job, idx, done) {
                 job.events(options, function(err, data) {
-                    console.log("===== EVENTS @ " + job.sid + " ====="); 
+                    console.log("===== EVENTS @ " + job.sid + " =====");
                     if (err) {
                         done(err);
                         return;
                     }
-                    
+
                     var output_mode = options.output_mode || "rows";
                     if (output_mode === "json_rows") {
                         printRows(data);
@@ -25067,7 +25071,7 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
                     callback(err);
                     return;
                 }
-                
+
                 console.log("Created job " + job.sid);
                 callback(null, job);
             });
@@ -25086,7 +25090,7 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
                         callback(err);
                         return;
                     }
-                    
+
                     var list = jobs.list() || [];
                     for(var i = 0; i < list.length; i++) {
                         console.log("  Job " + (i + 1) + " sid: "+ list[i].sid);
@@ -25104,7 +25108,7 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
                             done(err);
                             return;
                         }
-                        
+
                         console.log("Job " + job.sid + ": ");
                         var properties = job.properties();
                         for(var key in properties) {
@@ -25115,7 +25119,7 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
 
                             console.log("  " + key + ": ", properties[key]);
                         }
-                        
+
                         done(null, properties);
                     });
                 }, callback);
@@ -25127,7 +25131,7 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
             // For each of the passed in sids, get the relevant results
             this._foreach(sids, function(job, idx, done) {
                 job.preview(options, function(err, data) {
-                    console.log("===== PREVIEW @ " + job.sid + " ====="); 
+                    console.log("===== PREVIEW @ " + job.sid + " =====");
                     if (err) {
                         done(err);
                         return;
@@ -25157,12 +25161,12 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
                 job.track({}, {
                     'done': function(job) {
                         job.results(options, function(err, data) {
-                            console.log("===== RESULTS @ " + job.sid + " ====="); 
+                            console.log("===== RESULTS @ " + job.sid + " =====");
                             if (err) {
                                 done(err);
                                 return;
                             }
-                            
+
                             var output_mode = options.output_mode || "rows";
                             if (output_mode === "json_rows") {
                                 printRows(data);
@@ -25174,7 +25178,7 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
                             else {
                                 console.log(data);
                             }
-        
+
                             done(null, data);
                         });
                     },
@@ -25190,23 +25194,23 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
     });
 
 
-    exports.main = function(argv, callback) {     
+    exports.main = function(argv, callback) {
         var cmdline = options.create();
-        
-        callback = callback || function(err) { 
+
+        callback = callback || function(err) {
             if (err) {
                 console.log(err);
             }
             else {
-                console.log("=============="); 
+                console.log("==============");
             }
         };
-        
-        var run = function(name) {  
+
+        var run = function(name) {
             var options = arguments[arguments.length - 1];
-                    
+
             // Create our service context using the information from the command line
-            var svc = new splunkjs.Service({ 
+            var svc = new splunkjs.Service({
                 scheme: cmdline.opts.scheme,
                 host: cmdline.opts.host,
                 port: cmdline.opts.port,
@@ -25214,16 +25218,16 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
                 password: cmdline.opts.password,
                 version: cmdline.opts.version
             });
-            
+
             svc.login(function(err, success) {
                if (err) {
                    console.log("Error: " + err);
                    callback(err);
                    return;
                }
-               
+
                var program = new Program(svc);
-               
+
                program.run(name, cmdline.args, options.opts, function(err) {
                    if (err) {
                        callback(err);
@@ -25233,19 +25237,19 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
                });
             });
         };
-        
+
         cmdline.name = "jobs";
         cmdline.description("List, create and manage search jobs");
-        
+
         cmdline.add("create",  "Create a new search job",                                "",             FLAGS_CREATE,   ["search"], run);
         cmdline.add("results", "Fetch results for the specified search jobs",            "<sids...>",    FLAGS_RESULTS,  [],         run);
         cmdline.add("preview", "Fetch preview results for the specified search jobs",    "<sids...>",    FLAGS_RESULTS,  [],         run);
         cmdline.add("events",  "Fetch events for the specified search jobs",             "<sids...>",    FLAGS_EVENTS,   [],         run);
         cmdline.add("cancel",  "Cancel the specify search jobs",                         "<sids...>",    [],             [],         run);
         cmdline.add("list",    "List all search jobs or properties for those specified", "[sids...]",    [],             [],         run);
-        
+
         cmdline.parse(argv);
-        
+
         // Try and parse the command line
         if (!cmdline.executedCommand) {
             console.log(cmdline.helpInformation());
@@ -25253,7 +25257,7 @@ require.define("/examples/node/jobs.js", function (require, module, exports, __d
             return;
         }
     };
-    
+
     if (module === require.main) {
         exports.main(process.argv);
     }
@@ -25283,7 +25287,7 @@ require.define("/examples/node/search.js", function (require, module, exports, _
     var Async           = splunkjs.Async;
     var options         = require('./cmdline');
     var print           = require('util').print;
-    
+
     var FLAGS_CREATE = [
         "search", "earliest_time", "latest_time", "now", "time_format",
         "exec_mode", "search_mode", "rt_blocking", "rt_queue_size",
@@ -25303,7 +25307,7 @@ require.define("/examples/node/search.js", function (require, module, exports, _
             version:    options.version
         });
     };
-    
+
     var search = function(service, options, callback) {
         // Extract the options we care about and delete them
         // the object
@@ -25315,7 +25319,7 @@ require.define("/examples/node/search.js", function (require, module, exports, _
         delete options.verbose;
         delete options.count;
         delete options.mode;
-        
+
         Async.chain([
                 // Create a search
                 function(done) {
@@ -25346,7 +25350,7 @@ require.define("/examples/node/search.js", function (require, module, exports, _
                                             results  + " results";
                                         print("\r" + stats + "                                          ");
                                     }
-                                    
+
                                     Async.sleep(1000, iterationDone);
                                 }
                             });
@@ -25374,50 +25378,50 @@ require.define("/examples/node/search.js", function (require, module, exports, _
             }
         );
     };
-    
+
     var oneshotSearch = function(service, options, callback) {
         var query = options.search;
         delete options.search;
-        
+
         // Oneshot searches don't have a job associated with them, so we
         // simply execute it and print out the results.
         service.oneshotSearch(query, options, function(err, results) {
             if (err) {
                 callback(err);
             }
-            else { 
+            else {
                 console.log(JSON.stringify(results));
                 callback();
             }
         });
     };
 
-    exports.main = function(argv, callback) {     
+    exports.main = function(argv, callback) {
         splunkjs.Logger.setLevel("NONE");
-        
-        callback = callback || function(err) { 
+
+        callback = callback || function(err) {
             if (err) {
                 console.log(err);
             }
         };
         var cmdline = options.create();
-        
+
         cmdline.name = "search";
         cmdline.description("Create a search and print the results to stdout");
         cmdline.option("--verbose", "Output job progress as we wait for completion");
         cmdline.option("--count <count>", "How many results to fetch");
         cmdline.option("--mode <mode>", "Row or column mode [row|column]");
-        
+
         // For each of the flags, add an option to the parser
         var flags = FLAGS_CREATE;
         var required_flags = ["search"];
-        
+
         for(var i = 0; i < flags.length; i++) {
             var required = required_flags.indexOf(flags[i]) >= 0;
             var option = "<" + flags[i] + ">";
             cmdline.option("--" + flags[i] + " " + option, "", undefined, required);
         }
-        
+
         cmdline.on('--help', function(){
             console.log("  Examples:");
             console.log("  ");
@@ -25434,16 +25438,16 @@ require.define("/examples/node/search.js", function (require, module, exports, _
             console.log("  > node search.js --search 'search index=_internal | head 20' --verbose");
             console.log("  ");
         });
-        
+
         cmdline.parse(argv);
-        
+
         var service = createService(cmdline.opts);
         service.login(function(err, success) {
             if (err || !success) {
                 callback("Error logging in");
                 return;
             }
-            
+
             delete cmdline.username;
             delete cmdline.password;
             delete cmdline.scheme;
@@ -25451,7 +25455,7 @@ require.define("/examples/node/search.js", function (require, module, exports, _
             delete cmdline.port;
             delete cmdline.namespace;
             delete cmdline.version;
-            
+
             if (cmdline.opts.exec_mode === "oneshot") {
                 oneshotSearch(service, cmdline.opts, callback);
             }
@@ -25460,7 +25464,7 @@ require.define("/examples/node/search.js", function (require, module, exports, _
             }
         });
     };
-    
+
     if (module === require.main) {
         exports.main(process.argv);
     }
@@ -25468,7 +25472,7 @@ require.define("/examples/node/search.js", function (require, module, exports, _
 });
 
 require.define("/browser.test.entry.js", function (require, module, exports, __dirname, __filename) {
-    
+
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
