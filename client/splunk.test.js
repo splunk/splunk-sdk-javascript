@@ -1653,7 +1653,13 @@ require.define("/lib/context.js", function (require, module, exports, __dirname,
                 var hasSessionKey;
                 var responseData;
                 if (!err && response.data) {
-                    responseData = JSON.parse(response.data);
+                    if (typeof response.data === 'object') {
+                        responseData = response.data;
+                    }
+                    else {
+                        responseData = JSON.parse(response.data);
+                    }
+
                     hasSessionKey = !!(responseData.sessionKey);
                 }
                 if (err || !hasSessionKey) {
