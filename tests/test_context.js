@@ -174,6 +174,7 @@ exports.setup = function(svc) {
 
                 service.get("search/jobs", {count: 1}, function(err, res) {
                     test.ok(!err);
+                    test.ok(!res.data.sessionKey)
                     test.strictEqual(res.data.paging.offset, 0);
                     test.ok(res.data.entry.length <= res.data.paging.total);
                     test.strictEqual(res.data.entry.length, 1);
@@ -305,6 +306,7 @@ exports.setup = function(svc) {
                 service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
                         var sid = res.data.sid;
                         test.ok(sid);
+                        test.ok(res.data.sessionKey)
 
                         var endpoint = "search/jobs/" + sid + "/control";
                         service.post(endpoint, {action: "cancel"}, function(err, res) {
