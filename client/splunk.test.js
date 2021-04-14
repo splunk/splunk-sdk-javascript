@@ -25344,7 +25344,7 @@ require.define("/examples/node/search.js", function (require, module, exports, _
                                             scanned  + " scanned | " +
                                             matched  + " matched | " +
                                             results  + " results";
-                                        print("\r" + stats + "                                          ");
+                                        sprintf("%s", "\r" + stats + "                                          ");
                                     }
                                     
                                     Async.sleep(1000, iterationDone);
@@ -25353,7 +25353,7 @@ require.define("/examples/node/search.js", function (require, module, exports, _
                         },
                         function(err) {
                             if (isVerbose) {
-                                print("\r");
+                                sprintf("%s", "\r");
                             }
                             done(err, job);
                         }
