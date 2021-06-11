@@ -26,6 +26,7 @@
     var http           = require('http');
     var url            = require('url');
     var request        = require('request');
+    var needle         = require('needle');
 
     /**
      * Constants
@@ -101,29 +102,45 @@
                     method: req.method,
                     headers: {
                         "Content-Length": req.headers["content-length"] || 0,
-                        "Content-Type": req.headers["content-type"],
-                        "Authorization": req.headers["authorization"]
+                        "Content-Type": req.headers["content-type"] || '',
+                        "Authorization": req.headers["authorization"] || ''
                     },
                     followAllRedirects: true,
-                    body: body,
+                    body: body || '',
                     jar: false,
-                    strictSSL: false
+                    strictSSL: false,
+                    rejectUnauthorized : false
                 };
 
                 try {
-                    request(options, function(err, response, data) {
+                    needle.request(options.method, options.url, options.body, options, function(err, response, body)
+                    {
                         try {
                             var statusCode = (response ? response.statusCode : 500) || 500;
                             var headers = (response ? response.headers : {}) || {};
 
                             res.writeHead(statusCode, headers);
-                            res.write(data || JSON.stringify(err));
+                            res.write(JSON.stringify(body) || JSON.stringify(err));
                             res.end();
                         }
                         catch (ex) {
                             writeError();
                         }
                     });
+
+                    // request(options, function(err, response, data) {
+                    //     try {
+                    //         var statusCode = (response ? response.statusCode : 500) || 500;
+                    //         var headers = (response ? response.headers : {}) || {};
+
+                    //         res.writeHead(statusCode, headers);
+                    //         res.write(data || JSON.stringify(err));
+                    //         res.end();
+                    //     }
+                    //     catch (ex) {
+                    //         writeError();
+                    //     }
+                    // });
                 }
                 catch (ex) {
                     writeError();
