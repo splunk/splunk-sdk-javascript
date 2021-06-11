@@ -2,7 +2,7 @@ version: '3.6'
 
 services:
     splunk:
-        image: "splunk/splunk:${SPLUNK_VERSION}"
+        image: "splunk/splunk:8.0"
         container_name: splunk
         environment:
             - SPLUNK_START_ARGS=--accept-license
