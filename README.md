@@ -403,6 +403,7 @@ of embedded libraries and their licenses:
 * [commander Node.js command-line interfaces][commander]: [MIT][commander-license]
 * [script.js Asyncronous JavaScript loader and dependency manager][script.js]: [Apache][scriptjs-license]
 * [base64.js Fast base64 encoding/decoding][base64.js]: [MIT][base64-license]
+* [highcharts.js Interactive JavaScript charts][highcharts.js]: [CC BY-NC 3.0][highcharts-license]
 
 
 [dox]:                      https://github.com/visionmedia/dox
@@ -415,7 +416,8 @@ of embedded libraries and their licenses:
 [commander]:                https://github.com/visionmedia/commander.js/
 [script.js]:                https://github.com/ded/script.js/
 [base64.js]:                http://code.google.com/p/javascriptbase64/
-[dox-license]:              https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-DOX
+[highcharts.js]:            https://github.com/highcharts/highcharts
+[dox-license]:              xhttps://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-DOX
 [davis-license]:            https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-DAVIS
 [jquery.class-license]:     https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-JQUERYCLASS
 [nodeunit-license]:         https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-NODEUNIT
@@ -426,6 +428,7 @@ of embedded libraries and their licenses:
 [scriptjs-license]:         https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-SCRIPTJS
 [base64-license]:           https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-BASE64
 [event-license]:            https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-BASE64
+highcharts-license]:        https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-HIGHCHARTS
 
 [json2]:                    http://www.json.org/js.html
 [splunkrc]:                 https://github.com/splunk/splunk-sdk-javascript/blob/master/splunkrc.spec
