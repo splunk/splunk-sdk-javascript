@@ -119,39 +119,26 @@
                             var statusCode = (response ? response.statusCode : 500) || 500;
                             var headers = (response ? response.headers : {}) || {};
 
+                            // Used to make the body of Needle as same as Request library.
+                            var bodyString = JSON.stringify(body).replace(/<[/]/g, "<\\/");
+
                             res.writeHead(statusCode, headers);
-                            res.write(JSON.stringify(body) || JSON.stringify(err));
+                            res.write(bodyString || JSON.stringify(err));
                             res.end();
                         }
                         catch (ex) {
-                            console.log("Ex - ", ex);
                             writeError();
                         }
                     });
 
-                    // request(options, function(err, response, data) {
-                    //     try {
-                    //         var statusCode = (response ? response.statusCode : 500) || 500;
-                    //         var headers = (response ? response.headers : {}) || {};
-
-                    //         res.writeHead(statusCode, headers);
-                    //         res.write(data || JSON.stringify(err));
-                    //         res.end();
-                    //     }
-                    //     catch (ex) {
-                    //         writeError();
-                    //     }
-                    // });
                 }
                 catch (ex) {
-                    console.log("Ex - ", ex);
                     writeError();
                 }
 
             });
         }
         catch (ex) {
-            console.log("Ex - ", ex);
             writeError();
         }
     };
