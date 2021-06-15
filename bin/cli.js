@@ -124,6 +124,7 @@
                             res.end();
                         }
                         catch (ex) {
+                            console.log("Ex - ", ex);
                             writeError();
                         }
                     });
@@ -143,12 +144,14 @@
                     // });
                 }
                 catch (ex) {
+                    console.log("Ex - ", ex);
                     writeError();
                 }
 
             });
         }
         catch (ex) {
+            console.log("Ex - ", ex);
             writeError();
         }
     };

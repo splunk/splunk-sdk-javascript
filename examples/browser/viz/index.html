@@ -123,7 +123,7 @@
       };
        
       username = "admin";
-      password = "changeme";
+      password = "changed!";
       scheme   = "https";
       host     = "localhost";
       port     = "8089";
@@ -134,7 +134,7 @@
       
       var updateConnectionInformation = function() {
         username = utils.trim($("#id_username").pVal()) || "admin";
-        password = utils.trim($("#id_password").pVal()) || "changeme";
+        password = utils.trim($("#id_password").pVal()) || "changed!";
         scheme   = utils.trim($("#id_scheme").pVal())   || "https";
         host     = utils.trim($("#id_host").pVal())     || "localhost";
         port     = utils.trim($("#id_port").pVal())     || "8089";
@@ -244,7 +244,7 @@
                     <input id="id_username" type="text" name="username" placeholder="username: admin"/>
                   </li>
                   <li>
-                    <input type="password" name="password" id="id_password" placeholder="password: changeme"/>
+                    <input type="password" name="password" id="id_password" placeholder="password: changed!"/>
                   </li>
                   <li>
                     <input type="text" name="scheme" id="id_scheme" placeholder="scheme: https"/>
