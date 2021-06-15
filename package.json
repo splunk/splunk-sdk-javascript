@@ -22,9 +22,10 @@
     ],
     "dependencies": {
         "cookie": "0.2.0",
+        "dotenv": "^10.0.0",
         "elementtree": "0.1.6",
-        "request": "^2.x.x",
-        "needle": "2.6.0"
+        "needle": "2.6.0",
+        "request": "^2.x.x"
     },
     "devDependencies": {
         "browserify": "^16.2.3",
