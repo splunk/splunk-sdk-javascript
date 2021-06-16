@@ -20,16 +20,7 @@ jobs:
     
     steps:
       - uses: actions/checkout@v2
-      - name: Spin up a splunk container
-        run: docker-compose up -d
-      - name: Sleep
-        uses: jakejarvis/wait-action@master
-        with:
-          time: '60s'
-      - name: Use node ${{ matrix.node }}
-        uses: actions/setup-node@v2
-        with:
-          node-version: ${{ matrix.node }}
+      
       - name: Create .splunkrc file
         run: |
           echo host=localhost > .splunkrc
@@ -39,8 +30,25 @@ jobs:
           echo scheme=https >> .splunkrc
           echo version=${{ matrix.splunk }} >> .splunkrc
           cat .splunkrc
+          pwd
+      
+      - name: Spin up a splunk container
+        run: docker-compose up -d
+        
+      - name: Sleep
+        uses: jakejarvis/wait-action@master
+        with:
+          time: '60s'
+          
+      - name: Use node ${{ matrix.node }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node }}
+    
       - name: Run server tests
-        run: node sdkdo tests
+        run: |
+          pwd
+          node sdkdo tests
 
       # Runs a single command using the runners shell
       - name: Run a one-line script
