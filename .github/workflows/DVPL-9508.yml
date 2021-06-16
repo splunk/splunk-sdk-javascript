@@ -23,6 +23,7 @@ jobs:
       
       - name: Create .splunkrc file
         run: |
+          cd ~
           echo host=localhost > .splunkrc
           echo port=8089 >> .splunkrc
           echo username=admin >> .splunkrc
