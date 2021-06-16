@@ -30,6 +30,14 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node }}
+      - name: Create .splunkrc file
+        run: |
+          echo host=localhost > .splunkrc
+          echo port=8089 >> .splunkrc
+          echo username >> admin
+          echo password >> changed!
+          echo scheme >> https
+          echo version >> ${{ matrix.splunk }}
       - name: Run server tests
         run: node sdkdo tests
 
