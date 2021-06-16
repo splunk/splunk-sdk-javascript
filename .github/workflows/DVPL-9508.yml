@@ -9,9 +9,9 @@ jobs:
         node:
           - 14
         os:
-#           - ubuntu-latest
+          - ubuntu-latest
 #           - windows-latest
-          - macos-latest
+#           - macos-latest
         splunk:
           - 8.0
           - latest
@@ -21,7 +21,11 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Spin up a splunk container
-        run: docker-compose -f "docker-compose.yml" up -d --build
+        run: docker-compose up -d
+      - name: Sleep
+        uses: jakejarvis/wait-action@master
+        with:
+          time: '60s'
       - name: Use node ${{ matrix.node }}
         uses: actions/setup-node@v2
         with:
