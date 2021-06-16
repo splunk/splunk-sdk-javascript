@@ -34,7 +34,6 @@
                 var key = parts[0].trim();
                 var value = parts[1].trim();
                 defaults[key] = value;
-                console.log(key, value);
             }
         }
     };
