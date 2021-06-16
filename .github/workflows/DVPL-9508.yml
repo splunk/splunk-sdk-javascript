@@ -44,6 +44,3 @@ jobs:
     
       - name: Run server tests
         run: node sdkdo tests
-
-      - name: End of tests
-        run: Test run complete
