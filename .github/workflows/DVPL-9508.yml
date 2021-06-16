@@ -32,7 +32,7 @@ jobs:
           node-version: ${{ matrix.node }}
       
       - name: Run make up
-        run: docker-compose up -d
+        run: docker compose up -d
 
       # Runs a single command using the runners shell
       - name: Run a one-line script
