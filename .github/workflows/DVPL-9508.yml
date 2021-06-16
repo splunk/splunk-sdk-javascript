@@ -30,9 +30,9 @@ jobs:
           echo version=${{ matrix.splunk }} >> .splunkrc
         
       - name: Spin up a splunk container
-        run: docker-compose up -d
-        env: 
-          SPLUNK_VERSION: '${{ matrix.splunk }}'
+        run: |
+          export SPLUNK_VERSION= ${{ matrix.splunk }}
+          docker-compose up -d
         
       - name: Wait for container to spin up
         uses: jakejarvis/wait-action@master
