@@ -1,0 +1,42 @@
+name: DVPL-9114 CI
+
+on:
+  push:
+    branches:
+      - DVPL-9508
+  pull_request:
+    branches:
+      - DVPL-9508
+
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        node:
+          -8
+          -14
+        os:
+          - ubuntu-latest
+          - windows-latest
+          - macos-latest
+          
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+      - uses: actions/checkout@v2
+        
+      - name: Use node ${{ matrix.node }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node }}
+      
+      - name: Run make up
+        run: |
+          ls -al
+          docker-compose up -d
+
+      # Runs a single command using the runners shell
+      - name: Run a one-line script
+        run: echo testing Github Actions
