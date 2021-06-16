@@ -30,7 +30,7 @@ jobs:
           echo version=${{ matrix.splunk }} >> .splunkrc
         
       - name: Spin up a splunk container
-        run: docker-compose up -d
+        run: docker compose up -d
         env: 
           SPLUNK_VERSION: '${{ matrix.splunk }}'
         
