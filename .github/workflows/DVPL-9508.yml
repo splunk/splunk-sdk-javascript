@@ -10,7 +10,7 @@ jobs:
           - 14
         os:
           - ubuntu-latest
-#           - windows-latest
+          - windows-latest
 #           - macos-latest
         splunk:
 #           - 8.0
@@ -30,13 +30,11 @@ jobs:
           echo password=changed! >> .splunkrc
           echo scheme=https >> .splunkrc
           echo version=${{ matrix.splunk }} >> .splunkrc
-          cat .splunkrc
-          pwd
       
       - name: Spin up a splunk container
         run: docker-compose up -d
         
-      - name: Sleep
+      - name: Wait for container to spin up
         uses: jakejarvis/wait-action@master
         with:
           time: '60s'
@@ -47,10 +45,7 @@ jobs:
           node-version: ${{ matrix.node }}
     
       - name: Run server tests
-        run: |
-          pwd
-          node sdkdo tests
+        run: node sdkdo tests
 
-      # Runs a single command using the runners shell
-      - name: Run a one-line script
-        run: echo testing Github Actions 2
+      - name: End of tests
+        run: Test run complete
