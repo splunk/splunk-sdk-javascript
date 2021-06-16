@@ -32,7 +32,9 @@ jobs:
           echo version=${{ matrix.splunk }} >> .splunkrc
       
       - name: Run on windows
-        run: systeminfo
+        run: |
+          systeminfo 
+          docker -v
         if: matrix.os == 'windows-latest'
 #       - name: Spin up a splunk container
 #         run: docker-compose up -d
