@@ -33,6 +33,7 @@ jobs:
       
       - name: Run on windows
         run: systeminfo
+        if: matrix.os == 'windows-latest'
 #       - name: Spin up a splunk container
 #         run: docker-compose up -d
         
