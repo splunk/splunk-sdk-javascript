@@ -34,10 +34,11 @@ jobs:
         run: |
           echo host=localhost > .splunkrc
           echo port=8089 >> .splunkrc
-          echo username >> admin
-          echo password >> changed!
-          echo scheme >> https
-          echo version >> ${{ matrix.splunk }}
+          echo username=admin >> .splunkrc
+          echo password=changed! >> .splunkrc
+          echo scheme=https >> .splunkrc
+          echo version=${{ matrix.splunk }} >> .splunkrc
+          cat .splunkrc
       - name: Run server tests
         run: node sdkdo tests
 
