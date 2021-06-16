@@ -10,10 +10,8 @@ jobs:
           - 14
         os:
           - ubuntu-latest
-          - windows-latest
-#           - macos-latest
         splunk:
-#           - 8.0
+          - 8.0
           - latest
           
     runs-on: ${{ matrix.os }}
@@ -30,27 +28,19 @@ jobs:
           echo password=changed! >> .splunkrc
           echo scheme=https >> .splunkrc
           echo version=${{ matrix.splunk }} >> .splunkrc
-      
-      - name: Run on windows
-        run: |
-          systeminfo 
-          docker -v
-        if: matrix.os == 'windows-latest'
-#       - name: Spin up a splunk container
-#         run: docker-compose up -d
         
-#       - name: Wait for container to spin up
-#         uses: jakejarvis/wait-action@master
-#         with:
-#           time: '60s'
+      - name: Spin up a splunk container
+        run: docker-compose up -d -e SPLUNK_VERSION=${{ matrix.splunk }}
+        
+      - name: Wait for container to spin up
+        uses: jakejarvis/wait-action@master
+        with:
+          time: '60s'
           
-#       - name: Use node ${{ matrix.node }}
-#         uses: actions/setup-node@v2
-#         with:
-#           node-version: ${{ matrix.node }}
+      - name: Use node ${{ matrix.node }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node }}
     
-#       - name: Run server tests
-#         run: node sdkdo tests
-
-#       - name: End of tests
-#         run: Test run complete
+      - name: Run server tests
+        run: node sdkdo tests
