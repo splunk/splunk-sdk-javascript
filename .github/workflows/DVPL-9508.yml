@@ -31,7 +31,7 @@ jobs:
         
       - name: Spin up a splunk container
         run: |
-          export SPLUNK_VERSION= ${{ matrix.splunk }}
+          export SPLUNK_VERSION=${{ matrix.splunk }}
           docker-compose up -d
         
       - name: Wait for container to spin up
