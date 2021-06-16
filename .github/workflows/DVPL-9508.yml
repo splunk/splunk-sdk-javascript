@@ -31,21 +31,23 @@ jobs:
           echo scheme=https >> .splunkrc
           echo version=${{ matrix.splunk }} >> .splunkrc
       
-      - name: Spin up a splunk container
-        run: docker-compose up -d
+      - name: Run on windows
+        run: systeminfo
+#       - name: Spin up a splunk container
+#         run: docker-compose up -d
         
-      - name: Wait for container to spin up
-        uses: jakejarvis/wait-action@master
-        with:
-          time: '60s'
+#       - name: Wait for container to spin up
+#         uses: jakejarvis/wait-action@master
+#         with:
+#           time: '60s'
           
-      - name: Use node ${{ matrix.node }}
-        uses: actions/setup-node@v2
-        with:
-          node-version: ${{ matrix.node }}
+#       - name: Use node ${{ matrix.node }}
+#         uses: actions/setup-node@v2
+#         with:
+#           node-version: ${{ matrix.node }}
     
-      - name: Run server tests
-        run: node sdkdo tests
+#       - name: Run server tests
+#         run: node sdkdo tests
 
-      - name: End of tests
-        run: Test run complete
+#       - name: End of tests
+#         run: Test run complete
