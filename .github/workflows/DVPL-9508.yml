@@ -20,14 +20,12 @@ jobs:
     
     steps:
       - uses: actions/checkout@v2
-        
+      - name: Spin up a splunk container
+        run: docker-compose -f "docker-compose.yml" up -d --build
       - name: Use node ${{ matrix.node }}
         uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node }}
-      
-      - name: Run make up
-        run: docker compose up -d
 
       # Runs a single command using the runners shell
       - name: Run a one-line script
