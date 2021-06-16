@@ -2,8 +2,6 @@ name: DVPL-9114 CI
 
 on: [push, pull_request]
 
-  workflow_dispatch:
-
 jobs:
   build:
     strategy:
