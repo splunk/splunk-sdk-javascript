@@ -1,0 +1,46 @@
+name: JS SDK
+
+on: [push, pull_request]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+        node:
+          - 14
+        splunk:
+          - 8.0
+          - latest
+          
+    runs-on: ${{ matrix.os }}
+    
+    steps:
+      - uses: actions/checkout@v2
+      
+      - name: Create .splunkrc file
+        run: |
+          cd ~
+          echo host=localhost > .splunkrc
+          echo port=8089 >> .splunkrc
+          echo username=admin >> .splunkrc
+          echo password=changed! >> .splunkrc
+          echo scheme=https >> .splunkrc
+          echo version=${{ matrix.splunk }} >> .splunkrc
+        
+      - name: Spin up a splunk container
+        run: SPLUNK_VERSION=${{ matrix.splunk }} docker-compose up -d
+        
+      - name: Wait for container to spin up
+        uses: jakejarvis/wait-action@master
+        with:
+          time: '60s'
+          
+      - name: Use node ${{ matrix.node }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node }}
+    
+      - name: Run server tests
+        run: node sdkdo tests
