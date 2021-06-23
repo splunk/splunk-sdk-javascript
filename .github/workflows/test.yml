@@ -19,9 +19,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       
-#       - name: Create .env file
-#         run: |
-#           echo SPLUNK_VERSION=${{ matrix.splunk }} > .env 
+      - name: Use node ${{ matrix.node }}
+        uses: actions/setup-node@v2
+        with:
+          node-version: ${{ matrix.node }}
           
       - name: Create .splunkrc file
         run: |
@@ -34,19 +35,20 @@ jobs:
           echo version=${{ matrix.splunk }} >> .splunkrc
         
       - name: Spin up a splunk container
-        run: SPLUNK_VERSION=${{ matrix.splunk }} make up
+        run: |
+          SPLUNK_VERSION=${{ matrix.splunk }} make up
+          node sdkdo tests
+        env:
+          SPLUNK_HOME: /opt/splunk
         
 #       - name: Wait for container to spin up
 #         uses: jakejarvis/wait-action@master
 #         with:
 #           time: '60s'
           
-      - name: Use node ${{ matrix.node }}
-        uses: actions/setup-node@v2
-        with:
-          node-version: ${{ matrix.node }}
+      
     
-      - name: Run server tests
-        run: node sdkdo tests
-        env:
-          SPLUNK_HOME: /opt/splunk
+#       - name: Run server tests
+#         run: node sdkdo tests
+#         env:
+#           SPLUNK_HOME: /opt/splunk
