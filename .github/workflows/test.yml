@@ -4,6 +4,8 @@ on: [push, pull_request]
 
 jobs:
   build:
+    runs-on: ${{ matrix.os }}
+    
     strategy:
       matrix:
         os:
@@ -12,10 +14,8 @@ jobs:
           - 14
         splunk-version:
           - "8.0"
-          - "latest"
+          - "latest" 
           
-    runs-on: ${{ matrix.os }}
-    
     services:
       splunk:
         image: splunk/splunk:${{matrix.splunk-version}}
@@ -47,18 +47,7 @@ jobs:
           echo scheme=https >> .splunkrc
           echo version=${{ matrix.splunk }} >> .splunkrc
         
-#       - name: Spin up a splunk container
-#         run: |
-#           SPLUNK_VERSION=${{ matrix.splunk }} make up
-        
-#       - name: Wait for container to spin up
-#         uses: jakejarvis/wait-action@master
-#         with:
-#           time: '60s'
-          
-      
-    
       - name: Run server tests
-        run: node sdkdo tests
+        run: make test
         env:
           SPLUNK_HOME: /opt/splunk
