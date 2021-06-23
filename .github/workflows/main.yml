@@ -22,8 +22,11 @@ jobs:
       - name: Create .env file
         run: |
           echo SPLUNK_VERSION=${{ matrix.splunk }} > .env
-          echo SPLUNK_HOME=/opt/splunk >> .env
       
+      - name: Setup SPLUNK_HOME
+        env:
+          SPLUNK_HOME: /opt/splunk
+          
       - name: Create .splunkrc file
         run: |
           cd ~
