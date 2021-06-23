@@ -19,6 +19,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       
+      - name: Create .env file
+        run: echo SPLUNK_VERSION={{ matrix.splunk }} > .env
+      
       - name: Create .splunkrc file
         run: |
           cd ~
