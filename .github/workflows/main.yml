@@ -20,7 +20,8 @@ jobs:
       - uses: actions/checkout@v2
       
       - name: Create .env file
-        run: echo SPLUNK_VERSION={{ matrix.splunk }} > .env
+        run: |
+          echo SPLUNK_VERSION={{ matrix.splunk }} > .env
       
       - name: Create .splunkrc file
         run: |
@@ -33,7 +34,7 @@ jobs:
           echo version=${{ matrix.splunk }} >> .splunkrc
         
       - name: Spin up a splunk container
-        run: SPLUNK_VERSION=${{ matrix.splunk }} docker-compose up -d
+        run: docker-compose up -d
         
       - name: Wait for container to spin up
         uses: jakejarvis/wait-action@master
