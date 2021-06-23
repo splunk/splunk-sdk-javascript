@@ -22,6 +22,7 @@ jobs:
       - name: Create .env file
         run: |
           echo SPLUNK_VERSION=${{ matrix.splunk }} > .env
+          echo SPLUNK_HOME=/opt/splunk >> .env
       
       - name: Create .splunkrc file
         run: |
@@ -35,10 +36,6 @@ jobs:
         
       - name: Spin up a splunk container
         run: |
-          sudo rm -rf /usr/share/dotnet
-          sudo rm -rf /opt/ghc
-          sudo rm -rf "/usr/local/share/boost"
-          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
           docker-compose up -d
         
       - name: Wait for container to spin up
