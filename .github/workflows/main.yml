@@ -11,8 +11,8 @@ jobs:
         node:
           - 14
         splunk:
-          - 8.0
-          - latest
+          - "8.0"
+          - "latest"
           
     runs-on: ${{ matrix.os }}
     
@@ -39,7 +39,6 @@ jobs:
           sudo rm -rf /opt/ghc
           sudo rm -rf "/usr/local/share/boost"
           sudo rm -rf "$AGENT_TOOLSDIRECTORY"
-          --memory-swap -1
           docker-compose up -d
         
       - name: Wait for container to spin up
