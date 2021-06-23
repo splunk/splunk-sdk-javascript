@@ -34,7 +34,13 @@ jobs:
           echo version=${{ matrix.splunk }} >> .splunkrc
         
       - name: Spin up a splunk container
-        run: docker-compose up
+        run: |
+          sudo rm -rf /usr/share/dotnet
+          sudo rm -rf /opt/ghc
+          sudo rm -rf "/usr/local/share/boost"
+          sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+          --memory-swap -1
+          docker-compose up -d
         
       - name: Wait for container to spin up
         uses: jakejarvis/wait-action@master
