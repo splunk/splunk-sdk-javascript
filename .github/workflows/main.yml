@@ -21,7 +21,7 @@ jobs:
       
       - name: Create .env file
         run: |
-          echo SPLUNK_VERSION={{ matrix.splunk }} > .env
+          echo SPLUNK_VERSION=${{ matrix.splunk }} > .env
       
       - name: Create .splunkrc file
         run: |
