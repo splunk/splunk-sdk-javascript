@@ -1,4 +1,10 @@
-# Splunk SDK for JavaScript Changelog
+# Splunk Enterprise SDK for JavaScript Changelog
+
+## v1.9.1
+
+### Minor changes
+
+* Added third party credits file (CREDITS.md) and updated support and contributing documentation.
 
 ## v1.9.0
 
@@ -173,7 +179,7 @@ across all versions of Splunk.
 
 ### New features and APIs
 
-* The Splunk SDK for JavaScript now supports Node.js v0.8.x and v0.10.x
+* The Splunk Enterprise SDK for JavaScript now supports Node.js v0.8.x and v0.10.x
 
 * Add back general JQuery HTTP implementation.
 
@@ -181,7 +187,7 @@ across all versions of Splunk.
 
 ### Breaking changes
 
-* The Splunk SDK for JavaScript no longer supports Node.js v0.6.x
+* The Splunk Enterprise SDK for JavaScript no longer supports Node.js v0.6.x
 
 * Updated the Node.js request module dependency to v2.21.1
 
@@ -250,11 +256,11 @@ across all versions of Splunk.
   `splunkjs.JobManager.{events|results|preview}Iterator` methods.
 
 * A new "hello-world"-style code example, `log.js`, has been added to show how
-  to do simple application logging using the Splunk SDK for JavaScript.
+  to do simple application logging using the Splunk Enterprise SDK for JavaScript.
 
 ### Breaking changes
 
-* The easyXDM library is no longer included with the Splunk SDK for JavaScript
+* The easyXDM library is no longer included with the Splunk Enterprise SDK for JavaScript
   because this library was not being used, and could not work with a Splunk
   instance that had a self-signed SSL certificate.
 
