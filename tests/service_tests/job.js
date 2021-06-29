@@ -15,7 +15,8 @@ module.exports = function(svc) {
             done();
         },
 
-        // Disabling this test because apps/appinstall endpoint is deprecated in Splunk 8.2.
+        // Disabling this test for now because apps/appinstall endpoint is deprecated in Splunk 8.2.
+        // JIRA ticket: DVPL-9708 to track an alternative solution to fix this issue.
         //
         // "Callback#Create+abort job": function(test) {
         //     var service = this.service;
@@ -270,8 +271,8 @@ module.exports = function(svc) {
             );
         },
 
-        // Disabling this test because apps/appinstall endpoint is deprecated in Splunk 8.2.
-        //
+        // Disabling this test for now because apps/appinstall endpoint is deprecated in Splunk 8.2.
+        // JIRA ticket: DVPL-9708 to track an alternative solution to fix this issue.
         //
         // "Callback#Enable + disable preview": function(test) {
         //     var that = this;
@@ -301,9 +302,8 @@ module.exports = function(svc) {
         //     );
         // },
 
-
-        // Disabling this test because apps/appinstall endpoint is deprecated in Splunk 8.2.
-        //
+        // Disabling this test for now because apps/appinstall endpoint is deprecated in Splunk 8.2.
+        // JIRA ticket: DVPL-9708 to track an alternative solution to fix this issue.
         //
         // "Callback#Pause + unpause + finalize preview": function(test) {
         //     var that = this;
@@ -392,8 +392,8 @@ module.exports = function(svc) {
             );
         },
 
-        // Disabling this test because apps/appinstall endpoint is deprecated in Splunk 8.2.
-        //
+        // Disabling this test for now because apps/appinstall endpoint is deprecated in Splunk 8.2.
+        // JIRA ticket: DVPL-9708 to track an alternative solution to fix this issue.
         //
         // "Callback#Set priority": function(test) {
         //     var sid = getNextId();
