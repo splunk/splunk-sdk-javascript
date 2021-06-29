@@ -27,8 +27,8 @@ node_js:
     - "0.12"
 
 env:
-    - SPLUNK_VERSION=7.3
     - SPLUNK_VERSION=8.0
+    - SPLUNK_VERSION=8.1
 
 before_script:
     node sdkdo hint
