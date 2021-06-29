@@ -108,7 +108,8 @@
                     body: body || '',
                     jar: false,
                     strictSSL: false,
-                    rejectUnauthorized : false
+                    rejectUnauthorized : false,
+                    parse_response : false
                 };
 
                 try {
@@ -116,11 +117,9 @@
                         try {
                             var statusCode = (response ? response.statusCode : 500) || 500;
                             var headers = (response ? response.headers : {}) || {};
-                            var bodyString = JSON.stringify(body);
 
-                            bodyString = bodyString.replace(/<[/]/g, "<\\/");
                             res.writeHead(statusCode, headers);
-                            res.write(bodyString || JSON.stringify(err));
+                            res.write(body || JSON.stringify(err));
                             res.end();
                         }
                         catch (ex) {
