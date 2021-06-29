@@ -1,5 +1,11 @@
 # Splunk Enterprise SDK for JavaScript Changelog
 
+## v1.9.1
+
+### Minor changes
+
+* Added third party credits file (CREDITS.md) and updated support and contributing documentation.
+
 ## v1.9.0
 
 ### Minor changes
