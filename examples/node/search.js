@@ -174,7 +174,7 @@
         
         cmdline.parse(argv);
         
-        var service = createService(cmdline.opts);
+        var service = createService(cmdline);
         service.login(function(err, success) {
             if (err || !success) {
                 callback("Error logging in");
