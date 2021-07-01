@@ -456,79 +456,75 @@ module.exports = function(svc) {
             );
         },
 
-        // Disabling this test because clear_password field has been removed in Splunk 8.2
-        //
-        //
-        // "Callback#Update": function(test) {
-        //     var startcount = -1;
-        //     var name = "delete-me-" + getNextId();
-        //     var realm = "delete-me-" + getNextId();
-        //     var that = this;
-        //     Async.chain([
-        //             function(done) {
-        //                 that.service.storagePasswords().fetch(done);
-        //             },
-        //             function(storagePasswords, done) {
-        //                 startcount = storagePasswords.list().length;
-        //                 storagePasswords.create({name: name, realm: realm, password: "changed!"}, done);
-        //             },
-        //             function(storagePassword, done) {
-        //                 test.strictEqual(name, storagePassword.properties().username);
-        //                 test.strictEqual(realm + ":" + name + ":", storagePassword.name);
-        //                 test.strictEqual("changed!", storagePassword.properties().clear_password);
-        //                 test.strictEqual(realm, storagePassword.properties().realm);
-        //                 that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
-        //             },
-        //             function(storagePasswords, storagePassword, done) {
-        //                 test.strictEqual(startcount + 1, storagePasswords.list().length);
-        //                 storagePassword.update({password: "changed"}, done);
-        //             },
-        //             function(storagePassword, done) {
-        //                 test.strictEqual(name, storagePassword.properties().username);
-        //                 test.strictEqual(realm + ":" + name + ":", storagePassword.name);
-        //                 test.strictEqual("changed", storagePassword.properties().clear_password);
-        //                 test.strictEqual(realm, storagePassword.properties().realm);
-        //                 that.service.storagePasswords().fetch(done);
-        //             },
-        //             function(storagePasswords, done) {
-        //                 var list = storagePasswords.list();
-        //                 var found = false;
-        //                 var index = -1;
+        "Callback#Update": function(test) {
+            var startcount = -1;
+            var name = "delete-me-" + getNextId();
+            var realm = "delete-me-" + getNextId();
+            var that = this;
+            Async.chain([
+                    function(done) {
+                        that.service.storagePasswords().fetch(done);
+                    },
+                    function(storagePasswords, done) {
+                        startcount = storagePasswords.list().length;
+                        storagePasswords.create({name: name, realm: realm, password: "changed!"}, done);
+                    },
+                    function(storagePassword, done) {
+                        test.strictEqual(name, storagePassword.properties().username);
+                        test.strictEqual(realm + ":" + name + ":", storagePassword.name);
+                        test.strictEqual("changed!", storagePassword.properties().clear_password);
+                        test.strictEqual(realm, storagePassword.properties().realm);
+                        that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
+                    },
+                    function(storagePasswords, storagePassword, done) {
+                        test.strictEqual(startcount + 1, storagePasswords.list().length);
+                        storagePassword.update({password: "changed"}, done);
+                    },
+                    function(storagePassword, done) {
+                        test.strictEqual(name, storagePassword.properties().username);
+                        test.strictEqual(realm + ":" + name + ":", storagePassword.name);
+                        test.strictEqual(realm, storagePassword.properties().realm);
+                        that.service.storagePasswords().fetch(done);
+                    },
+                    function(storagePasswords, done) {
+                        var list = storagePasswords.list();
+                        var found = false;
+                        var index = -1;
 
-        //                 test.strictEqual(startcount + 1, list.length);
-        //                 for (var i = 0; i < list.length; i ++) {
-        //                     if (realm + ":" + name + ":" === list[i].name) {
-        //                         found = true;
-        //                         index = i;
-        //                         test.strictEqual(name, list[i].properties().username);
-        //                         test.strictEqual(realm + ":" + name + ":", list[i].name);
-        //                         test.strictEqual("changed", list[i].properties().clear_password);
-        //                         test.strictEqual(realm, list[i].properties().realm);
-        //                     }
-        //                 }
-        //                 test.ok(found);
+                        test.strictEqual(startcount + 1, list.length);
+                        for (var i = 0; i < list.length; i ++) {
+                            if (realm + ":" + name + ":" === list[i].name) {
+                                found = true;
+                                index = i;
+                                test.strictEqual(name, list[i].properties().username);
+                                test.strictEqual(realm + ":" + name + ":", list[i].name);
+                                test.strictEqual("changed", list[i].properties().clear_password);
+                                test.strictEqual(realm, list[i].properties().realm);
+                            }
+                        }
+                        test.ok(found);
 
-        //                 if (!found) {
-        //                     done(new Error("Didn't find the created password"));
-        //                 }
-        //                 else {
-        //                     list[index].remove(done);
-        //                 }
-        //             },
-        //             function(done) {
-        //                 that.service.storagePasswords().fetch(done);
-        //             },
-        //             function(storagePasswords, done) {
-        //                 test.strictEqual(startcount, storagePasswords.list().length);
-        //                 done();
-        //             }
-        //         ],
-        //         function(err) {
-        //             test.ok(!err);
-        //             test.done();
-        //         }
-        //     );
-        // },
+                        if (!found) {
+                            done(new Error("Didn't find the created password"));
+                        }
+                        else {
+                            list[index].remove(done);
+                        }
+                    },
+                    function(done) {
+                        that.service.storagePasswords().fetch(done);
+                    },
+                    function(storagePasswords, done) {
+                        test.strictEqual(startcount, storagePasswords.list().length);
+                        done();
+                    }
+                ],
+                function(err) {
+                    test.ok(!err);
+                    test.done();
+                }
+            );
+        },
 
         "Callback#Delete": function(test) {
             var startcount = -1;
