@@ -21654,6 +21654,7 @@
                                         index = i;
                                         test.strictEqual(name, list[i].properties().username);
                                         test.strictEqual(realm + ":" + name + ":", list[i].name);
+                                        test.strictEqual("changed", list[i].properties().clear_password);
                                         test.strictEqual(realm, list[i].properties().realm);
                                     }
                                 }
@@ -21728,6 +21729,7 @@
                                         index = i;
                                         test.strictEqual(name, list[i].properties().username);
                                         test.strictEqual(realm + ":" + name + ":", list[i].name);
+                                        test.strictEqual("changed!", list[i].properties().clear_password);
                                         test.strictEqual(realm, list[i].properties().realm);
                                     }
                                 }
