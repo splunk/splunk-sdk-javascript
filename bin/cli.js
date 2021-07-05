@@ -25,6 +25,7 @@
     var browserify     = require('browserify');
     var http           = require('http');
     var url            = require('url');
+    var request        = require('request');
     var needle         = require('needle');
 
     /**
@@ -113,7 +114,8 @@
                 };
 
                 try {
-                    needle.request(options.method, options.url, options.body, options, function(err, response, body){
+                    needle.request(options.method, options.url, options.body, options, function(err, response, body)
+                    {
                         try {
                             var statusCode = (response ? response.statusCode : 500) || 500;
                             var headers = (response ? response.headers : {}) || {};
@@ -126,6 +128,7 @@
                             writeError();
                         }
                     });
+
                 }
                 catch (ex) {
                     writeError();
