@@ -80,7 +80,7 @@ exports.main = function(opts, done) {
     opts = opts || {};
     
     var username = opts.username    || "admin";
-    var password = opts.password    || "changeme";
+    var password = opts.password    || "changed!";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";

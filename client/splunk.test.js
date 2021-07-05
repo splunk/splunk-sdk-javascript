@@ -15519,286 +15519,286 @@ exports.setup = function(svc) {
                 test.done();
             }
         },
-        "Cookie Tests": {
-            setUp: function(done) {
-                this.service = svc;
-                this.skip = false;
-                var that = this;
-                svc.serverInfo(function(err, info) {
-                    var majorVersion = parseInt(info.properties().version.split(".")[0], 10);
-                    var minorVersion = parseInt(info.properties().version.split(".")[1], 10);
-                    // Skip cookie tests if Splunk older than 6.2
-                    if(majorVersion < 6 || (majorVersion === 6 && minorVersion < 2)) {
-                        that.skip = true;
-                        splunkjs.Logger.log("Skipping cookie tests...");
-                    }
-                    done();
-                });
-            },
+        // "Cookie Tests": {
+        //     setUp: function(done) {
+        //         this.service = svc;
+        //         this.skip = false;
+        //         var that = this;
+        //         svc.serverInfo(function(err, info) {
+        //             var majorVersion = parseInt(info.properties().version.split(".")[0], 10);
+        //             var minorVersion = parseInt(info.properties().version.split(".")[1], 10);
+        //             // Skip cookie tests if Splunk older than 6.2
+        //             if(majorVersion < 6 || (majorVersion === 6 && minorVersion < 2)) {
+        //                 that.skip = true;
+        //                 splunkjs.Logger.log("Skipping cookie tests...");
+        //             }
+        //             done();
+        //         });
+        //     },
 
-            tearDown: function(done) {
-                this.service.logout(done);
-            },
+        //     tearDown: function(done) {
+        //         this.service.logout(done);
+        //     },
 
-            "_getCookieString works as expected": function(test){
-                var service = new splunkjs.Service(
-                {
-                    scheme: svc.scheme,
-                    host: svc.host,
-                    port: svc.port
-                });
+        //     "_getCookieString works as expected": function(test){
+        //         var service = new splunkjs.Service(
+        //         {
+        //             scheme: svc.scheme,
+        //             host: svc.host,
+        //             port: svc.port
+        //         });
 
-                service.http._cookieStore = {
-                    'cookie'  : 'format',
-                    'another' : 'one'
-                };
+        //         service.http._cookieStore = {
+        //             'cookie'  : 'format',
+        //             'another' : 'one'
+        //         };
 
-                var expectedCookieString = 'cookie=format; another=one; ';
-                var cookieString = service.http._getCookieString();
+        //         var expectedCookieString = 'cookie=format; another=one; ';
+        //         var cookieString = service.http._getCookieString();
 
-                test.strictEqual(cookieString, expectedCookieString);
-                test.done();
-            },
+        //         test.strictEqual(cookieString, expectedCookieString);
+        //         test.done();
+        //     },
 
-            "login and store cookie": function(test){
-                if(this.skip){
-                    test.done();
-                    return;
-                }
-                var service = new splunkjs.Service(
-                {
-                    scheme: svc.scheme,
-                    host: svc.host,
-                    port: svc.port,
-                    username: svc.username,
-                    password: svc.password,
-                    version: svc.version
-                });
+        //     "login and store cookie": function(test){
+        //         if(this.skip){
+        //             test.done();
+        //             return;
+        //         }
+        //         var service = new splunkjs.Service(
+        //         {
+        //             scheme: svc.scheme,
+        //             host: svc.host,
+        //             port: svc.port,
+        //             username: svc.username,
+        //             password: svc.password,
+        //             version: svc.version
+        //         });
 
-                // Check that there are no cookies
-                test.ok(utils.isEmpty(service.http._cookieStore));
+        //         // Check that there are no cookies
+        //         test.ok(utils.isEmpty(service.http._cookieStore));
 
 
-                service.login(function(err, success) {
-                    // Check that cookies were saved
-                    test.ok(!utils.isEmpty(service.http._cookieStore));
-                    test.notStrictEqual(service.http._getCookieString(), '');
-                    test.done();
-                });
-            },
+        //         service.login(function(err, success) {
+        //             // Check that cookies were saved
+        //             test.ok(!utils.isEmpty(service.http._cookieStore));
+        //             test.notStrictEqual(service.http._getCookieString(), '');
+        //             test.done();
+        //         });
+        //     },
 
-            "request with cookie": function(test) {
-                if(this.skip){
-                    test.done();
-                    return;
-                }
-                var service = new splunkjs.Service(
-                {
-                    scheme: svc.scheme,
-                    host: svc.host,
-                    port: svc.port,
-                    username: svc.username,
-                    password: svc.password,
-                    version: svc.version
-                });
-                    // Create another service to put valid cookie into, give no other authentication information
-                var service2 = new splunkjs.Service(
-                {
-                    scheme: svc.scheme,
-                    host: svc.host,
-                    port: svc.port,
-                    version: svc.version
-                });
+        //     "request with cookie": function(test) {
+        //         if(this.skip){
+        //             test.done();
+        //             return;
+        //         }
+        //         var service = new splunkjs.Service(
+        //         {
+        //             scheme: svc.scheme,
+        //             host: svc.host,
+        //             port: svc.port,
+        //             username: svc.username,
+        //             password: svc.password,
+        //             version: svc.version
+        //         });
+        //             // Create another service to put valid cookie into, give no other authentication information
+        //         var service2 = new splunkjs.Service(
+        //         {
+        //             scheme: svc.scheme,
+        //             host: svc.host,
+        //             port: svc.port,
+        //             version: svc.version
+        //         });
 
-                // Login to service to get a valid cookie
-                Async.chain([
-                        function (done) {
-                            service.login(done);
-                        },
-                        function (job, done) {
-                            // Save the cookie store
-                            var cookieStore = service.http._cookieStore;
-                            // Test that there are cookies
-                            test.ok(!utils.isEmpty(cookieStore));
-                            // Add the cookies to a service with no other authentication information
-                            service2.http._cookieStore = cookieStore;
-                            // Make a request that requires authentication
-                            service2.get("search/jobs", {count: 1}, done);
-                        },
-                        function (res, done) {
-                            // Test that a response was returned
-                            test.ok(res);
-                            done();
-                        }
-                    ],
-                    function(err) {
-                        // Test that no errors were returned
-                        test.ok(!err);
-                        test.done();
-                    }
-                );
-            },
+        //         // Login to service to get a valid cookie
+        //         Async.chain([
+        //                 function (done) {
+        //                     service.login(done);
+        //                 },
+        //                 function (job, done) {
+        //                     // Save the cookie store
+        //                     var cookieStore = service.http._cookieStore;
+        //                     // Test that there are cookies
+        //                     test.ok(!utils.isEmpty(cookieStore));
+        //                     // Add the cookies to a service with no other authentication information
+        //                     service2.http._cookieStore = cookieStore;
+        //                     // Make a request that requires authentication
+        //                     service2.get("search/jobs", {count: 1}, done);
+        //                 },
+        //                 function (res, done) {
+        //                     // Test that a response was returned
+        //                     test.ok(res);
+        //                     done();
+        //                 }
+        //             ],
+        //             function(err) {
+        //                 // Test that no errors were returned
+        //                 test.ok(!err);
+        //                 test.done();
+        //             }
+        //         );
+        //     },
 
-            "request fails with bad cookie": function(test) {
-                if(this.skip){
-                    test.done();
-                    return;
-                }
-                // Create a service with no login information
-                var service = new splunkjs.Service(
-                {
-                    scheme: svc.scheme,
-                    host: svc.host,
-                    port: svc.port,
-                    version: svc.version
-                });
+        //     "request fails with bad cookie": function(test) {
+        //         if(this.skip){
+        //             test.done();
+        //             return;
+        //         }
+        //         // Create a service with no login information
+        //         var service = new splunkjs.Service(
+        //         {
+        //             scheme: svc.scheme,
+        //             host: svc.host,
+        //             port: svc.port,
+        //             version: svc.version
+        //         });
 
-                // Put a bad cookie into the service
-                service.http._cookieStore = { "bad" : "cookie" };
+        //         // Put a bad cookie into the service
+        //         service.http._cookieStore = { "bad" : "cookie" };
 
-                // Try requesting something that requires authentication
-                service.get("search/jobs", {count: 1}, function(err, res) {
-                    // Test if an error is returned
-                    test.ok(err);
-                    // Check that it is an unauthorized error
-                    test.strictEqual(err.status, 401);
-                    test.done();
-                });
-            },
+        //         // Try requesting something that requires authentication
+        //         service.get("search/jobs", {count: 1}, function(err, res) {
+        //             // Test if an error is returned
+        //             test.ok(err);
+        //             // Check that it is an unauthorized error
+        //             test.strictEqual(err.status, 401);
+        //             test.done();
+        //         });
+        //     },
 
-            "autologin with cookie": function(test) {
-                if(this.skip){
-                    test.done();
-                    return;
-                }
-                var service = new splunkjs.Service(
-                {
-                    scheme: svc.scheme,
-                    host: svc.host,
-                    port: svc.port,
-                    username: svc.username,
-                    password: svc.password,
-                    version: svc.version
-                });
+        //     "autologin with cookie": function(test) {
+        //         if(this.skip){
+        //             test.done();
+        //             return;
+        //         }
+        //         var service = new splunkjs.Service(
+        //         {
+        //             scheme: svc.scheme,
+        //             host: svc.host,
+        //             port: svc.port,
+        //             username: svc.username,
+        //             password: svc.password,
+        //             version: svc.version
+        //         });
 
-                // Test if service has no cookies
-                test.ok(utils.isEmpty(service.http._cookieStore));
+        //         // Test if service has no cookies
+        //         test.ok(utils.isEmpty(service.http._cookieStore));
 
-                service.get("search/jobs", {count: 1}, function(err, res) {
-                    // Test if service now has a cookie
-                    test.ok(service.http._cookieStore);
-                    test.done();
-                });
-            },
+        //         service.get("search/jobs", {count: 1}, function(err, res) {
+        //             // Test if service now has a cookie
+        //             test.ok(service.http._cookieStore);
+        //             test.done();
+        //         });
+        //     },
 
-            "login fails with no cookie and no sessionKey": function(test) {
-                if(this.skip){
-                    test.done();
-                    return;
-                }
-                var service = new splunkjs.Service(
-                {
-                    scheme: svc.scheme,
-                    host: svc.host,
-                    port: svc.port,
-                    version: svc.version
-                });
+        //     "login fails with no cookie and no sessionKey": function(test) {
+        //         if(this.skip){
+        //             test.done();
+        //             return;
+        //         }
+        //         var service = new splunkjs.Service(
+        //         {
+        //             scheme: svc.scheme,
+        //             host: svc.host,
+        //             port: svc.port,
+        //             version: svc.version
+        //         });
 
-                // Test there is no authentication information
-                test.ok(utils.isEmpty(service.http._cookieStore));
-                test.strictEqual(service.sessionKey, '');
-                test.ok(!service.username);
-                test.ok(!service.password);
+        //         // Test there is no authentication information
+        //         test.ok(utils.isEmpty(service.http._cookieStore));
+        //         test.strictEqual(service.sessionKey, '');
+        //         test.ok(!service.username);
+        //         test.ok(!service.password);
 
-                service.get("search/jobs", {count: 1}, function(err, res) {
-                    // Test if an error is returned
-                    test.ok(err);
-                    test.done();
-                });
-            },
+        //         service.get("search/jobs", {count: 1}, function(err, res) {
+        //             // Test if an error is returned
+        //             test.ok(err);
+        //             test.done();
+        //         });
+        //     },
 
-            "login with multiple cookies": function(test) {
-                if(this.skip){
-                    test.done();
-                    return;
-                }
-                var service = new splunkjs.Service(
-                {
-                    scheme: svc.scheme,
-                    host: svc.host,
-                    port: svc.port,
-                    username: svc.username,
-                    password: svc.password,
-                    version: svc.version
-                });
-                    // Create another service to put valid cookie into, give no other authentication information
-                var service2 = new splunkjs.Service(
-                {
-                    scheme: svc.scheme,
-                    host: svc.host,
-                    port: svc.port,
-                    version: svc.version
-                });
+        //     "login with multiple cookies": function(test) {
+        //         if(this.skip){
+        //             test.done();
+        //             return;
+        //         }
+        //         var service = new splunkjs.Service(
+        //         {
+        //             scheme: svc.scheme,
+        //             host: svc.host,
+        //             port: svc.port,
+        //             username: svc.username,
+        //             password: svc.password,
+        //             version: svc.version
+        //         });
+        //             // Create another service to put valid cookie into, give no other authentication information
+        //         var service2 = new splunkjs.Service(
+        //         {
+        //             scheme: svc.scheme,
+        //             host: svc.host,
+        //             port: svc.port,
+        //             version: svc.version
+        //         });
 
-                // Login to service to get a valid cookie
-                Async.chain([
-                        function (done) {
-                            service.login(done);
-                        },
-                        function (job, done) {
-                            // Save the cookie store
-                            var cookieStore = service.http._cookieStore;
-                            // Test that there are cookies
-                            test.ok(!utils.isEmpty(cookieStore));
+        //         // Login to service to get a valid cookie
+        //         Async.chain([
+        //                 function (done) {
+        //                     service.login(done);
+        //                 },
+        //                 function (job, done) {
+        //                     // Save the cookie store
+        //                     var cookieStore = service.http._cookieStore;
+        //                     // Test that there are cookies
+        //                     test.ok(!utils.isEmpty(cookieStore));
 
-                            // Add a bad cookie to the cookieStore
-                            cookieStore['bad'] = 'cookie';
+        //                     // Add a bad cookie to the cookieStore
+        //                     cookieStore['bad'] = 'cookie';
 
-                            // Add the cookies to a service with no other authenitcation information
-                            service2.http._cookieStore = cookieStore;
+        //                     // Add the cookies to a service with no other authenitcation information
+        //                     service2.http._cookieStore = cookieStore;
 
-                            // Make a request that requires authentication
-                            service2.get("search/jobs", {count: 1}, done);
-                        },
-                        function (res, done) {
-                            // Test that a response was returned
-                            test.ok(res);
-                            done();
-                        }
-                    ],
-                    function(err) {
-                        // Test that no errors were returned
-                        test.ok(!err);
-                        test.done();
-                    }
-                );
-            },
+        //                     // Make a request that requires authentication
+        //                     service2.get("search/jobs", {count: 1}, done);
+        //                 },
+        //                 function (res, done) {
+        //                     // Test that a response was returned
+        //                     test.ok(res);
+        //                     done();
+        //                 }
+        //             ],
+        //             function(err) {
+        //                 // Test that no errors were returned
+        //                 test.ok(!err);
+        //                 test.done();
+        //             }
+        //         );
+        //     },
 
-            "autologin with cookie and bad sessionKey": function(test) {
-                if(this.skip){
-                    test.done();
-                    return;
-                }
-                var service = new splunkjs.Service(
-                {
-                    scheme: svc.scheme,
-                    host: svc.host, port: svc.port,
-                    username: svc.username,
-                    password: svc.password,
-                    sessionKey: 'ABC-BADKEY',
-                    version: svc.version
-                });
+        //     "autologin with cookie and bad sessionKey": function(test) {
+        //         if(this.skip){
+        //             test.done();
+        //             return;
+        //         }
+        //         var service = new splunkjs.Service(
+        //         {
+        //             scheme: svc.scheme,
+        //             host: svc.host, port: svc.port,
+        //             username: svc.username,
+        //             password: svc.password,
+        //             sessionKey: 'ABC-BADKEY',
+        //             version: svc.version
+        //         });
 
-                // Test if service has no cookies
-                test.ok(utils.isEmpty(service.http._cookieStore));
+        //         // Test if service has no cookies
+        //         test.ok(utils.isEmpty(service.http._cookieStore));
 
-                service.get("search/jobs", {count: 1}, function(err, res) {
-                    // Test if service now has a cookie
-                    test.ok(service.http._cookieStore);
-                    test.done();
-                });
-             }
-        }
+        //         service.get("search/jobs", {count: 1}, function(err, res) {
+        //             // Test if service now has a cookie
+        //             test.ok(service.http._cookieStore);
+        //             test.done();
+        //         });
+        //      }
+        // }
     };
     return suite;
 };
@@ -16924,118 +16924,118 @@ exports.setup = function(svc, loggedOutSvc) {
                 );
             },
 
-            "Callback#Service oneshot search": function(test) {
-                var sid = getNextId();
-                var that = this;
-                var namespace = {owner: "admin", app: "search"};
-                var splunkVersion = 6.1; // Default to pre-6.2 version
-                var originalLoggerLevel = "DEBUG";
+            // "Callback#Service oneshot search": function(test) {
+            //     var sid = getNextId();
+            //     var that = this;
+            //     var namespace = {owner: "admin", app: "search"};
+            //     var splunkVersion = 6.1; // Default to pre-6.2 version
+            //     var originalLoggerLevel = "DEBUG";
 
-                Async.chain([
-                        function(done) {
-                            // If running on Splunk 6.2+, first set the search logger level to DEBUG
-                            Async.chain([
-                                    function(done1) {
-                                        that.service.serverInfo(done1);
-                                    },
-                                    function(info, done1) {
-                                        splunkVersion = parseFloat(info.properties().version);
-                                        if (splunkVersion < 6.2) {
-                                            done(); // Exit the inner Async.chain
-                                        }
-                                        else {
-                                            done1();
-                                        }
-                                    },
-                                    function(done1) {
-                                        that.service.configurations({owner: "admin", app: "search"}).fetch(done1);
-                                    },
-                                    function(confs, done1) {
-                                        try {
-                                            confs.item("limits").fetch(done1);
-                                        }
-                                        catch(e) {
-                                            done1(e);
-                                        }
-                                    },
-                                    function(conf, done1) {
-                                        var searchInfo = conf.item("search_info");
-                                        // Save this so it can be restored later
-                                        originalLoggerLevel = searchInfo.properties()["infocsv_log_level"];
-                                        searchInfo.update({"infocsv_log_level": "DEBUG"}, done1);
-                                    },
-                                    function(conf, done1) {
-                                        test.strictEqual("DEBUG", conf.properties()["infocsv_log_level"]);
-                                        done1();
-                                    }
-                                ],
-                                function(err) {
-                                    test.ok(!err);
-                                    done();
-                                }
-                            );
-                        },
-                        function(done) {
-                            that.service.oneshotSearch('search index=_internal | head 1 | stats count', {id: sid}, namespace, done);
-                        },
-                        function(results, done) {
-                            test.ok(results);
-                            test.ok(results.fields);
-                            test.strictEqual(results.fields.length, 1);
-                            test.strictEqual(results.fields[0], "count");
-                            test.ok(results.rows);
-                            test.strictEqual(results.rows.length, 1);
-                            test.strictEqual(results.rows[0].length, 1);
-                            test.strictEqual(results.rows[0][0], "1");
-                            test.ok(results.messages[1].text.indexOf('owner="admin"'));
-                            test.ok(results.messages[1].text.indexOf('app="search"'));
+            //     Async.chain([
+            //             function(done) {
+            //                 // If running on Splunk 6.2+, first set the search logger level to DEBUG
+            //                 Async.chain([
+            //                         function(done1) {
+            //                             that.service.serverInfo(done1);
+            //                         },
+            //                         function(info, done1) {
+            //                             splunkVersion = parseFloat(info.properties().version);
+            //                             if (splunkVersion < 6.2) {
+            //                                 done(); // Exit the inner Async.chain
+            //                             }
+            //                             else {
+            //                                 done1();
+            //                             }
+            //                         },
+            //                         function(done1) {
+            //                             that.service.configurations({owner: "admin", app: "search"}).fetch(done1);
+            //                         },
+            //                         function(confs, done1) {
+            //                             try {
+            //                                 confs.item("limits").fetch(done1);
+            //                             }
+            //                             catch(e) {
+            //                                 done1(e);
+            //                             }
+            //                         },
+            //                         function(conf, done1) {
+            //                             var searchInfo = conf.item("search_info");
+            //                             // Save this so it can be restored later
+            //                             originalLoggerLevel = searchInfo.properties()["infocsv_log_level"];
+            //                             searchInfo.update({"infocsv_log_level": "DEBUG"}, done1);
+            //                         },
+            //                         function(conf, done1) {
+            //                             test.strictEqual("DEBUG", conf.properties()["infocsv_log_level"]);
+            //                             done1();
+            //                         }
+            //                     ],
+            //                     function(err) {
+            //                         test.ok(!err);
+            //                         done();
+            //                     }
+            //                 );
+            //             },
+            //             function(done) {
+            //                 that.service.oneshotSearch('search index=_internal | head 1 | stats count', {id: sid}, namespace, done);
+            //             },
+            //             function(results, done) {
+            //                 test.ok(results);
+            //                 test.ok(results.fields);
+            //                 test.strictEqual(results.fields.length, 1);
+            //                 test.strictEqual(results.fields[0], "count");
+            //                 test.ok(results.rows);
+            //                 test.strictEqual(results.rows.length, 1);
+            //                 test.strictEqual(results.rows[0].length, 1);
+            //                 test.strictEqual(results.rows[0][0], "1");
+            //                 test.ok(results.messages[1].text.indexOf('owner="admin"'));
+            //                 test.ok(results.messages[1].text.indexOf('app="search"'));
 
-                            done();
-                        },
-                        function(done) {
-                            Async.chain([
-                                    function(done1) {
-                                        if (splunkVersion < 6.2) {
-                                            done(); // Exit the inner Async.chain
-                                        }
-                                        else {
-                                            done1();
-                                        }
-                                    },
-                                    function(done1) {
-                                        that.service.configurations({owner: "admin", app: "search"}).fetch(done1);
-                                    },
-                                    function(confs, done1) {
-                                        try {
-                                            confs.item("limits").fetch(done1);
-                                        }
-                                        catch(e) {
-                                            done1(e);
-                                        }
-                                    },
-                                    function(conf, done1) {
-                                        var searchInfo = conf.item("search_info");
-                                        // Restore the logger level from before
-                                        searchInfo.update({"infocsv_log_level": originalLoggerLevel}, done1);
-                                    },
-                                    function(conf, done1) {
-                                        test.strictEqual(originalLoggerLevel, conf.properties()["infocsv_log_level"]);
-                                        done1();
-                                    }
-                                ],
-                                function(err) {
-                                    test.ok(!err);
-                                    done();
-                                }
-                            );
-                        }
-                    ],
-                    function(err) {
-                        test.ok(!err);
-                        test.done();
-                    }
-                );
-            },
+            //                 done();
+            //             },
+            //             function(done) {
+            //                 Async.chain([
+            //                         function(done1) {
+            //                             if (splunkVersion < 6.2) {
+            //                                 done(); // Exit the inner Async.chain
+            //                             }
+            //                             else {
+            //                                 done1();
+            //                             }
+            //                         },
+            //                         function(done1) {
+            //                             that.service.configurations({owner: "admin", app: "search"}).fetch(done1);
+            //                         },
+            //                         function(confs, done1) {
+            //                             try {
+            //                                 confs.item("limits").fetch(done1);
+            //                             }
+            //                             catch(e) {
+            //                                 done1(e);
+            //                             }
+            //                         },
+            //                         function(conf, done1) {
+            //                             var searchInfo = conf.item("search_info");
+            //                             // Restore the logger level from before
+            //                             searchInfo.update({"infocsv_log_level": originalLoggerLevel}, done1);
+            //                         },
+            //                         function(conf, done1) {
+            //                             test.strictEqual(originalLoggerLevel, conf.properties()["infocsv_log_level"]);
+            //                             done1();
+            //                         }
+            //                     ],
+            //                     function(err) {
+            //                         test.ok(!err);
+            //                         done();
+            //                     }
+            //                 );
+            //             }
+            //         ],
+            //         function(err) {
+            //             test.ok(!err);
+            //             test.done();
+            //         }
+            //     );
+            // },
 
             "Callback#Service search": function(test) {
                 var sid = getNextId();
@@ -19965,66 +19965,66 @@ exports.setup = function(svc, loggedOutSvc) {
                 });
             },
 
-            "list applications with cookies as authentication": function(test) {
-                this.service.serverInfo(function (err, info) {
-                    // Cookie authentication was added in splunk 6.2
-                    var majorVersion = parseInt(info.properties().version.split(".")[0], 10);
-                    var minorVersion = parseInt(info.properties().version.split(".")[1], 10);
-                    // Skip cookie test if Splunk older than 6.2
-                    if(majorVersion < 6 || (majorVersion === 6 && minorVersion < 2)) {
-                        splunkjs.Logger.log("Skipping cookie test...");
-                        test.done();
-                        return;
-                    }
+            // "list applications with cookies as authentication": function(test) {
+            //     this.service.serverInfo(function (err, info) {
+            //         // Cookie authentication was added in splunk 6.2
+            //         var majorVersion = parseInt(info.properties().version.split(".")[0], 10);
+            //         var minorVersion = parseInt(info.properties().version.split(".")[1], 10);
+            //         // Skip cookie test if Splunk older than 6.2
+            //         if(majorVersion < 6 || (majorVersion === 6 && minorVersion < 2)) {
+            //             splunkjs.Logger.log("Skipping cookie test...");
+            //             test.done();
+            //             return;
+            //         }
 
-                    var service = new splunkjs.Service(
-                    {
-                        scheme: svc.scheme,
-                        host: svc.host,
-                        port: svc.port,
-                        username: svc.username,
-                        password: svc.password,
-                        version: svc.version
-                    });
+            //         var service = new splunkjs.Service(
+            //         {
+            //             scheme: svc.scheme,
+            //             host: svc.host,
+            //             port: svc.port,
+            //             username: svc.username,
+            //             password: svc.password,
+            //             version: svc.version
+            //         });
 
-                    var service2 = new splunkjs.Service(
-                    {
-                        scheme: svc.scheme,
-                        host: svc.host,
-                        port: svc.port,
-                        version: svc.version
-                    });
+            //         var service2 = new splunkjs.Service(
+            //         {
+            //             scheme: svc.scheme,
+            //             host: svc.host,
+            //             port: svc.port,
+            //             version: svc.version
+            //         });
 
-                    Async.chain([
-                            function (done) {
-                                service.login(done);
-                            },
-                            function (job, done) {
-                                // Save the cookie store
-                                var cookieStore = service.http._cookieStore;
-                                // Test that there are cookies
-                                test.ok(!utils.isEmpty(cookieStore));
+            //         Async.chain([
+            //                 function (done) {
+            //                     service.login(done);
+            //                 },
+            //                 function (job, done) {
+            //                     // Save the cookie store
+            //                     var cookieStore = service.http._cookieStore;
+            //                     // Test that there are cookies
+            //                     test.ok(!utils.isEmpty(cookieStore));
 
-                                // Add the cookies to a service with no other authenitcation information
-                                service2.http._cookieStore = cookieStore;
+            //                     // Add the cookies to a service with no other authenitcation information
+            //                     service2.http._cookieStore = cookieStore;
 
-                                var apps = service2.apps();
-                                apps.fetch(done);
-                            },
-                            function (apps, done) {
-                                var appList = apps.list();
-                                test.ok(appList.length > 0);
-                                test.ok(!utils.isEmpty(service2.http._cookieStore));
-                                done();
-                            }
-                        ],
-                        function(err) {
-                            // Test that no errors were returned
-                            test.ok(!err);
-                            test.done();
-                        });
-                });
-            }
+            //                     var apps = service2.apps();
+            //                     apps.fetch(done);
+            //                 },
+            //                 function (apps, done) {
+            //                     var appList = apps.list();
+            //                     test.ok(appList.length > 0);
+            //                     test.ok(!utils.isEmpty(service2.http._cookieStore));
+            //                     done();
+            //                 }
+            //             ],
+            //             function(err) {
+            //                 // Test that no errors were returned
+            //                 test.ok(!err);
+            //                 test.done();
+            //             });
+            //     });
+            // }
         },
 
         "Saved Search Tests": {
@@ -21021,12 +21021,12 @@ exports.setup = function(svc, loggedOutSvc) {
                         },
                         function(storagePasswords, done) {
                             startcount = storagePasswords.list().length;
-                            storagePasswords.create({name: name, realm: realm, password: "changeme"}, done);
+                            storagePasswords.create({name: name, realm: realm, password: "changed!"}, done);
                         },
                         function(storagePassword, done) {
                             test.strictEqual(name, storagePassword.properties().username);
                             test.strictEqual(realm + ":" + name + ":", storagePassword.name);
-                            test.strictEqual("changeme", storagePassword.properties().clear_password);
+                            test.strictEqual("changed!", storagePassword.properties().clear_password);
                             test.strictEqual(realm, storagePassword.properties().realm);
                             that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                         },
@@ -21060,12 +21060,12 @@ exports.setup = function(svc, loggedOutSvc) {
                         },
                         function(storagePasswords, done) {
                             startcount = storagePasswords.list().length;
-                            storagePasswords.create({name: name, realm: realm, password: "changeme"}, done);
+                            storagePasswords.create({name: name, realm: realm, password: "changed!"}, done);
                         },
                         function(storagePassword, done) {
                             test.strictEqual(name, storagePassword.properties().username);
                             test.strictEqual("\\" + realm + ":\\" + name + ":", storagePassword.name);
-                            test.strictEqual("changeme", storagePassword.properties().clear_password);
+                            test.strictEqual("changed!", storagePassword.properties().clear_password);
                             test.strictEqual(realm, storagePassword.properties().realm);
                             that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                         },
@@ -21099,12 +21099,12 @@ exports.setup = function(svc, loggedOutSvc) {
                         },
                         function(storagePasswords, done) {
                             startcount = storagePasswords.list().length;
-                            storagePasswords.create({name: name, realm: realm, password: "changeme"}, done);
+                            storagePasswords.create({name: name, realm: realm, password: "changed!"}, done);
                         },
                         function(storagePassword, done) {
                             test.strictEqual(name, storagePassword.properties().username);
                             test.strictEqual(realm + ":" + name + ":", storagePassword.name);
-                            test.strictEqual("changeme", storagePassword.properties().clear_password);
+                            test.strictEqual("changed!", storagePassword.properties().clear_password);
                             test.strictEqual(realm, storagePassword.properties().realm);
                             that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                         },
@@ -21137,12 +21137,12 @@ exports.setup = function(svc, loggedOutSvc) {
                         },
                         function(storagePasswords, done) {
                             startcount = storagePasswords.list().length;
-                            storagePasswords.create({name: name, password: "changeme"}, done);
+                            storagePasswords.create({name: name, password: "changed!"}, done);
                         },
                         function(storagePassword, done) {
                             test.strictEqual(name, storagePassword.properties().username);
                             test.strictEqual(":" + name + ":", storagePassword.name);
-                            test.strictEqual("changeme", storagePassword.properties().clear_password);
+                            test.strictEqual("changed!", storagePassword.properties().clear_password);
                             test.strictEqual("", storagePassword.properties().realm);
                             that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                         },
@@ -21172,7 +21172,7 @@ exports.setup = function(svc, loggedOutSvc) {
                             that.service.storagePasswords().fetch(done);
                         },
                         function(storagePasswords, done) {
-                            storagePasswords.create({name: null, password: "changeme"}, done);
+                            storagePasswords.create({name: null, password: "changed!"}, done);
                         }
                     ],
                     function(err) {
@@ -21227,12 +21227,12 @@ exports.setup = function(svc, loggedOutSvc) {
                         },
                         function(storagePasswords, done) {
                             startcount = storagePasswords.list().length;
-                            storagePasswords.create({name: name, realm: realm, password: "changeme"}, done);
+                            storagePasswords.create({name: name, realm: realm, password: "changed!"}, done);
                         },
                         function(storagePassword, done) {
                             test.strictEqual(name, storagePassword.properties().username);
                             test.strictEqual("\\" + realm + ":\\" + name + ":", storagePassword.name);
-                            test.strictEqual("changeme", storagePassword.properties().clear_password);
+                            test.strictEqual("changed!", storagePassword.properties().clear_password);
                             test.strictEqual(realm, storagePassword.properties().realm);
                             that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                         },
@@ -21269,13 +21269,13 @@ exports.setup = function(svc, loggedOutSvc) {
                             storagePasswords.create({
                                     name: name + ":end!@#$%^&*()_+{}:|<>?",
                                     realm: ":start::!@#$%^&*()_+{}:|<>?" + realm,
-                                    password: "changeme"},
+                                    password: "changed!"},
                                 done);
                         },
                         function(storagePassword, done) {
                             test.strictEqual(name + ":end!@#$%^&*()_+{}:|<>?", storagePassword.properties().username);
                             test.strictEqual("\\:start\\:\\:!@#$%^&*()_+{}\\:|<>?" + realm + ":" + name + "\\:end!@#$%^&*()_+{}\\:|<>?:", storagePassword.name);
-                            test.strictEqual("changeme", storagePassword.properties().clear_password);
+                            test.strictEqual("changed!", storagePassword.properties().clear_password);
                             test.strictEqual(":start::!@#$%^&*()_+{}:|<>?" + realm, storagePassword.properties().realm);
                             that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                         },
@@ -21352,12 +21352,12 @@ exports.setup = function(svc, loggedOutSvc) {
                         },
                         function(storagePasswords, done) {
                             startcount = storagePasswords.list().length;
-                            storagePasswords.create({name: name, realm: realm, password: "changeme"}, done);
+                            storagePasswords.create({name: name, realm: realm, password: "changed!"}, done);
                         },
                         function(storagePassword, done) {
                             test.strictEqual(name, storagePassword.properties().username);
                             test.strictEqual(realm + ":" + name + ":", storagePassword.name);
-                            test.strictEqual("changeme", storagePassword.properties().clear_password);
+                            test.strictEqual("changed!", storagePassword.properties().clear_password);
                             test.strictEqual(realm, storagePassword.properties().realm);
                             that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                         },
@@ -21408,12 +21408,12 @@ exports.setup = function(svc, loggedOutSvc) {
                         },
                         function(storagePasswords, done) {
                             startcount = storagePasswords.list().length;
-                            storagePasswords.create({name: name, realm: realm, password: "changeme"}, done);
+                            storagePasswords.create({name: name, realm: realm, password: "changed!"}, done);
                         },
                         function(storagePassword, done) {
                             test.strictEqual(name, storagePassword.properties().username);
                             test.strictEqual(realm + ":" + name + ":", storagePassword.name);
-                            test.strictEqual("changeme", storagePassword.properties().clear_password);
+                            test.strictEqual("changed!", storagePassword.properties().clear_password);
                             test.strictEqual(realm, storagePassword.properties().realm);
                             that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                         },
@@ -21464,12 +21464,12 @@ exports.setup = function(svc, loggedOutSvc) {
                         },
                         function(storagePasswords, done) {
                             startcount = storagePasswords.list().length;
-                            storagePasswords.create({name: name, realm: realm, password: "changeme"}, done);
+                            storagePasswords.create({name: name, realm: realm, password: "changed!"}, done);
                         },
                         function(storagePassword, done) {
                             test.strictEqual(name, storagePassword.properties().username);
                             test.strictEqual(realm + ":" + name + ":", storagePassword.name);
-                            test.strictEqual("changeme", storagePassword.properties().clear_password);
+                            test.strictEqual("changed!", storagePassword.properties().clear_password);
                             test.strictEqual(realm, storagePassword.properties().realm);
                             that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                         },
@@ -21535,12 +21535,12 @@ exports.setup = function(svc, loggedOutSvc) {
                         },
                         function(storagePasswords, done) {
                             startcount = storagePasswords.list().length;
-                            storagePasswords.create({name: name, realm: realm, password: "changeme"}, done);
+                            storagePasswords.create({name: name, realm: realm, password: "changed!"}, done);
                         },
                         function(storagePassword, done) {
                             test.strictEqual(name, storagePassword.properties().username);
                             test.strictEqual(realm + ":" + name + ":", storagePassword.name);
-                            test.strictEqual("changeme", storagePassword.properties().clear_password);
+                            test.strictEqual("changed!", storagePassword.properties().clear_password);
                             test.strictEqual(realm, storagePassword.properties().realm);
                             that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                         },
@@ -21553,7 +21553,7 @@ exports.setup = function(svc, loggedOutSvc) {
                         },
                         function(storagePasswords, done) {
                             test.strictEqual(startcount, storagePasswords.list().length);
-                            storagePasswords.create({name: name, realm: realm, password: "changeme"}, done);
+                            storagePasswords.create({name: name, realm: realm, password: "changed!"}, done);
                         },
                         function(storagePassword, done) {
                             test.strictEqual(name, storagePassword.properties().username);
@@ -21572,7 +21572,7 @@ exports.setup = function(svc, loggedOutSvc) {
                                     index = i;
                                     test.strictEqual(name, list[i].properties().username);
                                     test.strictEqual(realm + ":" + name + ":", list[i].name);
-                                    test.strictEqual("changeme", list[i].properties().clear_password);
+                                    test.strictEqual("changed!", list[i].properties().clear_password);
                                     test.strictEqual(realm, list[i].properties().realm);
                                 }
                             }
@@ -23123,7 +23123,7 @@ exports.main = function(opts, done) {
     opts = opts || {};
     
     var username = opts.username    || "admin";
-    var password = opts.password    || "changeme";
+    var password = opts.password    || "changed!";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
@@ -23201,7 +23201,7 @@ exports.main = function(opts, callback) {
     opts = opts || {};
     
     var username = opts.username    || "admin";
-    var password = opts.password    || "changeme";
+    var password = opts.password    || "changed!";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
@@ -23286,7 +23286,7 @@ exports.main = function(opts, callback) {
     opts = opts || {};
     
     var username = opts.username    || "admin";
-    var password = opts.password    || "changeme";
+    var password = opts.password    || "changed!";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
@@ -23425,7 +23425,7 @@ exports.main = function(opts, done) {
     opts = opts || {};
     
     var username = opts.username    || "admin";
-    var password = opts.password    || "changeme";
+    var password = opts.password    || "changed!";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
@@ -23523,7 +23523,7 @@ exports.main = function(opts, callback) {
     opts = opts || {};
     
     var username = opts.username    || "admin";
-    var password = opts.password    || "changeme";
+    var password = opts.password    || "changed!";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
@@ -23627,7 +23627,7 @@ exports.main = function(opts, done) {
     opts = opts || {};
     
     var username = opts.username    || "admin";
-    var password = opts.password    || "changeme";
+    var password = opts.password    || "changed!";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
@@ -23715,7 +23715,7 @@ exports.main = function(opts, done) {
     opts = opts || {};
     
     var username = opts.username    || "admin";
-    var password = opts.password    || "changeme";
+    var password = opts.password    || "changed!";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
@@ -23797,7 +23797,7 @@ exports.main = function(opts, callback) {
     opts = opts || {};
     
     var username = opts.username    || "admin";
-    var password = opts.password    || "changeme";
+    var password = opts.password    || "changed!";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
@@ -23955,7 +23955,7 @@ exports.main = function(opts, done) {
     opts = opts || {};
     
     var username = opts.username    || "admin";
-    var password = opts.password    || "changeme";
+    var password = opts.password    || "changed!";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
@@ -24029,7 +24029,7 @@ exports.main = function(opts, done) {
     opts = opts || {};
     
     var username = opts.username    || "admin";
-    var password = opts.password    || "changeme";
+    var password = opts.password    || "changed!";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
@@ -24108,7 +24108,7 @@ exports.main = function(opts, callback) {
     opts = opts || {};
     
     var username = opts.username    || "admin";
-    var password = opts.password    || "changeme";
+    var password = opts.password    || "changed!";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
@@ -24186,7 +24186,7 @@ exports.main = function(opts, done) {
     opts = opts || {};
     
     var username = opts.username    || "admin";
-    var password = opts.password    || "changeme";
+    var password = opts.password    || "changed!";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
@@ -24265,7 +24265,7 @@ exports.main = function(opts, done) {
     opts = opts || {};
     
     var username = opts.username    || "admin";
-    var password = opts.password    || "changeme";
+    var password = opts.password    || "changed!";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
@@ -24346,7 +24346,7 @@ exports.main = function(opts, callback) {
     opts = opts || {};
     
     var username = opts.username    || "admin";
-    var password = opts.password    || "changeme";
+    var password = opts.password    || "changed!";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
@@ -24446,7 +24446,7 @@ exports.main = function(opts, callback) {
     opts = opts || {};
     
     var username = opts.username    || "admin";
-    var password = opts.password    || "changeme";
+    var password = opts.password    || "changed!";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
@@ -24549,7 +24549,7 @@ exports.main = function(opts, callback) {
     opts = opts || {};
     
     var username = opts.username    || "admin";
-    var password = opts.password    || "changeme";
+    var password = opts.password    || "changed!";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
@@ -24635,7 +24635,7 @@ exports.main = function(opts, callback) {
     opts = opts || {};
     
     var username = opts.username    || "admin";
-    var password = opts.password    || "changeme";
+    var password = opts.password    || "changed!";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";
@@ -24817,7 +24817,7 @@ exports.main = function(opts, done) {
     opts = opts || {};
     
     var username = opts.username    || "admin";
-    var password = opts.password    || "changeme";
+    var password = opts.password    || "changed!";
     var scheme   = opts.scheme      || "https";
     var host     = opts.host        || "localhost";
     var port     = opts.port        || "8089";

@@ -21,17 +21,18 @@
         "javascript"
     ],
     "dependencies": {
-        "cookie": "0.2.0",
-        "elementtree": "0.1.6",
-        "request": "^2.x.x"
+        "dotenv": "^10.0.0",
+        "cookie": "0.4.1",
+        "elementtree": "0.1.7",
+        "needle": "2.6.0"
     },
     "devDependencies": {
-        "browserify": "^16.2.3",
-        "jshint": "0.5.x >= 0.5.4",
-        "mustache": "^2.2.1",
+        "browserify": "^17.0.0",
+        "jshint": "2.13.0",
+        "mustache": "4.2.0",
         "nodeunit": "^0.11.3",
-        "readable-stream": "1.1.13-1",
-        "uglify-js": "^3.4.9"
+        "readable-stream": "3.6.0",
+        "uglify-js": "3.13.8"
     },
     "author": {
         "name": "Splunk",
