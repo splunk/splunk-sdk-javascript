@@ -19,7 +19,6 @@
     var utils           = splunkjs.Utils;
     var Async           = splunkjs.Async;
     var options         = require('./cmdline');
-    var print           = require('util').print;
     
     var FLAGS_CREATE = [
         "search", "earliest_time", "latest_time", "now", "time_format",
@@ -81,7 +80,7 @@
                                             scanned  + " scanned | " +
                                             matched  + " matched | " +
                                             results  + " results";
-                                        print("\r" + stats + "                                          ");
+                                        console.log("\r" + stats + "                                          ");
                                     }
                                     
                                     Async.sleep(1000, iterationDone);
@@ -90,7 +89,7 @@
                         },
                         function(err) {
                             if (isVerbose) {
-                                print("\r");
+                                console.log("\r");
                             }
                             done(err, job);
                         }
