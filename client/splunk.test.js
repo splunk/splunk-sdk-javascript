@@ -15386,7 +15386,7 @@
                 },
     
                 "Callback#timeout default test": function(test){
-                    var service = new splunkjs.Service(svc.http,
+                    var service = new splunkjs.Service(
                         {
                             scheme: this.service.scheme,
                             host: this.service.host,
@@ -15519,286 +15519,286 @@
                     test.done();
                 }
             },
-            "Cookie Tests": {
-                setUp: function(done) {
-                    this.service = svc;
-                    this.skip = false;
-                    var that = this;
-                    svc.serverInfo(function(err, info) {
-                        var majorVersion = parseInt(info.properties().version.split(".")[0], 10);
-                        var minorVersion = parseInt(info.properties().version.split(".")[1], 10);
-                        // Skip cookie tests if Splunk older than 6.2
-                        if(majorVersion < 6 || (majorVersion === 6 && minorVersion < 2)) {
-                            that.skip = true;
-                            splunkjs.Logger.log("Skipping cookie tests...");
-                        }
-                        done();
-                    });
-                },
+            // "Cookie Tests": {
+            //     setUp: function(done) {
+            //         this.service = svc;
+            //         this.skip = false;
+            //         var that = this;
+            //         svc.serverInfo(function(err, info) {
+            //             var majorVersion = parseInt(info.properties().version.split(".")[0], 10);
+            //             var minorVersion = parseInt(info.properties().version.split(".")[1], 10);
+            //             // Skip cookie tests if Splunk older than 6.2
+            //             if(majorVersion < 6 || (majorVersion === 6 && minorVersion < 2)) {
+            //                 that.skip = true;
+            //                 splunkjs.Logger.log("Skipping cookie tests...");
+            //             }
+            //             done();
+            //         });
+            //     },
     
-                tearDown: function(done) {
-                    this.service.logout(done);
-                },
+            //     tearDown: function(done) {
+            //         this.service.logout(done);
+            //     },
     
-                "_getCookieString works as expected": function(test){
-                    var service = new splunkjs.Service(svc.http,
-                    {
-                        scheme: svc.scheme,
-                        host: svc.host,
-                        port: svc.port
-                    });
+            //     "_getCookieString works as expected": function(test){
+            //         var service = new splunkjs.Service(
+            //         {
+            //             scheme: svc.scheme,
+            //             host: svc.host,
+            //             port: svc.port
+            //         });
     
-                    service.http._cookieStore = {
-                        'cookie'  : 'format',
-                        'another' : 'one'
-                    };
+            //         service.http._cookieStore = {
+            //             'cookie'  : 'format',
+            //             'another' : 'one'
+            //         };
     
-                    var expectedCookieString = 'cookie=format; another=one; ';
-                    var cookieString = service.http._getCookieString();
+            //         var expectedCookieString = 'cookie=format; another=one; ';
+            //         var cookieString = service.http._getCookieString();
     
-                    test.strictEqual(cookieString, expectedCookieString);
-                    test.done();
-                },
+            //         test.strictEqual(cookieString, expectedCookieString);
+            //         test.done();
+            //     },
     
-                "login and store cookie": function(test){
-                    if(this.skip){
-                        test.done();
-                        return;
-                    }
-                    var service = new splunkjs.Service(svc.http,
-                    {
-                        scheme: svc.scheme,
-                        host: svc.host,
-                        port: svc.port,
-                        username: svc.username,
-                        password: svc.password,
-                        version: svc.version
-                    });
+            //     "login and store cookie": function(test){
+            //         if(this.skip){
+            //             test.done();
+            //             return;
+            //         }
+            //         var service = new splunkjs.Service(
+            //         {
+            //             scheme: svc.scheme,
+            //             host: svc.host,
+            //             port: svc.port,
+            //             username: svc.username,
+            //             password: svc.password,
+            //             version: svc.version
+            //         });
     
-                    // Check that there are no cookies
-                    test.ok(utils.isEmpty(service.http._cookieStore));
+            //         // Check that there are no cookies
+            //         test.ok(utils.isEmpty(service.http._cookieStore));
     
     
-                    service.login(function(err, success) {
-                        // Check that cookies were saved
-                        test.ok(!utils.isEmpty(service.http._cookieStore));
-                        test.notStrictEqual(service.http._getCookieString(), '');
-                        test.done();
-                    });
-                },
+            //         service.login(function(err, success) {
+            //             // Check that cookies were saved
+            //             test.ok(!utils.isEmpty(service.http._cookieStore));
+            //             test.notStrictEqual(service.http._getCookieString(), '');
+            //             test.done();
+            //         });
+            //     },
     
-                "request with cookie": function(test) {
-                    if(this.skip){
-                        test.done();
-                        return;
-                    }
-                    var service = new splunkjs.Service(svc.http,
-                    {
-                        scheme: svc.scheme,
-                        host: svc.host,
-                        port: svc.port,
-                        username: svc.username,
-                        password: svc.password,
-                        version: svc.version
-                    });
-                        // Create another service to put valid cookie into, give no other authentication information
-                    var service2 = new splunkjs.Service(svc.http,
-                    {
-                        scheme: svc.scheme,
-                        host: svc.host,
-                        port: svc.port,
-                        version: svc.version
-                    });
+            //     "request with cookie": function(test) {
+            //         if(this.skip){
+            //             test.done();
+            //             return;
+            //         }
+            //         var service = new splunkjs.Service(
+            //         {
+            //             scheme: svc.scheme,
+            //             host: svc.host,
+            //             port: svc.port,
+            //             username: svc.username,
+            //             password: svc.password,
+            //             version: svc.version
+            //         });
+            //             // Create another service to put valid cookie into, give no other authentication information
+            //         var service2 = new splunkjs.Service(
+            //         {
+            //             scheme: svc.scheme,
+            //             host: svc.host,
+            //             port: svc.port,
+            //             version: svc.version
+            //         });
     
-                    // Login to service to get a valid cookie
-                    Async.chain([
-                            function (done) {
-                                service.login(done);
-                            },
-                            function (job, done) {
-                                // Save the cookie store
-                                var cookieStore = service.http._cookieStore;
-                                // Test that there are cookies
-                                test.ok(!utils.isEmpty(cookieStore));
-                                // Add the cookies to a service with no other authentication information
-                                service2.http._cookieStore = cookieStore;
-                                // Make a request that requires authentication
-                                service2.get("search/jobs", {count: 1}, done);
-                            },
-                            function (res, done) {
-                                // Test that a response was returned
-                                test.ok(res);
-                                done();
-                            }
-                        ],
-                        function(err) {
-                            // Test that no errors were returned
-                            test.ok(!err);
-                            test.done();
-                        }
-                    );
-                },
+            //         // Login to service to get a valid cookie
+            //         Async.chain([
+            //                 function (done) {
+            //                     service.login(done);
+            //                 },
+            //                 function (job, done) {
+            //                     // Save the cookie store
+            //                     var cookieStore = service.http._cookieStore;
+            //                     // Test that there are cookies
+            //                     test.ok(!utils.isEmpty(cookieStore));
+            //                     // Add the cookies to a service with no other authentication information
+            //                     service2.http._cookieStore = cookieStore;
+            //                     // Make a request that requires authentication
+            //                     service2.get("search/jobs", {count: 1}, done);
+            //                 },
+            //                 function (res, done) {
+            //                     // Test that a response was returned
+            //                     test.ok(res);
+            //                     done();
+            //                 }
+            //             ],
+            //             function(err) {
+            //                 // Test that no errors were returned
+            //                 test.ok(!err);
+            //                 test.done();
+            //             }
+            //         );
+            //     },
     
-                "request fails with bad cookie": function(test) {
-                    if(this.skip){
-                        test.done();
-                        return;
-                    }
-                    // Create a service with no login information
-                    var service = new splunkjs.Service(svc.http,
-                    {
-                        scheme: svc.scheme,
-                        host: svc.host,
-                        port: svc.port,
-                        version: svc.version
-                    });
+            //     "request fails with bad cookie": function(test) {
+            //         if(this.skip){
+            //             test.done();
+            //             return;
+            //         }
+            //         // Create a service with no login information
+            //         var service = new splunkjs.Service(
+            //         {
+            //             scheme: svc.scheme,
+            //             host: svc.host,
+            //             port: svc.port,
+            //             version: svc.version
+            //         });
     
-                    // Put a bad cookie into the service
-                    service.http._cookieStore = { "bad" : "cookie" };
+            //         // Put a bad cookie into the service
+            //         service.http._cookieStore = { "bad" : "cookie" };
     
-                    // Try requesting something that requires authentication
-                    service.get("search/jobs", {count: 1}, function(err, res) {
-                        // Test if an error is returned
-                        test.ok(err);
-                        // Check that it is an unauthorized error
-                        test.strictEqual(err.status, 401);
-                        test.done();
-                    });
-                },
+            //         // Try requesting something that requires authentication
+            //         service.get("search/jobs", {count: 1}, function(err, res) {
+            //             // Test if an error is returned
+            //             test.ok(err);
+            //             // Check that it is an unauthorized error
+            //             test.strictEqual(err.status, 401);
+            //             test.done();
+            //         });
+            //     },
     
-                "autologin with cookie": function(test) {
-                    if(this.skip){
-                        test.done();
-                        return;
-                    }
-                    var service = new splunkjs.Service(svc.http,
-                    {
-                        scheme: svc.scheme,
-                        host: svc.host,
-                        port: svc.port,
-                        username: svc.username,
-                        password: svc.password,
-                        version: svc.version
-                    });
+            //     "autologin with cookie": function(test) {
+            //         if(this.skip){
+            //             test.done();
+            //             return;
+            //         }
+            //         var service = new splunkjs.Service(
+            //         {
+            //             scheme: svc.scheme,
+            //             host: svc.host,
+            //             port: svc.port,
+            //             username: svc.username,
+            //             password: svc.password,
+            //             version: svc.version
+            //         });
     
-                    // Test if service has no cookies
-                    test.ok(utils.isEmpty(service.http._cookieStore));
+            //         // Test if service has no cookies
+            //         test.ok(utils.isEmpty(service.http._cookieStore));
     
-                    service.get("search/jobs", {count: 1}, function(err, res) {
-                        // Test if service now has a cookie
-                        test.ok(service.http._cookieStore);
-                        test.done();
-                    });
-                },
+            //         service.get("search/jobs", {count: 1}, function(err, res) {
+            //             // Test if service now has a cookie
+            //             test.ok(service.http._cookieStore);
+            //             test.done();
+            //         });
+            //     },
     
-                "login fails with no cookie and no sessionKey": function(test) {
-                    if(this.skip){
-                        test.done();
-                        return;
-                    }
-                    var service = new splunkjs.Service(svc.http,
-                    {
-                        scheme: svc.scheme,
-                        host: svc.host,
-                        port: svc.port,
-                        version: svc.version
-                    });
+            //     "login fails with no cookie and no sessionKey": function(test) {
+            //         if(this.skip){
+            //             test.done();
+            //             return;
+            //         }
+            //         var service = new splunkjs.Service(
+            //         {
+            //             scheme: svc.scheme,
+            //             host: svc.host,
+            //             port: svc.port,
+            //             version: svc.version
+            //         });
     
-                    // Test there is no authentication information
-                    test.ok(utils.isEmpty(service.http._cookieStore));
-                    test.strictEqual(service.sessionKey, '');
-                    test.ok(!service.username);
-                    test.ok(!service.password);
+            //         // Test there is no authentication information
+            //         test.ok(utils.isEmpty(service.http._cookieStore));
+            //         test.strictEqual(service.sessionKey, '');
+            //         test.ok(!service.username);
+            //         test.ok(!service.password);
     
-                    service.get("search/jobs", {count: 1}, function(err, res) {
-                        // Test if an error is returned
-                        test.ok(err);
-                        test.done();
-                    });
-                },
+            //         service.get("search/jobs", {count: 1}, function(err, res) {
+            //             // Test if an error is returned
+            //             test.ok(err);
+            //             test.done();
+            //         });
+            //     },
     
-                "login with multiple cookies": function(test) {
-                    if(this.skip){
-                        test.done();
-                        return;
-                    }
-                    var service = new splunkjs.Service(svc.http,
-                    {
-                        scheme: svc.scheme,
-                        host: svc.host,
-                        port: svc.port,
-                        username: svc.username,
-                        password: svc.password,
-                        version: svc.version
-                    });
-                        // Create another service to put valid cookie into, give no other authentication information
-                    var service2 = new splunkjs.Service(svc.http,
-                    {
-                        scheme: svc.scheme,
-                        host: svc.host,
-                        port: svc.port,
-                        version: svc.version
-                    });
+            //     "login with multiple cookies": function(test) {
+            //         if(this.skip){
+            //             test.done();
+            //             return;
+            //         }
+            //         var service = new splunkjs.Service(
+            //         {
+            //             scheme: svc.scheme,
+            //             host: svc.host,
+            //             port: svc.port,
+            //             username: svc.username,
+            //             password: svc.password,
+            //             version: svc.version
+            //         });
+            //             // Create another service to put valid cookie into, give no other authentication information
+            //         var service2 = new splunkjs.Service(
+            //         {
+            //             scheme: svc.scheme,
+            //             host: svc.host,
+            //             port: svc.port,
+            //             version: svc.version
+            //         });
     
-                    // Login to service to get a valid cookie
-                    Async.chain([
-                            function (done) {
-                                service.login(done);
-                            },
-                            function (job, done) {
-                                // Save the cookie store
-                                var cookieStore = service.http._cookieStore;
-                                // Test that there are cookies
-                                test.ok(!utils.isEmpty(cookieStore));
+            //         // Login to service to get a valid cookie
+            //         Async.chain([
+            //                 function (done) {
+            //                     service.login(done);
+            //                 },
+            //                 function (job, done) {
+            //                     // Save the cookie store
+            //                     var cookieStore = service.http._cookieStore;
+            //                     // Test that there are cookies
+            //                     test.ok(!utils.isEmpty(cookieStore));
     
-                                // Add a bad cookie to the cookieStore
-                                cookieStore['bad'] = 'cookie';
+            //                     // Add a bad cookie to the cookieStore
+            //                     cookieStore['bad'] = 'cookie';
     
-                                // Add the cookies to a service with no other authenitcation information
-                                service2.http._cookieStore = cookieStore;
+            //                     // Add the cookies to a service with no other authenitcation information
+            //                     service2.http._cookieStore = cookieStore;
     
-                                // Make a request that requires authentication
-                                service2.get("search/jobs", {count: 1}, done);
-                            },
-                            function (res, done) {
-                                // Test that a response was returned
-                                test.ok(res);
-                                done();
-                            }
-                        ],
-                        function(err) {
-                            // Test that no errors were returned
-                            test.ok(!err);
-                            test.done();
-                        }
-                    );
-                },
+            //                     // Make a request that requires authentication
+            //                     service2.get("search/jobs", {count: 1}, done);
+            //                 },
+            //                 function (res, done) {
+            //                     // Test that a response was returned
+            //                     test.ok(res);
+            //                     done();
+            //                 }
+            //             ],
+            //             function(err) {
+            //                 // Test that no errors were returned
+            //                 test.ok(!err);
+            //                 test.done();
+            //             }
+            //         );
+            //     },
     
-                "autologin with cookie and bad sessionKey": function(test) {
-                    if(this.skip){
-                        test.done();
-                        return;
-                    }
-                    var service = new splunkjs.Service(svc.http,
-                    {
-                        scheme: svc.scheme,
-                        host: svc.host, port: svc.port,
-                        username: svc.username,
-                        password: svc.password,
-                        sessionKey: 'ABC-BADKEY',
-                        version: svc.version
-                    });
+            //     "autologin with cookie and bad sessionKey": function(test) {
+            //         if(this.skip){
+            //             test.done();
+            //             return;
+            //         }
+            //         var service = new splunkjs.Service(
+            //         {
+            //             scheme: svc.scheme,
+            //             host: svc.host, port: svc.port,
+            //             username: svc.username,
+            //             password: svc.password,
+            //             sessionKey: 'ABC-BADKEY',
+            //             version: svc.version
+            //         });
     
-                    // Test if service has no cookies
-                    test.ok(utils.isEmpty(service.http._cookieStore));
+            //         // Test if service has no cookies
+            //         test.ok(utils.isEmpty(service.http._cookieStore));
     
-                    service.get("search/jobs", {count: 1}, function(err, res) {
-                        // Test if service now has a cookie
-                        test.ok(service.http._cookieStore);
-                        test.done();
-                    });
-                 }
-            }
+            //         service.get("search/jobs", {count: 1}, function(err, res) {
+            //             // Test if service now has a cookie
+            //             test.ok(service.http._cookieStore);
+            //             test.done();
+            //         });
+            //      }
+            // }
         };
         return suite;
     };
@@ -16058,12 +16058,12 @@
                             function(app2, done) {
                                 that.app2 = app2;
                                 that.appName2 = appName2;
-                                users.create({name: userName1, password: "Splunk@123", roles: ["user"]}, done);
+                                users.create({name: userName1, password: "abc", roles: ["user"]}, done);
                             },
                             function(user1, done) {
                                 that.user1 = user1;
                                 that.userName1 = userName1;
-                                users.create({name: userName2, password: "Splunk@123", roles: ["user"]}, done);
+                                users.create({name: userName2, password: "abc", roles: ["user"]}, done);
                             },
                             function(user2, done) {
                                 that.user2 = user2;
@@ -16303,39 +16303,37 @@
                     this.service = svc;
                     done();
                 },
-                
-                // Disabling the test for now because the apps/appinstall endpoint have been deprecated from Splunk 8.2
-                //
-                // "Callback#Create+abort job": function(test) {
-                //     var service = this.service;
-                //     Async.chain([
-                //         function(done){
-                //             var app_name = path.join(process.env.SPLUNK_HOME, ('/etc/apps/sdk-app-collection/build/sleep_command.tar'));
-                //             // Fix path on Windows if $SPLUNK_HOME contains a space (ex: C:/Program%20Files/Splunk)
-                //             app_name = app_name.replace("%20", " ");
-                //             service.post("apps/appinstall", {update:1, name:app_name}, done);
-                //         },
-                //         function(done){
-                //             var sid = getNextId();
-                //             var options = {id: sid};
-                //             var jobs = service.jobs({app: "sdk-app-collection"});
-                //             var req = jobs.oneshotSearch('search index=_internal | head 1 | sleep 10', options, function(err, job) {
-                //                 test.ok(err);
-                //                 test.ok(!job);
-                //                 test.strictEqual(err.error, "abort");
-                //                 test.done();
-                //             });
     
-                //             Async.sleep(1000, function(){
-                //                 req.abort();
-                //             });
-                //         }
-                //     ],
-                //     function(err){
-                //         test.ok(!err);
-                //         test.done();
-                //     });
-                // },
+                "Callback#Create+abort job": function(test) {
+                    var service = this.service;
+                    Async.chain([
+                        function(done){
+                            var app_name = path.join(process.env.SPLUNK_HOME, ('/etc/apps/sdk-app-collection/build/sleep_command.tar'));
+                            // Fix path on Windows if $SPLUNK_HOME contains a space (ex: C:/Program%20Files/Splunk)
+                            app_name = app_name.replace("%20", " ");
+                            service.post("apps/appinstall", {update:1, name:app_name}, done);
+                        },
+                        function(done){
+                            var sid = getNextId();
+                            var options = {id: sid};
+                            var jobs = service.jobs({app: "sdk-app-collection"});
+                            var req = jobs.oneshotSearch('search index=_internal | head 1 | sleep 10', options, function(err, job) {
+                                test.ok(err);
+                                test.ok(!job);
+                                test.strictEqual(err.error, "abort");
+                                test.done();
+                            });
+    
+                            Async.sleep(1000, function(){
+                                req.abort();
+                            });
+                        }
+                    ],
+                    function(err){
+                        test.ok(!err);
+                        test.done();
+                    });
+                },
     
                 "Callback#Create+cancel job": function(test) {
                     var sid = getNextId();
@@ -16559,89 +16557,85 @@
                     );
                 },
     
-                // Disabling the test for now because the apps/appinstall endpoint have been deprecated from Splunk 8.2
-                //
-                // "Callback#Enable + disable preview": function(test) {
-                //     var that = this;
-                //     var sid = getNextId();
+                "Callback#Enable + disable preview": function(test) {
+                    var that = this;
+                    var sid = getNextId();
     
-                //     var service = this.service.specialize("nobody", "sdk-app-collection");
+                    var service = this.service.specialize("nobody", "sdk-app-collection");
     
-                //     Async.chain([
-                //             function(done) {
-                //                 service.jobs().search('search index=_internal | head 1 | sleep 60', {id: sid}, done);
-                //             },
-                //             function(job, done) {
-                //                 job.enablePreview(done);
+                    Async.chain([
+                            function(done) {
+                                service.jobs().search('search index=_internal | head 1 | sleep 60', {id: sid}, done);
+                            },
+                            function(job, done) {
+                                job.enablePreview(done);
     
-                //             },
-                //             function(job, done) {
-                //                 job.disablePreview(done);
-                //             },
-                //             function(job, done) {
-                //                 job.cancel(done);
-                //             }
-                //         ],
-                //         function(err) {
-                //             test.ok(!err);
-                //             test.done();
-                //         }
-                //     );
-                // },
+                            },
+                            function(job, done) {
+                                job.disablePreview(done);
+                            },
+                            function(job, done) {
+                                job.cancel(done);
+                            }
+                        ],
+                        function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
+                },
     
-                // Disabling the test for now because the apps/appinstall endpoint have been deprecated from Splunk 8.2
-                //
-                // "Callback#Pause + unpause + finalize preview": function(test) {
-                //     var that = this;
-                //     var sid = getNextId();
+                "Callback#Pause + unpause + finalize preview": function(test) {
+                    var that = this;
+                    var sid = getNextId();
     
-                //     var service = this.service.specialize("nobody", "sdk-app-collection");
+                    var service = this.service.specialize("nobody", "sdk-app-collection");
     
-                //     Async.chain([
-                //             function(done) {
-                //                 service.jobs().search('search index=_internal | head 1 | sleep 5', {id: sid}, done);
-                //             },
-                //             function(job, done) {
-                //                 job.pause(done);
-                //             },
-                //             function(job, done) {
-                //                 tutils.pollUntil(
-                //                     job,
-                //                     function(j) {
-                //                         return j.properties()["isPaused"];
-                //                     },
-                //                     10,
-                //                     done
-                //                 );
-                //             },
-                //             function(job, done) {
-                //                 test.ok(job.properties()["isPaused"]);
-                //                 job.unpause(done);
-                //             },
-                //             function(job, done) {
-                //                 tutils.pollUntil(
-                //                     job,
-                //                     function(j) {
-                //                         return !j.properties()["isPaused"];
-                //                     },
-                //                     10,
-                //                     done
-                //                 );
-                //             },
-                //             function(job, done) {
-                //                 test.ok(!job.properties()["isPaused"]);
-                //                 job.finalize(done);
-                //             },
-                //             function(job, done) {
-                //                 job.cancel(done);
-                //             }
-                //         ],
-                //         function(err) {
-                //             test.ok(!err);
-                //             test.done();
-                //         }
-                //     );
-                // },
+                    Async.chain([
+                            function(done) {
+                                service.jobs().search('search index=_internal | head 1 | sleep 5', {id: sid}, done);
+                            },
+                            function(job, done) {
+                                job.pause(done);
+                            },
+                            function(job, done) {
+                                tutils.pollUntil(
+                                    job,
+                                    function(j) {
+                                        return j.properties()["isPaused"];
+                                    },
+                                    10,
+                                    done
+                                );
+                            },
+                            function(job, done) {
+                                test.ok(job.properties()["isPaused"]);
+                                job.unpause(done);
+                            },
+                            function(job, done) {
+                                tutils.pollUntil(
+                                    job,
+                                    function(j) {
+                                        return !j.properties()["isPaused"];
+                                    },
+                                    10,
+                                    done
+                                );
+                            },
+                            function(job, done) {
+                                test.ok(!job.properties()["isPaused"]);
+                                job.finalize(done);
+                            },
+                            function(job, done) {
+                                job.cancel(done);
+                            }
+                        ],
+                        function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
+                },
     
                 "Callback#Set TTL": function(test) {
                     var sid = getNextId();
@@ -16678,44 +16672,42 @@
                     );
                 },
     
-                // Disabling the test for now because the apps/appinstall endpoint have been deprecated from Splunk 8.2
-                //
-                // "Callback#Set priority": function(test) {
-                //     var sid = getNextId();
-                //     var originalPriority = 0;
-                //     var that = this;
+                "Callback#Set priority": function(test) {
+                    var sid = getNextId();
+                    var originalPriority = 0;
+                    var that = this;
     
-                //     var service = this.service.specialize("nobody", "sdk-app-collection");
+                    var service = this.service.specialize("nobody", "sdk-app-collection");
     
-                //     Async.chain([
-                //             function(done) {
-                //                 service.jobs().search('search index=_internal | head 1 | sleep 5', {id: sid}, done);
-                //             },
-                //             function(job, done) {
-                //                 job.track({}, {
-                //                     ready: function(job) {
-                //                         done(null, job);
-                //                     }
-                //                 });
-                //             },
-                //             function(job, done) {
-                //                 var priority = job.properties()["priority"];
-                //                 test.ok(priority, 5);
-                //                 job.setPriority(priority + 1, done);
-                //             },
-                //             function(job, done) {
-                //                 job.fetch(done);
-                //             },
-                //             function(job, done) {
-                //                 job.cancel(done);
-                //             }
-                //         ],
-                //         function(err) {
-                //             test.ok(!err);
-                //             test.done();
-                //         }
-                //     );
-                // },
+                    Async.chain([
+                            function(done) {
+                                service.jobs().search('search index=_internal | head 1 | sleep 5', {id: sid}, done);
+                            },
+                            function(job, done) {
+                                job.track({}, {
+                                    ready: function(job) {
+                                        done(null, job);
+                                    }
+                                });
+                            },
+                            function(job, done) {
+                                var priority = job.properties()["priority"];
+                                test.ok(priority, 5);
+                                job.setPriority(priority + 1, done);
+                            },
+                            function(job, done) {
+                                job.fetch(done);
+                            },
+                            function(job, done) {
+                                job.cancel(done);
+                            }
+                        ],
+                        function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
+                },
     
                 "Callback#Search log": function(test) {
                     var sid = getNextId();
@@ -16931,11 +16923,7 @@
                         }
                     );
                 },
-                
-                // Disabling the test for now because the messages field is missing in results object from Splunk 8.2
-                // so test.ok(results.messages[1].text.indexOf('owner="admin"')); 
-                // and test.ok(results.messages[1].text.indexOf('app="search"')); assertions will fail.
-                //
+    
                 // "Callback#Service oneshot search": function(test) {
                 //     var sid = getNextId();
                 //     var that = this;
@@ -17321,53 +17309,49 @@
                         return;
                     }
                     var args;
-                    var name = "delete-me-" + getNextId();
-                    var initialSize;
-                    var that = this;
-
                     try {
-                        // args = JSON.parse(utils.readFile(__filename, "../data/empty_data_model.json"));
-                        fetch('./data/empty_data_model.json')
-                        .then(response => response.json())
-                        .then(json => {
-                            args = json;
-                            Async.chain([
-                                function(done) {
-                                    that.dataModels.fetch(done);
-                                },
-                                function(dataModels, done) {
-                                    initialSize = dataModels.list().length;
-                                    dataModels.create(name, args, done);
-                                },
-                                function(dataModel, done) {
-                                    that.dataModels.fetch(done);
-                                },
-                                function(dataModels, done) {
-                                    // Make sure we have 1 more data model than we started with
-                                    test.strictEqual(initialSize + 1, dataModels.list().length);
-                                    // Delete the data model we just created, by name.
-                                    dataModels.item(name).remove(done);
-                                },
-                                function(done) {
-                                    that.dataModels.fetch(done);
-                                },
-                                function(dataModels, done) {
-                                    // Make sure we have as many data models as we started with
-                                    test.strictEqual(initialSize, dataModels.list().length);
-                                    done();
-                                }],
-                                function(err) {
-                                    test.ok(!err);
-                                    test.done();
-                                }
-                            );
-                        });
+                        args = JSON.parse(utils.readFile(__filename, "../data/empty_data_model.json"));
                     }
                     catch(err) {
                         // Fail if we can't read the file, likely to occur in the browser
                         test.ok(!err);
                         test.done();
                     }
+                    var name = "delete-me-" + getNextId();
+    
+                    var initialSize;
+                    var that = this;
+                    Async.chain([
+                            function(done) {
+                                that.dataModels.fetch(done);
+                            },
+                            function(dataModels, done) {
+                                initialSize = dataModels.list().length;
+                                dataModels.create(name, args, done);
+                            },
+                            function(dataModel, done) {
+                                that.dataModels.fetch(done);
+                            },
+                            function(dataModels, done) {
+                                // Make sure we have 1 more data model than we started with
+                                test.strictEqual(initialSize + 1, dataModels.list().length);
+                                // Delete the data model we just created, by name.
+                                dataModels.item(name).remove(done);
+                            },
+                            function(done) {
+                                that.dataModels.fetch(done);
+                            },
+                            function(dataModels, done) {
+                                // Make sure we have as many data models as we started with
+                                test.strictEqual(initialSize, dataModels.list().length);
+                                done();
+                            }
+                        ],
+                        function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
                 },
     
                 "Callback#DataModels - create a data model with spaces in the name, which are swapped for -'s": function(test) {
@@ -17376,35 +17360,31 @@
                         return;
                     }
                     var args;
-                    var name = "delete-me- " + getNextId();
-                    var that = this;
-
                     try {
-                        // args = JSON.parse(utils.readFile(__filename, "../data/empty_data_model.json"));
-                        fetch('./data/empty_data_model.json')
-                        .then(response => response.json())
-                        .then(json => {
-                            args = json;
-                            Async.chain([
-                                function(done) {
-                                    that.dataModels.create(name, args, done);
-                                },
-                                function(dataModel, done) {
-                                    test.strictEqual(name.replace(" ", "_"), dataModel.name);
-                                    done();
-                                }],
-                                function(err) {
-                                    test.ok(!err);
-                                    test.done();
-                                }
-                            );
-                        });
+                        args = JSON.parse(utils.readFile(__filename, "../data/empty_data_model.json"));
                     }
                     catch(err) {
                         // Fail if we can't read the file, likely to occur in the browser
                         test.ok(!err);
                         test.done();
                     }
+                    var name = "delete-me- " + getNextId();
+    
+                    var that = this;
+                    Async.chain([
+                            function(done) {
+                                that.dataModels.create(name, args, done);
+                            },
+                            function(dataModel, done) {
+                                test.strictEqual(name.replace(" ", "_"), dataModel.name);
+                                done();
+                            }
+                        ],
+                        function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
                 },
     
                 "Callback#DataModels - create a data model with 0 objects": function(test) {
@@ -17413,41 +17393,37 @@
                         return;
                     }
                     var args;
-                    var name = "delete-me-" + getNextId();
-                    var that = this;
-
                     try {
-                        // args = JSON.parse(utils.readFile(__filename, "../data/empty_data_model.json"));
-                        fetch('./data/empty_data_model.json')
-                        .then(response => response.json())
-                        .then(json => {
-                            args = json;
-                            Async.chain([
-                                function(done) {
-                                    that.dataModels.create(name, args, done);
-                                },
-                                function(dataModel, done) {
-                                    // Check for 0 objects before fetch
-                                    test.strictEqual(0, dataModel.objects.length);
-                                    that.dataModels.fetch(done);
-                                },
-                                function(dataModels, done) {
-                                    // Check for 0 objects after fetch
-                                    test.strictEqual(0, dataModels.item(name).objects.length);
-                                    done();
-                                }],
-                                function(err) {
-                                    test.ok(!err);
-                                    test.done();
-                                }
-                            );
-                        });
+                        args = JSON.parse(utils.readFile(__filename, "../data/empty_data_model.json"));
                     }
                     catch(err) {
                         // Fail if we can't read the file, likely to occur in the browser
                         test.ok(!err);
                         test.done();
                     }
+                    var name = "delete-me-" + getNextId();
+    
+                    var that = this;
+                    Async.chain([
+                            function(done) {
+                                that.dataModels.create(name, args, done);
+                            },
+                            function(dataModel, done) {
+                                // Check for 0 objects before fetch
+                                test.strictEqual(0, dataModel.objects.length);
+                                that.dataModels.fetch(done);
+                            },
+                            function(dataModels, done) {
+                                // Check for 0 objects after fetch
+                                test.strictEqual(0, dataModels.item(name).objects.length);
+                                done();
+                            }
+                        ],
+                        function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
                 },
     
                 "Callback#DataModels - create a data model with 1 search object": function(test) {
@@ -17455,44 +17431,41 @@
                         test.done();
                         return;
                     }
-
                     var dataModels = this.service.dataModels();
-                    var name = "delete-me-" + getNextId();
-                    var that = this;
+    
+    
                     var args;
-
                     try {
-                        // args = JSON.parse(utils.readFile(__filename, "../data/object_with_one_search.json"));
-                        fetch('./data/object_with_one_search.json')
-                        .then(response => response.json())
-                        .then(json => {
-                            args = json;
-                            Async.chain([
-                                function(done) {
-                                    that.dataModels.create(name, args, done);
-                                },
-                                function(dataModel, done) {
-                                    // Check for 1 object before fetch
-                                    test.strictEqual(1, dataModel.objects.length);
-                                    that.dataModels.fetch(done);
-                                },
-                                function(dataModels, done) {
-                                    // Check for 1 object after fetch
-                                    test.strictEqual(1, dataModels.item(name).objects.length);
-                                    done();
-                                }],
-                                function(err) {
-                                    test.ok(!err);
-                                    test.done();
-                                }
-                            );
-                        });
+                        args = JSON.parse(utils.readFile(__filename, "../data/object_with_one_search.json"));
                     }
                     catch(err) {
                         // Fail if we can't read the file, likely to occur in the browser
                         test.ok(!err);
                         test.done();
                     }
+                    var name = "delete-me-" + getNextId();
+    
+                    var that = this;
+                    Async.chain([
+                            function(done) {
+                                that.dataModels.create(name, args, done);
+                            },
+                            function(dataModel, done) {
+                                // Check for 1 object before fetch
+                                test.strictEqual(1, dataModel.objects.length);
+                                that.dataModels.fetch(done);
+                            },
+                            function(dataModels, done) {
+                                // Check for 1 object after fetch
+                                test.strictEqual(1, dataModels.item(name).objects.length);
+                                done();
+                            }
+                        ],
+                        function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
                 },
     
                 "Callback#DataModels - create a data model with 2 search objects": function(test) {
@@ -17500,43 +17473,38 @@
                         test.done();
                         return;
                     }
-
                     var args;
-                    var name = "delete-me-" + getNextId();
-                    var that = this;
-
                     try {
-                        // args = JSON.parse(utils.readFile(__filename, "../data/object_with_two_searches.json"));
-                        fetch('./data/object_with_two_searches.json')
-                        .then(response => response.json())
-                        .then(json => {
-                            args = json;
-                            Async.chain([
-                                function(done) {
-                                    that.dataModels.create(name, args, done);
-                                },
-                                function(dataModel, done) {
-                                    // Check for 2 objects before fetch
-                                    test.strictEqual(2, dataModel.objects.length);
-                                    that.dataModels.fetch(done);
-                                },
-                                function(dataModels, done) {
-                                    // Check for 2 objects after fetch
-                                    test.strictEqual(2, dataModels.item(name).objects.length);
-                                    done();
-                                }],
-                                function(err) {
-                                    test.ok(!err);
-                                    test.done();
-                                }
-                            );
-                        });
+                        args = JSON.parse(utils.readFile(__filename, "../data/object_with_two_searches.json"));
                     }
                     catch(err) {
                         // Fail if we can't read the file, likely to occur in the browser
                         test.ok(!err);
                         test.done();
                     }
+                    var name = "delete-me-" + getNextId();
+    
+                    var that = this;
+                    Async.chain([
+                            function(done) {
+                                that.dataModels.create(name, args, done);
+                            },
+                            function(dataModel, done) {
+                                // Check for 2 objects before fetch
+                                test.strictEqual(2, dataModel.objects.length);
+                                that.dataModels.fetch(done);
+                            },
+                            function(dataModels, done) {
+                                // Check for 2 objects after fetch
+                                test.strictEqual(2, dataModels.item(name).objects.length);
+                                done();
+                            }
+                        ],
+                        function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
                 },
     
                 "Callback#DataModels - data model objects are created correctly": function(test) {
@@ -17544,47 +17512,42 @@
                         test.done();
                         return;
                     }
-
                     var args;
-                    var name = "delete-me-" + getNextId();
-                    var that = this;
-
                     try {
-                        // args = JSON.parse(utils.readFile(__filename, "../data/object_with_two_searches.json"));
-                        fetch('./data/object_with_two_searches.json')
-                        .then(response => response.json())
-                        .then(json => {
-                            args = json;
-                            Async.chain([
-                                function(done) {
-                                    that.dataModels.create(name, args, done);
-                                },
-                                function(dataModel, done) {
-                                    test.ok(dataModel.hasObject("search1"));
-                                    test.ok(dataModel.hasObject("search2"));
-        
-                                    var search1 = dataModel.objectByName("search1");
-                                    test.ok(search1);
-                                    test.strictEqual(decodeURI("%E2%80%A1%C3%98%C2%B5%E2%80%A1%C3%98%C2%B1%E2%80%A1%C3%98%E2%88%9E%E2%80%A1%C3%98%C3%98%20-%20search%201"), search1.displayName);
-        
-                                    var search2 = dataModel.objectByName("search2");
-                                    test.ok(search2);
-                                    test.strictEqual(decodeURI("%E2%80%A1%C3%98%C2%B5%E2%80%A1%C3%98%C2%B1%E2%80%A1%C3%98%E2%88%9E%E2%80%A1%C3%98%C3%98%20-%20search%202"), search2.displayName);
-        
-                                    done();
-                                }],
-                                function(err) {
-                                    test.ok(!err);
-                                    test.done();
-                                }
-                            );
-                        });
+                        args = JSON.parse(utils.readFile(__filename, "../data/object_with_two_searches.json"));
                     }
                     catch(err) {
                         // Fail if we can't read the file, likely to occur in the browser
                         test.ok(!err);
                         test.done();
                     }
+                    var name = "delete-me-" + getNextId();
+    
+                    var that = this;
+                    Async.chain([
+                            function(done) {
+                                that.dataModels.create(name, args, done);
+                            },
+                            function(dataModel, done) {
+                                test.ok(dataModel.hasObject("search1"));
+                                test.ok(dataModel.hasObject("search2"));
+    
+                                var search1 = dataModel.objectByName("search1");
+                                test.ok(search1);
+                                test.strictEqual("‡Øµ‡Ø±‡Ø∞‡ØØ - search 1", search1.displayName);
+    
+                                var search2 = dataModel.objectByName("search2");
+                                test.ok(search2);
+                                test.strictEqual("‡Øµ‡Ø±‡Ø∞‡ØØ - search 2", search2.displayName);
+    
+                                done();
+                            }
+                        ],
+                        function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
                 },
     
                 "Callback#DataModels - data model handles unicode characters": function(test) {
@@ -17592,39 +17555,35 @@
                         test.done();
                         return;
                     }
-
                     var args;
-                    var name = "delete-me-" + getNextId();
-                    var that = this;
-
                     try {
-                        // args = JSON.parse(utils.readFile(__filename, "../data/model_with_unicode_headers.json"));
-                        fetch('./data/model_with_unicode_headers.json')
-                        .then(response => response.json())
-                        .then(json => {
-                            args = json;
-                            Async.chain([
-                                function(done) {
-                                    that.dataModels.create(name, args, done);
-                                },
-                                function(dataModel, done) {
-                                    test.strictEqual(name, dataModel.name);
-                                    test.strictEqual(decodeURI("%C2%B7%C3%84%C2%A9%C2%B7%C3%B6%C3%B4%E2%80%A1%C3%98%C2%B5"), dataModel.displayName);
-                                    test.strictEqual(decodeURI("%E2%80%A1%C3%98%C2%B5%E2%80%A1%C3%98%C2%B1%E2%80%A1%C3%98%E2%88%9E%E2%80%A1%C3%98%C3%98"), dataModel.description);
-                                    done();
-                                }],
-                                function(err) {
-                                    test.ok(!err);
-                                    test.done();
-                                }
-                            );
-                        });
+                        args = JSON.parse(utils.readFile(__filename, "../data/model_with_unicode_headers.json"));
                     }
                     catch(err) {
                         // Fail if we can't read the file, likely to occur in the browser
                         test.ok(!err);
                         test.done();
                     }
+                    var name = "delete-me-" + getNextId();
+    
+                    var that = this;
+                    Async.chain([
+                            function(done) {
+                                that.dataModels.create(name, args, done);
+                            },
+                            function(dataModel, done) {
+                                test.strictEqual(name, dataModel.name);
+                                test.strictEqual("·Ä©·öô‡Øµ", dataModel.displayName);
+                                test.strictEqual("‡Øµ‡Ø±‡Ø∞‡ØØ", dataModel.description);
+    
+                                done();
+                            }
+                        ],
+                        function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
                 },
     
                 "Callback#DataModels - create data model with empty headers": function(test) {
@@ -17632,43 +17591,38 @@
                         test.done();
                         return;
                     }
-
                     var args;
-                    var name = "delete-me-" + getNextId();
-                    var that = this;
-
                     try {
-                        // args = JSON.parse(utils.readFile(__filename, "../data/model_with_empty_headers.json"));
-                        fetch('./data/model_with_empty_headers.json')
-                        .then(response => response.json())
-                        .then(json => {
-                            args = json;
-                            Async.chain([
-                                function(done) {
-                                    that.dataModels.create(name, args, done);
-                                },
-                                function(dataModel, done) {
-                                    test.strictEqual(name, dataModel.name);
-                                    test.strictEqual("", dataModel.displayName);
-                                    test.strictEqual("", dataModel.description);
-        
-                                    // Make sure we're not getting a summary of the data model
-                                    test.strictEqual("0", dataModel.concise);
-        
-                                    done();
-                                }],
-                                function(err) {
-                                    test.ok(!err);
-                                    test.done();
-                                }
-                            );
-                        });
+                        args = JSON.parse(utils.readFile(__filename, "../data/model_with_empty_headers.json"));
                     }
                     catch(err) {
                         // Fail if we can't read the file, likely to occur in the browser
                         test.ok(!err);
                         test.done();
                     }
+                    var name = "delete-me-" + getNextId();
+    
+                    var that = this;
+                    Async.chain([
+                            function(done) {
+                                that.dataModels.create(name, args, done);
+                            },
+                            function(dataModel, done) {
+                                test.strictEqual(name, dataModel.name);
+                                test.strictEqual("", dataModel.displayName);
+                                test.strictEqual("", dataModel.description);
+    
+                                // Make sure we're not getting a summary of the data model
+                                test.strictEqual("0", dataModel.concise);
+    
+                                done();
+                            }
+                        ],
+                        function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
                 },
     
                 "Callback#DataModels - test acceleration settings": function(test) {
@@ -17676,54 +17630,49 @@
                         test.done();
                         return;
                     }
-
                     var args;
-                    var name = "delete-me-" + getNextId();
-                    var that = this;
-
                     try {
-                        // args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
-                        fetch('./data/data_model_with_test_objects.json')
-                        .then(response => response.json())
-                        .then(json => {
-                            args = json;
-                            Async.chain([
-                                function(done) {
-                                    that.dataModels.create(name, args, done);
-                                },
-                                function(dataModel, done) {
-                                    dataModel.acceleration.enabled = true;
-                                    dataModel.acceleration.earliestTime = "-2mon";
-                                    dataModel.acceleration.cronSchedule = "5/* * * * *";
-        
-                                    test.strictEqual(true, dataModel.isAccelerated());
-                                    test.strictEqual(true, dataModel.acceleration.enabled);
-                                    test.strictEqual("-2mon", dataModel.acceleration.earliestTime);
-                                    test.strictEqual("5/* * * * *", dataModel.acceleration.cronSchedule);
-        
-                                    dataModel.acceleration.enabled = false;
-                                    dataModel.acceleration.earliestTime = "-1mon";
-                                    dataModel.acceleration.cronSchedule = "* * * * *";
-        
-                                    test.strictEqual(false, dataModel.isAccelerated());
-                                    test.strictEqual(false, dataModel.acceleration.enabled);
-                                    test.strictEqual("-1mon", dataModel.acceleration.earliestTime);
-                                    test.strictEqual("* * * * *", dataModel.acceleration.cronSchedule);
-        
-                                    done();
-                                }],
-                                function(err) {
-                                    test.ok(!err);
-                                    test.done();
-                                }
-                            );
-                        });
+                        args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
                     }
                     catch(err) {
                         // Fail if we can't read the file, likely to occur in the browser
                         test.ok(!err);
                         test.done();
                     }
+                    var name = "delete-me-" + getNextId();
+    
+                    var that = this;
+                    Async.chain([
+                            function(done) {
+                                that.dataModels.create(name, args, done);
+                            },
+                            function(dataModel, done) {
+                                dataModel.acceleration.enabled = true;
+                                dataModel.acceleration.earliestTime = "-2mon";
+                                dataModel.acceleration.cronSchedule = "5/* * * * *";
+    
+                                test.strictEqual(true, dataModel.isAccelerated());
+                                test.strictEqual(true, dataModel.acceleration.enabled);
+                                test.strictEqual("-2mon", dataModel.acceleration.earliestTime);
+                                test.strictEqual("5/* * * * *", dataModel.acceleration.cronSchedule);
+    
+                                dataModel.acceleration.enabled = false;
+                                dataModel.acceleration.earliestTime = "-1mon";
+                                dataModel.acceleration.cronSchedule = "* * * * *";
+    
+                                test.strictEqual(false, dataModel.isAccelerated());
+                                test.strictEqual(false, dataModel.acceleration.enabled);
+                                test.strictEqual("-1mon", dataModel.acceleration.earliestTime);
+                                test.strictEqual("* * * * *", dataModel.acceleration.cronSchedule);
+    
+                                done();
+                            }
+                        ],
+                        function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
                 },
     
                 "Callback#DataModels - test data model object metadata": function(test) {
@@ -17731,43 +17680,38 @@
                         test.done();
                         return;
                     }
-
                     var args;
-                    var name = "delete-me-" + getNextId();
-                    var that = this;
-
                     try {
-                        // args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
-                        fetch('./data/data_model_with_test_objects.json')
-                        .then(response => response.json())
-                        .then(json => {
-                            args = json;
-                            Async.chain([
-                                function(done) {
-                                    that.dataModels.create(name, args, done);
-                                },
-                                function(dataModel, done) {
-                                    var obj = dataModel.objectByName("event1");
-                                    test.ok(obj);
-        
-                                    test.strictEqual(decodeURI("event1%20%C2%B7%C3%84%C2%A9%C2%B7%C3%B6%C3%B4"), obj.displayName);
-                                    test.strictEqual("event1", obj.name);
-                                    test.same(dataModel, obj.dataModel);
-        
-                                    done();
-                                }],
-                                function(err) {
-                                    test.ok(!err);
-                                    test.done();
-                                }
-                            );
-                        });
+                        args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
                     }
                     catch(err) {
                         // Fail if we can't read the file, likely to occur in the browser
                         test.ok(!err);
                         test.done();
                     }
+                    var name = "delete-me-" + getNextId();
+    
+                    var that = this;
+                    Async.chain([
+                            function(done) {
+                                that.dataModels.create(name, args, done);
+                            },
+                            function(dataModel, done) {
+                                var obj = dataModel.objectByName("event1");
+                                test.ok(obj);
+    
+                                test.strictEqual("event1 ·Ä©·öô", obj.displayName);
+                                test.strictEqual("event1", obj.name);
+                                test.same(dataModel, obj.dataModel);
+    
+                                done();
+                            }
+                        ],
+                        function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
                 },
     
                 "Callback#DataModels - test data model object parent": function(test) {
@@ -17775,40 +17719,35 @@
                         test.done();
                         return;
                     }
-
                     var args;
-                    var name = "delete-me-" + getNextId();
-                    var that = this;
-
                     try {
-                        // args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
-                        fetch('./data/data_model_with_test_objects.json')
-                        .then(response => response.json())
-                        .then(json => {
-                            args = json;
-                            Async.chain([
-                                function(done) {
-                                    that.dataModels.create(name, args, done);
-                                },
-                                function(dataModel, done) {
-                                    var obj = dataModel.objectByName("event1");
-                                    test.ok(obj);
-                                    test.ok(!obj.parent());
-        
-                                    done();
-                                }],
-                                function(err) {
-                                    test.ok(!err);
-                                    test.done();
-                                }
-                            );
-                        });
+                        args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
                     }
                     catch(err) {
                         // Fail if we can't read the file, likely to occur in the browser
                         test.ok(!err);
                         test.done();
                     }
+                    var name = "delete-me-" + getNextId();
+    
+                    var that = this;
+                    Async.chain([
+                            function(done) {
+                                that.dataModels.create(name, args, done);
+                            },
+                            function(dataModel, done) {
+                                var obj = dataModel.objectByName("event1");
+                                test.ok(obj);
+                                test.ok(!obj.parent());
+    
+                                done();
+                            }
+                        ],
+                        function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
                 },
     
                 "Callback#DataModels - test data model object lineage": function(test) {
@@ -17816,57 +17755,52 @@
                         test.done();
                         return;
                     }
-
                     var args;
-                    var name = "delete-me-" + getNextId();
-                    var that = this;
-
                     try {
-                        // args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
-                        fetch('./data/inheritance_test_data.json')
-                        .then(response => response.json())
-                        .then(json => {
-                            args = json;
-                            Async.chain([
-                                function(done) {
-                                    that.dataModels.create(name, args, done);
-                                },
-                                function(dataModel, done) {
-                                    var obj = dataModel.objectByName("level_0");
-                                    test.ok(obj);
-                                    test.strictEqual(1, obj.lineage.length);
-                                    test.strictEqual("level_0", obj.lineage[0]);
-                                    test.strictEqual("BaseEvent", obj.parentName);
-        
-                                    obj = dataModel.objectByName("level_1");
-                                    test.ok(obj);
-                                    test.strictEqual(2, obj.lineage.length);
-                                    test.same(["level_0", "level_1"], obj.lineage);
-                                    test.strictEqual("level_0", obj.parentName);
-        
-                                    obj = dataModel.objectByName("level_2");
-                                    test.ok(obj);
-                                    test.strictEqual(3, obj.lineage.length);
-                                    test.same(["level_0", "level_1", "level_2"], obj.lineage);
-                                    test.strictEqual("level_1", obj.parentName);
-        
-                                    // Make sure there's no extra children
-                                    test.ok(!dataModel.objectByName("level_3"));
-        
-                                    done();
-                                }],
-                                function(err) {
-                                    test.ok(!err);
-                                    test.done();
-                                }
-                            );
-                        });
+                        args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
                     }
                     catch(err) {
                         // Fail if we can't read the file, likely to occur in the browser
                         test.ok(!err);
                         test.done();
                     }
+                    var name = "delete-me-" + getNextId();
+    
+                    var that = this;
+                    Async.chain([
+                            function(done) {
+                                that.dataModels.create(name, args, done);
+                            },
+                            function(dataModel, done) {
+                                var obj = dataModel.objectByName("level_0");
+                                test.ok(obj);
+                                test.strictEqual(1, obj.lineage.length);
+                                test.strictEqual("level_0", obj.lineage[0]);
+                                test.strictEqual("BaseEvent", obj.parentName);
+    
+                                obj = dataModel.objectByName("level_1");
+                                test.ok(obj);
+                                test.strictEqual(2, obj.lineage.length);
+                                test.same(["level_0", "level_1"], obj.lineage);
+                                test.strictEqual("level_0", obj.parentName);
+    
+                                obj = dataModel.objectByName("level_2");
+                                test.ok(obj);
+                                test.strictEqual(3, obj.lineage.length);
+                                test.same(["level_0", "level_1", "level_2"], obj.lineage);
+                                test.strictEqual("level_1", obj.parentName);
+    
+                                // Make sure there's no extra children
+                                test.ok(!dataModel.objectByName("level_3"));
+    
+                                done();
+                            }
+                        ],
+                        function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
                 },
     
                 "Callback#DataModels - test data model object fields": function(test) {
@@ -17874,74 +17808,69 @@
                         test.done();
                         return;
                     }
-
                     var args;
-                    var name = "delete-me-" + getNextId();
-                    var that = this;
-
                     try {
-                        // args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
-                        fetch('./data/inheritance_test_data.json')
-                        .then(response => response.json())
-                        .then(json => {
-                            args = json;
-                            Async.chain([
-                                function(done) {
-                                    that.dataModels.create(name, args, done);
-                                },
-                                function(dataModel, done) {
-                                    var obj = dataModel.objectByName("level_2");
-                                    test.ok(obj);
-        
-                                    var timeField = obj.fieldByName("_time");
-                                    test.ok(timeField);
-                                    test.strictEqual("timestamp", timeField.type);
-                                    test.ok(timeField.isTimestamp());
-                                    test.ok(!timeField.isNumber());
-                                    test.ok(!timeField.isString());
-                                    test.ok(!timeField.isObjectcount());
-                                    test.ok(!timeField.isChildcount());
-                                    test.ok(!timeField.isIPv4());
-                                    test.same(["BaseEvent"], timeField.lineage);
-                                    test.strictEqual("_time", timeField.name);
-                                    test.strictEqual(false, timeField.required);
-                                    test.strictEqual(false, timeField.multivalued);
-                                    test.strictEqual(false, timeField.hidden);
-                                    test.strictEqual(false, timeField.editable);
-                                    test.strictEqual(null, timeField.comment);
-        
-                                    var lvl2 = obj.fieldByName("level_2");
-                                    test.strictEqual("level_2", lvl2.owner);
-                                    test.same(["level_0", "level_1", "level_2"], lvl2.lineage);
-                                    test.strictEqual("objectCount", lvl2.type);
-                                    test.ok(!lvl2.isTimestamp());
-                                    test.ok(!lvl2.isNumber());
-                                    test.ok(!lvl2.isString());
-                                    test.ok(lvl2.isObjectcount());
-                                    test.ok(!lvl2.isChildcount());
-                                    test.ok(!lvl2.isIPv4());
-                                    test.strictEqual("level_2", lvl2.name);
-                                    test.strictEqual("level 2", lvl2.displayName);
-                                    test.strictEqual(false, lvl2.required);
-                                    test.strictEqual(false, lvl2.multivalued);
-                                    test.strictEqual(false, lvl2.hidden);
-                                    test.strictEqual(false, lvl2.editable);
-                                    test.strictEqual(null, lvl2.comment);
-        
-                                    done();
-                                }],
-                                function(err) {
-                                    test.ok(!err);
-                                    test.done();
-                                }
-                            );
-                        });
+                        args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
                     }
                     catch(err) {
                         // Fail if we can't read the file, likely to occur in the browser
                         test.ok(!err);
                         test.done();
                     }
+                    var name = "delete-me-" + getNextId();
+    
+                    var that = this;
+                    Async.chain([
+                            function(done) {
+                                that.dataModels.create(name, args, done);
+                            },
+                            function(dataModel, done) {
+                                var obj = dataModel.objectByName("level_2");
+                                test.ok(obj);
+    
+                                var timeField = obj.fieldByName("_time");
+                                test.ok(timeField);
+                                test.strictEqual("timestamp", timeField.type);
+                                test.ok(timeField.isTimestamp());
+                                test.ok(!timeField.isNumber());
+                                test.ok(!timeField.isString());
+                                test.ok(!timeField.isObjectcount());
+                                test.ok(!timeField.isChildcount());
+                                test.ok(!timeField.isIPv4());
+                                test.same(["BaseEvent"], timeField.lineage);
+                                test.strictEqual("_time", timeField.name);
+                                test.strictEqual(false, timeField.required);
+                                test.strictEqual(false, timeField.multivalued);
+                                test.strictEqual(false, timeField.hidden);
+                                test.strictEqual(false, timeField.editable);
+                                test.strictEqual(null, timeField.comment);
+    
+                                var lvl2 = obj.fieldByName("level_2");
+                                test.strictEqual("level_2", lvl2.owner);
+                                test.same(["level_0", "level_1", "level_2"], lvl2.lineage);
+                                test.strictEqual("objectCount", lvl2.type);
+                                test.ok(!lvl2.isTimestamp());
+                                test.ok(!lvl2.isNumber());
+                                test.ok(!lvl2.isString());
+                                test.ok(lvl2.isObjectcount());
+                                test.ok(!lvl2.isChildcount());
+                                test.ok(!lvl2.isIPv4());
+                                test.strictEqual("level_2", lvl2.name);
+                                test.strictEqual("level 2", lvl2.displayName);
+                                test.strictEqual(false, lvl2.required);
+                                test.strictEqual(false, lvl2.multivalued);
+                                test.strictEqual(false, lvl2.hidden);
+                                test.strictEqual(false, lvl2.editable);
+                                test.strictEqual(null, lvl2.comment);
+    
+                                done();
+                            }
+                        ],
+                        function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
                 },
     
                 "Callback#DataModels - test data model object properties": function(test) {
@@ -17949,45 +17878,40 @@
                         test.done();
                         return;
                     }
-
                     var args;
-                    var name = "delete-me-" + getNextId();
-                    var that = this;
-                    
                     try {
-                        // args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
-                        fetch('./data/data_model_for_pivot.json')
-                        .then(response => response.json())
-                        .then(json => {
-                            args = json;
-                            Async.chain([
-                                function(done) {
-                                    that.dataModels.create(name, args, done);
-                                },
-                                function(dataModel, done) {
-                                    var obj = dataModel.objectByName("test_data");
-                                    test.ok(obj);
-                                    test.strictEqual(5, obj.fieldNames().length);
-                                    test.strictEqual(10, obj.allFieldNames().length);
-                                    test.ok(obj.fieldByName("has_boris"));
-                                    test.ok(obj.hasField("has_boris"));
-                                    test.ok(obj.fieldByName("_time"));
-                                    test.ok(obj.hasField("_time"));
-        
-                                    done();
-                                }],
-                                function(err) {
-                                    test.ok(!err);
-                                    test.done();
-                                }
-                            );
-                        });
+                        args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                     }
                     catch(err) {
                         // Fail if we can't read the file, likely to occur in the browser
                         test.ok(!err);
                         test.done();
                     }
+                    var name = "delete-me-" + getNextId();
+    
+                    var that = this;
+                    Async.chain([
+                            function(done) {
+                                that.dataModels.create(name, args, done);
+                            },
+                            function(dataModel, done) {
+                                var obj = dataModel.objectByName("test_data");
+                                test.ok(obj);
+                                test.strictEqual(5, obj.fieldNames().length);
+                                test.strictEqual(10, obj.allFieldNames().length);
+                                test.ok(obj.fieldByName("has_boris"));
+                                test.ok(obj.hasField("has_boris"));
+                                test.ok(obj.fieldByName("_time"));
+                                test.ok(obj.hasField("_time"));
+    
+                                done();
+                            }
+                        ],
+                        function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
                 },
     
                 "Callback#DataModels - create local acceleration job": function(test) {
@@ -17995,56 +17919,51 @@
                         test.done();
                         return;
                     }
-
                     var args;
-                    var name = "delete-me-" + getNextId();
-                    var obj;
-                    var that = this;
-
                     try {
-                        // args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
-                        fetch('./data/inheritance_test_data.json')
-                        .then(response => response.json())
-                        .then(json => {
-                            args = json;
-                            Async.chain([
-                                function(done) {
-                                    that.dataModels.create(name, args, done);
-                                },
-                                function(dataModel, done) {
-                                    obj = dataModel.objectByName("level_2");
-                                    test.ok(obj);
-        
-                                    obj.createLocalAccelerationJob(null, done);
-                                },
-                                function(job, done) {
-                                    test.ok(job);
-        
-                                    tutils.pollUntil(
-                                        job,
-                                        function(j) {
-                                            return job.properties()["isDone"];
-                                        },
-                                        10,
-                                        done
-                                    );
-                                },
-                                function(job, done) {
-                                    test.strictEqual("| datamodel \"" + name + "\" level_2 search | tscollect", job.properties().request.search);
-                                    job.cancel(done);
-                                }],
-                                function(err) {
-                                    test.ok(!err);
-                                    test.done();
-                                }
-                            );
-                        });
+                        args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
                     }
                     catch(err) {
                         // Fail if we can't read the file, likely to occur in the browser
                         test.ok(!err);
                         test.done();
                     }
+                    var name = "delete-me-" + getNextId();
+    
+                    var obj;
+                    var that = this;
+                    Async.chain([
+                            function(done) {
+                                that.dataModels.create(name, args, done);
+                            },
+                            function(dataModel, done) {
+                                obj = dataModel.objectByName("level_2");
+                                test.ok(obj);
+    
+                                obj.createLocalAccelerationJob(null, done);
+                            },
+                            function(job, done) {
+                                test.ok(job);
+    
+                                tutils.pollUntil(
+                                    job,
+                                    function(j) {
+                                        return job.properties()["isDone"];
+                                    },
+                                    10,
+                                    done
+                                );
+                            },
+                            function(job, done) {
+                                test.strictEqual("| datamodel \"" + name + "\" level_2 search | tscollect", job.properties().request.search);
+                                job.cancel(done);
+                            }
+                        ],
+                        function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
                 },
     
                 "Callback#DataModels - create local acceleration job with earliest time": function(test) {
@@ -18052,69 +17971,64 @@
                         test.done();
                         return;
                     }
-
                     var args;
-                    var name = "delete-me-" + getNextId();
-                    var obj;
-                    var oldNow = Date.now();
-                    var that = this;
-
                     try {
-                        // args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
-                        fetch('./data/inheritance_test_data.json')
-                        .then(response => response.json())
-                        .then(json => {
-                            args = json;
-                            Async.chain([
-                                function(done) {
-                                    that.dataModels.create(name, args, done);
-                                },
-                                function(dataModel, done) {
-                                    obj = dataModel.objectByName("level_2");
-                                    test.ok(obj);
-                                    obj.createLocalAccelerationJob("-1d", done);
-                                },
-                                function(job, done) {
-                                    test.ok(job);
-                                    tutils.pollUntil(
-                                        job,
-                                        function(j) {
-                                            return job.properties()["isDone"];
-                                        },
-                                        10,
-                                        done
-                                    );
-                                },
-                                function(job, done) {
-                                    test.strictEqual("| datamodel \"" + name + "\" level_2 search | tscollect", job.properties().request.search);
-        
-                                    // Make sure the earliest time is 1 day behind
-                                    var yesterday = new Date(Date.now() - (1000 * 60 * 60 * 24));
-                                    var month = (yesterday.getMonth() + 1);
-                                    if (month <= 9) {
-                                        month = "0" + month;
-                                    }
-                                    var date = yesterday.getDate();
-                                    if (date <= 9) {
-                                        date = "0" + date;
-                                    }
-                                    var expectedDate = yesterday.getFullYear() + "-" + month + "-" + date;
-                                    test.ok(utils.startsWith(job._state.content.earliestTime, expectedDate));
-        
-                                    job.cancel(done);
-                                }],
-                                function(err) {
-                                    test.ok(!err);
-                                    test.done();
-                                }
-                            );
-                        });
+                        args = JSON.parse(utils.readFile(__filename, "../data/inheritance_test_data.json"));
                     }
                     catch(err) {
                         // Fail if we can't read the file, likely to occur in the browser
                         test.ok(!err);
                         test.done();
                     }
+                    var name = "delete-me-" + getNextId();
+    
+                    var obj;
+                    var oldNow = Date.now();
+                    var that = this;
+                    Async.chain([
+                            function(done) {
+                                that.dataModels.create(name, args, done);
+                            },
+                            function(dataModel, done) {
+                                obj = dataModel.objectByName("level_2");
+                                test.ok(obj);
+                                obj.createLocalAccelerationJob("-1d", done);
+                            },
+                            function(job, done) {
+                                test.ok(job);
+                                tutils.pollUntil(
+                                    job,
+                                    function(j) {
+                                        return job.properties()["isDone"];
+                                    },
+                                    10,
+                                    done
+                                );
+                            },
+                            function(job, done) {
+                                test.strictEqual("| datamodel \"" + name + "\" level_2 search | tscollect", job.properties().request.search);
+    
+                                // Make sure the earliest time is 1 day behind
+                                var yesterday = new Date(Date.now() - (1000 * 60 * 60 * 24));
+                                var month = (yesterday.getMonth() + 1);
+                                if (month <= 9) {
+                                    month = "0" + month;
+                                }
+                                var date = yesterday.getDate();
+                                if (date <= 9) {
+                                    date = "0" + date;
+                                }
+                                var expectedDate = yesterday.getFullYear() + "-" + month + "-" + date;
+                                test.ok(utils.startsWith(job._state.content.earliestTime, expectedDate));
+    
+                                job.cancel(done);
+                            }
+                        ],
+                        function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
                 },
     
                 "Callback#DataModels - test data model constraints": function(test) {
@@ -18122,51 +18036,46 @@
                         test.done();
                         return;
                     }
-
                     var args;
-                    var name = "delete-me-" + getNextId();
-                    var obj;
-                    var that = this;
-
                     try {
-                        // args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
-                        fetch('./data/data_model_with_test_objects.json')
-                        .then(response => response.json())
-                        .then(json => {
-                            args = json;
-                            Async.chain([
-                                function(done) {
-                                    that.dataModels.create(name, args, done);
-                                },
-                                function(dataModel, done) {
-                                    obj = dataModel.objectByName("event1");
-                                    test.ok(obj);
-                                    var constraints = obj.constraints;
-                                    test.ok(constraints);
-                                    var onlyOne = true;
-        
-                                    for (var i = 0; i < constraints.length; i++) {
-                                        var constraint = constraints[i];
-                                        test.ok(!!onlyOne);
-        
-                                        test.strictEqual("event1", constraint.owner);
-                                        test.strictEqual("uri=\"*.php\" OR uri=\"*.py\"\nNOT (referer=null OR referer=\"-\")", constraint.query);
-                                    }
-        
-                                    done();
-                                }],
-                                function(err) {
-                                    test.ok(!err);
-                                    test.done();
-                                }
-                            );
-                        });
+                        args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
                     }
                     catch(err) {
                         // Fail if we can't read the file, likely to occur in the browser
                         test.ok(!err);
                         test.done();
                     }
+                    var name = "delete-me-" + getNextId();
+    
+                    var obj;
+                    var that = this;
+                    Async.chain([
+                            function(done) {
+                                that.dataModels.create(name, args, done);
+                            },
+                            function(dataModel, done) {
+                                obj = dataModel.objectByName("event1");
+                                test.ok(obj);
+                                var constraints = obj.constraints;
+                                test.ok(constraints);
+                                var onlyOne = true;
+    
+                                for (var i = 0; i < constraints.length; i++) {
+                                    var constraint = constraints[i];
+                                    test.ok(!!onlyOne);
+    
+                                    test.strictEqual("event1", constraint.owner);
+                                    test.strictEqual("uri=\"*.php\" OR uri=\"*.py\"\nNOT (referer=null OR referer=\"-\")", constraint.query);
+                                }
+    
+                                done();
+                            }
+                        ],
+                        function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
                 },
     
                 "Callback#DataModels - test data model calculations, and the different types": function(test) {
@@ -18174,107 +18083,102 @@
                         test.done();
                         return;
                     }
-
                     var args;
-                    var name = "delete-me-" + getNextId();
-                    var obj;
-                    var that = this;
-
                     try {
-                        // args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
-                        fetch('./data/data_model_with_test_objects.json')
-                        .then(response => response.json())
-                        .then(json => {
-                            args = json;
-                            Async.chain([
-                                function(done) {
-                                    that.dataModels.create(name, args, done);
-                                },
-                                function(dataModel, done) {
-                                    obj = dataModel.objectByName("event1");
-                                    test.ok(obj);
-        
-                                    var calculations = obj.calculations;
-                                    test.strictEqual(4, Object.keys(calculations).length);
-                                    test.strictEqual(4, obj.calculationIDs().length);
-        
-                                    var evalCalculation = calculations["93fzsv03wa7"];
-                                    test.ok(evalCalculation);
-                                    test.strictEqual("event1", evalCalculation.owner);
-                                    test.same(["event1"], evalCalculation.lineage);
-                                    test.strictEqual("Eval", evalCalculation.type);
-                                    test.ok(evalCalculation.isEval());
-                                    test.ok(!evalCalculation.isLookup());
-                                    test.ok(!evalCalculation.isGeoIP());
-                                    test.ok(!evalCalculation.isRex());
-                                    test.strictEqual(null, evalCalculation.comment);
-                                    test.strictEqual(true, evalCalculation.isEditable());
-                                    test.strictEqual("if(cidrmatch(\"192.0.0.0/16\", clientip), \"local\", \"other\")", evalCalculation.expression);
-        
-                                    test.strictEqual(1, Object.keys(evalCalculation.outputFields).length);
-                                    test.strictEqual(1, evalCalculation.outputFieldNames().length);
-        
-                                    var field = evalCalculation.outputFields["new_field"];
-                                    test.ok(field);
-                                    test.strictEqual("My New Field", field.displayName);
-        
-                                    var lookupCalculation = calculations["sr3mc8o3mjr"];
-                                    test.ok(lookupCalculation);
-                                    test.strictEqual("event1", lookupCalculation.owner);
-                                    test.same(["event1"], lookupCalculation.lineage);
-                                    test.strictEqual("Lookup", lookupCalculation.type);
-                                    test.ok(lookupCalculation.isLookup());
-                                    test.ok(!lookupCalculation.isEval());
-                                    test.ok(!lookupCalculation.isGeoIP());
-                                    test.ok(!lookupCalculation.isRex());
-                                    test.strictEqual(null, lookupCalculation.comment);
-                                    test.strictEqual(true, lookupCalculation.isEditable());
-                                    test.same({lookupField: "a_lookup_field", inputField: "host"}, lookupCalculation.inputFieldMappings);
-                                    test.strictEqual(2, Object.keys(lookupCalculation.inputFieldMappings).length);
-                                    test.strictEqual("a_lookup_field", lookupCalculation.inputFieldMappings.lookupField);
-                                    test.strictEqual("host", lookupCalculation.inputFieldMappings.inputField);
-                                    test.strictEqual("dnslookup", lookupCalculation.lookupName);
-        
-                                    var regexpCalculation = calculations["a5v1k82ymic"];
-                                    test.ok(regexpCalculation);
-                                    test.strictEqual("event1", regexpCalculation.owner);
-                                    test.same(["event1"], regexpCalculation.lineage);
-                                    test.strictEqual("Rex", regexpCalculation.type);
-                                    test.ok(regexpCalculation.isRex());
-                                    test.ok(!regexpCalculation.isLookup());
-                                    test.ok(!regexpCalculation.isEval());
-                                    test.ok(!regexpCalculation.isGeoIP());
-                                    test.strictEqual(2, regexpCalculation.outputFieldNames().length);
-                                    test.strictEqual("_raw", regexpCalculation.inputField);
-                                    test.strictEqual(" From: (?<from>.*) To: (?<to>.*) ", regexpCalculation.expression);
-        
-                                    var geoIPCalculation = calculations["pbe9bd0rp4"];
-                                    test.ok(geoIPCalculation);
-                                    test.strictEqual("event1", geoIPCalculation.owner);
-                                    test.same(["event1"], geoIPCalculation.lineage);
-                                    test.strictEqual("GeoIP", geoIPCalculation.type);
-                                    test.ok(geoIPCalculation.isGeoIP());
-                                    test.ok(!geoIPCalculation.isLookup());
-                                    test.ok(!geoIPCalculation.isEval());
-                                    test.ok(!geoIPCalculation.isRex());
-                                    test.strictEqual(decodeURI("%C2%B7%C3%84%C2%A9%C2%B7%C3%B6%C3%B4%E2%80%A1%C3%98%C2%B5%20comment%20of%20pbe9bd0rp4"), geoIPCalculation.comment);
-                                    test.strictEqual(5, geoIPCalculation.outputFieldNames().length);
-                                    test.strictEqual("output_from_reverse_hostname", geoIPCalculation.inputField);
-        
-                                    done();
-                                }],
-                                function(err) {
-                                    test.ok(!err);
-                                    test.done();
-                                }
-                            );
-                        });
+                        args = JSON.parse(utils.readFile(__filename, "../data/data_model_with_test_objects.json"));
                     }
                     catch(err) {
                         // Fail if we can't read the file, likely to occur in the browser
                         test.ok(!err);
                         test.done();
                     }
+                    var name = "delete-me-" + getNextId();
+    
+                    var obj;
+                    var that = this;
+                    Async.chain([
+                            function(done) {
+                                that.dataModels.create(name, args, done);
+                            },
+                            function(dataModel, done) {
+                                obj = dataModel.objectByName("event1");
+                                test.ok(obj);
+    
+                                var calculations = obj.calculations;
+                                test.strictEqual(4, Object.keys(calculations).length);
+                                test.strictEqual(4, obj.calculationIDs().length);
+    
+                                var evalCalculation = calculations["93fzsv03wa7"];
+                                test.ok(evalCalculation);
+                                test.strictEqual("event1", evalCalculation.owner);
+                                test.same(["event1"], evalCalculation.lineage);
+                                test.strictEqual("Eval", evalCalculation.type);
+                                test.ok(evalCalculation.isEval());
+                                test.ok(!evalCalculation.isLookup());
+                                test.ok(!evalCalculation.isGeoIP());
+                                test.ok(!evalCalculation.isRex());
+                                test.strictEqual(null, evalCalculation.comment);
+                                test.strictEqual(true, evalCalculation.isEditable());
+                                test.strictEqual("if(cidrmatch(\"192.0.0.0/16\", clientip), \"local\", \"other\")", evalCalculation.expression);
+    
+                                test.strictEqual(1, Object.keys(evalCalculation.outputFields).length);
+                                test.strictEqual(1, evalCalculation.outputFieldNames().length);
+    
+                                var field = evalCalculation.outputFields["new_field"];
+                                test.ok(field);
+                                test.strictEqual("My New Field", field.displayName);
+    
+                                var lookupCalculation = calculations["sr3mc8o3mjr"];
+                                test.ok(lookupCalculation);
+                                test.strictEqual("event1", lookupCalculation.owner);
+                                test.same(["event1"], lookupCalculation.lineage);
+                                test.strictEqual("Lookup", lookupCalculation.type);
+                                test.ok(lookupCalculation.isLookup());
+                                test.ok(!lookupCalculation.isEval());
+                                test.ok(!lookupCalculation.isGeoIP());
+                                test.ok(!lookupCalculation.isRex());
+                                test.strictEqual(null, lookupCalculation.comment);
+                                test.strictEqual(true, lookupCalculation.isEditable());
+                                test.same({lookupField: "a_lookup_field", inputField: "host"}, lookupCalculation.inputFieldMappings);
+                                test.strictEqual(2, Object.keys(lookupCalculation.inputFieldMappings).length);
+                                test.strictEqual("a_lookup_field", lookupCalculation.inputFieldMappings.lookupField);
+                                test.strictEqual("host", lookupCalculation.inputFieldMappings.inputField);
+                                test.strictEqual("dnslookup", lookupCalculation.lookupName);
+    
+                                var regexpCalculation = calculations["a5v1k82ymic"];
+                                test.ok(regexpCalculation);
+                                test.strictEqual("event1", regexpCalculation.owner);
+                                test.same(["event1"], regexpCalculation.lineage);
+                                test.strictEqual("Rex", regexpCalculation.type);
+                                test.ok(regexpCalculation.isRex());
+                                test.ok(!regexpCalculation.isLookup());
+                                test.ok(!regexpCalculation.isEval());
+                                test.ok(!regexpCalculation.isGeoIP());
+                                test.strictEqual(2, regexpCalculation.outputFieldNames().length);
+                                test.strictEqual("_raw", regexpCalculation.inputField);
+                                test.strictEqual(" From: (?<from>.*) To: (?<to>.*) ", regexpCalculation.expression);
+    
+                                var geoIPCalculation = calculations["pbe9bd0rp4"];
+                                test.ok(geoIPCalculation);
+                                test.strictEqual("event1", geoIPCalculation.owner);
+                                test.same(["event1"], geoIPCalculation.lineage);
+                                test.strictEqual("GeoIP", geoIPCalculation.type);
+                                test.ok(geoIPCalculation.isGeoIP());
+                                test.ok(!geoIPCalculation.isLookup());
+                                test.ok(!geoIPCalculation.isEval());
+                                test.ok(!geoIPCalculation.isRex());
+                                test.strictEqual("·Ä©·öô‡Øµ comment of pbe9bd0rp4", geoIPCalculation.comment);
+                                test.strictEqual(5, geoIPCalculation.outputFieldNames().length);
+                                test.strictEqual("output_from_reverse_hostname", geoIPCalculation.inputField);
+    
+                                done();
+                            }
+                        ],
+                        function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
                 },
     
                 "Callback#DataModels - run queries": function(test) {
@@ -18337,43 +18241,39 @@
                         test.done();
                         return;
                     }
-
                     var args;
-                    var name = "delete-me-" + getNextId();
-                    var obj;
-                    var that = this;
-
                     try {
-                        // args = JSON.parse(utils.readFile(__filename, "../data/model_with_multiple_types.json"));
-                        fetch('./data/model_with_multiple_types.json')
-                        .then(response => response.json())
-                        .then(json => {
-                            args = json;
-                            Async.chain([
-                                function(done) {
-                                    that.dataModels.create(name, args, done);
-                                },
-                                function(dataModel, done) {
-                                    obj = dataModel.objectByName("search1");
-                                    test.ok(obj);
-                                    test.strictEqual("BaseSearch", obj.parentName);
-                                    test.ok(obj.isBaseSearch());
-                                    test.ok(!obj.isBaseTransaction());
-                                    test.strictEqual("search index=_internal | head 10", obj.baseSearch);
-                                    done();
-                                }],
-                                function(err) {
-                                    test.ok(!err);
-                                    test.done();
-                                }
-                            );
-                        });
+                        args = JSON.parse(utils.readFile(__filename, "../data/model_with_multiple_types.json"));
                     }
                     catch(err) {
                         // Fail if we can't read the file, likely to occur in the browser
                         test.ok(!err);
                         test.done();
                     }
+                    var name = "delete-me-" + getNextId();
+    
+                    var obj;
+                    var that = this;
+                    Async.chain([
+                            function(done) {
+                                that.dataModels.create(name, args, done);
+                            },
+                            function(dataModel, done) {
+                                obj = dataModel.objectByName("search1");
+                                test.ok(obj);
+                                test.ok(obj instanceof splunkjs.Service.DataModelObject);
+                                test.strictEqual("BaseSearch", obj.parentName);
+                                test.ok(obj.isBaseSearch());
+                                test.ok(!obj.isBaseTransaction());
+                                test.strictEqual("search index=_internal | head 10", obj.baseSearch);
+                                done();
+                            }
+                        ],
+                        function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
                 },
     
                 "Callback#DataModels - baseTransaction is parsed correctly": function(test) {
@@ -18381,47 +18281,43 @@
                         test.done();
                         return;
                     }
-
                     var args;
-                    var name = "delete-me-" + getNextId();
-                    var obj;
-                    var that = this;
-
                     try {
-                        // args = JSON.parse(utils.readFile(__filename, "../data/model_with_multiple_types.json"));
-                        fetch('./data/model_with_multiple_types.json')
-                        .then(response => response.json())
-                        .then(json => {
-                            args = json;
-                            Async.chain([
-                                function(done) {
-                                    that.dataModels.create(name, args, done);
-                                },
-                                function(dataModel, done) {
-                                    obj = dataModel.objectByName("transaction1");
-                                    test.ok(obj);
-                                    test.strictEqual("BaseTransaction", obj.parentName);
-                                    test.ok(obj.isBaseTransaction());
-                                    test.ok(!obj.isBaseSearch());
-                                    test.same(["event1"], obj.objectsToGroup);
-                                    test.same(["host", "from"], obj.groupByFields);
-                                    test.strictEqual("25s", obj.maxPause);
-                                    test.strictEqual("100m", obj.maxSpan);
-        
-                                    done();
-                                }],
-                                function(err) {
-                                    test.ok(!err);
-                                    test.done();
-                                }
-                            );
-                        });
+                        args = JSON.parse(utils.readFile(__filename, "../data/model_with_multiple_types.json"));
                     }
                     catch(err) {
                         // Fail if we can't read the file, likely to occur in the browser
                         test.ok(!err);
                         test.done();
                     }
+                    var name = "delete-me-" + getNextId();
+    
+                    var obj;
+                    var that = this;
+                    Async.chain([
+                            function(done) {
+                                that.dataModels.create(name, args, done);
+                            },
+                            function(dataModel, done) {
+                                obj = dataModel.objectByName("transaction1");
+                                test.ok(obj);
+                                test.ok(obj instanceof splunkjs.Service.DataModelObject);
+                                test.strictEqual("BaseTransaction", obj.parentName);
+                                test.ok(obj.isBaseTransaction());
+                                test.ok(!obj.isBaseSearch());
+                                test.same(["event1"], obj.objectsToGroup);
+                                test.same(["host", "from"], obj.groupByFields);
+                                test.strictEqual("25s", obj.maxPause);
+                                test.strictEqual("100m", obj.maxSpan);
+    
+                                done();
+                            }
+                        ],
+                        function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
                 }
             },
     
@@ -18440,128 +18336,117 @@
                     });
                 },
     
-                "Callback#Pivot - test constructor args": async function(test) {
+                "Callback#Pivot - test constructor args": function(test) {
                     if (this.skip) {
                         test.done();
                         return;
                     }
                     var name = "delete-me-" + getNextId();
                     var args;
-                    var that = this;
                     try {
-                        // args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
-                        fetch('./data/data_model_for_pivot.json')
-                        .then(response => response.json())
-                        .then(json => {
-                            args = json;
-                            Async.chain([
-                                    function(done) {
-                                        that.dataModels.create(name, args, done);
-                                    },
-                                    function(dataModel, done) {
-                                        test.ok(dataModel.objectByName("test_data"));
-                                        done();
-                                    }
-                                ],
-                                function(err) {
-                                    test.ok(!err);
-                                    test.done();
-                                }
-                            );
-                        });
+                        args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                     }
                     catch(err) {
                         // Fail if we can't read the file, likely to occur in the browser
                         test.ok(!err);
                         test.done();
                     }
+                    var that = this;
+                    Async.chain([
+                            function(done) {
+                                that.dataModels.create(name, args, done);
+                            },
+                            function(dataModel, done) {
+                                test.ok(dataModel.objectByName("test_data"));
+                                done();
+                            }
+                        ],
+                        function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
                 },
     
-                "Callback#Pivot - test acceleration, then pivot":  function(test) {
+                "Callback#Pivot - test acceleration, then pivot": function(test) {
                     if (this.skip) {
                         test.done();
                         return;
                     }
                     var name = "delete-me-" + getNextId();
                     var args;
-                    var that = this;
-
                     try {
-                        // args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
-                        fetch('./data/data_model_for_pivot.json')
-                        .then(response => response.json())
-                        .then(json => {
-                            args = json;
-                            Async.chain([
-                                    function(done) {
-                                        that.dataModels.create(name, args, done);
-                                    },
-                                    function(dataModel, done) {
-                                        dataModel.objectByName("test_data");
-                                        test.ok(dataModel);
-            
-                                        dataModel.acceleration.enabled = true;
-                                        dataModel.acceleration.earliestTime = "-2mon";
-                                        dataModel.acceleration.cronSchedule = "0 */12 * * *";
-                                        dataModel.update(done);
-                                    },
-                                    function(dataModel, done) {
-                                        var props = dataModel.properties();
-            
-                                        test.strictEqual(true, dataModel.isAccelerated());
-                                        test.strictEqual(true, !!dataModel.acceleration.enabled);
-                                        test.strictEqual("-2mon", dataModel.acceleration.earliest_time);
-                                        test.strictEqual("0 */12 * * *", dataModel.acceleration.cron_schedule);
-            
-                                        var dataModelObject = dataModel.objectByName("test_data");
-                                        var pivotSpecification = dataModelObject.createPivotSpecification();
-            
-                                        test.strictEqual(dataModelObject.dataModel.name, pivotSpecification.accelerationNamespace);
-            
-                                        var name1 = "delete-me-" + getNextId();
-                                        pivotSpecification.setAccelerationJob(name1);
-                                        test.strictEqual("sid=" + name1, pivotSpecification.accelerationNamespace);
-            
-                                        var namespaceTemp = "delete-me-" + getNextId();
-                                        pivotSpecification.accelerationNamespace = namespaceTemp;
-                                        test.strictEqual(namespaceTemp, pivotSpecification.accelerationNamespace);
-            
-                                        pivotSpecification
-                                            .addCellValue("test_data", "Source Value", "count")
-                                            .run(done);
-                                    },
-                                    function(job, pivot, done) {
-                                        test.ok(job);
-                                        test.ok(pivot);
-                                        test.notStrictEqual("FAILED", job.properties().dispatchState);
-            
-                                        job.track({}, function(job) {
-                                            test.ok(pivot.tstatsSearch);
-                                            test.strictEqual(0, job.properties().request.search.indexOf("| tstats"));
-                                            test.strictEqual("| tstats", job.properties().request.search.match("^\\| tstats")[0]);
-                                            test.strictEqual(1, job.properties().request.search.match("^\\| tstats").length);
-            
-                                            test.strictEqual(pivot.tstatsSearch, job.properties().request.search);
-                                            done(null, job);
-                                        });
-                                    },
-                                    function(job, done) {
-                                        test.ok(job);
-                                        done();
-                                    }
-                                ],
-                                function(err) {
-                                    test.ok(!err);
-                                    test.done();
-                                }
-                            );
-                        });
+                        args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                     }
                     catch(err) {
                         // Fail if we can't read the file, likely to occur in the browser
                         test.ok(!err);
                         test.done();
-                    }                    
+                    }
+                    var that = this;
+                    Async.chain([
+                            function(done) {
+                                that.dataModels.create(name, args, done);
+                            },
+                            function(dataModel, done) {
+                                dataModel.objectByName("test_data");
+                                test.ok(dataModel);
+    
+                                dataModel.acceleration.enabled = true;
+                                dataModel.acceleration.earliestTime = "-2mon";
+                                dataModel.acceleration.cronSchedule = "0 */12 * * *";
+                                dataModel.update(done);
+                            },
+                            function(dataModel, done) {
+                                var props = dataModel.properties();
+    
+                                test.strictEqual(true, dataModel.isAccelerated());
+                                test.strictEqual(true, !!dataModel.acceleration.enabled);
+                                test.strictEqual("-2mon", dataModel.acceleration.earliest_time);
+                                test.strictEqual("0 */12 * * *", dataModel.acceleration.cron_schedule);
+    
+                                var dataModelObject = dataModel.objectByName("test_data");
+                                var pivotSpecification = dataModelObject.createPivotSpecification();
+    
+                                test.strictEqual(dataModelObject.dataModel.name, pivotSpecification.accelerationNamespace);
+    
+                                var name1 = "delete-me-" + getNextId();
+                                pivotSpecification.setAccelerationJob(name1);
+                                test.strictEqual("sid=" + name1, pivotSpecification.accelerationNamespace);
+    
+                                var namespaceTemp = "delete-me-" + getNextId();
+                                pivotSpecification.accelerationNamespace = namespaceTemp;
+                                test.strictEqual(namespaceTemp, pivotSpecification.accelerationNamespace);
+    
+                                pivotSpecification
+                                    .addCellValue("test_data", "Source Value", "count")
+                                    .run(done);
+                            },
+                            function(job, pivot, done) {
+                                test.ok(job);
+                                test.ok(pivot);
+                                test.notStrictEqual("FAILED", job.properties().dispatchState);
+    
+                                job.track({}, function(job) {
+                                    test.ok(pivot.tstatsSearch);
+                                    test.strictEqual(0, job.properties().request.search.indexOf("| tstats"));
+                                    test.strictEqual("| tstats", job.properties().request.search.match("^\\| tstats")[0]);
+                                    test.strictEqual(1, job.properties().request.search.match("^\\| tstats").length);
+    
+                                    test.strictEqual(pivot.tstatsSearch, job.properties().request.search);
+                                    done(null, job);
+                                });
+                            },
+                            function(job, done) {
+                                test.ok(job);
+                                done();
+                            }
+                        ],
+                        function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
                 },
     
                 "Callback#Pivot - test illegal filtering (all types)": function(test) {
@@ -18571,154 +18456,149 @@
                     }
                     var name = "delete-me-" + getNextId();
                     var args;
-                    var that = this;
-
                     try {
-                        // args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
-                        fetch('./data/data_model_for_pivot.json')
-                        .then(response => response.json())
-                        .then(json => {
-                            args = json;
-                            Async.chain([
-                                function(done) {
-                                   that.dataModels.create(name, args, done);
-                                },
-                                function(dataModel, done) {
-                                    var obj = dataModel.objectByName("test_data");
-                                    test.ok(obj);
-        
-                                    var pivotSpecification = obj.createPivotSpecification();
-        
-                                    // Boolean comparisons
-                                    try {
-                                        pivotSpecification.addFilter(getNextId(), "boolean", "=", true);
-                                        test.ok(false);
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Cannot add filter on a nonexistent field.");
-                                    }
-                                    try {
-                                        pivotSpecification.addFilter("_time", "boolean", "=", true);
-                                        test.ok(false);
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Cannot add boolean filter on _time because it is of type timestamp");
-                                    }
-        
-                                    // String comparisons
-                                    try {
-                                        pivotSpecification.addFilter("has_boris", "string", "contains", "abc");
-                                        test.ok(false);
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Cannot add string filter on has_boris because it is of type boolean");
-                                    }
-                                    try {
-                                        pivotSpecification.addFilter(getNextId(), "string", "contains", "abc");
-                                        test.ok(false);
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Cannot add filter on a nonexistent field.");
-                                    }
-        
-                                    // IPv4 comparisons
-                                    try {
-                                        pivotSpecification.addFilter("has_boris", "ipv4", "startsWith", "192.168");
-                                        test.ok(false);
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Cannot add ipv4 filter on has_boris because it is of type boolean");
-                                    }
-                                    try {
-                                        pivotSpecification.addFilter(getNextId(), "ipv4", "startsWith", "192.168");
-                                        test.ok(false);
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Cannot add filter on a nonexistent field.");
-                                    }
-        
-                                    // Number comparisons
-                                    try {
-                                        pivotSpecification.addFilter("has_boris", "number", "atLeast", 2.3);
-                                        test.ok(false);
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Cannot add number filter on has_boris because it is of type boolean");
-                                    }
-                                    try {
-                                        pivotSpecification.addFilter(getNextId(), "number", "atLeast", 2.3);
-                                        test.ok(false);
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Cannot add filter on a nonexistent field.");
-                                    }
-        
-                                    // Limit filter
-                                    try {
-                                        pivotSpecification.addLimitFilter("has_boris", "host", "DEFAULT", 50, "count");
-                                        test.ok(false);
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Cannot add limit filter on has_boris because it is of type boolean");
-                                    }
-                                    try {
-                                        pivotSpecification.addLimitFilter(getNextId(), "host", "DEFAULT", 50, "count");
-                                        test.ok(false);
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Cannot add limit filter on a nonexistent field.");
-                                    }
-                                    try {
-                                        pivotSpecification.addLimitFilter("source", "host", "DEFAULT", 50, "sum");
-                                        test.ok(false);
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message,
-                                            "Stats function for fields of type string must be COUNT or DISTINCT_COUNT; found sum");
-                                    }
-                                    try {
-                                        pivotSpecification.addLimitFilter("epsilon", "host", "DEFAULT", 50, "duration");
-                                        test.ok(false);
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message,
-                                            "Stats function for fields of type number must be one of COUNT, DISTINCT_COUNT, SUM, or AVERAGE; found duration");
-                                    }
-                                    try {
-                                        pivotSpecification.addLimitFilter("test_data", "host", "DEFAULT", 50, "list");
-                                        test.ok(false);
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message,
-                                            "Stats function for fields of type object count must be COUNT; found list");
-                                    }
-                                    done();
-                                }],
-                                function(err) {
-                                    test.ok(!err);
-                                    test.done();
-                                }
-                            );
-                        });
+                        args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                     }
                     catch(err) {
                         // Fail if we can't read the file, likely to occur in the browser
                         test.ok(!err);
                         test.done();
                     }
+                    var that = this;
+                    Async.chain([
+                            function(done) {
+                               that.dataModels.create(name, args, done);
+                            },
+                            function(dataModel, done) {
+                                var obj = dataModel.objectByName("test_data");
+                                test.ok(obj);
+    
+                                var pivotSpecification = obj.createPivotSpecification();
+    
+                                // Boolean comparisons
+                                try {
+                                    pivotSpecification.addFilter(getNextId(), "boolean", "=", true);
+                                    test.ok(false);
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Cannot add filter on a nonexistent field.");
+                                }
+                                try {
+                                    pivotSpecification.addFilter("_time", "boolean", "=", true);
+                                    test.ok(false);
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Cannot add boolean filter on _time because it is of type timestamp");
+                                }
+    
+                                // String comparisons
+                                try {
+                                    pivotSpecification.addFilter("has_boris", "string", "contains", "abc");
+                                    test.ok(false);
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Cannot add string filter on has_boris because it is of type boolean");
+                                }
+                                try {
+                                    pivotSpecification.addFilter(getNextId(), "string", "contains", "abc");
+                                    test.ok(false);
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Cannot add filter on a nonexistent field.");
+                                }
+    
+                                // IPv4 comparisons
+                                try {
+                                    pivotSpecification.addFilter("has_boris", "ipv4", "startsWith", "192.168");
+                                    test.ok(false);
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Cannot add ipv4 filter on has_boris because it is of type boolean");
+                                }
+                                try {
+                                    pivotSpecification.addFilter(getNextId(), "ipv4", "startsWith", "192.168");
+                                    test.ok(false);
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Cannot add filter on a nonexistent field.");
+                                }
+    
+                                // Number comparisons
+                                try {
+                                    pivotSpecification.addFilter("has_boris", "number", "atLeast", 2.3);
+                                    test.ok(false);
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Cannot add number filter on has_boris because it is of type boolean");
+                                }
+                                try {
+                                    pivotSpecification.addFilter(getNextId(), "number", "atLeast", 2.3);
+                                    test.ok(false);
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Cannot add filter on a nonexistent field.");
+                                }
+    
+                                // Limit filter
+                                try {
+                                    pivotSpecification.addLimitFilter("has_boris", "host", "DEFAULT", 50, "count");
+                                    test.ok(false);
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Cannot add limit filter on has_boris because it is of type boolean");
+                                }
+                                try {
+                                    pivotSpecification.addLimitFilter(getNextId(), "host", "DEFAULT", 50, "count");
+                                    test.ok(false);
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Cannot add limit filter on a nonexistent field.");
+                                }
+                                try {
+                                    pivotSpecification.addLimitFilter("source", "host", "DEFAULT", 50, "sum");
+                                    test.ok(false);
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message,
+                                        "Stats function for fields of type string must be COUNT or DISTINCT_COUNT; found sum");
+                                }
+                                try {
+                                    pivotSpecification.addLimitFilter("epsilon", "host", "DEFAULT", 50, "duration");
+                                    test.ok(false);
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message,
+                                        "Stats function for fields of type number must be one of COUNT, DISTINCT_COUNT, SUM, or AVERAGE; found duration");
+                                }
+                                try {
+                                    pivotSpecification.addLimitFilter("test_data", "host", "DEFAULT", 50, "list");
+                                    test.ok(false);
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message,
+                                        "Stats function for fields of type object count must be COUNT; found list");
+                                }
+                                done();
+                            }
+                        ],
+                        function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
                 },
     
                 "Callback#Pivot - test boolean filtering": function(test) {
@@ -18728,59 +18608,54 @@
                     }
                     var name = "delete-me-" + getNextId();
                     var args;
-                    var that = this;
-
                     try {
-                        // args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
-                        fetch('./data/data_model_for_pivot.json')
-                        .then(response => response.json())
-                        .then(json => {
-                            args = json;
-                            Async.chain([
-                                function(done) {
-                                   that.dataModels.create(name, args, done);
-                                },
-                                function(dataModel, done) {
-                                    var obj = dataModel.objectByName("test_data");
-                                    test.ok(obj);
-        
-                                    var pivotSpecification = obj.createPivotSpecification();
-                                    try {
-                                        pivotSpecification.addFilter("has_boris", "boolean", "=", true);
-                                        test.strictEqual(1, pivotSpecification.filters.length);
-        
-                                        //Test the individual parts of the filter
-                                        var filter = pivotSpecification.filters[0];
-        
-                                        test.ok(filter.hasOwnProperty("fieldName"));
-                                        test.ok(filter.hasOwnProperty("type"));
-                                        test.ok(filter.hasOwnProperty("rule"));
-                                        test.ok(filter.hasOwnProperty("owner"));
-        
-                                        test.strictEqual("has_boris", filter.fieldName);
-                                        test.strictEqual("boolean", filter.type);
-                                        test.strictEqual("=", filter.rule.comparator);
-                                        test.strictEqual(true, filter.rule.compareTo);
-                                        test.strictEqual("test_data", filter.owner);
-                                    }
-                                    catch (e) {
-                                        test.ok(false);
-                                    }
-        
-                                    done();
-                                }],
-                                function(err) {
-                                    test.ok(!err);
-                                    test.done();
-                                }
-                            );
-                        });
+                        args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                     }
                     catch(err) {
                         // Fail if we can't read the file, likely to occur in the browser
                         test.ok(!err);
                         test.done();
                     }
+                    var that = this;
+                    Async.chain([
+                            function(done) {
+                               that.dataModels.create(name, args, done);
+                            },
+                            function(dataModel, done) {
+                                var obj = dataModel.objectByName("test_data");
+                                test.ok(obj);
+    
+                                var pivotSpecification = obj.createPivotSpecification();
+                                try {
+                                    pivotSpecification.addFilter("has_boris", "boolean", "=", true);
+                                    test.strictEqual(1, pivotSpecification.filters.length);
+    
+                                    //Test the individual parts of the filter
+                                    var filter = pivotSpecification.filters[0];
+    
+                                    test.ok(filter.hasOwnProperty("fieldName"));
+                                    test.ok(filter.hasOwnProperty("type"));
+                                    test.ok(filter.hasOwnProperty("rule"));
+                                    test.ok(filter.hasOwnProperty("owner"));
+    
+                                    test.strictEqual("has_boris", filter.fieldName);
+                                    test.strictEqual("boolean", filter.type);
+                                    test.strictEqual("=", filter.rule.comparator);
+                                    test.strictEqual(true, filter.rule.compareTo);
+                                    test.strictEqual("test_data", filter.owner);
+                                }
+                                catch (e) {
+                                    test.ok(false);
+                                }
+    
+                                done();
+                            }
+                        ],
+                        function(err) {
+                           test.ok(!err);
+                           test.done();
+                        }
+                    );
                 },
     
                 "Callback#Pivot - test string filtering": function(test) {
@@ -18790,59 +18665,54 @@
                     }
                     var name = "delete-me-" + getNextId();
                     var args;
-                    var that = this;
-
                     try {
-                        // args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
-                        fetch('./data/data_model_for_pivot.json')
-                        .then(response => response.json())
-                        .then(json => {
-                            args = json;
-                            Async.chain([
-                                function(done) {
-                                   that.dataModels.create(name, args, done);
-                                },
-                                function(dataModel, done) {
-                                    var obj = dataModel.objectByName("test_data");
-                                    test.ok(obj);
-        
-                                    var pivotSpecification = obj.createPivotSpecification();
-                                    try {
-                                        pivotSpecification.addFilter("host", "string", "contains", "abc");
-                                        test.strictEqual(1, pivotSpecification.filters.length);
-        
-                                        //Test the individual parts of the filter
-                                        var filter = pivotSpecification.filters[0];
-        
-                                        test.ok(filter.hasOwnProperty("fieldName"));
-                                        test.ok(filter.hasOwnProperty("type"));
-                                        test.ok(filter.hasOwnProperty("rule"));
-                                        test.ok(filter.hasOwnProperty("owner"));
-        
-                                        test.strictEqual("host", filter.fieldName);
-                                        test.strictEqual("string", filter.type);
-                                        test.strictEqual("contains", filter.rule.comparator);
-                                        test.strictEqual("abc", filter.rule.compareTo);
-                                        test.strictEqual("BaseEvent", filter.owner);
-                                    }
-                                    catch (e) {
-                                        test.ok(false);
-                                    }
-        
-                                    done();
-                                }],
-                                function(err) {
-                                    test.ok(!err);
-                                    test.done();
-                                }
-                            );
-                        });
+                        args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                     }
                     catch(err) {
                         // Fail if we can't read the file, likely to occur in the browser
                         test.ok(!err);
                         test.done();
                     }
+                    var that = this;
+                    Async.chain([
+                            function(done) {
+                               that.dataModels.create(name, args, done);
+                            },
+                            function(dataModel, done) {
+                                var obj = dataModel.objectByName("test_data");
+                                test.ok(obj);
+    
+                                var pivotSpecification = obj.createPivotSpecification();
+                                try {
+                                    pivotSpecification.addFilter("host", "string", "contains", "abc");
+                                    test.strictEqual(1, pivotSpecification.filters.length);
+    
+                                    //Test the individual parts of the filter
+                                    var filter = pivotSpecification.filters[0];
+    
+                                    test.ok(filter.hasOwnProperty("fieldName"));
+                                    test.ok(filter.hasOwnProperty("type"));
+                                    test.ok(filter.hasOwnProperty("rule"));
+                                    test.ok(filter.hasOwnProperty("owner"));
+    
+                                    test.strictEqual("host", filter.fieldName);
+                                    test.strictEqual("string", filter.type);
+                                    test.strictEqual("contains", filter.rule.comparator);
+                                    test.strictEqual("abc", filter.rule.compareTo);
+                                    test.strictEqual("BaseEvent", filter.owner);
+                                }
+                                catch (e) {
+                                    test.ok(false);
+                                }
+    
+                                done();
+                            }
+                        ],
+                        function(err) {
+                           test.ok(!err);
+                           test.done();
+                        }
+                    );
                 },
     
                 "Callback#Pivot - test IPv4 filtering": function(test) {
@@ -18852,59 +18722,54 @@
                     }
                     var name = "delete-me-" + getNextId();
                     var args;
-                    var that = this;
-
                     try {
-                        // args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
-                        fetch('./data/data_model_for_pivot.json')
-                        .then(response => response.json())
-                        .then(json => {
-                            args = json;
-                            Async.chain([
-                                function(done) {
-                                   that.dataModels.create(name, args, done);
-                                },
-                                function(dataModel, done) {
-                                    var obj = dataModel.objectByName("test_data");
-                                    test.ok(obj);
-        
-                                    var pivotSpecification = obj.createPivotSpecification();
-                                    try {
-                                        pivotSpecification.addFilter("hostip", "ipv4", "startsWith", "192.168");
-                                        test.strictEqual(1, pivotSpecification.filters.length);
-        
-                                        //Test the individual parts of the filter
-                                        var filter = pivotSpecification.filters[0];
-        
-                                        test.ok(filter.hasOwnProperty("fieldName"));
-                                        test.ok(filter.hasOwnProperty("type"));
-                                        test.ok(filter.hasOwnProperty("rule"));
-                                        test.ok(filter.hasOwnProperty("owner"));
-        
-                                        test.strictEqual("hostip", filter.fieldName);
-                                        test.strictEqual("ipv4", filter.type);
-                                        test.strictEqual("startsWith", filter.rule.comparator);
-                                        test.strictEqual("192.168", filter.rule.compareTo);
-                                        test.strictEqual("test_data", filter.owner);
-                                    }
-                                    catch (e) {
-                                        test.ok(false);
-                                    }
-        
-                                    done();
-                                }],
-                                function(err) {
-                                    test.ok(!err);
-                                    test.done();
-                                }
-                            );
-                        });
+                        args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                     }
                     catch(err) {
                         // Fail if we can't read the file, likely to occur in the browser
                         test.ok(!err);
                         test.done();
                     }
+                    var that = this;
+                    Async.chain([
+                            function(done) {
+                               that.dataModels.create(name, args, done);
+                            },
+                            function(dataModel, done) {
+                                var obj = dataModel.objectByName("test_data");
+                                test.ok(obj);
+    
+                                var pivotSpecification = obj.createPivotSpecification();
+                                try {
+                                    pivotSpecification.addFilter("hostip", "ipv4", "startsWith", "192.168");
+                                    test.strictEqual(1, pivotSpecification.filters.length);
+    
+                                    //Test the individual parts of the filter
+                                    var filter = pivotSpecification.filters[0];
+    
+                                    test.ok(filter.hasOwnProperty("fieldName"));
+                                    test.ok(filter.hasOwnProperty("type"));
+                                    test.ok(filter.hasOwnProperty("rule"));
+                                    test.ok(filter.hasOwnProperty("owner"));
+    
+                                    test.strictEqual("hostip", filter.fieldName);
+                                    test.strictEqual("ipv4", filter.type);
+                                    test.strictEqual("startsWith", filter.rule.comparator);
+                                    test.strictEqual("192.168", filter.rule.compareTo);
+                                    test.strictEqual("test_data", filter.owner);
+                                }
+                                catch (e) {
+                                    test.ok(false);
+                                }
+    
+                                done();
+                            }
+                        ],
+                        function(err) {
+                           test.ok(!err);
+                           test.done();
+                        }
+                    );
                 },
     
                 "Callback#Pivot - test number filtering": function(test) {
@@ -18914,59 +18779,54 @@
                     }
                     var name = "delete-me-" + getNextId();
                     var args;
-                    var that = this;
-
                     try {
-                        // args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
-                        fetch('./data/data_model_for_pivot.json')
-                        .then(response => response.json())
-                        .then(json => {
-                            args = json;
-                            Async.chain([
-                                function(done) {
-                                   that.dataModels.create(name, args, done);
-                                },
-                                function(dataModel, done) {
-                                    var obj = dataModel.objectByName("test_data");
-                                    test.ok(obj);
-        
-                                    var pivotSpecification = obj.createPivotSpecification();
-                                    try {
-                                        pivotSpecification.addFilter("epsilon", "number", ">=", 2.3);
-                                        test.strictEqual(1, pivotSpecification.filters.length);
-        
-                                        //Test the individual parts of the filter
-                                        var filter = pivotSpecification.filters[0];
-        
-                                        test.ok(filter.hasOwnProperty("fieldName"));
-                                        test.ok(filter.hasOwnProperty("type"));
-                                        test.ok(filter.hasOwnProperty("rule"));
-                                        test.ok(filter.hasOwnProperty("owner"));
-        
-                                        test.strictEqual("epsilon", filter.fieldName);
-                                        test.strictEqual("number", filter.type);
-                                        test.strictEqual(">=", filter.rule.comparator);
-                                        test.strictEqual(2.3, filter.rule.compareTo);
-                                        test.strictEqual("test_data", filter.owner);
-                                    }
-                                    catch (e) {
-                                        test.ok(false);
-                                    }
-        
-                                    done();
-                                }],
-                                function(err) {
-                                    test.ok(!err);
-                                    test.done();
-                                }
-                            );
-                        });
+                        args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                     }
                     catch(err) {
                         // Fail if we can't read the file, likely to occur in the browser
                         test.ok(!err);
                         test.done();
                     }
+                    var that = this;
+                    Async.chain([
+                            function(done) {
+                               that.dataModels.create(name, args, done);
+                            },
+                            function(dataModel, done) {
+                                var obj = dataModel.objectByName("test_data");
+                                test.ok(obj);
+    
+                                var pivotSpecification = obj.createPivotSpecification();
+                                try {
+                                    pivotSpecification.addFilter("epsilon", "number", ">=", 2.3);
+                                    test.strictEqual(1, pivotSpecification.filters.length);
+    
+                                    //Test the individual parts of the filter
+                                    var filter = pivotSpecification.filters[0];
+    
+                                    test.ok(filter.hasOwnProperty("fieldName"));
+                                    test.ok(filter.hasOwnProperty("type"));
+                                    test.ok(filter.hasOwnProperty("rule"));
+                                    test.ok(filter.hasOwnProperty("owner"));
+    
+                                    test.strictEqual("epsilon", filter.fieldName);
+                                    test.strictEqual("number", filter.type);
+                                    test.strictEqual(">=", filter.rule.comparator);
+                                    test.strictEqual(2.3, filter.rule.compareTo);
+                                    test.strictEqual("test_data", filter.owner);
+                                }
+                                catch (e) {
+                                    test.ok(false);
+                                }
+    
+                                done();
+                            }
+                        ],
+                        function(err) {
+                           test.ok(!err);
+                           test.done();
+                        }
+                    );
                 },
                 "Callback#Pivot - test limit filtering": function(test) {
                     if (this.skip) {
@@ -18975,66 +18835,61 @@
                     }
                     var name = "delete-me-" + getNextId();
                     var args;
-                    var that = this;
-
                     try {
-                        // args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
-                        fetch('./data/data_model_for_pivot.json')
-                        .then(response => response.json())
-                        .then(json => {
-                            args = json;
-                            Async.chain([
-                                function(done) {
-                                    that.dataModels.create(name, args, done);
-                                },
-                                function(dataModel, done) {
-                                    var obj = dataModel.objectByName("test_data");
-                                    test.ok(obj);
-        
-                                    var pivotSpecification = obj.createPivotSpecification();
-                                    try {
-                                        pivotSpecification.addLimitFilter("epsilon", "host", "ASCENDING", 500, "average");
-                                        test.strictEqual(1, pivotSpecification.filters.length);
-        
-                                        //Test the individual parts of the filter
-                                        var filter = pivotSpecification.filters[0];
-        
-                                        test.ok(filter.hasOwnProperty("fieldName"));
-                                        test.ok(filter.hasOwnProperty("type"));
-                                        test.ok(filter.hasOwnProperty("owner"));
-                                        test.ok(filter.hasOwnProperty("attributeName"));
-                                        test.ok(filter.hasOwnProperty("attributeOwner"));
-                                        test.ok(filter.hasOwnProperty("limitType"));
-                                        test.ok(filter.hasOwnProperty("limitAmount"));
-                                        test.ok(filter.hasOwnProperty("statsFn"));
-        
-                                        test.strictEqual("epsilon", filter.fieldName);
-                                        test.strictEqual("number", filter.type);
-                                        test.strictEqual("test_data", filter.owner);
-                                        test.strictEqual("host", filter.attributeName);
-                                        test.strictEqual("BaseEvent", filter.attributeOwner);
-                                        test.strictEqual("lowest", filter.limitType);
-                                        test.strictEqual(500, filter.limitAmount);
-                                        test.strictEqual("average", filter.statsFn);
-                                    }
-                                    catch (e) {
-                                        test.ok(false);
-                                    }
-        
-                                    done();
-                                }],
-                                function(err) {
-                                   test.ok(!err);
-                                   test.done();
-                                }
-                            );
-                        });
+                        args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                     }
                     catch(err) {
                         // Fail if we can't read the file, likely to occur in the browser
                         test.ok(!err);
                         test.done();
                     }
+                    var that = this;
+                    Async.chain([
+                            function(done) {
+                               that.dataModels.create(name, args, done);
+                            },
+                            function(dataModel, done) {
+                                var obj = dataModel.objectByName("test_data");
+                                test.ok(obj);
+    
+                                var pivotSpecification = obj.createPivotSpecification();
+                                try {
+                                    pivotSpecification.addLimitFilter("epsilon", "host", "ASCENDING", 500, "average");
+                                    test.strictEqual(1, pivotSpecification.filters.length);
+    
+                                    //Test the individual parts of the filter
+                                    var filter = pivotSpecification.filters[0];
+    
+                                    test.ok(filter.hasOwnProperty("fieldName"));
+                                    test.ok(filter.hasOwnProperty("type"));
+                                    test.ok(filter.hasOwnProperty("owner"));
+                                    test.ok(filter.hasOwnProperty("attributeName"));
+                                    test.ok(filter.hasOwnProperty("attributeOwner"));
+                                    test.ok(filter.hasOwnProperty("limitType"));
+                                    test.ok(filter.hasOwnProperty("limitAmount"));
+                                    test.ok(filter.hasOwnProperty("statsFn"));
+    
+                                    test.strictEqual("epsilon", filter.fieldName);
+                                    test.strictEqual("number", filter.type);
+                                    test.strictEqual("test_data", filter.owner);
+                                    test.strictEqual("host", filter.attributeName);
+                                    test.strictEqual("BaseEvent", filter.attributeOwner);
+                                    test.strictEqual("lowest", filter.limitType);
+                                    test.strictEqual(500, filter.limitAmount);
+                                    test.strictEqual("average", filter.statsFn);
+                                }
+                                catch (e) {
+                                    test.ok(false);
+                                }
+    
+                                done();
+                            }
+                        ],
+                        function(err) {
+                           test.ok(!err);
+                           test.done();
+                        }
+                    );
                 },
                 "Callback#Pivot - test row split": function(test) {
                     if (this.skip) {
@@ -19043,253 +18898,248 @@
                     }
                     var name = "delete-me-" + getNextId();
                     var args;
-                    var that = this;
-
                     try {
-                        // args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
-                        fetch('./data/data_model_for_pivot.json')
-                        .then(response => response.json())
-                        .then(json => {
-                            args = json;
-                            Async.chain([
-                                function(done) {
-                                    that.dataModels.create(name, args, done);
-                                },
-                                function(dataModel, done) {
-                                    var obj = dataModel.objectByName("test_data");
-                                    test.ok(obj);
-        
-                                    var pivotSpecification = obj.createPivotSpecification();
-        
-                                    // Test error handling for row split
-                                    try {
-                                        pivotSpecification.addRowSplit("has_boris", "Wrong type here");
-                                        test.ok(false);
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number or string.");
-                                    }
-                                    var field = getNextId();
-                                    try {
-        
-                                        pivotSpecification.addRowSplit(field, "Break Me!");
-                                        test.ok(false);
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Did not find field " + field);
-                                    }
-        
-                                    // Test row split, number
-                                    pivotSpecification.addRowSplit("epsilon", "My Label");
-                                    test.strictEqual(1, pivotSpecification.rows.length);
-        
-                                    var row = pivotSpecification.rows[0];
-                                    test.ok(row.hasOwnProperty("fieldName"));
-                                    test.ok(row.hasOwnProperty("owner"));
-                                    test.ok(row.hasOwnProperty("type"));
-                                    test.ok(row.hasOwnProperty("label"));
-                                    test.ok(row.hasOwnProperty("display"));
-        
-                                    test.strictEqual("epsilon", row.fieldName);
-                                    test.strictEqual("test_data", row.owner);
-                                    test.strictEqual("number", row.type);
-                                    test.strictEqual("My Label", row.label);
-                                    test.strictEqual("all", row.display);
-                                    test.same({
-                                            fieldName: "epsilon",
-                                            owner: "test_data",
-                                            type: "number",
-                                            label: "My Label",
-                                            display: "all"
-                                        },
-                                        row);
-        
-                                    // Test row split, string
-                                    pivotSpecification.addRowSplit("host", "My Label");
-                                    test.strictEqual(2, pivotSpecification.rows.length);
-        
-                                    row = pivotSpecification.rows[pivotSpecification.rows.length - 1];
-                                    test.ok(row.hasOwnProperty("fieldName"));
-                                    test.ok(row.hasOwnProperty("owner"));
-                                    test.ok(row.hasOwnProperty("type"));
-                                    test.ok(row.hasOwnProperty("label"));
-                                    test.ok(!row.hasOwnProperty("display"));
-        
-                                    test.strictEqual("host", row.fieldName);
-                                    test.strictEqual("BaseEvent", row.owner);
-                                    test.strictEqual("string", row.type);
-                                    test.strictEqual("My Label", row.label);
-                                    test.same({
-                                            fieldName: "host",
-                                            owner: "BaseEvent",
-                                            type: "string",
-                                            label: "My Label"
-                                        },
-                                        row);
-        
-                                    // Test error handling on range row split
-                                    try {
-                                        pivotSpecification.addRangeRowSplit("has_boris", "Wrong type here", {start: 0, end: 100, step:20, limit:5});
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number.");
-                                    }
-                                    try {
-                                        pivotSpecification.addRangeRowSplit(field, "Break Me!", {start: 0, end: 100, step:20, limit:5});
-                                        test.ok(false);
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Did not find field " + field);
-                                    }
-        
-                                    // Test range row split
-                                    pivotSpecification.addRangeRowSplit("epsilon", "My Label", {start: 0, end: 100, step:20, limit:5});
-                                    test.strictEqual(3, pivotSpecification.rows.length);
-        
-                                    row = pivotSpecification.rows[pivotSpecification.rows.length - 1];
-                                    test.ok(row.hasOwnProperty("fieldName"));
-                                    test.ok(row.hasOwnProperty("owner"));
-                                    test.ok(row.hasOwnProperty("type"));
-                                    test.ok(row.hasOwnProperty("label"));
-                                    test.ok(row.hasOwnProperty("display"));
-                                    test.ok(row.hasOwnProperty("ranges"));
-        
-                                    test.strictEqual("epsilon", row.fieldName);
-                                    test.strictEqual("test_data", row.owner);
-                                    test.strictEqual("number", row.type);
-                                    test.strictEqual("My Label", row.label);
-                                    test.strictEqual("ranges", row.display);
-        
-                                    var ranges = {
-                                        start: 0,
-                                        end: 100,
-                                        size: 20,
-                                        maxNumberOf: 5
-                                    };
-                                    test.same(ranges, row.ranges);
-                                    test.same({
-                                            fieldName: "epsilon",
-                                            owner: "test_data",
-                                            type: "number",
-                                            label: "My Label",
-                                            display: "ranges",
-                                            ranges: ranges
-                                        },
-                                        row);
-        
-                                    // Test error handling on boolean row split
-                                    try {
-                                        pivotSpecification.addBooleanRowSplit("epsilon", "Wrong type here", "t", "f");
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected boolean.");
-                                    }
-                                    try {
-                                        pivotSpecification.addBooleanRowSplit(field, "Break Me!", "t", "f");
-                                        test.ok(false);
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Did not find field " + field);
-                                    }
-        
-                                    // Test boolean row split
-                                    pivotSpecification.addBooleanRowSplit("has_boris", "My Label", "is_true", "is_false");
-                                    test.strictEqual(4, pivotSpecification.rows.length);
-        
-                                    row = pivotSpecification.rows[pivotSpecification.rows.length - 1];
-                                    test.ok(row.hasOwnProperty("fieldName"));
-                                    test.ok(row.hasOwnProperty("owner"));
-                                    test.ok(row.hasOwnProperty("type"));
-                                    test.ok(row.hasOwnProperty("label"));
-                                    test.ok(row.hasOwnProperty("trueLabel"));
-                                    test.ok(row.hasOwnProperty("falseLabel"));
-        
-                                    test.strictEqual("has_boris", row.fieldName);
-                                    test.strictEqual("My Label", row.label);
-                                    test.strictEqual("test_data", row.owner);
-                                    test.strictEqual("boolean", row.type);
-                                    test.strictEqual("is_true", row.trueLabel);
-                                    test.strictEqual("is_false", row.falseLabel);
-                                    test.same({
-                                            fieldName: "has_boris",
-                                            label: "My Label",
-                                            owner: "test_data",
-                                            type: "boolean",
-                                            trueLabel: "is_true",
-                                            falseLabel: "is_false"
-                                        },
-                                        row);
-        
-                                    // Test error handling on timestamp row split
-                                    try {
-                                        pivotSpecification.addTimestampRowSplit("epsilon", "Wrong type here", "some binning");
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected timestamp.");
-                                    }
-                                    try {
-                                        pivotSpecification.addTimestampRowSplit(field, "Break Me!", "some binning");
-                                        test.ok(false);
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Did not find field " + field);
-                                    }
-                                    try {
-                                        pivotSpecification.addTimestampRowSplit("_time", "some label", "Bogus binning value");
-                                        test.ok(false);
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Invalid binning Bogus binning value found. Valid values are: " + pivotSpecification._binning.join(", "));
-                                    }
-        
-                                    // Test timestamp row split
-                                    pivotSpecification.addTimestampRowSplit("_time", "My Label", "day");
-                                    test.strictEqual(5, pivotSpecification.rows.length);
-        
-                                    row = pivotSpecification.rows[pivotSpecification.rows.length - 1];
-                                    test.ok(row.hasOwnProperty("fieldName"));
-                                    test.ok(row.hasOwnProperty("owner"));
-                                    test.ok(row.hasOwnProperty("type"));
-                                    test.ok(row.hasOwnProperty("label"));
-                                    test.ok(row.hasOwnProperty("period"));
-        
-                                    test.strictEqual("_time", row.fieldName);
-                                    test.strictEqual("My Label", row.label);
-                                    test.strictEqual("BaseEvent", row.owner);
-                                    test.strictEqual("timestamp", row.type);
-                                    test.strictEqual("day", row.period);
-                                    test.same({
-                                            fieldName: "_time",
-                                            label: "My Label",
-                                            owner: "BaseEvent",
-                                            type: "timestamp",
-                                            period: "day"
-                                        },
-                                        row);
-        
-                                    done();
-                                }],
-                                function(err) {
-                                    test.ok(!err);
-                                    test.done();
-                                }
-                            );
-                        });
+                        args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                     }
                     catch(err) {
                         // Fail if we can't read the file, likely to occur in the browser
                         test.ok(!err);
                         test.done();
                     }
+                    var that = this;
+                    Async.chain([
+                            function(done) {
+                                that.dataModels.create(name, args, done);
+                            },
+                            function(dataModel, done) {
+                                var obj = dataModel.objectByName("test_data");
+                                test.ok(obj);
+    
+                                var pivotSpecification = obj.createPivotSpecification();
+    
+                                // Test error handling for row split
+                                try {
+                                    pivotSpecification.addRowSplit("has_boris", "Wrong type here");
+                                    test.ok(false);
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number or string.");
+                                }
+                                var field = getNextId();
+                                try {
+    
+                                    pivotSpecification.addRowSplit(field, "Break Me!");
+                                    test.ok(false);
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Did not find field " + field);
+                                }
+    
+                                // Test row split, number
+                                pivotSpecification.addRowSplit("epsilon", "My Label");
+                                test.strictEqual(1, pivotSpecification.rows.length);
+    
+                                var row = pivotSpecification.rows[0];
+                                test.ok(row.hasOwnProperty("fieldName"));
+                                test.ok(row.hasOwnProperty("owner"));
+                                test.ok(row.hasOwnProperty("type"));
+                                test.ok(row.hasOwnProperty("label"));
+                                test.ok(row.hasOwnProperty("display"));
+    
+                                test.strictEqual("epsilon", row.fieldName);
+                                test.strictEqual("test_data", row.owner);
+                                test.strictEqual("number", row.type);
+                                test.strictEqual("My Label", row.label);
+                                test.strictEqual("all", row.display);
+                                test.same({
+                                        fieldName: "epsilon",
+                                        owner: "test_data",
+                                        type: "number",
+                                        label: "My Label",
+                                        display: "all"
+                                    },
+                                    row);
+    
+                                // Test row split, string
+                                pivotSpecification.addRowSplit("host", "My Label");
+                                test.strictEqual(2, pivotSpecification.rows.length);
+    
+                                row = pivotSpecification.rows[pivotSpecification.rows.length - 1];
+                                test.ok(row.hasOwnProperty("fieldName"));
+                                test.ok(row.hasOwnProperty("owner"));
+                                test.ok(row.hasOwnProperty("type"));
+                                test.ok(row.hasOwnProperty("label"));
+                                test.ok(!row.hasOwnProperty("display"));
+    
+                                test.strictEqual("host", row.fieldName);
+                                test.strictEqual("BaseEvent", row.owner);
+                                test.strictEqual("string", row.type);
+                                test.strictEqual("My Label", row.label);
+                                test.same({
+                                        fieldName: "host",
+                                        owner: "BaseEvent",
+                                        type: "string",
+                                        label: "My Label"
+                                    },
+                                    row);
+    
+                                // Test error handling on range row split
+                                try {
+                                    pivotSpecification.addRangeRowSplit("has_boris", "Wrong type here", {start: 0, end: 100, step:20, limit:5});
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number.");
+                                }
+                                try {
+                                    pivotSpecification.addRangeRowSplit(field, "Break Me!", {start: 0, end: 100, step:20, limit:5});
+                                    test.ok(false);
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Did not find field " + field);
+                                }
+    
+                                // Test range row split
+                                pivotSpecification.addRangeRowSplit("epsilon", "My Label", {start: 0, end: 100, step:20, limit:5});
+                                test.strictEqual(3, pivotSpecification.rows.length);
+    
+                                row = pivotSpecification.rows[pivotSpecification.rows.length - 1];
+                                test.ok(row.hasOwnProperty("fieldName"));
+                                test.ok(row.hasOwnProperty("owner"));
+                                test.ok(row.hasOwnProperty("type"));
+                                test.ok(row.hasOwnProperty("label"));
+                                test.ok(row.hasOwnProperty("display"));
+                                test.ok(row.hasOwnProperty("ranges"));
+    
+                                test.strictEqual("epsilon", row.fieldName);
+                                test.strictEqual("test_data", row.owner);
+                                test.strictEqual("number", row.type);
+                                test.strictEqual("My Label", row.label);
+                                test.strictEqual("ranges", row.display);
+    
+                                var ranges = {
+                                    start: 0,
+                                    end: 100,
+                                    size: 20,
+                                    maxNumberOf: 5
+                                };
+                                test.same(ranges, row.ranges);
+                                test.same({
+                                        fieldName: "epsilon",
+                                        owner: "test_data",
+                                        type: "number",
+                                        label: "My Label",
+                                        display: "ranges",
+                                        ranges: ranges
+                                    },
+                                    row);
+    
+                                // Test error handling on boolean row split
+                                try {
+                                    pivotSpecification.addBooleanRowSplit("epsilon", "Wrong type here", "t", "f");
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected boolean.");
+                                }
+                                try {
+                                    pivotSpecification.addBooleanRowSplit(field, "Break Me!", "t", "f");
+                                    test.ok(false);
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Did not find field " + field);
+                                }
+    
+                                // Test boolean row split
+                                pivotSpecification.addBooleanRowSplit("has_boris", "My Label", "is_true", "is_false");
+                                test.strictEqual(4, pivotSpecification.rows.length);
+    
+                                row = pivotSpecification.rows[pivotSpecification.rows.length - 1];
+                                test.ok(row.hasOwnProperty("fieldName"));
+                                test.ok(row.hasOwnProperty("owner"));
+                                test.ok(row.hasOwnProperty("type"));
+                                test.ok(row.hasOwnProperty("label"));
+                                test.ok(row.hasOwnProperty("trueLabel"));
+                                test.ok(row.hasOwnProperty("falseLabel"));
+    
+                                test.strictEqual("has_boris", row.fieldName);
+                                test.strictEqual("My Label", row.label);
+                                test.strictEqual("test_data", row.owner);
+                                test.strictEqual("boolean", row.type);
+                                test.strictEqual("is_true", row.trueLabel);
+                                test.strictEqual("is_false", row.falseLabel);
+                                test.same({
+                                        fieldName: "has_boris",
+                                        label: "My Label",
+                                        owner: "test_data",
+                                        type: "boolean",
+                                        trueLabel: "is_true",
+                                        falseLabel: "is_false"
+                                    },
+                                    row);
+    
+                                // Test error handling on timestamp row split
+                                try {
+                                    pivotSpecification.addTimestampRowSplit("epsilon", "Wrong type here", "some binning");
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected timestamp.");
+                                }
+                                try {
+                                    pivotSpecification.addTimestampRowSplit(field, "Break Me!", "some binning");
+                                    test.ok(false);
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Did not find field " + field);
+                                }
+                                try {
+                                    pivotSpecification.addTimestampRowSplit("_time", "some label", "Bogus binning value");
+                                    test.ok(false);
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Invalid binning Bogus binning value found. Valid values are: " + pivotSpecification._binning.join(", "));
+                                }
+    
+                                // Test timestamp row split
+                                pivotSpecification.addTimestampRowSplit("_time", "My Label", "day");
+                                test.strictEqual(5, pivotSpecification.rows.length);
+    
+                                row = pivotSpecification.rows[pivotSpecification.rows.length - 1];
+                                test.ok(row.hasOwnProperty("fieldName"));
+                                test.ok(row.hasOwnProperty("owner"));
+                                test.ok(row.hasOwnProperty("type"));
+                                test.ok(row.hasOwnProperty("label"));
+                                test.ok(row.hasOwnProperty("period"));
+    
+                                test.strictEqual("_time", row.fieldName);
+                                test.strictEqual("My Label", row.label);
+                                test.strictEqual("BaseEvent", row.owner);
+                                test.strictEqual("timestamp", row.type);
+                                test.strictEqual("day", row.period);
+                                test.same({
+                                        fieldName: "_time",
+                                        label: "My Label",
+                                        owner: "BaseEvent",
+                                        type: "timestamp",
+                                        period: "day"
+                                    },
+                                    row);
+    
+                                done();
+                            }
+                        ],
+                        function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
                 },
                 "Callback#Pivot - test column split": function(test) {
                     if (this.skip) {
@@ -19298,239 +19148,234 @@
                     }
                     var name = "delete-me-" + getNextId();
                     var args;
-                    var that = this;
-
                     try {
-                        // args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
-                        fetch('./data/data_model_for_pivot.json')
-                        .then(response => response.json())
-                        .then(json => {
-                            args = json;
-                            Async.chain([
-                                function(done) {
-                                    that.dataModels.create(name, args, done);
-                                },
-                                function(dataModel, done) {
-                                    var obj = dataModel.objectByName("test_data");
-                                    test.ok(obj);
-        
-                                    var pivotSpecification = obj.createPivotSpecification();
-        
-                                    // Test error handling for column split
-                                    try {
-                                        pivotSpecification.addColumnSplit("has_boris", "Wrong type here");
-                                        test.ok(false);
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number or string.");
-                                    }
-                                    var field = getNextId();
-                                    try {
-        
-                                        pivotSpecification.addColumnSplit(field, "Break Me!");
-                                        test.ok(false);
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Did not find field " + field);
-                                    }
-        
-                                    // Test column split, number
-                                    pivotSpecification.addColumnSplit("epsilon");
-                                    test.strictEqual(1, pivotSpecification.columns.length);
-        
-                                    var col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
-                                    test.ok(col.hasOwnProperty("fieldName"));
-                                    test.ok(col.hasOwnProperty("owner"));
-                                    test.ok(col.hasOwnProperty("type"));
-                                    test.ok(col.hasOwnProperty("display"));
-        
-                                    test.strictEqual("epsilon", col.fieldName);
-                                    test.strictEqual("test_data", col.owner);
-                                    test.strictEqual("number", col.type);
-                                    test.strictEqual("all", col.display);
-                                    test.same({
-                                            fieldName: "epsilon",
-                                            owner: "test_data",
-                                            type: "number",
-                                            display: "all"
-                                        },
-                                        col);
-        
-                                    // Test column split, string
-                                    pivotSpecification.addColumnSplit("host");
-                                    test.strictEqual(2, pivotSpecification.columns.length);
-        
-                                    col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
-                                    test.ok(col.hasOwnProperty("fieldName"));
-                                    test.ok(col.hasOwnProperty("owner"));
-                                    test.ok(col.hasOwnProperty("type"));
-                                    test.ok(!col.hasOwnProperty("display"));
-        
-                                    test.strictEqual("host", col.fieldName);
-                                    test.strictEqual("BaseEvent", col.owner);
-                                    test.strictEqual("string", col.type);
-                                    test.same({
-                                            fieldName: "host",
-                                            owner: "BaseEvent",
-                                            type: "string"
-                                        },
-                                        col);
-        
-                                    done();
-        
-                                    // Test error handling for range column split
-                                    try {
-                                        pivotSpecification.addRangeColumnSplit("has_boris", "Wrong type here", {start: 0, end: 100, step:20, limit:5});
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number.");
-                                    }
-                                    try {
-                                        pivotSpecification.addRangeColumnSplit(field, {start: 0, end: 100, step:20, limit:5});
-                                        test.ok(false);
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Did not find field " + field);
-                                    }
-        
-                                    // Test range column split
-                                    pivotSpecification.addRangeColumnSplit("epsilon", {start: 0, end: 100, step:20, limit:5});
-                                    test.strictEqual(3, pivotSpecification.columns.length);
-        
-                                    col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
-                                    test.ok(col.hasOwnProperty("fieldName"));
-                                    test.ok(col.hasOwnProperty("owner"));
-                                    test.ok(col.hasOwnProperty("type"));
-                                    test.ok(col.hasOwnProperty("display"));
-                                    test.ok(col.hasOwnProperty("ranges"));
-        
-                                    test.strictEqual("epsilon", col.fieldName);
-                                    test.strictEqual("test_data", col.owner);
-                                    test.strictEqual("number", col.type);
-                                    test.strictEqual("ranges", col.display);
-                                    var ranges = {
-                                        start: "0",
-                                        end: "100",
-                                        size: "20",
-                                        maxNumberOf: "5"
-                                    };
-                                    test.same(ranges, col.ranges);
-                                    test.same({
-                                            fieldName: "epsilon",
-                                            owner: "test_data",
-                                            type: "number",
-                                            display: "ranges",
-                                            ranges: ranges
-                                        },
-                                        col);
-        
-                                    // Test error handling on boolean column split
-                                    try {
-                                        pivotSpecification.addBooleanColumnSplit("epsilon", "t", "f");
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected boolean.");
-                                    }
-                                    try {
-                                        pivotSpecification.addBooleanColumnSplit(field, "t", "f");
-                                        test.ok(false);
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Did not find field " + field);
-                                    }
-        
-                                    // Test boolean column split
-                                    pivotSpecification.addBooleanColumnSplit("has_boris", "is_true", "is_false");
-                                    test.strictEqual(4, pivotSpecification.columns.length);
-        
-                                    col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
-                                    test.ok(col.hasOwnProperty("fieldName"));
-                                    test.ok(col.hasOwnProperty("owner"));
-                                    test.ok(col.hasOwnProperty("type"));
-                                    test.ok(!col.hasOwnProperty("label"));
-                                    test.ok(col.hasOwnProperty("trueLabel"));
-                                    test.ok(col.hasOwnProperty("falseLabel"));
-        
-                                    test.strictEqual("has_boris", col.fieldName);
-                                    test.strictEqual("test_data", col.owner);
-                                    test.strictEqual("boolean", col.type);
-                                    test.strictEqual("is_true", col.trueLabel);
-                                    test.strictEqual("is_false", col.falseLabel);
-                                    test.same({
-                                            fieldName: "has_boris",
-                                            owner: "test_data",
-                                            type: "boolean",
-                                            trueLabel: "is_true",
-                                            falseLabel: "is_false"
-                                        },
-                                        col);
-        
-                                    // Test error handling on timestamp column split
-                                    try {
-                                        pivotSpecification.addTimestampColumnSplit("epsilon", "Wrong type here");
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected timestamp.");
-                                    }
-                                    try {
-                                        pivotSpecification.addTimestampColumnSplit(field, "Break Me!");
-                                        test.ok(false);
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Did not find field " + field);
-                                    }
-                                    try {
-                                        pivotSpecification.addTimestampColumnSplit("_time", "Bogus binning value");
-                                        test.ok(false);
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Invalid binning Bogus binning value found. Valid values are: " + pivotSpecification._binning.join(", "));
-                                    }
-        
-                                    // Test timestamp column split
-                                    pivotSpecification.addTimestampColumnSplit("_time", "day");
-                                    test.strictEqual(5, pivotSpecification.columns.length);
-        
-                                    col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
-                                    test.ok(col.hasOwnProperty("fieldName"));
-                                    test.ok(col.hasOwnProperty("owner"));
-                                    test.ok(col.hasOwnProperty("type"));
-                                    test.ok(!col.hasOwnProperty("label"));
-                                    test.ok(col.hasOwnProperty("period"));
-        
-                                    test.strictEqual("_time", col.fieldName);
-                                    test.strictEqual("BaseEvent", col.owner);
-                                    test.strictEqual("timestamp", col.type);
-                                    test.strictEqual("day", col.period);
-                                    test.same({
-                                            fieldName: "_time",
-                                            owner: "BaseEvent",
-                                            type: "timestamp",
-                                            period: "day"
-                                        },
-                                        col);
-                                }],
-                                function(err) {
-                                    test.ok(!err);
-                                    test.done();
-                                }
-                            );
-                        });
+                        args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                     }
                     catch(err) {
                         // Fail if we can't read the file, likely to occur in the browser
                         test.ok(!err);
                         test.done();
                     }
+                    var that = this;
+                    Async.chain([
+                            function(done) {
+                               that.dataModels.create(name, args, done);
+                            },
+                            function(dataModel, done) {
+                                var obj = dataModel.objectByName("test_data");
+                                test.ok(obj);
+    
+                                var pivotSpecification = obj.createPivotSpecification();
+    
+                                // Test error handling for column split
+                                try {
+                                    pivotSpecification.addColumnSplit("has_boris", "Wrong type here");
+                                    test.ok(false);
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number or string.");
+                                }
+                                var field = getNextId();
+                                try {
+    
+                                    pivotSpecification.addColumnSplit(field, "Break Me!");
+                                    test.ok(false);
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Did not find field " + field);
+                                }
+    
+                                // Test column split, number
+                                pivotSpecification.addColumnSplit("epsilon");
+                                test.strictEqual(1, pivotSpecification.columns.length);
+    
+                                var col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
+                                test.ok(col.hasOwnProperty("fieldName"));
+                                test.ok(col.hasOwnProperty("owner"));
+                                test.ok(col.hasOwnProperty("type"));
+                                test.ok(col.hasOwnProperty("display"));
+    
+                                test.strictEqual("epsilon", col.fieldName);
+                                test.strictEqual("test_data", col.owner);
+                                test.strictEqual("number", col.type);
+                                test.strictEqual("all", col.display);
+                                test.same({
+                                        fieldName: "epsilon",
+                                        owner: "test_data",
+                                        type: "number",
+                                        display: "all"
+                                    },
+                                    col);
+    
+                                // Test column split, string
+                                pivotSpecification.addColumnSplit("host");
+                                test.strictEqual(2, pivotSpecification.columns.length);
+    
+                                col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
+                                test.ok(col.hasOwnProperty("fieldName"));
+                                test.ok(col.hasOwnProperty("owner"));
+                                test.ok(col.hasOwnProperty("type"));
+                                test.ok(!col.hasOwnProperty("display"));
+    
+                                test.strictEqual("host", col.fieldName);
+                                test.strictEqual("BaseEvent", col.owner);
+                                test.strictEqual("string", col.type);
+                                test.same({
+                                        fieldName: "host",
+                                        owner: "BaseEvent",
+                                        type: "string"
+                                    },
+                                    col);
+    
+                                done();
+    
+                                // Test error handling for range column split
+                                try {
+                                    pivotSpecification.addRangeColumnSplit("has_boris", "Wrong type here", {start: 0, end: 100, step:20, limit:5});
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number.");
+                                }
+                                try {
+                                    pivotSpecification.addRangeColumnSplit(field, {start: 0, end: 100, step:20, limit:5});
+                                    test.ok(false);
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Did not find field " + field);
+                                }
+    
+                                // Test range column split
+                                pivotSpecification.addRangeColumnSplit("epsilon", {start: 0, end: 100, step:20, limit:5});
+                                test.strictEqual(3, pivotSpecification.columns.length);
+    
+                                col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
+                                test.ok(col.hasOwnProperty("fieldName"));
+                                test.ok(col.hasOwnProperty("owner"));
+                                test.ok(col.hasOwnProperty("type"));
+                                test.ok(col.hasOwnProperty("display"));
+                                test.ok(col.hasOwnProperty("ranges"));
+    
+                                test.strictEqual("epsilon", col.fieldName);
+                                test.strictEqual("test_data", col.owner);
+                                test.strictEqual("number", col.type);
+                                test.strictEqual("ranges", col.display);
+                                var ranges = {
+                                    start: "0",
+                                    end: "100",
+                                    size: "20",
+                                    maxNumberOf: "5"
+                                };
+                                test.same(ranges, col.ranges);
+                                test.same({
+                                        fieldName: "epsilon",
+                                        owner: "test_data",
+                                        type: "number",
+                                        display: "ranges",
+                                        ranges: ranges
+                                    },
+                                    col);
+    
+                                // Test error handling on boolean column split
+                                try {
+                                    pivotSpecification.addBooleanColumnSplit("epsilon", "t", "f");
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected boolean.");
+                                }
+                                try {
+                                    pivotSpecification.addBooleanColumnSplit(field, "t", "f");
+                                    test.ok(false);
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Did not find field " + field);
+                                }
+    
+                                // Test boolean column split
+                                pivotSpecification.addBooleanColumnSplit("has_boris", "is_true", "is_false");
+                                test.strictEqual(4, pivotSpecification.columns.length);
+    
+                                col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
+                                test.ok(col.hasOwnProperty("fieldName"));
+                                test.ok(col.hasOwnProperty("owner"));
+                                test.ok(col.hasOwnProperty("type"));
+                                test.ok(!col.hasOwnProperty("label"));
+                                test.ok(col.hasOwnProperty("trueLabel"));
+                                test.ok(col.hasOwnProperty("falseLabel"));
+    
+                                test.strictEqual("has_boris", col.fieldName);
+                                test.strictEqual("test_data", col.owner);
+                                test.strictEqual("boolean", col.type);
+                                test.strictEqual("is_true", col.trueLabel);
+                                test.strictEqual("is_false", col.falseLabel);
+                                test.same({
+                                        fieldName: "has_boris",
+                                        owner: "test_data",
+                                        type: "boolean",
+                                        trueLabel: "is_true",
+                                        falseLabel: "is_false"
+                                    },
+                                    col);
+    
+                                // Test error handling on timestamp column split
+                                try {
+                                    pivotSpecification.addTimestampColumnSplit("epsilon", "Wrong type here");
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected timestamp.");
+                                }
+                                try {
+                                    pivotSpecification.addTimestampColumnSplit(field, "Break Me!");
+                                    test.ok(false);
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Did not find field " + field);
+                                }
+                                try {
+                                    pivotSpecification.addTimestampColumnSplit("_time", "Bogus binning value");
+                                    test.ok(false);
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Invalid binning Bogus binning value found. Valid values are: " + pivotSpecification._binning.join(", "));
+                                }
+    
+                                // Test timestamp column split
+                                pivotSpecification.addTimestampColumnSplit("_time", "day");
+                                test.strictEqual(5, pivotSpecification.columns.length);
+    
+                                col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
+                                test.ok(col.hasOwnProperty("fieldName"));
+                                test.ok(col.hasOwnProperty("owner"));
+                                test.ok(col.hasOwnProperty("type"));
+                                test.ok(!col.hasOwnProperty("label"));
+                                test.ok(col.hasOwnProperty("period"));
+    
+                                test.strictEqual("_time", col.fieldName);
+                                test.strictEqual("BaseEvent", col.owner);
+                                test.strictEqual("timestamp", col.type);
+                                test.strictEqual("day", col.period);
+                                test.same({
+                                        fieldName: "_time",
+                                        owner: "BaseEvent",
+                                        type: "timestamp",
+                                        period: "day"
+                                    },
+                                    col);
+                            }
+                        ],
+                        function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
                 },
                 "Callback#Pivot - test cell value": function(test) {
                     if (this.skip) {
@@ -19539,246 +19384,241 @@
                     }
                     var name = "delete-me-" + getNextId();
                     var args;
-                    var that = this;
-
                     try {
-                        // args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
-                        fetch('./data/data_model_for_pivot.json')
-                        .then(response => response.json())
-                        .then(json => {
-                            args = json;
-                            Async.chain([
-                                function(done) {
-                                    that.dataModels.create(name, args, done);
-                                },
-                                function(dataModel, done) {
-                                    var obj = dataModel.objectByName("test_data");
-                                    test.ok(obj);
-        
-                                    var pivotSpecification = obj.createPivotSpecification();
-        
-                                    // Test error handling for cell value, string
-                                    try {
-                                        pivotSpecification.addCellValue("iDontExist", "Break Me!", "explosion");
-                                        test.ok(false);
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Did not find field iDontExist");
-                                    }
-                                    try {
-                                        pivotSpecification.addCellValue("source", "Wrong Stats Function", "stdev");
-                                        test.ok(false);
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Stats function on string and IPv4 fields must be one of:" +
-                                            " list, distinct_values, first, last, count, or distinct_count; found stdev");
-                                    }
-        
-                                    // Add cell value, string
-                                    pivotSpecification.addCellValue("source", "Source Value", "dc");
-                                    test.strictEqual(1, pivotSpecification.cells.length);
-        
-                                    var cell = pivotSpecification.cells[pivotSpecification.cells.length - 1];
-                                    test.ok(cell.hasOwnProperty("fieldName"));
-                                    test.ok(cell.hasOwnProperty("owner"));
-                                    test.ok(cell.hasOwnProperty("type"));
-                                    test.ok(cell.hasOwnProperty("label"));
-                                    test.ok(cell.hasOwnProperty("value"));
-                                    test.ok(cell.hasOwnProperty("sparkline"));
-        
-                                    test.strictEqual("source", cell.fieldName);
-                                    test.strictEqual("BaseEvent", cell.owner);
-                                    test.strictEqual("string", cell.type);
-                                    test.strictEqual("Source Value", cell.label);
-                                    test.strictEqual("dc", cell.value);
-                                    test.strictEqual(false, cell.sparkline);
-                                    test.same({
-                                            fieldName: "source",
-                                            owner: "BaseEvent",
-                                            type: "string",
-                                            label: "Source Value",
-                                            value: "dc",
-                                            sparkline: false
-                                        }, cell);
-        
-                                    // Test error handling for cell value, IPv4
-                                    try {
-                                        pivotSpecification.addCellValue("hostip", "Wrong Stats Function", "stdev");
-                                        test.ok(false);
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Stats function on string and IPv4 fields must be one of:" +
-                                            " list, distinct_values, first, last, count, or distinct_count; found stdev");
-                                    }
-        
-                                    // Add cell value, IPv4
-                                    pivotSpecification.addCellValue("hostip", "Source Value", "dc");
-                                    test.strictEqual(2, pivotSpecification.cells.length);
-        
-                                    cell = pivotSpecification.cells[pivotSpecification.cells.length - 1];
-                                    test.ok(cell.hasOwnProperty("fieldName"));
-                                    test.ok(cell.hasOwnProperty("owner"));
-                                    test.ok(cell.hasOwnProperty("type"));
-                                    test.ok(cell.hasOwnProperty("label"));
-                                    test.ok(cell.hasOwnProperty("value"));
-                                    test.ok(cell.hasOwnProperty("sparkline"));
-        
-                                    test.strictEqual("hostip", cell.fieldName);
-                                    test.strictEqual("test_data", cell.owner);
-                                    test.strictEqual("ipv4", cell.type);
-                                    test.strictEqual("Source Value", cell.label);
-                                    test.strictEqual("dc", cell.value);
-                                    test.strictEqual(false, cell.sparkline);
-                                    test.same({
-                                            fieldName: "hostip",
-                                            owner: "test_data",
-                                            type: "ipv4",
-                                            label: "Source Value",
-                                            value: "dc",
-                                            sparkline: false
-                                        }, cell);
-        
-                                    // Test error handling for cell value, boolean
-                                    try {
-                                        pivotSpecification.addCellValue("has_boris", "Booleans not allowed", "sum");
-                                        test.ok(false);
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Cannot use boolean valued fields as cell values.");
-                                    }
-        
-                                    // Test error handling for cell value, number
-                                    try {
-                                        pivotSpecification.addCellValue("epsilon", "Wrong Stats Function", "latest");
-                                        test.ok(false);
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Stats function on number field must be must be one of:" +
-                                            " sum, count, average, max, min, stdev, list, or distinct_values; found latest");
-                                    }
-        
-                                    // Add cell value, number
-                                    pivotSpecification.addCellValue("epsilon", "Source Value", "average");
-                                    test.strictEqual(3, pivotSpecification.cells.length);
-        
-                                    cell = pivotSpecification.cells[pivotSpecification.cells.length - 1];
-                                    test.ok(cell.hasOwnProperty("fieldName"));
-                                    test.ok(cell.hasOwnProperty("owner"));
-                                    test.ok(cell.hasOwnProperty("type"));
-                                    test.ok(cell.hasOwnProperty("label"));
-                                    test.ok(cell.hasOwnProperty("value"));
-                                    test.ok(cell.hasOwnProperty("sparkline"));
-        
-                                    test.strictEqual("epsilon", cell.fieldName);
-                                    test.strictEqual("test_data", cell.owner);
-                                    test.strictEqual("number", cell.type);
-                                    test.strictEqual("Source Value", cell.label);
-                                    test.strictEqual("average", cell.value);
-                                    test.strictEqual(false, cell.sparkline);
-                                    test.same({
-                                            fieldName: "epsilon",
-                                            owner: "test_data",
-                                            type: "number",
-                                            label: "Source Value",
-                                            value: "average",
-                                            sparkline: false
-                                        }, cell);
-        
-                                    // Test error handling for cell value, timestamp
-                                    try {
-                                        pivotSpecification.addCellValue("_time", "Wrong Stats Function", "max");
-                                        test.ok(false);
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Stats function on timestamp field must be one of:" +
-                                            " duration, earliest, latest, list, or distinct values; found max");
-                                    }
-        
-                                    // Add cell value, timestamp
-                                    pivotSpecification.addCellValue("_time", "Source Value", "earliest");
-                                    test.strictEqual(4, pivotSpecification.cells.length);
-        
-                                    cell = pivotSpecification.cells[pivotSpecification.cells.length - 1];
-                                    test.ok(cell.hasOwnProperty("fieldName"));
-                                    test.ok(cell.hasOwnProperty("owner"));
-                                    test.ok(cell.hasOwnProperty("type"));
-                                    test.ok(cell.hasOwnProperty("label"));
-                                    test.ok(cell.hasOwnProperty("value"));
-                                    test.ok(cell.hasOwnProperty("sparkline"));
-        
-                                    test.strictEqual("_time", cell.fieldName);
-                                    test.strictEqual("BaseEvent", cell.owner);
-                                    test.strictEqual("timestamp", cell.type);
-                                    test.strictEqual("Source Value", cell.label);
-                                    test.strictEqual("earliest", cell.value);
-                                    test.strictEqual(false, cell.sparkline);
-                                    test.same({
-                                            fieldName: "_time",
-                                            owner: "BaseEvent",
-                                            type: "timestamp",
-                                            label: "Source Value",
-                                            value: "earliest",
-                                            sparkline: false
-                                        }, cell);
-        
-                                    // Test error handling for cell value, count
-                                    try {
-                                        pivotSpecification.addCellValue("test_data", "Wrong Stats Function", "min");
-                                        test.ok(false);
-                                    }
-                                    catch (e) {
-                                        test.ok(e);
-                                        test.strictEqual(e.message, "Stats function on childcount and objectcount fields " +
-                                            "must be count; found " + "min");
-                                    }
-        
-                                    // Add cell value, count
-                                    pivotSpecification.addCellValue("test_data", "Source Value", "count");
-                                    test.strictEqual(5, pivotSpecification.cells.length);
-        
-                                    cell = pivotSpecification.cells[pivotSpecification.cells.length - 1];
-                                    test.ok(cell.hasOwnProperty("fieldName"));
-                                    test.ok(cell.hasOwnProperty("owner"));
-                                    test.ok(cell.hasOwnProperty("type"));
-                                    test.ok(cell.hasOwnProperty("label"));
-                                    test.ok(cell.hasOwnProperty("value"));
-                                    test.ok(cell.hasOwnProperty("sparkline"));
-        
-                                    test.strictEqual("test_data", cell.fieldName);
-                                    test.strictEqual("test_data", cell.owner);
-                                    test.strictEqual("objectCount", cell.type);
-                                    test.strictEqual("Source Value", cell.label);
-                                    test.strictEqual("count", cell.value);
-                                    test.strictEqual(false, cell.sparkline);
-                                    test.same({
-                                            fieldName: "test_data",
-                                            owner: "test_data",
-                                            type: "objectCount",
-                                            label: "Source Value",
-                                            value: "count",
-                                            sparkline: false
-                                        }, cell);
-        
-                                    done();
-                                }],
-                                function(err) {
-                                    test.ok(!err);
-                                    test.done();
-                                }
-                            );
-                        });
+                        args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                     }
                     catch(err) {
                         // Fail if we can't read the file, likely to occur in the browser
                         test.ok(!err);
                         test.done();
                     }
+                    var that = this;
+                    Async.chain([
+                            function(done) {
+                               that.dataModels.create(name, args, done);
+                            },
+                            function(dataModel, done) {
+                                var obj = dataModel.objectByName("test_data");
+                                test.ok(obj);
+    
+                                var pivotSpecification = obj.createPivotSpecification();
+    
+                                // Test error handling for cell value, string
+                                try {
+                                    pivotSpecification.addCellValue("iDontExist", "Break Me!", "explosion");
+                                    test.ok(false);
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Did not find field iDontExist");
+                                }
+                                try {
+                                    pivotSpecification.addCellValue("source", "Wrong Stats Function", "stdev");
+                                    test.ok(false);
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Stats function on string and IPv4 fields must be one of:" +
+                                        " list, distinct_values, first, last, count, or distinct_count; found stdev");
+                                }
+    
+                                // Add cell value, string
+                                pivotSpecification.addCellValue("source", "Source Value", "dc");
+                                test.strictEqual(1, pivotSpecification.cells.length);
+    
+                                var cell = pivotSpecification.cells[pivotSpecification.cells.length - 1];
+                                test.ok(cell.hasOwnProperty("fieldName"));
+                                test.ok(cell.hasOwnProperty("owner"));
+                                test.ok(cell.hasOwnProperty("type"));
+                                test.ok(cell.hasOwnProperty("label"));
+                                test.ok(cell.hasOwnProperty("value"));
+                                test.ok(cell.hasOwnProperty("sparkline"));
+    
+                                test.strictEqual("source", cell.fieldName);
+                                test.strictEqual("BaseEvent", cell.owner);
+                                test.strictEqual("string", cell.type);
+                                test.strictEqual("Source Value", cell.label);
+                                test.strictEqual("dc", cell.value);
+                                test.strictEqual(false, cell.sparkline);
+                                test.same({
+                                        fieldName: "source",
+                                        owner: "BaseEvent",
+                                        type: "string",
+                                        label: "Source Value",
+                                        value: "dc",
+                                        sparkline: false
+                                    }, cell);
+    
+                                // Test error handling for cell value, IPv4
+                                try {
+                                    pivotSpecification.addCellValue("hostip", "Wrong Stats Function", "stdev");
+                                    test.ok(false);
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Stats function on string and IPv4 fields must be one of:" +
+                                        " list, distinct_values, first, last, count, or distinct_count; found stdev");
+                                }
+    
+                                // Add cell value, IPv4
+                                pivotSpecification.addCellValue("hostip", "Source Value", "dc");
+                                test.strictEqual(2, pivotSpecification.cells.length);
+    
+                                cell = pivotSpecification.cells[pivotSpecification.cells.length - 1];
+                                test.ok(cell.hasOwnProperty("fieldName"));
+                                test.ok(cell.hasOwnProperty("owner"));
+                                test.ok(cell.hasOwnProperty("type"));
+                                test.ok(cell.hasOwnProperty("label"));
+                                test.ok(cell.hasOwnProperty("value"));
+                                test.ok(cell.hasOwnProperty("sparkline"));
+    
+                                test.strictEqual("hostip", cell.fieldName);
+                                test.strictEqual("test_data", cell.owner);
+                                test.strictEqual("ipv4", cell.type);
+                                test.strictEqual("Source Value", cell.label);
+                                test.strictEqual("dc", cell.value);
+                                test.strictEqual(false, cell.sparkline);
+                                test.same({
+                                        fieldName: "hostip",
+                                        owner: "test_data",
+                                        type: "ipv4",
+                                        label: "Source Value",
+                                        value: "dc",
+                                        sparkline: false
+                                    }, cell);
+    
+                                // Test error handling for cell value, boolean
+                                try {
+                                    pivotSpecification.addCellValue("has_boris", "Booleans not allowed", "sum");
+                                    test.ok(false);
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Cannot use boolean valued fields as cell values.");
+                                }
+    
+                                // Test error handling for cell value, number
+                                try {
+                                    pivotSpecification.addCellValue("epsilon", "Wrong Stats Function", "latest");
+                                    test.ok(false);
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Stats function on number field must be must be one of:" +
+                                        " sum, count, average, max, min, stdev, list, or distinct_values; found latest");
+                                }
+    
+                                // Add cell value, number
+                                pivotSpecification.addCellValue("epsilon", "Source Value", "average");
+                                test.strictEqual(3, pivotSpecification.cells.length);
+    
+                                cell = pivotSpecification.cells[pivotSpecification.cells.length - 1];
+                                test.ok(cell.hasOwnProperty("fieldName"));
+                                test.ok(cell.hasOwnProperty("owner"));
+                                test.ok(cell.hasOwnProperty("type"));
+                                test.ok(cell.hasOwnProperty("label"));
+                                test.ok(cell.hasOwnProperty("value"));
+                                test.ok(cell.hasOwnProperty("sparkline"));
+    
+                                test.strictEqual("epsilon", cell.fieldName);
+                                test.strictEqual("test_data", cell.owner);
+                                test.strictEqual("number", cell.type);
+                                test.strictEqual("Source Value", cell.label);
+                                test.strictEqual("average", cell.value);
+                                test.strictEqual(false, cell.sparkline);
+                                test.same({
+                                        fieldName: "epsilon",
+                                        owner: "test_data",
+                                        type: "number",
+                                        label: "Source Value",
+                                        value: "average",
+                                        sparkline: false
+                                    }, cell);
+    
+                                // Test error handling for cell value, timestamp
+                                try {
+                                    pivotSpecification.addCellValue("_time", "Wrong Stats Function", "max");
+                                    test.ok(false);
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Stats function on timestamp field must be one of:" +
+                                        " duration, earliest, latest, list, or distinct values; found max");
+                                }
+    
+                                // Add cell value, timestamp
+                                pivotSpecification.addCellValue("_time", "Source Value", "earliest");
+                                test.strictEqual(4, pivotSpecification.cells.length);
+    
+                                cell = pivotSpecification.cells[pivotSpecification.cells.length - 1];
+                                test.ok(cell.hasOwnProperty("fieldName"));
+                                test.ok(cell.hasOwnProperty("owner"));
+                                test.ok(cell.hasOwnProperty("type"));
+                                test.ok(cell.hasOwnProperty("label"));
+                                test.ok(cell.hasOwnProperty("value"));
+                                test.ok(cell.hasOwnProperty("sparkline"));
+    
+                                test.strictEqual("_time", cell.fieldName);
+                                test.strictEqual("BaseEvent", cell.owner);
+                                test.strictEqual("timestamp", cell.type);
+                                test.strictEqual("Source Value", cell.label);
+                                test.strictEqual("earliest", cell.value);
+                                test.strictEqual(false, cell.sparkline);
+                                test.same({
+                                        fieldName: "_time",
+                                        owner: "BaseEvent",
+                                        type: "timestamp",
+                                        label: "Source Value",
+                                        value: "earliest",
+                                        sparkline: false
+                                    }, cell);
+    
+                                // Test error handling for cell value, count
+                                try {
+                                    pivotSpecification.addCellValue("test_data", "Wrong Stats Function", "min");
+                                    test.ok(false);
+                                }
+                                catch (e) {
+                                    test.ok(e);
+                                    test.strictEqual(e.message, "Stats function on childcount and objectcount fields " +
+                                        "must be count; found " + "min");
+                                }
+    
+                                // Add cell value, count
+                                pivotSpecification.addCellValue("test_data", "Source Value", "count");
+                                test.strictEqual(5, pivotSpecification.cells.length);
+    
+                                cell = pivotSpecification.cells[pivotSpecification.cells.length - 1];
+                                test.ok(cell.hasOwnProperty("fieldName"));
+                                test.ok(cell.hasOwnProperty("owner"));
+                                test.ok(cell.hasOwnProperty("type"));
+                                test.ok(cell.hasOwnProperty("label"));
+                                test.ok(cell.hasOwnProperty("value"));
+                                test.ok(cell.hasOwnProperty("sparkline"));
+    
+                                test.strictEqual("test_data", cell.fieldName);
+                                test.strictEqual("test_data", cell.owner);
+                                test.strictEqual("objectCount", cell.type);
+                                test.strictEqual("Source Value", cell.label);
+                                test.strictEqual("count", cell.value);
+                                test.strictEqual(false, cell.sparkline);
+                                test.same({
+                                        fieldName: "test_data",
+                                        owner: "test_data",
+                                        type: "objectCount",
+                                        label: "Source Value",
+                                        value: "count",
+                                        sparkline: false
+                                    }, cell);
+    
+                                done();
+                            }
+                        ],
+                        function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
                 },
                 "Callback#Pivot - test pivot throws HTTP exception": function(test) {
                     if (this.skip) {
@@ -19787,41 +19627,36 @@
                     }
                     var name = "delete-me-" + getNextId();
                     var args;
-                    var that = this;
-
                     try {
-                        // args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
-                        fetch('./data/data_model_for_pivot.json')
-                        .then(response => response.json())
-                        .then(json => {
-                            args = json;
-                            Async.chain([
-                                function(done) {
-                                    that.dataModels.create(name, args, done);
-                                },
-                                function(dataModel, done) {
-                                    var obj = dataModel.objectByName("test_data");
-                                    test.ok(obj);
-        
-                                    obj.createPivotSpecification().pivot(done);
-                                },
-                                function(pivot, done) {
-                                    test.ok(false);
-                                }],
-                                function(err) {
-                                    test.ok(err);
-                                    var expectedErr = "In handler 'datamodelpivot': Error in 'PivotReport': Must have non-empty cells or non-empty rows.";
-                                    test.ok(utils.endsWith(err.message, expectedErr));
-                                    test.done();
-                                }
-                            );
-                        });
+                        args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                     }
                     catch(err) {
                         // Fail if we can't read the file, likely to occur in the browser
                         test.ok(!err);
                         test.done();
                     }
+                    var that = this;
+                    Async.chain([
+                            function(done) {
+                               that.dataModels.create(name, args, done);
+                            },
+                            function(dataModel, done) {
+                                var obj = dataModel.objectByName("test_data");
+                                test.ok(obj);
+    
+                                obj.createPivotSpecification().pivot(done);
+                            },
+                            function(pivot, done) {
+                                test.ok(false);
+                            }
+                        ],
+                        function(err) {
+                            test.ok(err);
+                            var expectedErr = "In handler 'datamodelpivot': Error in 'PivotReport': Must have non-empty cells or non-empty rows.";
+                            test.ok(utils.endsWith(err.message, expectedErr));
+                            test.done();
+                        }
+                    );
                 },
                 "Callback#Pivot - test pivot with simple namespace": function(test) {
                     if (this.skip) {
@@ -19830,87 +19665,83 @@
                     }
                     var name = "delete-me-" + getNextId();
                     var args;
-                    var that = this;
-                    var obj;
-                    var pivotSpecification;
-                    var adhocjob;
                     try {
-                        // args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
-                        fetch('./data/data_model_for_pivot.json')
-                        .then(response => response.json())
-                        .then(json => {
-                            args = json;
-                            Async.chain([
-                                function(done) {
-                                    that.dataModels.create(name, args, done);
-                                },
-                                function(dataModel, done) {
-                                    obj = dataModel.objectByName("test_data");
-                                    test.ok(obj);
-                                    obj.createLocalAccelerationJob(null, done);
-                                },
-                                function(job, done) {
-                                    adhocjob = job;
-                                    test.ok(job);
-                                    pivotSpecification = obj.createPivotSpecification();
-        
-                                    pivotSpecification.addBooleanRowSplit("has_boris", "Has Boris", "meep", "hilda");
-                                    pivotSpecification.addCellValue("hostip", "Distinct IPs", "count");
-        
-                                    // Test setting a job
-                                    pivotSpecification.setAccelerationJob(job);
-                                    test.strictEqual("string", typeof pivotSpecification.accelerationNamespace);
-                                    test.strictEqual("sid=" + job.sid, pivotSpecification.accelerationNamespace);
-        
-                                    // Test setting a job's SID
-                                    pivotSpecification.setAccelerationJob(job.sid);
-                                    test.strictEqual("string", typeof pivotSpecification.accelerationNamespace);
-                                    test.strictEqual("sid=" + job.sid, pivotSpecification.accelerationNamespace);
-        
-                                    pivotSpecification.pivot(done);
-                                },
-                                function(pivot, done) {
-                                    test.ok(pivot.tstatsSearch);
-                                    test.ok(pivot.tstatsSearch.length > 0);
-                                    test.strictEqual(0, pivot.tstatsSearch.indexOf("| tstats"));
-                                    // This test won't work with utils.startsWith due to the regex escaping
-                                    test.strictEqual("| tstats", pivot.tstatsSearch.match("^\\| tstats")[0]);
-                                    test.strictEqual(1, pivot.tstatsSearch.match("^\\| tstats").length);
-        
-                                    pivot.run(done);
-                                },
-                                function(job, done) {
-                                    tutils.pollUntil(
-                                        job,
-                                        function(j) {
-                                            return job.properties().isDone;
-                                        },
-                                        10,
-                                        done
-                                    );
-                                },
-                                function(job, done) {
-                                    test.ok("FAILED" !== job.properties().dispatchState);
-        
-                                    test.strictEqual(0, job.properties().request.search.indexOf("| tstats"));
-                                    // This test won't work with utils.startsWith due to the regex escaping
-                                    test.strictEqual("| tstats", job.properties().request.search.match("^\\| tstats")[0]);
-                                    test.strictEqual(1, job.properties().request.search.match("^\\| tstats").length);
-        
-                                    adhocjob.cancel(done);
-                                }],
-                                function(err) {
-                                    test.ok(!err);
-                                    test.done();
-                                }
-                            );
-                        });
+                        args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
                     }
                     catch(err) {
                         // Fail if we can't read the file, likely to occur in the browser
                         test.ok(!err);
                         test.done();
                     }
+                    var that = this;
+                    var obj;
+                    var pivotSpecification;
+                    var adhocjob;
+                    Async.chain([
+                            function(done) {
+                               that.dataModels.create(name, args, done);
+                            },
+                            function(dataModel, done) {
+                                obj = dataModel.objectByName("test_data");
+                                test.ok(obj);
+                                obj.createLocalAccelerationJob(null, done);
+                            },
+                            function(job, done) {
+                                adhocjob = job;
+                                test.ok(job);
+                                pivotSpecification = obj.createPivotSpecification();
+    
+                                pivotSpecification.addBooleanRowSplit("has_boris", "Has Boris", "meep", "hilda");
+                                pivotSpecification.addCellValue("hostip", "Distinct IPs", "count");
+    
+                                // Test setting a job
+                                pivotSpecification.setAccelerationJob(job);
+                                test.strictEqual("string", typeof pivotSpecification.accelerationNamespace);
+                                test.strictEqual("sid=" + job.sid, pivotSpecification.accelerationNamespace);
+    
+                                // Test setting a job's SID
+                                pivotSpecification.setAccelerationJob(job.sid);
+                                test.strictEqual("string", typeof pivotSpecification.accelerationNamespace);
+                                test.strictEqual("sid=" + job.sid, pivotSpecification.accelerationNamespace);
+    
+                                pivotSpecification.pivot(done);
+                            },
+                            function(pivot, done) {
+                                test.ok(pivot.tstatsSearch);
+                                test.ok(pivot.tstatsSearch.length > 0);
+                                test.strictEqual(0, pivot.tstatsSearch.indexOf("| tstats"));
+                                // This test won't work with utils.startsWith due to the regex escaping
+                                test.strictEqual("| tstats", pivot.tstatsSearch.match("^\\| tstats")[0]);
+                                test.strictEqual(1, pivot.tstatsSearch.match("^\\| tstats").length);
+    
+                                pivot.run(done);
+                            },
+                            function(job, done) {
+                                tutils.pollUntil(
+                                    job,
+                                    function(j) {
+                                        return job.properties().isDone;
+                                    },
+                                    10,
+                                    done
+                                );
+                            },
+                            function(job, done) {
+                                test.ok("FAILED" !== job.properties().dispatchState);
+    
+                                test.strictEqual(0, job.properties().request.search.indexOf("| tstats"));
+                                // This test won't work with utils.startsWith due to the regex escaping
+                                test.strictEqual("| tstats", job.properties().request.search.match("^\\| tstats")[0]);
+                                test.strictEqual(1, job.properties().request.search.match("^\\| tstats").length);
+    
+                                adhocjob.cancel(done);
+                            }
+                        ],
+                        function(err) {
+                            test.ok(!err);
+                            test.done();
+                        }
+                    );
                 },
                 "Callback#Pivot - test pivot column range split": function(test) {
                     // This test is here because we had a problem with fields that were supposed to be
@@ -20134,66 +19965,66 @@
                     });
                 },
     
-                "list applications with cookies as authentication": function(test) {
-                    this.service.serverInfo(function (err, info) {
-                        // Cookie authentication was added in splunk 6.2
-                        var majorVersion = parseInt(info.properties().version.split(".")[0], 10);
-                        var minorVersion = parseInt(info.properties().version.split(".")[1], 10);
-                        // Skip cookie test if Splunk older than 6.2
-                        if(majorVersion < 6 || (majorVersion === 6 && minorVersion < 2)) {
-                            splunkjs.Logger.log("Skipping cookie test...");
-                            test.done();
-                            return;
-                        }
+                // "list applications with cookies as authentication": function(test) {
+                //     this.service.serverInfo(function (err, info) {
+                //         // Cookie authentication was added in splunk 6.2
+                //         var majorVersion = parseInt(info.properties().version.split(".")[0], 10);
+                //         var minorVersion = parseInt(info.properties().version.split(".")[1], 10);
+                //         // Skip cookie test if Splunk older than 6.2
+                //         if(majorVersion < 6 || (majorVersion === 6 && minorVersion < 2)) {
+                //             splunkjs.Logger.log("Skipping cookie test...");
+                //             test.done();
+                //             return;
+                //         }
     
-                        var service = new splunkjs.Service(svc.http,
-                        {
-                            scheme: svc.scheme,
-                            host: svc.host,
-                            port: svc.port,
-                            username: svc.username,
-                            password: svc.password,
-                            version: svc.version
-                        });
+                //         var service = new splunkjs.Service(
+                //         {
+                //             scheme: svc.scheme,
+                //             host: svc.host,
+                //             port: svc.port,
+                //             username: svc.username,
+                //             password: svc.password,
+                //             version: svc.version
+                //         });
     
-                        var service2 = new splunkjs.Service(svc.http,
-                        {
-                            scheme: svc.scheme,
-                            host: svc.host,
-                            port: svc.port,
-                            version: svc.version
-                        });
+                //         var service2 = new splunkjs.Service(
+                //         {
+                //             scheme: svc.scheme,
+                //             host: svc.host,
+                //             port: svc.port,
+                //             version: svc.version
+                //         });
     
-                        Async.chain([
-                                function (done) {
-                                    service.login(done);
-                                },
-                                function (job, done) {
-                                    // Save the cookie store
-                                    var cookieStore = service.http._cookieStore;
-                                    // Test that there are cookies
-                                    test.ok(!utils.isEmpty(cookieStore));
+                //         Async.chain([
+                //                 function (done) {
+                //                     service.login(done);
+                //                 },
+                //                 function (job, done) {
+                //                     // Save the cookie store
+                //                     var cookieStore = service.http._cookieStore;
+                //                     // Test that there are cookies
+                //                     test.ok(!utils.isEmpty(cookieStore));
     
-                                    // Add the cookies to a service with no other authenitcation information
-                                    service2.http._cookieStore = cookieStore;
+                //                     // Add the cookies to a service with no other authenitcation information
+                //                     service2.http._cookieStore = cookieStore;
     
-                                    var apps = service2.apps();
-                                    apps.fetch(done);
-                                },
-                                function (apps, done) {
-                                    var appList = apps.list();
-                                    test.ok(appList.length > 0);
-                                    test.ok(!utils.isEmpty(service2.http._cookieStore));
-                                    done();
-                                }
-                            ],
-                            function(err) {
-                                // Test that no errors were returned
-                                test.ok(!err);
-                                test.done();
-                            });
-                    });
-                }
+                //                     var apps = service2.apps();
+                //                     apps.fetch(done);
+                //                 },
+                //                 function (apps, done) {
+                //                     var appList = apps.list();
+                //                     test.ok(appList.length > 0);
+                //                     test.ok(!utils.isEmpty(service2.http._cookieStore));
+                //                     done();
+                //                 }
+                //             ],
+                //             function(err) {
+                //                 // Test that no errors were returned
+                //                 test.ok(!err);
+                //                 test.done();
+                //             });
+                //     });
+                // }
             },
     
             "Saved Search Tests": {
@@ -21190,11 +21021,12 @@
                             },
                             function(storagePasswords, done) {
                                 startcount = storagePasswords.list().length;
-                                storagePasswords.create({name: name, realm: realm, password: "changeme"}, done);
+                                storagePasswords.create({name: name, realm: realm, password: "changed!"}, done);
                             },
                             function(storagePassword, done) {
                                 test.strictEqual(name, storagePassword.properties().username);
                                 test.strictEqual(realm + ":" + name + ":", storagePassword.name);
+                                test.strictEqual("changed!", storagePassword.properties().clear_password);
                                 test.strictEqual(realm, storagePassword.properties().realm);
                                 that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                             },
@@ -21228,11 +21060,12 @@
                             },
                             function(storagePasswords, done) {
                                 startcount = storagePasswords.list().length;
-                                storagePasswords.create({name: name, realm: realm, password: "changeme"}, done);
+                                storagePasswords.create({name: name, realm: realm, password: "changed!"}, done);
                             },
                             function(storagePassword, done) {
                                 test.strictEqual(name, storagePassword.properties().username);
                                 test.strictEqual("\\" + realm + ":\\" + name + ":", storagePassword.name);
+                                test.strictEqual("changed!", storagePassword.properties().clear_password);
                                 test.strictEqual(realm, storagePassword.properties().realm);
                                 that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                             },
@@ -21266,11 +21099,12 @@
                             },
                             function(storagePasswords, done) {
                                 startcount = storagePasswords.list().length;
-                                storagePasswords.create({name: name, realm: realm, password: "changeme"}, done);
+                                storagePasswords.create({name: name, realm: realm, password: "changed!"}, done);
                             },
                             function(storagePassword, done) {
                                 test.strictEqual(name, storagePassword.properties().username);
                                 test.strictEqual(realm + ":" + name + ":", storagePassword.name);
+                                test.strictEqual("changed!", storagePassword.properties().clear_password);
                                 test.strictEqual(realm, storagePassword.properties().realm);
                                 that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                             },
@@ -21303,11 +21137,12 @@
                             },
                             function(storagePasswords, done) {
                                 startcount = storagePasswords.list().length;
-                                storagePasswords.create({name: name, password: "changeme"}, done);
+                                storagePasswords.create({name: name, password: "changed!"}, done);
                             },
                             function(storagePassword, done) {
                                 test.strictEqual(name, storagePassword.properties().username);
                                 test.strictEqual(":" + name + ":", storagePassword.name);
+                                test.strictEqual("changed!", storagePassword.properties().clear_password);
                                 test.strictEqual("", storagePassword.properties().realm);
                                 that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                             },
@@ -21337,7 +21172,7 @@
                                 that.service.storagePasswords().fetch(done);
                             },
                             function(storagePasswords, done) {
-                                storagePasswords.create({name: null, password: "changeme"}, done);
+                                storagePasswords.create({name: null, password: "changed!"}, done);
                             }
                         ],
                         function(err) {
@@ -21392,11 +21227,12 @@
                             },
                             function(storagePasswords, done) {
                                 startcount = storagePasswords.list().length;
-                                storagePasswords.create({name: name, realm: realm, password: "changeme"}, done);
+                                storagePasswords.create({name: name, realm: realm, password: "changed!"}, done);
                             },
                             function(storagePassword, done) {
                                 test.strictEqual(name, storagePassword.properties().username);
                                 test.strictEqual("\\" + realm + ":\\" + name + ":", storagePassword.name);
+                                test.strictEqual("changed!", storagePassword.properties().clear_password);
                                 test.strictEqual(realm, storagePassword.properties().realm);
                                 that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                             },
@@ -21433,12 +21269,13 @@
                                 storagePasswords.create({
                                         name: name + ":end!@#$%^&*()_+{}:|<>?",
                                         realm: ":start::!@#$%^&*()_+{}:|<>?" + realm,
-                                        password: "changeme"},
+                                        password: "changed!"},
                                     done);
                             },
                             function(storagePassword, done) {
                                 test.strictEqual(name + ":end!@#$%^&*()_+{}:|<>?", storagePassword.properties().username);
                                 test.strictEqual("\\:start\\:\\:!@#$%^&*()_+{}\\:|<>?" + realm + ":" + name + "\\:end!@#$%^&*()_+{}\\:|<>?:", storagePassword.name);
+                                test.strictEqual("changed!", storagePassword.properties().clear_password);
                                 test.strictEqual(":start::!@#$%^&*()_+{}:|<>?" + realm, storagePassword.properties().realm);
                                 that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                             },
@@ -21481,6 +21318,7 @@
                             function(storagePassword, done) {
                                 test.strictEqual(name + ":end!@#$%^&*()_+{}:|<>?쎼 and 쎶 and &lt;&amp;&gt; für", storagePassword.properties().username);
                                 test.strictEqual("\\:start\\:\\:!@#$%^&*()_+{}\\:|<>?" + encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für") + realm + ":" + name + "\\:end!@#$%^&*()_+{}\\:|<>?쎼 and 쎶 and &lt;&amp;&gt; für:", storagePassword.name);
+                                test.strictEqual(decodeURIComponent(encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für")), storagePassword.properties().clear_password);
                                 test.strictEqual(":start::!@#$%^&*()_+{}:|<>?" + encodeURIComponent("쎼 and 쎶 and &lt;&amp;&gt; für") + realm, storagePassword.properties().realm);
                                 that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                             },
@@ -21514,11 +21352,12 @@
                             },
                             function(storagePasswords, done) {
                                 startcount = storagePasswords.list().length;
-                                storagePasswords.create({name: name, realm: realm, password: "changeme"}, done);
+                                storagePasswords.create({name: name, realm: realm, password: "changed!"}, done);
                             },
                             function(storagePassword, done) {
                                 test.strictEqual(name, storagePassword.properties().username);
                                 test.strictEqual(realm + ":" + name + ":", storagePassword.name);
+                                test.strictEqual("changed!", storagePassword.properties().clear_password);
                                 test.strictEqual(realm, storagePassword.properties().realm);
                                 that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                             },
@@ -21569,11 +21408,12 @@
                             },
                             function(storagePasswords, done) {
                                 startcount = storagePasswords.list().length;
-                                storagePasswords.create({name: name, realm: realm, password: "changeme"}, done);
+                                storagePasswords.create({name: name, realm: realm, password: "changed!"}, done);
                             },
                             function(storagePassword, done) {
                                 test.strictEqual(name, storagePassword.properties().username);
                                 test.strictEqual(realm + ":" + name + ":", storagePassword.name);
+                                test.strictEqual("changed!", storagePassword.properties().clear_password);
                                 test.strictEqual(realm, storagePassword.properties().realm);
                                 that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                             },
@@ -21624,11 +21464,12 @@
                             },
                             function(storagePasswords, done) {
                                 startcount = storagePasswords.list().length;
-                                storagePasswords.create({name: name, realm: realm, password: "changeme"}, done);
+                                storagePasswords.create({name: name, realm: realm, password: "changed!"}, done);
                             },
                             function(storagePassword, done) {
                                 test.strictEqual(name, storagePassword.properties().username);
                                 test.strictEqual(realm + ":" + name + ":", storagePassword.name);
+                                test.strictEqual("changed!", storagePassword.properties().clear_password);
                                 test.strictEqual(realm, storagePassword.properties().realm);
                                 that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                             },
@@ -21639,6 +21480,7 @@
                             function(storagePassword, done) {
                                 test.strictEqual(name, storagePassword.properties().username);
                                 test.strictEqual(realm + ":" + name + ":", storagePassword.name);
+                                test.strictEqual("changed", storagePassword.properties().clear_password);
                                 test.strictEqual(realm, storagePassword.properties().realm);
                                 that.service.storagePasswords().fetch(done);
                             },
@@ -21693,11 +21535,12 @@
                             },
                             function(storagePasswords, done) {
                                 startcount = storagePasswords.list().length;
-                                storagePasswords.create({name: name, realm: realm, password: "changeme"}, done);
+                                storagePasswords.create({name: name, realm: realm, password: "changed!"}, done);
                             },
                             function(storagePassword, done) {
                                 test.strictEqual(name, storagePassword.properties().username);
                                 test.strictEqual(realm + ":" + name + ":", storagePassword.name);
+                                test.strictEqual("changed!", storagePassword.properties().clear_password);
                                 test.strictEqual(realm, storagePassword.properties().realm);
                                 that.service.storagePasswords().fetch(Async.augment(done, storagePassword));
                             },
@@ -21710,7 +21553,7 @@
                             },
                             function(storagePasswords, done) {
                                 test.strictEqual(startcount, storagePasswords.list().length);
-                                storagePasswords.create({name: name, realm: realm, password: "changeme"}, done);
+                                storagePasswords.create({name: name, realm: realm, password: "changed!"}, done);
                             },
                             function(storagePassword, done) {
                                 test.strictEqual(name, storagePassword.properties().username);
@@ -22049,10 +21892,10 @@
                                 }
                                 catch (err) {
                                     // Assume Buffer isn't defined, we're probably in the browser
-                                    // test.strictEqual(decodeURI(encodeURIComponent(messages[m])).length, vals[m].bytes);
-                                    test.strictEqual(new Blob([messages[m]]).size, vals[m].bytes);
+                                    test.strictEqual(decodeURI(encodeURIComponent(messages[m])).length, vals[m].bytes);
                                 }
                             }
+    
                             test.done();
                         }
                     );
@@ -22227,7 +22070,7 @@
     
                     Async.chain([
                             function(done) {
-                                service.users().create({name: "jssdk_testuser", password: "Splunk@123", roles: "user"}, done);
+                                service.users().create({name: "jssdk_testuser", password: "abc", roles: "user"}, done);
                             },
                             function(user, done) {
                                 test.ok(user);
@@ -22301,7 +22144,7 @@
     
                     Async.chain([
                             function(done) {
-                                service.users().create({name: name, password: "Splunk@123", roles: "user"}, done);
+                                service.users().create({name: name, password: "abc", roles: "user"}, done);
                             },
                             function(user, done) {
                                 test.ok(user);
@@ -22311,7 +22154,7 @@
     
                                 newService = new splunkjs.Service(service.http, {
                                     username: name,
-                                    password: "Splunk@123",
+                                    password: "abc",
                                     host: service.host,
                                     port: service.port,
                                     scheme: service.scheme,
@@ -22324,14 +22167,14 @@
                                 test.ok(success);
                                 test.ok(user);
     
-                                user.update({password: "Splunk@1232"}, done);
+                                user.update({password: "abc2"}, done);
                             },
                             function(user, done) {
                                 newService.login(function(err, success) {
                                     test.ok(err);
                                     test.ok(!success);
     
-                                    user.update({password: "Splunk@123"}, done);
+                                    user.update({password: "abc"}, done);
                                 });
                             },
                             function(user, done) {
@@ -23280,7 +23123,7 @@
         opts = opts || {};
         
         var username = opts.username    || "admin";
-        var password = opts.password    || "changeme";
+        var password = opts.password    || "changed!";
         var scheme   = opts.scheme      || "https";
         var host     = opts.host        || "localhost";
         var port     = opts.port        || "8089";
@@ -23358,7 +23201,7 @@
         opts = opts || {};
         
         var username = opts.username    || "admin";
-        var password = opts.password    || "changeme";
+        var password = opts.password    || "changed!";
         var scheme   = opts.scheme      || "https";
         var host     = opts.host        || "localhost";
         var port     = opts.port        || "8089";
@@ -23443,7 +23286,7 @@
         opts = opts || {};
         
         var username = opts.username    || "admin";
-        var password = opts.password    || "changeme";
+        var password = opts.password    || "changed!";
         var scheme   = opts.scheme      || "https";
         var host     = opts.host        || "localhost";
         var port     = opts.port        || "8089";
@@ -23582,7 +23425,7 @@
         opts = opts || {};
         
         var username = opts.username    || "admin";
-        var password = opts.password    || "changeme";
+        var password = opts.password    || "changed!";
         var scheme   = opts.scheme      || "https";
         var host     = opts.host        || "localhost";
         var port     = opts.port        || "8089";
@@ -23680,7 +23523,7 @@
         opts = opts || {};
         
         var username = opts.username    || "admin";
-        var password = opts.password    || "changeme";
+        var password = opts.password    || "changed!";
         var scheme   = opts.scheme      || "https";
         var host     = opts.host        || "localhost";
         var port     = opts.port        || "8089";
@@ -23784,7 +23627,7 @@
         opts = opts || {};
         
         var username = opts.username    || "admin";
-        var password = opts.password    || "changeme";
+        var password = opts.password    || "changed!";
         var scheme   = opts.scheme      || "https";
         var host     = opts.host        || "localhost";
         var port     = opts.port        || "8089";
@@ -23872,7 +23715,7 @@
         opts = opts || {};
         
         var username = opts.username    || "admin";
-        var password = opts.password    || "changeme";
+        var password = opts.password    || "changed!";
         var scheme   = opts.scheme      || "https";
         var host     = opts.host        || "localhost";
         var port     = opts.port        || "8089";
@@ -23954,7 +23797,7 @@
         opts = opts || {};
         
         var username = opts.username    || "admin";
-        var password = opts.password    || "changeme";
+        var password = opts.password    || "changed!";
         var scheme   = opts.scheme      || "https";
         var host     = opts.host        || "localhost";
         var port     = opts.port        || "8089";
@@ -24112,7 +23955,7 @@
         opts = opts || {};
         
         var username = opts.username    || "admin";
-        var password = opts.password    || "changeme";
+        var password = opts.password    || "changed!";
         var scheme   = opts.scheme      || "https";
         var host     = opts.host        || "localhost";
         var port     = opts.port        || "8089";
@@ -24186,7 +24029,7 @@
         opts = opts || {};
         
         var username = opts.username    || "admin";
-        var password = opts.password    || "changeme";
+        var password = opts.password    || "changed!";
         var scheme   = opts.scheme      || "https";
         var host     = opts.host        || "localhost";
         var port     = opts.port        || "8089";
@@ -24265,7 +24108,7 @@
         opts = opts || {};
         
         var username = opts.username    || "admin";
-        var password = opts.password    || "changeme";
+        var password = opts.password    || "changed!";
         var scheme   = opts.scheme      || "https";
         var host     = opts.host        || "localhost";
         var port     = opts.port        || "8089";
@@ -24343,7 +24186,7 @@
         opts = opts || {};
         
         var username = opts.username    || "admin";
-        var password = opts.password    || "changeme";
+        var password = opts.password    || "changed!";
         var scheme   = opts.scheme      || "https";
         var host     = opts.host        || "localhost";
         var port     = opts.port        || "8089";
@@ -24422,7 +24265,7 @@
         opts = opts || {};
         
         var username = opts.username    || "admin";
-        var password = opts.password    || "changeme";
+        var password = opts.password    || "changed!";
         var scheme   = opts.scheme      || "https";
         var host     = opts.host        || "localhost";
         var port     = opts.port        || "8089";
@@ -24503,7 +24346,7 @@
         opts = opts || {};
         
         var username = opts.username    || "admin";
-        var password = opts.password    || "changeme";
+        var password = opts.password    || "changed!";
         var scheme   = opts.scheme      || "https";
         var host     = opts.host        || "localhost";
         var port     = opts.port        || "8089";
@@ -24603,7 +24446,7 @@
         opts = opts || {};
         
         var username = opts.username    || "admin";
-        var password = opts.password    || "changeme";
+        var password = opts.password    || "changed!";
         var scheme   = opts.scheme      || "https";
         var host     = opts.host        || "localhost";
         var port     = opts.port        || "8089";
@@ -24706,7 +24549,7 @@
         opts = opts || {};
         
         var username = opts.username    || "admin";
-        var password = opts.password    || "changeme";
+        var password = opts.password    || "changed!";
         var scheme   = opts.scheme      || "https";
         var host     = opts.host        || "localhost";
         var port     = opts.port        || "8089";
@@ -24792,7 +24635,7 @@
         opts = opts || {};
         
         var username = opts.username    || "admin";
-        var password = opts.password    || "changeme";
+        var password = opts.password    || "changed!";
         var scheme   = opts.scheme      || "https";
         var host     = opts.host        || "localhost";
         var port     = opts.port        || "8089";
@@ -24974,7 +24817,7 @@
         opts = opts || {};
         
         var username = opts.username    || "admin";
-        var password = opts.password    || "changeme";
+        var password = opts.password    || "changed!";
         var scheme   = opts.scheme      || "https";
         var host     = opts.host        || "localhost";
         var port     = opts.port        || "8089";
