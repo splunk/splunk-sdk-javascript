@@ -1,0 +1,90 @@
+[
+    {
+        "outputFields": [
+            {
+                "fieldName": "is_realtime",
+                "owner": "Audit.searches",
+                "type": "boolean",
+                "required": false,
+                "multivalue": false,
+                "hidden": false,
+                "editable": true,
+                "displayName": "Realtime?",
+                "comment": "",
+                "fieldSearch": ""
+            }
+        ],
+        "calculationID": "42on2o5518vbzkt9",
+        "owner": "Audit.searches",
+        "editable": true,
+        "comment": "",
+        "calculationType": "Eval",
+        "expression": "case(is_realtime == 0, \"false\", is_realtime == 1, \"true\", is_realtime == \"N/A\", \"false\")"
+    },
+    {
+        "outputFields": [
+            {
+                "fieldName": "search_id",
+                "owner": "Audit.searches",
+                "type": "string",
+                "required": false,
+                "multivalue": false,
+                "hidden": false,
+                "editable": true,
+                "displayName": "search_id",
+                "comment": "",
+                "fieldSearch": ""
+            }
+        ],
+        "calculationID": "i69cygcgck5wxw29",
+        "owner": "Audit.searches",
+        "editable": true,
+        "comment": "",
+        "calculationType": "Eval",
+        "expression": "replace(search_id,\"'\",\"\")"
+    },
+    {
+        "outputFields": [
+            {
+                "fieldName": "search",
+                "owner": "Audit.searches",
+                "type": "string",
+                "required": false,
+                "multivalue": false,
+                "hidden": false,
+                "editable": true,
+                "displayName": "search",
+                "comment": "",
+                "fieldSearch": ""
+            }
+        ],
+        "calculationID": "8q76efc4bulerk9",
+        "owner": "Audit.searches",
+        "editable": true,
+        "comment": "",
+        "calculationType": "Eval",
+        "expression": "replace(search,\"'\",\"\")"
+    },
+    {
+        "outputFields": [
+            {
+                "fieldName": "search_type",
+                "owner": "Audit.searches",
+                "type": "string",
+                "required": false,
+                "multivalue": false,
+                "hidden": false,
+                "editable": true,
+                "displayName": "search type",
+                "comment": "",
+                "fieldSearch": ""
+            }
+        ],
+        "calculationID": "lnnoqwo7qi8p8pvi",
+        "owner": "Audit.searches",
+        "editable": true,
+        "comment": "",
+        "calculationType": "Eval",
+        "expression": "case((id LIKE \"DM_%\" OR savedsearch_name LIKE \"_ACCELERATE_DM%\"), \"dm_acceleration\", search_id LIKE \"scheduler%\", \"scheduled\", search_id LIKE \"rt%\", \"realtime\", search_id LIKE \"subsearch%\", \"subsearch\", (search_id LIKE \"SummaryDirector%\" OR search_id LIKE \"summarize_SummaryDirector%\"), \"summary_director\", 1=1, \"adhoc\") "
+    }
+]

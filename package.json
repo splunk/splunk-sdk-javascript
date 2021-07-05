@@ -20,10 +20,14 @@
         "logs",
         "javascript"
     ],
+    "scripts": {
+        "test": "mocha test/tests.js --ui exports -t 50000 --exit"
+    },
     "dependencies": {
-        "dotenv": "^10.0.0",
         "cookie": "0.4.1",
+        "dotenv": "^10.0.0",
         "elementtree": "0.1.7",
+        "mocha": "^9.0.2",
         "needle": "2.6.0"
     },
     "devDependencies": {
