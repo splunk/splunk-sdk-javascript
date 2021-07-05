@@ -233,7 +233,7 @@ exports.setup = function() {
                     test.strictEqual(0, scriptStatus);
                     test.done();
                 });
-                inStream.emit("data", new Buffer(validationFile));
+                inStream.emit("data", Buffer.from(validationFile));
             },
 
             "ModularInput Input Validation succeeds when validateInput is undefined": function(test) {
@@ -265,7 +265,7 @@ exports.setup = function() {
                     test.strictEqual(0, scriptStatus);
                     test.done();
                 });
-                inStream.emit("data", new Buffer(validationFile));
+                inStream.emit("data", Buffer.from(validationFile));
             },
 
             "ModularInput Input Validation times out after 30s with impartial XML": function(test) {
@@ -305,7 +305,7 @@ exports.setup = function() {
                     test.done();
                 });
                 // Remove the closing </items> tag to send impartial data
-                inStream.emit("data", new Buffer(validationFile.replace("</items>", "")));
+                inStream.emit("data", Buffer.from(validationFile.replace("</items>", "")));
             },
 
             "ModularInput Input Validation fails": function(test) {
@@ -362,7 +362,7 @@ exports.setup = function() {
                     test.strictEqual(1, scriptStatus);
                     test.done();
                 });
-                inStream.emit("data", new Buffer(validationFile));
+                inStream.emit("data", Buffer.from(validationFile));
             },
 
             "ModularInput streaming events works - 2 inputs": function(test) {
@@ -410,7 +410,7 @@ exports.setup = function() {
                     test.strictEqual(0, scriptStatus);
                     test.done();
                 });
-                inStream.emit("data", new Buffer(inputConfiguration));
+                inStream.emit("data", Buffer.from(inputConfiguration));
             },
 
             "ModularInput streaming events works - 5 inputs": function(test) {
@@ -491,7 +491,7 @@ exports.setup = function() {
                     test.strictEqual(0, scriptStatus);
                     test.done();
                 });
-                inStream.emit("data", new Buffer(inputConfiguration));
+                inStream.emit("data", Buffer.from(inputConfiguration));
             },
 
             "ModularInput streaming events works - as object": function(test) {
@@ -547,7 +547,7 @@ exports.setup = function() {
                     test.strictEqual(0, scriptStatus);
                     test.done();
                 });
-                inStream.emit("data", new Buffer(inputConfiguration));
+                inStream.emit("data", Buffer.from(inputConfiguration));
             },
 
             "ModularInput streaming events times out after 30s with impartial XML": function(test) {
@@ -599,7 +599,7 @@ exports.setup = function() {
                     test.done();
                 });
                 // Remove the closing </input> tag to send impartial data
-                inStream.emit("data", new Buffer(inputConfiguration.replace("</input>", "")));
+                inStream.emit("data", Buffer.from(inputConfiguration.replace("</input>", "")));
             },
 
             "ModularInput streaming events times out after 30s with no data sent": function(test) {
@@ -655,7 +655,7 @@ exports.setup = function() {
 
                 // Emit the data 1.5 seconds after the timeout threshold
                 setTimeout(function() {
-                    inStream.emit("data", new Buffer(inputConfiguration));
+                    inStream.emit("data", Buffer.from(inputConfiguration));
                     test.done();
                 }, 32000);
 
@@ -705,7 +705,7 @@ exports.setup = function() {
                     test.strictEqual(0, scriptStatus);
                     test.done();
                 });
-                inStream.emit("data", new Buffer(inputConfiguration));
+                inStream.emit("data", Buffer.from(inputConfiguration));
             }
         }
     };
