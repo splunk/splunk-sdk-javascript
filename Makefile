@@ -24,7 +24,7 @@ init:
 .PHONY: test
 test:
 	@echo "$(ATTN_COLOR)==> test $(NO_COLOR)"
-	@node sdkdo tests
+	@npm test
 
 .PHONY: test_specific
 test_specific:
