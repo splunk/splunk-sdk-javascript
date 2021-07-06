@@ -21,7 +21,7 @@
         "javascript"
     ],
     "scripts": {
-        "test": "mocha test/tests.js --ui exports -t 50000 --exit"
+        "test": "mocha tests/tests.js --ui exports -t 50000 --exit"
     },
     "dependencies": {
         "cookie": "0.4.1",
