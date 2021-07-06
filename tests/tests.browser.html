@@ -6,7 +6,7 @@
       // What is this?
       i18n_register = function(){}
     </script>
-    <link rel="stylesheet" type="text/css" href="../node_modules/mocha/mocha.css">
+    <link rel="stylesheet" type="text/css" href="../contrib/nodeunit/nodeunit.css">
     <script type="text/javascript" src="../contrib/nodeunit/nodeunit.browser.js"></script>
     <script type="text/javascript" src="../client/splunk.js"></script>
     <script type="text/javascript" src="../client/splunk.test.js"></script>
@@ -110,21 +110,7 @@
         border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
       }
     </style>
-          <script src="../node_modules/mocha/mocha.js"></script>
-        <script>
-          mocha.setup('exports');
-        </script>
 
-   <!-- <script type="module" src="../test/test.js"></script>
-   <script type="module" src="../test/service_test/app.js"></script> -->
-   <script type="module" src="../client/demo.test.js"></script>
-   <!-- <script type="module" src="../client/splunk.test.js"></script> -->
-    <script>
-      window.onload = () => {
-        //mocha.run();
-      };
-    </script>
-    
     <script>
       $(function() {
         $("#run-button").click(function(e) {
@@ -162,20 +148,18 @@
               if (err) throw err;
               alert("Cannot run tests - login failed");
             }
-            mocha.run([{
-              "app test": setup()
-            }]);
-            // nodeunit.run([{
+            
+            nodeunit.run([{
             //   // Note that we cannot run the following tests in the browser,
             //   // as they depend on capabilities of node.js:
             //   //  - HTTP tests (require cross-domain)
             //   //  - Examples Tests (require command line and process capabilities)
               
-            //   "Utils Tests": SplunkTest.Utils.setup(svc),
-            //   "Async Tests": SplunkTest.Async.setup(svc),
-            //   "Context Tests": SplunkTest.Context.setup(svc),
-            //   "Service Tests": SplunkTest.Service.setup(svc, loggedOutSvc)
-            // }]);
+              "Utils Tests": SplunkTest.Utils.setup(svc),
+              "Async Tests": SplunkTest.Async.setup(svc),
+              "Context Tests": SplunkTest.Context.setup(svc),
+              "Service Tests": SplunkTest.Service.setup(svc, loggedOutSvc)
+            }]);
           });
         });
       });
@@ -216,6 +200,5 @@
       </div>
       <div class="clearfix"></div>
     </div>
-    <div id="mocha"></div>
   </body>
 </html>
