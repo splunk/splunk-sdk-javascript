@@ -47,6 +47,9 @@ jobs:
           echo scheme=https >> .splunkrc
           echo version=${{ matrix.splunk }} >> .splunkrc
         
+      - name: Run npm install
+        run: npm install
+        
       - name: Run server tests
         run: make test
         env:
