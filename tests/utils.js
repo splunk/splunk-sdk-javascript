@@ -15,7 +15,7 @@
 (function () {
     "use strict";
     var Async = require('../lib/async');
-    var assert = require("assert");
+    var assert = require('chai').assert;
 
     var root = exports || this;
 

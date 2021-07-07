@@ -13,9 +13,6 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-var assert = require("assert");
-var fs = require('fs');
-
 var splunkjs = require('../../index');
 splunkjs.Logger.setLevel("ALL");
 

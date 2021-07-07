@@ -13,7 +13,7 @@
 // under the License.
 
 exports.setup = function () {
-    var assert = require("assert");
+    var assert = require('chai').assert;
     var isBrowser = typeof window !== "undefined";
 
     var unload = function (name) {

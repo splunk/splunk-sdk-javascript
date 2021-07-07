@@ -14,7 +14,7 @@
 // under the License.
 
 exports.setup = function () {
-    var assert = require("assert");
+    var assert = require('chai').assert;
     var splunkjs = require('../index');
     var Async = splunkjs.Async;
     var isBrowser = typeof "window" !== "undefined";

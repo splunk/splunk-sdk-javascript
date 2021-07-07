@@ -1,6 +1,8 @@
+var assert = require('chai').assert;
+
 var splunkjs = require('../../index');
+
 var Async = splunkjs.Async;
-var assert = require("assert");
 
 module.exports = function (svc) {
     return {

@@ -13,7 +13,7 @@
 // under the License.
 
 exports.setup = function (svc, opts) {
-    var assert = require("assert");
+    var assert = require('chai').assert;
     var splunkjs = require('../index');
     var Async = splunkjs.Async;
     var idCounter = 0;

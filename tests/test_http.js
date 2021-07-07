@@ -14,7 +14,7 @@
 // under the License.
 
 exports.setup = function (http) {
-    var assert = require("assert");
+    var assert = require('chai').assert;
     var splunkjs = require('../index');
 
     splunkjs.Logger.setLevel("ALL");

@@ -12,7 +12,6 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-var assert = require("assert");
 var options = require('../examples/node/cmdline');
 var splunkjs = require('../index');
 var utils = require('../lib/utils');
@@ -23,8 +22,18 @@ var parser = new options.create();
 // If we found the --quiet flag, remove it
 var quiet = utils.contains(process.argv, "--quiet");
 if (quiet) {
+    splunkjs.Logger.setLevel("NONE");
     var quietIndex = utils.keyOf("--quiet", process.argv);
     process.argv.splice(quietIndex, 1);
+} 
+else {
+    splunkjs.Logger.setLevel("ALL");   
+}
+
+// If $SPLUNK_HOME isn't set, abort the tests
+if (!Object.prototype.hasOwnProperty.call(process.env, "SPLUNK_HOME")) {
+    console.error("$SPLUNK_HOME is not set, aborting tests.");
+    return;
 }
 
 // Do the normal parsing

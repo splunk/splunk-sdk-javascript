@@ -1,4 +1,4 @@
-var assert = require("assert");
+var assert = require('chai').assert;
 
 var splunkjs = require('../../index');
 var tutils = require('../utils');
@@ -955,10 +955,10 @@ module.exports = function (svc) {
                     assert.strictEqual("number", col.type);
                     assert.strictEqual("ranges", col.display);
                     var ranges = {
-                        start: "0",
-                        end: "100",
-                        size: "20",
-                        maxNumberOf: "5"
+                        start: 0,
+                        end: 100,
+                        size: 20,
+                        maxNumberOf: 5
                     };
                     assert.deepEqual(ranges, col.ranges);
                     assert.deepEqual({

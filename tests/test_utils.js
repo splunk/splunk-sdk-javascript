@@ -15,7 +15,7 @@
 
 exports.setup = function () {
     var splunkjs = require('../index');
-    var assert = require("assert");
+    var assert = require('chai').assert;
 
     splunkjs.Logger.setLevel("ALL");
 

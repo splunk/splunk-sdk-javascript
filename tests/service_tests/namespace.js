@@ -1,4 +1,4 @@
-var assert = require("assert");
+var assert = require('chai').assert;
 
 var splunkjs = require('../../index');
 const { Logger } = require('../../lib/log');

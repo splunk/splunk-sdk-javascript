@@ -1,4 +1,4 @@
-var assert = require("assert");
+var assert = require('chai').assert;
 
 module.exports = function (svc) {
     return {

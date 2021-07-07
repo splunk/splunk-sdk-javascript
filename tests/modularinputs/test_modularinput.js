@@ -13,7 +13,7 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-var assert = require("assert");
+var assert = require('chai').assert;
 var ET = require("elementtree");
 
 var splunkjs = require("../../index");
