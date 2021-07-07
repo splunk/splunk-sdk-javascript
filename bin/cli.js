@@ -406,6 +406,7 @@
         args = args || [];
         args = args.slice();
         args.unshift(file);
+        args.unshift("./node_modules/mocha/bin/mocha");
 
         // Spawn
         var program = spawn("node", args);
@@ -413,7 +414,7 @@
         program.stdout.on("data", function(data) {
             var str = data.toString("utf-8");
             process.stdout.write(str);
-        });
+        }); 
 
         program.stderr.on("data", function(data) {
             var str = data.toString("utf-8");
@@ -749,6 +750,9 @@
             .concat(cmdline.opts.version   ?   makeOption("version",   cmdline.opts.version)   : "")
             .concat(cmdline.opts.password  ?   makeOption("password",  cmdline.opts.password)  : "")
             .concat(cmdline.opts.reporter  ?   makeOption("reporter",  cmdline.opts.reporter.toLowerCase())  : "")
+            .concat(cmdline.opts.ui        ?   makeOption("ui",        cmdline.opts.ui)  : ["--ui", "exports"])
+            .concat(cmdline.opts.timeout   ?   makeOption("timeout",   cmdline.opts.timeout)  : ["--timeout", "50000"])
+            .concat(cmdline.opts.exit      ?   "--exit"  : "--exit")
             .concat(cmdline.opts.quiet     ?   "--quiet" : "");
 
         var testFunctions = files.map(function(file) {
@@ -814,6 +818,9 @@
         .option('--version <version>', 'Splunk version')
         .option('--namespace <namespace>', 'Splunk namespace (in the form of owner:app)')
         .option('--reporter <reporter>', '(optional) How to report results, currently "junit" is a valid reporter.')
+        .option('--ui <ui>', 'Specify user interface')
+        .option('--timeout <timeout>', 'Specify test timeout threshold (in milliseconds)')
+        .option('--exit', '(optional) Force Mocha to quit after tests complete')
         .option('--quiet', '(optional) Hides splunkd output.')
         .action(runTests);
 
