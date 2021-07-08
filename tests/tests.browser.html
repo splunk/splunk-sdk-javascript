@@ -2,14 +2,9 @@
 <html>
   <head>
     <title>Splunk SDK Browser Tests</title>
-    <script>
-      // What is this?
-      i18n_register = function(){}
-    </script>
-    <link rel="stylesheet" type="text/css" href="../contrib/nodeunit/nodeunit.css">
-    <script type="text/javascript" src="../contrib/nodeunit/nodeunit.browser.js"></script>
+    <link rel="stylesheet" href="../node_modules/mocha/mocha.css">
     <script type="text/javascript" src="../client/splunk.js"></script>
-    <script type="text/javascript" src="../client/splunk.test.js"></script>
+    <!-- <script type="text/javascript" src="../client/splunk_mocha.test.js"></script> -->
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
     <style>
       #server-info-form {
@@ -110,8 +105,27 @@
         border-color: rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.1) rgba(0, 0, 0, 0.25);
       }
     </style>
-    
     <script>
+      var http = new splunkjs.ProxyHttp("/proxy");
+      var options={};
+      var svc;
+      var loggedOutSvc;
+        pollUntil = function(obj, condition, iterations, callback) {
+          callback = callback || function() {};
+          
+          var i = 0;
+          Async.whilst(
+              function() { return !condition(obj) && (i++ < iterations); },
+              function(done) {
+                  Async.sleep(500, function() {
+                      obj.fetch(done); 
+                  });
+              },
+              function(err) {
+                  callback(err, obj);
+              }
+          );
+      };
       $(function() {
         $("#run-button").click(function(e) {
           e.preventDefault();
@@ -123,7 +137,7 @@
           var password = $("#server-password").val() || "changed!";
           var version  = $("#server-version").val() || "5.0";
           
-          var options = {
+          options = {
             scheme: scheme,
             host: host,
             port: port,
@@ -131,9 +145,8 @@
             password: password,
             version: version
           };
-          var http = new splunkjs.ProxyHttp("/proxy");
 
-          var loggedOutSvc = new splunkjs.Service(http, { 
+          loggedOutSvc = new splunkjs.Service(http, { 
               scheme:   options.scheme,
               host:     options.host,
               port:     options.port,
@@ -142,24 +155,15 @@
               version:  options.version
           });
           
-          var svc = new splunkjs.Service(http, options);
+          svc = new splunkjs.Service(http, options);
           svc.login(function(err, success) {
             if (err || !success) {
               if (err) throw err;
               alert("Cannot run tests - login failed");
             }
-            
-            nodeunit.run([{
-              // Note that we cannot run the following tests in the browser,
-              // as they depend on capabilities of node.js:
-              //  - HTTP tests (require cross-domain)
-              //  - Examples Tests (require command line and process capabilities)
-              
-              "Utils Tests": SplunkTest.Utils.setup(svc),
-              "Async Tests": SplunkTest.Async.setup(svc),
-              "Context Tests": SplunkTest.Context.setup(svc),
-              "Service Tests": SplunkTest.Service.setup(svc, loggedOutSvc)
-            }]);
+            //mocha.setup('exports');
+            //utils();
+            mocha.run();
           });
         });
       });
@@ -198,7 +202,18 @@
             <a class="btn success" id="run-button" href="">Run</a>
         </div>
       </div>
-      <div class="clearfix"></div>
     </div>
+    </div>
+    <div id="mocha"></div>
+    <script src="../node_modules/mocha/mocha.js"></script>
+    <script src="../node_modules/chai/chai.js"></script>
+    <script>
+      mocha.setup('bdd')
+    </script>
+    <script src="../client/browser_utils.js"></script>
+    <script src="../client/browser_async.js"></script>
+    <script src="../client/browser_service.js"></script>
+    <script src="../client/browser_context.js"></script>
+    <!-- <script src="../client/browser_examples.js"></script> -->
   </body>
 </html>
