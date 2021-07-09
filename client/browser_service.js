@@ -4107,27 +4107,27 @@ describe("Service Tests ", function(){
             });
         });
 
-        // "Callback#delete test applications", function(done) {
-        //     var apps = this.service.apps();
-        //     apps.fetch(function(err, apps) {
-        //         var appList = apps.list();
+        it("Callback#delete test applications", function(done) {
+            var apps = this.service.apps();
+            apps.fetch(function(err, apps) {
+                var appList = apps.list();
 
-        //         Async.parallelEach(
-        //             appList,
-        //             function(app, idx, callback) {
-        //                 if (utils.startsWith(app.name, "jssdk_")) {
-        //                     app.remove(callback);
-        //                 }
-        //                 else {
-        //                     callback();
-        //                 }
-        //             }, function(err) {
-        //                 assert.ok(!err);
-        //                 done();
-        //             }
-        //         );
-        //     });
-        // },
+                Async.parallelEach(
+                    appList,
+                    function(app, idx, callback) {
+                        if (utils.startsWith(app.name, "jssdk_")) {
+                            app.remove(callback);
+                        }
+                        else {
+                            callback();
+                        }
+                    }, function(err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
+            });
+        });
 
         it("list applications with cookies as authentication", function(done) {
             this.service.serverInfo(function (err, info) {
@@ -5784,6 +5784,66 @@ describe("Service Tests ", function(){
             });
 
         })
+
+        it("Callback#remove index fails on Splunk 4.x", function(done) {
+            var original_version = this.service.version;
+            this.service.version = "4.0";
+
+            var index = this.service.indexes().item(this.indexName);
+            assert.throws(function() { index.remove(function(err) {}); });
+
+            this.service.version = original_version;
+            done();
+        });
+
+        it("Callback#remove index", function(done) {
+            var indexes = this.service.indexes();
+
+            // Must generate a private index because an index cannot
+            // be recreated with the same name as a deleted index
+            // for a certain period of time after the deletion.
+            var salt = Math.floor(Math.random() * 65536);
+            var myIndexName = this.indexName + '-' + salt;
+
+            if (this.service.versionCompare("5.0") < 0) {
+                splunkjs.Logger.info("", "Must be running Splunk 5.0+ for this test to work.");
+                done();
+                return;
+            }
+
+            Async.chain([
+                    function(callback) {
+                        indexes.create(myIndexName, {}, callback);
+                    },
+                    function(index, callback) {
+                        index.remove(callback);
+                    },
+                    function(callback) {
+                        var numTriesLeft = 50;
+                        var delayPerTry = 100;  // ms
+
+                        Async.whilst(
+                             function() { return indexes.item(myIndexName) && ((numTriesLeft--) > 0); },
+                             function(iterDone) {
+                                  Async.sleep(delayPerTry, function() { indexes.fetch(iterDone); });
+                             },
+                             function(err) {
+                                  if (err) {
+                                       callback(err);
+                                  }
+                                  else {
+                                       callback(numTriesLeft <= 0 ? "Timed out" : null);
+                                  }
+                             }
+                        );
+                    }
+                ],
+                function(err) {
+                    assert.ok(!err);
+                    done();
+                }
+            );
+        });
 
         it("Callback#list indexes", function(done) {
             var indexes = this.service.indexes();

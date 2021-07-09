@@ -723,67 +723,67 @@ describe('Context tests', function() {
             });
         });
 
-        // it("fullpath gets its owner/app from the right places", function(done) {
-        //     var http = tutils.DummyHttp;
-        //     var ctx = new splunkjs.Context(http, { /*nothing*/ });
+        it("fullpath gets its owner/app from the right places", function(done) {
+            var http = DummyHttp;
+            var ctx = new splunkjs.Context(http, { /*nothing*/ });
 
-        //     // Absolute paths are unchanged
-        //     assert.strictEqual(ctx.fullpath("/a/b/c"), "/a/b/c");
-        //     // Fall through to /services if there is no app
-        //     assert.strictEqual(ctx.fullpath("meep"), "/services/meep");
-        //     // Are username and app set properly?
-        //     var ctx2 = new splunkjs.Context(http, {owner: "alpha", app: "beta"});
-        //     assert.strictEqual(ctx2.fullpath("meep"), "/servicesNS/alpha/beta/meep");
-        //     assert.strictEqual(ctx2.fullpath("meep", {owner: "boris"}), "/servicesNS/boris/beta/meep");
-        //     assert.strictEqual(ctx2.fullpath("meep", {app: "factory"}), "/servicesNS/alpha/factory/meep");
-        //     assert.strictEqual(ctx2.fullpath("meep", {owner: "boris", app: "factory"}), "/servicesNS/boris/factory/meep");
-        //     // Sharing settings
-        //     assert.strictEqual(ctx2.fullpath("meep", {sharing: "app"}), "/servicesNS/nobody/beta/meep");
-        //     assert.strictEqual(ctx2.fullpath("meep", {sharing: "global"}), "/servicesNS/nobody/beta/meep");
-        //     assert.strictEqual(ctx2.fullpath("meep", {sharing: "system"}), "/servicesNS/nobody/system/meep");
-        //     // Do special characters get encoded?
-        //     var ctx3 = new splunkjs.Context(http, {owner: "alpha@beta.com", app: "beta"});
-        //     assert.strictEqual(ctx3.fullpath("meep"), "/servicesNS/alpha%40beta.com/beta/meep");
-        //     done();
-        // });
+            // Absolute paths are unchanged
+            assert.strictEqual(ctx.fullpath("/a/b/c"), "/a/b/c");
+            // Fall through to /services if there is no app
+            assert.strictEqual(ctx.fullpath("meep"), "/services/meep");
+            // Are username and app set properly?
+            var ctx2 = new splunkjs.Context(http, {owner: "alpha", app: "beta"});
+            assert.strictEqual(ctx2.fullpath("meep"), "/servicesNS/alpha/beta/meep");
+            assert.strictEqual(ctx2.fullpath("meep", {owner: "boris"}), "/servicesNS/boris/beta/meep");
+            assert.strictEqual(ctx2.fullpath("meep", {app: "factory"}), "/servicesNS/alpha/factory/meep");
+            assert.strictEqual(ctx2.fullpath("meep", {owner: "boris", app: "factory"}), "/servicesNS/boris/factory/meep");
+            // Sharing settings
+            assert.strictEqual(ctx2.fullpath("meep", {sharing: "app"}), "/servicesNS/nobody/beta/meep");
+            assert.strictEqual(ctx2.fullpath("meep", {sharing: "global"}), "/servicesNS/nobody/beta/meep");
+            assert.strictEqual(ctx2.fullpath("meep", {sharing: "system"}), "/servicesNS/nobody/system/meep");
+            // Do special characters get encoded?
+            var ctx3 = new splunkjs.Context(http, {owner: "alpha@beta.com", app: "beta"});
+            assert.strictEqual(ctx3.fullpath("meep"), "/servicesNS/alpha%40beta.com/beta/meep");
+            done();
+        });
 
-        // it("version check", function(done) {
-        //     var http = tutils.DummyHttp;
-        //     var ctx;
+        it("version check", function(done) {
+            var http = DummyHttp;
+            var ctx;
 
-        //     ctx = new splunkjs.Context(http, { "version": "4.0" });
-        //     assert.ok(ctx.version === "4.0");
+            ctx = new splunkjs.Context(http, { "version": "4.0" });
+            assert.ok(ctx.version === "4.0");
 
-        //     ctx = new splunkjs.Context(http, { "version": "4.0" });
-        //     assert.ok(ctx.versionCompare("5.0") === -1);
-        //     ctx = new splunkjs.Context(http, { "version": "4" });
-        //     assert.ok(ctx.versionCompare("5.0") === -1);
-        //     ctx = new splunkjs.Context(http, { "version": "4.0" });
-        //     assert.ok(ctx.versionCompare("5") === -1);
-        //     ctx = new splunkjs.Context(http, { "version": "4.1" });
-        //     assert.ok(ctx.versionCompare("4.9") === -1);
+            ctx = new splunkjs.Context(http, { "version": "4.0" });
+            assert.ok(ctx.versionCompare("5.0") === -1);
+            ctx = new splunkjs.Context(http, { "version": "4" });
+            assert.ok(ctx.versionCompare("5.0") === -1);
+            ctx = new splunkjs.Context(http, { "version": "4.0" });
+            assert.ok(ctx.versionCompare("5") === -1);
+            ctx = new splunkjs.Context(http, { "version": "4.1" });
+            assert.ok(ctx.versionCompare("4.9") === -1);
 
-        //     ctx = new splunkjs.Context(http, { "version": "4.0" });
-        //     assert.ok(ctx.versionCompare("4.0") === 0);
-        //     ctx = new splunkjs.Context(http, { "version": "4" });
-        //     assert.ok(ctx.versionCompare("4.0") === 0);
-        //     ctx = new splunkjs.Context(http, { "version": "4.0" });
-        //     assert.ok(ctx.versionCompare("4") === 0);
+            ctx = new splunkjs.Context(http, { "version": "4.0" });
+            assert.ok(ctx.versionCompare("4.0") === 0);
+            ctx = new splunkjs.Context(http, { "version": "4" });
+            assert.ok(ctx.versionCompare("4.0") === 0);
+            ctx = new splunkjs.Context(http, { "version": "4.0" });
+            assert.ok(ctx.versionCompare("4") === 0);
 
-        //     ctx = new splunkjs.Context(http, { "version": "5.0" });
-        //     assert.ok(ctx.versionCompare("4.0") === 1);
-        //     ctx = new splunkjs.Context(http, { "version": "5.0" });
-        //     assert.ok(ctx.versionCompare("4") === 1);
-        //     ctx = new splunkjs.Context(http, { "version": "5" });
-        //     assert.ok(ctx.versionCompare("4.0") === 1);
-        //     ctx = new splunkjs.Context(http, { "version": "4.9" });
-        //     assert.ok(ctx.versionCompare("4.1") === 1);
+            ctx = new splunkjs.Context(http, { "version": "5.0" });
+            assert.ok(ctx.versionCompare("4.0") === 1);
+            ctx = new splunkjs.Context(http, { "version": "5.0" });
+            assert.ok(ctx.versionCompare("4") === 1);
+            ctx = new splunkjs.Context(http, { "version": "5" });
+            assert.ok(ctx.versionCompare("4.0") === 1);
+            ctx = new splunkjs.Context(http, { "version": "4.9" });
+            assert.ok(ctx.versionCompare("4.1") === 1);
 
-        //     ctx = new splunkjs.Context(http, { /*nothing*/ });
-        //     assert.ok(ctx.versionCompare("5.0") === 0);
+            ctx = new splunkjs.Context(http, { /*nothing*/ });
+            assert.ok(ctx.versionCompare("5.0") === 0);
 
-        //     done();
-        // });
+            done();
+        });
     });
 
     describe('Cookie Tests', function() {

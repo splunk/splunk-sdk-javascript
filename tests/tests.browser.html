@@ -125,7 +125,15 @@
                   callback(err, obj);
               }
           );
-      };
+        };
+
+        DummyHttp = {
+        // Required by Context.init()
+        _setSplunkVersion: function(version) {
+            // nothing
+            }
+        };
+
       $(function() {
         $("#run-button").click(function(e) {
           e.preventDefault();
@@ -209,6 +217,7 @@
     <script src="../node_modules/chai/chai.js"></script>
     <script>
       mocha.setup('bdd')
+      mocha.timeout('5s');
     </script>
     <script src="../client/browser_utils.js"></script>
     <script src="../client/browser_async.js"></script>
