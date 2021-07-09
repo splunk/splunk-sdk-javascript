@@ -2424,7 +2424,7 @@ describe("Service Tests ", function(){
             });
         });
     
-        it("Callback#Pivot - test constructor args", async function(done) {
+        it("Callback#Pivot - test constructor args", function(done) {
             if (this.skip) {
                 done();
                 return;
@@ -3278,247 +3278,247 @@ describe("Service Tests ", function(){
             }
         });
     
-        // it("Callback#Pivot - test column split", function(done) {
-        //     if (this.skip) {
-        //         done();
-        //         return;
-        //     }
-        //     var name = "delete-me-" + getNextId();
-        //     var args;
-        //     var that = this;
+        it("Callback#Pivot - test column split", function(done) {
+            if (this.skip) {
+                done();
+                return;
+            }
+            var name = "delete-me-" + getNextId();
+            var args;
+            var that = this;
     
-        //     try {
-        //         // args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
-        //         fetch('./data/data_model_for_pivot.json')
-        //         .then(response => response.json())
-        //         .then(json => {
-        //             args = json;
-        //             Async.chain([
-        //                 function(done) {
-        //                     that.dataModels.create(name, args, done);
-        //                 },
-        //                 function(dataModel, done) {
-        //                     var obj = dataModel.objectByName("test_data");
-        //                     assert.ok(obj);
+            try {
+                // args = JSON.parse(utils.readFile(__filename, "../data/data_model_for_pivot.json"));
+                fetch('./data/data_model_for_pivot.json')
+                .then(response => response.json())
+                .then(json => {
+                    args = json;
+                    Async.chain([
+                        function(done) {
+                            that.dataModels.create(name, args, done);
+                        },
+                        function(dataModel, done) {
+                            var obj = dataModel.objectByName("test_data");
+                            assert.ok(obj);
     
-        //                     var pivotSpecification = obj.createPivotSpecification();
+                            var pivotSpecification = obj.createPivotSpecification();
     
-        //                     // Test error handling for column split
-        //                     try {
-        //                         pivotSpecification.addColumnSplit("has_boris", "Wrong type here");
-        //                         assert.ok(false);
-        //                     }
-        //                     catch (e) {
-        //                         assert.ok(e);
-        //                         assert.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number or string.");
-        //                     }
-        //                     var field = getNextId();
-        //                     try {
+                            // Test error handling for column split
+                            try {
+                                pivotSpecification.addColumnSplit("has_boris", "Wrong type here");
+                                assert.ok(false);
+                            }
+                            catch (e) {
+                                assert.ok(e);
+                                assert.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number or string.");
+                            }
+                            var field = getNextId();
+                            try {
     
-        //                         pivotSpecification.addColumnSplit(field, "Break Me!");
-        //                         assert.ok(false);
-        //                     }
-        //                     catch (e) {
-        //                         assert.ok(e);
-        //                         assert.strictEqual(e.message, "Did not find field " + field);
-        //                     }
+                                pivotSpecification.addColumnSplit(field, "Break Me!");
+                                assert.ok(false);
+                            }
+                            catch (e) {
+                                assert.ok(e);
+                                assert.strictEqual(e.message, "Did not find field " + field);
+                            }
     
-        //                     // Test column split, number
-        //                     pivotSpecification.addColumnSplit("epsilon");
-        //                     assert.strictEqual(1, pivotSpecification.columns.length);
+                            // Test column split, number
+                            pivotSpecification.addColumnSplit("epsilon");
+                            assert.strictEqual(1, pivotSpecification.columns.length);
     
-        //                     var col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
-        //                     assert.ok(col.hasOwnProperty("fieldName"));
-        //                     assert.ok(col.hasOwnProperty("owner"));
-        //                     assert.ok(col.hasOwnProperty("type"));
-        //                     assert.ok(col.hasOwnProperty("display"));
+                            var col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
+                            assert.ok(col.hasOwnProperty("fieldName"));
+                            assert.ok(col.hasOwnProperty("owner"));
+                            assert.ok(col.hasOwnProperty("type"));
+                            assert.ok(col.hasOwnProperty("display"));
     
-        //                     assert.strictEqual("epsilon", col.fieldName);
-        //                     assert.strictEqual("test_data", col.owner);
-        //                     assert.strictEqual("number", col.type);
-        //                     assert.strictEqual("all", col.display);
-        //                     assert.deepEqual({
-        //                             fieldName: "epsilon",
-        //                             owner: "test_data",
-        //                             type: "number",
-        //                             display: "all"
-        //                         },
-        //                         col);
+                            assert.strictEqual("epsilon", col.fieldName);
+                            assert.strictEqual("test_data", col.owner);
+                            assert.strictEqual("number", col.type);
+                            assert.strictEqual("all", col.display);
+                            assert.deepEqual({
+                                    fieldName: "epsilon",
+                                    owner: "test_data",
+                                    type: "number",
+                                    display: "all"
+                                },
+                                col);
     
-        //                     // Test column split, string
-        //                     pivotSpecification.addColumnSplit("host");
-        //                     assert.strictEqual(2, pivotSpecification.columns.length);
+                            // Test column split, string
+                            pivotSpecification.addColumnSplit("host");
+                            assert.strictEqual(2, pivotSpecification.columns.length);
     
-        //                     col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
-        //                     assert.ok(col.hasOwnProperty("fieldName"));
-        //                     assert.ok(col.hasOwnProperty("owner"));
-        //                     assert.ok(col.hasOwnProperty("type"));
-        //                     assert.ok(!col.hasOwnProperty("display"));
+                            col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
+                            assert.ok(col.hasOwnProperty("fieldName"));
+                            assert.ok(col.hasOwnProperty("owner"));
+                            assert.ok(col.hasOwnProperty("type"));
+                            assert.ok(!col.hasOwnProperty("display"));
     
-        //                     assert.strictEqual("host", col.fieldName);
-        //                     assert.strictEqual("BaseEvent", col.owner);
-        //                     assert.strictEqual("string", col.type);
-        //                     assert.deepEqual({
-        //                             fieldName: "host",
-        //                             owner: "BaseEvent",
-        //                             type: "string"
-        //                         },
-        //                         col);
+                            assert.strictEqual("host", col.fieldName);
+                            assert.strictEqual("BaseEvent", col.owner);
+                            assert.strictEqual("string", col.type);
+                            assert.deepEqual({
+                                    fieldName: "host",
+                                    owner: "BaseEvent",
+                                    type: "string"
+                                },
+                                col);
     
-        //                     done();
+                            done();
     
-        //                     // Test error handling for range column split
-        //                     try {
-        //                         pivotSpecification.addRangeColumnSplit("has_boris", "Wrong type here", {start: 0, end: 100, step:20, limit:5});
-        //                     }
-        //                     catch (e) {
-        //                         assert.ok(e);
-        //                         assert.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number.");
-        //                     }
-        //                     try {
-        //                         pivotSpecification.addRangeColumnSplit(field, {start: 0, end: 100, step:20, limit:5});
-        //                         assert.ok(false);
-        //                     }
-        //                     catch (e) {
-        //                         assert.ok(e);
-        //                         assert.strictEqual(e.message, "Did not find field " + field);
-        //                     }
+                            // Test error handling for range column split
+                            try {
+                                pivotSpecification.addRangeColumnSplit("has_boris", "Wrong type here", {start: 0, end: 100, step:20, limit:5});
+                            }
+                            catch (e) {
+                                assert.ok(e);
+                                assert.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number.");
+                            }
+                            try {
+                                pivotSpecification.addRangeColumnSplit(field, {start: 0, end: 100, step:20, limit:5});
+                                assert.ok(false);
+                            }
+                            catch (e) {
+                                assert.ok(e);
+                                assert.strictEqual(e.message, "Did not find field " + field);
+                            }
     
-        //                     // Test range column split
-        //                     pivotSpecification.addRangeColumnSplit("epsilon", {start: 0, end: 100, step:20, limit:5});
-        //                     assert.strictEqual(3, pivotSpecification.columns.length);
+                            // Test range column split
+                            pivotSpecification.addRangeColumnSplit("epsilon", {start: 0, end: 100, step:20, limit:5});
+                            assert.strictEqual(3, pivotSpecification.columns.length);
     
-        //                     col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
-        //                     assert.ok(col.hasOwnProperty("fieldName"));
-        //                     assert.ok(col.hasOwnProperty("owner"));
-        //                     assert.ok(col.hasOwnProperty("type"));
-        //                     assert.ok(col.hasOwnProperty("display"));
-        //                     assert.ok(col.hasOwnProperty("ranges"));
+                            col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
+                            assert.ok(col.hasOwnProperty("fieldName"));
+                            assert.ok(col.hasOwnProperty("owner"));
+                            assert.ok(col.hasOwnProperty("type"));
+                            assert.ok(col.hasOwnProperty("display"));
+                            assert.ok(col.hasOwnProperty("ranges"));
     
-        //                     assert.strictEqual("epsilon", col.fieldName);
-        //                     assert.strictEqual("test_data", col.owner);
-        //                     assert.strictEqual("number", col.type);
-        //                     assert.strictEqual("ranges", col.display);
-        //                     var ranges = {
-        //                         start: "0",
-        //                         end: "100",
-        //                         size: "20",
-        //                         maxNumberOf: "5"
-        //                     };
-        //                     assert.equal(ranges, col.ranges);
-        //                     assert.equal({
-        //                             fieldName: "epsilon",
-        //                             owner: "test_data",
-        //                             type: "number",
-        //                             display: "ranges",
-        //                             ranges: ranges
-        //                         },
-        //                         col);
+                            assert.strictEqual("epsilon", col.fieldName);
+                            assert.strictEqual("test_data", col.owner);
+                            assert.strictEqual("number", col.type);
+                            assert.strictEqual("ranges", col.display);
+                            var ranges = {
+                                start: 0,
+                                end: 100,
+                                size: 20,
+                                maxNumberOf: 5
+                            };
+                            assert.deepEqual(ranges, col.ranges);
+                            assert.deepEqual({
+                                    fieldName: "epsilon",
+                                    owner: "test_data",
+                                    type: "number",
+                                    display: "ranges",
+                                    ranges: ranges
+                                },
+                                col);
     
-        //                     // Test error handling on boolean column split
-        //                     try {
-        //                         pivotSpecification.addBooleanColumnSplit("epsilon", "t", "f");
-        //                     }
-        //                     catch (e) {
-        //                         assert.ok(e);
-        //                         assert.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected boolean.");
-        //                     }
-        //                     try {
-        //                         pivotSpecification.addBooleanColumnSplit(field, "t", "f");
-        //                         assert.ok(false);
-        //                     }
-        //                     catch (e) {
-        //                         assert.ok(e);
-        //                         assert.strictEqual(e.message, "Did not find field " + field);
-        //                     }
+                            // Test error handling on boolean column split
+                            try {
+                                pivotSpecification.addBooleanColumnSplit("epsilon", "t", "f");
+                            }
+                            catch (e) {
+                                assert.ok(e);
+                                assert.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected boolean.");
+                            }
+                            try {
+                                pivotSpecification.addBooleanColumnSplit(field, "t", "f");
+                                assert.ok(false);
+                            }
+                            catch (e) {
+                                assert.ok(e);
+                                assert.strictEqual(e.message, "Did not find field " + field);
+                            }
     
-        //                     // Test boolean column split
-        //                     pivotSpecification.addBooleanColumnSplit("has_boris", "is_true", "is_false");
-        //                     assert.strictEqual(4, pivotSpecification.columns.length);
+                            // Test boolean column split
+                            pivotSpecification.addBooleanColumnSplit("has_boris", "is_true", "is_false");
+                            assert.strictEqual(4, pivotSpecification.columns.length);
     
-        //                     col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
-        //                     assert.ok(col.hasOwnProperty("fieldName"));
-        //                     assert.ok(col.hasOwnProperty("owner"));
-        //                     assert.ok(col.hasOwnProperty("type"));
-        //                     assert.ok(!col.hasOwnProperty("label"));
-        //                     assert.ok(col.hasOwnProperty("trueLabel"));
-        //                     assert.ok(col.hasOwnProperty("falseLabel"));
+                            col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
+                            assert.ok(col.hasOwnProperty("fieldName"));
+                            assert.ok(col.hasOwnProperty("owner"));
+                            assert.ok(col.hasOwnProperty("type"));
+                            assert.ok(!col.hasOwnProperty("label"));
+                            assert.ok(col.hasOwnProperty("trueLabel"));
+                            assert.ok(col.hasOwnProperty("falseLabel"));
     
-        //                     assert.strictEqual("has_boris", col.fieldName);
-        //                     assert.strictEqual("test_data", col.owner);
-        //                     assert.strictEqual("boolean", col.type);
-        //                     assert.strictEqual("is_true", col.trueLabel);
-        //                     assert.strictEqual("is_false", col.falseLabel);
-        //                     assert.deepEqual({
-        //                             fieldName: "has_boris",
-        //                             owner: "test_data",
-        //                             type: "boolean",
-        //                             trueLabel: "is_true",
-        //                             falseLabel: "is_false"
-        //                         },
-        //                         col);
+                            assert.strictEqual("has_boris", col.fieldName);
+                            assert.strictEqual("test_data", col.owner);
+                            assert.strictEqual("boolean", col.type);
+                            assert.strictEqual("is_true", col.trueLabel);
+                            assert.strictEqual("is_false", col.falseLabel);
+                            assert.deepEqual({
+                                    fieldName: "has_boris",
+                                    owner: "test_data",
+                                    type: "boolean",
+                                    trueLabel: "is_true",
+                                    falseLabel: "is_false"
+                                },
+                                col);
     
-        //                     // Test error handling on timestamp column split
-        //                     try {
-        //                         pivotSpecification.addTimestampColumnSplit("epsilon", "Wrong type here");
-        //                     }
-        //                     catch (e) {
-        //                         assert.ok(e);
-        //                         assert.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected timestamp.");
-        //                     }
-        //                     try {
-        //                         pivotSpecification.addTimestampColumnSplit(field, "Break Me!");
-        //                         assert.ok(false);
-        //                     }
-        //                     catch (e) {
-        //                         assert.ok(e);
-        //                         assert.strictEqual(e.message, "Did not find field " + field);
-        //                     }
-        //                     try {
-        //                         pivotSpecification.addTimestampColumnSplit("_time", "Bogus binning value");
-        //                         assert.ok(false);
-        //                     }
-        //                     catch (e) {
-        //                         assert.ok(e);
-        //                         assert.strictEqual(e.message, "Invalid binning Bogus binning value found. Valid values are: " + pivotSpecification._binning.join(", "));
-        //                     }
+                            // Test error handling on timestamp column split
+                            try {
+                                pivotSpecification.addTimestampColumnSplit("epsilon", "Wrong type here");
+                            }
+                            catch (e) {
+                                assert.ok(e);
+                                assert.strictEqual(e.message, "Field was of type " + obj.fieldByName("epsilon").type + ", expected timestamp.");
+                            }
+                            try {
+                                pivotSpecification.addTimestampColumnSplit(field, "Break Me!");
+                                assert.ok(false);
+                            }
+                            catch (e) {
+                                assert.ok(e);
+                                assert.strictEqual(e.message, "Did not find field " + field);
+                            }
+                            try {
+                                pivotSpecification.addTimestampColumnSplit("_time", "Bogus binning value");
+                                assert.ok(false);
+                            }
+                            catch (e) {
+                                assert.ok(e);
+                                assert.strictEqual(e.message, "Invalid binning Bogus binning value found. Valid values are: " + pivotSpecification._binning.join(", "));
+                            }
     
-        //                     // Test timestamp column split
-        //                     pivotSpecification.addTimestampColumnSplit("_time", "day");
-        //                     assert.strictEqual(5, pivotSpecification.columns.length);
+                            // Test timestamp column split
+                            pivotSpecification.addTimestampColumnSplit("_time", "day");
+                            assert.strictEqual(5, pivotSpecification.columns.length);
     
-        //                     col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
-        //                     assert.ok(col.hasOwnProperty("fieldName"));
-        //                     assert.ok(col.hasOwnProperty("owner"));
-        //                     assert.ok(col.hasOwnProperty("type"));
-        //                     assert.ok(!col.hasOwnProperty("label"));
-        //                     assert.ok(col.hasOwnProperty("period"));
+                            col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
+                            assert.ok(col.hasOwnProperty("fieldName"));
+                            assert.ok(col.hasOwnProperty("owner"));
+                            assert.ok(col.hasOwnProperty("type"));
+                            assert.ok(!col.hasOwnProperty("label"));
+                            assert.ok(col.hasOwnProperty("period"));
     
-        //                     assert.strictEqual("_time", col.fieldName);
-        //                     assert.strictEqual("BaseEvent", col.owner);
-        //                     assert.strictEqual("timestamp", col.type);
-        //                     assert.strictEqual("day", col.period);
-        //                     assert.deepEqual({
-        //                             fieldName: "_time",
-        //                             owner: "BaseEvent",
-        //                             type: "timestamp",
-        //                             period: "day"
-        //                         },
-        //                         col);
-        //                 }],
-        //                 function(err) {
-        //                     assert.ok(!err);
-        //                     done();
-        //                 }
-        //             );
-        //         });
-        //     }
-        //     catch(err) {
-        //         // Fail if we can't read the file, likely to occur in the browser
-        //         assert.ok(!err);
-        //         done();
-        //     }
-        // });
+                            assert.strictEqual("_time", col.fieldName);
+                            assert.strictEqual("BaseEvent", col.owner);
+                            assert.strictEqual("timestamp", col.type);
+                            assert.strictEqual("day", col.period);
+                            assert.deepEqual({
+                                    fieldName: "_time",
+                                    owner: "BaseEvent",
+                                    type: "timestamp",
+                                    period: "day"
+                                },
+                                col);
+                        }],
+                        function(err) {
+                            assert.ok(!err);
+                            done();
+                        }
+                    );
+                });
+            }
+            catch(err) {
+                // Fail if we can't read the file, likely to occur in the browser
+                assert.ok(!err);
+                done();
+            }
+        });
     
         it("Callback#Pivot - test cell value", function(done) {
             if (this.skip) {
@@ -3620,7 +3620,7 @@ describe("Service Tests ", function(){
                             assert.strictEqual("Source Value", cell.label);
                             assert.strictEqual("dc", cell.value);
                             assert.strictEqual(false, cell.sparkline);
-                            assert.equal({
+                            assert.deepEqual({
                                     fieldName: "hostip",
                                     owner: "test_data",
                                     type: "ipv4",
