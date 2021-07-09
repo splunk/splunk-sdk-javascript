@@ -21,7 +21,7 @@
         "javascript"
     ],
     "scripts": {
-        "test": "mocha tests/tests.js --ui exports -t 50000 --exit"
+        "test": "nyc mocha tests/tests.js --ui exports -t 50000 --exit"
     },
     "dependencies": {
         "cookie": "0.4.1",
@@ -35,6 +35,7 @@
         "jshint": "2.13.0",
         "mocha": "^9.0.2",
         "mustache": "4.2.0",
+        "nyc": "^15.1.0",
         "readable-stream": "3.6.0",
         "uglify-js": "3.13.8"
     },

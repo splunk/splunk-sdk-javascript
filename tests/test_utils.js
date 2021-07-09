@@ -261,3 +261,8 @@ exports.setup = function () {
         }
     };
 };
+
+// Run the individual test suite
+if (module === require.cache[__filename] && !module.parent) {
+    module.exports = exports.setup();
+}

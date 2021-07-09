@@ -25,4 +25,3 @@ module.exports = {
     'ValidationDefinition': require('./test_validation_definition').setup(),
 }
 
-

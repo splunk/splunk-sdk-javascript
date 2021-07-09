@@ -25,9 +25,9 @@ if (quiet) {
     splunkjs.Logger.setLevel("NONE");
     var quietIndex = utils.keyOf("--quiet", process.argv);
     process.argv.splice(quietIndex, 1);
-} 
+}
 else {
-    splunkjs.Logger.setLevel("ALL");   
+    splunkjs.Logger.setLevel("ALL");
 }
 
 // If $SPLUNK_HOME isn't set, abort the tests
@@ -59,13 +59,23 @@ var loggedOutSvc = new splunkjs.Service({
     version: cmdline.opts.version
 });
 
-module.exports = {
-    'Modular input tests': require('./modularinputs'),
-    'Async tests': require('./test_async').setup(),
-    'Context tests': require('./test_context').setup(svc),
-    'Example tests': require('./test_examples').setup(svc, cmdline.opts),
-    'HTTP tests': require('./test_http').setup(nonSplunkHttp),
-    'Log tests': require('./test_log').setup(),
-    'Service tests': require('./test_service').setup(svc, loggedOutSvc),
-    'Utils tests': require('./test_utils').setup()
-}
+// Exports tests on a successful login
+module.exports = new Promise((resolve, reject) => {
+    svc.login(function (err, success) {
+        if (err || !success) {
+            throw new Error("Login failed - not running tests", err || "");
+        }
+
+        var tests = {
+            'Modular input tests': require('./modularinputs'),
+            'Async tests': require('./test_async').setup(),
+            'Context tests': require('./test_context').setup(svc),
+            'Example tests': require('./test_examples').setup(svc, cmdline.opts),
+            'HTTP tests': require('./test_http').setup(nonSplunkHttp),
+            'Log tests': require('./test_log').setup(),
+            'Service tests': require('./test_service').setup(svc, loggedOutSvc),
+            'Utils tests': require('./test_utils').setup()
+        }
+        return resolve(tests);
+    });
+});

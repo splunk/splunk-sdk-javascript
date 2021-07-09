@@ -1069,3 +1069,36 @@ exports.setup = function (svc) {
     };
     return suite;
 };
+
+// Run the individual test suite
+if (module === require.cache[__filename] && !module.parent) {
+
+    var options = require('../examples/node/cmdline');
+    var splunkjs = require('../index');
+
+    var cmdline = new options.create().parse(process.argv);
+
+    // If there is no command line, we should return
+    if (!cmdline) {
+        throw new Error("Error in parsing command line parameters");
+    }
+
+    var svc = new splunkjs.Service({
+        scheme: cmdline.opts.scheme,
+        host: cmdline.opts.host,
+        port: cmdline.opts.port,
+        username: cmdline.opts.username,
+        password: cmdline.opts.password,
+        version: cmdline.opts.version
+    });
+
+    // Exports tests on a successful login
+    module.exports = new Promise((resolve, reject) => {
+        svc.login(function (err, success) {
+            if (err || !success) {
+                throw new Error("Login failed - not running tests", err || "");
+            }
+            return resolve(exports.setup(svc));
+        });
+    });
+}

@@ -65,6 +65,7 @@ exports.setup = function (http) {
             },
 
             "Callback#error all": function (done) {
+                this.timeout(40000);
                 this.http.get("https://httpbin.org/status/404", [], {}, 0, function (err, res) {
                     assert.strictEqual(err.status, 404);
                     done();
@@ -72,6 +73,7 @@ exports.setup = function (http) {
             },
 
             "Callback#args": function (done) {
+                this.timeout(40000);
                 this.http.get("https://httpbin.org/get", [], { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0, function (err, res) {
                     var args = res.data.args;
                     assert.strictEqual(args.a, "1");
@@ -84,6 +86,7 @@ exports.setup = function (http) {
             },
 
             "Callback#args with objects": function (done) {
+                this.timeout(40000);
                 this.http.get(
                     "https://httpbin.org/get", [],
                     { a: 1, b: { c: "ab", d: 12 } }, 0,
@@ -302,3 +305,11 @@ exports.setup = function (http) {
         }
     };
 };
+
+// Run the individual test suite
+if (module === require.cache[__filename] && !module.parent) {
+    var splunkjs = require('../index');
+    var http = new splunkjs.NodeHttp();
+
+    module.exports = exports.setup(http);
+}

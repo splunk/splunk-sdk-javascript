@@ -272,6 +272,8 @@ exports.setup = function () {
             },
 
             "ModularInput Input Validation times out after 30s with impartial XML": function (done) {
+
+                this.timeout(40000);
                 exports.getScheme = function () {
                     return null;
                 };
@@ -554,6 +556,8 @@ exports.setup = function () {
             },
 
             "ModularInput streaming events times out after 30s with impartial XML": function (done) {
+
+                this.timeout(40000);
                 exports.getScheme = function () {
                     return null;
                 };
@@ -606,6 +610,8 @@ exports.setup = function () {
             },
 
             "ModularInput streaming events times out after 30s with no data sent": function (done) {
+
+                this.timeout(40000);
                 exports.getScheme = function () {
                     return null;
                 };
@@ -638,6 +644,8 @@ exports.setup = function () {
             },
 
             "ModularInput streaming events times out after 30s with data sent after 30s": function (done) {
+
+                this.timeout(40000);
                 exports.getScheme = function () {
                     return null;
                 };
@@ -713,3 +721,8 @@ exports.setup = function () {
         }
     };
 };
+
+// Run the individual test suite
+if (module === require.cache[__filename] && !module.parent) {
+    module.exports = exports.setup();
+}
