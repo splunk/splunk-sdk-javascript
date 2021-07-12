@@ -50,7 +50,7 @@ if (!util.format) {
 
 var consoleFlush = function(data) {
   if (!Buffer.isBuffer(data)) {
-    data= new Buffer(''+ data);
+    data= Buffer.from(''+ data);
   }
   if (data.length) {
     var written= 0;

@@ -11,83 +11,82 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations
 // under the License.
-exports.setup = function() {
+
+exports.setup = function () {
+    var assert = require('chai').assert;
     var isBrowser = typeof window !== "undefined";
 
-    var unload = function(name) {
+    var unload = function (name) {
         for (var k in require.cache) {
             if (require.cache[k] && k.match(name + "$")) {
                 delete require.cache[k];
             }
         }
     };
-    
+
     if (isBrowser) {
         return {};
-    } 
+    }
     else {
         return {
-            "Default level with no environment variable": function(test) {
+            "Default level with no environment variable": function (done) {
                 var oldVal = process.env.LOG_LEVEL;
                 delete process.env.LOG_LEVEL;
                 unload("log.js");
                 var logger = require("../lib/log.js");
-                test.equal(process.env.LOG_LEVEL, logger.Logger.levels.ERROR);
+                assert.equal(process.env.LOG_LEVEL, logger.Logger.levels.ERROR);
                 process.env.LOG_LEVEL = oldVal;
                 unload("log.js");
-                test.done();
+                done();
             },
 
-            "Setting a nonexistant level default to errors": function(test) {
+            "Setting a nonexistant level default to errors": function (done) {
                 var oldVal = process.env.LOG_LEVEL;
                 process.env.LOG_LEVEL = "25";
                 unload("log.js");
                 var logger = require("../lib/log.js");
-                test.equal(process.env.LOG_LEVEL, logger.Logger.levels.ERROR);
+                assert.equal(process.env.LOG_LEVEL, logger.Logger.levels.ERROR);
                 process.env.LOG_LEVEL = oldVal;
                 unload("log.js");
-                test.done();
+                done();
             },
 
-            "Setting logging level as integer works": function(test) {
+            "Setting logging level as integer works": function (done) {
                 var oldVal = process.env.LOG_LEVEL;
                 process.env.LOG_LEVEL = "3";
                 unload("log.js");
                 var logger = require("../lib/log.js");
-                test.equal(process.env.LOG_LEVEL, logger.Logger.levels.INFO);
+                assert.equal(process.env.LOG_LEVEL, logger.Logger.levels.INFO);
                 process.env.LOG_LEVEL = oldVal;
                 unload("log.js");
-                test.done();
+                done();
             },
 
-            "Setting logging level as string works": function(test) {
+            "Setting logging level as string works": function (done) {
                 var oldVal = process.env.LOG_LEVEL;
                 process.env.LOG_LEVEL = "INFO";
                 unload("log.js");
                 var logger = require("../lib/log.js");
-                test.equal(process.env.LOG_LEVEL, logger.Logger.levels.INFO);
+                assert.equal(process.env.LOG_LEVEL, logger.Logger.levels.INFO);
                 process.env.LOG_LEVEL = oldVal;
                 unload("log.js");
-                test.done();
+                done();
             },
 
-            "Setting logging level after the fact works": function(test) {
+            "Setting logging level after the fact works": function (done) {
                 var oldVal = process.env.LOG_LEVEL;
                 unload("log.js");
                 var logger = require("../lib/log.js");
                 logger.Logger.setLevel();
                 process.env.LOG_LEVEL = oldVal;
                 unload("log.js");
-                test.done();
+                done();
             }
-
         };
     }
 };
 
-if (module === require.main) {
-    var test        = require("../contrib/nodeunit/test_reporter");
-    
-    var suite = exports.setup();
-    test.run([{"Tests": suite}]);
+// Run the individual test suite
+if (module === require.cache[__filename] && !module.parent) {
+    module.exports = exports.setup();
 }

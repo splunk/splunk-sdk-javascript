@@ -1,24 +1,27 @@
-    var splunkjs    = require('../../index');
-var Async       = splunkjs.Async;
-var tutils      = require('../utils');
-var path        = require("path");
+var assert = require('chai').assert;
+var path = require("path");
 
+var splunkjs = require('../../index');
+var tutils = require('../utils');
+const { Logger } = require('../../lib/log');
+
+var Async = splunkjs.Async;
 var idCounter = 0;
-var getNextId = function() {
+
+var getNextId = function () {
     return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
 };
 
-module.exports = function(svc) {
+exports.setup = function (svc) {
     return {
-        setUp: function(done) {
+        beforeEach: function (done) {
             this.service = svc;
             done();
         },
 
-        // Disabling this test for now because apps/appinstall endpoint is deprecated in Splunk 8.2.
-        // JIRA ticket: DVPL-9708 to track an alternative solution to fix this issue.
+        // Disabling this test because apps/appinstall endpoint is deprecated in Splunk 8.2.
         //
-        // "Callback#Create+abort job": function(test) {
+        // "Callback#Create+abort job": function(done) {
         //     var service = this.service;
         //     Async.chain([
         //             function(done){
@@ -32,10 +35,10 @@ module.exports = function(svc) {
         //                 var options = {id: sid};
         //                 var jobs = service.jobs({app: "sdk-app-collection"});
         //                 var req = jobs.oneshotSearch('search index=_internal | head 1 | sleep 10', options, function(err, job) {
-        //                     test.ok(err);
-        //                     test.ok(!job);
-        //                     test.strictEqual(err.error, "abort");
-        //                     test.done();
+        //                     assert.ok(err);
+        //                     assert.ok(!job);
+        //                     assert.strictEqual(err.error, "abort");
+        //                     done();
         //                 });
 
         //                 Async.sleep(1000, function(){
@@ -44,237 +47,237 @@ module.exports = function(svc) {
         //             }
         //         ],
         //         function(err){
-        //             test.ok(!err);
-        //             test.done();
+        //             assert.ok(!err);
+        //             done();
         //         });
         // },
 
-        "Callback#Create+cancel job": function(test) {
+        "Callback#Create+cancel job": function (done) {
             var sid = getNextId();
-            this.service.jobs().search('search index=_internal | head 1', {id: sid}, function(err, job) {
-                test.ok(job);
-                test.strictEqual(job.sid, sid);
+            this.service.jobs().search('search index=_internal | head 1', { id: sid }, function (err, job) {
+                assert.ok(job);
+                assert.strictEqual(job.sid, sid);
 
-                job.cancel(function() {
-                    test.done();
+                job.cancel(function () {
+                    done();
                 });
             });
         },
 
-        "Callback#Create job error": function(test) {
+        "Callback#Create job error": function (done) {
             var sid = getNextId();
-            this.service.jobs().search({search: 'index=_internal | head 1', id: sid}, function(err) {
-                test.ok(!!err);
-                test.done();
+            this.service.jobs().search({ search: 'index=_internal | head 1', id: sid }, function (err) {
+                assert.ok(!!err);
+                done();
             });
         },
 
-        "Callback#List jobs": function(test) {
-            this.service.jobs().fetch(function(err, jobs) {
-                test.ok(!err);
-                test.ok(jobs);
+        "Callback#List jobs": function (done) {
+            this.service.jobs().fetch(function (err, jobs) {
+                assert.ok(!err);
+                assert.ok(jobs);
 
                 var jobsList = jobs.list();
-                test.ok(jobsList.length > 0);
+                assert.ok(jobsList.length > 0);
 
-                for(var i = 0; i < jobsList.length; i++) {
-                    test.ok(jobsList[i]);
+                for (var i = 0; i < jobsList.length; i++) {
+                    assert.ok(jobsList[i]);
                 }
 
-                test.done();
+                done();
             });
         },
 
-        "Callback#Contains job": function(test) {
+        "Callback#Contains job": function (done) {
             var that = this;
             var sid = getNextId();
             var jobs = this.service.jobs();
 
-            jobs.search('search index=_internal | head 1', {id: sid}, function(err, job) {
-                test.ok(!err);
-                test.ok(job);
-                test.strictEqual(job.sid, sid);
+            jobs.search('search index=_internal | head 1', { id: sid }, function (err, job) {
+                assert.ok(!err);
+                assert.ok(job);
+                assert.strictEqual(job.sid, sid);
 
-                jobs.fetch(function(err, jobs) {
-                    test.ok(!err);
+                jobs.fetch(function (err, jobs) {
+                    assert.ok(!err);
                     var job = jobs.item(sid);
-                    test.ok(job);
+                    assert.ok(job);
 
-                    job.cancel(function() {
-                        test.done();
+                    job.cancel(function () {
+                        done();
                     });
                 });
             });
         },
 
-        "Callback#job results": function(test) {
+        "Callback#job results": function (done) {
             var sid = getNextId();
             var service = this.service;
             var that = this;
 
             Async.chain([
-                    function(done) {
-                        that.service.jobs().search('search index=_internal | head 1 | stats count', {id: sid}, done);
-                    },
-                    function(job, done) {
-                        test.strictEqual(job.sid, sid);
-                        tutils.pollUntil(
-                            job,
-                            function(j) {
-                                return job.properties()["isDone"];
-                            },
-                            10,
-                            done
-                        );
-                    },
-                    function(job, done) {
-                        job.results({}, done);
-                    },
-                    function(results, job, done) {
-                        test.strictEqual(results.rows.length, 1);
-                        test.strictEqual(results.fields.length, 1);
-                        test.strictEqual(results.fields[0], "count");
-                        test.strictEqual(results.rows[0][0], "1");
-                        job.cancel(done);
-                    }
-                ],
-                function(err) {
-                    test.ok(!err);
-                    test.done();
+                function (done) {
+                    that.service.jobs().search('search index=_internal | head 1 | stats count', { id: sid }, done);
+                },
+                function (job, done) {
+                    assert.strictEqual(job.sid, sid);
+                    tutils.pollUntil(
+                        job,
+                        function (j) {
+                            return job.properties()["isDone"];
+                        },
+                        10,
+                        done
+                    );
+                },
+                function (job, done) {
+                    job.results({}, done);
+                },
+                function (results, job, done) {
+                    assert.strictEqual(results.rows.length, 1);
+                    assert.strictEqual(results.fields.length, 1);
+                    assert.strictEqual(results.fields[0], "count");
+                    assert.strictEqual(results.rows[0][0], "1");
+                    job.cancel(done);
+                }
+            ],
+                function (err) {
+                    assert.ok(!err);
+                    done();
                 }
             );
         },
 
-        "Callback#job events": function(test) {
+        "Callback#job events": function (done) {
             var sid = getNextId();
             var service = this.service;
             var that = this;
 
             Async.chain([
-                    function(done) {
-                        that.service.jobs().search('search index=_internal | head 1', {id: sid}, done);
-                    },
-                    function(job, done) {
-                        test.strictEqual(job.sid, sid);
-                        tutils.pollUntil(
-                            job,
-                            function(j) {
-                                return job.properties()["isDone"];
-                            },
-                            10,
-                            done
-                        );
-                    },
-                    function(job, done) {
-                        job.events({}, done);
-                    },
-                    function(results, job, done) {
-                        test.strictEqual(results.rows.length, 1);
-                        test.strictEqual(results.fields.length, results.rows[0].length);
-                        job.cancel(done);
-                    }
-                ],
-                function(err) {
-                    test.ok(!err);
-                    test.done();
+                function (done) {
+                    that.service.jobs().search('search index=_internal | head 1', { id: sid }, done);
+                },
+                function (job, done) {
+                    assert.strictEqual(job.sid, sid);
+                    tutils.pollUntil(
+                        job,
+                        function (j) {
+                            return job.properties()["isDone"];
+                        },
+                        10,
+                        done
+                    );
+                },
+                function (job, done) {
+                    job.events({}, done);
+                },
+                function (results, job, done) {
+                    assert.strictEqual(results.rows.length, 1);
+                    assert.strictEqual(results.fields.length, results.rows[0].length);
+                    job.cancel(done);
+                }
+            ],
+                function (err) {
+                    assert.ok(!err);
+                    done();
                 }
             );
         },
 
-        "Callback#job results preview": function(test) {
+        "Callback#job results preview": function (done) {
             var sid = getNextId();
             var service = this.service;
             var that = this;
 
             Async.chain([
-                    function(done) {
-                        that.service.jobs().search('search index=_internal | head 1 | stats count', {id: sid}, done);
-                    },
-                    function(job, done) {
-                        test.strictEqual(job.sid, sid);
-                        tutils.pollUntil(
-                            job,
-                            function(j) {
-                                return job.properties()["isDone"];
-                            },
-                            10,
-                            done
-                        );
-                    },
-                    function(job, done) {
-                        job.preview({}, done);
-                    },
-                    function(results, job, done) {
-                        test.strictEqual(results.rows.length, 1);
-                        test.strictEqual(results.fields.length, 1);
-                        test.strictEqual(results.fields[0], "count");
-                        test.strictEqual(results.rows[0][0], "1");
-                        job.cancel(done);
-                    }
-                ],
-                function(err) {
-                    test.ok(!err);
-                    test.done();
+                function (done) {
+                    that.service.jobs().search('search index=_internal | head 1 | stats count', { id: sid }, done);
+                },
+                function (job, done) {
+                    assert.strictEqual(job.sid, sid);
+                    tutils.pollUntil(
+                        job,
+                        function (j) {
+                            return job.properties()["isDone"];
+                        },
+                        10,
+                        done
+                    );
+                },
+                function (job, done) {
+                    job.preview({}, done);
+                },
+                function (results, job, done) {
+                    assert.strictEqual(results.rows.length, 1);
+                    assert.strictEqual(results.fields.length, 1);
+                    assert.strictEqual(results.fields[0], "count");
+                    assert.strictEqual(results.rows[0][0], "1");
+                    job.cancel(done);
+                }
+            ],
+                function (err) {
+                    assert.ok(!err);
+                    done();
                 }
             );
         },
 
-        "Callback#job results iterator": function(test) {
+        "Callback#job results iterator": function (done) {
             var that = this;
 
             Async.chain([
-                    function(done) {
-                        that.service.jobs().search('search index=_internal | head 10', {}, done);
-                    },
-                    function(job, done) {
-                        tutils.pollUntil(
-                            job,
-                            function(j) {
-                                return job.properties()["isDone"];
-                            },
-                            10,
-                            done
-                        );
-                    },
-                    function(job, done) {
-                        var iterator = job.iterator("results", { pagesize: 4 });
-                        var hasMore = true;
-                        var numElements = 0;
-                        var pageSizes = [];
-                        Async.whilst(
-                            function() { return hasMore; },
-                            function(nextIteration) {
-                                iterator.next(function(err, results, _hasMore) {
-                                    if (err) {
-                                        nextIteration(err);
-                                        return;
-                                    }
+                function (done) {
+                    that.service.jobs().search('search index=_internal | head 10', {}, done);
+                },
+                function (job, done) {
+                    tutils.pollUntil(
+                        job,
+                        function (j) {
+                            return job.properties()["isDone"];
+                        },
+                        10,
+                        done
+                    );
+                },
+                function (job, done) {
+                    var iterator = job.iterator("results", { pagesize: 4 });
+                    var hasMore = true;
+                    var numElements = 0;
+                    var pageSizes = [];
+                    Async.whilst(
+                        function () { return hasMore; },
+                        function (nextIteration) {
+                            iterator.next(function (err, results, _hasMore) {
+                                if (err) {
+                                    nextIteration(err);
+                                    return;
+                                }
 
-                                    hasMore = _hasMore;
-                                    if (hasMore) {
-                                        pageSizes.push(results.rows.length);
-                                    }
-                                    nextIteration();
-                                });
-                            },
-                            function(err) {
-                                test.deepEqual(pageSizes, [4,4,2]);
-                                done(err);
-                            }
-                        );
-                    }
-                ],
-                function(err) {
-                    test.ok(!err);
-                    test.done();
+                                hasMore = _hasMore;
+                                if (hasMore) {
+                                    pageSizes.push(results.rows.length);
+                                }
+                                nextIteration();
+                            });
+                        },
+                        function (err) {
+                            assert.deepStrictEqual(pageSizes, [4, 4, 2]);
+                            done(err);
+                        }
+                    );
+                }
+            ],
+                function (err) {
+                    assert.ok(!err);
+                    done();
                 }
             );
         },
 
-        // Disabling this test for now because apps/appinstall endpoint is deprecated in Splunk 8.2.
-        // JIRA ticket: DVPL-9708 to track an alternative solution to fix this issue.
+        // Disabling this test because apps/appinstall endpoint is deprecated in Splunk 8.2.
         //
-        // "Callback#Enable + disable preview": function(test) {
+        //
+        // "Callback#Enable + disable preview": function(done) {
         //     var that = this;
         //     var sid = getNextId();
 
@@ -296,16 +299,17 @@ module.exports = function(svc) {
         //             }
         //         ],
         //         function(err) {
-        //             test.ok(!err);
-        //             test.done();
+        //             assert.ok(!err);
+        //             done();
         //         }
         //     );
         // },
 
-        // Disabling this test for now because apps/appinstall endpoint is deprecated in Splunk 8.2.
-        // JIRA ticket: DVPL-9708 to track an alternative solution to fix this issue.
+
+        // Disabling this test because apps/appinstall endpoint is deprecated in Splunk 8.2.
         //
-        // "Callback#Pause + unpause + finalize preview": function(test) {
+        //
+        // "Callback#Pause + unpause + finalize preview": function(done) {
         //     var that = this;
         //     var sid = getNextId();
 
@@ -329,7 +333,7 @@ module.exports = function(svc) {
         //                 );
         //             },
         //             function(job, done) {
-        //                 test.ok(job.properties()["isPaused"]);
+        //                 assert.ok(job.properties()["isPaused"]);
         //                 job.unpause(done);
         //             },
         //             function(job, done) {
@@ -343,7 +347,7 @@ module.exports = function(svc) {
         //                 );
         //             },
         //             function(job, done) {
-        //                 test.ok(!job.properties()["isPaused"]);
+        //                 assert.ok(!job.properties()["isPaused"]);
         //                 job.finalize(done);
         //             },
         //             function(job, done) {
@@ -351,51 +355,51 @@ module.exports = function(svc) {
         //             }
         //         ],
         //         function(err) {
-        //             test.ok(!err);
-        //             test.done();
+        //             assert.ok(!err);
+        //             done();
         //         }
         //     );
         // },
 
-        "Callback#Set TTL": function(test) {
+        "Callback#Set TTL": function (done) {
             var sid = getNextId();
             var originalTTL = 0;
             var that = this;
 
             Async.chain([
-                    function(done) {
-                        that.service.jobs().search('search index=_internal | head 1', {id: sid}, done);
-                    },
-                    function(job, done) {
-                        job.fetch(done);
-                    },
-                    function(job, done) {
-                        var ttl = job.properties()["ttl"];
-                        originalTTL = ttl;
+                function (done) {
+                    that.service.jobs().search('search index=_internal | head 1', { id: sid }, done);
+                },
+                function (job, done) {
+                    job.fetch(done);
+                },
+                function (job, done) {
+                    var ttl = job.properties()["ttl"];
+                    originalTTL = ttl;
 
-                        job.setTTL(ttl*2, done);
-                    },
-                    function(job, done) {
-                        job.fetch(done);
-                    },
-                    function(job, done) {
-                        var ttl = job.properties()["ttl"];
-                        test.ok(ttl > originalTTL);
-                        test.ok(ttl <= (originalTTL*2));
-                        job.cancel(done);
-                    }
-                ],
-                function(err) {
-                    test.ok(!err);
-                    test.done();
+                    job.setTTL(ttl * 2, done);
+                },
+                function (job, done) {
+                    job.fetch(done);
+                },
+                function (job, done) {
+                    var ttl = job.properties()["ttl"];
+                    assert.ok(ttl > originalTTL);
+                    assert.ok(ttl <= (originalTTL * 2));
+                    job.cancel(done);
+                }
+            ],
+                function (err) {
+                    assert.ok(!err);
+                    done();
                 }
             );
         },
 
-        // Disabling this test for now because apps/appinstall endpoint is deprecated in Splunk 8.2.
-        // JIRA ticket: DVPL-9708 to track an alternative solution to fix this issue.
+        // Disabling this test because apps/appinstall endpoint is deprecated in Splunk 8.2.
         //
-        // "Callback#Set priority": function(test) {
+        //
+        // "Callback#Set priority": function(done) {
         //     var sid = getNextId();
         //     var originalPriority = 0;
         //     var that = this;
@@ -415,7 +419,7 @@ module.exports = function(svc) {
         //             },
         //             function(job, done) {
         //                 var priority = job.properties()["priority"];
-        //                 test.ok(priority, 5);
+        //                 assert.ok(priority, 5);
         //                 job.setPriority(priority + 1, done);
         //             },
         //             function(job, done) {
@@ -426,228 +430,228 @@ module.exports = function(svc) {
         //             }
         //         ],
         //         function(err) {
-        //             test.ok(!err);
-        //             test.done();
+        //             assert.ok(!err);
+        //             done();
         //         }
         //     );
         // },
 
-        "Callback#Search log": function(test) {
+        "Callback#Search log": function (done) {
             var sid = getNextId();
             var that = this;
 
             Async.chain([
-                    function(done) {
-                        that.service.jobs().search('search index=_internal | head 1', {id: sid, exec_mode: "blocking"}, done);
-                    },
-                    function(job, done) {
-                        job.searchlog(done);
-                    },
-                    function(log, job, done) {
-                        test.ok(job);
-                        test.ok(log);
-                        test.ok(log.length > 0);
-                        test.ok(log.split("\r\n").length > 0);
-                        job.cancel(done);
-                    }
-                ],
-                function(err) {
-                    test.ok(!err);
-                    test.done();
+                function (done) {
+                    that.service.jobs().search('search index=_internal | head 1', { id: sid, exec_mode: "blocking" }, done);
+                },
+                function (job, done) {
+                    job.searchlog(done);
+                },
+                function (log, job, done) {
+                    assert.ok(job);
+                    assert.ok(log);
+                    assert.ok(log.length > 0);
+                    assert.ok(log.split("\r\n").length > 0);
+                    job.cancel(done);
+                }
+            ],
+                function (err) {
+                    assert.ok(!err);
+                    done();
                 }
             );
         },
 
-        "Callback#Search summary": function(test) {
+        "Callback#Search summary": function (done) {
             var sid = getNextId();
             var that = this;
 
             Async.chain([
-                    function(done) {
-                        that.service.jobs().search(
-                            'search index=_internal | head 1 | eval foo="bar" | fields foo',
-                            {
-                                id: sid,
-                                status_buckets: 300,
-                                rf: ["foo"]
-                            },
-                            done);
-                    },
-                    function(job, done) {
-                        // Let's sleep for 2 second so
-                        // we let the server catch up
-                        Async.sleep(2000, function() {
-                            job.summary({}, done);
-                        });
-                    },
-                    function(summary, job, done) {
-                        test.ok(job);
-                        test.ok(summary);
-                        test.strictEqual(summary.event_count, 1);
-                        test.strictEqual(summary.fields.foo.count, 1);
-                        test.strictEqual(summary.fields.foo.distinct_count, 1);
-                        test.ok(summary.fields.foo.is_exact, 1);
-                        test.strictEqual(summary.fields.foo.modes.length, 1);
-                        test.strictEqual(summary.fields.foo.modes[0].count, 1);
-                        test.strictEqual(summary.fields.foo.modes[0].value, "bar");
-                        test.ok(summary.fields.foo.modes[0].is_exact);
-                        job.cancel(done);
-                    }
-                ],
-                function(err) {
-                    test.ok(!err);
-                    test.done();
+                function (done) {
+                    that.service.jobs().search(
+                        'search index=_internal | head 1 | eval foo="bar" | fields foo',
+                        {
+                            id: sid,
+                            status_buckets: 300,
+                            rf: ["foo"]
+                        },
+                        done);
+                },
+                function (job, done) {
+                    // Let's sleep for 2 second so
+                    // we let the server catch up
+                    Async.sleep(2000, function () {
+                        job.summary({}, done);
+                    });
+                },
+                function (summary, job, done) {
+                    assert.ok(job);
+                    assert.ok(summary);
+                    assert.strictEqual(summary.event_count, 1);
+                    assert.strictEqual(summary.fields.foo.count, 1);
+                    assert.strictEqual(summary.fields.foo.distinct_count, 1);
+                    assert.ok(summary.fields.foo.is_exact, 1);
+                    assert.strictEqual(summary.fields.foo.modes.length, 1);
+                    assert.strictEqual(summary.fields.foo.modes[0].count, 1);
+                    assert.strictEqual(summary.fields.foo.modes[0].value, "bar");
+                    assert.ok(summary.fields.foo.modes[0].is_exact);
+                    job.cancel(done);
+                }
+            ],
+                function (err) {
+                    assert.ok(!err);
+                    done();
                 }
             );
         },
 
-        "Callback#Search timeline": function(test) {
+        "Callback#Search timeline": function (done) {
             var sid = getNextId();
             var that = this;
 
             Async.chain([
-                    function(done) {
-                        that.service.jobs().search(
-                            'search index=_internal | head 1 | eval foo="bar" | fields foo',
-                            {
-                                id: sid,
-                                status_buckets: 300,
-                                rf: ["foo"],
-                                exec_mode: "blocking"
-                            },
-                            done);
-                    },
-                    function(job, done) {
-                        job.timeline({}, done);
-                    },
-                    function(timeline, job, done) {
-                        test.ok(job);
-                        test.ok(timeline);
-                        test.strictEqual(timeline.buckets.length, 1);
-                        test.strictEqual(timeline.event_count, 1);
-                        test.strictEqual(timeline.buckets[0].available_count, 1);
-                        test.strictEqual(timeline.buckets[0].duration, 0.001);
-                        test.strictEqual(timeline.buckets[0].earliest_time_offset, timeline.buckets[0].latest_time_offset);
-                        test.strictEqual(timeline.buckets[0].total_count, 1);
-                        test.ok(timeline.buckets[0].is_finalized);
-                        job.cancel(done);
-                    }
-                ],
-                function(err) {
-                    test.ok(!err);
-                    test.done();
+                function (done) {
+                    that.service.jobs().search(
+                        'search index=_internal | head 1 | eval foo="bar" | fields foo',
+                        {
+                            id: sid,
+                            status_buckets: 300,
+                            rf: ["foo"],
+                            exec_mode: "blocking"
+                        },
+                        done);
+                },
+                function (job, done) {
+                    job.timeline({}, done);
+                },
+                function (timeline, job, done) {
+                    assert.ok(job);
+                    assert.ok(timeline);
+                    assert.strictEqual(timeline.buckets.length, 1);
+                    assert.strictEqual(timeline.event_count, 1);
+                    assert.strictEqual(timeline.buckets[0].available_count, 1);
+                    assert.strictEqual(timeline.buckets[0].duration, 0.001);
+                    assert.strictEqual(timeline.buckets[0].earliest_time_offset, timeline.buckets[0].latest_time_offset);
+                    assert.strictEqual(timeline.buckets[0].total_count, 1);
+                    assert.ok(timeline.buckets[0].is_finalized);
+                    job.cancel(done);
+                }
+            ],
+                function (err) {
+                    assert.ok(!err);
+                    done();
                 }
             );
         },
 
-        "Callback#Touch": function(test) {
+        "Callback#Touch": function (done) {
             var sid = getNextId();
             var that = this;
             var originalTime = "";
 
             Async.chain([
-                    function(done) {
-                        that.service.jobs().search('search index=_internal | head 1', {id: sid}, done);
-                    },
-                    function(job, done) {
-                        job.fetch(done);
-                    },
-                    function(job, done) {
-                        test.ok(job);
-                        originalTime = job.properties().updated;
-                        Async.sleep(1200, function() { job.touch(done); });
-                    },
-                    function(job, done) {
-                        job.fetch(done);
-                    },
-                    function(job, done) {
-                        test.ok(originalTime !== job.updated());
-                        job.cancel(done);
-                    }
-                ],
-                function(err) {
-                    test.ok(!err);
-                    test.done();
+                function (done) {
+                    that.service.jobs().search('search index=_internal | head 1', { id: sid }, done);
+                },
+                function (job, done) {
+                    job.fetch(done);
+                },
+                function (job, done) {
+                    assert.ok(job);
+                    originalTime = job.properties().updated;
+                    Async.sleep(1200, function () { job.touch(done); });
+                },
+                function (job, done) {
+                    job.fetch(done);
+                },
+                function (job, done) {
+                    assert.ok(originalTime !== job.updated());
+                    job.cancel(done);
+                }
+            ],
+                function (err) {
+                    assert.ok(!err);
+                    done();
                 }
             );
         },
 
-        "Callback#Create failure": function(test) {
+        "Callback#Create failure": function (done) {
             var name = "jssdk_savedsearch_" + getNextId();
             var originalSearch = "search index=_internal | head 1";
 
             var jobs = this.service.jobs();
-            test.throws(function() {jobs.create({search: originalSearch, name: name, exec_mode: "oneshot"}, function() {});});
-            test.done();
+            assert.throws(function () { jobs.create({ search: originalSearch, name: name, exec_mode: "oneshot" }, function () { }); });
+            done();
         },
 
-        "Callback#Create fails with no search string": function(test) {
+        "Callback#Create fails with no search string": function (done) {
             var jobs = this.service.jobs();
             jobs.create(
                 "", {},
-                function(err) {
-                    test.ok(err);
-                    test.done();
+                function (err) {
+                    assert.ok(err);
+                    done();
                 }
             );
         },
 
-        "Callback#Oneshot search": function(test) {
+        "Callback#Oneshot search": function (done) {
             var sid = getNextId();
             var that = this;
             var originalTime = "";
 
             Async.chain([
-                    function(done) {
-                        that.service.jobs().oneshotSearch('search index=_internal | head 1 | stats count', {id: sid}, done);
-                    },
-                    function(results, done) {
-                        test.ok(results);
-                        test.ok(results.fields);
-                        test.strictEqual(results.fields.length, 1);
-                        test.strictEqual(results.fields[0], "count");
-                        test.ok(results.rows);
-                        test.strictEqual(results.rows.length, 1);
-                        test.strictEqual(results.rows[0].length, 1);
-                        test.strictEqual(results.rows[0][0], "1");
+                function (done) {
+                    that.service.jobs().oneshotSearch('search index=_internal | head 1 | stats count', { id: sid }, done);
+                },
+                function (results, done) {
+                    assert.ok(results);
+                    assert.ok(results.fields);
+                    assert.strictEqual(results.fields.length, 1);
+                    assert.strictEqual(results.fields[0], "count");
+                    assert.ok(results.rows);
+                    assert.strictEqual(results.rows.length, 1);
+                    assert.strictEqual(results.rows[0].length, 1);
+                    assert.strictEqual(results.rows[0][0], "1");
 
-                        done();
-                    }
-                ],
-                function(err) {
-                    test.ok(!err);
-                    test.done();
+                    done();
+                }
+            ],
+                function (err) {
+                    assert.ok(!err);
+                    done();
                 }
             );
         },
 
-        "Callback#Oneshot search with no results": function(test) {
+        "Callback#Oneshot search with no results": function (done) {
             var sid = getNextId();
             var that = this;
             var originalTime = "";
 
             Async.chain([
-                    function(done) {
-                        var query = 'search index=history MUST_NOT_EXISTABCDEF';
-                        that.service.jobs().oneshotSearch(query, {id: sid}, done);
-                    },
-                    function(results, done) {
-                        test.ok(results);
-                        test.strictEqual(results.fields.length, 0);
-                        test.strictEqual(results.rows.length, 0);
-                        test.ok(!results.preview);
+                function (done) {
+                    var query = 'search index=history MUST_NOT_EXISTABCDEF';
+                    that.service.jobs().oneshotSearch(query, { id: sid }, done);
+                },
+                function (results, done) {
+                    assert.ok(results);
+                    assert.strictEqual(results.fields.length, 0);
+                    assert.strictEqual(results.rows.length, 0);
+                    assert.ok(!results.preview);
 
-                        done();
-                    }
-                ],
-                function(err) {
-                    test.ok(!err);
-                    test.done();
+                    done();
+                }
+            ],
+                function (err) {
+                    assert.ok(!err);
+                    done();
                 }
             );
         },
 
-        // "Callback#Service oneshot search": function(test) {
+        // "Callback#Service oneshot search": function(done) {
         //     var sid = getNextId();
         //     var that = this;
         //     var namespace = {owner: "admin", app: "search"};
@@ -688,12 +692,12 @@ module.exports = function(svc) {
         //                             searchInfo.update({"infocsv_log_level": "DEBUG"}, done1);
         //                         },
         //                         function(conf, done1) {
-        //                             test.strictEqual("DEBUG", conf.properties()["infocsv_log_level"]);
+        //                             assert.strictEqual("DEBUG", conf.properties()["infocsv_log_level"]);
         //                             done1();
         //                         }
         //                     ],
         //                     function(err) {
-        //                         test.ok(!err);
+        //                         assert.ok(!err);
         //                         done();
         //                     }
         //                 );
@@ -702,16 +706,16 @@ module.exports = function(svc) {
         //                 that.service.oneshotSearch('search index=_internal | head 1 | stats count', {id: sid}, namespace, done);
         //             },
         //             function(results, done) {
-        //                 test.ok(results);
-        //                 test.ok(results.fields);
-        //                 test.strictEqual(results.fields.length, 1);
-        //                 test.strictEqual(results.fields[0], "count");
-        //                 test.ok(results.rows);
-        //                 test.strictEqual(results.rows.length, 1);
-        //                 test.strictEqual(results.rows[0].length, 1);
-        //                 test.strictEqual(results.rows[0][0], "1");
-        //                 test.ok(results.messages[1].text.indexOf('owner="admin"'));
-        //                 test.ok(results.messages[1].text.indexOf('app="search"'));
+        //                 assert.ok(results);
+        //                 assert.ok(results.fields);
+        //                 assert.strictEqual(results.fields.length, 1);
+        //                 assert.strictEqual(results.fields[0], "count");
+        //                 assert.ok(results.rows);
+        //                 assert.strictEqual(results.rows.length, 1);
+        //                 assert.strictEqual(results.rows[0].length, 1);
+        //                 assert.strictEqual(results.rows[0][0], "1");
+        //                 assert.ok(results.messages[1].text.indexOf('owner="admin"'));
+        //                 assert.ok(results.messages[1].text.indexOf('app="search"'));
 
         //                 done();
         //             },
@@ -742,209 +746,209 @@ module.exports = function(svc) {
         //                             searchInfo.update({"infocsv_log_level": originalLoggerLevel}, done1);
         //                         },
         //                         function(conf, done1) {
-        //                             test.strictEqual(originalLoggerLevel, conf.properties()["infocsv_log_level"]);
+        //                             assert.strictEqual(originalLoggerLevel, conf.properties()["infocsv_log_level"]);
         //                             done1();
         //                         }
         //                     ],
         //                     function(err) {
-        //                         test.ok(!err);
+        //                         assert.ok(!err);
         //                         done();
         //                     }
         //                 );
         //             }
         //         ],
         //         function(err) {
-        //             test.ok(!err);
-        //             test.done();
+        //             assert.ok(!err);
+        //             done();
         //         }
         //     );
         // },
 
-        "Callback#Service search": function(test) {
+        "Callback#Service search": function (done) {
             var sid = getNextId();
             var service = this.service;
             var that = this;
-            var namespace = {owner: "admin", app: "search"};
+            var namespace = { owner: "admin", app: "search" };
 
             Async.chain([
-                    function(done) {
-                        that.service.search('search index=_internal | head 1 | stats count', {id: sid}, namespace, done);
-                    },
-                    function(job, done) {
-                        test.strictEqual(job.sid, sid);
-                        test.strictEqual(job.namespace, namespace);
-                        tutils.pollUntil(
-                            job,
-                            function(j) {
-                                return job.properties()["isDone"];
-                            },
-                            10,
-                            done
-                        );
-                    },
-                    function(job, done) {
-                        job.results({}, done);
-                    },
-                    function(results, job, done) {
-                        test.strictEqual(results.rows.length, 1);
-                        test.strictEqual(results.fields.length, 1);
-                        test.strictEqual(results.fields[0], "count");
-                        test.strictEqual(results.rows[0][0], "1");
-                        job.cancel(done);
-                    }
-                ],
-                function(err) {
-                    test.ok(!err);
-                    test.done();
+                function (done) {
+                    that.service.search('search index=_internal | head 1 | stats count', { id: sid }, namespace, done);
+                },
+                function (job, done) {
+                    assert.strictEqual(job.sid, sid);
+                    assert.strictEqual(job.namespace, namespace);
+                    tutils.pollUntil(
+                        job,
+                        function (j) {
+                            return job.properties()["isDone"];
+                        },
+                        10,
+                        done
+                    );
+                },
+                function (job, done) {
+                    job.results({}, done);
+                },
+                function (results, job, done) {
+                    assert.strictEqual(results.rows.length, 1);
+                    assert.strictEqual(results.fields.length, 1);
+                    assert.strictEqual(results.fields[0], "count");
+                    assert.strictEqual(results.rows[0][0], "1");
+                    job.cancel(done);
+                }
+            ],
+                function (err) {
+                    assert.ok(!err);
+                    done();
                 }
             );
         },
 
-        "Callback#Wait until job done": function(test) {
-            this.service.search('search index=_internal | head 1000', {}, function(err, job) {
-                test.ok(!err);
+        "Callback#Wait until job done": function (done) {
+            this.service.search('search index=_internal | head 1000', {}, function (err, job) {
+                assert.ok(!err);
 
                 var numReadyEvents = 0;
                 var numProgressEvents = 0;
                 job.track({ period: 200 }, {
-                    ready: function(job) {
-                        test.ok(job);
+                    ready: function (job) {
+                        assert.ok(job);
 
                         numReadyEvents++;
                     },
-                    progress: function(job) {
-                        test.ok(job);
+                    progress: function (job) {
+                        assert.ok(job);
 
                         numProgressEvents++;
                     },
-                    done: function(job) {
-                        test.ok(job);
+                    done: function (job) {
+                        assert.ok(job);
 
-                        test.ok(numReadyEvents === 1);      // all done jobs must have become ready
-                        test.ok(numProgressEvents >= 1);    // a job that becomes ready has progress
-                        test.done();
+                        assert.ok(numReadyEvents === 1);      // all done jobs must have become ready
+                        assert.ok(numProgressEvents >= 1);    // a job that becomes ready has progress
+                        done();
                     },
-                    failed: function(job) {
-                        test.ok(job);
+                    failed: function (job) {
+                        assert.ok(job);
 
-                        test.ok(false, "Job failed unexpectedly.");
-                        test.done();
+                        assert.ok(false, "Job failed unexpectedly.");
+                        done();
                     },
-                    error: function(err) {
-                        test.ok(err);
+                    error: function (err) {
+                        assert.ok(err);
 
-                        test.ok(false, "Error while tracking job.");
-                        test.done();
+                        assert.ok(false, "Error while tracking job.");
+                        done();
                     }
                 });
             });
         },
 
-        "Callback#Wait until job failed": function(test) {
-            this.service.search('search index=_internal | head bogusarg', {}, function(err, job) {
+        "Callback#Wait until job failed": function (done) {
+            this.service.search('search index=_internal | head bogusarg', {}, function (err, job) {
                 if (err) {
-                    test.ok(!err);
-                    test.done();
+                    assert.ok(!err);
+                    done();
                     return;
                 }
 
                 var numReadyEvents = 0;
                 var numProgressEvents = 0;
                 job.track({ period: 200 }, {
-                    ready: function(job) {
-                        test.ok(job);
+                    ready: function (job) {
+                        assert.ok(job);
 
                         numReadyEvents++;
                     },
-                    progress: function(job) {
-                        test.ok(job);
+                    progress: function (job) {
+                        assert.ok(job);
 
                         numProgressEvents++;
                     },
-                    done: function(job) {
-                        test.ok(job);
+                    done: function (job) {
+                        assert.ok(job);
 
-                        test.ok(false, "Job became done unexpectedly.");
-                        test.done();
+                        assert.ok(false, "Job became done unexpectedly.");
+                        done();
                     },
-                    failed: function(job) {
-                        test.ok(job);
+                    failed: function (job) {
+                        assert.ok(job);
 
-                        test.ok(numReadyEvents === 1);      // even failed jobs become ready
-                        test.ok(numProgressEvents >= 1);    // a job that becomes ready has progress
-                        test.done();
+                        assert.ok(numReadyEvents === 1);      // even failed jobs become ready
+                        assert.ok(numProgressEvents >= 1);    // a job that becomes ready has progress
+                        done();
                     },
-                    error: function(err) {
-                        test.ok(err);
+                    error: function (err) {
+                        assert.ok(err);
 
-                        test.ok(false, "Error while tracking job.");
-                        test.done();
+                        assert.ok(false, "Error while tracking job.");
+                        done();
                     }
                 });
             });
         },
 
-        "Callback#track() with default params and one function": function(test) {
-            this.service.search('search index=_internal | head 1', {}, function(err, job) {
+        "Callback#track() with default params and one function": function (done) {
+            this.service.search('search index=_internal | head 1', {}, function (err, job) {
                 if (err) {
-                    test.ok(!err);
-                    test.done();
+                    assert.ok(!err);
+                    done();
                     return;
                 }
 
-                job.track({}, function(job) {
-                    test.ok(job);
-                    test.done();
+                job.track({}, function (job) {
+                    assert.ok(job);
+                    done();
                 });
             });
         },
 
-        "Callback#track() should stop polling if only the ready callback is specified": function(test) {
-            this.service.search('search index=_internal | head 1', {}, function(err, job) {
+        "Callback#track() should stop polling if only the ready callback is specified": function (done) {
+            this.service.search('search index=_internal | head 1', {}, function (err, job) {
                 if (err) {
-                    test.ok(!err);
-                    test.done();
+                    assert.ok(!err);
+                    done();
                     return;
                 }
 
                 job.track({}, {
-                    ready: function(job) {
-                        test.ok(job);
+                    ready: function (job) {
+                        assert.ok(job);
                     },
 
-                    _stoppedAfterReady: function(job) {
-                        test.done();
+                    _stoppedAfterReady: function (job) {
+                        done();
                     }
                 });
             });
         },
 
-        "Callback#track() a job that is not immediately ready": function(test) {
+        "Callback#track() a job that is not immediately ready": function (done) {
             /*jshint loopfunc:true */
             var numJobs = 20;
             var numJobsLeft = numJobs;
             var gotJobNotImmediatelyReady = false;
             for (var i = 0; i < numJobs; i++) {
-                this.service.search('search index=_internal | head 10000', {}, function(err, job) {
+                this.service.search('search index=_internal | head 10000', {}, function (err, job) {
                     if (err) {
-                        test.ok(!err);
-                        test.done();
+                        assert.ok(!err);
+                        done();
                         return;
                     }
 
                     job.track({}, {
-                        _preready: function(job) {
+                        _preready: function (job) {
                             gotJobNotImmediatelyReady = true;
                         },
 
-                        ready: function(job) {
+                        ready: function (job) {
                             numJobsLeft--;
 
                             if (numJobsLeft === 0) {
                                 if (!gotJobNotImmediatelyReady) {
                                     splunkjs.Logger.error("", "WARNING: Couldn't test code path in track() where job wasn't ready immediately.");
                                 }
-                                test.done();
+                                done();
                             }
                         }
                     });
@@ -952,33 +956,68 @@ module.exports = function(svc) {
             }
         },
 
-        "Callback#Service.getJob() works": function(test) {
+        "Callback#Service.getJob() works": function (done) {
             var that = this;
             var sidsMatch = false;
-            this.service.search('search index=_internal | head 1', {}, function(err, job){
+            this.service.search('search index=_internal | head 1', {}, function (err, job) {
                 if (err) {
-                    test.ok(!err);
-                    test.done();
+                    assert.ok(!err);
+                    done();
                     return;
                 }
                 var sid = job.sid;
                 return Async.chain([
-                        function(done) {
-                            that.service.getJob(sid, done);
-                        },
-                        function(innerJob, done) {
-                            test.strictEqual(sid, innerJob.sid);
-                            sidsMatch = sid === innerJob.sid;
-                            done();
-                        }
-                    ],
-                    function(err) {
-                        test.ok(!err);
-                        test.ok(sidsMatch);
-                        test.done();
+                    function (done) {
+                        that.service.getJob(sid, done);
+                    },
+                    function (innerJob, done) {
+                        assert.strictEqual(sid, innerJob.sid);
+                        sidsMatch = sid === innerJob.sid;
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        assert.ok(sidsMatch);
+                        done();
                     }
                 );
             });
         }
     };
 };
+
+if (module === require.cache[__filename] && !module.parent) {
+    var splunkjs = require('../../index');
+    var options = require('../../examples/node/cmdline');
+
+    var cmdline = options.create().parse(process.argv);
+
+    // If there is no command line, we should return
+    if (!cmdline) {
+        throw new Error("Error in parsing command line parameters");
+    }
+
+    if (!process.env.SPLUNK_HOME) {
+        throw new Error("$PATH variable SPLUNK_HOME is not set. Please export SPLUNK_HOME to the splunk instance.");
+    }
+
+    var svc = new splunkjs.Service({
+        scheme: cmdline.opts.scheme,
+        host: cmdline.opts.host,
+        port: cmdline.opts.port,
+        username: cmdline.opts.username,
+        password: cmdline.opts.password,
+        version: cmdline.opts.version
+    });
+
+    // Exports tests on a successful login
+    module.exports = new Promise((resolve, reject) => {
+        svc.login(function (err, success) {
+            if (err || !success) {
+                throw new Error("Login failed - not running tests", err || "");
+            }
+            return resolve(exports.setup(svc));
+        });
+    });
+}

@@ -13,18 +13,21 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-exports.setup = function() {
-    var splunkjs        = require("../../index");
-    var ET              = require("elementtree");
-    var ModularInputs   = splunkjs.ModularInputs;
-    var Logger          = ModularInputs.Logger;
-    var ModularInput    = ModularInputs.ModularInput;
-    var Event           = ModularInputs.Event;
-    var EventWriter     = ModularInputs.EventWriter;
-    var Scheme          = ModularInputs.Scheme;
-    var Argument        = ModularInputs.Argument;
-    var utils           = ModularInputs.utils;
-    var testUtils       = require("./utils");
+var assert = require('chai').assert;
+var ET = require("elementtree");
+
+var splunkjs = require("../../index");
+var testUtils = require("./utils");
+
+exports.setup = function () {
+    var ModularInputs = splunkjs.ModularInputs;
+    var Logger = ModularInputs.Logger;
+    var ModularInput = ModularInputs.ModularInput;
+    var Event = ModularInputs.Event;
+    var EventWriter = ModularInputs.EventWriter;
+    var Scheme = ModularInputs.Scheme;
+    var Argument = ModularInputs.Argument;
+    var utils = ModularInputs.utils;
 
     splunkjs.Logger.setLevel("ALL");
 
@@ -32,79 +35,79 @@ exports.setup = function() {
 
     return {
         "ModularInput tests": {
-            setUp: function(done) {
+            before: function (done) {
                 done();
             },
 
-            "ModularInputs logger works, severity: DEBUG": function(test) {
+            "ModularInputs logger works, severity: DEBUG": function (done) {
                 var err = testUtils.getDuplexStream();
                 try {
                     Logger.debug("Modular Input Tests", "Something happened!", err);
-                    test.ok(utils.startsWith(err._read(), Logger.DEBUG));
+                    assert.ok(utils.startsWith(err._read(), Logger.DEBUG));
                 }
                 catch (e) {
-                    test.ok(false);
+                    assert.ok(false);
                 }
-                test.done();
+                done();
             },
 
-            "ModularInputs logger works, severity: INFO": function(test) {
+            "ModularInputs logger works, severity: INFO": function (done) {
                 var err = testUtils.getDuplexStream();
                 try {
                     Logger.info("Modular Input Tests", "Something happened!", err);
-                    test.ok(utils.startsWith(err._read(), Logger.INFO));
+                    assert.ok(utils.startsWith(err._read(), Logger.INFO));
                 }
                 catch (e) {
-                    test.ok(false);
+                    assert.ok(false);
                 }
-                test.done();
+                done();
             },
 
-            "ModularInputs logger works, severity: WARN": function(test) {
+            "ModularInputs logger works, severity: WARN": function (done) {
                 var err = testUtils.getDuplexStream();
                 try {
                     Logger.warn("Modular Input Tests", "Something happened!", err);
-                    test.ok(utils.startsWith(err._read(), Logger.WARN));
+                    assert.ok(utils.startsWith(err._read(), Logger.WARN));
                 }
                 catch (e) {
-                    test.ok(false);
+                    assert.ok(false);
                 }
-                test.done();
+                done();
             },
 
-            "ModularInputs logger works, severity: ERROR": function(test) {
+            "ModularInputs logger works, severity: ERROR": function (done) {
                 var err = testUtils.getDuplexStream();
                 try {
                     Logger.error("Modular Input Tests", "Something happened!", err);
-                    test.ok(utils.startsWith(err._read(), Logger.ERROR));
+                    assert.ok(utils.startsWith(err._read(), Logger.ERROR));
                 }
                 catch (e) {
-                    test.ok(false);
+                    assert.ok(false);
                 }
-                test.done();
+                done();
             },
 
-            "ModularInputs logger works, severity: FATAL": function(test) {
+            "ModularInputs logger works, severity: FATAL": function (done) {
                 var err = testUtils.getDuplexStream();
                 try {
                     Logger.fatal("Modular Input Tests", "Something happened!", err);
-                    test.ok(utils.startsWith(err._read(), Logger.FATAL));
+                    assert.ok(utils.startsWith(err._read(), Logger.FATAL));
                 }
                 catch (e) {
-                    test.ok(false);
+                    assert.ok(false);
                 }
-                test.done();
+                done();
             },
 
-            "An error happens when a ModularInput gets bad args": function(test) {
+            "An error happens when a ModularInput gets bad args": function (done) {
                 // A script that returns a null scheme should generate no output on stdout
                 // and an error on stderr saying that the scheme was null.
 
-                exports.getScheme = function() {
+                exports.getScheme = function () {
                     return null;
                 };
-                
-                exports.streamEvents = function() {
+
+                exports.streamEvents = function () {
                     // Not used
                     return null;
                 };
@@ -116,24 +119,24 @@ exports.setup = function() {
                 var inStream = testUtils.getReadableStream();
 
                 var args = [TEST_SCRIPT_PATH, "foobar"];
-                ModularInput.runScript(exports, args, ew, inStream, function(err, scriptStatus) {
+                ModularInput.runScript(exports, args, ew, inStream, function (err, scriptStatus) {
                     var error = ew._err._read();
-                    
-                    test.ok(utils.startsWith(error, "ERROR Modular input Invalid arguments to modular input script:"));
-                    test.strictEqual(1, scriptStatus);
-                    test.done();
+
+                    assert.ok(utils.startsWith(error, "ERROR Modular input Invalid arguments to modular input script:"));
+                    assert.strictEqual(1, scriptStatus);
+                    done();
                 });
             },
 
-            "An error happens when a ModularInput has a null scheme": function(test) {
+            "An error happens when a ModularInput has a null scheme": function (done) {
                 // A script that returns a null scheme should generate no output on stdout
                 // and an error on stderr saying that the scheme was null.
 
-                exports.getScheme = function() {
+                exports.getScheme = function () {
                     return null;
                 };
-                
-                exports.streamEvents = function() {
+
+                exports.streamEvents = function () {
                     // Not used
                     return null;
                 };
@@ -145,19 +148,19 @@ exports.setup = function() {
                 var inStream = testUtils.getReadableStream();
 
                 var args = [TEST_SCRIPT_PATH, "--scheme"];
-                ModularInput.runScript(exports, args, ew, inStream, function(err, scriptStatus) {
+                ModularInput.runScript(exports, args, ew, inStream, function (err, scriptStatus) {
                     var error = ew._err._read();
 
-                    test.strictEqual(error, "FATAL Modular input script returned a null scheme.\n");
-                    test.strictEqual(1, scriptStatus);
-                    test.done();
+                    assert.strictEqual(error, "FATAL Modular input script returned a null scheme.\n");
+                    assert.strictEqual(1, scriptStatus);
+                    done();
                 });
             },
 
-            "ModularInput properly generates Scheme": function(test) {
+            "ModularInput properly generates Scheme": function (done) {
                 // Check that a scheme generated by a script is what we expect.
 
-                exports.getScheme = function() {
+                exports.getScheme = function () {
                     var scheme = new Scheme("abcd");
                     scheme.description = "\uC3BC and \uC3B6 and <&> f\u00FCr";
                     scheme.streamingMode = Scheme.streamingModeSimple;
@@ -177,8 +180,8 @@ exports.setup = function() {
 
                     return scheme;
                 };
-                
-                exports.streamEvents = function() {
+
+                exports.streamEvents = function () {
                     // Not used
                     return null;
                 };
@@ -190,28 +193,28 @@ exports.setup = function() {
                 var inStream = testUtils.getReadableStream();
 
                 var args = [TEST_SCRIPT_PATH, "--scheme"];
-                ModularInput.runScript(exports, args, ew, inStream, function(err, scriptStatus) {
+                ModularInput.runScript(exports, args, ew, inStream, function (err, scriptStatus) {
                     var expected = utils.readFile(__filename, "../data/scheme_without_defaults.xml");
                     var output = ew._out._read();
 
-                    test.ok(testUtils.XMLCompare(ET.parse(expected), ET.parse(output)));
-                    test.strictEqual("", ew._err._read());
-                    test.strictEqual(0, scriptStatus);
-                    test.done();
+                    assert.ok(testUtils.XMLCompare(ET.parse(expected), ET.parse(output)));
+                    assert.strictEqual("", ew._err._read());
+                    assert.strictEqual(0, scriptStatus);
+                    done();
                 });
             },
 
-            "ModularInput Input Validation succeeds": function(test) {
-                exports.getScheme = function() {
+            "ModularInput Input Validation succeeds": function (done) {
+                exports.getScheme = function () {
                     return null;
                 };
 
-                exports.validateInput = function(definition, done) {
+                exports.validateInput = function (definition, done) {
                     // Always succeed
                     done();
                 };
 
-                exports.streamEvents = function() {
+                exports.streamEvents = function () {
                     // not used
                     return;
                 };
@@ -225,25 +228,25 @@ exports.setup = function() {
                 var inStream = testUtils.getReadableStream();
 
                 var args = [TEST_SCRIPT_PATH, "--validate-arguments"];
-                ModularInput.runScript(exports, args, ew, inStream, function(err, scriptStatus) {
-                    test.ok(!err);
+                ModularInput.runScript(exports, args, ew, inStream, function (err, scriptStatus) {
+                    assert.ok(!err);
 
-                    test.strictEqual("", ew._out._read());
-                    test.strictEqual("", ew._err._read());
-                    test.strictEqual(0, scriptStatus);
-                    test.done();
+                    assert.strictEqual("", ew._out._read());
+                    assert.strictEqual("", ew._err._read());
+                    assert.strictEqual(0, scriptStatus);
+                    done();
                 });
-                inStream.emit("data", new Buffer(validationFile));
+                inStream.emit("data", Buffer.from(validationFile));
             },
 
-            "ModularInput Input Validation succeeds when validateInput is undefined": function(test) {
-                exports.getScheme = function() {
+            "ModularInput Input Validation succeeds when validateInput is undefined": function (done) {
+                exports.getScheme = function () {
                     return null;
                 };
 
                 exports.validateInput = undefined;
 
-                exports.streamEvents = function() {
+                exports.streamEvents = function () {
                     // not used
                     return;
                 };
@@ -257,28 +260,30 @@ exports.setup = function() {
                 var inStream = testUtils.getReadableStream();
 
                 var args = [TEST_SCRIPT_PATH, "--validate-arguments"];
-                ModularInput.runScript(exports, args, ew, inStream, function(err, scriptStatus) {
-                    test.ok(!err);
+                ModularInput.runScript(exports, args, ew, inStream, function (err, scriptStatus) {
+                    assert.ok(!err);
 
-                    test.strictEqual("", ew._out._read());
-                    test.strictEqual("", ew._err._read());
-                    test.strictEqual(0, scriptStatus);
-                    test.done();
+                    assert.strictEqual("", ew._out._read());
+                    assert.strictEqual("", ew._err._read());
+                    assert.strictEqual(0, scriptStatus);
+                    done();
                 });
-                inStream.emit("data", new Buffer(validationFile));
+                inStream.emit("data", Buffer.from(validationFile));
             },
 
-            "ModularInput Input Validation times out after 30s with impartial XML": function(test) {
-                exports.getScheme = function() {
+            "ModularInput Input Validation times out after 30s with impartial XML": function (done) {
+
+                this.timeout(40000);
+                exports.getScheme = function () {
                     return null;
                 };
 
-                exports.validateInput = function() {
+                exports.validateInput = function () {
                     return;
                 };
                 exports.validateInput = undefined;
 
-                exports.streamEvents = function() {
+                exports.streamEvents = function () {
                     // not used
                     return;
                 };
@@ -294,34 +299,34 @@ exports.setup = function() {
                 var startTime = Date.now();
 
                 var args = [TEST_SCRIPT_PATH, "--validate-arguments"];
-                ModularInput.runScript(exports, args, ew, inStream, function(err, scriptStatus) {
-                    test.ok(err);
-                    test.strictEqual("Receiving validation definition prior to validating timed out.", err.message);
+                ModularInput.runScript(exports, args, ew, inStream, function (err, scriptStatus) {
+                    assert.ok(err);
+                    assert.strictEqual("Receiving validation definition prior to validating timed out.", err.message);
 
-                    test.ok(Date.now() - startTime >= 30000); // Make sure it times out only after 30 seconds
-                    test.strictEqual("", ew._out._read());
-                    test.strictEqual("", ew._err._read());
-                    test.strictEqual(1, scriptStatus);
-                    test.done();
+                    assert.ok(Date.now() - startTime >= 30000); // Make sure it times out only after 30 seconds
+                    assert.strictEqual("", ew._out._read());
+                    assert.strictEqual("", ew._err._read());
+                    assert.strictEqual(1, scriptStatus);
+                    done();
                 });
                 // Remove the closing </items> tag to send impartial data
-                inStream.emit("data", new Buffer(validationFile.replace("</items>", "")));
+                inStream.emit("data", Buffer.from(validationFile.replace("</items>", "")));
             },
 
-            "ModularInput Input Validation fails": function(test) {
+            "ModularInput Input Validation fails": function (done) {
                 // Make logger noop so testoutput is cleaner
                 var loggerErrorBackup = Logger.error;
-                Logger.error = function(){};
+                Logger.error = function () { };
 
-                exports.getScheme = function() {
+                exports.getScheme = function () {
                     return null;
                 };
 
-                exports.validateInput = function(definition, done) {
+                exports.validateInput = function (definition, done) {
                     done(new Error("Big fat validation error!"));
                 };
 
-                exports.streamEvents = function() {
+                exports.streamEvents = function () {
                     // not used
                     return;
                 };
@@ -335,42 +340,42 @@ exports.setup = function() {
                 var validationFile = utils.readFile(__filename, "../data/validation.xml");
 
                 var args = [TEST_SCRIPT_PATH, "--validate-arguments"];
-                ModularInput.runScript(exports, args, ew, inStream, function(err, scriptStatus) {
-                    test.ok(err);
+                ModularInput.runScript(exports, args, ew, inStream, function (err, scriptStatus) {
+                    assert.ok(err);
                     var output = ew._out._read();
 
                     var expected = ET.parse(utils.readFile(__filename, "../data/validation_error.xml")).getroot();
                     var found = ET.parse(output).getroot();
 
-                    test.strictEqual(expected.tag, found.tag);
-                    test.strictEqual(expected.text.trim(), found.text.trim());
-                    test.strictEqual(expected.tail, found.tail);
-                    test.strictEqual(expected.getchildren().length, found.getchildren().length);
+                    assert.strictEqual(expected.tag, found.tag);
+                    assert.strictEqual(expected.text.trim(), found.text.trim());
+                    assert.strictEqual(expected.tail, found.tail);
+                    assert.strictEqual(expected.getchildren().length, found.getchildren().length);
 
                     var expectedChildren = expected.getchildren();
                     var foundChildren = found.getchildren();
                     for (var i = 0; i < expectedChildren.length; i++) {
                         var expectedchild = expectedChildren[i];
                         var foundChild = foundChildren[i];
-                        test.strictEqual(expectedchild.tag, foundChild.tag);
-                        test.strictEqual(expectedchild.text.trim(), foundChild.text.trim());
-                        test.strictEqual(expectedchild.tail, foundChild.tail);
+                        assert.strictEqual(expectedchild.tag, foundChild.tag);
+                        assert.strictEqual(expectedchild.text.trim(), foundChild.text.trim());
+                        assert.strictEqual(expectedchild.tail, foundChild.tail);
                     }
-                    
-                    test.ok(testUtils.XMLCompare(expected, found));
-                    test.strictEqual("", ew._err._read());
-                    test.strictEqual(1, scriptStatus);
-                    test.done();
+
+                    assert.ok(testUtils.XMLCompare(expected, found));
+                    assert.strictEqual("", ew._err._read());
+                    assert.strictEqual(1, scriptStatus);
+                    done();
                 });
-                inStream.emit("data", new Buffer(validationFile));
+                inStream.emit("data", Buffer.from(validationFile));
             },
 
-            "ModularInput streaming events works - 2 inputs": function(test) {
-                exports.getScheme = function() {
+            "ModularInput streaming events works - 2 inputs": function (done) {
+                exports.getScheme = function () {
                     return null;
                 };
 
-                exports.streamEvents = function(name, input, eventWriter, callback) {
+                exports.streamEvents = function (name, input, eventWriter, callback) {
                     var myEvent = new Event({
                         data: "This is a test of the emergency broadcast system.",
                         stanza: "fubar",
@@ -385,10 +390,10 @@ exports.setup = function() {
 
                     try {
                         eventWriter.writeEvent(myEvent);
-                        callback(null);    
+                        callback(null);
                     }
                     catch (e) {
-                        callback(e);    
+                        callback(e);
                     }
                 };
 
@@ -401,25 +406,25 @@ exports.setup = function() {
                 var inputConfiguration = utils.readFile(__filename, "../data/conf_with_2_inputs.xml");
 
                 var args = [TEST_SCRIPT_PATH];
-                ModularInput.runScript(exports, args, ew, inStream, function(err, scriptStatus) {
-                    test.ok(!err);
+                ModularInput.runScript(exports, args, ew, inStream, function (err, scriptStatus) {
+                    assert.ok(!err);
 
                     var expected = utils.readFile(__filename, "../data/stream_with_two_events.xml");
                     var found = ew._out._read();
-                    test.ok(testUtils.XMLCompare(ET.parse(expected).getroot(), ET.parse(found).getroot()));
-                    test.strictEqual(0, scriptStatus);
-                    test.done();
+                    assert.ok(testUtils.XMLCompare(ET.parse(expected).getroot(), ET.parse(found).getroot()));
+                    assert.strictEqual(0, scriptStatus);
+                    done();
                 });
-                inStream.emit("data", new Buffer(inputConfiguration));
+                inStream.emit("data", Buffer.from(inputConfiguration));
             },
 
-            "ModularInput streaming events works - 5 inputs": function(test) {
-                exports.getScheme = function() {
+            "ModularInput streaming events works - 5 inputs": function (done) {
+                exports.getScheme = function () {
                     return null;
                 };
 
                 var num = 1;
-                exports.streamEvents = function(name, input, eventWriter, callback) {
+                exports.streamEvents = function (name, input, eventWriter, callback) {
                     var myEvent = new Event({
                         data: "This is a test of the emergency broadcast system. " + num,
                         stanza: "fubar",
@@ -435,10 +440,10 @@ exports.setup = function() {
                     try {
                         eventWriter.writeEvent(myEvent);
                         num++;
-                        callback(null);    
+                        callback(null);
                     }
                     catch (e) {
-                        callback(e);    
+                        callback(e);
                     }
                 };
 
@@ -451,8 +456,8 @@ exports.setup = function() {
                 var inputConfiguration = utils.readFile(__filename, "../data/conf_with_5_inputs.xml");
 
                 var args = [TEST_SCRIPT_PATH];
-                ModularInput.runScript(exports, args, ew, inStream, function(err, scriptStatus) {
-                    test.ok(!err);
+                ModularInput.runScript(exports, args, ew, inStream, function (err, scriptStatus) {
+                    assert.ok(!err);
 
                     var expected = utils.readFile(__filename, "../data/stream_with_five_events.xml");
                     var found = ew._out._read();
@@ -483,24 +488,24 @@ exports.setup = function() {
                         }
                     }
 
-                    test.equal(5, totalFound); // Did we find as many events as we expected?
-                    test.equal(5, expectedChildren.length);
-                    test.equal(expectedChildren.length, foundChildren.length);
-    
-                    test.ok(testUtils.XMLCompare(ET.parse(expected).getroot(), ET.parse(found).getroot()));
-                    test.strictEqual(0, scriptStatus);
-                    test.done();
+                    assert.equal(5, totalFound); // Did we find as many events as we expected?
+                    assert.equal(5, expectedChildren.length);
+                    assert.equal(expectedChildren.length, foundChildren.length);
+
+                    assert.ok(testUtils.XMLCompare(ET.parse(expected).getroot(), ET.parse(found).getroot()));
+                    assert.strictEqual(0, scriptStatus);
+                    done();
                 });
-                inStream.emit("data", new Buffer(inputConfiguration));
+                inStream.emit("data", Buffer.from(inputConfiguration));
             },
 
-            "ModularInput streaming events works - as object": function(test) {
-                exports.getScheme = function() {
+            "ModularInput streaming events works - as object": function (done) {
+                exports.getScheme = function () {
                     return null;
                 };
 
                 var asObject = false;
-                exports.streamEvents = function(name, input, eventWriter, callback) {
+                exports.streamEvents = function (name, input, eventWriter, callback) {
                     var myEvent = new Event({
                         data: "{\"some\":\"json\"}",
                         stanza: "fubar",
@@ -514,16 +519,16 @@ exports.setup = function() {
                     });
 
                     if (asObject) {
-                        myEvent.data = {some:"json object"}; // Write a JS object
+                        myEvent.data = { some: "json object" }; // Write a JS object
                     }
 
                     try {
                         eventWriter.writeEvent(myEvent);
                         asObject = true;
-                        callback(null);    
+                        callback(null);
                     }
                     catch (e) {
-                        callback(e);    
+                        callback(e);
                     }
                 };
 
@@ -536,26 +541,28 @@ exports.setup = function() {
                 var inputConfiguration = utils.readFile(__filename, "../data/conf_with_2_inputs.xml");
 
                 var args = [TEST_SCRIPT_PATH];
-                ModularInput.runScript(exports, args, ew, inStream, function(err, scriptStatus) {
-                    test.ok(!err);
+                ModularInput.runScript(exports, args, ew, inStream, function (err, scriptStatus) {
+                    assert.ok(!err);
 
                     var expected = utils.readFile(__filename, "../data/stream_with_two_json_events.xml");
                     var found = ew._out._read();
 
-                    test.ok(asObject);
-                    test.ok(testUtils.XMLCompare(ET.parse(expected).getroot(), ET.parse(found).getroot()));
-                    test.strictEqual(0, scriptStatus);
-                    test.done();
+                    assert.ok(asObject);
+                    assert.ok(testUtils.XMLCompare(ET.parse(expected).getroot(), ET.parse(found).getroot()));
+                    assert.strictEqual(0, scriptStatus);
+                    done();
                 });
-                inStream.emit("data", new Buffer(inputConfiguration));
+                inStream.emit("data", Buffer.from(inputConfiguration));
             },
 
-            "ModularInput streaming events times out after 30s with impartial XML": function(test) {
-                exports.getScheme = function() {
+            "ModularInput streaming events times out after 30s with impartial XML": function (done) {
+
+                this.timeout(40000);
+                exports.getScheme = function () {
                     return null;
                 };
 
-                exports.streamEvents = function(name, input, eventWriter, callback) {
+                exports.streamEvents = function (name, input, eventWriter, callback) {
                     var myEvent = new Event({
                         data: "This is a test of the emergency broadcast system.",
                         stanza: "fubar",
@@ -570,10 +577,10 @@ exports.setup = function() {
 
                     try {
                         eventWriter.writeEvent(myEvent);
-                        callback(null);    
+                        callback(null);
                     }
                     catch (e) {
-                        callback(e);    
+                        callback(e);
                     }
                 };
 
@@ -588,26 +595,28 @@ exports.setup = function() {
                 var startTime = Date.now();
 
                 var args = [TEST_SCRIPT_PATH];
-                ModularInput.runScript(exports, args, ew, inStream, function(err, scriptStatus) {
-                    test.ok(err);
-                    test.strictEqual("Receiving input definitions prior to streaming timed out.", err.message);
+                ModularInput.runScript(exports, args, ew, inStream, function (err, scriptStatus) {
+                    assert.ok(err);
+                    assert.strictEqual("Receiving input definitions prior to streaming timed out.", err.message);
 
-                    test.ok(Date.now() - startTime >= 30000); // Make sure it times out only after 30 seconds
-                    test.strictEqual("", ew._out._read());
-                    test.strictEqual("", ew._err._read());
-                    test.strictEqual(1, scriptStatus);
-                    test.done();
+                    assert.ok(Date.now() - startTime >= 30000); // Make sure it times out only after 30 seconds
+                    assert.strictEqual("", ew._out._read());
+                    assert.strictEqual("", ew._err._read());
+                    assert.strictEqual(1, scriptStatus);
+                    done();
                 });
                 // Remove the closing </input> tag to send impartial data
-                inStream.emit("data", new Buffer(inputConfiguration.replace("</input>", "")));
+                inStream.emit("data", Buffer.from(inputConfiguration.replace("</input>", "")));
             },
 
-            "ModularInput streaming events times out after 30s with no data sent": function(test) {
-                exports.getScheme = function() {
+            "ModularInput streaming events times out after 30s with no data sent": function (done) {
+
+                this.timeout(40000);
+                exports.getScheme = function () {
                     return null;
                 };
 
-                exports.streamEvents = function(name, input, eventWriter, callback) {
+                exports.streamEvents = function (name, input, eventWriter, callback) {
                     return;
                 };
 
@@ -622,24 +631,26 @@ exports.setup = function() {
                 var startTime = Date.now();
 
                 var args = [TEST_SCRIPT_PATH];
-                ModularInput.runScript(exports, args, ew, inStream, function(err, scriptStatus) {
-                    test.ok(err);
-                    test.strictEqual("Receiving input definitions prior to streaming timed out.", err.message);
+                ModularInput.runScript(exports, args, ew, inStream, function (err, scriptStatus) {
+                    assert.ok(err);
+                    assert.strictEqual("Receiving input definitions prior to streaming timed out.", err.message);
 
-                    test.ok(Date.now() - startTime >= 30000); // Make sure it times out only after 30 seconds
-                    test.strictEqual("", ew._out._read());
-                    test.strictEqual("", ew._err._read());
-                    test.strictEqual(1, scriptStatus);
-                    test.done();
+                    assert.ok(Date.now() - startTime >= 30000); // Make sure it times out only after 30 seconds
+                    assert.strictEqual("", ew._out._read());
+                    assert.strictEqual("", ew._err._read());
+                    assert.strictEqual(1, scriptStatus);
+                    done();
                 });
             },
 
-            "ModularInput streaming events times out after 30s with data sent after 30s": function(test) {
-                exports.getScheme = function() {
+            "ModularInput streaming events times out after 30s with data sent after 30s": function (done) {
+
+                this.timeout(40000);
+                exports.getScheme = function () {
                     return null;
                 };
 
-                exports.streamEvents = function(name, input, eventWriter, callback) {
+                exports.streamEvents = function (name, input, eventWriter, callback) {
                     return;
                 };
 
@@ -654,37 +665,37 @@ exports.setup = function() {
                 var startTime = Date.now();
 
                 // Emit the data 1.5 seconds after the timeout threshold
-                setTimeout(function() {
-                    inStream.emit("data", new Buffer(inputConfiguration));
-                    test.done();
+                setTimeout(function () {
+                    inStream.emit("data", Buffer.from(inputConfiguration));
+                    done();
                 }, 32000);
 
                 var args = [TEST_SCRIPT_PATH];
-                ModularInput.runScript(exports, args, ew, inStream, function(err, scriptStatus) {
-                    test.ok(err);
-                    test.strictEqual("Receiving input definitions prior to streaming timed out.", err.message);
+                ModularInput.runScript(exports, args, ew, inStream, function (err, scriptStatus) {
+                    assert.ok(err);
+                    assert.strictEqual("Receiving input definitions prior to streaming timed out.", err.message);
 
-                    test.ok(Date.now() - startTime >= 30000); // Make sure it times out only after 30 seconds
-                    test.strictEqual("", ew._out._read());
-                    test.strictEqual("", ew._err._read());
-                    test.strictEqual(1, scriptStatus);
+                    assert.ok(Date.now() - startTime >= 30000); // Make sure it times out only after 30 seconds
+                    assert.strictEqual("", ew._out._read());
+                    assert.strictEqual("", ew._err._read());
+                    assert.strictEqual(1, scriptStatus);
                 });
             },
 
-            "ModularInput gets a valid Service": function(test) {
-                exports.getScheme = function() {
+            "ModularInput gets a valid Service": function (done) {
+                exports.getScheme = function () {
                     return null;
                 };
 
-                exports.validateInput = function(definition) {
+                exports.validateInput = function (definition) {
                     return null;
                 };
 
-                exports.streamEvents = function(name, input, eventWriter, callback) {
+                exports.streamEvents = function (name, input, eventWriter, callback) {
                     var service = ModularInput.service();
-                    
-                    test.ok(service instanceof splunkjs.Service);
-                    test.strictEqual(service.prefix, this._inputDefinition.metadata["server_uri"]);
+
+                    assert.ok(service instanceof splunkjs.Service);
+                    assert.strictEqual(service.prefix, this._inputDefinition.metadata["server_uri"]);
                     callback(null);
                 };
 
@@ -696,25 +707,22 @@ exports.setup = function() {
 
                 var inputConfiguration = utils.readFile(__filename, "../data/conf_with_2_inputs.xml");
 
-                test.ok(utils.isUndefined(ModularInput._service));
+                assert.ok(utils.isUndefined(ModularInput._service));
 
                 var args = [TEST_SCRIPT_PATH];
-                ModularInput.runScript(exports, args, ew, inStream, function(err, scriptStatus) {
-                    test.ok(!err);
-                    test.strictEqual("", ew._err._read());
-                    test.strictEqual(0, scriptStatus);
-                    test.done();
+                ModularInput.runScript(exports, args, ew, inStream, function (err, scriptStatus) {
+                    assert.ok(!err);
+                    assert.strictEqual("", ew._err._read());
+                    assert.strictEqual(0, scriptStatus);
+                    done();
                 });
-                inStream.emit("data", new Buffer(inputConfiguration));
+                inStream.emit("data", Buffer.from(inputConfiguration));
             }
         }
     };
 };
 
-if (module === require.main) {
-    var splunkjs    = require('../../index');
-    var test        = require('../../contrib/nodeunit/test_reporter');
-
-    var suite = exports.setup();
-    test.run([{"Tests": suite}]);
+// Run the individual test suite
+if (module === require.cache[__filename] && !module.parent) {
+    module.exports = exports.setup();
 }

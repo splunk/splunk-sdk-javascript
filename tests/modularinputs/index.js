@@ -13,19 +13,15 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-(function() {
-    var fs          = require('fs');
-    var test        = require('../../contrib/nodeunit/test_reporter');
-    var splunkjs    = require('../../index');
+var splunkjs = require('../../index');
+splunkjs.Logger.setLevel("ALL");
 
-    exports.Tests = {};
+// // Modular input tests
+module.exports = {
+    'Event': require('./test_event').setup(),
+    'InputDefinition': require('./test_input_definition').setup(),
+    'ModularInput': require('./test_modularinput').setup(),
+    'Scheme': require('./test_scheme').setup(),
+    'ValidationDefinition': require('./test_validation_definition').setup(),
+}
 
-    // Modular input tests
-    exports.Tests.ValidationDefinition = require('./test_validation_definition').setup();
-    exports.Tests.InputDefinition = require('./test_input_definition').setup();
-    exports.Tests.Event = require('./test_event').setup();
-    exports.Tests.Scheme = require('./test_scheme').setup();
-    exports.Tests.ModularInput = require('./test_modularinput').setup();
-
-    splunkjs.Logger.setLevel("ALL");
-})();

@@ -12,39 +12,38 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-(function() {
-    var utils          = require('../lib/utils');
-    var Async          = require('../lib/async');
+(function () {
+    var utils = require('../lib/utils');
+    var Async = require('../lib/async');
     var staticResource = require('../contrib/static-resource/index');
-    var dox            = require('../contrib/dox/dox');
-    var doc_builder    = require('../contrib/dox/doc_builder');
-    var program        = require('../contrib/commander');
-    var spawn          = require('child_process').spawn;
-    var path           = require('path');
-    var fs             = require('fs');
-    var browserify     = require('browserify');
-    var http           = require('http');
-    var url            = require('url');
-    var request        = require('request');
-    var needle         = require('needle');
+    var dox = require('../contrib/dox/dox');
+    var doc_builder = require('../contrib/dox/doc_builder');
+    var program = require('../contrib/commander');
+    var spawn = require('child_process').spawn;
+    var path = require('path');
+    var fs = require('fs');
+    var browserify = require('browserify');
+    var http = require('http');
+    var url = require('url');
+    var needle = require('needle');
 
     /**
      * Constants
      */
-    var DEFAULT_PORT        = 6969;
-    var DOC_DIRECTORY       = "docs";
-    var REFDOC_DIRECTORY    = "refs";
-    var CLIENT_DIRECTORY    = "client";
-    var TEST_DIRECTORY      = "tests";
-    var TEST_PREFIX         = "test_";
-    var ALL_TESTS           = "tests.js";
-    var SDK_BROWSER_ENTRY   = "./lib/entries/browser.entry.js";
-    var TEST_BROWSER_ENTRY  = "./lib/entries/browser.test.entry.js";
-    var UI_BROWSER_ENTRY    = "./lib/entries/browser.ui.entry.js";
-    var DOC_FILE            = "index.html";
-    var BUILD_CACHE_FILE    = ".buildcache";
-    var SDK_VERSION         = JSON.parse(fs.readFileSync(path.resolve(__dirname, "../package.json")).toString("utf-8")).version;
-    var IGNORED_MODULES     = [
+    var DEFAULT_PORT = 6969;
+    var DOC_DIRECTORY = "docs";
+    var REFDOC_DIRECTORY = "refs";
+    var CLIENT_DIRECTORY = "client";
+    var TEST_DIRECTORY = "tests";
+    var TEST_PREFIX = "test_";
+    var ALL_TESTS = "tests.js";
+    var SDK_BROWSER_ENTRY = "./lib/entries/browser.entry.js";
+    var TEST_BROWSER_ENTRY = "./lib/entries/browser.test.entry.js";
+    var UI_BROWSER_ENTRY = "./lib/entries/browser.ui.entry.js";
+    var DOC_FILE = "index.html";
+    var BUILD_CACHE_FILE = ".buildcache";
+    var SDK_VERSION = JSON.parse(fs.readFileSync(path.resolve(__dirname, "../package.json")).toString("utf-8")).version;
+    var IGNORED_MODULES = [
         "../contrib/nodeunit/test_reporter",
         "../contrib/nodeunit/junit_reporter",
         "../contrib/commander",
@@ -57,7 +56,7 @@
     /**
      * UI Component Entry Points (for async loading)
      */
-    var UI_COMPONENT_BROWSER_ENTRY  = {
+    var UI_COMPONENT_BROWSER_ENTRY = {
         timeline: "./lib/entries/browser.ui.timeline.entry.js",
         charting: "./lib/entries/browser.ui.charting.entry.js"
     };
@@ -65,13 +64,13 @@
     /**
      * Generated files
      */
-    var COMPILED_SDK       = path.join(CLIENT_DIRECTORY, "splunk.js");
-    var COMPILED_SDK_MIN   = path.join(CLIENT_DIRECTORY, "splunk.min.js");
-    var COMPILED_TEST      = path.join(CLIENT_DIRECTORY, "splunk.test.js");
-    var COMPILED_TEST_MIN  = path.join(CLIENT_DIRECTORY, "splunk.test.min.js");
-    var COMPILED_UI        = path.join(CLIENT_DIRECTORY, "splunk.ui.js");
-    var COMPILED_UI_MIN    = path.join(CLIENT_DIRECTORY, "splunk.ui.min.js");
-    var GENERATED_DOCS     = path.join(DOC_DIRECTORY, SDK_VERSION, DOC_FILE);
+    var COMPILED_SDK = path.join(CLIENT_DIRECTORY, "splunk.js");
+    var COMPILED_SDK_MIN = path.join(CLIENT_DIRECTORY, "splunk.min.js");
+    var COMPILED_TEST = path.join(CLIENT_DIRECTORY, "splunk.test.js");
+    var COMPILED_TEST_MIN = path.join(CLIENT_DIRECTORY, "splunk.test.min.js");
+    var COMPILED_UI = path.join(CLIENT_DIRECTORY, "splunk.ui.js");
+    var COMPILED_UI_MIN = path.join(CLIENT_DIRECTORY, "splunk.ui.min.js");
+    var GENERATED_DOCS = path.join(DOC_DIRECTORY, SDK_VERSION, DOC_FILE);
     var GENERATED_REF_DOCS = path.join(DOC_DIRECTORY, SDK_VERSION, REFDOC_DIRECTORY, DOC_FILE);
     var GENERATED_DOCS_DIR = path.join(DOC_DIRECTORY, SDK_VERSION);
 
@@ -79,10 +78,10 @@
      * Helpers
      */
 
-    var serverProxy = function(req, res) {
-        var error = {d: { __messages: [{ type: "ERROR", text: "Proxy Error", code: "PROXY"}] }};
+    var serverProxy = function (req, res) {
+        var error = { d: { __messages: [{ type: "ERROR", text: "Proxy Error", code: "PROXY" }] } };
 
-        var writeError = function() {
+        var writeError = function () {
             res.writeHead(500, {});
             res.write(JSON.stringify(error));
             res.end();
@@ -90,11 +89,11 @@
 
         try {
             var body = "";
-            req.on('data', function(data) {
+            req.on('data', function (data) {
                 body += data.toString("utf-8");
             });
 
-            req.on('end', function() {
+            req.on('end', function () {
                 var destination = req.headers["X-ProxyDestination".toLowerCase()];
 
                 var options = {
@@ -109,13 +108,12 @@
                     body: body || '',
                     jar: false,
                     strictSSL: false,
-                    rejectUnauthorized : false,
-                    parse_response : false
+                    rejectUnauthorized: false,
+                    parse_response: false
                 };
 
                 try {
-                    needle.request(options.method, options.url, options.body, options, function(err, response, body)
-                    {
+                    needle.request(options.method, options.url, options.body, options, function (err, response, body) {
                         try {
                             var statusCode = (response ? response.statusCode : 500) || 500;
                             var headers = (response ? response.headers : {}) || {};
@@ -141,11 +139,11 @@
         }
     };
 
-    var createServer = function(port) {
+    var createServer = function (port) {
         // passing where is going to be the document root of resources.
         var handler = staticResource.createHandler(fs.realpathSync(path.resolve(__dirname, "..")));
 
-        var server = http.createServer(function(request, response) {
+        var server = http.createServer(function (request, response) {
             var path = url.parse(request.url).pathname;
 
             if (utils.startsWith(path, "/proxy")) {
@@ -155,7 +153,7 @@
 
             // handle method returns true if a resource specified with the path
             // has been handled by handler and returns false otherwise.
-            if(!handler.handle(path, request, response)) {
+            if (!handler.handle(path, request, response)) {
                 response.writeHead(404);
                 response.write('404');
                 response.end();
@@ -167,11 +165,11 @@
         console.log("Running server on port: " + (port) + " -- Hit CTRL+C to exit");
     };
 
-    var makeOption = function(name, value) {
+    var makeOption = function (name, value) {
         return ["--" + name, value];
     };
 
-    var makeURL = function(file, port) {
+    var makeURL = function (file, port) {
         return "http://localhost:" + (port ? port : DEFAULT_PORT) + "/" + file;
     };
 
@@ -179,8 +177,8 @@
         _defaultDirectory: '/tmp',
         _environmentVariables: ['TMPDIR', 'TMP', 'TEMP'],
 
-        _findDirectory: function() {
-            for(var i = 0; i < temp._environmentVariables.length; i++) {
+        _findDirectory: function () {
+            for (var i = 0; i < temp._environmentVariables.length; i++) {
                 var value = process.env[temp._environmentVariables[i]];
                 if (value) {
                     return fs.realpathSync(value);
@@ -190,19 +188,19 @@
             return fs.realpathSync(temp._defaultDirectory);
         },
 
-        _generateName: function() {
+        _generateName: function () {
             var now = new Date();
             var name = ["__",
-                        now.getYear(), now.getMonth(), now.getDay(),
-                        '-',
-                        process.pid,
-                        '-',
-                        (Math.random() * 0x100000000 + 1).toString(36),
-                        "__"].join('');
+                now.getYear(), now.getMonth(), now.getDay(),
+                '-',
+                process.pid,
+                '-',
+                (Math.random() * 0x100000000 + 1).toString(36),
+                "__"].join('');
             return path.join(temp._findDirectory(), name);
         },
 
-        mkdirSync: function() {
+        mkdirSync: function () {
             var tempDirPath = temp._generateName();
             fs.mkdirSync(tempDirPath, "755");
             return tempDirPath;
@@ -210,15 +208,15 @@
     };
 
     // Taken from wrench.js
-    var copyDirectoryRecursiveSync = function(sourceDir, newDirLocation, opts) {
+    var copyDirectoryRecursiveSync = function (sourceDir, newDirLocation, opts) {
 
         if (!opts || !opts.preserve) {
             try {
-                if(fs.statSync(newDirLocation).isDirectory()) {
+                if (fs.statSync(newDirLocation).isDirectory()) {
                     exports.rmdirSyncRecursive(newDirLocation);
                 }
             }
-            catch(e) { }
+            catch (e) { }
         }
 
         /*  Create the directory where all our junk is moving to; read the mode of the source directory and mirror it */
@@ -235,14 +233,14 @@
 
         var files = fs.readdirSync(sourceDir);
 
-        for(var i = 0; i < files.length; i++) {
+        for (var i = 0; i < files.length; i++) {
             var currFile = fs.lstatSync(sourceDir + "/" + files[i]);
 
-            if(currFile.isDirectory()) {
+            if (currFile.isDirectory()) {
                 /*  recursion this thing right on back. */
                 copyDirectoryRecursiveSync(sourceDir + "/" + files[i], newDirLocation + "/" + files[i], opts);
             }
-            else if(currFile.isSymbolicLink()) {
+            else if (currFile.isSymbolicLink()) {
                 var symlinkFull = fs.readlinkSync(sourceDir + "/" + files[i]);
                 fs.symlinkSync(symlinkFull, newDirLocation + "/" + files[i]);
             }
@@ -254,27 +252,27 @@
         }
     };
 
-    var rmdirRecursiveSync = function(path, failSilent) {
+    var rmdirRecursiveSync = function (path, failSilent) {
         var files;
 
         try {
             files = fs.readdirSync(path);
         }
         catch (err) {
-            if(failSilent) {
+            if (failSilent) {
                 return;
             }
             throw new Error(err.message);
         }
 
         /*  Loop through and delete everything in the sub-tree after checking it */
-        for(var i = 0; i < files.length; i++) {
+        for (var i = 0; i < files.length; i++) {
             var currFile = fs.lstatSync(path + "/" + files[i]);
 
-            if(currFile.isDirectory()) {// Recursive function back to the beginning
+            if (currFile.isDirectory()) {// Recursive function back to the beginning
                 rmdirRecursiveSync(path + "/" + files[i]);
             }
-            else if(currFile.isSymbolicLink()) {// Unlink symlinks
+            else if (currFile.isSymbolicLink()) {// Unlink symlinks
                 fs.unlinkSync(path + "/" + files[i]);
             }
             else { // Assume it's a file - perhaps a try/catch belongs here?
@@ -288,24 +286,24 @@
     };
 
     var git = {
-        execute: function(args, callback) {
+        execute: function (args, callback) {
             var program = spawn("git", args);
 
-            process.on("exit", function() {
+            process.on("exit", function () {
                 program.kill();
             });
 
-            program.stderr.on("data", function(data) {
+            program.stderr.on("data", function (data) {
                 process.stderr.write(data);
             });
 
             return program;
         },
 
-        stash: function(callback) {
+        stash: function (callback) {
             var program = git.execute(["stash"], callback);
 
-            program.on("exit", function(code) {
+            program.on("exit", function (code) {
                 if (code) {
                     throw new Error("Stash error");
                 }
@@ -315,10 +313,10 @@
             });
         },
 
-        unstash: function(callback) {
+        unstash: function (callback) {
             var program = git.execute(["stash", "pop"], callback);
 
-            program.on("exit", function(code) {
+            program.on("exit", function (code) {
                 if (code) {
                     throw new Error("Unstash error");
                 }
@@ -328,10 +326,10 @@
             });
         },
 
-        switchBranch: function(toBranch, callback) {
+        switchBranch: function (toBranch, callback) {
             var program = git.execute(["checkout", toBranch], callback);
 
-            program.on("exit", function(code) {
+            program.on("exit", function (code) {
                 if (code) {
                     throw new Error("Switch branch error error");
                 }
@@ -341,15 +339,15 @@
             });
         },
 
-        currentBranch: function(callback) {
-            var program = git.execute(["symbolic-ref",  "HEAD"], callback);
+        currentBranch: function (callback) {
+            var program = git.execute(["symbolic-ref", "HEAD"], callback);
 
             var buffer = "";
-            program.stdout.on("data", function(data) {
+            program.stdout.on("data", function (data) {
                 buffer = data.toString("utf-8");
             });
 
-            program.on("exit", function(code) {
+            program.on("exit", function (code) {
                 if (code) {
                     throw new Error("Couldn't determine current branch name");
                 }
@@ -360,10 +358,10 @@
             });
         },
 
-        add: function(filename, callback) {
+        add: function (filename, callback) {
             var program = git.execute(["add", filename], callback);
 
-            program.on("exit", function(code) {
+            program.on("exit", function (code) {
                 if (code) {
                     throw new Error("Add error");
                 }
@@ -373,10 +371,10 @@
             });
         },
 
-        commit: function(msg, callback) {
+        commit: function (msg, callback) {
             var program = git.execute(["commit", "-m", msg], callback);
 
-            program.on("exit", function(code) {
+            program.on("exit", function (code) {
                 if (code) {
                     throw new Error("Commit error");
                 }
@@ -386,10 +384,10 @@
             });
         },
 
-        push: function(branch, callback) {
+        push: function (branch, callback) {
             var program = git.execute(["push", "origin", branch], callback);
 
-            program.on("exit", function(code) {
+            program.on("exit", function (code) {
                 if (code) {
                     throw new Error("push error");
                 }
@@ -400,29 +398,34 @@
         }
     };
 
-    var launch = function(file, args, done) {
-        done = done || function() {};
+    var launch = function (file, args, done) {
+        done = done || function () { };
 
         // Add the file to the arguments
         args = args || [];
         args = args.slice();
         args.unshift(file);
+        args.unshift("./node_modules/mocha/bin/mocha");
+        args.unshift("./node_modules/nyc/bin/nyc")
+        args.push("--color=always");
+
+        args = args.filter(arg => arg);
 
         // Spawn
         var program = spawn("node", args);
 
-        program.stdout.on("data", function(data) {
+        program.stdout.on("data", function (data) {
             var str = data.toString("utf-8");
             process.stdout.write(str);
         });
 
-        program.stderr.on("data", function(data) {
+        program.stderr.on("data", function (data) {
             var str = data.toString("utf-8");
             process.stderr.write(str);
         });
 
         var exitCode = 0;
-        program.on("exit", function(code) {
+        program.on("exit", function (code) {
             if (code) {
                 exitCode = code;
                 done(code);
@@ -432,7 +435,7 @@
             }
         });
 
-        process.on("exit", function() {
+        process.on("exit", function () {
             program.kill();
             process.reallyExit(exitCode);
         });
@@ -440,7 +443,7 @@
         return program;
     };
 
-    var getDependencies = function(entry) {
+    var getDependencies = function (entry) {
         var bundle = browserify({
             entry: entry,
             ignore: IGNORED_MODULES,
@@ -448,7 +451,7 @@
         });
 
         var dependencies = [entry];
-        for(var file in bundle.files) {
+        for (var file in bundle.files) {
             if (bundle.files.hasOwnProperty(file)) {
                 dependencies.push(file);
             }
@@ -457,7 +460,7 @@
         return dependencies;
     };
 
-    var compile = function(entry, path, shouldUglify, watch, exportName) {
+    var compile = function (entry, path, shouldUglify, watch, exportName) {
         exportName = exportName || "splunkjs";
 
         // Compile/combine all the files into the package
@@ -465,7 +468,7 @@
             entry: entry,
             ignore: IGNORED_MODULES,
             cache: BUILD_CACHE_FILE,
-            filter: function(code) {
+            filter: function (code) {
                 if (shouldUglify) {
                     var uglifyjs = require("uglify-js"),
                         parser = uglifyjs.parser,
@@ -495,27 +498,27 @@
         console.log("Compiled " + path);
     };
 
-    var outOfDate = function(dependencies, compiled, compiledMin) {
+    var outOfDate = function (dependencies, compiled, compiledMin) {
         if (!fs.existsSync(compiled) || !fs.existsSync(compiledMin)) {
             return true;
         }
 
         var compiledTime = fs.statSync(compiled).mtime;
         var compiledMinTime = fs.statSync(compiledMin).mtime;
-        var latestDependencyTime = Math.max.apply(null, dependencies.map(function(path) {
+        var latestDependencyTime = Math.max.apply(null, dependencies.map(function (path) {
             return fs.statSync(path).mtime;
         }));
 
         return latestDependencyTime > compiledTime || latestDependencyTime > compiledMinTime;
     };
 
-    var ensureDirectoryExists = function(dir) {
+    var ensureDirectoryExists = function (dir) {
         if (!fs.existsSync(dir)) {
             fs.mkdirSync(dir, "755");
         }
     };
 
-    var ensureClientDirectory = function() {
+    var ensureClientDirectory = function () {
         ensureDirectoryExists(CLIENT_DIRECTORY);
     };
 
@@ -523,7 +526,7 @@
      * Tasks
      */
 
-    var compileSDK = function(watch, exportName) {
+    var compileSDK = function (watch, exportName) {
         ensureClientDirectory();
 
         var dependencies = getDependencies(SDK_BROWSER_ENTRY);
@@ -536,7 +539,7 @@
         compile(SDK_BROWSER_ENTRY, COMPILED_SDK_MIN, true, watch, exportName);
     };
 
-    var compileTests = function(watch, exportName) {
+    var compileTests = function (watch, exportName) {
         ensureClientDirectory();
 
         var dependencies = getDependencies(TEST_BROWSER_ENTRY);
@@ -549,7 +552,7 @@
         compile(TEST_BROWSER_ENTRY, COMPILED_TEST_MIN, true, watch);
     };
 
-    var compileUI = function(watch, exportName) {
+    var compileUI = function (watch, exportName) {
         ensureClientDirectory();
 
         var dependencies = getDependencies(UI_BROWSER_ENTRY);
@@ -561,7 +564,7 @@
             console.log("Compiled UI is not out of date -- skipping...");
         }
 
-        for(var component in UI_COMPONENT_BROWSER_ENTRY) {
+        for (var component in UI_COMPONENT_BROWSER_ENTRY) {
             if (!UI_COMPONENT_BROWSER_ENTRY.hasOwnProperty(component)) {
                 continue;
             }
@@ -581,19 +584,19 @@
         }
     };
 
-    var compileAll = function(watch, exportName) {
+    var compileAll = function (watch, exportName) {
         compileSDK(watch, exportName);
         compileTests(watch);
         compileUI(watch, exportName);
     };
 
-    var runServer = function(port) {
+    var runServer = function (port) {
         // TODO: compile doesn't work on Windows, so lets not
         // make runServer depend on it
         createServer(port);
     };
 
-    var launchBrowser = function(file, port) {
+    var launchBrowser = function (file, port) {
         if (!fs.existsSync(file)) {
             throw new Error("File does not exist: " + file);
         }
@@ -606,18 +609,18 @@
         }
     };
 
-    var launchBrowserTests = function(port) {
+    var launchBrowserTests = function (port) {
         runServer(port);
         launchBrowser("tests/tests.browser.html", port);
     };
 
-    var launchBrowserExamples = function(port) {
+    var launchBrowserExamples = function (port) {
         runServer(port);
         launchBrowser("examples/browser/index.html", port);
     };
 
-    var generateDocs = function(callback) {
-        callback = (callback && utils.isFunction(callback)) ? callback : (function() {});
+    var generateDocs = function (callback) {
+        callback = (callback && utils.isFunction(callback)) ? callback : (function () { });
 
         var files = [
             "lib/log.js",
@@ -638,14 +641,14 @@
         ];
 
         var comments = [];
-        files.forEach(function(file) {
-          var contents = fs.readFileSync(file).toString("utf-8");
+        files.forEach(function (file) {
+            var contents = fs.readFileSync(file).toString("utf-8");
 
-          var obj = dox.parseComments(contents, file);
-          comments = comments.concat(obj);
+            var obj = dox.parseComments(contents, file);
+            comments = comments.concat(obj);
         });
 
-        doc_builder.generate(comments, SDK_VERSION, function(err, data) {
+        doc_builder.generate(comments, SDK_VERSION, function (err, data) {
             if (err) {
                 throw err;
             }
@@ -654,7 +657,7 @@
             ensureDirectoryExists(path.join(DOC_DIRECTORY, SDK_VERSION));
             ensureDirectoryExists(path.join(DOC_DIRECTORY, SDK_VERSION, REFDOC_DIRECTORY));
 
-            for(var name in data) {
+            for (var name in data) {
                 var htmlPath = path.join(DOC_DIRECTORY, SDK_VERSION, REFDOC_DIRECTORY, name + ".html");
                 fs.writeFileSync(htmlPath, data[name]);
             }
@@ -663,19 +666,19 @@
         });
     };
 
-    var uploadDocs = function() {
+    var uploadDocs = function () {
         var originalBranch = "master";
         var tempPath = "";
 
         Async.chain([
-            function(done) {
+            function (done) {
                 git.currentBranch(done);
             },
-            function(branchName, done) {
+            function (branchName, done) {
                 originalBranch = branchName;
                 generateDocs(done);
             },
-            function(done) {
+            function (done) {
                 var tempDirPath = temp.mkdirSync();
 
                 tempPath = tempDirPath;
@@ -683,13 +686,13 @@
 
                 done();
             },
-            function(done) {
+            function (done) {
                 git.stash(done);
             },
-            function(done) {
+            function (done) {
                 git.switchBranch("gh-pages", done);
             },
-            function(done) {
+            function (done) {
                 if (fs.existsSync(GENERATED_DOCS_DIR)) {
                     rmdirRecursiveSync(GENERATED_DOCS_DIR);
                 }
@@ -701,38 +704,45 @@
 
                 done();
             },
-            function(done) {
+            function (done) {
                 git.add(GENERATED_DOCS_DIR, done);
             },
-            function(done) {
+            function (done) {
                 git.commit("Updating v" + SDK_VERSION + " docs: " + (new Date()), done);
             },
-            function(done) {
+            function (done) {
                 git.push("gh-pages", done);
             },
-            function(done) {
+            function (done) {
                 git.switchBranch(originalBranch, done);
             },
-            function(done) {
+            function (done) {
                 git.unstash(done);
             }],
-            function(err) {
-               if (err) {
-                   console.log(err);
-               }
+            function (err) {
+                if (err) {
+                    console.log(err);
+                }
             }
         );
     };
 
-    var runTests = function(tests, cmdline) {
-        cmdline = cmdline || {opts: {}};
-        var args = (tests || "").split(",").map(function(arg) { return arg.trim(); });
+    var runTests = function (tests, cmdline) {
+        cmdline = cmdline || { opts: {} };
+        var args = (tests || "").split(",").map(function (arg) { return arg.trim(); });
 
-        var files = args.map(function(arg) {
-            return path.join(TEST_DIRECTORY, TEST_PREFIX + arg + ".js");
-        }).filter(function(file) {
-            return fs.existsSync(file);
-        });
+        var files = args
+            .map(arg => {
+                if (arg.indexOf('modularinputs') >= 0) {
+                    return path.join(TEST_DIRECTORY, 'modularinputs', TEST_PREFIX + arg.split('/')[1] + ".js");
+                }
+                else if (arg.indexOf('service_tests') >= 0) {
+                    return path.join(TEST_DIRECTORY, 'service_tests', arg.split('/')[1] + ".js");
+                }
+                else {
+                    return path.join(TEST_DIRECTORY, TEST_PREFIX + arg + ".js");
+                }
+            }).filter(file => fs.existsSync(file));
 
         if (files.length === 0) {
             if (args.length > 0 && args[0].length !== 0) {
@@ -741,19 +751,24 @@
             }
             files.push(path.join(TEST_DIRECTORY, ALL_TESTS));
         }
-        var cmdlineArgs = []
-            .concat(cmdline.opts.username  ?   makeOption("username",  cmdline.opts.username)  : "")
-            .concat(cmdline.opts.scheme    ?   makeOption("scheme",    cmdline.opts.scheme)    : "")
-            .concat(cmdline.opts.host      ?   makeOption("host",      cmdline.opts.host)      : "")
-            .concat(cmdline.opts.port      ?   makeOption("port",      cmdline.opts.port)      : "")
-            .concat(cmdline.opts.app       ?   makeOption("app",       cmdline.opts.app)       : "")
-            .concat(cmdline.opts.version   ?   makeOption("version",   cmdline.opts.version)   : "")
-            .concat(cmdline.opts.password  ?   makeOption("password",  cmdline.opts.password)  : "")
-            .concat(cmdline.opts.reporter  ?   makeOption("reporter",  cmdline.opts.reporter.toLowerCase())  : "")
-            .concat(cmdline.opts.quiet     ?   "--quiet" : "");
 
-        var testFunctions = files.map(function(file) {
-            return function(done) {
+        var cmdlineArgs = []
+            .concat(cmdline.opts.username ? makeOption("username", cmdline.opts.username) : "")
+            .concat(cmdline.opts.scheme ? makeOption("scheme", cmdline.opts.scheme) : "")
+            .concat(cmdline.opts.host ? makeOption("host", cmdline.opts.host) : "")
+            .concat(cmdline.opts.port ? makeOption("port", cmdline.opts.port) : "")
+            .concat(cmdline.opts.app ? makeOption("app", cmdline.opts.app) : "")
+            .concat(cmdline.opts.version ? makeOption("version", cmdline.opts.version) : "")
+            .concat(cmdline.opts.password ? makeOption("password", cmdline.opts.password) : "")
+            .concat(cmdline.opts.reporter ? makeOption("reporter", cmdline.opts.reporter.toLowerCase()) : "")
+            .concat(cmdline.opts.ui ? makeOption("ui", cmdline.opts.ui) : ["--ui", "exports"])
+            .concat(cmdline.opts.timeout ? makeOption("timeout", cmdline.opts.timeout) : ["--timeout", "5000"])
+            .concat(cmdline.opts.grep ? makeOption("grep", cmdline.opts.grep) : "")
+            .concat(cmdline.opts.exit ? "--exit" : "--exit")
+            .concat(cmdline.opts.quiet ? "--quiet" : "");
+
+        var testFunctions = files.map(function (file) {
+            return function (done) {
                 launch(file, cmdlineArgs, done);
             };
         });
@@ -761,7 +776,7 @@
         Async.series(testFunctions);
     };
 
-    var hint = function() {
+    var hint = function () {
         var hintRequirePath = path.join(path.resolve(require.resolve('jshint'), './../../../'), 'lib', 'cli');
         var jshint = require(hintRequirePath);
         jshint.interpret(['node', 'jshint', '.']);
@@ -773,7 +788,7 @@
     program
         .command('compile-sdk [global]')
         .description('Compile all SDK files into a single, browser-includable file.')
-        .action(function(globalName) {
+        .action(function (globalName) {
             compileSDK(false, globalName);
         });
 
@@ -790,7 +805,7 @@
     program
         .command('compile [global]')
         .description('Compile all files into several single, browser-includable files.')
-        .action(function(globalName) {
+        .action(function (globalName) {
             compileAll(false, globalName);
         });
 
@@ -815,6 +830,10 @@
         .option('--version <version>', 'Splunk version')
         .option('--namespace <namespace>', 'Splunk namespace (in the form of owner:app)')
         .option('--reporter <reporter>', '(optional) How to report results, currently "junit" is a valid reporter.')
+        .option('--ui <ui>', 'Specify user interface')
+        .option('--timeout <timeout>', 'Specify test timeout threshold (in milliseconds)')
+        .option('--grep <grep>', 'Only run tests matching this string or regexp')
+        .option('--exit', '(optional) Force Mocha to quit after tests complete')
         .option('--quiet', '(optional) Hides splunkd output.')
         .action(runTests);
 
