@@ -33,7 +33,7 @@
         "browserify": "^17.0.0",
         "chai": "^4.3.4",
         "jshint": "2.13.0",
-        "mocha": "7.2.0",
+        "mocha": "^9.0.2",
         "mustache": "4.2.0",
         "nyc": "^15.1.0",
         "readable-stream": "3.6.0",
