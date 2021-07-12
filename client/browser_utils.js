@@ -1,7 +1,7 @@
 splunkjs.Logger.setLevel("ALL");
 assert = chai.assert;
 
-describe('utils', function() {
+describe('Utils Tests', function() {
 it("Callback#callback to object success", function(done) {
     var successfulFunction = function(callback) {
         callback(null, "one", "two");

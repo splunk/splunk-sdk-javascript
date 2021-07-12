@@ -3,7 +3,7 @@ var Async       = splunkjs.Async;
 var isBrowser = typeof "window" !== "undefined";
 assert = chai.assert;
     
-describe('async', function() {
+describe('Async Tests', function() {
     it("While success", function(done) {
         var i = 0;
         Async.whilst(

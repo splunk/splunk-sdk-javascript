@@ -25,7 +25,6 @@
     var browserify     = require('browserify');
     var http           = require('http');
     var url            = require('url');
-    var request        = require('request');
     var needle         = require('needle');
 
     /**
