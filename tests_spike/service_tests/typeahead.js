@@ -2,13 +2,13 @@
 exports.setup = function (svc, loggedOutSvc) {
     var assert = require('chai').assert;
     return (
-        describe("Typeahad Tests", function(){
-            before(function (done) {
+        describe("Typeahad Tests", function () {
+            beforeEach(function (done) {
                 this.service = svc;
                 this.loggedOutService = loggedOutSvc;
                 done();
             })
-    
+
             it("Callback#Typeahead failure", function (done) {
                 var service = this.loggedOutService;
                 service.typeahead("index=", 1, function (err, options) {
@@ -16,10 +16,10 @@ exports.setup = function (svc, loggedOutSvc) {
                     done();
                 });
             })
-    
+
             it("Callback#Basic typeahead", function (done) {
                 var service = this.service;
-    
+
                 service.typeahead("index=", 1, function (err, options) {
                     assert.ok(!err);
                     assert.ok(options);
@@ -28,7 +28,7 @@ exports.setup = function (svc, loggedOutSvc) {
                     done();
                 });
             })
-    
+
             it("Typeahead with omitted optional arguments", function (done) {
                 var service = this.service;
                 service.typeahead("index=", function (err, options) {

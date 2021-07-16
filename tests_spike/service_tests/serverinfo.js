@@ -2,15 +2,15 @@
 exports.setup = function (svc) {
     var assert = require('chai').assert;
     return (
-        describe("Server Info Test", function(){
-            before(function (done) {
+        describe("Server Info Test", function () {
+            beforeEach(function (done) {
                 this.service = svc;
                 done();
             })
-    
+
             it("Callback#Basic", function (done) {
                 var service = this.service;
-    
+
                 service.serverInfo(function (err, info) {
                     assert.ok(!err);
                     assert.ok(info);
@@ -18,7 +18,7 @@ exports.setup = function (svc) {
                     assert.ok(info.properties().hasOwnProperty("version"));
                     assert.ok(info.properties().hasOwnProperty("serverName"));
                     assert.ok(info.properties().hasOwnProperty("os_version"));
-    
+
                     done();
                 });
             })

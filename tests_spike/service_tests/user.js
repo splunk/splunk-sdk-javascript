@@ -10,19 +10,19 @@ exports.setup = function (svc, loggedOutSvc) {
         return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
     };
     return (
-        describe("User Tests", function(){
+        describe("User Tests", function () {
 
-            before(function (done) {
+            beforeEach(function (done) {
                 this.service = svc;
                 this.loggedOutService = loggedOutSvc;
                 done();
             })
 
-            after(function (done) {
+            afterEach(function (done) {
                 this.service.logout(done);
             })
 
-            it("Callback#CCurrent user", function (done) {
+            it("Callback#Current user", function (done) {
                 var service = this.service;
 
                 service.currentUser(function (err, user) {
@@ -33,7 +33,7 @@ exports.setup = function (svc, loggedOutSvc) {
                 });
             })
 
-            it("Callback#CCurrent user fails", function (done) {
+            it("Callback#Current user fails", function (done) {
                 var service = this.loggedOutService;
 
                 service.currentUser(function (err, user) {
@@ -42,7 +42,7 @@ exports.setup = function (svc, loggedOutSvc) {
                 });
             })
 
-            it("Callback#CList users", function (done) {
+            it("Callback#List users", function (done) {
                 var service = this.service;
 
                 service.users().fetch(function (err, users) {
@@ -56,7 +56,7 @@ exports.setup = function (svc, loggedOutSvc) {
                 });
             })
 
-            it("Callback#Ccreate user failure", function (done) {
+            it("Callback#create user failure", function (done) {
                 this.loggedOutService.users().create(
                     { name: "jssdk_testuser", password: "abcdefg!", roles: "user" },
                     function (err, response) {
@@ -66,7 +66,7 @@ exports.setup = function (svc, loggedOutSvc) {
                 );
             })
 
-            it("Callback#CCreate + update + delete user", function (done) {
+            it("Callback#Create + update + delete user", function (done) {
                 var service = this.service;
                 var name = "jssdk_testuser";
 
@@ -99,7 +99,7 @@ exports.setup = function (svc, loggedOutSvc) {
                 );
             })
 
-            it("Callback#CRoles", function (done) {
+            it("Callback#Roles", function (done) {
                 var service = this.service;
                 var name = "jssdk_testuser_" + getNextId();
 
@@ -139,7 +139,7 @@ exports.setup = function (svc, loggedOutSvc) {
                 );
             })
 
-            it("Callback#CPasswords", function (done) {
+            it("Callback#Passwords", function (done) {
                 var service = this.service;
                 var newService = null;
                 var name = "jssdk_testuser_" + getNextId();
@@ -225,7 +225,7 @@ exports.setup = function (svc, loggedOutSvc) {
                 );
             })
 
-            it("Callback#Cdelete test users", function (done) {
+            it("Callback#delete test users", function (done) {
                 var users = this.service.users();
                 users.fetch(function (err, users) {
                     var userList = users.list();

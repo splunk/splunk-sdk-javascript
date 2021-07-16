@@ -8,12 +8,12 @@ exports.setup = function (svc) {
         return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
     };
     return (
-        describe("Storage Password Tests", function(){
-            before(function (done) {
+        describe("Storage Password Tests", function () {
+            beforeEach(function (done) {
                 this.service = svc;
                 done();
             });
-    
+
             it("Callback#Create", function (done) {
                 var startcount = -1;
                 var name = "delete-me-" + getNextId();
@@ -52,7 +52,7 @@ exports.setup = function (svc) {
                     }
                 );
             })
-    
+
             it("Callback#Create with backslashes", function (done) {
                 var startcount = -1;
                 var name = "\\delete-me-" + getNextId();
@@ -91,7 +91,7 @@ exports.setup = function (svc) {
                     }
                 );
             })
-    
+
             it("Callback#Create with slashes", function (done) {
                 var startcount = -1;
                 var name = "/delete-me-" + getNextId();
@@ -130,7 +130,7 @@ exports.setup = function (svc) {
                     }
                 );
             })
-    
+
             it("Callback#Create without realm", function (done) {
                 var startcount = -1;
                 var name = "delete-me-" + getNextId();
@@ -168,7 +168,7 @@ exports.setup = function (svc) {
                     }
                 );
             })
-    
+
             it("Callback#Create should fail without user, or realm", function (done) {
                 var that = this;
                 Async.chain([
@@ -185,7 +185,7 @@ exports.setup = function (svc) {
                     }
                 );
             })
-    
+
             it("Callback#Create should fail without password", function (done) {
                 var that = this;
                 Async.chain([
@@ -202,7 +202,7 @@ exports.setup = function (svc) {
                     }
                 );
             })
-    
+
             it("Callback#Create should fail without user, realm, or password", function (done) {
                 var that = this;
                 Async.chain([
@@ -219,7 +219,7 @@ exports.setup = function (svc) {
                     }
                 );
             })
-    
+
             it("Callback#Create with colons", function (done) {
                 var startcount = -1;
                 var name = ":delete-me-" + getNextId();
@@ -258,7 +258,7 @@ exports.setup = function (svc) {
                     }
                 );
             })
-    
+
             it("Callback#Create crazy", function (done) {
                 var startcount = -1;
                 var name = "delete-me-" + getNextId();
@@ -302,7 +302,7 @@ exports.setup = function (svc) {
                     }
                 );
             })
-    
+
             it("Callback#Create with unicode chars", function (done) {
                 var startcount = -1;
                 var name = "delete-me-" + getNextId();
@@ -346,7 +346,7 @@ exports.setup = function (svc) {
                     }
                 );
             })
-    
+
             it("Callback#Read", function (done) {
                 var startcount = -1;
                 var name = "delete-me-" + getNextId();
@@ -374,10 +374,10 @@ exports.setup = function (svc) {
                         catch (e) {
                             assert.ok(false);
                         }
-    
+
                         var list = storagePasswords.list();
                         var found = false;
-    
+
                         assert.strictEqual(startcount + 1, list.length);
                         for (var i = 0; i < list.length; i++) {
                             if (realm + ":" + name + ":" === list[i].name) {
@@ -385,7 +385,7 @@ exports.setup = function (svc) {
                             }
                         }
                         assert.ok(found);
-    
+
                         storagePassword.remove(done);
                     },
                     function (done) {
@@ -402,7 +402,7 @@ exports.setup = function (svc) {
                     }
                 );
             })
-    
+
             it("Callback#Read with slashes", function (done) {
                 var startcount = -1;
                 var name = "/delete-me-" + getNextId();
@@ -430,10 +430,10 @@ exports.setup = function (svc) {
                         catch (e) {
                             assert.ok(false);
                         }
-    
+
                         var list = storagePasswords.list();
                         var found = false;
-    
+
                         assert.strictEqual(startcount + 1, list.length);
                         for (var i = 0; i < list.length; i++) {
                             if (realm + ":" + name + ":" === list[i].name) {
@@ -441,7 +441,7 @@ exports.setup = function (svc) {
                             }
                         }
                         assert.ok(found);
-    
+
                         storagePassword.remove(done);
                     },
                     function (done) {
@@ -458,7 +458,7 @@ exports.setup = function (svc) {
                     }
                 );
             })
-    
+
             // Disabling this test because clear_password field has been removed in Splunk 8.2
             //
             //
@@ -497,7 +497,7 @@ exports.setup = function (svc) {
             //                 var list = storagePasswords.list();
             //                 var found = false;
             //                 var index = -1;
-    
+
             //                 assert.strictEqual(startcount + 1, list.length);
             //                 for (var i = 0; i < list.length; i ++) {
             //                     if (realm + ":" + name + ":" === list[i].name) {
@@ -510,7 +510,7 @@ exports.setup = function (svc) {
             //                     }
             //                 }
             //                 assert.ok(found);
-    
+
             //                 if (!found) {
             //                     done(new Error("Didn't find the created password"));
             //                 }
@@ -532,7 +532,7 @@ exports.setup = function (svc) {
             //         }
             //     );
             // },
-    
+
             it("Callback#Delete", function (done) {
                 var startcount = -1;
                 var name = "delete-me-" + getNextId();
@@ -573,7 +573,7 @@ exports.setup = function (svc) {
                         var list = storagePasswords.list();
                         var found = false;
                         var index = -1;
-    
+
                         assert.strictEqual(startcount + 1, list.length);
                         for (var i = 0; i < list.length; i++) {
                             if (realm + ":" + name + ":" === list[i].name) {
@@ -586,7 +586,7 @@ exports.setup = function (svc) {
                             }
                         }
                         assert.ok(found);
-    
+
                         if (!found) {
                             done(new Error("Didn't find the created password"));
                         }

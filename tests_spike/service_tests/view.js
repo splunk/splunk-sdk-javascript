@@ -4,9 +4,9 @@ exports.setup = function (svc) {
     var splunkjs = require('../../index');
     var Async = splunkjs.Async;
     return (
-        describe("Views ", function(){
-        
-            before(function (done) {
+        describe("Views ", function () {
+
+            beforeEach(function (done) {
                 this.service = svc;
                 done();
             })

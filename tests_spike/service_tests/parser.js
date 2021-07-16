@@ -1,15 +1,15 @@
 exports.setup = function (svc) {
     var assert = require('chai').assert;
     return (
-        describe("Parsing Tests",function(){
-            before(function (done) {
+        describe("Parsing Tests", function () {
+            beforeEach(function (done) {
                 this.service = svc;
                 done();
             });
-    
+
             it("Callback#Basic parse", function (done) {
                 var service = this.service;
-    
+
                 service.parse("search index=_internal | head 1", function (err, parse) {
                     assert.ok(!err);
                     assert.ok(parse);
@@ -17,10 +17,10 @@ exports.setup = function (svc) {
                     done();
                 });
             });
-    
+
             it("Callback#Parse error", function (done) {
                 var service = this.service;
-    
+
                 service.parse("ABCXYZ", function (err, parse) {
                     assert.ok(err);
                     assert.strictEqual(err.status, 400);

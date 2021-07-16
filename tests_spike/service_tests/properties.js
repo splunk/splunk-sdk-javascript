@@ -11,9 +11,9 @@ exports.setup = function (svc) {
         return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
     };
     return (
-        describe("Properties Test", function(){
+        describe("Properties Test", function () {
 
-            before(function (done) {
+            beforeEach(function (done) {
                 this.service = svc;
                 done();
             })
