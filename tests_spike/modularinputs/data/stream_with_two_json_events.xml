@@ -1,0 +1,20 @@
+<stream>
+    <event stanza="fubar" unbroken="1">
+        <time>1372275124.466</time>
+        <source>hilda</source>
+        <sourcetype>misc</sourcetype>
+        <index>main</index>
+        <host>localhost</host>
+        <data>{"some":"json"}</data>
+        <done/>
+    </event>
+    <event stanza="fubar" unbroken="1">
+        <time>1372275124.466</time>
+        <source>hilda</source>
+        <sourcetype>misc</sourcetype>
+        <index>main</index>
+        <host>localhost</host>
+        <data>{"some":"json object"}</data>
+        <done/>
+    </event>
+</stream>
