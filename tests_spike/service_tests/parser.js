@@ -1,33 +1,34 @@
-var assert = require('chai').assert;
-
 exports.setup = function (svc) {
-    return {
-        beforeEach: function (done) {
-            this.service = svc;
-            done();
-        },
-
-        "Callback#Basic parse": function (done) {
-            var service = this.service;
-
-            service.parse("search index=_internal | head 1", function (err, parse) {
-                assert.ok(!err);
-                assert.ok(parse);
-                assert.ok(parse.commands.length > 0);
+    var assert = require('chai').assert;
+    return (
+        describe("Parsing Tests",function(){
+            before(function (done) {
+                this.service = svc;
                 done();
             });
-        },
-
-        "Callback#Parse error": function (done) {
-            var service = this.service;
-
-            service.parse("ABCXYZ", function (err, parse) {
-                assert.ok(err);
-                assert.strictEqual(err.status, 400);
-                done();
+    
+            it("Callback#Basic parse", function (done) {
+                var service = this.service;
+    
+                service.parse("search index=_internal | head 1", function (err, parse) {
+                    assert.ok(!err);
+                    assert.ok(parse);
+                    assert.ok(parse.commands.length > 0);
+                    done();
+                });
             });
-        }
-    };
+    
+            it("Callback#Parse error", function (done) {
+                var service = this.service;
+    
+                service.parse("ABCXYZ", function (err, parse) {
+                    assert.ok(err);
+                    assert.strictEqual(err.status, 400);
+                    done();
+                });
+            });
+        })
+    );
 };
 
 if (module === require.cache[__filename] && !module.parent) {
