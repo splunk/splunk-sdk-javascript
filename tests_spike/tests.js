@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-const { describe } = require('mocha');
+// var { describe } = require('mocha');
 var options = require('../examples/node/cmdline');
 var splunkjs = require('../index');
 var utils = require('../lib/utils');
@@ -71,14 +71,14 @@ describe("Server tests", function () {
         done();
     })
 
-    require('./modularinputs');
-    require('./test_async').setup();
-    require('./test_context').setup(svc);
-    require('./test_examples').setup(svc, cmdline.opts);
-    require('./test_http').setup(nonSplunkHttp);
-    require('./test_log').setup();
+    // require('./modularinputs');
+    // require('./test_async').setup();
+    // require('./test_context').setup(svc);
+    // require('./test_examples').setup(svc, cmdline.opts);
+    // require('./test_http').setup(nonSplunkHttp);
+    // require('./test_log').setup();
     require('./test_service').setup(svc, loggedOutSvc);
-    require('./test_utils').setup();
+    // require('./test_utils').setup();
 })
 
 

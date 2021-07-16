@@ -16,25 +16,28 @@
 exports.setup = function (svc, loggedOutSvc) {
 
     return (
-        require("./service_tests/app").setup(svc),
-        require("./service_tests/collection").setup(svc, loggedOutSvc),
-        require("./service_tests/configuration").setup(svc),
-        require("./service_tests/datamodels").setup(svc),
-        require("./service_tests/endpoint").setup(svc),
-        require("./service_tests/entity").setup(svc, loggedOutSvc),
-        require("./service_tests/firedalerts").setup(svc, loggedOutSvc),
-        require("./service_tests/indexes").setup(svc, loggedOutSvc),
-        require("./service_tests/job").setup(svc),
-        require("./service_tests/namespace").setup(svc),
-        require("./service_tests/parser").setup(svc),
-        require("./service_tests/pivot").setup(svc),
-        require("./service_tests/properties").setup(svc),
-        require("./service_tests/savedsearch").setup(svc, loggedOutSvc),
-        require("./service_tests/serverinfo").setup(svc),
-        require("./service_tests/storagepasswords").setup(svc),
-        require("./service_tests/typeahead").setup(svc, loggedOutSvc),
-        require("./service_tests/user").setup(svc, loggedOutSvc),
-        require("./service_tests/view").setup(svc)
+
+        describe("Service tests", function (done) {
+            require("./service_tests/app").setup(svc),
+                require("./service_tests/collection").setup(svc, loggedOutSvc),
+                require("./service_tests/configuration").setup(svc),
+                require("./service_tests/datamodels").setup(svc),
+                require("./service_tests/endpoint").setup(svc),
+                require("./service_tests/entity").setup(svc, loggedOutSvc),
+                require("./service_tests/firedalerts").setup(svc, loggedOutSvc),
+                require("./service_tests/indexes").setup(svc, loggedOutSvc),
+                require("./service_tests/job").setup(svc),
+                require("./service_tests/namespace").setup(svc),
+                require("./service_tests/parser").setup(svc),
+                require("./service_tests/pivot").setup(svc),
+                require("./service_tests/properties").setup(svc),
+                require("./service_tests/savedsearch").setup(svc, loggedOutSvc),
+                require("./service_tests/serverinfo").setup(svc),
+                require("./service_tests/storagepasswords").setup(svc),
+                require("./service_tests/typeahead").setup(svc, loggedOutSvc),
+                require("./service_tests/user").setup(svc, loggedOutSvc),
+                require("./service_tests/view").setup(svc)
+        })
     )
 };
 
