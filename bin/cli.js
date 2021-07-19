@@ -16,16 +16,17 @@
     var utils = require('../lib/utils');
     var Async = require('../lib/async');
     var staticResource = require('../contrib/static-resource/index');
-    var dox = require('../contrib/dox/dox');
-    var doc_builder = require('../contrib/dox/doc_builder');
-    var program = require('../contrib/commander');
-    var spawn = require('child_process').spawn;
-    var path = require('path');
-    var fs = require('fs');
-    var browserify = require('browserify');
-    var http = require('http');
-    var url = require('url');
-    var needle = require('needle');
+    var dox            = require('../contrib/dox/dox');
+    var doc_builder    = require('../contrib/dox/doc_builder');
+    var program        = require('../contrib/commander');
+    var spawn          = require('child_process').spawn;
+    var path           = require('path');
+    var fs             = require('fs');
+    var browserify     = require('browserify');
+    var http           = require('http');
+    var url            = require('url');
+    var needle         = require('needle');
+
 
     /**
      * Constants
