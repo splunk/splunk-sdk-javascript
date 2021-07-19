@@ -1,21 +1,25 @@
-var splunkjs    = require('../../index');
-var Async       = splunkjs.Async;
+var assert = require('chai').assert;
 
+var splunkjs = require('../../index');
+
+var Async = splunkjs.Async;
 var idCounter = 0;
-var getNextId = function() {
+
+var getNextId = function () {
     return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
 };
 
-module.exports = function(svc, loggedOutSvc) {
+exports.setup = function (svc, loggedOutSvc) {
     return {
-        setUp: function(done) {
+
+        beforeEach: function (done) {
             this.service = svc;
             this.loggedOutService = loggedOutSvc;
 
             // Create the index for everyone to use
             var name = this.indexName = "sdk-tests";
             var indexes = this.service.indexes();
-            indexes.create(name, {}, function(err, index) {
+            indexes.create(name, {}, function (err, index) {
                 if (err && err.status !== 409) {
                     throw new Error("Index creation failed for an unknown reason");
                 }
@@ -24,18 +28,18 @@ module.exports = function(svc, loggedOutSvc) {
             });
         },
 
-        // "Callback#remove index fails on Splunk 4.x": function(test) {
+        // "Callback#remove index fails on Splunk 4.x": function(done) {
         //     var original_version = this.service.version;
         //     this.service.version = "4.0";
         //
         //     var index = this.service.indexes().item(this.indexName);
-        //     test.throws(function() { index.remove(function(err) {}); });
+        //     assert.throws(function() { index.remove(function(err) {}); });
         //
         //     this.service.version = original_version;
-        //     test.done();
+        //     done();
         // },
 
-        // "Callback#remove index": function(test) {
+        // "Callback#remove index": function(done) {
         //     var indexes = this.service.indexes();
         //
         //     // Must generate a private index because an index cannot
@@ -46,7 +50,7 @@ module.exports = function(svc, loggedOutSvc) {
         //
         //     if (this.service.versionCompare("5.0") < 0) {
         //         splunkjs.Logger.info("", "Must be running Splunk 5.0+ for this test to work.");
-        //         test.done();
+        //         done();
         //         return;
         //     }
         //
@@ -78,184 +82,185 @@ module.exports = function(svc, loggedOutSvc) {
         //             }
         //         ],
         //         function(err) {
-        //             test.ok(!err);
-        //             test.done();
+        //             assert.ok(!err);
+        //             done();
         //         }
         //     );
         // },
 
-        "Callback#list indexes": function(test) {
+        "Callback#list indexes": function (done) {
             var indexes = this.service.indexes();
-            indexes.fetch(function(err, indexes) {
+            indexes.fetch(function (err, indexes) {
                 var indexList = indexes.list();
-                test.ok(indexList.length > 0);
-                test.done();
+                assert.ok(indexList.length > 0);
+                done();
             });
         },
 
-        "Callback#contains index": function(test) {
+        "Callback#contains index": function (done) {
             var indexes = this.service.indexes();
             var indexName = this.indexName;
 
-            indexes.fetch(function(err, indexes) {
+            indexes.fetch(function (err, indexes) {
                 var index = indexes.item(indexName);
-                test.ok(index);
-                test.done();
+                assert.ok(index);
+                done();
             });
         },
 
-        "Callback#modify index": function(test) {
+        "Callback#modify index": function (done) {
 
             var name = this.indexName;
             var indexes = this.service.indexes();
             var originalSyncMeta = false;
 
             Async.chain([
-                    function(callback) {
-                        indexes.fetch(callback);
-                    },
-                    function(indexes, callback) {
-                        var index = indexes.item(name);
-                        test.ok(index);
+                function (callback) {
+                    indexes.fetch(callback);
+                },
+                function (indexes, callback) {
+                    var index = indexes.item(name);
+                    assert.ok(index);
 
-                        originalSyncMeta = index.properties().syncMeta;
-                        index.update({
-                            syncMeta: !originalSyncMeta
-                        }, callback);
-                    },
-                    function(index, callback) {
-                        test.ok(index);
-                        var properties = index.properties();
+                    originalSyncMeta = index.properties().syncMeta;
+                    index.update({
+                        syncMeta: !originalSyncMeta
+                    }, callback);
+                },
+                function (index, callback) {
+                    assert.ok(index);
+                    var properties = index.properties();
 
-                        test.strictEqual(!originalSyncMeta, properties.syncMeta);
+                    assert.strictEqual(!originalSyncMeta, properties.syncMeta);
 
-                        index.update({
-                            syncMeta: !properties.syncMeta
-                        }, callback);
-                    },
-                    function(index, callback) {
-                        test.ok(index);
-                        var properties = index.properties();
+                    index.update({
+                        syncMeta: !properties.syncMeta
+                    }, callback);
+                },
+                function (index, callback) {
+                    assert.ok(index);
+                    var properties = index.properties();
 
-                        test.strictEqual(originalSyncMeta, properties.syncMeta);
-                        callback();
-                    }
-                ],
-                function(err) {
-                    test.ok(!err);
-                    test.done();
+                    assert.strictEqual(originalSyncMeta, properties.syncMeta);
+                    callback();
+                }
+            ],
+                function (err) {
+                    assert.ok(!err);
+                    done();
                 }
             );
         },
 
-        "Callback#Enable+disable index": function(test) {
+        "Callback#Enable+disable index": function (done) {
 
+            this.timeout(40000);
             var name = this.indexName;
             var indexes = this.service.indexes();
 
             Async.chain([
-                    function(callback) {
-                        indexes.fetch(callback);
-                    },
-                    function(indexes, callback) {
-                        var index = indexes.item(name);
-                        test.ok(index);
+                function (callback) {
+                    indexes.fetch(callback);
+                },
+                function (indexes, callback) {
+                    var index = indexes.item(name);
+                    assert.ok(index);
 
-                        index.disable(callback);
-                    },
-                    function(index, callback) {
-                        Async.sleep(5000, function () {
-                            callback(null, index);
-                        });
-                    },
-                    function(index, callback) {
-                        test.ok(index);
-                        index.fetch(callback);
-                    },
-                    function(index, callback) {
-                        test.ok(index);
-                        test.ok(index.properties().disabled);
+                    index.disable(callback);
+                },
+                function (index, callback) {
+                    Async.sleep(5000, function () {
+                        callback(null, index);
+                    });
+                },
+                function (index, callback) {
+                    assert.ok(index);
+                    index.fetch(callback);
+                },
+                function (index, callback) {
+                    assert.ok(index);
+                    assert.ok(index.properties().disabled);
 
-                        index.enable(callback);
-                    },
-                    function(index, callback) {
-                        Async.sleep(5000, function () {
-                            callback(null, index);
-                        });
-                    },
-                    function(index, callback) {
-                        test.ok(index);
-                        index.fetch(callback);
-                    },
-                    function(index, callback) {
-                        test.ok(index);
-                        test.ok(!index.properties().disabled);
+                    index.enable(callback);
+                },
+                function (index, callback) {
+                    Async.sleep(5000, function () {
+                        callback(null, index);
+                    });
+                },
+                function (index, callback) {
+                    assert.ok(index);
+                    index.fetch(callback);
+                },
+                function (index, callback) {
+                    assert.ok(index);
+                    assert.ok(!index.properties().disabled);
 
-                        callback();
-                    }
-                ],
-                function(err) {
-                    test.ok(!err, JSON.stringify(err));
-                    test.done();
+                    callback();
+                }
+            ],
+                function (err) {
+                    assert.ok(!err, JSON.stringify(err));
+                    done();
                 }
             );
         },
 
-        "Callback#Service submit event": function(test) {
+        "Callback#Service submit event": function (done) {
             var message = "Hello World -- " + getNextId();
             var sourcetype = "sdk-tests";
 
             var service = this.service;
             var indexName = this.indexName;
             Async.chain(
-                function(done) {
-                    service.log(message, {sourcetype: sourcetype, index: indexName}, done);
+                function (done) {
+                    service.log(message, { sourcetype: sourcetype, index: indexName }, done);
                 },
-                function(eventInfo, done) {
-                    test.ok(eventInfo);
-                    test.strictEqual(eventInfo.sourcetype, sourcetype);
-                    test.strictEqual(eventInfo.bytes, message.length);
-                    test.strictEqual(eventInfo.index, indexName);
+                function (eventInfo, done) {
+                    assert.ok(eventInfo);
+                    assert.strictEqual(eventInfo.sourcetype, sourcetype);
+                    assert.strictEqual(eventInfo.bytes, message.length);
+                    assert.strictEqual(eventInfo.index, indexName);
 
                     // We could poll to make sure the index has eaten up the event,
                     // but unfortunately this can take an unbounded amount of time.
                     // As such, since we got a good response, we'll just be done with it.
                     done();
                 },
-                function(err) {
-                    test.ok(!err);
-                    test.done();
+                function (err) {
+                    assert.ok(!err);
+                    done();
                 }
             );
         },
 
-        "Callback#Service submit event, omitting optional arguments": function(test) {
+        "Callback#Service submit event, omitting optional arguments": function (done) {
             var message = "Hello World -- " + getNextId();
             var sourcetype = "sdk-tests";
 
             var service = this.service;
             var indexName = this.indexName;
             Async.chain(
-                function(done) {
+                function (done) {
                     service.log(message, done);
                 },
-                function(eventInfo, done) {
-                    test.ok(eventInfo);
-                    test.strictEqual(eventInfo.bytes, message.length);
+                function (eventInfo, done) {
+                    assert.ok(eventInfo);
+                    assert.strictEqual(eventInfo.bytes, message.length);
 
                     // We could poll to make sure the index has eaten up the event,
                     // but unfortunately this can take an unbounded amount of time.
                     // As such, since we got a good response, we'll just be done with it.
                     done();
                 },
-                function(err) {
-                    test.ok(!err);
-                    test.done();
+                function (err) {
+                    assert.ok(!err);
+                    done();
                 }
             );
         },
 
-        "Callback#Service submit events with multi-byte chars": function(test) {
+        "Callback#Service submit events with multi-byte chars": function (done) {
             var service = this.service;
             var messages = [
                 "Ummelner Straße 6",
@@ -292,69 +297,69 @@ module.exports = function(svc, loggedOutSvc) {
             var counter = 0;
             Async.seriesMap(
                 messages,
-                function(val, idx, done) {
+                function (val, idx, done) {
                     counter++;
                     service.log(val, done);
                 },
-                function(err, vals) {
-                    test.ok(!err);
-                    test.strictEqual(counter, messages.length);
+                function (err, vals) {
+                    assert.ok(!err);
+                    assert.strictEqual(counter, messages.length);
 
                     // Verify that the full byte-length was sent for each message
                     for (var m in messages) {
-                        test.notStrictEqual(messages[m].length, vals[m].bytes);
+                        assert.notStrictEqual(messages[m].length, vals[m].bytes);
                         try {
-                            test.strictEqual(Buffer.byteLength(messages[m]), vals[m].bytes);
+                            assert.strictEqual(Buffer.byteLength(messages[m]), vals[m].bytes);
                         }
                         catch (err) {
                             // Assume Buffer isn't defined, we're probably in the browser
-                            test.strictEqual(decodeURI(encodeURIComponent(messages[m])).length, vals[m].bytes);
+                            assert.strictEqual(decodeURI(encodeURIComponent(messages[m])).length, vals[m].bytes);
                         }
                     }
 
-                    test.done();
+                    done();
                 }
             );
         },
 
-        "Callback#Service submit event, failure": function(test) {
+        "Callback#Service submit event, failure": function (done) {
             var message = "Hello World -- " + getNextId();
             var sourcetype = "sdk-tests";
 
             var service = this.loggedOutService;
             var indexName = this.indexName;
             Async.chain(
-                function(done) {
-                    test.ok(service);
+                function (done) {
+                    assert.ok(service);
                     service.log(message, done);
                 },
-                function(err) {
-                    test.ok(err);
-                    test.done();
+                function (err) {
+                    assert.ok(err);
+                    done();
                 }
             );
         },
 
-        "Callback#remove throws an error": function(test) {
+        "Callback#remove throws an error": function (done) {
             var index = this.service.indexes().item("_internal");
-            test.throws(function() {
+            assert.throws(function () {
                 index.remove();
             });
-            test.done();
+            done();
         },
 
-        "Callback#create an index with alternate argument format": function(test) {
+        "Callback#create an index with alternate argument format": function (done) {
             var indexes = this.service.indexes();
             indexes.create(
-                {name: "_internal"},
-                function(err, newIndex) {
-                    test.ok(err.data.messages[0].text.match("name=_internal already exists"));
-                    test.done();
+                { name: "_internal" },
+                function (err, newIndex) {
+                    assert.ok(err.data.messages[0].text.match("name=_internal already exists"));
+                    done();
                 }
             );
         },
 
-        "Callback#Index submit event with omitted optional arguments": function(test) {
+        "Callback#Index submit event with omitted optional arguments": function (done) {
             var message = "Hello world -- " + getNextId();
 
             var indexName = this.indexName;
@@ -362,19 +367,19 @@ module.exports = function(svc, loggedOutSvc) {
 
             Async.chain(
                 [
-                    function(done) {
+                    function (done) {
                         indexes.fetch(done);
                     },
-                    function(indexes, done) {
+                    function (indexes, done) {
                         var index = indexes.item(indexName);
-                        test.ok(index);
-                        test.strictEqual(index.name, indexName);
+                        assert.ok(index);
+                        assert.strictEqual(index.name, indexName);
                         index.submitEvent(message, done);
                     },
-                    function(eventInfo, index, done) {
-                        test.ok(eventInfo);
-                        test.strictEqual(eventInfo.bytes, message.length);
-                        test.strictEqual(eventInfo.index, indexName);
+                    function (eventInfo, index, done) {
+                        assert.ok(eventInfo);
+                        assert.strictEqual(eventInfo.bytes, message.length);
+                        assert.strictEqual(eventInfo.index, indexName);
 
                         // We could poll to make sure the index has eaten up the event,
                         // but unfortunately this can take an unbounded amount of time.
@@ -382,46 +387,86 @@ module.exports = function(svc, loggedOutSvc) {
                         done();
                     }
                 ],
-                function(err) {
-                    test.ok(!err);
-                    test.done();
+                function (err) {
+                    assert.ok(!err);
+                    done();
                 }
             );
         },
 
-        "Callback#Index submit event": function(test) {
+        "Callback#Index submit event": function (done) {
             var message = "Hello World -- " + getNextId();
             var sourcetype = "sdk-tests";
 
             var indexName = this.indexName;
             var indexes = this.service.indexes();
             Async.chain([
-                    function(done) {
-                        indexes.fetch(done);
-                    },
-                    function(indexes, done) {
-                        var index = indexes.item(indexName);
-                        test.ok(index);
-                        test.strictEqual(index.name, indexName);
-                        index.submitEvent(message, {sourcetype: sourcetype}, done);
-                    },
-                    function(eventInfo, index, done) {
-                        test.ok(eventInfo);
-                        test.strictEqual(eventInfo.sourcetype, sourcetype);
-                        test.strictEqual(eventInfo.bytes, message.length);
-                        test.strictEqual(eventInfo.index, indexName);
+                function (done) {
+                    indexes.fetch(done);
+                },
+                function (indexes, done) {
+                    var index = indexes.item(indexName);
+                    assert.ok(index);
+                    assert.strictEqual(index.name, indexName);
+                    index.submitEvent(message, { sourcetype: sourcetype }, done);
+                },
+                function (eventInfo, index, done) {
+                    assert.ok(eventInfo);
+                    assert.strictEqual(eventInfo.sourcetype, sourcetype);
+                    assert.strictEqual(eventInfo.bytes, message.length);
+                    assert.strictEqual(eventInfo.index, indexName);
 
-                        // We could poll to make sure the index has eaten up the event,
-                        // but unfortunately this can take an unbounded amount of time.
-                        // As such, since we got a good response, we'll just be done with it.
-                        done();
-                    }
-                ],
-                function(err) {
-                    test.ok(!err);
-                    test.done();
+                    // We could poll to make sure the index has eaten up the event,
+                    // but unfortunately this can take an unbounded amount of time.
+                    // As such, since we got a good response, we'll just be done with it.
+                    done();
+                }
+            ],
+                function (err) {
+                    assert.ok(!err);
+                    done();
                 }
             );
         }
     };
 };
+
+if (module === require.cache[__filename] && !module.parent) {
+    var splunkjs = require('../../index');
+    var options = require('../../examples/node/cmdline');
+
+    var cmdline = options.create().parse(process.argv);
+
+    // If there is no command line, we should return
+    if (!cmdline) {
+        throw new Error("Error in parsing command line parameters");
+    }
+
+    var svc = new splunkjs.Service({
+        scheme: cmdline.opts.scheme,
+        host: cmdline.opts.host,
+        port: cmdline.opts.port,
+        username: cmdline.opts.username,
+        password: cmdline.opts.password,
+        version: cmdline.opts.version
+    });
+
+    var loggedOutSvc = new splunkjs.Service({
+        scheme: cmdline.opts.scheme,
+        host: cmdline.opts.host,
+        port: cmdline.opts.port,
+        username: cmdline.opts.username,
+        password: cmdline.opts.password + 'wrong',
+        version: cmdline.opts.version
+    });
+
+    // Exports tests on a successful login
+    module.exports = new Promise((resolve, reject) => {
+        svc.login(function (err, success) {
+            if (err || !success) {
+                throw new Error("Login failed - not running tests", err || "");
+            }
+            return resolve(exports.setup(svc, loggedOutSvc));
+        });
+    });
+}
