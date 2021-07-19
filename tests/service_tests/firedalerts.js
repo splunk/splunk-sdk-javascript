@@ -1,25 +1,27 @@
-var splunkjs    = require('../../index');
-var Async       = splunkjs.Async;
-var utils       = splunkjs.Utils;
+var assert = require('chai').assert;
 
+var splunkjs = require('../../index');
+
+var Async = splunkjs.Async;
+var utils = splunkjs.Utils;
 var idCounter = 0;
-var getNextId = function() {
+
+var getNextId = function () {
     return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
 };
 
-module.exports = function (svc, loggedOutSvc) {
+exports.setup = function (svc, loggedOutSvc) {
     return {
-        setUp: function(done) {
+        beforeEach: function (done) {
             this.service = svc;
             this.loggedOutService = loggedOutSvc;
-
             var indexes = this.service.indexes();
             done();
         },
 
-        "Callback#create + verify emptiness + delete new alert group": function(test) {
-            var searches = this.service.savedSearches({owner: this.service.username});
+        "Callback#create + verify emptiness + delete new alert group": function (done) {
 
+            var searches = this.service.savedSearches({ owner: this.service.username });
             var name = "jssdk_savedsearch_alert_" + getNextId();
             var searchConfig = {
                 "name": name,
@@ -35,36 +37,36 @@ module.exports = function (svc, loggedOutSvc) {
             };
 
             Async.chain([
-                    function(done) {
-                        searches.create(searchConfig, done);
-                    },
-                    function(search, done) {
-                        test.ok(search);
-                        test.strictEqual(search.alertCount(), 0);
-                        search.history(done);
-                    },
-                    function(jobs, search, done) {
-                        test.strictEqual(jobs.length, 0);
-                        test.strictEqual(search.firedAlertGroup().count(), 0);
-                        searches.service.firedAlertGroups().fetch( Async.augment(done, search) );
-                    },
-                    function(firedAlertGroups, originalSearch, done) {
-                        test.strictEqual(firedAlertGroups.list().indexOf(originalSearch.name), -1);
-                        done(null, originalSearch);
-                    },
-                    function(originalSearch, done) {
-                        originalSearch.remove(done);
-                    }
-                ],
-                function(err) {
-                    test.ok(!err);
-                    test.done();
+                function (done) {
+                    searches.create(searchConfig, done);
+                },
+                function (search, done) {
+                    assert.ok(search);
+                    assert.strictEqual(search.alertCount(), 0);
+                    search.history(done);
+                },
+                function (jobs, search, done) {
+                    assert.strictEqual(jobs.length, 0);
+                    assert.strictEqual(search.firedAlertGroup().count(), 0);
+                    searches.service.firedAlertGroups().fetch(Async.augment(done, search));
+                },
+                function (firedAlertGroups, originalSearch, done) {
+                    assert.strictEqual(firedAlertGroups.list().indexOf(originalSearch.name), -1);
+                    done(null, originalSearch);
+                },
+                function (originalSearch, done) {
+                    originalSearch.remove(done);
+                }
+            ],
+                function (err) {
+                    assert.ok(!err);
+                    done();
                 }
             );
         },
 
         // This test is not stable, commenting it out until we figure it out
-        // "Callback#alert is triggered + test firedAlert entity -- FAILS INTERMITTENTLY": function(test) {
+        // "Callback#alert is triggered + test firedAlert entity -- FAILS INTERMITTENTLY": function(done) {
         //     var searches = this.service.savedSearches({owner: this.service.username});
         //     var indexName = "sdk-tests-alerts";
         //     var name = "jssdk_savedsearch_alert_" + getNextId();
@@ -88,9 +90,9 @@ module.exports = function (svc, loggedOutSvc) {
         //                 searches.create(searchConfig, done);
         //             },
         //             function(search, done) {
-        //                 test.ok(search);
-        //                 test.strictEqual(search.alertCount(), 0);
-        //                 test.strictEqual(search.firedAlertGroup().count(), 0);
+        //                 assert.ok(search);
+        //                 assert.strictEqual(search.alertCount(), 0);
+        //                 assert.strictEqual(search.firedAlertGroup().count(), 0);
 
         //                 var indexes = search.service.indexes();
         //                 indexes.create(indexName, {}, function(err, index) {
@@ -108,14 +110,14 @@ module.exports = function (svc, loggedOutSvc) {
         //                     }
         //                     else {
         //                         var index = indexes.item(indexName);
-        //                         test.ok(index);
+        //                         assert.ok(index);
         //                         index.enable(Async.augment(done, originalSearch));
         //                     }
         //                 });
         //             },
         //             function(index, originalSearch, done) {
         //                 //Is the index enabled?
-        //                 test.ok(!index.properties().disabled);
+        //                 assert.ok(!index.properties().disabled);
         //                 //refresh the index
         //                 index.fetch(Async.augment(done, originalSearch));
         //             },
@@ -123,8 +125,8 @@ module.exports = function (svc, loggedOutSvc) {
         //                 //Store the current event count for a later comparison
         //                 var eventCount = index.properties().totalEventCount;
 
-        //                 test.strictEqual(index.properties().sync, 0);
-        //                 test.ok(!index.properties().disabled);
+        //                 assert.strictEqual(index.properties().sync, 0);
+        //                 assert.ok(!index.properties().disabled);
 
         //                 index.fetch(Async.augment(done, originalSearch, eventCount));
         //             },
@@ -146,7 +148,7 @@ module.exports = function (svc, loggedOutSvc) {
         //             },
         //             function(index, originalSearch, eventCount, done) {
         //                 // Did the event get submitted
-        //                 test.strictEqual(index.properties().totalEventCount, eventCount+1);
+        //                 assert.strictEqual(index.properties().totalEventCount, eventCount+1);
         //                 // Refresh the search
         //                 originalSearch.fetch(Async.augment(done, index));
         //             },
@@ -225,7 +227,7 @@ module.exports = function (svc, loggedOutSvc) {
         //             },
         //             function(originalSearch, index, done) {
         //                 // Make sure the event count has incremented, as expected
-        //                 test.strictEqual(originalSearch.alertCount(), 1);
+        //                 assert.strictEqual(originalSearch.alertCount(), 1);
         //                 // Remove the search, especially because it's a real-time search
         //                 originalSearch.remove(Async.augment(done, index));
         //             },
@@ -236,19 +238,19 @@ module.exports = function (svc, loggedOutSvc) {
         //             }
         //         ],
         //         function(err) {
-        //             test.ok(!err);
-        //             test.done();
+        //             assert.ok(!err);
+        //             done();
         //         }
         //     );
         // },
 
-        "Callback#delete all alerts": function(test) {
+        "Callback#delete all alerts": function (done) {
             var namePrefix = "jssdk_savedsearch_alert_";
             var alertList = this.service.savedSearches().list();
 
             Async.parallelEach(
                 alertList,
-                function(alert, idx, callback) {
+                function (alert, idx, callback) {
                     if (utils.startsWith(alert.name, namePrefix)) {
                         splunkjs.Logger.log("ALERT ---", alert.name);
                         alert.remove(callback);
@@ -256,11 +258,51 @@ module.exports = function (svc, loggedOutSvc) {
                     else {
                         callback();
                     }
-                }, function(err) {
-                    test.ok(!err);
-                    test.done();
+                }, function (err) {
+                    assert.ok(!err);
+                    done();
                 }
             );
         }
     };
 };
+
+if (module === require.cache[__filename] && !module.parent) {
+    var splunkjs = require('../../index');
+    var options = require('../../examples/node/cmdline');
+
+    var cmdline = options.create().parse(process.argv);
+
+    // If there is no command line, we should return
+    if (!cmdline) {
+        throw new Error("Error in parsing command line parameters");
+    }
+
+    var svc = new splunkjs.Service({
+        scheme: cmdline.opts.scheme,
+        host: cmdline.opts.host,
+        port: cmdline.opts.port,
+        username: cmdline.opts.username,
+        password: cmdline.opts.password,
+        version: cmdline.opts.version
+    });
+
+    var loggedOutSvc = new splunkjs.Service({
+        scheme: cmdline.opts.scheme,
+        host: cmdline.opts.host,
+        port: cmdline.opts.port,
+        username: cmdline.opts.username,
+        password: cmdline.opts.password + 'wrong',
+        version: cmdline.opts.version
+    });
+
+    // Exports tests on a successful login
+    module.exports = new Promise((resolve, reject) => {
+        svc.login(function (err, success) {
+            if (err || !success) {
+                throw new Error("Login failed - not running tests", err || "");
+            }
+            return resolve(exports.setup(svc, loggedOutSvc));
+        });
+    });
+}

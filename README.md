@@ -9,13 +9,13 @@ For more information, see [Splunk Enterprise SDK for JavaScript](https://dev.spl
 
 ## Requirements
 
-* Node.js v 0.12, or v4 or later
+* Node.js v 8.17.0, or v14 or later
 
-    The Splunk Enterprise SDK for JavaScript was tested with Node.js v.0.12, v4.2, and v10.0. 
+    The Splunk Enterprise SDK for JavaScript was tested with Node.js v8.17.0, v14. 
 
-* Splunk Enterprise 6.3.0 or later, or Splunk Cloud
+* Splunk Enterprise 8.2.0 or later, or Splunk Cloud
 
-    The Splunk Enterprise SDK for JavaScript was tested with Splunk Enterprise 7.0 and 7.2. 
+    The Splunk Enterprise SDK for JavaScript was tested with Splunk Enterprise 8.0 or 8.2, or Splunk Cloud. 
 
 *  Splunk Enterprise SDK for JavaScript
 
@@ -129,7 +129,7 @@ To use this convenience file, create a text file with the following format:
     # Access scheme (default: https)
     scheme=https
     # Your version of Splunk Enterprise
-    version=7.2
+    version=8.2
 
 Save the file as **.splunkrc** in the current user's home directory.
 

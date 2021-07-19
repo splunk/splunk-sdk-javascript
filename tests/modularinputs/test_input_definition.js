@@ -13,20 +13,25 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-exports.setup = function() {
-    var splunkjs            = require('../../index');
-    var ModularInputs       = splunkjs.ModularInputs;
-    var InputDefinition     = ModularInputs.InputDefinition;
-    var utils               = ModularInputs.utils;
+var assert = require('chai').assert;
+
+const { Logger } = require("../../lib/log");
+var splunkjs = require('../../index');
+
+exports.setup = function () {
+    var ModularInputs = splunkjs.ModularInputs;
+    var InputDefinition = ModularInputs.InputDefinition;
+    var utils = ModularInputs.utils;
 
     splunkjs.Logger.setLevel("ALL");
+
     return {
         "Input Definition tests": {
-            setUp: function(done) {
+            beforeEach: function (done) {
                 done();
             },
 
-            "Parse produces expected result - no inputs": function(test) {
+            "Parse produces expected result - no inputs": function (done) {
                 var expected = new InputDefinition();
                 expected.metadata = {
                     "server_host": "tiny",
@@ -34,23 +39,24 @@ exports.setup = function() {
                     "checkpoint_dir": "/some/dir",
                     "session_key": "123102983109283019283"
                 };
-                
+
                 try {
                     var found = InputDefinition.parse(utils.readFile(__filename, "../data/conf_with_0_inputs.xml"));
 
-                    test.equals(found.metadata["server_host"], expected.metadata["server_host"]);
-                    test.equals(found.metadata["server_uri"], expected.metadata["server_uri"]);
-                    test.equals(found.metadata["checkpoint_dir"], expected.metadata["checkpoint_dir"]);
-                    test.equals(found.metadata["session_key"], expected.metadata["session_key"]);
-                    test.same(found, expected);
+                    assert.equal(found.metadata["server_host"], expected.metadata["server_host"]);
+                    assert.equal(found.metadata["server_uri"], expected.metadata["server_uri"]);
+                    assert.equal(found.metadata["checkpoint_dir"], expected.metadata["checkpoint_dir"]);
+                    assert.equal(found.metadata["session_key"], expected.metadata["session_key"]);
+                    assert.deepEqual(found, expected);
                 }
                 catch (e) {
-                    test.ok(false);
+                    Logger.info(JSON.stringify(e));
+                    assert.ok(false);
                 }
-                test.done();
+                done();
             },
 
-            "Parse produces expected result - 2 inputs": function(test) {
+            "Parse produces expected result - 2 inputs": function (done) {
                 var expected = new InputDefinition();
                 expected.metadata = {
                     "server_host": "tiny",
@@ -72,59 +78,56 @@ exports.setup = function() {
                     "multiValue": ["value1", "value2"],
                     "multiValue2": ["value3", "value4"]
                 };
-                
+
                 try {
                     var found = InputDefinition.parse(utils.readFile(__filename, "../data/conf_with_2_inputs.xml"));
 
-                    test.equals(found.metadata["server_host"], expected.metadata["server_host"]);
-                    test.equals(found.metadata["server_uri"], expected.metadata["server_uri"]);
-                    test.equals(found.metadata["checkpoint_dir"], expected.metadata["checkpoint_dir"]);
-                    test.equals(found.metadata["session_key"], expected.metadata["session_key"]);
+                    assert.equal(found.metadata["server_host"], expected.metadata["server_host"]);
+                    assert.equal(found.metadata["server_uri"], expected.metadata["server_uri"]);
+                    assert.equal(found.metadata["checkpoint_dir"], expected.metadata["checkpoint_dir"]);
+                    assert.equal(found.metadata["session_key"], expected.metadata["session_key"]);
 
-                    test.same(found.inputs["foobar://bbb"], expected.inputs["foobar://bbb"]);
-                    test.equals(found.inputs["foobar://bbb"]["param1"], expected.inputs["foobar://bbb"]["param1"]);
-                    test.equals(found.inputs["foobar://bbb"]["param2"], expected.inputs["foobar://bbb"]["param2"]);
-                    test.equals(found.inputs["foobar://bbb"]["disabled"], expected.inputs["foobar://bbb"]["disabled"]);
-                    test.equals(found.inputs["foobar://bbb"]["index"], expected.inputs["foobar://bbb"]["index"]);
+                    assert.deepEqual(found.inputs["foobar://bbb"], expected.inputs["foobar://bbb"]);
+                    assert.equal(found.inputs["foobar://bbb"]["param1"], expected.inputs["foobar://bbb"]["param1"]);
+                    assert.equal(found.inputs["foobar://bbb"]["param2"], expected.inputs["foobar://bbb"]["param2"]);
+                    assert.equal(found.inputs["foobar://bbb"]["disabled"], expected.inputs["foobar://bbb"]["disabled"]);
+                    assert.equal(found.inputs["foobar://bbb"]["index"], expected.inputs["foobar://bbb"]["index"]);
 
-                    test.same(found.inputs["foobar://bbb"], expected.inputs["foobar://bbb"]);
-                    test.equals(found.inputs["foobar://bbb"]["param1"], expected.inputs["foobar://bbb"]["param1"]);
-                    test.equals(found.inputs["foobar://bbb"]["param2"], expected.inputs["foobar://bbb"]["param2"]);
-                    test.equals(found.inputs["foobar://bbb"]["disabled"], expected.inputs["foobar://bbb"]["disabled"]);
-                    test.equals(found.inputs["foobar://bbb"]["index"], expected.inputs["foobar://bbb"]["index"]);
-                    test.same(found.inputs["foobar://bbb"]["multiValue"], expected.inputs["foobar://bbb"]["multiValue"]);
-                    test.equals(found.inputs["foobar://bbb"]["multiValue"][0], expected.inputs["foobar://bbb"]["multiValue"][0]);
-                    test.equals(found.inputs["foobar://bbb"]["multiValue"][1], expected.inputs["foobar://bbb"]["multiValue"][1]);
-                    test.same(found.inputs["foobar://bbb"]["multiValue2"], expected.inputs["foobar://bbb"]["multiValue2"]);
-                    test.equals(found.inputs["foobar://bbb"]["multiValue2"][0], expected.inputs["foobar://bbb"]["multiValue2"][0]);
-                    test.equals(found.inputs["foobar://bbb"]["multiValue2"][1], expected.inputs["foobar://bbb"]["multiValue2"][1]);
-                    
-                    test.same(found, expected);
+                    assert.deepEqual(found.inputs["foobar://bbb"], expected.inputs["foobar://bbb"]);
+                    assert.equal(found.inputs["foobar://bbb"]["param1"], expected.inputs["foobar://bbb"]["param1"]);
+                    assert.equal(found.inputs["foobar://bbb"]["param2"], expected.inputs["foobar://bbb"]["param2"]);
+                    assert.equal(found.inputs["foobar://bbb"]["disabled"], expected.inputs["foobar://bbb"]["disabled"]);
+                    assert.equal(found.inputs["foobar://bbb"]["index"], expected.inputs["foobar://bbb"]["index"]);
+                    assert.deepEqual(found.inputs["foobar://bbb"]["multiValue"], expected.inputs["foobar://bbb"]["multiValue"]);
+                    assert.equal(found.inputs["foobar://bbb"]["multiValue"][0], expected.inputs["foobar://bbb"]["multiValue"][0]);
+                    assert.equal(found.inputs["foobar://bbb"]["multiValue"][1], expected.inputs["foobar://bbb"]["multiValue"][1]);
+                    assert.deepEqual(found.inputs["foobar://bbb"]["multiValue2"], expected.inputs["foobar://bbb"]["multiValue2"]);
+                    assert.equal(found.inputs["foobar://bbb"]["multiValue2"][0], expected.inputs["foobar://bbb"]["multiValue2"][0]);
+                    assert.equal(found.inputs["foobar://bbb"]["multiValue2"][1], expected.inputs["foobar://bbb"]["multiValue2"][1]);
+
+                    assert.deepEqual(found, expected);
                 }
                 catch (e) {
-                    test.ok(false);
+                    assert.ok(false);
                 }
-                test.done();
+                done();
             },
 
-            "Parse throws an error with malformed input definition": function(test) {
+            "Parse throws an error with malformed input definition": function (done) {
                 try {
                     InputDefinition.parse(utils.readFile(__filename, "../data/conf_with_invalid_inputs.xml"));
-                    test.ok(false);
+                    assert.ok(false);
                 }
                 catch (e) {
-                    test.ok(true);
+                    assert.ok(true);
                 }
-                test.done();
+                done();
             }
         }
     };
 };
 
-if (module === require.main) {
-    var splunkjs    = require('../../index');
-    var test        = require('../../contrib/nodeunit/test_reporter');
-    
-    var suite = exports.setup();
-    test.run([{"Tests": suite}]);
+// Run the individual test suite
+if (module === require.cache[__filename] && !module.parent) {
+    module.exports = exports.setup();
 }

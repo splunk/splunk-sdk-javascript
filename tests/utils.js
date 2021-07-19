@@ -12,40 +12,41 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-(function() {
+(function () {
     "use strict";
     var Async = require('../lib/async');
-    
+    var assert = require('chai').assert;
+
     var root = exports || this;
 
-    root.pollUntil = function(obj, condition, iterations, callback) {
-        callback = callback || function() {};
-        
+    root.pollUntil = function (obj, condition, iterations, callback) {
+        callback = callback || function () { };
+
         var i = 0;
         Async.whilst(
-            function() { return !condition(obj) && (i++ < iterations); },
-            function(done) {
-                Async.sleep(500, function() {
-                    obj.fetch(done); 
+            function () { return !condition(obj) && (i++ < iterations); },
+            function (done) {
+                Async.sleep(500, function () {
+                    obj.fetch(done);
                 });
             },
-            function(err) {
+            function (err) {
                 callback(err, obj);
             }
         );
     };
-    
+
     // Minimal Http implementation that is designed to pass the tests
     // done by Context.init(), but nothing more.
     root.DummyHttp = {
         // Required by Context.init()
-        _setSplunkVersion: function(version) {
+        _setSplunkVersion: function (version) {
             // nothing
         }
     };
 
     var idCounter = 0;
-    root.getNextId = function() {
+    root.getNextId = function () {
         return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
     };
 

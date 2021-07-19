@@ -12,29 +12,29 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-(function() {
+(function () {
     "use strict";
     var Stream = require("readable-stream");
-    var utils  = require("../../lib/utils"); // Grab the SDK utils
+    var utils = require("../../lib/utils"); // Grab the SDK utils
     var root = exports || this;
 
-    root.getDuplexStream = function() {
+    root.getDuplexStream = function () {
         var duplex = new Stream.Duplex();
         duplex.data = "";
-        duplex._write = function(chunk, enc, next) {
+        duplex._write = function (chunk, enc, next) {
             this.data += chunk.toString();
             next();
         };
-        duplex._read = function() {
+        duplex._read = function () {
             return this.data;
         };
         return duplex;
     };
 
-    root.getReadableStream = function() {
+    root.getReadableStream = function () {
         var readable = new Stream.Readable();
         readable.data = "";
-        readable._read = function() {
+        readable._read = function () {
             return this.data;
         };
         return readable;
@@ -48,8 +48,8 @@
      * @param {String} the key to sort by.
      * @return {Boolean} true if they are equal, else false 
      */
-    root.sortByKey = function(array, key) {
-        return array.sort(function(a, b) {
+    root.sortByKey = function (array, key) {
+        return array.sort(function (a, b) {
             var x = a[key]; var y = b[key];
             return ((x < y) ? -1 : ((x > y) ? 1 : 0));
         });
@@ -63,7 +63,7 @@
      * @param {Object} an `Elementtree` object.
      * @return {Boolean} true if their children are equal, else false 
      */
-    root.XMLCompareChildren = function(expected, found) {
+    root.XMLCompareChildren = function (expected, found) {
         if (expected.len !== found.len) {
             return false;
         }
@@ -94,7 +94,7 @@
      * @param {Object} an `Elementtree` object.
      * @return {Boolean} true if they are equal, else false 
      */
-    root.XMLCompare = function(expected, found) {
+    root.XMLCompare = function (expected, found) {
         // They're equal if they're the same.
         if (expected === found) {
             return true;
@@ -109,14 +109,14 @@
             var foundItems = expected.items().sort();
 
             if (expectedItems.length !== foundItems.length) {
-                return false;    
+                return false;
             }
             else {
                 for (var i = 0; i < foundItems.length; i++) {
                     if (foundItems[i] && expectedItems[i]) {
                         var f = foundItems[i];
                         var e = expectedItems[i];
-                        
+
                         for (var j = 0; j < e.length; j++) {
                             if (f[j] !== e[j]) {
                                 return false;

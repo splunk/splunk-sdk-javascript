@@ -1,62 +1,96 @@
-var splunkjs    = require('../../index');
-var Async       = splunkjs.Async;
+var assert = require('chai').assert;
 
-module.exports = function (svc) {
+var splunkjs = require('../../index');
+
+var Async = splunkjs.Async;
+
+exports.setup = function (svc) {
     return {
-    setUp: function(done) {
-        this.service = svc;
-        done();
-    },
+        beforeEach: function (done) {
+            this.service = svc;
+            done();
+        },
 
-    "Callback#List views": function(test) {
-        var service = this.service;
+        "Callback#List views": function (done) {
+            var service = this.service;
 
-        service.views({owner: "admin", app: "search"}).fetch(function(err, views) {
-            test.ok(!err);
-            test.ok(views);
+            service.views({ owner: "admin", app: "search" }).fetch(function (err, views) {
+                assert.ok(!err);
+                assert.ok(views);
 
-            var viewsList = views.list();
-            test.ok(viewsList);
-            test.ok(viewsList.length > 0);
+                var viewsList = views.list();
+                assert.ok(viewsList);
+                assert.ok(viewsList.length > 0);
 
-            for(var i = 0; i < viewsList.length; i++) {
-                test.ok(viewsList[i]);
-            }
+                for (var i = 0; i < viewsList.length; i++) {
+                    assert.ok(viewsList[i]);
+                }
 
-            test.done();
-        });
-    },
+                done();
+            });
+        },
 
-    "Callback#Create + update + delete view": function(test) {
-        var service = this.service;
-        var name = "jssdk_testview";
-        var originalData = "<view/>";
-        var newData = "<view isVisible='false'></view>";
+        "Callback#Create + update + delete view": function (done) {
+            var service = this.service;
+            var name = "jssdk_testview";
+            var originalData = "<view/>";
+            var newData = "<view isVisible='false'></view>";
 
-        Async.chain([
-                function(done) {
-                    service.views({owner: "admin", app: "sdk-app-collection"}).create({name: name, "eai:data": originalData}, done);
+            Async.chain([
+                function (done) {
+                    service.views({ owner: "admin", app: "sdk-app-collection" }).create({ name: name, "eai:data": originalData }, done);
                 },
-                function(view, done) {
-                    test.ok(view);
+                function (view, done) {
+                    assert.ok(view);
 
-                    test.strictEqual(view.name, name);
-                    test.strictEqual(view.properties()["eai:data"], originalData);
+                    assert.strictEqual(view.name, name);
+                    assert.strictEqual(view.properties()["eai:data"], originalData);
 
-                    view.update({"eai:data": newData}, done);
+                    view.update({ "eai:data": newData }, done);
                 },
-                function(view, done) {
-                    test.ok(view);
-                    test.strictEqual(view.properties()["eai:data"], newData);
+                function (view, done) {
+                    assert.ok(view);
+                    assert.strictEqual(view.properties()["eai:data"], newData);
 
                     view.remove(done);
                 }
             ],
-            function(err) {
-                test.ok(!err);
-                test.done();
-            }
-        );
+                function (err) {
+                    assert.ok(!err);
+                    done();
+                }
+            );
+        }
+    };
+};
+
+if (module === require.cache[__filename] && !module.parent) {
+    var splunkjs = require('../../index');
+    var options = require('../../examples/node/cmdline');
+
+    var cmdline = options.create().parse(process.argv);
+
+    // If there is no command line, we should return
+    if (!cmdline) {
+        throw new Error("Error in parsing command line parameters");
     }
-};
-};
+
+    var svc = new splunkjs.Service({
+        scheme: cmdline.opts.scheme,
+        host: cmdline.opts.host,
+        port: cmdline.opts.port,
+        username: cmdline.opts.username,
+        password: cmdline.opts.password,
+        version: cmdline.opts.version
+    });
+
+    // Exports tests on a successful login
+    module.exports = new Promise((resolve, reject) => {
+        svc.login(function (err, success) {
+            if (err || !success) {
+                throw new Error("Login failed - not running tests", err || "");
+            }
+            return resolve(exports.setup(svc));
+        });
+    });
+}

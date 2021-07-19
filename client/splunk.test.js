@@ -12795,7 +12795,7 @@
             if (inputStream.resume && !inputStream.isTTY) {
                 inputStream.resume();
             }
-            var bigBuff = new Buffer(0);
+            var bigBuff = Buffer.alloc(0);
     
             // When streaming events...
             if (args.length === 1) {
