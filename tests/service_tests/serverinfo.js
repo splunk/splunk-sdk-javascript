@@ -1,27 +1,29 @@
-var assert = require('chai').assert;
 
 exports.setup = function (svc) {
-    return {
-        beforeEach: function (done) {
-            this.service = svc;
-            done();
-        },
-
-        "Callback#Basic": function (done) {
-            var service = this.service;
-
-            service.serverInfo(function (err, info) {
-                assert.ok(!err);
-                assert.ok(info);
-                assert.strictEqual(info.name, "server-info");
-                assert.ok(info.properties().hasOwnProperty("version"));
-                assert.ok(info.properties().hasOwnProperty("serverName"));
-                assert.ok(info.properties().hasOwnProperty("os_version"));
-
+    var assert = require('chai').assert;
+    return (
+        describe("Server Info Test", function () {
+            beforeEach(function (done) {
+                this.service = svc;
                 done();
-            });
-        }
-    };
+            })
+
+            it("Callback#Basic", function (done) {
+                var service = this.service;
+
+                service.serverInfo(function (err, info) {
+                    assert.ok(!err);
+                    assert.ok(info);
+                    assert.strictEqual(info.name, "server-info");
+                    assert.ok(info.properties().hasOwnProperty("version"));
+                    assert.ok(info.properties().hasOwnProperty("serverName"));
+                    assert.ok(info.properties().hasOwnProperty("os_version"));
+
+                    done();
+                });
+            })
+        })
+    );
 };
 
 if (module === require.cache[__filename] && !module.parent) {

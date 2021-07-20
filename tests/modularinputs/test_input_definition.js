@@ -25,13 +25,13 @@ exports.setup = function () {
 
     splunkjs.Logger.setLevel("ALL");
 
-    return {
-        "Input Definition tests": {
-            beforeEach: function (done) {
+    return (
+        describe("Input Definition tests", function (done) {
+            this.beforeEach(function (done) {
                 done();
-            },
+            });
 
-            "Parse produces expected result - no inputs": function (done) {
+            it("Parse produces expected result - no inputs", function (done) {
                 var expected = new InputDefinition();
                 expected.metadata = {
                     "server_host": "tiny",
@@ -54,9 +54,9 @@ exports.setup = function () {
                     assert.ok(false);
                 }
                 done();
-            },
+            });
 
-            "Parse produces expected result - 2 inputs": function (done) {
+            it("Parse produces expected result - 2 inputs", function (done) {
                 var expected = new InputDefinition();
                 expected.metadata = {
                     "server_host": "tiny",
@@ -111,9 +111,9 @@ exports.setup = function () {
                     assert.ok(false);
                 }
                 done();
-            },
+            });
 
-            "Parse throws an error with malformed input definition": function (done) {
+            it("Parse throws an error with malformed input definition", function (done) {
                 try {
                     InputDefinition.parse(utils.readFile(__filename, "../data/conf_with_invalid_inputs.xml"));
                     assert.ok(false);
@@ -122,11 +122,10 @@ exports.setup = function () {
                     assert.ok(true);
                 }
                 done();
-            }
-        }
-    };
-};
-
+            });
+        })
+    )
+}
 // Run the individual test suite
 if (module === require.cache[__filename] && !module.parent) {
     module.exports = exports.setup();

@@ -1,42 +1,44 @@
-var assert = require('chai').assert;
 
 exports.setup = function (svc, loggedOutSvc) {
-    return {
-        beforeEach: function (done) {
-            this.service = svc;
-            this.loggedOutService = loggedOutSvc;
-            done();
-        },
-
-        "Callback#Typeahead failure": function (done) {
-            var service = this.loggedOutService;
-            service.typeahead("index=", 1, function (err, options) {
-                assert.ok(err);
+    var assert = require('chai').assert;
+    return (
+        describe("Typeahad Tests", function () {
+            beforeEach(function (done) {
+                this.service = svc;
+                this.loggedOutService = loggedOutSvc;
                 done();
-            });
-        },
+            })
 
-        "Callback#Basic typeahead": function (done) {
-            var service = this.service;
+            it("Callback#Typeahead failure", function (done) {
+                var service = this.loggedOutService;
+                service.typeahead("index=", 1, function (err, options) {
+                    assert.ok(err);
+                    done();
+                });
+            })
 
-            service.typeahead("index=", 1, function (err, options) {
-                assert.ok(!err);
-                assert.ok(options);
-                assert.strictEqual(options.length, 1);
-                assert.ok(options[0]);
-                done();
-            });
-        },
+            it("Callback#Basic typeahead", function (done) {
+                var service = this.service;
 
-        "Typeahead with omitted optional arguments": function (done) {
-            var service = this.service;
-            service.typeahead("index=", function (err, options) {
-                assert.ok(!err);
-                assert.ok(options);
-                done();
-            });
-        }
-    };
+                service.typeahead("index=", 1, function (err, options) {
+                    assert.ok(!err);
+                    assert.ok(options);
+                    assert.strictEqual(options.length, 1);
+                    assert.ok(options[0]);
+                    done();
+                });
+            })
+
+            it("Typeahead with omitted optional arguments", function (done) {
+                var service = this.service;
+                service.typeahead("index=", function (err, options) {
+                    assert.ok(!err);
+                    assert.ok(options);
+                    done();
+                });
+            })
+        })
+    );
 };
 
 if (module === require.cache[__filename] && !module.parent) {

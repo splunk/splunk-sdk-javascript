@@ -24,13 +24,13 @@ exports.setup = function () {
 
     splunkjs.Logger.setLevel("ALL");
 
-    return {
-        "Validation Definition tests": {
-            before: function (done) {
+    return (
+        describe("Validation Definition tests", function () {
+            before(function (done) {
                 done();
-            },
+            });
 
-            "Parse produces expected result": function (done) {
+            it("Parse produces expected result", function (done) {
                 try {
                     var found = ValidationDefinition.parse(utils.readFile(__filename, "../data/validation.xml"));
 
@@ -79,9 +79,9 @@ exports.setup = function () {
                 }
 
                 done();
-            }
-        }
-    };
+            });
+        })
+    )
 };
 
 // Run the individual test suite

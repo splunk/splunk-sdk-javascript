@@ -10,205 +10,207 @@ var getNextId = function () {
 
 exports.setup = function (svc) {
 
-    return {
-        beforeEach: function (done) {
-            this.service = svc;
-            done();
-        },
-
-        "Callback#list": function (done) {
-            var that = this;
-            var namespace = { owner: "admin", app: "search" };
-
-            Async.chain([
-                function (done) { that.service.configurations(namespace).fetch(done); },
-                function (props, done) {
-                    var files = props.list();
-                    assert.ok(files.length > 0);
-                    done();
-                }
-            ],
-                function (err) {
-                    assert.ok(!err);
-                    done();
-                });
-        },
-
-        "Callback#contains": function (done) {
-            var that = this;
-            var namespace = { owner: "admin", app: "search" };
-
-            Async.chain([
-                function (done) { that.service.configurations(namespace).fetch(done); },
-                function (props, done) {
-                    var file = props.item("web");
-                    assert.ok(file);
-                    file.fetch(done);
-                },
-                function (file, done) {
-                    assert.strictEqual(file.name, "web");
-                    done();
-                }
-            ],
-                function (err) {
-                    assert.ok(!err);
-                    done();
-                });
-        },
-
-        "Callback#contains stanza": function (done) {
-            var that = this;
-            var namespace = { owner: "admin", app: "search" };
-
-            Async.chain([
-                function (done) { that.service.configurations(namespace).fetch(done); },
-                function (props, done) {
-                    var file = props.item("web");
-                    assert.ok(file);
-                    file.fetch(done);
-                },
-                function (file, done) {
-                    assert.strictEqual(file.name, "web");
-
-                    var stanza = file.item("settings");
-                    assert.ok(stanza);
-                    stanza.fetch(done);
-                },
-                function (stanza, done) {
-                    assert.ok(stanza.properties().hasOwnProperty("httpport"));
-                    done();
-                }
-            ],
-                function (err) {
-                    assert.ok(!err);
-                    done();
-                });
-        },
-
-        "Callback#configurations init": function (done) {
-            assert.throws(function () {
-                var confs = new splunkjs.Service.Configurations(
-                    this.service,
-                    { owner: "-", app: "-", sharing: "system" }
-                );
+    return (
+        describe("Configuration tests", function (done) {
+            beforeEach(function (done) {
+                this.service = svc;
+                done();
             });
-            done();
-        },
 
-        "Callback#create file + create stanza + update stanza": function (done) {
-            var that = this;
-            var namespace = { owner: "nobody", app: "system" };
-            var fileName = "jssdk_file_" + getNextId();
-            var value = "barfoo_" + getNextId();
+            it("Callback#list", function (done) {
+                var that = this;
+                var namespace = { owner: "admin", app: "search" };
 
-            Async.chain([
-                function (done) {
-                    var configs = svc.configurations(namespace);
-                    configs.fetch(done);
-                },
-                function (configs, done) {
-                    configs.create({ __conf: fileName }, done);
-                },
-                function (file, done) {
-                    if (file.item("stanza")) {
-                        file.item("stanza").remove();
+                Async.chain([
+                    function (done) { that.service.configurations(namespace).fetch(done); },
+                    function (props, done) {
+                        var files = props.list();
+                        assert.ok(files.length > 0);
+                        done();
                     }
-                    file.create("stanza", done);
-                },
-                function (stanza, done) {
-                    stanza.update({ "jssdk_foobar": value }, done);
-                },
-                function (stanza, done) {
-                    assert.strictEqual(stanza.properties()["jssdk_foobar"], value);
-                    done();
-                },
-                function (done) {
-                    var file = new splunkjs.Service.ConfigurationFile(svc, fileName);
-                    file.fetch(done);
-                },
-                function (file, done) {
-                    var stanza = file.item("stanza");
-                    assert.ok(stanza);
-                    stanza.remove(done);
-                }
-            ],
-                function (err) {
-                    assert.ok(!err);
-                    done();
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    });
+            });
+
+            it("Callback#contains", function (done) {
+                var that = this;
+                var namespace = { owner: "admin", app: "search" };
+
+                Async.chain([
+                    function (done) { that.service.configurations(namespace).fetch(done); },
+                    function (props, done) {
+                        var file = props.item("web");
+                        assert.ok(file);
+                        file.fetch(done);
+                    },
+                    function (file, done) {
+                        assert.strictEqual(file.name, "web");
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    });
+            });
+
+            it("Callback#contains stanza", function (done) {
+                var that = this;
+                var namespace = { owner: "admin", app: "search" };
+
+                Async.chain([
+                    function (done) { that.service.configurations(namespace).fetch(done); },
+                    function (props, done) {
+                        var file = props.item("web");
+                        assert.ok(file);
+                        file.fetch(done);
+                    },
+                    function (file, done) {
+                        assert.strictEqual(file.name, "web");
+
+                        var stanza = file.item("settings");
+                        assert.ok(stanza);
+                        stanza.fetch(done);
+                    },
+                    function (stanza, done) {
+                        assert.ok(stanza.properties().hasOwnProperty("httpport"));
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    });
+            });
+
+            it("Callback#configurations init", function (done) {
+                assert.throws(function () {
+                    var confs = new splunkjs.Service.Configurations(
+                        this.service,
+                        { owner: "-", app: "-", sharing: "system" }
+                    );
                 });
-        },
+                done();
+            });
 
-        "Callback#can get default stanza": function (done) {
-            var that = this;
-            var namespace = { owner: "admin", app: "search" };
+            it("Callback#create file + create stanza + update stanza", function (done) {
+                var that = this;
+                var namespace = { owner: "nobody", app: "system" };
+                var fileName = "jssdk_file_" + getNextId();
+                var value = "barfoo_" + getNextId();
 
-            Async.chain([
-                function (done) { that.service.configurations(namespace).fetch(done); },
-                function (props, done) {
-                    var file = props.item("savedsearches");
-                    assert.strictEqual(namespace, file.namespace);
-                    assert.ok(file);
-                    file.fetch(done);
-                },
-                function (file, done) {
-                    assert.strictEqual(namespace, file.namespace);
-                    file.getDefaultStanza().fetch(done);
-                },
-                function (stanza, done) {
-                    assert.strictEqual(stanza.name, "default");
-                    assert.strictEqual(namespace, stanza.namespace);
-                    done();
-                }
-            ],
-                function (err) {
-                    assert.ok(!err);
-                    done();
-                });
-        },
+                Async.chain([
+                    function (done) {
+                        var configs = svc.configurations(namespace);
+                        configs.fetch(done);
+                    },
+                    function (configs, done) {
+                        configs.create({ __conf: fileName }, done);
+                    },
+                    function (file, done) {
+                        if (file.item("stanza")) {
+                            file.item("stanza").remove();
+                        }
+                        file.create("stanza", done);
+                    },
+                    function (stanza, done) {
+                        stanza.update({ "jssdk_foobar": value }, done);
+                    },
+                    function (stanza, done) {
+                        assert.strictEqual(stanza.properties()["jssdk_foobar"], value);
+                        done();
+                    },
+                    function (done) {
+                        var file = new splunkjs.Service.ConfigurationFile(svc, fileName);
+                        file.fetch(done);
+                    },
+                    function (file, done) {
+                        var stanza = file.item("stanza");
+                        assert.ok(stanza);
+                        stanza.remove(done);
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    });
+            });
 
-        "Callback#updating default stanza is noop": function (done) {
-            var that = this;
-            var namespace = { owner: "admin", app: "search" };
-            var backup = null;
-            var invalid = "this won't work";
+            it("Callback#can get default stanza", function (done) {
+                var that = this;
+                var namespace = { owner: "admin", app: "search" };
 
-            Async.chain([
-                function (done) { that.service.configurations(namespace).fetch(done); },
-                function (props, done) {
-                    var file = props.item("savedsearches");
-                    assert.strictEqual(namespace, file.namespace);
-                    assert.ok(file);
-                    file.fetch(done);
-                },
-                function (file, done) {
-                    assert.strictEqual(namespace, file.namespace);
-                    file.getDefaultStanza().fetch(done);
-                },
-                function (stanza, done) {
-                    assert.ok(stanza._properties.hasOwnProperty("max_concurrent"));
-                    assert.strictEqual(namespace, stanza.namespace);
-                    backup = stanza._properties.max_concurrent;
-                    stanza.update({ "max_concurrent": invalid }, done);
-                },
-                function (stanza, done) {
-                    assert.ok(stanza.properties().hasOwnProperty("max_concurrent"));
-                    assert.strictEqual(stanza.properties()["max_concurrent"], backup);
-                    assert.notStrictEqual(stanza.properties()["max_concurrent"], invalid);
-                    stanza.fetch(done);
-                },
-                function (stanza, done) {
-                    assert.ok(stanza.properties().hasOwnProperty("max_concurrent"));
-                    assert.strictEqual(stanza.properties()["max_concurrent"], backup);
-                    assert.notStrictEqual(stanza.properties()["max_concurrent"], invalid);
-                    done();
-                }
-            ],
-                function (err) {
-                    assert.ok(!err);
-                    done();
-                });
-        }
-    };
+                Async.chain([
+                    function (done) { that.service.configurations(namespace).fetch(done); },
+                    function (props, done) {
+                        var file = props.item("savedsearches");
+                        assert.strictEqual(namespace, file.namespace);
+                        assert.ok(file);
+                        file.fetch(done);
+                    },
+                    function (file, done) {
+                        assert.strictEqual(namespace, file.namespace);
+                        file.getDefaultStanza().fetch(done);
+                    },
+                    function (stanza, done) {
+                        assert.strictEqual(stanza.name, "default");
+                        assert.strictEqual(namespace, stanza.namespace);
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    });
+            });
+
+            it("Callback#updating default stanza is noop", function (done) {
+                var that = this;
+                var namespace = { owner: "admin", app: "search" };
+                var backup = null;
+                var invalid = "this won't work";
+
+                Async.chain([
+                    function (done) { that.service.configurations(namespace).fetch(done); },
+                    function (props, done) {
+                        var file = props.item("savedsearches");
+                        assert.strictEqual(namespace, file.namespace);
+                        assert.ok(file);
+                        file.fetch(done);
+                    },
+                    function (file, done) {
+                        assert.strictEqual(namespace, file.namespace);
+                        file.getDefaultStanza().fetch(done);
+                    },
+                    function (stanza, done) {
+                        assert.ok(stanza._properties.hasOwnProperty("max_concurrent"));
+                        assert.strictEqual(namespace, stanza.namespace);
+                        backup = stanza._properties.max_concurrent;
+                        stanza.update({ "max_concurrent": invalid }, done);
+                    },
+                    function (stanza, done) {
+                        assert.ok(stanza.properties().hasOwnProperty("max_concurrent"));
+                        assert.strictEqual(stanza.properties()["max_concurrent"], backup);
+                        assert.notStrictEqual(stanza.properties()["max_concurrent"], invalid);
+                        stanza.fetch(done);
+                    },
+                    function (stanza, done) {
+                        assert.ok(stanza.properties().hasOwnProperty("max_concurrent"));
+                        assert.strictEqual(stanza.properties()["max_concurrent"], backup);
+                        assert.notStrictEqual(stanza.properties()["max_concurrent"], invalid);
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    });
+            })
+        })
+    )
 };
 
 if (module === require.cache[__filename] && !module.parent) {

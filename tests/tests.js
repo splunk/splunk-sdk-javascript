@@ -12,6 +12,7 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
+var describe = require('mocha').describe;
 var options = require('../examples/node/cmdline');
 var splunkjs = require('../index');
 var utils = require('../lib/utils');
@@ -59,23 +60,27 @@ var loggedOutSvc = new splunkjs.Service({
     version: cmdline.opts.version
 });
 
-// Exports tests on a successful login
-module.exports = new Promise((resolve, reject) => {
-    svc.login(function (err, success) {
-        if (err || !success) {
-            throw new Error("Login failed - not running tests", err || "");
-        }
+describe("Server tests", function () {
 
-        var tests = {
-            'Modular input tests': require('./modularinputs'),
-            'Async tests': require('./test_async').setup(),
-            'Context tests': require('./test_context').setup(svc),
-            'Example tests': require('./test_examples').setup(svc, cmdline.opts),
-            'HTTP tests': require('./test_http').setup(nonSplunkHttp),
-            'Log tests': require('./test_log').setup(),
-            'Service tests': require('./test_service').setup(svc, loggedOutSvc),
-            'Utils tests': require('./test_utils').setup()
-        }
-        return resolve(tests);
-    });
-});
+    this.beforeAll(function (done) {
+        svc.login(function (err, success) {
+            if (err || !success) {
+                throw new Error("Login failed - not running tests", err || "");
+            }
+        });
+        done();
+    })
+
+    require('./modularinputs');
+    require('./test_async').setup();
+    require('./test_context').setup(svc);
+    require('./test_examples').setup(svc, cmdline.opts);
+    require('./test_http').setup(nonSplunkHttp);
+    require('./test_log').setup();
+    require('./test_service').setup(svc, loggedOutSvc);
+    require('./test_utils').setup();
+})
+
+
+
+

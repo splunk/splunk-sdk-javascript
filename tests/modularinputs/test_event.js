@@ -57,13 +57,13 @@ exports.setup = function () {
         }
     }
 
-    return {
-        "Event tests": {
-            beforeEach: function (done) {
+    return (
+        describe("Event tests", function () {
+            this.beforeEach(function (done) {
                 done();
-            },
+            });
 
-            "Event class handles times correctly - Date object": function (done) {
+            it("Event class handles times correctly - Date object", function (done) {
                 var now = Date.now();
                 var expected = (now / 1000).toFixed(3);
                 var found = Event.formatTime(now);
@@ -80,9 +80,9 @@ exports.setup = function () {
                 assert.equal(otherFound, otherExpected);
 
                 done();
-            },
+            });
 
-            "Event class handles times correctly - String": function (done) {
+            it("Event class handles times correctly - String", function (done) {
                 // Test time in seconds
                 var stringTime = "1372187084";
                 var expected = 1372187084.000;
@@ -114,9 +114,9 @@ exports.setup = function () {
                 assert.equal(found, expected);
 
                 done();
-            },
+            });
 
-            "Event class handles times correctly - Number (integer)": function (done) {
+            it("Event class handles times correctly - Number (integer)", function (done) {
                 // Test time in seconds
                 var intTime = 1372187084;
                 var expected = 1372187084.000;
@@ -142,9 +142,9 @@ exports.setup = function () {
                 assert.equal(found, expected);
 
                 done();
-            },
+            });
 
-            "Event class handles times correctly - Number (float)": function (done) {
+            it("Event class handles times correctly - Number (float)", function (done) {
                 // Test a perfect value
                 var floatTime = 1372187084.424;
                 var expected = 1372187084.424;
@@ -182,9 +182,9 @@ exports.setup = function () {
                 assert.equal(found, expected);
 
                 done();
-            },
+            });
 
-            "Event without enough fields throws error": function (done) {
+            it("Event without enough fields throws error", function (done) {
                 try {
                     var myEvent = new Event();
                     myEvent._writeTo(testUtils.getDuplexStream());
@@ -195,9 +195,9 @@ exports.setup = function () {
                     assert.ok(e);
                 }
                 done();
-            },
+            });
 
-            "Event with minimal config matches expected XML": function (done) {
+            it("Event with minimal config matches expected XML", function (done) {
                 var out = testUtils.getDuplexStream();
 
                 var myEvent = new Event({
@@ -219,9 +219,9 @@ exports.setup = function () {
                     assert.ok(false);
                 }
                 done();
-            },
+            });
 
-            "Event with full config matches expected XML": function (done) {
+            it("Event with full config matches expected XML", function (done) {
                 var out = testUtils.getDuplexStream();
 
                 var myEvent = new Event({
@@ -249,9 +249,9 @@ exports.setup = function () {
                     assert.ok(false);
                 }
                 done();
-            },
+            });
 
-            "EventWriter event writing works": function (done) {
+            it("EventWriter event writing works", function (done) {
                 var out = testUtils.getDuplexStream();
                 var err = testUtils.getDuplexStream();
 
@@ -291,9 +291,9 @@ exports.setup = function () {
                     assert.ok(false);
                 }
                 done();
-            },
+            });
 
-            "EventWriter gets an error from invalid Event": function (done) {
+            it("EventWriter gets an error from invalid Event", function (done) {
                 var out = testUtils.getDuplexStream();
                 var err = testUtils.getDuplexStream();
 
@@ -308,9 +308,9 @@ exports.setup = function () {
                     assert.ok(utils.startsWith(ew._err._read(), Logger.WARN));
                 }
                 done();
-            },
+            });
 
-            "EventWriter logging works": function (done) {
+            it("EventWriter logging works", function (done) {
                 var out = testUtils.getDuplexStream();
                 var err = testUtils.getDuplexStream();
 
@@ -324,9 +324,9 @@ exports.setup = function () {
                     assert.ok(false);
                 }
                 done();
-            },
+            });
 
-            "EventWriter XML writing works": function (done) {
+            it("EventWriter XML writing works", function (done) {
                 var out = testUtils.getDuplexStream();
                 var err = testUtils.getDuplexStream();
 
@@ -344,9 +344,9 @@ exports.setup = function () {
                     assert.ok(false);
                 }
                 done();
-            }
-        }
-    };
+            });
+        })
+    )
 };
 
 // Run the individual test suite

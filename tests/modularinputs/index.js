@@ -17,11 +17,11 @@ var splunkjs = require('../../index');
 splunkjs.Logger.setLevel("ALL");
 
 // // Modular input tests
-module.exports = {
-    'Event': require('./test_event').setup(),
-    'InputDefinition': require('./test_input_definition').setup(),
-    'ModularInput': require('./test_modularinput').setup(),
-    'Scheme': require('./test_scheme').setup(),
-    'ValidationDefinition': require('./test_validation_definition').setup(),
-}
+module.exports = (
+    require('./test_event').setup(),
+    require('./test_input_definition').setup(),
+    require('./test_modularinput').setup(),
+    require('./test_scheme').setup(),
+    require('./test_validation_definition').setup()
+)
 
