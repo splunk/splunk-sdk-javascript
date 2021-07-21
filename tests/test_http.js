@@ -19,15 +19,14 @@ exports.setup = function (http) {
 
     splunkjs.Logger.setLevel("ALL");
 
-    return {
-
-        "HTTP GET Tests": {
-            before: function (done) {
+    return (
+        describe("HTTP GET Tests", function (done) {
+            before(function (done) {
                 this.http = http;
                 done();
-            },
+            });
 
-            "Callback#abort simple": function (done) {
+            it("Callback#abort simple", function (done) {
                 var req = this.http.get("https://httpbin.org/get", {}, {}, 0, function (err, res) {
                     assert.ok(err);
                     assert.strictEqual(err.error, "abort");
@@ -35,9 +34,9 @@ exports.setup = function (http) {
                 });
 
                 req.abort();
-            },
+            });
 
-            "Callback#abort delay": function (done) {
+            it("Callback#abort delay", function (done) {
                 var req = this.http.get("https://httpbin.org/delay/20", {}, {}, 0, function (err, res) {
                     assert.ok(err);
                     assert.strictEqual(err.error, "abort");
@@ -47,32 +46,32 @@ exports.setup = function (http) {
                 splunkjs.Async.sleep(1000, function () {
                     req.abort();
                 });
-            },
+            });
 
-            "Callback#no args": function (done) {
+            it("Callback#no args", function (done) {
                 this.http.get("https://httpbin.org/get", [], {}, 0, function (err, res) {
                     assert.strictEqual(res.data.url, "https://httpbin.org/get");
                     done();
                 });
-            },
+            });
 
-            "Callback#success success+error": function (done) {
+            it("Callback#success success+error", function (done) {
                 this.http.get("https://httpbin.org/get", [], {}, 0, function (err, res) {
                     assert.ok(!err);
                     assert.strictEqual(res.data.url, "https://httpbin.org/get");
                     done();
                 });
-            },
+            });
 
-            "Callback#error all": function (done) {
+            it("Callback#error all", function (done) {
                 this.timeout(40000);
                 this.http.get("https://httpbin.org/status/404", [], {}, 0, function (err, res) {
                     assert.strictEqual(err.status, 404);
                     done();
                 });
-            },
+            });
 
-            "Callback#args": function (done) {
+            it("Callback#args", function (done) {
                 this.timeout(40000);
                 this.http.get("https://httpbin.org/get", [], { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0, function (err, res) {
                     var args = res.data.args;
@@ -83,9 +82,9 @@ exports.setup = function (http) {
                     assert.strictEqual(res.data.url, "https://httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
                     done();
                 });
-            },
+            });
 
-            "Callback#args with objects": function (done) {
+            it("Callback#args with objects", function (done) {
                 this.timeout(40000);
                 this.http.get(
                     "https://httpbin.org/get", [],
@@ -101,9 +100,9 @@ exports.setup = function (http) {
                         done();
                     }
                 );
-            },
+            });
 
-            "Callback#headers": function (done) {
+            it("Callback#headers", function (done) {
                 var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
                 this.http.get("https://httpbin.org/get", { "X-Test1": 1, "X-Test2": "a/b/c" }, {}, 0, function (err, res) {
@@ -118,9 +117,9 @@ exports.setup = function (http) {
                     assert.strictEqual(res.data.url, "https://httpbin.org/get");
                     done();
                 });
-            },
+            });
 
-            "Callback#all": function (done) {
+            it("Callback#all", function (done) {
                 var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
                 this.http.get("https://httpbin.org/get", { "X-Test1": 1, "X-Test2": "a/b/c" }, { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0, function (err, res) {
@@ -140,38 +139,38 @@ exports.setup = function (http) {
                     assert.strictEqual(res.data.url, "https://httpbin.org/get?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
                     done();
                 });
-            }
-        },
+            });
+        }),
 
-        "HTTP POST Tests": {
-            before: function (done) {
+        describe("HTTP POST Tests", function (done) {
+            before(function (done) {
                 this.http = http;
                 done();
-            },
+            });
 
-            "Callback#no args": function (done) {
+            it("Callback#no args", function (done) {
                 this.http.post("https://httpbin.org/post", {}, {}, 0, function (err, res) {
                     assert.strictEqual(res.data.url, "https://httpbin.org/post");
                     done();
                 });
-            },
+            });
 
-            "Callback#success success+error": function (done) {
+            it("Callback#success success+error", function (done) {
                 this.http.post("https://httpbin.org/post", {}, {}, 0, function (err, res) {
                     assert.ok(!err);
                     assert.strictEqual(res.data.url, "https://httpbin.org/post");
                     done();
                 });
-            },
+            });
 
-            "Callback#error all": function (done) {
+            it("Callback#error all", function (done) {
                 this.http.post("https://httpbin.org/status/405", {}, {}, 0, function (err, res) {
                     assert.strictEqual(err.status, 405);
                     done();
                 });
-            },
+            });
 
-            "Callback#args": function (done) {
+            it("Callback#args", function (done) {
                 this.http.post("https://httpbin.org/post", {}, { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0, function (err, res) {
                     var args = res.data.form;
                     assert.strictEqual(args.a, "1");
@@ -181,9 +180,9 @@ exports.setup = function (http) {
                     assert.strictEqual(res.data.url, "https://httpbin.org/post");
                     done();
                 });
-            },
+            });
 
-            "Callback#headers": function (done) {
+            it("Callback#headers", function (done) {
                 var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
                 this.http.post("https://httpbin.org/post", { "X-Test1": 1, "X-Test2": "a/b/c" }, {}, 0, function (err, res) {
@@ -197,9 +196,9 @@ exports.setup = function (http) {
                     assert.strictEqual(res.data.url, "https://httpbin.org/post");
                     done();
                 });
-            },
+            });
 
-            "Callback#all": function (done) {
+            it("Callback#all", function (done) {
                 var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
                 this.http.post("https://httpbin.org/post", { "X-Test1": 1, "X-Test2": "a/b/c" }, { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0, function (err, res) {
@@ -219,45 +218,45 @@ exports.setup = function (http) {
                     assert.strictEqual(res.data.url, "https://httpbin.org/post");
                     done();
                 });
-            }
-        },
+            })
+        }),
 
-        "HTTP DELETE Tests": {
-            before: function (done) {
+        describe("HTTP DELETE Tests", function (done) {
+            before(function (done) {
                 this.http = http;
                 done();
-            },
+            });
 
-            "Callback#no args": function (done) {
+            it("Callback#no args", function (done) {
                 this.http.del("https://httpbin.org/delete", [], {}, 0, function (err, res) {
                     assert.strictEqual(res.data.url, "https://httpbin.org/delete");
                     done();
                 });
-            },
+            });
 
-            "Callback#success success+error": function (done) {
+            it("Callback#success success+error", function (done) {
                 this.http.del("https://httpbin.org/delete", [], {}, 0, function (err, res) {
                     assert.ok(!err);
                     assert.strictEqual(res.data.url, "https://httpbin.org/delete");
                     done();
                 });
-            },
+            });
 
-            "Callback#error all": function (done) {
+            it("Callback#error all", function (done) {
                 this.http.del("https://httpbin.org/status/405", [], {}, 0, function (err, res) {
                     assert.strictEqual(err.status, 405);
                     done();
                 });
-            },
+            });
 
-            "Callback#args": function (done) {
+            it("Callback#args", function (done) {
                 this.http.del("https://httpbin.org/delete", [], { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0, function (err, res) {
                     assert.strictEqual(res.data.url, "https://httpbin.org/delete?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
                     done();
                 });
-            },
+            });
 
-            "Callback#headers": function (done) {
+            it("Callback#headers", function (done) {
                 var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
                 this.http.del("https://httpbin.org/delete", { "X-Test1": 1, "X-Test2": "a/b/c" }, {}, 0, function (err, res) {
@@ -271,9 +270,9 @@ exports.setup = function (http) {
                     assert.strictEqual(res.data.url, "https://httpbin.org/delete");
                     done();
                 });
-            },
+            });
 
-            "Callback#all": function (done) {
+            it("Callback#all", function (done) {
                 var headers = { "X-Test1": 1, "X-Test2": "a/b/c" };
 
                 this.http.del("https://httpbin.org/delete", { "X-Test1": 1, "X-Test2": "a/b/c" }, { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0, function (err, res) {
@@ -287,23 +286,23 @@ exports.setup = function (http) {
                     assert.strictEqual(res.data.url, "https://httpbin.org/delete?a=1&b=2&c=1&c=2&c=3&d=a%2Fb");
                     done();
                 });
-            },
+            });
 
-            "Default arguments to Http work": function (done) {
+            it("Default arguments to Http work", function (done) {
                 var NodeHttp = splunkjs.NodeHttp;
                 var h = new NodeHttp();
                 assert.ok(h);
                 done();
-            },
+            });
 
-            "Methods of Http base class that must be overrided": function (done) {
+            it("Methods of Http base class that must be overrided", function (done) {
                 var h = new splunkjs.Http();
                 assert.throws(function () { h.makeRequest("asdf", null, null); });
                 assert.throws(function () { h.parseJson("{}"); });
                 done();
-            }
-        }
-    };
+            })
+        })
+    )
 };
 
 // Run the individual test suite

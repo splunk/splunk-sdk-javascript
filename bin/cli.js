@@ -762,7 +762,7 @@
             .concat(cmdline.opts.version ? makeOption("version", cmdline.opts.version) : "")
             .concat(cmdline.opts.password ? makeOption("password", cmdline.opts.password) : "")
             .concat(cmdline.opts.reporter ? makeOption("reporter", cmdline.opts.reporter.toLowerCase()) : "")
-            .concat(cmdline.opts.ui ? makeOption("ui", cmdline.opts.ui) : ["--ui", "exports"])
+            .concat(cmdline.opts.ui ? makeOption("ui", cmdline.opts.ui) : ["--ui", "bdd"])
             .concat(cmdline.opts.timeout ? makeOption("timeout", cmdline.opts.timeout) : ["--timeout", "5000"])
             .concat(cmdline.opts.grep ? makeOption("grep", cmdline.opts.grep) : "")
             .concat(cmdline.opts.exit ? "--exit" : "--exit")

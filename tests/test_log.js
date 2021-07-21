@@ -28,62 +28,64 @@ exports.setup = function () {
         return {};
     }
     else {
-        return {
-            "Default level with no environment variable": function (done) {
-                var oldVal = process.env.LOG_LEVEL;
-                delete process.env.LOG_LEVEL;
-                unload("log.js");
-                var logger = require("../lib/log.js");
-                assert.equal(process.env.LOG_LEVEL, logger.Logger.levels.ERROR);
-                process.env.LOG_LEVEL = oldVal;
-                unload("log.js");
-                done();
-            },
+        return (
+            describe('Log tests', function () {
+                it("Default level with no environment variable", function (done) {
+                    var oldVal = process.env.LOG_LEVEL;
+                    delete process.env.LOG_LEVEL;
+                    unload("log.js");
+                    var logger = require("../lib/log.js");
+                    assert.equal(process.env.LOG_LEVEL, logger.Logger.levels.ERROR);
+                    process.env.LOG_LEVEL = oldVal;
+                    unload("log.js");
+                    done();
+                });
 
-            "Setting a nonexistant level default to errors": function (done) {
-                var oldVal = process.env.LOG_LEVEL;
-                process.env.LOG_LEVEL = "25";
-                unload("log.js");
-                var logger = require("../lib/log.js");
-                assert.equal(process.env.LOG_LEVEL, logger.Logger.levels.ERROR);
-                process.env.LOG_LEVEL = oldVal;
-                unload("log.js");
-                done();
-            },
+                it("Setting a nonexistant level default to errors", function (done) {
+                    var oldVal = process.env.LOG_LEVEL;
+                    process.env.LOG_LEVEL = "25";
+                    unload("log.js");
+                    var logger = require("../lib/log.js");
+                    assert.equal(process.env.LOG_LEVEL, logger.Logger.levels.ERROR);
+                    process.env.LOG_LEVEL = oldVal;
+                    unload("log.js");
+                    done();
+                });
 
-            "Setting logging level as integer works": function (done) {
-                var oldVal = process.env.LOG_LEVEL;
-                process.env.LOG_LEVEL = "3";
-                unload("log.js");
-                var logger = require("../lib/log.js");
-                assert.equal(process.env.LOG_LEVEL, logger.Logger.levels.INFO);
-                process.env.LOG_LEVEL = oldVal;
-                unload("log.js");
-                done();
-            },
+                it("Setting logging level as integer works", function (done) {
+                    var oldVal = process.env.LOG_LEVEL;
+                    process.env.LOG_LEVEL = "3";
+                    unload("log.js");
+                    var logger = require("../lib/log.js");
+                    assert.equal(process.env.LOG_LEVEL, logger.Logger.levels.INFO);
+                    process.env.LOG_LEVEL = oldVal;
+                    unload("log.js");
+                    done();
+                });
 
-            "Setting logging level as string works": function (done) {
-                var oldVal = process.env.LOG_LEVEL;
-                process.env.LOG_LEVEL = "INFO";
-                unload("log.js");
-                var logger = require("../lib/log.js");
-                assert.equal(process.env.LOG_LEVEL, logger.Logger.levels.INFO);
-                process.env.LOG_LEVEL = oldVal;
-                unload("log.js");
-                done();
-            },
+                it("Setting logging level as string works", function (done) {
+                    var oldVal = process.env.LOG_LEVEL;
+                    process.env.LOG_LEVEL = "INFO";
+                    unload("log.js");
+                    var logger = require("../lib/log.js");
+                    assert.equal(process.env.LOG_LEVEL, logger.Logger.levels.INFO);
+                    process.env.LOG_LEVEL = oldVal;
+                    unload("log.js");
+                    done();
+                });
 
-            "Setting logging level after the fact works": function (done) {
-                var oldVal = process.env.LOG_LEVEL;
-                unload("log.js");
-                var logger = require("../lib/log.js");
-                logger.Logger.setLevel();
-                process.env.LOG_LEVEL = oldVal;
-                unload("log.js");
-                done();
-            }
-        };
-    }
+                it("Setting logging level after the fact works", function (done) {
+                    var oldVal = process.env.LOG_LEVEL;
+                    unload("log.js");
+                    var logger = require("../lib/log.js");
+                    logger.Logger.setLevel();
+                    process.env.LOG_LEVEL = oldVal;
+                    unload("log.js");
+                    done();
+                });
+            })
+        )
+    };
 };
 
 // Run the individual test suite

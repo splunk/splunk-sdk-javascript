@@ -23,28 +23,28 @@ exports.setup = function (svc) {
     splunkjs.Logger.setLevel("ALL");
     var isBrowser = typeof window !== "undefined";
 
-    var suite = {
-        "General Context Test": {
-            before: function (done) {
+    var suite = (
+        describe("General Context Test", function (done) {
+            before(function (done) {
                 this.service = svc;
                 done();
-            },
+            });
 
-            "Service exists": function (done) {
+            it("Service exists", function (done) {
                 assert.ok(this.service);
                 done();
-            },
+            });
 
-            "Create test search": function (done) {
+            it("Create test search", function (done) {
                 // The search created here is used by several of the following tests, specifically those using get()
                 var searchID = "DELETEME_JSSDK_UNITTEST";
                 this.service.post("search/jobs", { search: "search index=_internal | head 1", exec_mode: "blocking", id: searchID }, function (err, res) {
                     assert.ok(res.data.sid);
                     done();
                 });
-            },
+            });
 
-            "Callback#login": function (done) {
+            it("Callback#login", function (done) {
                 var newService = new splunkjs.Service(svc.http, {
                     scheme: svc.scheme,
                     host: svc.host,
@@ -58,9 +58,9 @@ exports.setup = function (svc) {
                     assert.ok(success);
                     done();
                 });
-            },
+            });
 
-            "Callback#login fail": function (done) {
+            it("Callback#login fail", function (done) {
                 var newService = new splunkjs.Service(svc.http, {
                     scheme: svc.scheme,
                     host: svc.host,
@@ -79,9 +79,9 @@ exports.setup = function (svc) {
                 else {
                     done();
                 }
-            },
+            });
 
-            "Callback#get": function (done) {
+            it("Callback#get", function (done) {
                 this.service.get("search/jobs", { count: 1 }, function (err, res) {
                     assert.strictEqual(res.data.paging.offset, 0);
                     assert.ok(res.data.entry.length <= res.data.paging.total);
@@ -89,17 +89,17 @@ exports.setup = function (svc) {
                     assert.ok(res.data.entry[0].content.sid);
                     done();
                 });
-            },
+            });
 
-            "Callback#get error": function (done) {
+            it("Callback#get error", function (done) {
                 this.service.get("search/jobs/1234_nosuchjob", {}, function (res) {
                     assert.ok(!!res);
                     assert.strictEqual(res.status, 404);
                     done();
                 });
-            },
+            });
 
-            "Callback#get autologin - success": function (done) {
+            it("Callback#get autologin - success", function (done) {
                 var service = new splunkjs.Service(
                     {
                         scheme: this.service.scheme,
@@ -118,9 +118,9 @@ exports.setup = function (svc) {
                     assert.ok(res.data.entry[0].content.sid);
                     done();
                 });
-            },
+            });
 
-            "Callback#get autologin - error": function (done) {
+            it("Callback#get autologin - error", function (done) {
                 var service = new splunkjs.Service(
                     {
                         scheme: this.service.scheme,
@@ -137,10 +137,10 @@ exports.setup = function (svc) {
                     assert.strictEqual(err.status, 401);
                     done();
                 });
-            },
+            });
 
 
-            "Callback#get autologin - disabled": function (done) {
+            it("Callback#get autologin - disabled", function (done) {
                 var service = new splunkjs.Service(
                     {
                         scheme: this.service.scheme,
@@ -158,9 +158,9 @@ exports.setup = function (svc) {
                     assert.strictEqual(err.status, 401);
                     done();
                 });
-            },
+            });
 
-            "Callback#get relogin - success": function (done) {
+            it("Callback#get relogin - success", function (done) {
                 var service = new splunkjs.Service(
                     {
                         scheme: this.service.scheme,
@@ -181,9 +181,9 @@ exports.setup = function (svc) {
                     assert.ok(res.data.entry[0].content.sid);
                     done();
                 });
-            },
+            });
 
-            "Callback#get relogin - error": function (done) {
+            it("Callback#get relogin - error", function (done) {
                 var service = new splunkjs.Service(
                     {
                         scheme: this.service.scheme,
@@ -201,9 +201,9 @@ exports.setup = function (svc) {
                     assert.strictEqual(err.status, 401);
                     done();
                 });
-            },
+            });
 
-            "Callback#post": function (done) {
+            it("Callback#post", function (done) {
                 var service = this.service;
                 this.service.post("search/jobs", { search: "search index=_internal | head 1" }, function (err, res) {
                     var sid = res.data.sid;
@@ -216,17 +216,17 @@ exports.setup = function (svc) {
                     );
                 }
                 );
-            },
+            });
 
-            "Callback#post error": function (done) {
+            it("Callback#post error", function (done) {
                 this.service.post("search/jobs", { search: "index_internal | head 1" }, function (res) {
                     assert.ok(!!res);
                     assert.strictEqual(res.status, 400);
                     done();
                 });
-            },
+            });
 
-            "Callback#post autologin - success": function (done) {
+            it("Callback#post autologin - success", function (done) {
                 var service = new splunkjs.Service(
                     {
                         scheme: this.service.scheme,
@@ -249,9 +249,9 @@ exports.setup = function (svc) {
                     );
                 }
                 );
-            },
+            });
 
-            "Callback#post autologin - error": function (done) {
+            it("Callback#post autologin - error", function (done) {
                 var service = new splunkjs.Service(
                     {
                         scheme: this.service.scheme,
@@ -268,9 +268,9 @@ exports.setup = function (svc) {
                     assert.strictEqual(err.status, 401);
                     done();
                 });
-            },
+            });
 
-            "Callback#post autologin - disabled": function (done) {
+            it("Callback#post autologin - disabled", function (done) {
                 var service = new splunkjs.Service(
                     {
                         scheme: this.service.scheme,
@@ -288,9 +288,9 @@ exports.setup = function (svc) {
                     assert.strictEqual(err.status, 401);
                     done();
                 });
-            },
+            });
 
-            "Callback#post relogin - success": function (done) {
+            it("Callback#post relogin - success", function (done) {
                 var service = new splunkjs.Service(
                     {
                         scheme: this.service.scheme,
@@ -314,9 +314,9 @@ exports.setup = function (svc) {
                     );
                 }
                 );
-            },
+            });
 
-            "Callback#post relogin - error": function (done) {
+            it("Callback#post relogin - error", function (done) {
                 var service = new splunkjs.Service(
                     {
                         scheme: this.service.scheme,
@@ -334,9 +334,9 @@ exports.setup = function (svc) {
                     assert.strictEqual(err.status, 401);
                     done();
                 });
-            },
+            });
 
-            "Callback#delete": function (done) {
+            it("Callback#delete", function (done) {
                 var service = this.service;
                 this.service.post("search/jobs", { search: "search index=_internal | head 1" }, function (err, res) {
                     var sid = res.data.sid;
@@ -347,17 +347,17 @@ exports.setup = function (svc) {
                         done();
                     });
                 });
-            },
+            });
 
-            "Callback#delete error": function (done) {
+            it("Callback#delete error", function (done) {
                 this.service.del("search/jobs/1234_nosuchjob", {}, function (res) {
                     assert.ok(!!res);
                     assert.strictEqual(res.status, 404);
                     done();
                 });
-            },
+            });
 
-            "Callback#delete autologin - success": function (done) {
+            it("Callback#delete autologin - success", function (done) {
                 var service = new splunkjs.Service(
                     {
                         scheme: this.service.scheme,
@@ -379,9 +379,9 @@ exports.setup = function (svc) {
                         done();
                     });
                 });
-            },
+            });
 
-            "Callback#delete autologin - error": function (done) {
+            it("Callback#delete autologin - error", function (done) {
                 var service = new splunkjs.Service(
                     {
                         scheme: this.service.scheme,
@@ -398,9 +398,9 @@ exports.setup = function (svc) {
                     assert.strictEqual(err.status, 401);
                     done();
                 });
-            },
+            });
 
-            "Callback#delete autologin - disabled": function (done) {
+            it("Callback#delete autologin - disabled", function (done) {
                 var service = new splunkjs.Service(
                     {
                         scheme: this.service.scheme,
@@ -418,9 +418,9 @@ exports.setup = function (svc) {
                     assert.strictEqual(err.status, 401);
                     done();
                 });
-            },
+            });
 
-            "Callback#delete relogin - success": function (done) {
+            it("Callback#delete relogin - success", function (done) {
                 var service = new splunkjs.Service(
                     {
                         scheme: this.service.scheme,
@@ -443,9 +443,9 @@ exports.setup = function (svc) {
                         done();
                     });
                 });
-            },
+            });
 
-            "Callback#delete relogin - error": function (done) {
+            it("Callback#delete relogin - error", function (done) {
                 var service = new splunkjs.Service(
                     {
                         scheme: this.service.scheme,
@@ -463,9 +463,9 @@ exports.setup = function (svc) {
                     assert.strictEqual(err.status, 401);
                     done();
                 });
-            },
+            });
 
-            "Callback#request get": function (done) {
+            it("Callback#request get", function (done) {
                 var get = { count: 1 };
                 var post = null;
                 var body = null;
@@ -481,9 +481,9 @@ exports.setup = function (svc) {
 
                     done();
                 });
-            },
+            });
 
-            "Callback#request post": function (done) {
+            it("Callback#request post", function (done) {
                 var body = "search=" + encodeURIComponent("search index=_internal | head 1");
                 var headers = {
                     "Content-Type": "application/x-www-form-urlencoded"
@@ -498,9 +498,9 @@ exports.setup = function (svc) {
                         done();
                     });
                 });
-            },
+            });
 
-            "Callback#request error": function (done) {
+            it("Callback#request error", function (done) {
                 this.service.request("search/jobs/1234_nosuchjob", "GET", null, null, null, { "X-TestHeader": 1 }, function (res) {
                     assert.ok(!!res);
 
@@ -511,9 +511,9 @@ exports.setup = function (svc) {
                     assert.strictEqual(res.status, 404);
                     done();
                 });
-            },
+            });
 
-            "Callback#request autologin - success": function (done) {
+            it("Callback#request autologin - success", function (done) {
                 var service = new splunkjs.Service(
                     {
                         scheme: this.service.scheme,
@@ -540,9 +540,9 @@ exports.setup = function (svc) {
 
                     done();
                 });
-            },
+            });
 
-            "Callback#request autologin - error": function (done) {
+            it("Callback#request autologin - error", function (done) {
                 var service = new splunkjs.Service(
                     {
                         scheme: this.service.scheme,
@@ -562,9 +562,9 @@ exports.setup = function (svc) {
                     assert.strictEqual(err.status, 401);
                     done();
                 });
-            },
+            });
 
-            "Callback#request autologin - disabled": function (done) {
+            it("Callback#request autologin - disabled", function (done) {
                 var service = new splunkjs.Service(
                     {
                         scheme: this.service.scheme,
@@ -585,9 +585,9 @@ exports.setup = function (svc) {
                     assert.strictEqual(err.status, 401);
                     done();
                 });
-            },
+            });
 
-            "Callback#request relogin - success": function (done) {
+            it("Callback#request relogin - success", function (done) {
                 var service = new splunkjs.Service(
                     {
                         scheme: this.service.scheme,
@@ -615,9 +615,9 @@ exports.setup = function (svc) {
 
                     done();
                 });
-            },
+            });
 
-            "Callback#request relogin - error": function (done) {
+            it("Callback#request relogin - error", function (done) {
                 var service = new splunkjs.Service(
                     {
                         scheme: this.service.scheme,
@@ -638,9 +638,9 @@ exports.setup = function (svc) {
                     assert.strictEqual(err.status, 401);
                     done();
                 });
-            },
+            });
 
-            "Callback#abort": function (done) {
+            it("Callback#abort", function (done) {
                 var req = this.service.get("search/jobs", { count: 1 }, function (err, res) {
                     assert.ok(!res);
                     assert.ok(err);
@@ -650,9 +650,9 @@ exports.setup = function (svc) {
                 });
 
                 req.abort();
-            },
+            });
 
-            "Callback#timeout default test": function (done) {
+            it("Callback#timeout default test", function (done) {
                 var service = new splunkjs.Service(
                     {
                         scheme: this.service.scheme,
@@ -669,9 +669,9 @@ exports.setup = function (svc) {
                     assert.ok(res);
                     done();
                 });
-            },
+            });
 
-            "Callback#timeout timed test": function (done) {
+            it("Callback#timeout timed test", function (done) {
                 var service = new splunkjs.Service(
                     {
                         scheme: this.service.scheme,
@@ -689,7 +689,7 @@ exports.setup = function (svc) {
                     assert.ok(res);
                     done();
                 });
-            },
+            });
 
             // This test is not stable, commenting it out until we figure it out
             // "Callback#timeout fail -- FAILS INTERMITTENTLY": function(done){
@@ -716,15 +716,15 @@ exports.setup = function (svc) {
             //     });
             // },
 
-            "Cancel test search": function (done) {
+            it("Cancel test search", function (done) {
                 // Here, the search created for several of the previous tests is terminated, it is no longer necessary
                 var endpoint = "search/jobs/DELETEME_JSSDK_UNITTEST/control";
                 this.service.post(endpoint, { action: "cancel" }, function (err, res) {
                     done();
                 });
-            },
+            });
 
-            "fullpath gets its owner/app from the right places": function (done) {
+            it("fullpath gets its owner/app from the right places", function (done) {
                 var http = tutils.DummyHttp;
                 var ctx = new splunkjs.Context(http, { /*nothing*/ });
 
@@ -746,9 +746,9 @@ exports.setup = function (svc) {
                 var ctx3 = new splunkjs.Context(http, { owner: "alpha@beta.com", app: "beta" });
                 assert.strictEqual(ctx3.fullpath("meep"), "/servicesNS/alpha%40beta.com/beta/meep");
                 done();
-            },
+            });
 
-            "version check": function (done) {
+            it("version check", function (done) {
                 var http = tutils.DummyHttp;
                 var ctx;
 
@@ -784,10 +784,11 @@ exports.setup = function (svc) {
                 assert.ok(ctx.versionCompare("5.0") === 0);
 
                 done();
-            }
-        },
-        "Cookie Tests": {
-            before: function (done) {
+            });
+        }),
+
+        describe("Cookie Tests", function (done) {
+            before(function (done) {
                 this.service = svc;
                 this.skip = false;
                 var that = this;
@@ -801,13 +802,13 @@ exports.setup = function (svc) {
                     }
                     done();
                 });
-            },
+            });
 
-            tearDown: function (done) {
+            after(function (done) {
                 this.service.logout(done);
-            },
+            });
 
-            "_getCookieString works as expected": function (done) {
+            it("_getCookieString works as expected", function (done) {
                 var service = new splunkjs.Service(
                     {
                         scheme: svc.scheme,
@@ -825,9 +826,9 @@ exports.setup = function (svc) {
 
                 assert.strictEqual(cookieString, expectedCookieString);
                 done();
-            },
+            });
 
-            "login and store cookie": function (done) {
+            it("login and store cookie", function (done) {
                 if (this.skip) {
                     done();
                     return;
@@ -852,9 +853,9 @@ exports.setup = function (svc) {
                     assert.notStrictEqual(service.http._getCookieString(), '');
                     done();
                 });
-            },
+            });
 
-            "request with cookie": function (done) {
+            it("request with cookie", function (done) {
                 if (this.skip) {
                     done();
                     return;
@@ -904,9 +905,9 @@ exports.setup = function (svc) {
                         done();
                     }
                 );
-            },
+            });
 
-            "request fails with bad cookie": function (done) {
+            it("request fails with bad cookie", function (done) {
                 if (this.skip) {
                     done();
                     return;
@@ -931,9 +932,9 @@ exports.setup = function (svc) {
                     assert.strictEqual(err.status, 401);
                     done();
                 });
-            },
+            });
 
-            "autologin with cookie": function (done) {
+            it("autologin with cookie", function (done) {
                 if (this.skip) {
                     done();
                     return;
@@ -956,9 +957,9 @@ exports.setup = function (svc) {
                     assert.ok(service.http._cookieStore);
                     done();
                 });
-            },
+            });
 
-            "login fails with no cookie and no sessionKey": function (done) {
+            it("login fails with no cookie and no sessionKey", function (done) {
                 if (this.skip) {
                     done();
                     return;
@@ -982,9 +983,9 @@ exports.setup = function (svc) {
                     assert.ok(err);
                     done();
                 });
-            },
+            });
 
-            "login with multiple cookies": function (done) {
+            it("login with multiple cookies", function (done) {
                 if (this.skip) {
                     done();
                     return;
@@ -1039,9 +1040,9 @@ exports.setup = function (svc) {
                         done();
                     }
                 );
-            },
+            });
 
-            "autologin with cookie and bad sessionKey": function (done) {
+            it("autologin with cookie and bad sessionKey", function (done) {
                 if (this.skip) {
                     done();
                     return;
@@ -1064,9 +1065,10 @@ exports.setup = function (svc) {
                     assert.ok(service.http._cookieStore);
                     done();
                 });
-            }
-        }
-    };
+            });
+        })
+    )
+
     return suite;
 };
 

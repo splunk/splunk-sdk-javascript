@@ -4,59 +4,61 @@ var splunkjs = require('../../index');
 
 exports.setup = function (svc, loggedOutSvc) {
 
-    return {
-        beforeEach: function (done) {
-            this.service = svc;
-            this.loggedOutService = loggedOutSvc;
-            done();
-        },
-
-        "Methods to be overridden throw": function (done) {
-            var coll = new splunkjs.Service.Collection(
-                this.service,
-                "/data/indexes",
-                {
-                    owner: "admin",
-                    app: "search",
-                    sharing: "app"
-                }
-            );
-            assert.throws(function () {
-                coll.instantiateEntity({});
+    return (
+        describe("Collection tests", function (done) {
+            beforeEach(function (done) {
+                this.service = svc;
+                this.loggedOutService = loggedOutSvc;
+                done();
             });
-            done();
-        },
 
-        "Accessors work": function (done) {
-            var coll = new splunkjs.Service.Collection(
-                this.service,
-                "/data/indexes",
-                {
-                    owner: "admin",
-                    app: "search",
-                    sharing: "app"
-                }
-            );
-            coll._load({ links: "Hilda", updated: true });
-            assert.strictEqual(coll.links(), "Hilda");
-            assert.ok(coll.updated());
-            done();
-        },
+            it("Methods to be overridden throw", function (done) {
+                var coll = new splunkjs.Service.Collection(
+                    this.service,
+                    "/data/indexes",
+                    {
+                        owner: "admin",
+                        app: "search",
+                        sharing: "app"
+                    }
+                );
+                assert.throws(function () {
+                    coll.instantiateEntity({});
+                });
+                done();
+            });
 
-        "Contains throws without a good id": function (done) {
-            var coll = new splunkjs.Service.Collection(
-                this.service,
-                "/data/indexes",
-                {
-                    owner: "admin",
-                    app: "search",
-                    sharing: "app"
-                }
-            );
-            assert.throws(function () { coll.item(null); });
-            done();
-        }
-    };
+            it("Accessors work", function (done) {
+                var coll = new splunkjs.Service.Collection(
+                    this.service,
+                    "/data/indexes",
+                    {
+                        owner: "admin",
+                        app: "search",
+                        sharing: "app"
+                    }
+                );
+                coll._load({ links: "Hilda", updated: true });
+                assert.strictEqual(coll.links(), "Hilda");
+                assert.ok(coll.updated());
+                done();
+            });
+
+            it("Contains throws without a good id", function (done) {
+                var coll = new splunkjs.Service.Collection(
+                    this.service,
+                    "/data/indexes",
+                    {
+                        owner: "admin",
+                        app: "search",
+                        sharing: "app"
+                    }
+                );
+                assert.throws(function () { coll.item(null); });
+                done();
+            })
+        })
+    )
 };
 
 if (module === require.cache[__filename] && !module.parent) {

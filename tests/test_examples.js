@@ -25,108 +25,108 @@ exports.setup = function (svc, opts) {
 
     splunkjs.Logger.setLevel("ALL");
 
-    return {
-        "Hello World Tests": {
-            "Apps": function (done) {
+    return (
+        describe("Hello World Tests", function (done) {
+            it("Apps", function (done) {
                 var main = require("../examples/node/helloworld/apps").main;
                 main(opts, done);
-            },
+            });
 
-            "Apps#Async": function (done) {
+            it("Apps#Async", function (done) {
                 var main = require("../examples/node/helloworld/apps_async").main;
                 main(opts, done);
-            },
+            });
 
-            "Pivot#Async": function (done) {
+            it("Pivot#Async", function (done) {
                 var main = require("../examples/node/helloworld/pivot_async").main;
                 main(opts, done);
-            },
+            });
 
-            "Fired Alerts": function (done) {
+            it("Fired Alerts", function (done) {
                 var main = require("../examples/node/helloworld/firedalerts").main;
                 main(opts, done);
-            },
+            });
 
-            "Fired Alerts#Async": function (done) {
+            it("Fired Alerts#Async", function (done) {
                 var main = require("../examples/node/helloworld/firedalerts_async").main;
                 main(opts, done);
-            },
+            });
 
-            "Fired Alerts#Create": function (done) {
+            it("Fired Alerts#Create", function (done) {
                 var main = require("../examples/node/helloworld/firedalerts_create").main;
                 main(opts, done);
-            },
+            });
 
-            "Fired Alerts#Delete": function (done) {
+            it("Fired Alerts#Delete", function (done) {
                 var main = require("../examples/node/helloworld/firedalerts_delete").main;
                 main(opts, done);
-            },
+            });
 
-            "Get Job by sid": function (done) {
+            it("Get Job by sid", function (done) {
                 var main = require("../examples/node/helloworld/get_job").main;
                 main(opts, done);
-            },
+            });
 
-            "Endpoint Instantiation": function (done) {
+            it("Endpoint Instantiation", function (done) {
                 var main = require("../examples/node/helloworld/endpoint_instantiation").main;
                 main(opts, done);
-            },
+            });
 
-            "Saved Searches": function (done) {
+            it("Saved Searches", function (done) {
                 var main = require("../examples/node/helloworld/savedsearches").main;
                 main(opts, done);
-            },
+            });
 
-            "Saved Searches#Async": function (done) {
+            it("Saved Searches#Async", function (done) {
                 var main = require("../examples/node/helloworld/savedsearches_async").main;
                 main(opts, done);
-            },
+            });
 
-            "Saved Searches#Delete": function (done) {
+            it("Saved Searches#Delete", function (done) {
                 var main = require("../examples/node/helloworld/savedsearches_delete").main;
                 main(opts, done);
-            },
+            });
 
-            "Saved Searches#Create": function (done) {
+            it("Saved Searches#Create", function (done) {
                 var main = require("../examples/node/helloworld/savedsearches_create").main;
                 main(opts, done);
-            },
+            });
 
-            "Saved Searches#Delete Again": function (done) {
+            it("Saved Searches#Delete Again", function (done) {
                 var main = require("../examples/node/helloworld/savedsearches_delete").main;
                 main(opts, done);
-            },
+            });
 
-            "Search#normal": function (done) {
+            it("Search#normal", function (done) {
                 var main = require("../examples/node/helloworld/search_normal").main;
                 main(opts, done);
-            },
+            });
 
-            "Search#blocking": function (done) {
+            it("Search#blocking", function (done) {
                 var main = require("../examples/node/helloworld/search_blocking").main;
                 main(opts, done);
-            },
+            });
 
-            "Search#oneshot": function (done) {
+            it("Search#oneshot", function (done) {
                 var main = require("../examples/node/helloworld/search_oneshot").main;
                 main(opts, done);
-            },
+            });
 
-            "Search#realtime": function (done) {
+            it("Search#realtime", function (done) {
 
                 this.timeout(40000)
                 var main = require("../examples/node/helloworld/search_realtime").main;
                 main(opts, done);
-            },
+            });
 
-            "Logging": function (done) {
+            it("Logging", function (done) {
                 var main = require("../examples/node/helloworld/log").main;
                 main(opts, done);
-            }
-        },
+            })
+        }),
 
-        "Jobs Example Tests": {
-            beforeEach: function (done) {
+        describe("Jobs Example Tests", function (done) {
+            beforeEach(function (done) {
                 var context = this;
 
                 this.main = require("../examples/node/jobs").main;
@@ -155,23 +155,23 @@ exports.setup = function (svc, opts) {
                 };
 
                 done();
-            },
+            });
 
-            "help": function (done) {
+            it("help", function (done) {
                 this.run(null, null, null, function (err) {
                     assert.ok(!!err);
                     done();
                 });
-            },
+            });
 
-            "List jobs": function (done) {
+            it("List jobs", function (done) {
                 this.run("list", null, null, function (err) {
                     assert.ok(!err);
                     done();
                 });
-            },
+            });
 
-            "Create job": function (done) {
+            it("Create job", function (done) {
                 var create = {
                     search: "search index=_internal | head 1",
                     id: getNextId()
@@ -185,9 +185,9 @@ exports.setup = function (svc, opts) {
                         done();
                     });
                 });
-            },
+            });
 
-            "Cancel job": function (done) {
+            it("Cancel job", function (done) {
                 var create = {
                     search: "search index=_internal | head 1",
                     id: getNextId()
@@ -201,9 +201,9 @@ exports.setup = function (svc, opts) {
                         done();
                     });
                 });
-            },
+            });
 
-            "List job properties": function (done) {
+            it("List job properties", function (done) {
                 var create = {
                     search: "search index=_internal | head 1",
                     id: getNextId()
@@ -220,9 +220,9 @@ exports.setup = function (svc, opts) {
                         });
                     });
                 });
-            },
+            });
 
-            "List job events": function (done) {
+            it("List job events", function (done) {
                 var create = {
                     search: "search index=_internal | head 1",
                     id: getNextId()
@@ -239,9 +239,9 @@ exports.setup = function (svc, opts) {
                         });
                     });
                 });
-            },
+            });
 
-            "List job preview": function (done) {
+            it("List job preview", function (done) {
                 var create = {
                     search: "search index=_internal | head 1",
                     id: getNextId()
@@ -258,9 +258,9 @@ exports.setup = function (svc, opts) {
                         });
                     });
                 });
-            },
+            });
 
-            "List job results": function (done) {
+            it("List job results", function (done) {
                 var create = {
                     search: "search index=_internal | head 1",
                     id: getNextId()
@@ -277,9 +277,9 @@ exports.setup = function (svc, opts) {
                         });
                     });
                 });
-            },
+            });
 
-            "List job results, by column": function (done) {
+            it("List job results, by column", function (done) {
                 var create = {
                     search: "search index=_internal | head 1",
                     id: getNextId()
@@ -296,9 +296,9 @@ exports.setup = function (svc, opts) {
                         });
                     });
                 });
-            },
+            });
 
-            "Create+list multiple jobs": function (done) {
+            it("Create+list multiple jobs", function (done) {
                 var creates = [];
                 for (var i = 0; i < 3; i++) {
                     creates[i] = {
@@ -334,11 +334,11 @@ exports.setup = function (svc, opts) {
 
                     }
                 );
-            }
-        },
+            })
+        }),
 
-        "Search Example Tests": {
-            beforeEach: function (done) {
+        describe("Search Example Tests", function (done) {
+            beforeEach(function (done) {
                 var context = this;
 
                 this.main = require("../examples/node/search").main;
@@ -367,9 +367,9 @@ exports.setup = function (svc, opts) {
                 };
 
                 done();
-            },
+            });
 
-            "Create regular search": function (done) {
+            it("Create regular search", function (done) {
                 var options = {
                     search: "search index=_internal | head 5"
                 };
@@ -378,9 +378,9 @@ exports.setup = function (svc, opts) {
                     assert.ok(!err);
                     done();
                 });
-            },
+            });
 
-            "Create regular search with verbose": function (done) {
+            it("Create regular search with verbose", function (done) {
                 var options = {
                     search: "search index=_internal | head 5"
                 };
@@ -389,9 +389,9 @@ exports.setup = function (svc, opts) {
                     assert.ok(!err);
                     done();
                 });
-            },
+            });
 
-            "Create oneshot search": function (done) {
+            it("Create oneshot search", function (done) {
                 var options = {
                     search: "search index=_internal | head 5",
                     exec_mode: "oneshot"
@@ -401,9 +401,9 @@ exports.setup = function (svc, opts) {
                     assert.ok(!err);
                     done();
                 });
-            },
+            });
 
-            "Create normal search with reduced count": function (done) {
+            it("Create normal search with reduced count", function (done) {
                 var options = {
                     search: "search index=_internal | head 20",
                     count: 10
@@ -413,8 +413,8 @@ exports.setup = function (svc, opts) {
                     assert.ok(!err);
                     done();
                 });
-            }
-        }
+            })
+        })
 
         // This test is commented out because it causes a failure/hang on
         // Node >0.6. We need to revisit this test, so disabling it for now.
@@ -469,7 +469,7 @@ exports.setup = function (svc, opts) {
                 done();
             }
         }*/
-    };
+    )
 };
 
 // Run the individual test suite

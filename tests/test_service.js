@@ -14,30 +14,29 @@
 // under the License.
 
 exports.setup = function (svc, loggedOutSvc) {
-
-    var suite = {
-        "App Tests": require("./service_tests/app").setup(svc),
-        "Collection tests": require("./service_tests/collection").setup(svc, loggedOutSvc),
-        "Configuration Tests": require("./service_tests/configuration").setup(svc),
-        "Data Model tests": require("./service_tests/datamodels").setup(svc),
-        "Endpoint Tests": require("./service_tests/endpoint").setup(svc),
-        "Entity tests": require("./service_tests/entity").setup(svc, loggedOutSvc),
-        "Fired Alerts Tests": require("./service_tests/firedalerts").setup(svc, loggedOutSvc),
-        "Index Tests": require("./service_tests/indexes").setup(svc, loggedOutSvc),
-        "Job Tests": require("./service_tests/job").setup(svc),
-        "Namespace Tests": require("./service_tests/namespace").setup(svc),
-        "Parser Tests": require("./service_tests/parser").setup(svc),
-        "Pivot tests": require("./service_tests/pivot").setup(svc),
-        "Properties Tests": require("./service_tests/properties").setup(svc),
-        "Saved Search Tests": require("./service_tests/savedsearch").setup(svc, loggedOutSvc),
-        "Server Info Tests": require("./service_tests/serverinfo").setup(svc),
-        "Storage Passwords Tests": require("./service_tests/storagepasswords").setup(svc),
-        "Typeahead Tests": require("./service_tests/typeahead").setup(svc, loggedOutSvc),
-        "User Tests": require("./service_tests/user").setup(svc, loggedOutSvc),
-        "View Tests": require("./service_tests/view").setup(svc),
-    };
-
-    return suite;
+    return (
+        describe("Service tests", function (done) {
+            require("./service_tests/app").setup(svc);
+            require("./service_tests/collection").setup(svc, loggedOutSvc);
+            require("./service_tests/configuration").setup(svc);
+            require("./service_tests/datamodels").setup(svc);
+            require("./service_tests/endpoint").setup(svc);
+            require("./service_tests/entity").setup(svc, loggedOutSvc);
+            require("./service_tests/firedalerts").setup(svc, loggedOutSvc);
+            require("./service_tests/indexes").setup(svc, loggedOutSvc);
+            require("./service_tests/job").setup(svc);
+            require("./service_tests/namespace").setup(svc);
+            require("./service_tests/parser").setup(svc);
+            require("./service_tests/pivot").setup(svc);
+            require("./service_tests/properties").setup(svc);
+            require("./service_tests/savedsearch").setup(svc, loggedOutSvc);
+            require("./service_tests/serverinfo").setup(svc);
+            require("./service_tests/storagepasswords").setup(svc);
+            require("./service_tests/typeahead").setup(svc, loggedOutSvc);
+            require("./service_tests/user").setup(svc, loggedOutSvc);
+            require("./service_tests/view").setup(svc);
+        })
+    )
 };
 
 if (module === require.cache[__filename] && !module.parent) {

@@ -5,17 +5,18 @@ on: [push, pull_request]
 jobs:
   build:
     runs-on: ${{ matrix.os }}
-    
+
     strategy:
       matrix:
         os:
           - ubuntu-latest
         node:
           - 14
+          - 8.17.0
         splunk-version:
           - "8.0"
-          - "latest" 
-          
+          - "latest"
+
     services:
       splunk:
         image: splunk/splunk:${{matrix.splunk-version}}
@@ -28,15 +29,15 @@ jobs:
           - 8000:8000
           - 8088:8088
           - 8089:8089
-          
+
     steps:
       - uses: actions/checkout@v2
-      
+
       - name: Use node ${{ matrix.node }}
         uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node }}
-          
+
       - name: Create .splunkrc file
         run: |
           cd ~
@@ -46,10 +47,10 @@ jobs:
           echo password=changed! >> .splunkrc
           echo scheme=https >> .splunkrc
           echo version=${{ matrix.splunk }} >> .splunkrc
-        
+
       - name: Run npm install
         run: npm install
-        
+
       - name: Run server tests
         run: make test
         env:
