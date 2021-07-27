@@ -1,62 +1,97 @@
-var splunkjs    = require('../../index');
-var Async       = splunkjs.Async;
 
-module.exports = function (svc) {
-    return {
-    setUp: function(done) {
-        this.service = svc;
-        done();
-    },
+exports.setup = function (svc) {
+    var assert = require('chai').assert;
+    var splunkjs = require('../../index');
+    var Async = splunkjs.Async;
+    return (
+        describe("Views ", function () {
 
-    "Callback#List views": function(test) {
-        var service = this.service;
+            beforeEach(function (done) {
+                this.service = svc;
+                done();
+            })
 
-        service.views({owner: "admin", app: "search"}).fetch(function(err, views) {
-            test.ok(!err);
-            test.ok(views);
+            it("Callback#List views", function (done) {
+                var service = this.service;
 
-            var viewsList = views.list();
-            test.ok(viewsList);
-            test.ok(viewsList.length > 0);
+                service.views({ owner: "admin", app: "search" }).fetch(function (err, views) {
+                    assert.ok(!err);
+                    assert.ok(views);
 
-            for(var i = 0; i < viewsList.length; i++) {
-                test.ok(viewsList[i]);
-            }
+                    var viewsList = views.list();
+                    assert.ok(viewsList);
+                    assert.ok(viewsList.length > 0);
 
-            test.done();
-        });
-    },
+                    for (var i = 0; i < viewsList.length; i++) {
+                        assert.ok(viewsList[i]);
+                    }
 
-    "Callback#Create + update + delete view": function(test) {
-        var service = this.service;
-        var name = "jssdk_testview";
-        var originalData = "<view/>";
-        var newData = "<view isVisible='false'></view>";
+                    done();
+                });
+            })
 
-        Async.chain([
-                function(done) {
-                    service.views({owner: "admin", app: "sdk-app-collection"}).create({name: name, "eai:data": originalData}, done);
-                },
-                function(view, done) {
-                    test.ok(view);
+            it("Callback#Create + update + delete view", function (done) {
+                var service = this.service;
+                var name = "jssdk_testview";
+                var originalData = "<view/>";
+                var newData = "<view isVisible='false'></view>";
 
-                    test.strictEqual(view.name, name);
-                    test.strictEqual(view.properties()["eai:data"], originalData);
+                Async.chain([
+                    function (done) {
+                        service.views({ owner: "admin", app: "sdk-app-collection" }).create({ name: name, "eai:data": originalData }, done);
+                    },
+                    function (view, done) {
+                        assert.ok(view);
 
-                    view.update({"eai:data": newData}, done);
-                },
-                function(view, done) {
-                    test.ok(view);
-                    test.strictEqual(view.properties()["eai:data"], newData);
+                        assert.strictEqual(view.name, name);
+                        assert.strictEqual(view.properties()["eai:data"], originalData);
 
-                    view.remove(done);
-                }
-            ],
-            function(err) {
-                test.ok(!err);
-                test.done();
-            }
-        );
+                        view.update({ "eai:data": newData }, done);
+                    },
+                    function (view, done) {
+                        assert.ok(view);
+                        assert.strictEqual(view.properties()["eai:data"], newData);
+
+                        view.remove(done);
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
+            })
+        })
+    );
+};
+
+if (module.id === __filename && module.parent.id.includes('mocha')) {
+    var splunkjs = require('../../index');
+    var options = require('../../examples/node/cmdline');
+
+    var cmdline = options.create().parse(process.argv);
+
+    // If there is no command line, we should return
+    if (!cmdline) {
+        throw new Error("Error in parsing command line parameters");
     }
-};
-};
+
+    var svc = new splunkjs.Service({
+        scheme: cmdline.opts.scheme,
+        host: cmdline.opts.host,
+        port: cmdline.opts.port,
+        username: cmdline.opts.username,
+        password: cmdline.opts.password,
+        version: cmdline.opts.version
+    });
+
+    // Exports tests on a successful login
+    module.exports = new Promise((resolve, reject) => {
+        svc.login(function (err, success) {
+            if (err || !success) {
+                throw new Error("Login failed - not running tests", err || "");
+            }
+            return resolve(exports.setup(svc));
+        });
+    });
+}

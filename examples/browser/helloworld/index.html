@@ -78,7 +78,7 @@
       };
       
       username = "admin";
-      password = "changeme";
+      password = "changed!";
       scheme   = "https";
       host     = "localhost";
       port     = "8089";
@@ -89,7 +89,7 @@
       
       var updateConnectionInformation = function() {
         username = utils.trim($("#id_username").pVal()) || "admin";
-        password = utils.trim($("#id_password").pVal()) || "changeme";
+        password = utils.trim($("#id_password").pVal()) || "changed!";
         scheme   = utils.trim($("#id_scheme").pVal())   || "https";
         host     = utils.trim($("#id_host").pVal())     || "localhost";
         port     = utils.trim($("#id_port").pVal())     || "8089";
@@ -167,7 +167,7 @@
           
           $("#apps-tab-content #apps-output pre").text("");
           tag = injectCode(code);
-          $("#apps-tabs li a[href=#apps-output]").click();
+          $("#apps-tabs li a[href='#apps-output']").click();
         });
         
         $("#savedsearches-run").click(function() {
@@ -192,7 +192,7 @@
           
           $("#savedsearches-tab-content #savedsearches-output pre").text("");
           tag = injectCode(code);
-          $("#savedsearches-tabs li a[href=#savedsearches-output]").click();
+          $("#savedsearches-tabs li a[href='#savedsearches-output']").click();
         });
         
         $("#search-run").click(function() {
@@ -218,7 +218,7 @@
           
           $("#search-tab-content #search-output pre").text("");
           tag = injectCode(code);
-          $("#search-tabs li a[href=#search-output]").click();
+          $("#search-tabs li a[href='#search-output']").click();
         });
         
         $("#search-realtime-run").click(function() {
@@ -244,7 +244,7 @@
           
           $("#search-realtime-tab-content #search-realtime-output pre").text("");
           tag = injectCode(code);
-          $("#search-realtime-tabs li a[href=#search-realtime-output]").click();
+          $("#search-realtime-tabs li a[href='#search-realtime-output']").click();
         });
         
         $("#logging-run").click(function() {
@@ -270,7 +270,7 @@
           
           $("#logging-tab-content #logging-output pre").text("");
           tag = injectCode(code);
-          $("#logging-tabs li a[href=#logging-output]").click();
+          $("#logging-tabs li a[href='#logging-output']").click();
         });
       });
     </script>
@@ -296,7 +296,7 @@
                     <input id="id_username" type="text" name="username" placeholder="username: admin"/>
                   </li>
                   <li>
-                    <input type="password" name="password" id="id_password" placeholder="password: changeme"/>
+                    <input type="password" name="password" id="id_password" placeholder="password: changed!"/>
                   </li>
                   <li>
                     <input type="text" name="scheme" id="id_scheme" placeholder="scheme: https"/>

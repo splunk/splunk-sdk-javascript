@@ -13,26 +13,29 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-exports.setup = function() {
-    var splunkjs                = require('../../index');
-    var ModularInputs           = splunkjs.ModularInputs;
-    var ValidationDefinition    = ModularInputs.ValidationDefinition;
-    var utils                   = ModularInputs.utils;
+var assert = require('chai').assert;
+
+var splunkjs = require('../../index');
+
+exports.setup = function () {
+    var ModularInputs = splunkjs.ModularInputs;
+    var ValidationDefinition = ModularInputs.ValidationDefinition;
+    var utils = ModularInputs.utils;
 
     splunkjs.Logger.setLevel("ALL");
-    
-    return {
-        "Validation Definition tests": {
-            setUp: function(done) {
-                done();
-            },
 
-            "Parse produces expected result": function(test) {
+    return (
+        describe("Validation Definition tests", function () {
+            before(function (done) {
+                done();
+            });
+
+            it("Parse produces expected result", function (done) {
                 try {
                     var found = ValidationDefinition.parse(utils.readFile(__filename, "../data/validation.xml"));
 
                     var expected = new ValidationDefinition();
-                    expected.metadata =  {
+                    expected.metadata = {
                         "server_host": "tiny",
                         "server_uri": "https://127.0.0.1:8089",
                         "checkpoint_dir": "/opt/splunk/var/lib/splunk/modinputs",
@@ -48,43 +51,40 @@ exports.setup = function() {
                         "multiValue2": ["value3", "value4"]
                     };
 
-                    test.same(found.metadata, expected.metadata);
-                    test.equals(found.metadata["server_host"], expected.metadata["server_host"]);
-                    test.equals(found.metadata["server_uri"], expected.metadata["server_uri"]);
-                    test.equals(found.metadata["checkpoint_dir"], expected.metadata["checkpoint_dir"]);
-                    test.equals(found.metadata["session_key"], expected.metadata["session_key"]);
-                    test.equals(found.metadata["name"], expected.metadata["name"]);
+                    assert.deepEqual(found.metadata, expected.metadata);
+                    assert.equal(found.metadata["server_host"], expected.metadata["server_host"]);
+                    assert.equal(found.metadata["server_uri"], expected.metadata["server_uri"]);
+                    assert.equal(found.metadata["checkpoint_dir"], expected.metadata["checkpoint_dir"]);
+                    assert.equal(found.metadata["session_key"], expected.metadata["session_key"]);
+                    assert.equal(found.metadata["name"], expected.metadata["name"]);
 
-                    test.same(found.parameters, expected.parameters);
-                    test.equals(found.parameters["param1"], expected.parameters["param1"]);
-                    test.equals(found.parameters["param2"], expected.parameters["param2"]);
-                    test.equals(found.parameters["disabled"], expected.parameters["disabled"]);
-                    test.equals(found.parameters["index"], expected.parameters["index"]);
+                    assert.deepEqual(found.parameters, expected.parameters);
+                    assert.equal(found.parameters["param1"], expected.parameters["param1"]);
+                    assert.equal(found.parameters["param2"], expected.parameters["param2"]);
+                    assert.equal(found.parameters["disabled"], expected.parameters["disabled"]);
+                    assert.equal(found.parameters["index"], expected.parameters["index"]);
 
-                    test.same(found.parameters["multiValue"], expected.parameters["multiValue"]);
-                    test.equals(found.parameters["multiValue"][0], expected.parameters["multiValue"][0]);
-                    test.equals(found.parameters["multiValue"][1], expected.parameters["multiValue"][1]);
+                    assert.deepEqual(found.parameters["multiValue"], expected.parameters["multiValue"]);
+                    assert.equal(found.parameters["multiValue"][0], expected.parameters["multiValue"][0]);
+                    assert.equal(found.parameters["multiValue"][1], expected.parameters["multiValue"][1]);
 
-                    test.same(found.parameters["multiValue2"], expected.parameters["multiValue2"]);
-                    test.equals(found.parameters["multiValue2"][0], expected.parameters["multiValue2"][0]);
-                    test.equals(found.parameters["multiValue2"][1], expected.parameters["multiValue2"][1]);
+                    assert.deepEqual(found.parameters["multiValue2"], expected.parameters["multiValue2"]);
+                    assert.equal(found.parameters["multiValue2"][0], expected.parameters["multiValue2"][0]);
+                    assert.equal(found.parameters["multiValue2"][1], expected.parameters["multiValue2"][1]);
 
-                    test.same(found, expected);
+                    assert.deepEqual(found, expected);
                 }
                 catch (e) {
-                    test.ok(!e);
+                    assert.ok(!e, JSON.stringify(e));
                 }
 
-                test.done();
-            }
-        }
-    };
+                done();
+            });
+        })
+    )
 };
 
-if (module === require.main) {
-    var splunkjs    = require('../../index');
-    var test        = require('../../contrib/nodeunit/test_reporter');
-
-    var suite = exports.setup();
-    test.run([{"Tests": suite}]);
+// Run the individual test suite
+if (module.id === __filename && module.parent.id.includes('mocha')) {
+    module.exports = exports.setup();
 }
