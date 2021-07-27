@@ -61,7 +61,7 @@ exports.setup = function (svc, loggedOutSvc) {
     )
 };
 
-if (module === require.cache[__filename] && !module.parent) {
+if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../../examples/node/cmdline');
 

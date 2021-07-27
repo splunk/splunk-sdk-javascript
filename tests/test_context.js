@@ -1073,7 +1073,7 @@ exports.setup = function (svc) {
 };
 
 // Run the individual test suite
-if (module === require.cache[__filename] && !module.parent) {
+if (module.id === __filename && module.parent.id.includes('mocha')) {
 
     var options = require('../examples/node/cmdline');
     var splunkjs = require('../index');

@@ -532,6 +532,6 @@ exports.setup = function () {
 };
 
 // Run the individual test suite
-// if (module === require.cache[__filename] && !module.parent) {
-//     module.exports = exports.setup();
-// }
+if (module.id === __filename && module.parent.id.includes('mocha')) {
+    module.exports = exports.setup();
+}
