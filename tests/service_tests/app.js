@@ -180,7 +180,6 @@ exports.setup = function (svc) {
 };
 
 if (module.id === __filename && module.parent.id.includes('mocha')) {
-    console.log("in IF");
     var splunkjs = require('../../index');
     var options = require('../../examples/node/cmdline');
 
