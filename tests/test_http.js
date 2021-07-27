@@ -306,7 +306,7 @@ exports.setup = function (http) {
 };
 
 // Run the individual test suite
-if (module === require.cache[__filename] && !module.parent) {
+if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../index');
     var http = new splunkjs.NodeHttp();
 
