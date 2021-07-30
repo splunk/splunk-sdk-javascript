@@ -1,5 +1,27 @@
 # Splunk Enterprise SDK for JavaScript Changelog
 
+## v1.10.0
+
+### Minor changes
+
+* Added support for Splunk Enterprise 8.2
+* Added support for Node v14.
+* Dropped support for deprecated request http client.
+* Added support for [needle](https://www.npmjs.com/package/needle) http client library.
+* Dropped support for deprecated nodeunit testing library.
+* Added support for [mocha](https://www.npmjs.com/package/mocha) for testing and [chai](https://www.npmjs.com/package/chai) for assertions.
+* Updated `cookie` dependency version to `0.4.1` 
+* Updated `elementtree` dependency version to `0.1.7`
+* Updated `browserify` dependency version to `17.0.0`
+* Updated `jshint` dependency version to `2.13.0`
+* Updated `mustache` dependency version to `4.2.0`
+* Updated `readable-stream` dependency version to `3.6.0`
+* Updated `uglify-js` dependency version to `3.13.8`
+* Added support for `dotenv@10.0.0` to declared env variables.
+* Added support for `mochawesome@6.2.2` to generate test report.
+* Fixed the Buffer and new Buffer() deprecation warnings appeared when running the tests.
+* Added support for running single test file and test case. Run `make test_specific` for more info.
+
 ## v1.9.1
 
 ### Minor changes
