@@ -21,7 +21,7 @@
         "javascript"
     ],
     "scripts": {
-        "test": "nyc mocha tests/test_async.js -t 50000 --allow-uncaught --exit --reporter mochawesome"
+        "test": "nyc mocha tests/tests.js -t 50000 --allow-uncaught --exit --reporter mochawesome"
     },
     "dependencies": {
         "cookie": "0.4.1",
