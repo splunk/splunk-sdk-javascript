@@ -1,6 +1,6 @@
 {
     "name": "splunk-sdk",
-    "version": "1.9.1",
+    "version": "1.10.0",
     "description": "SDK for usage with the Splunk REST API",
     "homepage": "http://dev.splunk.com",
     "main": "index.js",
@@ -20,18 +20,25 @@
         "logs",
         "javascript"
     ],
+    "scripts": {
+        "test": "nyc mocha tests/tests.js -t 50000 --allow-uncaught --exit --reporter mochawesome"
+    },
     "dependencies": {
-        "cookie": "0.2.0",
-        "elementtree": "0.1.6",
-        "request": "^2.x.x"
+        "cookie": "0.4.1",
+        "dotenv": "^10.0.0",
+        "elementtree": "0.1.7",
+        "needle": "2.6.0"
     },
     "devDependencies": {
-        "browserify": "^16.2.3",
-        "jshint": "0.5.x >= 0.5.4",
-        "mustache": "^2.2.1",
-        "nodeunit": "^0.11.3",
-        "readable-stream": "1.1.13-1",
-        "uglify-js": "^3.4.9"
+        "browserify": "^17.0.0",
+        "chai": "^4.3.4",
+        "jshint": "2.13.0",
+        "mocha": "7.2.0",
+        "mochawesome": "^6.2.2",
+        "mustache": "4.2.0",
+        "nyc": "^15.1.0",
+        "readable-stream": "3.6.0",
+        "uglify-js": "3.13.8"
     },
     "author": {
         "name": "Splunk",

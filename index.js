@@ -18,6 +18,7 @@
 
     // Declare a process environment so that we can set
     // some globals here and have interop with node
+    var env = require("dotenv").config();
     process.env = process.env || {};
 
     module.exports = root = {
