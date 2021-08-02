@@ -2,12 +2,14 @@
 
 ## v1.10.0
 
+### Major changes
+* Dropped support for deprecated request http client.
+* Added support for [needle](https://www.npmjs.com/package/needle) http client library.
+
 ### Minor changes
 
 * Added support for Splunk Enterprise 8.2
 * Added support for Node v14.
-* Dropped support for deprecated request http client.
-* Added support for [needle](https://www.npmjs.com/package/needle) http client library.
 * Dropped support for deprecated nodeunit testing library.
 * Added support for [mocha](https://www.npmjs.com/package/mocha) for testing and [chai](https://www.npmjs.com/package/chai) for assertions.
 * Updated `cookie` dependency version to `0.4.1` 
