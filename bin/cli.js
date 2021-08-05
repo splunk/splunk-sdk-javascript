@@ -16,16 +16,16 @@
     var utils = require('../lib/utils');
     var Async = require('../lib/async');
     var staticResource = require('../contrib/static-resource/index');
-    var dox            = require('../contrib/dox/dox');
-    var doc_builder    = require('../contrib/dox/doc_builder');
-    var program        = require('../contrib/commander');
-    var spawn          = require('child_process').spawn;
-    var path           = require('path');
-    var fs             = require('fs');
-    var browserify     = require('browserify');
-    var http           = require('http');
-    var url            = require('url');
-    var needle         = require('needle');
+    var dox = require('../contrib/dox/dox');
+    var doc_builder = require('../contrib/dox/doc_builder');
+    var program = require('../contrib/commander');
+    var spawn = require('child_process').spawn;
+    var path = require('path');
+    var fs = require('fs');
+    var browserify = require('browserify');
+    var http = require('http');
+    var url = require('url');
+    var needle = require('needle');
 
 
     /**
@@ -830,7 +830,7 @@
         .option('--port <port>', 'Splunk port')
         .option('--version <version>', 'Splunk version')
         .option('--namespace <namespace>', 'Splunk namespace (in the form of owner:app)')
-        .option('--reporter <reporter>', '(optional) How to report results, currently "junit" is a valid reporter.')
+        .option('--reporter <reporter>', '(optional) How to report results')
         .option('--ui <ui>', 'Specify user interface')
         .option('--timeout <timeout>', 'Specify test timeout threshold (in milliseconds)')
         .option('--grep <grep>', 'Only run tests matching this string or regexp')

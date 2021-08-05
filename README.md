@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/splunk/splunk-sdk-javascript.svg?branch=master)](https://travis-ci.org/splunk/splunk-sdk-javascript)
 # The Splunk Enterprise Software Development Kit for JavaScript
 
-#### Version 1.9.1
+#### Version 1.10.0
 
 The Splunk Enterprise Software Development Kit (SDK) for JavaScript contains library code and examples designed to enable developers to build applications using the Splunk platform and JavaScript. This SDK supports server-side and client-side JavaScript.
 
@@ -13,7 +13,7 @@ For more information, see [Splunk Enterprise SDK for JavaScript](https://dev.spl
 
     The Splunk Enterprise SDK for JavaScript was tested with Node.js v8.17.0, v14. 
 
-* Splunk Enterprise 8.2.0 or later, or Splunk Cloud
+* Splunk Enterprise 8.0 or 8.2, or Splunk Cloud
 
     The Splunk Enterprise SDK for JavaScript was tested with Splunk Enterprise 8.0 or 8.2, or Splunk Cloud. 
 
@@ -61,13 +61,13 @@ The following examples show you how to list search jobs using client-side and se
 ### Client-side code example
 
 This HTML example uses the Splunk Enterprise SDK for JavaScript to list all jobs:
-
+```javascript
     <script type="text/javascript" src="splunk.js"></script>
     <script type="text/javascript" src="jquery.min.js"></script>
 
     <script type="text/javascript" charset="utf-8">
 
-        var service = new splunkjs.Service({username: "admin", password: "changeme"});
+        var service = new splunkjs.Service({username: "admin", password: "changed!"});
         service.login(function(err, success) {
             if (err) {
                 throw err;
@@ -83,14 +83,16 @@ This HTML example uses the Splunk Enterprise SDK for JavaScript to list all jobs
         });
 
     </script>
+```
 
 ### Node.js code example
 
 This example shows how to use the Splunk Enterprise SDK for JavaScript and Node.js to list all jobs:
 
+```javascript
     var splunkjs = require('splunk-sdk');
 
-    var service = new splunkjs.Service({username: "admin", password: "changeme"});
+    var service = new splunkjs.Service({username: "admin", password: "changed!"});
     service.login(function(err, success) {
         if (err) {
             throw err;
@@ -104,6 +106,7 @@ This example shows how to use the Splunk Enterprise SDK for JavaScript and Node.
             }
         });
     });
+```
 
 ## SDK examples
 
@@ -125,7 +128,7 @@ To use this convenience file, create a text file with the following format:
     # Splunk Enterprise username
     username=admin
     # Splunk Enterprise password
-    password=changeme
+    password=changed!
     # Access scheme (default: https)
     scheme=https
     # Your version of Splunk Enterprise
@@ -209,6 +212,10 @@ To run the HTTP and the Async tests, enter:
 
     node sdkdo tests http,async
 
+To run tests containing a particular string, enter:
+
+    node sdkdo tests --grep "While success"
+
 To run the browser tests, enter:
 
     node sdkdo tests-browser
@@ -217,9 +224,13 @@ To run all unit tests without log messages, enter:
 
     node sdkdo tests --quiet
 
-To run all the tests and generate JUnit compatible XML in **splunk-sdk-javascript/test_logs/junit_test_results.xml**, enter:
+To run all the tests and generate test report in **splunk-sdk-javascript/mochawesome-report/mochawesome.html**, enter:
 
-    node sdkdo tests --reporter junit
+    node sdkdo tests --reporter mochawesome
+
+To get more info to run tests, enter:
+
+    make test_specific
 
 ## Repository
 

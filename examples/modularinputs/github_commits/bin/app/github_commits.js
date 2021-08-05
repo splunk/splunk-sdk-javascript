@@ -12,21 +12,21 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-(function() {
-    var fs              = require("fs");
-    var path            = require("path");
-    var GithubAPI       = require("github");
-    var splunkjs        = require("splunk-sdk");
-    var Async           = splunkjs.Async;
-    var ModularInputs   = splunkjs.ModularInputs;
-    var Logger          = ModularInputs.Logger;
-    var Event           = ModularInputs.Event;
-    var Scheme          = ModularInputs.Scheme;
-    var Argument        = ModularInputs.Argument;
-    var utils           = ModularInputs.utils;
+(function () {
+    var fs = require("fs");
+    var path = require("path");
+    var GithubAPI = require("github");
+    var splunkjs = require("splunk-sdk");
+    var Async = splunkjs.Async;
+    var ModularInputs = splunkjs.ModularInputs;
+    var Logger = ModularInputs.Logger;
+    var Event = ModularInputs.Event;
+    var Scheme = ModularInputs.Scheme;
+    var Argument = ModularInputs.Argument;
+    var utils = ModularInputs.utils;
 
     // The version number should be updated every time a new version of the JavaScript SDK is released.
-    var SDK_UA_STRING = "splunk-sdk-javascript/1.9.1";
+    var SDK_UA_STRING = "splunk-sdk-javascript/1.10.0";
 
     // Create easy to read date format.
     function getDisplayDate(date) {
@@ -47,7 +47,7 @@
             " - " + hours + ":" + mins + " " + (date.getUTCHours() < 12 ? "AM" : "PM");
     }
 
-    exports.getScheme = function() {
+    exports.getScheme = function () {
         var scheme = new Scheme("Github Commits");
 
         scheme.description = "Streams events of commits in the specified Github repository (must be public, unless setting a token).";
@@ -81,12 +81,12 @@
         return scheme;
     };
 
-    exports.validateInput = function(definition, done) {
+    exports.validateInput = function (definition, done) {
         var owner = definition.parameters.owner;
         var repository = definition.parameters.repository;
         var token = definition.parameters.token;
 
-        var Github = new GithubAPI({version: "3.0.0"});
+        var Github = new GithubAPI({ version: "3.0.0" });
 
         try {
             // Authenticate with the access token if it was provided.
@@ -98,7 +98,7 @@
             }
 
             Github.repos.getCommits({
-                headers: {"User-Agent": SDK_UA_STRING},
+                headers: { "User-Agent": SDK_UA_STRING },
                 user: owner,
                 repo: repository,
                 per_page: 1, // The minimum per page value supported by the Github API.
@@ -127,17 +127,17 @@
         }
     };
 
-    exports.streamEvents = function(name, singleInput, eventWriter, done) {
+    exports.streamEvents = function (name, singleInput, eventWriter, done) {
         // Get the checkpoint directory out of the modular input's metadata.
         var checkpointDir = this._inputDefinition.metadata["checkpoint_dir"];
 
         var owner = singleInput.owner;
         var repository = singleInput.repository;
-        var token      = singleInput.token;
+        var token = singleInput.token;
 
         var alreadyIndexed = 0;
 
-        var Github = new GithubAPI({version: "3.0.0"});
+        var Github = new GithubAPI({ version: "3.0.0" });
 
         if (token && token.length > 0) {
             Github.authenticate({
@@ -150,13 +150,13 @@
         var working = true;
 
         Async.whilst(
-            function() {
+            function () {
                 return working;
             },
-            function(callback) {
+            function (callback) {
                 try {
                     Github.repos.getCommits({
-                        headers: {"User-Agent": SDK_UA_STRING},
+                        headers: { "User-Agent": SDK_UA_STRING },
                         user: owner,
                         repo: repository,
                         per_page: 100, // The maximum per page value supported by the Github API.
@@ -172,7 +172,7 @@
                             working = false;
                         }
 
-                        var checkpointFilePath  = path.join(checkpointDir, owner + " " + repository + ".txt");
+                        var checkpointFilePath = path.join(checkpointDir, owner + " " + repository + ".txt");
                         var checkpointFileNewContents = "";
                         var errorFound = false;
 
@@ -248,7 +248,7 @@
                     callback(e);
                 }
             },
-            function(err) {
+            function (err) {
                 // We're done streaming.
                 done(err);
             }
