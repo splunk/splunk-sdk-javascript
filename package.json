@@ -27,18 +27,18 @@
         "cookie": "0.4.1",
         "dotenv": "^10.0.0",
         "elementtree": "0.1.7",
-        "needle": "2.6.0"
+        "needle": "2.8.0"
     },
     "devDependencies": {
         "browserify": "^17.0.0",
         "chai": "^4.3.4",
-        "jshint": "2.13.0",
-        "mocha": "7.2.0",
+        "jshint": "2.13.1",
+        "mocha": "9.0.3",
         "mochawesome": "^6.2.2",
         "mustache": "4.2.0",
         "nyc": "^15.1.0",
         "readable-stream": "3.6.0",
-        "uglify-js": "3.13.8"
+        "uglify-js": "3.14.1"
     },
     "author": {
         "name": "Splunk",
