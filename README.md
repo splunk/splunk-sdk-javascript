@@ -110,6 +110,7 @@ This example shows how to use the Splunk Enterprise SDK for JavaScript and Node.
     });
 ```
 ##### Login with sessionKey
+
 ```shell
 # Create a sessionKey
 curl -k -u <username>:<password>  <scheme>://<host>:<port>/services/auth/login -d username=<username> -d password=<password>
@@ -122,7 +123,7 @@ var serviceWithSessionKey = new splunkjs.Service(
         scheme: 'https',
         host: 'localhost',
         port: '8089',
-        sessionKey: 'SESSION_KEY', // Add your session key
+        sessionKey: SESSION_KEY, // Add your sessionKey here
         version: '8',
     });
 
@@ -138,17 +139,20 @@ serviceWithSessionKey.get("search/jobs", { count: 1 }, function (err, res) {
 ##### Login with token
 
 ```shell
-# Enable token authetication from shell
+#### From shell ####
+# Enable token authetication
 curl -k -u <username>:<password> -X POST <scheme>://<host>:<port>/services/admin/token-auth/tokens_auth -d disabled=false
 
-# Enable token authentication from web
-Go to settings > Tokens and click on 'Enable Token Authentication'
-```
-```shell
-# Create a token from shell
+# Create a token
 curl -k -u <username>:<password> -X POST <scheme>://<host>:<port>/services/authorization/tokens?output_mode=json --data name=admin --data audience=Users --data-urlencode expires_on=+30d
+```
 
-# Create a token from web
+```shell
+#### From web ####
+# Enable token authentication
+Go to settings > Tokens and click on 'Enable Token Authentication'
+
+# Create a token
 1. Go to settings > Token and click on 'New Token'
 2. Enter the relevant information
 3. Copy the created token and save it somewhere safe.
@@ -161,7 +165,7 @@ var serviceWithBearerToken = new splunkjs.Service(
         scheme: 'https',
         host: 'localhost',
         port: '8089',
-        sessionKey: 'TOKEN', // Add your token here
+        sessionKey: TOKEN, // Add your token here
         version: '8',
     });
 
