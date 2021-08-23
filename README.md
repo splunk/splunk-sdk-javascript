@@ -144,7 +144,7 @@ serviceWithSessionKey.get("search/jobs", { count: 1 }, function (err, res) {
 curl -k -u <username>:<password> -X POST <scheme>://<host>:<port>/services/admin/token-auth/tokens_auth -d disabled=false
 
 # Create a token
-curl -k -u <username>:<password> -X POST <scheme>://<host>:<port>/services/authorization/tokens?output_mode=json --data name=admin --data audience=Users --data-urlencode expires_on=+30d
+curl -k -u <username>:<password> -X POST <scheme>://<host>:<port>/services/authorization/tokens?output_mode=json --data name=<username> --data audience=Users --data-urlencode expires_on=+30d
 ```
 
 ```shell
