@@ -89,6 +89,8 @@ This HTML example uses the Splunk Enterprise SDK for JavaScript to list all jobs
 
 This example shows how to use the Splunk Enterprise SDK for JavaScript and Node.js to list all jobs:
 
+##### Login with username and password
+
 ```javascript
     var splunkjs = require('splunk-sdk');
 
@@ -106,6 +108,73 @@ This example shows how to use the Splunk Enterprise SDK for JavaScript and Node.
             }
         });
     });
+```
+##### Login with sessionKey
+
+```shell
+# Create a sessionKey
+curl -k -u <username>:<password>  <scheme>://<host>:<port>/services/auth/login -d username=<username> -d password=<password>
+```
+
+```javascript
+var serviceWithSessionKey = new splunkjs.Service(
+    {
+        // Replace the host if you are accessing remote host
+        scheme: 'https',
+        host: 'localhost',
+        port: '8089',
+        sessionKey: SESSION_KEY, // Add your sessionKey here
+        version: '8',
+    });
+
+serviceWithSessionKey.get("search/jobs", { count: 1 }, function (err, res) {
+    if (err) {
+        console.log(err);
+    } else }
+        console.log("Login successful with sessionKey");
+    }
+});
+```
+
+##### Login with token
+
+```shell
+#### From shell ####
+# Enable token authetication
+curl -k -u <username>:<password> -X POST <scheme>://<host>:<port>/services/admin/token-auth/tokens_auth -d disabled=false
+
+# Create a token
+curl -k -u <username>:<password> -X POST <scheme>://<host>:<port>/services/authorization/tokens?output_mode=json --data name=<username> --data audience=Users --data-urlencode expires_on=+30d
+```
+
+```shell
+#### From web ####
+# Enable token authentication
+Go to settings > Tokens and click on 'Enable Token Authentication'
+
+# Create a token
+1. Go to settings > Token and click on 'New Token'
+2. Enter the relevant information
+3. Copy the created token and save it somewhere safe.
+```
+
+```javascript
+var serviceWithBearerToken = new splunkjs.Service(
+    {
+        // Replace the host if you are accessing remote host
+        scheme: 'https',
+        host: 'localhost',
+        port: '8089',
+        sessionKey: TOKEN, // Add your token here
+        version: '8',
+    });
+
+serviceWithBearerToken.get("search/jobs", { count: 2 }, function (err, res) {
+    if (err)
+        console.log(err);
+    else
+        console.log("Login successful with bearer token");
+});
 ```
 
 ## SDK examples
