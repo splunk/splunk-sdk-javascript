@@ -23,7 +23,7 @@ class SplunkJsExample extends React.Component {
       this.handleSearch = this.handleSearch.bind(this);
       this.state = {
           username: 'admin',
-          password: 'changeme',
+          password: 'changed!',
           query: 'search index=_internal | head 3',
           results: [],
       };
