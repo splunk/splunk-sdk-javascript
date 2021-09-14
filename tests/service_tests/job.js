@@ -643,11 +643,12 @@ exports.setup = function (svc) {
 
                 Async.chain([
                     function (done) {
-                        that.service.jobs().oneshotSearch('search index=_internal | head 1 | stats count', { id: sid, output_mode: 'xml' }, done);
+                        that.service.jobs().oneshotSearch('search index=_internal | head 2 | stats count', { id: sid, output_mode: 'xml' }, done);
                     },
                     function (results, done) {
                         assert.ok(results);
-                        assert.ok(results.includes('count'));
+                        assert.ok(results.includes('<field>count</field>'));
+                        assert.ok(results.includes('<value><text>2</text></value>'));
                         done();
                     }
                 ],
@@ -664,11 +665,14 @@ exports.setup = function (svc) {
 
                 Async.chain([
                     function (done) {
-                        that.service.jobs().oneshotSearch('search index=_internal | head 1 | stats count', { id: sid, output_mode: 'csv' }, done);
+                        that.service.jobs().oneshotSearch('makeresults count=3 | streamstats count | eval foo="bar" | fields - _time', { id: sid, output_mode: 'csv' }, done);
                     },
                     function (results, done) {
                         assert.ok(results);
-                        assert.ok(results.includes('count'));
+                        assert.ok(results.includes('count,foo'));
+                        assert.ok(results.includes('1,bar'));
+                        assert.ok(results.includes('2,bar'));
+                        assert.ok(results.includes('3,bar'));
                         done();
                     }
                 ],
