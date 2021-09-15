@@ -615,6 +615,74 @@ exports.setup = function (svc) {
                 );
             });
 
+            it("Callback#Oneshot search with json results", function (done) {
+                var sid = getNextId();
+                var that = this;
+
+                Async.chain([
+                    function (done) {
+                        that.service.jobs().oneshotSearch('search index=_internal | head 1 | stats count', { id: sid, output_mode: 'json' }, done);
+                    },
+                    function (results, done) {
+                        assert.ok(results);
+                        assert.ok(results.fields);
+                        assert.strictEqual(results.fields.length, 1);
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
+            });
+
+            it("Callback#Oneshot search with xml results", function (done) {
+                var sid = getNextId();
+                var that = this;
+
+                Async.chain([
+                    function (done) {
+                        that.service.jobs().oneshotSearch('search index=_internal | head 2 | stats count', { id: sid, output_mode: 'xml' }, done);
+                    },
+                    function (results, done) {
+                        assert.ok(results);
+                        assert.ok(results.includes('<field>count</field>'));
+                        assert.ok(results.includes('<value><text>2</text></value>'));
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
+            });
+
+            it("Callback#Oneshot search with csv results", function (done) {
+                var sid = getNextId();
+                var that = this;
+
+                Async.chain([
+                    function (done) {
+                        that.service.jobs().oneshotSearch('makeresults count=3 | streamstats count | eval foo="bar" | fields - _time', { id: sid, output_mode: 'csv' }, done);
+                    },
+                    function (results, done) {
+                        assert.ok(results);
+                        assert.ok(results.includes('count,foo'));
+                        assert.ok(results.includes('1,bar'));
+                        assert.ok(results.includes('2,bar'));
+                        assert.ok(results.includes('3,bar'));
+                        done();
+                    }
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
+            });
+
             it("Callback#Oneshot search with no results", function (done) {
                 var sid = getNextId();
                 var that = this;
