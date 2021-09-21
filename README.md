@@ -11,11 +11,11 @@ For more information, see [Splunk Enterprise SDK for JavaScript](https://dev.spl
 
 * Node.js v 8.17.0, or v14 or later
 
-    The Splunk Enterprise SDK for JavaScript was tested with Node.js v8.17.0, v14. 
+    The Splunk Enterprise SDK for JavaScript was tested with Node.js v8.17.0, v14.
 
 * Splunk Enterprise 8.0 or 8.2, or Splunk Cloud
 
-    The Splunk Enterprise SDK for JavaScript was tested with Splunk Enterprise 8.0 or 8.2, or Splunk Cloud. 
+    The Splunk Enterprise SDK for JavaScript was tested with Splunk Enterprise 8.0 or 8.2, or Splunk Cloud.
 
 *  Splunk Enterprise SDK for JavaScript
 
@@ -253,7 +253,7 @@ Your output should look something like this:
 
 ## Development
 
-The Splunk Enterprise SDK for JavaScript infrastructure relies on Node.js to build files, run examples, run tests, and generate documentation. 
+The Splunk Enterprise SDK for JavaScript infrastructure relies on Node.js to build files, run examples, run tests, and generate documentation.
 
 All development activities are managed by a helper script called `sdkdo`. For a list of possible commands and options, open a command prompt in the **splunk-sdk-javascript** directory and enter:
 
@@ -271,7 +271,7 @@ The Splunk Enterprise SDK for JavaScript includes several unit tests for each co
 
 >**Note**: The [SDK App Collection](https://github.com/splunk/sdk-app-collection) app is required for running unit tests.
 
-To run the unit tests, open a command prompt in the **splunk-sdk-javascript** directory, then run the following commands. 
+To run the unit tests, open a command prompt in the **splunk-sdk-javascript** directory, then run the following commands.
 
 To run all tests, enter:
 
@@ -349,7 +349,7 @@ Stay connected with other developers building on the Splunk platform.
 
 ### Contributions
 
-If you would like to contribute to the SDK, see [Contributing to Splunk](https://www.splunk.com/en_us/form/contributions.html). For additional guidelines, see [CONTRIBUTING](CONTRIBUTING.md). 
+If you would like to contribute to the SDK, see [Contributing to Splunk](https://www.splunk.com/en_us/form/contributions.html). For additional guidelines, see [CONTRIBUTING](CONTRIBUTING.md).
 
 ### Support
 
@@ -357,7 +357,7 @@ If you would like to contribute to the SDK, see [Contributing to Splunk](https:/
 
    If you are not covered under an existing maintenance/support agreement, you can find help through the broader community at [Splunk Answers](https://community.splunk.com/t5/Splunk-Development/ct-p/developer-tools).
 
-*  Splunk will NOT provide support for SDKs if the core library (the code in the **/splunklib** directory) has been modified. If you modify an SDK and want support, you can find help through the broader community and [Splunk Answers](https://community.splunk.com/t5/Splunk-Development/ct-p/developer-tools). 
+*  Splunk will NOT provide support for SDKs if the core library (the code in the **/splunklib** directory) has been modified. If you modify an SDK and want support, you can find help through the broader community and [Splunk Answers](https://community.splunk.com/t5/Splunk-Development/ct-p/developer-tools).
 
    We would also like to know why you modified the core library, so please send feedback to _devinfo@splunk.com_.
 
