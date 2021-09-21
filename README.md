@@ -11,18 +11,6 @@ JavaScript. This SDK supports both server- and client-side JavaScript.
 
 * Node.js v 8.17.0, or v14 or later
 
-    The Splunk Enterprise SDK for JavaScript was tested with Node.js v8.17.0, v14.
-
-* Splunk Enterprise 8.0 or 8.2, or Splunk Cloud
-
-    The Splunk Enterprise SDK for JavaScript was tested with Splunk Enterprise 8.0 or 8.2, or Splunk Cloud.
-
-*  Splunk Enterprise SDK for JavaScript
-
-    Download the SDK as a [ZIP file](https://github.com/splunk/splunk-sdk-javascript/zipball/master) or clone the repository:
-
-        git clone https://github.com/splunk/splunk-sdk-javascript.git
-
 
 ## Installation
 
