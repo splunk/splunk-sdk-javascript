@@ -9,8 +9,8 @@ JavaScript. This SDK supports both server- and client-side JavaScript.
 
 ## Requirements
 
-* Node.js v.0.12, or v4 or later. The Splunk SDK for Javascript is tested with Node.js v.0.12, v4.2, and v10.0. 
-* Splunk Enterprise 6.3.0 or later, or Splunk Cloud. The Splunk SDK for Javascript is tested with Splunk Enterprise 7.0 and 7.2. 
+* Node.js v.0.12, or v4 or later. The Splunk SDK for Javascript is tested with Node.js v.0.12, v4.2, and v10.0.
+* Splunk Enterprise 6.3.0 or later, or Splunk Cloud. The Splunk SDK for Javascript is tested with Splunk Enterprise 7.0 and 7.2.
 
 ## Installation
 
@@ -363,22 +363,22 @@ If you would like to contribute to the SDK, go here for more information:
 
 ### Support
 
-1. You will be granted support if you or your company are already covered under an existing maintenance/support agreement. 
+1. You will be granted support if you or your company are already covered under an existing maintenance/support agreement.
    Send an email to support@splunk.com and include "Splunk SDK for JavaScript" in the subject line.    
- 2. If you are not covered under an existing maintenance/support agreement, you 
+ 2. If you are not covered under an existing maintenance/support agreement, you
     can find help through the broader community at:  
    <ul>    
-   <li><a href='http://splunk-base.splunk.com/answers/'>Splunk Answers</a> (use 
+   <li><a href='http://splunk-base.splunk.com/answers/'>Splunk Answers</a> (use
     the <b>sdk</b>, <b>java</b>, <b>python</b>, and <b>javascript</b> tags to   
     identify your questions)</li>   
    </ul>    
 3. Splunk will NOT provide support for SDKs if the core library (the    
    code in the <b>/lib</b> directory) has been modified. If you modify an SDK   
-   and want support, you can find help through the broader community and Splunk 
+   and want support, you can find help through the broader community and Splunk
    answers (see above). We would also like to know why you modified the core    
    library&mdash;please send feedback to devinfo@splunk.com.  
 4. File any issues on [GitHub](githubjsissues)
- 
+
 ### Contact us
 
 You can reach the Developer Platform team at _devinfo@splunk.com_.
@@ -403,7 +403,7 @@ of embedded libraries and their licenses:
 * [commander Node.js command-line interfaces][commander]: [MIT][commander-license]
 * [script.js Asyncronous JavaScript loader and dependency manager][script.js]: [Apache][scriptjs-license]
 * [base64.js Fast base64 encoding/decoding][base64.js]: [MIT][base64-license]
-* [highcharts.js Interactive JavaScript charts][highcharts.js]: [CC BY-NC 3.0][highcharts-license]
+* [highcharts.js Interactive JavaScript charts][highcharts.js]: [CC BY-NC 3.0]
 
 
 [dox]:                      https://github.com/visionmedia/dox
@@ -428,7 +428,6 @@ of embedded libraries and their licenses:
 [scriptjs-license]:         https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-SCRIPTJS
 [base64-license]:           https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-BASE64
 [event-license]:            https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-BASE64
-highcharts-license]:        https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-HIGHCHARTS
 
 [json2]:                    http://www.json.org/js.html
 [splunkrc]:                 https://github.com/splunk/splunk-sdk-javascript/blob/master/splunkrc.spec
