@@ -18,3 +18,4 @@ Some of the components included in the Splunk Enterprise SDK for JavaScript are 
 | [cookie](https://github.com/jshttp/cookie) | HTTP cookie parser and serializer for HTTP servers | [MIT](https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-COOKIE) |
 | [elementtree](https://github.com/racker/node-elementtree) | Node.js XML parserer and serializer | [Apache-2.0](https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-ELEMENTTREE) |
 | [needle](https://github.com/tomas/needle) | Node.js http client | [MIT](https://github.com/splunk/splunk-sdk-javascript/blob/master/licenses/LICENSE-NEEDLE) |
+| [Highcharts](https://github.com/highcharts/highcharts) | Interactive JavaScript charts | 
