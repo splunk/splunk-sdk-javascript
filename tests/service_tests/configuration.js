@@ -139,6 +139,68 @@ exports.setup = function (svc) {
                     });
             });
 
+            it("Callback#create_v2", function (done) {
+                var that = this;
+                var namespace = { owner: "nobody", app: "system" };
+                var filename = "jssdk_file_new_" + getNextId();
+                var stanza = "jssdk_stanza"
+                var property1 = "foo1"
+                var value1 = "bar1";
+                var property2 = "foo2"
+                var value2 = "bar2";
+
+                Async.chain([
+                    function (done) {
+                        var configs = svc.configurations(namespace);
+                        configs.fetch(done);
+                    },
+                    async function (configs, done) {
+                        var keyValueMap = {}
+                        keyValueMap[property1] = value1;
+                        keyValueMap[property2] = value2;
+
+                        configs.create_v2(configs, svc, filename, stanza, keyValueMap, done);
+                    },
+                    async function (done) {
+                        var configs = svc.configurations(namespace);
+                        configs.fetch();
+
+                        // a. File exists: Positive
+                        var doesFileExistResponse1 = await configs.doesFileExist(filename);
+                        var configFile = doesFileExistResponse1?.file;
+                        assert.ok(configFile);
+                        
+                        // b. Stanza exists: Positive
+                        configFile = await configFile.fetch_v2();
+                        var doesStanzaExistResponse1 = await configs.doesStanzaExist(configFile, stanza);
+                        var configStanza = doesStanzaExistResponse1.stanza;
+
+                        assert.ok(configStanza);
+                        assert.ok(configStanza._properties);
+                        assert.strictEqual(configStanza._properties[property1], value1 );
+                        assert.strictEqual(configStanza._properties[property2], value2 );
+
+                        // c. File exists: Negative
+                        var doesFileExistResponse2 = await configs.doesFileExist("invalid_filename");
+                        var invalidConfigFile = doesFileExistResponse2?.file;
+
+                        assert.ok(!invalidConfigFile);
+                        
+                        // d. Stanza exists: Positive
+                        var doesStanzaExistResponse2 = await configs.doesStanzaExist(configFile, "invalid_stanza_name");
+                        var invalidConfigStanza = doesStanzaExistResponse2.stanza;
+
+                        assert.ok(!invalidConfigStanza);
+
+                        done();
+                    },
+                ],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    });
+            });
+
             it("Callback#can get default stanza", function (done) {
                 var that = this;
                 var namespace = { owner: "admin", app: "search" };
