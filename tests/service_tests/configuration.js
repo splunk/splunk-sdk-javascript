@@ -167,7 +167,7 @@ exports.setup = function (svc) {
 
                         // a. File exists: Positive
                         var doesFileExistResponse1 = await configs.doesFileExist(filename);
-                        var configFile = doesFileExistResponse1?.file;
+                        var configFile = doesFileExistResponse1.file;
                         assert.ok(configFile);
                         
                         // b. Stanza exists: Positive
@@ -182,7 +182,7 @@ exports.setup = function (svc) {
 
                         // c. File exists: Negative
                         var doesFileExistResponse2 = await configs.doesFileExist("invalid_filename");
-                        var invalidConfigFile = doesFileExistResponse2?.file;
+                        var invalidConfigFile = doesFileExistResponse2.file;
 
                         assert.ok(!invalidConfigFile);
                         
