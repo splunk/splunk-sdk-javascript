@@ -139,7 +139,7 @@ exports.setup = function (svc) {
                     });
             });
 
-            it("Callback#create_v2", function (done) {
+            it("Callback#createAsync", function (done) {
                 var that = this;
                 var namespace = { owner: "nobody", app: "system" };
                 var filename = "jssdk_file_new_" + getNextId();
@@ -159,7 +159,7 @@ exports.setup = function (svc) {
                         keyValueMap[property1] = value1;
                         keyValueMap[property2] = value2;
 
-                        configs.create_v2(configs, svc, filename, stanza, keyValueMap, done);
+                        configs.createAsync(configs, svc, filename, stanza, keyValueMap, done);
                     },
                     async function (done) {
                         var configs = svc.configurations(namespace);
@@ -171,7 +171,7 @@ exports.setup = function (svc) {
                         assert.ok(configFile);
                         
                         // b. Stanza exists: Positive
-                        configFile = await configFile.fetch_v2();
+                        configFile = await configFile.fetchAsync();
                         var doesStanzaExistResponse1 = await configs.doesStanzaExist(configFile, stanza);
                         var configStanza = doesStanzaExistResponse1.stanza;
 
