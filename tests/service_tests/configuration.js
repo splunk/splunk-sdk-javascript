@@ -159,7 +159,7 @@ exports.setup = function (svc) {
                         keyValueMap[property1] = value1;
                         keyValueMap[property2] = value2;
 
-                        configs.createAsync(configs, svc, filename, stanza, keyValueMap, done);
+                        configs.createAsync(filename, stanza, keyValueMap, done);
                     },
                     async function (done) {
                         var configs = svc.configurations(namespace);
