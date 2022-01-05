@@ -154,7 +154,7 @@ exports.setup = function (svc) {
                         var configs = svc.configurations(namespace);
                         configs.fetch(done);
                     },
-                    async function (configs, done) {
+                    function (configs, done) {
                         var keyValueMap = {}
                         keyValueMap[property1] = value1;
                         keyValueMap[property2] = value2;
@@ -180,7 +180,7 @@ exports.setup = function (svc) {
                         var invalidConfigFile = await configs.getConfFile("invalid_filename");
                         assert.ok(!invalidConfigFile);
                         
-                        // d. Stanza exists: Positive
+                        // d. Stanza exists: Negative
                         var invalidConfigStanza = await configs.getStanza(configFile, "invalid_stanza_name");
                         assert.ok(!invalidConfigStanza);
 
