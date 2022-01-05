@@ -158,7 +158,6 @@ exports.setup = function (svc) {
                         var keyValueMap = {}
                         keyValueMap[property1] = value1;
                         keyValueMap[property2] = value2;
-
                         configs.createAsync(filename, stanza, keyValueMap, done);
                     },
                     async function (done) {
@@ -166,39 +165,32 @@ exports.setup = function (svc) {
                         configs.fetch();
 
                         // a. File exists: Positive
-                        var doesFileExistResponse1 = await configs.doesFileExist(filename);
-                        var configFile = doesFileExistResponse1.file;
+                        var configFile = await configs.getConfFile(filename);
                         assert.ok(configFile);
                         
                         // b. Stanza exists: Positive
                         configFile = await configFile.fetchAsync();
-                        var doesStanzaExistResponse1 = await configs.doesStanzaExist(configFile, stanza);
-                        var configStanza = doesStanzaExistResponse1.stanza;
-
+                        var configStanza = await configs.getStanza(configFile, stanza);
                         assert.ok(configStanza);
                         assert.ok(configStanza._properties);
                         assert.strictEqual(configStanza._properties[property1], value1 );
                         assert.strictEqual(configStanza._properties[property2], value2 );
 
                         // c. File exists: Negative
-                        var doesFileExistResponse2 = await configs.doesFileExist("invalid_filename");
-                        var invalidConfigFile = doesFileExistResponse2.file;
-
+                        var invalidConfigFile = await configs.getConfFile("invalid_filename");
                         assert.ok(!invalidConfigFile);
                         
                         // d. Stanza exists: Positive
-                        var doesStanzaExistResponse2 = await configs.doesStanzaExist(configFile, "invalid_stanza_name");
-                        var invalidConfigStanza = doesStanzaExistResponse2.stanza;
-
+                        var invalidConfigStanza = await configs.getStanza(configFile, "invalid_stanza_name");
                         assert.ok(!invalidConfigStanza);
 
                         done();
                     },
                 ],
-                    function (err) {
-                        assert.ok(!err);
-                        done();
-                    });
+                function (err) {
+                    assert.ok(!err);
+                    done();
+                });
             });
 
             it("Callback#can get default stanza", function (done) {
