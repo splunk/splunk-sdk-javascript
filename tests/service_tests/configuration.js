@@ -143,11 +143,11 @@ exports.setup = function (svc) {
                 var that = this;
                 var namespace = { owner: "nobody", app: "system" };
                 var filename = "jssdk_file_new_" + getNextId();
-                var stanza = "jssdk_stanza"
-                var property1 = "foo1"
-                var value1 = "bar1";
-                var property2 = "foo2"
-                var value2 = "bar2";
+                var stanza = "install"
+                var property1 = "state"
+                var value1 = "enabled";
+                var property2 = "python.version"
+                var value2 = "python3";
 
                 Async.chain([
                     function (done) {

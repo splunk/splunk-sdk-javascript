@@ -230,8 +230,11 @@ Async.chain([
     },
     async function (configs, done) {
         // Create a key-value map to store under a stanza
+        const filename = "app.conf";
+        const stanzaName = "install";
         var keyValueMap = {}
-        keyValueMap[property1] = value1;
+        keyValueMap["state"] = "enabled";
+        keyValueMap["python.version"] = "python3";
 
         // If file/stanza doesn't exist, it will be created 
         // else it will be updated.
