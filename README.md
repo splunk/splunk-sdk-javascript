@@ -219,6 +219,32 @@ Save the file as **.splunkrc** in the current user's home directory.
 
     Click **Yes**, then continue creating the file.
 
+### Create/Update a .conf file
+```javascript
+
+Async.chain([
+    function (done) {
+        // Fetch configurations
+        var configs = svc.configurations(namespace);
+        configs.fetch(done);
+    },
+    async function (configs, done) {
+        // Create a key-value map to store under a stanza
+        const filename = "app.conf";
+        const stanzaName = "install";
+        var keyValueMap = {}
+        keyValueMap["state"] = "enabled";
+        keyValueMap["python.version"] = "python3";
+
+        // If file/stanza doesn't exist, it will be created 
+        // else it will be updated.
+        configs.createAsync(filename, stanzaName, keyValueMap, done);
+    }
+],
+function (err) {
+    done();
+});
+```
 
 ### Client-side examples
 

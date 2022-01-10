@@ -139,6 +139,60 @@ exports.setup = function (svc) {
                     });
             });
 
+            it("Callback#createAsync", function (done) {
+                var that = this;
+                var namespace = { owner: "nobody", app: "system" };
+                var filename = "jssdk_file_new_" + getNextId();
+                var stanza = "install"
+                var property1 = "state"
+                var value1 = "enabled";
+                var property2 = "python.version"
+                var value2 = "python3";
+
+                Async.chain([
+                    function (done) {
+                        var configs = svc.configurations(namespace);
+                        configs.fetch(done);
+                    },
+                    function (configs, done) {
+                        var keyValueMap = {}
+                        keyValueMap[property1] = value1;
+                        keyValueMap[property2] = value2;
+                        configs.createAsync(filename, stanza, keyValueMap, done);
+                    },
+                    async function (done) {
+                        var configs = svc.configurations(namespace);
+                        configs.fetch();
+
+                        // a. File exists: Positive
+                        var configFile = await configs.getConfFile(filename);
+                        assert.ok(configFile);
+                        
+                        // b. Stanza exists: Positive
+                        configFile = await configFile.fetchAsync();
+                        var configStanza = await configs.getStanza(configFile, stanza);
+                        assert.ok(configStanza);
+                        assert.ok(configStanza._properties);
+                        assert.strictEqual(configStanza._properties[property1], value1 );
+                        assert.strictEqual(configStanza._properties[property2], value2 );
+
+                        // c. File exists: Negative
+                        var invalidConfigFile = await configs.getConfFile("invalid_filename");
+                        assert.ok(!invalidConfigFile);
+                        
+                        // d. Stanza exists: Negative
+                        var invalidConfigStanza = await configs.getStanza(configFile, "invalid_stanza_name");
+                        assert.ok(!invalidConfigStanza);
+
+                        done();
+                    },
+                ],
+                function (err) {
+                    assert.ok(!err);
+                    done();
+                });
+            });
+
             it("Callback#can get default stanza", function (done) {
                 var that = this;
                 var namespace = { owner: "admin", app: "search" };
