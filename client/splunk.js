@@ -368,10 +368,6 @@ require.define("/index.js", function (require, module, exports, __dirname, __fil
 (function() {
     var root = exports || this;
 
-    // Declare a process environment so that we can set
-    // some globals here and have interop with node
-    process.env = process.env || {};
-
     module.exports = root = {
         Logger          : require('./lib/log').Logger,
         Context         : require('./lib/context'),
