@@ -1,7 +1,7 @@
 {
-    "name": "@mitre/splunk-sdk-no-env",
+    "name": "splunk-sdk",
     "version": "1.10.0",
-    "description": "SDK for usage with the Splunk REST API with browser compatibility",
+    "description": "SDK for usage with the Splunk REST API",
     "homepage": "http://dev.splunk.com",
     "main": "index.js",
     "directories": {
