@@ -15,11 +15,16 @@
 
 (function() {
     var root = exports || this;
+    var env = require("dotenv").config();
 
     // Declare a process environment so that we can set
     // some globals here and have interop with node
-    var env = require("dotenv").config();
-    process.env = process.env || {};
+    try {
+        process.env = process.env || {};
+    } catch (e) {
+        // Depending on the browser implementation process.env may not
+        // be assignable but still accessible, ignore these errors
+    }
 
     module.exports = root = {
         Logger          : require('./lib/log').Logger,

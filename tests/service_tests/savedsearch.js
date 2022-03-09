@@ -104,7 +104,7 @@ exports.setup = function (svc, loggedOutSvc) {
                 var updatedSearch = "search * | head 10";
                 var updatedDescription = "description";
 
-                var searches = this.service.savedSearches({ owner: this.service.username, app: "sdk-app-collection" });
+                var searches = this.service.savedSearches({ owner: this.service.username, app: "sdkappcollection" });
 
                 Async.chain([
                     function (done) {
@@ -172,7 +172,7 @@ exports.setup = function (svc, loggedOutSvc) {
                 var name = "jssdk_savedsearch_" + getNextId();
                 var originalSearch = "search index=_internal | head 1";
 
-                var searches = this.service.savedSearches({ owner: this.service.username, app: "sdk-app-collection" });
+                var searches = this.service.savedSearches({ owner: this.service.username, app: "sdkappcollection" });
 
                 Async.chain(
                     [function (done) {
@@ -194,6 +194,47 @@ exports.setup = function (svc, loggedOutSvc) {
                 );
                 done();
             })
+
+            it("Callback#history with pagination", function (done) {
+                var name = "jssdk_savedsearch_" + getNextId();
+                var originalSearch = "search index=_internal | head 1";
+                var searches = this.service.savedSearches({ owner: this.service.username, app: "sdkappcollection" });
+
+                Async.chain([
+                    function (done) {
+                        searches.create({ search: originalSearch, name: name }, done);
+                    },
+                    function (search, done) {
+                        assert.ok(search);
+                        search.dispatch(done);
+                    },
+                    function (job, search, done) {
+                        assert.ok(job);
+                        assert.ok(search);
+                        search.dispatch(done);
+                    },
+                    function (job, search, done) {
+                        assert.ok(job);
+                        assert.ok(search);
+
+                        tutils.pollUntil(
+                            job, () => job.properties()["isDone"], 10, Async.augment(done, search)
+                        );
+                    },
+                    function (job, search, done) {
+                        search.history({ count: 1 }, Async.augment(done, job));
+                    },
+                    function (jobs, search, originalJob, done) {
+                        assert.ok(jobs.length > 0);
+                        assert.equal(jobs.length, 1);
+                        done();
+                    }],
+                    function (err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
+            });
 
             it("Callback#history error", function (done) {
                 var name = "jssdk_savedsearch_" + getNextId();
@@ -234,7 +275,7 @@ exports.setup = function (svc, loggedOutSvc) {
                 var name = "jssdk_savedsearch_" + getNextId();
                 var originalSearch = "search index=_internal | head 1";
 
-                var searches = this.service.savedSearches({ owner: this.service.username, app: "sdk-app-collection" });
+                var searches = this.service.savedSearches({ owner: this.service.username, app: "sdkappcollection" });
 
                 Async.chain(
                     function (done) {
@@ -352,7 +393,7 @@ exports.setup = function (svc, loggedOutSvc) {
             })
 
             it("Callback#delete test saved searches", function (done) {
-                var searches = this.service.savedSearches({ owner: this.service.username, app: "sdk-app-collection" });
+                var searches = this.service.savedSearches({ owner: this.service.username, app: "sdkappcollection" });
                 searches.fetch(function (err, searches) {
                     var searchList = searches.list();
                     Async.parallelEach(
@@ -381,7 +422,7 @@ exports.setup = function (svc, loggedOutSvc) {
             })
 
             it("Callback#setupInfo succeeds", function (done) {
-                var app = new splunkjs.Service.Application(this.service, "sdk-app-collection");
+                var app = new splunkjs.Service.Application(this.service, "sdkappcollection");
                 app.setupInfo(function (err, content, app) {
                     // This error message was removed in modern versions of Splunk
                     if (err) {
@@ -406,7 +447,7 @@ exports.setup = function (svc, loggedOutSvc) {
             })
 
             it("Callback#updateInfo failure", function (done) {
-                var app = new splunkjs.Service.Application(this.loggedOutService, "sdk-app-collection");
+                var app = new splunkjs.Service.Application(this.loggedOutService, "sdkappcollection");
                 app.updateInfo(function (err, info, app) {
                     assert.ok(err);
                     done();

@@ -38,7 +38,7 @@ exports.setup = function (svc) {
 
                 Async.chain([
                     function (done) {
-                        service.views({ owner: "admin", app: "sdk-app-collection" }).create({ name: name, "eai:data": originalData }, done);
+                        service.views({ owner: "admin", app: "sdkappcollection" }).create({ name: name, "eai:data": originalData }, done);
                     },
                     function (view, done) {
                         assert.ok(view);
