@@ -12,7 +12,7 @@ jobs:
           - ubuntu-latest
         node:
           - 14
-          - 8.17.0
+          # - 8.17.0
         splunk-version:
           - "8.0"
           - "latest"
