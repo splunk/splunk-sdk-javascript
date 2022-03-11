@@ -51,7 +51,22 @@ jobs:
       - name: Run npm install
         run: npm install
 
-      - name: Run make test
-        run: make test
-        env:
-          SPLUNK_HOME: /opt/splunk
+      # - name: Run make test
+      #   run: make test
+      #   env:
+      #     SPLUNK_HOME: /opt/splunk
+
+      - name: info-from-package-json
+        uses: myrotvorets/info-from-package-json-action@1.1.0
+        id: pkgjson
+
+      - name: Generate docs
+        run: |
+          node sdkdo docs
+          ls -l docs/${{ steps.pkgjson.outputs.packageVersion }}/refs
+
+      # - name: Upload Artifact
+      #   uses: actions/upload-artifact@v3
+      #   with:
+      #     name: apidocs
+      #     path: docs/_build/docs_html.zip
