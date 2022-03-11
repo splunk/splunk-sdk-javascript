@@ -27,6 +27,7 @@
         "cookie": "0.4.2",
         "dotenv": "16.0.0",
         "elementtree": "0.1.7",
+        "mustache": "4.2.0",
         "needle": "3.0.0"
     },
     "devDependencies": {
@@ -35,7 +36,6 @@
         "jshint": "2.13.4",
         "mocha": "7.2.0",
         "mochawesome": "7.1.0",
-        "mustache": "4.2.0",
         "nyc": "^15.1.0",
         "readable-stream": "3.6.0",
         "uglify-js": "3.15.2"
