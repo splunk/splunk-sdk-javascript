@@ -56,15 +56,15 @@ jobs:
       #   env:
       #     SPLUNK_HOME: /opt/splunk
 
-      - name: Generate docs
-        run: |
-          node sdkdo docs
-
       - name: Package JSON Info
         uses: myrotvorets/info-from-package-json-action@1.1.0
         id: pkgjson
+
+      - name: Generate docs
         run: |
-          ls docs/${{ steps.pkgjson.outputs.packageVersion }}
+          node sdkdo docs
+          echo ${{ steps.pkgjson.outputs.packageVersion }}
+          ls docs
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
