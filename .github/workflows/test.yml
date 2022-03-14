@@ -63,11 +63,10 @@ jobs:
       - name: Generate docs
         run: |
           node sdkdo docs
-          echo ${{ steps.pkgjson.outputs.packageVersion }}
-          ls docs
+          zip -r docs.zip docs/${{ steps.pkgjson.outputs.packageVersion }}/refs
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
           name: apidocs
-          path: docs/_build/docs_html.zip
+          path: docs.zip
