@@ -323,7 +323,7 @@
             version: version
         }
         
-        outputs[module.name] = mustache.to_html(ref_template, context, null);
+        outputs[module.name] = mustache.render(ref_template, context, null);
     });
     
     // Generate index
@@ -332,9 +332,9 @@
         version: version
     }
     var ref_index_template = fs.readFileSync(path.resolve(__dirname, 'ref_index_template.mustache')).toString("utf-8");
-    outputs["index"] = mustache.to_html(ref_index_template, context, null);
+    outputs["index"] = mustache.render(ref_index_template, context, null);
     
-    //var output = mustache.to_html(template, context, null);
+    //var output = mustache.render(template, context, null);
     callback(null, outputs);
   };
 })();
