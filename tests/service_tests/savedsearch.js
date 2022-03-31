@@ -172,7 +172,7 @@ exports.setup = function (svc, loggedOutSvc) {
                 var name = "jssdk_savedsearch_" + getNextId();
                 var originalSearch = "search index=_internal | head 1";
 
-                var searches = this.service.savedSearches({ owner: this.service.username, app: "sdkappcollection" });
+                var searches = this.service.savedSearches({ owner: this.service.username, app: "sdk-app-collection" });
 
                 Async.chain(
                     [function (done) {

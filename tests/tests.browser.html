@@ -43,8 +43,8 @@
           var host     = $("#server-host").val() || "localhost";
           var port     = $("#server-port").val() || "8089";
           var username = $("#server-username").val() || "admin";
-          var password = $("#server-password").val() || "changed!";
-          var version  = $("#server-version").val() || "5.0";
+          var password = $("#server-password").val() || "Chang3d!";
+          var version  = $("#server-version").val() || "8.2.4";
           
           options = {
             scheme: scheme,
@@ -98,11 +98,11 @@
         </div>
         <div class="server-info-field">
             <h3>Password</h3> 
-            <input type="password" id="server-password" value="changed!"/>
+            <input type="password" id="server-password" value="Chang3d!"/>
         </div>
         <div class="server-info-field">
             <h3>Version</h3> 
-            <input type="text" id="server-version" value="8.0"/>
+            <input type="text" id="server-version" value="8.2.4"/>
         </div>
         <div class="server-info-field">
             <h3>&nbsp;</h3> 
@@ -116,7 +116,7 @@
     <script src="../node_modules/chai/chai.js"></script>
     <script>
       mocha.setup('bdd')
-      mocha.timeout('5s');
+      mocha.timeout('10s');
     </script>
     <script src="../client/browser_utils.js"></script>
     <script src="../client/browser_async.js"></script>

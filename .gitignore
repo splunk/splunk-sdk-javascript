@@ -18,3 +18,5 @@ cover_html
 *.zip
 test_logs/*
 docs/
+node_modules/*
+.nyc_output/*

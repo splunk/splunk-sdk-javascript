@@ -27,7 +27,6 @@
     var url = require('url');
     var needle = require('needle');
 
-
     /**
      * Constants
      */
@@ -445,11 +444,11 @@
     };
 
     var getDependencies = function (entry) {
+        // Latest browserify API
         var bundle = browserify({
-            entry: entry,
-            ignore: IGNORED_MODULES,
-            cache: BUILD_CACHE_FILE
+            entries: entry
         });
+        bundle.ignore(IGNORED_MODULES)
 
         var dependencies = [entry];
         for (var file in bundle.files) {
@@ -463,40 +462,30 @@
 
     var compile = function (entry, path, shouldUglify, watch, exportName) {
         exportName = exportName || "splunkjs";
-
-        // Compile/combine all the files into the package
-        var bundle = browserify({
-            entry: entry,
-            ignore: IGNORED_MODULES,
-            cache: BUILD_CACHE_FILE,
-            filter: function (code) {
-                if (shouldUglify) {
-                    var uglifyjs = require("uglify-js"),
-                        parser = uglifyjs.parser,
-                        uglify = uglifyjs.uglify;
-
-                    var ast = parser.parse(code);
-                    ast = uglify.ast_mangle(ast);
-                    ast = uglify.ast_squeeze(ast);
-                    code = uglify.gen_code(ast);
-                }
-
-                code = [
-                    "(function() {",
-                    "",
-                    "var __exportName = '" + exportName + "';",
-                    "",
-                    code,
-                    "",
-                    "})();"
-                ].join("\n");
-                return code;
+        var bundle = browserify();
+        bundle.add(entry);
+        bundle.ignore(IGNORED_MODULES);
+        bundle.bundle(function (err,src){
+            var code = [
+                            "(function() {",
+                            "",
+                            "var __exportName = '" + exportName + "';",
+                            "",
+                            src.toString(),
+                            "",
+                            "})();"
+                        ].join("\n");
+            if(err){
+                throw err;
             }
+            if (shouldUglify){
+                var UglifyJS = require("uglify-js");
+                code = UglifyJS.minify({"file1.js":code},{toplevel:true}).code;
+            }
+            fs.writeFileSync(path,code);
+            console.log("Compiled " + path);
         });
 
-        var js = bundle.bundle();
-        fs.writeFileSync(path, js);
-        console.log("Compiled " + path);
     };
 
     var outOfDate = function (dependencies, compiled, compiledMin) {
@@ -735,13 +724,13 @@
         var files = args
             .map(arg => {
                 if (arg.indexOf('modularinputs') >= 0) {
-                    return path.join(TEST_DIRECTORY, 'modularinputs', TEST_PREFIX + arg.split('/')[1] + ".js");
+                    return path.join(TEST_DIRECTORY, 'modularinputs', arg.split('/').reverse()[0]);
                 }
                 else if (arg.indexOf('service_tests') >= 0) {
-                    return path.join(TEST_DIRECTORY, 'service_tests', arg.split('/')[1] + ".js");
+                    return path.join(TEST_DIRECTORY, 'service_tests', arg.split('/').reverse()[0]);
                 }
                 else {
-                    return path.join(TEST_DIRECTORY, TEST_PREFIX + arg + ".js");
+                    return path.join(TEST_DIRECTORY, arg.split('/').reverse()[0]);
                 }
             }).filter(file => fs.existsSync(file));
 
