@@ -179,12 +179,12 @@ serviceWithBearerToken.get("search/jobs", { count: 2 }, function (err, res) {
 
 ## SDK examples
 
-The Splunk Enterprise SDK for JavaScript contains several server- and client-based examples.
+The Splunk Enterprise SDK for JavaScript contains several server- and client-based examples, which are located in the [Splunk App Example repo](https://github.com/splunk/splunk-app-examples).
 For details, see the [Splunk Enterprise SDK for JavaScript Examples](https://dev.splunk.com/enterprise/docs/devtools/javascript/sdk-javascript/sdkjavascriptexamples) on the Splunk Developer Portal.
 
-#### Create a .splunkrc convenience file
+## Create a .splunkrc convenience file
 
-To connect to Splunk Enterprise, many of the SDK examples and unit tests take command-line arguments that specify values for the host, port, and login credentials for Splunk Enterprise. For convenience during development, you can store these arguments as key-value pairs in a text file named **.splunkrc**. Then, the SDK examples and unit tests use the values from the **.splunkrc** file when you don't specify them.
+To connect to Splunk Enterprise, many of the SDK unit tests take command-line arguments that specify values for the host, port, and login credentials for Splunk Enterprise. For convenience during development, you can store these arguments as key-value pairs in a text file named **.splunkrc**. Then, the SDK unit tests use the values from the **.splunkrc** file when you don't specify them.
 
 >**Note**: Storing login credentials in the **.splunkrc** file is only for convenience during development. This file isn't part of the Splunk platform and shouldn't be used for storing user credentials for production. And, if you're at all concerned about the security of your credentials, enter them at the command line rather than saving them in this file.
 
@@ -246,37 +246,6 @@ function (err) {
 });
 ```
 
-### Client-side examples
-
-The Splunk Enterprise SDK for JavaScript includes several browser-based examples, which you can run from the Examples web page.
-
-To start a simple web server and open the Examples page in a web browser, enter:
-
-    node sdkdo examples
-
-### Node.js examples
-
-The Splunk Enterprise SDK for JavaScript includes several command-line examples, which are located in the **/splunk-sdk-javascript/examples/node** directory. These examples run with Node.js and use the command-line arguments from the **.splunkrc** file, if you set this up with your login credentials.
-
-For example, to run the **jobs.js** example, open a command prompt in the **/splunk-sdk-javascript/examples/node** directory and enter:
-
-    node jobs.js list
-
-If you aren't storing your login credentials in **.splunkrc**, enter the following command, providing your own values:
-
-    node jobs.js --username yourusername --password yourpassword list
-
-Your output should look something like this:
-
-    ~\splunk-sdk-javascript\examples\node> node .\jobs.js list
-      Job 1 sid: scheduler__nobody__search_VG9wIGZpdmUgc291cmNldHlwZXM_at_1323917700_79740ae7e22350d6
-      Job 2 sid: scheduler__nobody__search_VG9wIGZpdmUgc291cmNldHlwZXM_at_1323917400_0dceb302931a2b3f
-      Job 3 sid: scheduler__nobody__search_SW5kZXhpbmcgd29ya2xvYWQ_at_1323917100_48fb4cc65a25c5b1
-      Job 4 sid: scheduler__nobody__search_SW5kZXhpbmcgd29ya2xvYWQ_at_1323916200_b2f239fef7834523
-      Job 5 sid: scheduler__nobody__unix_QWxlcnQgLSBzeXNsb2cgZXJyb3JzIGxhc3QgaG91cg_at_1323914400_96cb9084680b25d7
-      Job 6 sid: admin__admin__search_TXkgQXdlc29tZSBTYXZlZCBTZWFyY2g_1323901055.6
-    ==============
-
 ## Development
 
 The Splunk Enterprise SDK for JavaScript infrastructure relies on Node.js to build files, run examples, run tests, and generate documentation. 
@@ -335,7 +304,6 @@ To get more info to run tests, enter:
 | /client       | Pre-built files for the browser                            |
 | /contrib      | Packaged third-party dependencies (such as test runners)   |
 | /docs         | API reference documentation                                |
-| /examples     | Examples                                                   |
 | /lib          | The SDK code files                                         |
 | /licenses     | License information for packaged third-party dependencies  |
 | /node_modules | JavaScript modules used by Node.js                         |
@@ -360,6 +328,7 @@ To learn about our branching model, see [Branching Model](https://github.com/spl
 | [REST API Reference Manual](https://docs.splunk.com/Documentation/Splunk/latest/RESTREF/RESTprolog) | Splunk REST API reference documentation |
 | [Splunk>Docs](https://docs.splunk.com/Documentation) | General documentation for the Splunk platform |
 | [GitHub Wiki](https://github.com/splunk/splunk-sdk-javascript/wiki/) | Documentation for this SDK's repository on GitHub |
+| [Splunk JavaScript SDK Examples](https://github.com/splunk/splunk-app-examples) | modular inputs, server- and client-based examples for the Splunk JavaScript SDK |
 
 
 ## Community

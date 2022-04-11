@@ -5,12 +5,6 @@ node_modules
 build
 client
 external
-examples/browser/create-react-app
-examples/browser/minisplunk
-examples/browser/resources
-examples\\browser\\create-react-app
-examples\\browser\\minisplunk
-examples\\browser\\resources
 old_english
 new_english
 xml2json
