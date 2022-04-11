@@ -13,7 +13,7 @@
 // under the License.
 
 var describe = require('mocha').describe;
-var options = require('../examples/node/cmdline');
+var options = require('./cmdline');
 var splunkjs = require('../index');
 var utils = require('../lib/utils');
 var NodeHttp = splunkjs.NodeHttp;
@@ -74,7 +74,6 @@ describe("Server tests", function () {
     require('./modularinputs');
     require('./test_async').setup();
     require('./test_context').setup(svc);
-    require('./test_examples').setup(svc, cmdline.opts);
     require('./test_http').setup(nonSplunkHttp);
     require('./test_log').setup();
     require('./test_service').setup(svc, loggedOutSvc);
