@@ -1,5 +1,22 @@
 # Splunk Enterprise SDK for JavaScript Changelog
 
+## v1.11.0
+
+### Major changes
+* DVPL-9708 apps/local support ([PR#135](https://github.com/splunk/splunk-sdk-javascript/pull/135))
+* .conf CRUD functionality added ([PR#141](https://github.com/splunk/splunk-sdk-javascript/pull/141))
+### Minor changes
+* NodeUnit to Mocha Transition for Browser Test Cases ([PR#127](https://github.com/splunk/splunk-sdk-javascript/pull/127))
+* Login example and README.md change ([PR#138](https://github.com/splunk/splunk-sdk-javascript/pull/138))
+* Add pagination support to history calls ([PR#95](https://github.com/splunk/splunk-sdk-javascript/pull/95))
+* Changes for savedsearch history pagination ([PR#139](https://github.com/splunk/splunk-sdk-javascript/pull/139))
+* Add create-react-app browser example ([PR#99](https://github.com/splunk/splunk-sdk-javascript/pull/99))
+* Support added for output_mode for oneShotSearch ([PR#140](https://github.com/splunk/splunk-sdk-javascript/pull/140))
+* Updated Highcharts License. ([PR#119](https://github.com/splunk/splunk-sdk-javascript/pull/119))
+* package-lock.json updated ([PR#137](https://github.com/splunk/splunk-sdk-javascript/pull/137))
+* WIP: Stabilize CI/CD ([PR#115](https://github.com/splunk/splunk-sdk-javascript/pull/115))
+* Dependency updates ([PR#145](https://github.com/splunk/splunk-sdk-javascript/pull/145))
+
 ## v1.10.0
 
 ### Major changes
