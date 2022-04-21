@@ -2,7 +2,7 @@
 
 [stream splicer](https://npmjs.org/package/stream-splicer) with labels
 
-[![build status](https://secure.travis-ci.org/substack/labeled-stream-splicer.png)](http://travis-ci.org/substack/labeled-stream-splicer)
+[![build status](https://secure.travis-ci.org/browserify/labeled-stream-splicer.png?branch=master)](http://travis-ci.org/browserify/labeled-stream-splicer)
 
 # example
 

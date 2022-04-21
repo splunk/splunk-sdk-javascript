@@ -1,3 +1,4 @@
+/*! simple-concat. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
 module.exports = function (stream, cb) {
   var chunks = []
   stream.on('data', function (chunk) {

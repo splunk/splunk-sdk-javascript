@@ -3,7 +3,7 @@
 sort [module-deps](https://npmjs.org/package/module-deps) output for deterministic
 browserify bundles
 
-[![build status](https://secure.travis-ci.org/substack/deps-sort.png)](http://travis-ci.org/substack/deps-sort)
+[![build status](https://secure.travis-ci.org/browserify/deps-sort.png)](http://travis-ci.org/browserify/deps-sort)
 
 # example
 
@@ -70,6 +70,28 @@ to strings, those strings will be used to resolve the indexed references.
 `row.sameDeps` will be set to a boolean of whether the dependencies at the
 dedupe target match (true) or just the source content (false).
 
+# input objects
+
+Input objects are file objects in the [module-deps][] shape. They must at least
+have these properties:
+
+* `row.id` - a unique identifier for the file
+* `row.source` - the file contents
+* `row.deps` - dependencies for this file, mapping strings as used in
+  `require()` to row IDs.
+
+# output objects
+
+All the input properties, and:
+
+* `row.index` - when `opts.index` is true, the sorted numeric index of the row
+* `row.indexDeps` - like `row.deps`, but mapping to `row.index` instead of
+  `row.id`
+* `row.dedupe` - when `opts.dedupe` is true, contains the row ID of a file with
+  identical contents
+* `row.dedupeIndex` - like `row.dedupe`, but contains the `row.index` instead
+  of `row.id`
+
 # install
 
 With [npm](https://npmjs.org) do:
@@ -81,3 +103,5 @@ npm install deps-sort
 # license
 
 MIT
+
+[module-deps]: https://github.com/browserify/module-deps#output-objects

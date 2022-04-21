@@ -1,6 +1,5 @@
 var Splicer = require('stream-splicer');
 var inherits = require('inherits');
-var isarray = require('isarray');
 
 module.exports = Labeled;
 inherits(Labeled, Splicer);
@@ -19,7 +18,7 @@ function Labeled (streams, opts) {
     for (var i = 0; i < streams.length; i++) {
         var s = streams[i];
         if (typeof s === 'string') continue;
-        if (isarray(s)) {
+        if (Array.isArray(s)) {
             s = new Labeled(s, opts);
         }
         if (i >= 0 && typeof streams[i-1] === 'string') {

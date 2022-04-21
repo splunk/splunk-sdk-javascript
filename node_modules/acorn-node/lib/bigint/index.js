@@ -18,7 +18,7 @@ module.exports = function(Parser) {
 
     anonymous.prototype.parseLiteral = function parseLiteral (value) {
       var node = Parser.prototype.parseLiteral.call(this, value)
-      if (node.raw.charCodeAt(node.raw.length - 1) == 110) { node.bigint = node.raw }
+      if (node.raw.charCodeAt(node.raw.length - 1) == 110) { node.bigint = this.getNumberInput(node.start, node.end) }
       return node
     };
 
@@ -28,7 +28,7 @@ module.exports = function(Parser) {
       var val = this.readInt(radix)
       if (val === null) { this.raise(this.start + 2, ("Expected number in radix " + radix)) }
       if (this.input.charCodeAt(this.pos) == 110) {
-        var str = this.input.slice(start, this.pos)
+        var str = this.getNumberInput(start, this.pos)
         val = typeof BigInt !== "undefined" ? BigInt(str) : null
         ++this.pos
       } else if (isIdentifierStart(this.fullCharCodeAtPos())) { this.raise(this.pos, "Identifier directly after number") }
@@ -54,10 +54,16 @@ module.exports = function(Parser) {
         return Parser.prototype.readNumber.call(this, startsWithDot)
       }
 
-      var str = this.input.slice(start, this.pos)
+      var str = this.getNumberInput(start, this.pos)
       var val = typeof BigInt !== "undefined" ? BigInt(str) : null
       ++this.pos
       return this.finishToken(tt.num, val)
+    };
+
+    // This is basically a hook for acorn-numeric-separator
+    anonymous.prototype.getNumberInput = function getNumberInput (start, end) {
+      if (Parser.prototype.getNumberInput) { return Parser.prototype.getNumberInput.call(this, start, end) }
+      return this.input.slice(start, end)
     };
 
     return anonymous;

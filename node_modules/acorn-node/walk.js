@@ -1,9 +1,8 @@
 var xtend = require('xtend')
 var walk = require('acorn-walk')
-var dynamicImportKey = require('acorn-dynamic-import').DynamicImportKey
 
 var base = xtend(walk.base)
-base[dynamicImportKey] = function () {}
+base.Import = function () {}
 
 function simple (node, visitors, baseVisitor, state, override) {
   return walk.simple(node, visitors, baseVisitor || base, state, override)

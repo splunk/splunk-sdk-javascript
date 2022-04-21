@@ -154,10 +154,13 @@ function closeOver (globals, src, file, opts) {
     if (keys.length === 0) return src;
     var values = keys.map(function (key) { return globals[key] });
     
-    var wrappedSource;
+    // we double-wrap the source in IIFEs to prevent code like
+    //     (function(Buffer){ const Buffer = null }())
+    // which causes a parse error.
+    var wrappedSource = '(function (){\n' + src + '\n}).call(this)';
     if (keys.length <= 3) {
-        wrappedSource = '(function (' + keys.join(',') + '){\n'
-            + src + '\n}).call(this,' + values.join(',') + ')'
+        wrappedSource = '(function (' + keys.join(',') + '){'
+            + wrappedSource + '}).call(this,' + values.join(',') + ')'
         ;
     }
     else {
@@ -169,8 +172,8 @@ function closeOver (globals, src, file, opts) {
           'arguments[3]','arguments[4]',
           'arguments[5]','arguments[6]'
       );
-      wrappedSource = '(function (' + names.join(',') + '){\n'
-        + src + '\n}).call(this,' + values.join(',') + ')';
+      wrappedSource = '(function (' + names.join(',') + '){'
+        + wrappedSource + '}).call(this,' + values.join(',') + ')';
     }
 
     // Generate source maps if wanted. Including the right offset for

@@ -9,7 +9,7 @@ test('bundle', function (t) {
     t.plan(1);
     
     var pipeline = splicer.obj([
-        'deps', [ deps(__dirname + '/bundle/main.js') ],
+        'deps', [ deps() ],
         'pack', [ pack({ raw: true }) ]
     ]);
     pipeline.pipe(concat(function (body) {
@@ -24,4 +24,6 @@ test('bundle', function (t) {
         this.push(row);
         next();
     }));
+
+    pipeline.end(__dirname + '/bundle/main.js');
 });

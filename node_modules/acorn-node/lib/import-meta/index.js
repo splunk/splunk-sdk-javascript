@@ -37,9 +37,6 @@ module.exports = function(Parser) {
       if (node.property.name !== "meta") {
         this.raiseRecoverable(node.property.start, "The only valid meta property for import is import.meta")
       }
-      if (this.containsEsc) {
-        this.raiseRecoverable(node.property.start, "\"meta\" in import.meta must not contain escape sequences")
-      }
       return this.finishNode(node, "MetaProperty")
     };
 
