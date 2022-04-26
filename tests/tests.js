@@ -71,7 +71,6 @@ describe("Server tests", function () {
         done();
     })
 
-    require('./modularinputs');
     require('./test_async').setup();
     require('./test_context').setup(svc);
     require('./test_http').setup(nonSplunkHttp);
