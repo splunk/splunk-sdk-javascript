@@ -288,6 +288,7 @@ All development activities are managed by a helper script called `sdkdo`. For a 
 ### Compile the browser files
 
 To rebuild and minify the browser files, open a command prompt in the **splunk-sdk-javascript** directory and enter:
+Note:- If any TypeError is encountered, please run "npm install" before running the below command.
 
     node sdkdo compile
 
