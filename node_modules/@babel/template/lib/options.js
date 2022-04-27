@@ -63,7 +63,7 @@ function validate(opts) {
     parser,
     placeholderWhitelist: placeholderWhitelist || undefined,
     placeholderPattern: placeholderPattern == null ? undefined : placeholderPattern,
-    preserveComments: preserveComments == null ? undefined : preserveComments,
+    preserveComments: preserveComments == null ? false : preserveComments,
     syntacticPlaceholders: syntacticPlaceholders == null ? undefined : syntacticPlaceholders
   };
 }

@@ -1,34 +1,18 @@
-var fs = require('fs');
 var path = require('path');
 var test = require('tape');
 var resolve = require('../');
 
 test('$NODE_PATH', function (t) {
-    t.plan(8);
-
-    var isDir = function (dir, cb) {
-        if (dir === '/node_path' || dir === 'node_path/x') {
-            return cb(null, true);
-        }
-        fs.stat(dir, function (err, stat) {
-            if (!err) {
-                return cb(null, stat.isDirectory());
-            }
-            if (err.code === 'ENOENT' || err.code === 'ENOTDIR') return cb(null, false);
-            return cb(err);
-        });
-    };
+    t.plan(4);
 
     resolve('aaa', {
         paths: [
             path.join(__dirname, '/node_path/x'),
             path.join(__dirname, '/node_path/y')
         ],
-        basedir: __dirname,
-        isDirectory: isDir
+        basedir: __dirname
     }, function (err, res) {
-        t.error(err);
-        t.equal(res, path.join(__dirname, '/node_path/x/aaa/index.js'), 'aaa resolves');
+        t.equal(res, path.join(__dirname, '/node_path/x/aaa/index.js'));
     });
 
     resolve('bbb', {
@@ -36,11 +20,9 @@ test('$NODE_PATH', function (t) {
             path.join(__dirname, '/node_path/x'),
             path.join(__dirname, '/node_path/y')
         ],
-        basedir: __dirname,
-        isDirectory: isDir
+        basedir: __dirname
     }, function (err, res) {
-        t.error(err);
-        t.equal(res, path.join(__dirname, '/node_path/y/bbb/index.js'), 'bbb resolves');
+        t.equal(res, path.join(__dirname, '/node_path/y/bbb/index.js'));
     });
 
     resolve('ccc', {
@@ -48,23 +30,20 @@ test('$NODE_PATH', function (t) {
             path.join(__dirname, '/node_path/x'),
             path.join(__dirname, '/node_path/y')
         ],
-        basedir: __dirname,
-        isDirectory: isDir
+        basedir: __dirname
     }, function (err, res) {
-        t.error(err);
-        t.equal(res, path.join(__dirname, '/node_path/x/ccc/index.js'), 'ccc resolves');
+        t.equal(res, path.join(__dirname, '/node_path/x/ccc/index.js'));
     });
 
-    // ensure that relative paths still resolve against the regular `node_modules` correctly
+    // ensure that relative paths still resolve against the
+    // regular `node_modules` correctly
     resolve('tap', {
         paths: [
             'node_path'
         ],
-        basedir: path.join(__dirname, 'node_path/x'),
-        isDirectory: isDir
+        basedir: 'node_path/x'
     }, function (err, res) {
         var root = require('tap/package.json').main;
-        t.error(err);
-        t.equal(res, path.resolve(__dirname, '..', 'node_modules/tap', root), 'tap resolves');
+        t.equal(res, path.resolve(__dirname, '..', 'node_modules/tap', root));
     });
 });
