@@ -103,7 +103,8 @@
                     headers: {
                         "Content-Length": req.headers["content-length"] || 0,
                         "Content-Type": req.headers["content-type"] || '',
-                        "Authorization": req.headers["authorization"] || ''
+                        "Authorization": req.headers["authorization"] || '',
+                        "User-Agent": "splunk-sdk-javascript/" + SDK_VERSION
                     },
                     followAllRedirects: true,
                     body: body || '',
