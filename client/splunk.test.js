@@ -4686,7 +4686,7 @@ window.SplunkTest = {
     Service  : require('../../tests/test_service'),
     Examples : require('../../tests/test_examples')
 };
-},{"../../tests/test_async":357,"../../tests/test_context":358,"../../tests/test_examples":359,"../../tests/test_http":360,"../../tests/test_service":361,"../../tests/test_utils":362}],27:[function(require,module,exports){
+},{"../../tests/test_async":358,"../../tests/test_context":359,"../../tests/test_examples":360,"../../tests/test_http":361,"../../tests/test_service":362,"../../tests/test_utils":363}],27:[function(require,module,exports){
 /*!*/
 // Copyright 2012 Splunk, Inc.
 //
@@ -6745,6 +6745,7 @@ module.exports = utils;
     var needle = require('needle');
     var Http    = require('../../http');
     var utils   = require('../../utils');
+    var SDK_VERSION = require('../../../package.json').version;
 
     var root = exports || this;
 
@@ -6768,6 +6769,7 @@ module.exports = utils;
 
             // Get the byte-length of the content, which adjusts for multi-byte characters
             request_options.headers["Content-Length"] = Buffer.byteLength(request_options.body, "utf8");
+            request_options.headers["User-Agent"] = "splunk-sdk-javascript/" + SDK_VERSION;
 
             if(message.query && ["xml", "csv"].includes(message.query.output_mode)){
                 request_options.parse_response = false;
@@ -6828,6 +6830,7 @@ module.exports = utils;
 
             // Get the byte-length of the content, which adjusts for multi-byte characters
             request_options.headers["Content-Length"] = Buffer.byteLength(request_options.body, "utf8");
+            request_options.headers["User-Agent"] = "splunk-sdk-javascript/" + SDK_VERSION;
 
             var that = this;
             var response = needle(request_options.method, request_options.url, request_options.body, request_options);
@@ -6842,7 +6845,7 @@ module.exports = utils;
 })();
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"../../http":27,"../../utils":43,"buffer":100,"needle":250}],42:[function(require,module,exports){
+},{"../../../package.json":338,"../../http":27,"../../utils":43,"buffer":100,"needle":250}],42:[function(require,module,exports){
 /*!*/
 // Copyright 2014 Splunk, Inc.
 //
@@ -45485,7 +45488,7 @@ module.exports={
   "_args": [
     [
       "elliptic@6.5.4",
-      "/Users/abhis/Documents/python/splunk-sdk-javascript"
+      "/Users/abhis/Documents/GitHub/splunk-sdk-javascript"
     ]
   ],
   "_development": true,
@@ -45511,7 +45514,7 @@ module.exports={
   ],
   "_resolved": "https://registry.npmjs.org/elliptic/-/elliptic-6.5.4.tgz",
   "_spec": "6.5.4",
-  "_where": "/Users/abhis/Documents/python/splunk-sdk-javascript",
+  "_where": "/Users/abhis/Documents/GitHub/splunk-sdk-javascript",
   "author": {
     "name": "Fedor Indutny",
     "email": "fedor@indutny.com"
@@ -56297,7 +56300,7 @@ module.exports={
   "_args": [
     [
       "needle@3.0.0",
-      "/Users/abhis/Documents/python/splunk-sdk-javascript"
+      "/Users/abhis/Documents/GitHub/splunk-sdk-javascript"
     ]
   ],
   "_from": "needle@3.0.0",
@@ -56321,7 +56324,7 @@ module.exports={
   ],
   "_resolved": "https://registry.npmjs.org/needle/-/needle-3.0.0.tgz",
   "_spec": "3.0.0",
-  "_where": "/Users/abhis/Documents/python/splunk-sdk-javascript",
+  "_where": "/Users/abhis/Documents/GitHub/splunk-sdk-javascript",
   "author": {
     "name": "Tomás Pollak",
     "email": "tomas@forkhq.com"
@@ -74407,6 +74410,60 @@ function extend() {
 }
 
 },{}],338:[function(require,module,exports){
+module.exports={
+    "name": "splunk-sdk",
+    "version": "1.11.0",
+    "description": "SDK for usage with the Splunk REST API",
+    "homepage": "http://dev.splunk.com",
+    "main": "index.js",
+    "directories": {
+        "example": "examples",
+        "lib": "lib",
+        "test": "tests"
+    },
+    "repository": {
+        "type": "git",
+        "url": "http://github.com/splunk/splunk-sdk-javascript.git"
+    },
+    "keywords": [
+        "splunk",
+        "data",
+        "search",
+        "logs",
+        "javascript"
+    ],
+    "scripts": {
+        "test": "nyc mocha tests/tests.js -t 50000 --allow-uncaught --exit --reporter mochawesome"
+    },
+    "dependencies": {
+        "cookie": "0.4.2",
+        "dotenv": "16.0.0",
+        "elementtree": "0.1.7",
+        "needle": "3.0.0"
+    },
+    "devDependencies": {
+        "browserify": "^17.0.0",
+        "chai": "^4.3.6",
+        "jshint": "2.13.4",
+        "mocha": "7.2.0",
+        "mochawesome": "7.1.0",
+        "mustache": "4.2.0",
+        "nyc": "^15.1.0",
+        "readable-stream": "3.6.0",
+        "uglify-js": "3.15.2"
+    },
+    "author": {
+        "name": "Splunk",
+        "email": "devinfo@splunk.com",
+        "url": "http://dev.splunk.com"
+    },
+    "license": "Apache-2.0",
+    "engine": {
+        "node": ">=0.8.0"
+    }
+}
+
+},{}],339:[function(require,module,exports){
 (function (process,__filename){(function (){
 var assert = require('chai').assert;
 
@@ -74621,7 +74678,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/app.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],339:[function(require,module,exports){
+},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],340:[function(require,module,exports){
 (function (process,__filename){(function (){
 var assert = require('chai').assert;
 
@@ -74727,7 +74784,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/collection.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],340:[function(require,module,exports){
+},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],341:[function(require,module,exports){
 (function (process,__filename){(function (){
 var assert = require('chai').assert;
 
@@ -75030,7 +75087,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/configuration.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],341:[function(require,module,exports){
+},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],342:[function(require,module,exports){
 (function (process,__filename){(function (){
 var assert = require('chai').assert;
 
@@ -76143,7 +76200,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/datamodels.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"../utils":363,"_process":281,"chai":104}],342:[function(require,module,exports){
+},{"../../examples/node/cmdline":2,"../../index":23,"../utils":364,"_process":281,"chai":104}],343:[function(require,module,exports){
 (function (process,__filename){(function (){
 var assert = require('chai').assert;
 
@@ -76218,7 +76275,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/endpoint.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],343:[function(require,module,exports){
+},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],344:[function(require,module,exports){
 (function (process,__filename){(function (){
 var assert = require('chai').assert;
 
@@ -76378,7 +76435,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/entity.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],344:[function(require,module,exports){
+},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],345:[function(require,module,exports){
 (function (process,__filename){(function (){
 var assert = require('chai').assert;
 
@@ -76692,7 +76749,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/firedalerts.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],345:[function(require,module,exports){
+},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],346:[function(require,module,exports){
 (function (process,Buffer,__filename){(function (){
 var assert = require('chai').assert;
 
@@ -77169,7 +77226,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),require("buffer").Buffer,"/tests/service_tests/indexes.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"buffer":100,"chai":104}],346:[function(require,module,exports){
+},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"buffer":100,"chai":104}],347:[function(require,module,exports){
 (function (process,__filename){(function (){
 exports.setup = function (svc) {
     var assert = require('chai').assert;
@@ -78255,7 +78312,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/job.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"../../lib/log":29,"../utils":363,"_process":281,"chai":104,"path":273}],347:[function(require,module,exports){
+},{"../../examples/node/cmdline":2,"../../index":23,"../../lib/log":29,"../utils":364,"_process":281,"chai":104,"path":273}],348:[function(require,module,exports){
 (function (process,__filename){(function (){
 var assert = require('chai').assert;
 
@@ -78546,7 +78603,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/namespace.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"../../lib/log":29,"_process":281,"chai":104}],348:[function(require,module,exports){
+},{"../../examples/node/cmdline":2,"../../index":23,"../../lib/log":29,"_process":281,"chai":104}],349:[function(require,module,exports){
 (function (process,__filename){(function (){
 exports.setup = function (svc) {
     var assert = require('chai').assert;
@@ -78613,7 +78670,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/parser.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],349:[function(require,module,exports){
+},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],350:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 exports.setup = function (svc) {
@@ -80217,7 +80274,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/pivot.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"../utils":363,"_process":281,"chai":104}],350:[function(require,module,exports){
+},{"../../examples/node/cmdline":2,"../../index":23,"../utils":364,"_process":281,"chai":104}],351:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 exports.setup = function (svc) {
@@ -80385,7 +80442,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/properties.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],351:[function(require,module,exports){
+},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],352:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 exports.setup = function (svc, loggedOutSvc) {
@@ -80887,7 +80944,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/savedsearch.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"../utils":363,"_process":281,"chai":104}],352:[function(require,module,exports){
+},{"../../examples/node/cmdline":2,"../../index":23,"../utils":364,"_process":281,"chai":104}],353:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 exports.setup = function (svc) {
@@ -80949,7 +81006,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/serverinfo.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],353:[function(require,module,exports){
+},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],354:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 exports.setup = function (svc) {
@@ -81597,7 +81654,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/storagepasswords.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],354:[function(require,module,exports){
+},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],355:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 exports.setup = function (svc, loggedOutSvc) {
@@ -81683,7 +81740,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/typeahead.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],355:[function(require,module,exports){
+},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],356:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 exports.setup = function (svc, loggedOutSvc) {
@@ -81978,7 +82035,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/user.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],356:[function(require,module,exports){
+},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],357:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 exports.setup = function (svc) {
@@ -82079,7 +82136,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/view.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],357:[function(require,module,exports){
+},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],358:[function(require,module,exports){
 (function (__filename){(function (){
 
 // Copyright 2011 Splunk, Inc.
@@ -82620,7 +82677,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,"/tests/test_async.js")
-},{"../index":23,"chai":104}],358:[function(require,module,exports){
+},{"../index":23,"chai":104}],359:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 // Copyright 2011 Splunk, Inc.
@@ -83730,7 +83787,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/test_context.js")
-},{"../examples/node/cmdline":2,"../index":23,"./utils":363,"_process":281,"chai":104}],359:[function(require,module,exports){
+},{"../examples/node/cmdline":2,"../index":23,"./utils":364,"_process":281,"chai":104}],360:[function(require,module,exports){
 (function (process,__filename){(function (){
 // Copyright 2011 Splunk, Inc.
 //
@@ -84240,7 +84297,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/test_examples.js")
-},{"../examples/node/cmdline":2,"../examples/node/helloworld/apps":3,"../examples/node/helloworld/apps_async":4,"../examples/node/helloworld/endpoint_instantiation":5,"../examples/node/helloworld/firedalerts":6,"../examples/node/helloworld/firedalerts_async":7,"../examples/node/helloworld/firedalerts_create":8,"../examples/node/helloworld/firedalerts_delete":9,"../examples/node/helloworld/get_job":10,"../examples/node/helloworld/log":11,"../examples/node/helloworld/pivot_async":12,"../examples/node/helloworld/savedsearches":13,"../examples/node/helloworld/savedsearches_async":14,"../examples/node/helloworld/savedsearches_create":15,"../examples/node/helloworld/savedsearches_delete":16,"../examples/node/helloworld/search_blocking":17,"../examples/node/helloworld/search_normal":18,"../examples/node/helloworld/search_oneshot":19,"../examples/node/helloworld/search_realtime":20,"../examples/node/jobs":21,"../examples/node/search":22,"../index":23,"_process":281,"chai":104}],360:[function(require,module,exports){
+},{"../examples/node/cmdline":2,"../examples/node/helloworld/apps":3,"../examples/node/helloworld/apps_async":4,"../examples/node/helloworld/endpoint_instantiation":5,"../examples/node/helloworld/firedalerts":6,"../examples/node/helloworld/firedalerts_async":7,"../examples/node/helloworld/firedalerts_create":8,"../examples/node/helloworld/firedalerts_delete":9,"../examples/node/helloworld/get_job":10,"../examples/node/helloworld/log":11,"../examples/node/helloworld/pivot_async":12,"../examples/node/helloworld/savedsearches":13,"../examples/node/helloworld/savedsearches_async":14,"../examples/node/helloworld/savedsearches_create":15,"../examples/node/helloworld/savedsearches_delete":16,"../examples/node/helloworld/search_blocking":17,"../examples/node/helloworld/search_normal":18,"../examples/node/helloworld/search_oneshot":19,"../examples/node/helloworld/search_realtime":20,"../examples/node/jobs":21,"../examples/node/search":22,"../index":23,"_process":281,"chai":104}],361:[function(require,module,exports){
 (function (__filename){(function (){
 
 // Copyright 2011 Splunk, Inc.
@@ -84558,7 +84615,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,"/tests/test_http.js")
-},{"../index":23,"chai":104}],361:[function(require,module,exports){
+},{"../index":23,"chai":104}],362:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 // Copyright 2011 Splunk, Inc.
@@ -84646,7 +84703,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/test_service.js")
-},{"../examples/node/cmdline":2,"../index":23,"./service_tests/app":338,"./service_tests/collection":339,"./service_tests/configuration":340,"./service_tests/datamodels":341,"./service_tests/endpoint":342,"./service_tests/entity":343,"./service_tests/firedalerts":344,"./service_tests/indexes":345,"./service_tests/job":346,"./service_tests/namespace":347,"./service_tests/parser":348,"./service_tests/pivot":349,"./service_tests/properties":350,"./service_tests/savedsearch":351,"./service_tests/serverinfo":352,"./service_tests/storagepasswords":353,"./service_tests/typeahead":354,"./service_tests/user":355,"./service_tests/view":356,"_process":281}],362:[function(require,module,exports){
+},{"../examples/node/cmdline":2,"../index":23,"./service_tests/app":339,"./service_tests/collection":340,"./service_tests/configuration":341,"./service_tests/datamodels":342,"./service_tests/endpoint":343,"./service_tests/entity":344,"./service_tests/firedalerts":345,"./service_tests/indexes":346,"./service_tests/job":347,"./service_tests/namespace":348,"./service_tests/parser":349,"./service_tests/pivot":350,"./service_tests/properties":351,"./service_tests/savedsearch":352,"./service_tests/serverinfo":353,"./service_tests/storagepasswords":354,"./service_tests/typeahead":355,"./service_tests/user":356,"./service_tests/view":357,"_process":281}],363:[function(require,module,exports){
 (function (__filename){(function (){
 
 // Copyright 2011 Splunk, Inc.
@@ -84918,7 +84975,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,"/tests/test_utils.js")
-},{"../index":23,"chai":104}],363:[function(require,module,exports){
+},{"../index":23,"chai":104}],364:[function(require,module,exports){
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may

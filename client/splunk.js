@@ -3289,6 +3289,7 @@ module.exports = utils;
 (function() {
     var Http    = require('../../http');
     var utils   = require('../../utils');
+    var SDK_VERSION = require('../../../package.json').version;
 
     var root = exports || this;
 
@@ -3311,6 +3312,7 @@ module.exports = utils;
         },
 
         makeRequest: function(url, message, callback) {
+            message.headers["Splunk-Client"] = "splunk-sdk-javascript/" + SDK_VERSION;
             var that = this;
             var params = {
                 url: url,
@@ -3354,7 +3356,7 @@ module.exports = utils;
         }
     });
 })();
-},{"../../http":7,"../../utils":25}],22:[function(require,module,exports){
+},{"../../../package.json":280,"../../http":7,"../../utils":25}],22:[function(require,module,exports){
 
 // Copyright 2011 Splunk, Inc.
 //
@@ -3373,6 +3375,7 @@ module.exports = utils;
 (function() {
     var Http    = require('../../http');
     var utils   = require('../../utils');
+    var SDK_VERSION = require('../../../package.json').version;
 
     var root = exports || this;
     
@@ -3442,6 +3445,7 @@ module.exports = utils;
             // as some proxy implementations would rather
             // use this.
             message.headers["X-ProxyDestination"] = url;
+            message.headers["Splunk-Client"] = "splunk-sdk-javascript/" + SDK_VERSION;
             
             // Need to remove the hostname from the URL
             var parsed = parseUri(url);
@@ -3517,7 +3521,7 @@ module.exports = utils;
         }
     });
 })();
-},{"../../http":7,"../../utils":25}],23:[function(require,module,exports){
+},{"../../../package.json":280,"../../http":7,"../../utils":25}],23:[function(require,module,exports){
 (function (Buffer){(function (){
 
 // Copyright 2011 Splunk, Inc.
@@ -3538,6 +3542,7 @@ module.exports = utils;
     var needle = require('needle');
     var Http    = require('../../http');
     var utils   = require('../../utils');
+    var SDK_VERSION = require('../../../package.json').version;
 
     var root = exports || this;
 
@@ -3561,6 +3566,7 @@ module.exports = utils;
 
             // Get the byte-length of the content, which adjusts for multi-byte characters
             request_options.headers["Content-Length"] = Buffer.byteLength(request_options.body, "utf8");
+            request_options.headers["User-Agent"] = "splunk-sdk-javascript/" + SDK_VERSION;
 
             if(message.query && ["xml", "csv"].includes(message.query.output_mode)){
                 request_options.parse_response = false;
@@ -3621,6 +3627,7 @@ module.exports = utils;
 
             // Get the byte-length of the content, which adjusts for multi-byte characters
             request_options.headers["Content-Length"] = Buffer.byteLength(request_options.body, "utf8");
+            request_options.headers["User-Agent"] = "splunk-sdk-javascript/" + SDK_VERSION;
 
             var that = this;
             var response = needle(request_options.method, request_options.url, request_options.body, request_options);
@@ -3635,7 +3642,7 @@ module.exports = utils;
 })();
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"../../http":7,"../../utils":25,"buffer":81,"needle":195}],24:[function(require,module,exports){
+},{"../../../package.json":280,"../../http":7,"../../utils":25,"buffer":81,"needle":195}],24:[function(require,module,exports){
 /*!*/
 // Copyright 2014 Splunk, Inc.
 //
@@ -32404,7 +32411,7 @@ module.exports={
   "_args": [
     [
       "elliptic@6.5.4",
-      "/Users/abhis/Documents/python/splunk-sdk-javascript"
+      "/Users/abhis/Documents/GitHub/splunk-sdk-javascript"
     ]
   ],
   "_development": true,
@@ -32430,7 +32437,7 @@ module.exports={
   ],
   "_resolved": "https://registry.npmjs.org/elliptic/-/elliptic-6.5.4.tgz",
   "_spec": "6.5.4",
-  "_where": "/Users/abhis/Documents/python/splunk-sdk-javascript",
+  "_where": "/Users/abhis/Documents/GitHub/splunk-sdk-javascript",
   "author": {
     "name": "Fedor Indutny",
     "email": "fedor@indutny.com"
@@ -42314,7 +42321,7 @@ module.exports={
   "_args": [
     [
       "needle@3.0.0",
-      "/Users/abhis/Documents/python/splunk-sdk-javascript"
+      "/Users/abhis/Documents/GitHub/splunk-sdk-javascript"
     ]
   ],
   "_from": "needle@3.0.0",
@@ -42338,7 +42345,7 @@ module.exports={
   ],
   "_resolved": "https://registry.npmjs.org/needle/-/needle-3.0.0.tgz",
   "_spec": "3.0.0",
-  "_where": "/Users/abhis/Documents/python/splunk-sdk-javascript",
+  "_where": "/Users/abhis/Documents/GitHub/splunk-sdk-javascript",
   "author": {
     "name": "Tomás Pollak",
     "email": "tomas@forkhq.com"
@@ -59713,6 +59720,60 @@ function extend() {
     }
 
     return target
+}
+
+},{}],280:[function(require,module,exports){
+module.exports={
+    "name": "splunk-sdk",
+    "version": "1.11.0",
+    "description": "SDK for usage with the Splunk REST API",
+    "homepage": "http://dev.splunk.com",
+    "main": "index.js",
+    "directories": {
+        "example": "examples",
+        "lib": "lib",
+        "test": "tests"
+    },
+    "repository": {
+        "type": "git",
+        "url": "http://github.com/splunk/splunk-sdk-javascript.git"
+    },
+    "keywords": [
+        "splunk",
+        "data",
+        "search",
+        "logs",
+        "javascript"
+    ],
+    "scripts": {
+        "test": "nyc mocha tests/tests.js -t 50000 --allow-uncaught --exit --reporter mochawesome"
+    },
+    "dependencies": {
+        "cookie": "0.4.2",
+        "dotenv": "16.0.0",
+        "elementtree": "0.1.7",
+        "needle": "3.0.0"
+    },
+    "devDependencies": {
+        "browserify": "^17.0.0",
+        "chai": "^4.3.6",
+        "jshint": "2.13.4",
+        "mocha": "7.2.0",
+        "mochawesome": "7.1.0",
+        "mustache": "4.2.0",
+        "nyc": "^15.1.0",
+        "readable-stream": "3.6.0",
+        "uglify-js": "3.15.2"
+    },
+    "author": {
+        "name": "Splunk",
+        "email": "devinfo@splunk.com",
+        "url": "http://dev.splunk.com"
+    },
+    "license": "Apache-2.0",
+    "engine": {
+        "node": ">=0.8.0"
+    }
 }
 
 },{}]},{},[5]);
