@@ -4276,6 +4276,7 @@ if (module === require.main) {
             this.login            = utils.bind(this, this.login);
             this._shouldAutoLogin = utils.bind(this, this._shouldAutoLogin);
             this._requestWrapper  = utils.bind(this, this._requestWrapper);
+            this.getVersion       = utils.bind(this, this.getVersion);
         },
 
         /**
@@ -4439,6 +4440,41 @@ if (module === require.main) {
         },
 
         /**
+         * Get Splunk version during login phase.
+         *
+         * @param {Function} callback The function to call when login has finished: `()`.
+         *
+         * @method splunkjs.Context
+         * @private
+         */
+        getVersion: function (callback) {
+            var that = this;
+            var url = this.paths.info;
+
+            callback = callback || function() {};
+
+            var wrappedCallback = function(err, response) {
+                var hasVersion = !!(!err && response.data && response.data.generator.version);
+
+                if (err || !hasVersion) {
+                    callback(err || "No version found", false);
+                }
+                else {
+                    that.version = response.data.generator.version;
+                    that.http.version = that.version;
+                    callback(null, true);
+                }
+            };
+            return this.http.get(
+                this.urlify(url),
+                this._headers(),
+                "",
+                this.timeout,
+                wrappedCallback
+            );
+        },
+
+        /**
          * Authenticates and logs in to a Splunk instance, then stores the
          * resulting session key.
          *
@@ -4457,6 +4493,7 @@ if (module === require.main) {
             };
 
             callback = callback || function() {};
+
             var wrappedCallback = function(err, response) {
                 // Let's make sure that not only did the request succeed, but
                 // we actually got a non-empty session key back.
@@ -4467,10 +4504,9 @@ if (module === require.main) {
                 }
                 else {
                     that.sessionKey = response.data.sessionKey;
-                    callback(null, true);
+                    that.getVersion(callback);
                 }
             };
-
             return this.http.post(
                 this.urlify(url),
                 this._headers(),
@@ -4479,7 +4515,6 @@ if (module === require.main) {
                 wrappedCallback
             );
         },
-
 
         /**
          * Logs the session out resulting in the removal of all cookies and the
@@ -6932,17 +6967,6 @@ module.exports = utils;
             this.views              = utils.bind(this, this.views);
             this.firedAlertGroups   = utils.bind(this, this.firedAlertGroups);
             this.dataModels         = utils.bind(this, this.dataModels);
-            
-            // Register version at highest level (Service instance)
-            var that = this;
-            this.serverInfo(function (err, info) {
-                try {
-                    that.version = info.properties().version;
-                } catch (ignore) {
-                    // Corner case: Service auth failure won't provide server/info details.
-                }
-                
-            });
         },
         
         /**
@@ -7154,7 +7178,7 @@ module.exports = utils;
          * @method splunkjs.Service
          * @see splunkjs.Service.Jobs
          */
-        jobs: function(namespace) {
+        jobs: function (namespace) {
             return new root.Jobs(this, namespace);  
         },
         
@@ -77367,6 +77391,36 @@ exports.setup = function (svc) {
             //     done();
             // });
 
+            it("Job Create Urls validation", function () {
+                var testData = {
+                    "v1_1": {
+                        "qualifiedPath": "/servicesNS/admin/foo/search/jobs/id5_1649796951725",
+                        "relpath": "search/jobs/id5_1649796951725/events",
+                        "expected": "/servicesNS/admin/foo/search/jobs/id5_1649796951725/events"
+                    },
+                    "v1_2": {
+                        "qualifiedPath": "/services/search/jobs/id5_1649796951725",
+                        "relpath": "search/jobs/id5_1649796951725/events",
+                        "expected": "/services/search/jobs/id5_1649796951725/events"
+                    },
+                    "v2_1": {
+                        "qualifiedPath": "/servicesNS/admin/foo/search/v2/jobs/id5_1649796951725",
+                        "relpath": "search/v2/jobs/id5_1649796951725/events",
+                        "expected": "/servicesNS/admin/foo/search/v2/jobs/id5_1649796951725/events"
+                    },
+                    "v2_2": {
+                        "qualifiedPath": "/services/search/v2/jobs/id5_1649796951725",
+                        "relpath": "search/v2/jobs/id5_1649796951725/events",
+                        "expected": "/services/search/v2/jobs/id5_1649796951725/events"
+                    }
+                }
+                
+                for (const [key, value] of Object.entries(testData)) {
+                    createdUrl = this.service.jobs().createUrl(value.qualifiedPath, value.relpath);
+                    assert.strictEqual(value.expected, createdUrl);
+                }
+            });
+
             it("Callback#Create+cancel job", function (done) {
                 var sid = getNextId();
                 this.service.jobs().search('search index=_internal | head 1', { id: sid }, function (err, job) {
@@ -77498,7 +77552,7 @@ exports.setup = function (svc) {
                     }
                 );
             });
-
+                
             it("Callback#job events - fallback to v1 with search params", function(done) {
                 var sid = getNextId();
                 var service = this.service;

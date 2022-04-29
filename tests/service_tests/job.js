@@ -52,6 +52,36 @@ exports.setup = function (svc) {
             //     done();
             // });
 
+            it("Job Create Urls validation", function () {
+                var testData = {
+                    "v1_1": {
+                        "qualifiedPath": "/servicesNS/admin/foo/search/jobs/id5_1649796951725",
+                        "relpath": "search/jobs/id5_1649796951725/events",
+                        "expected": "/servicesNS/admin/foo/search/jobs/id5_1649796951725/events"
+                    },
+                    "v1_2": {
+                        "qualifiedPath": "/services/search/jobs/id5_1649796951725",
+                        "relpath": "search/jobs/id5_1649796951725/events",
+                        "expected": "/services/search/jobs/id5_1649796951725/events"
+                    },
+                    "v2_1": {
+                        "qualifiedPath": "/servicesNS/admin/foo/search/v2/jobs/id5_1649796951725",
+                        "relpath": "search/v2/jobs/id5_1649796951725/events",
+                        "expected": "/servicesNS/admin/foo/search/v2/jobs/id5_1649796951725/events"
+                    },
+                    "v2_2": {
+                        "qualifiedPath": "/services/search/v2/jobs/id5_1649796951725",
+                        "relpath": "search/v2/jobs/id5_1649796951725/events",
+                        "expected": "/services/search/v2/jobs/id5_1649796951725/events"
+                    }
+                }
+                
+                for (const [key, value] of Object.entries(testData)) {
+                    createdUrl = this.service.jobs().createUrl(value.qualifiedPath, value.relpath);
+                    assert.strictEqual(value.expected, createdUrl);
+                }
+            });
+
             it("Callback#Create+cancel job", function (done) {
                 var sid = getNextId();
                 this.service.jobs().search('search index=_internal | head 1', { id: sid }, function (err, job) {
@@ -183,7 +213,7 @@ exports.setup = function (svc) {
                     }
                 );
             });
-
+                
             it("Callback#job events - fallback to v1 with search params", function(done) {
                 var sid = getNextId();
                 var service = this.service;
