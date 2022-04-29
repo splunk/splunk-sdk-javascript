@@ -1114,2451 +1114,7 @@ function outputHelpIfNecessary(cmd, options) {
 }
 
 }).call(this)}).call(this,require('_process'),require("buffer").Buffer)
-},{"_process":281,"buffer":100,"events":189,"fs":98,"path":273,"tty":328,"util":335}],2:[function(require,module,exports){
-(function (process,__dirname){(function (){
-// Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-(function() {
-    var path         = require('path');
-    var fs           = require('fs');
-    var commander    = require('../../contrib/commander');
-    var utils        = require('../../lib/utils');
-    
-    var DEFAULTS_PATHS = [
-        process.env.HOME || process.env.HOMEPATH,
-        path.resolve(__dirname, "..")
-    ];
-    
-    var readDefaultsFile = function(path, defaults) {
-        var contents = fs.readFileSync(path, "utf8") || "";
-        var lines = contents.split("\n") || [];
-        
-        for(var i = 0; i < lines.length; i++) {
-            var line = lines[i].trim();
-            if (line !== "" && !utils.startsWith(line, "#")) {
-                var parts = line.split("=");
-                var key = parts[0].trim();
-                var value = parts[1].trim();
-                defaults[key] = value;
-            }
-        }
-    };
-    
-    var getDefaults = function() {
-        var defaults = {};
-        for(var i = 0; i < DEFAULTS_PATHS.length; i++) {
-            var defaultsPath = path.join(DEFAULTS_PATHS[i], ".splunkrc");
-            if (fs.existsSync(defaultsPath)) {
-                readDefaultsFile(defaultsPath, defaults);
-            }
-        }
-        
-        return defaults;
-    };
-    
-    module.exports.create = function() {
-        var parser = new commander.Command();
-        var parse = parser.parse;
-    
-        parser.password = undefined;
-    
-        parser
-            .option('-u, --username <username>', "Username to login with", undefined, true)
-            .option('--password <password>', "Username to login with", undefined, false)
-            .option('--scheme <scheme>', "Scheme to use", "https", false)
-            .option('--host <host>', "Hostname to use", "localhost", false)
-            .option('--port <port>', "Port to use", 8089, false)
-            .option('--version <version>', "Which version to use", "4", false);
-        
-        parser.parse = function(argv) {
-            argv = (argv || []).slice(2);
-            var defaults = getDefaults();
-            for(var key in defaults) {
-                if (defaults.hasOwnProperty(key) && argv.indexOf("--" + key) < 0) {
-                    var value = defaults[key];
-                    argv.unshift(value);
-                    argv.unshift("--" + key.trim());
-                }
-            }
-            
-            argv.unshift("");
-            argv.unshift("");
-            
-            var cmdline = parse.call(parser, argv);
-            
-            return cmdline;
-        };
-        
-        parser.add = function(commandName, description, args, flags, required_flags, onAction) {
-            var opts = {};
-            flags = flags || [];
-            
-            var command = parser.command(commandName + (args ? " " + args : "")).description(description || "");
-            
-            // For each of the flags, add an option to the parser
-            for(var i = 0; i < flags.length; i++) {
-                var required = required_flags.indexOf(flags[i]) >= 0;
-                var option = "<" + flags[i] + ">";
-                command.option("--" + flags[i] + " " + option, "", undefined, required);
-            }
-            
-            command.action(function() {
-                var args = utils.toArray(arguments);
-                args.unshift(commandName);
-                onAction.apply(null, args);
-            });
-        };
-        
-        return parser;
-    };
-})();
-}).call(this)}).call(this,require('_process'),"/examples/node")
-},{"../../contrib/commander":1,"../../lib/utils":43,"_process":281,"fs":98,"path":273}],3:[function(require,module,exports){
-
-// Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-// This example will login to Splunk, and then retrieve the list of applications,
-// printing each application's name.
-
-var splunkjs = require('../../../index');
-
-exports.main = function(opts, done) {
-    // This is just for testing - ignore it
-    opts = opts || {};
-    
-    var username = opts.username    || "admin";
-    var password = opts.password    || "changed!";
-    var scheme   = opts.scheme      || "https";
-    var host     = opts.host        || "localhost";
-    var port     = opts.port        || "8089";
-    var version  = opts.version     || "default";
-    
-    var service = new splunkjs.Service({
-        username: username,
-        password: password,
-        scheme: scheme,
-        host: host,
-        port: port,
-        version: version
-    });
-
-    // First, we log in
-    service.login(function(err, success) {
-        // We check for both errors in the connection as well
-        // as if the login itself failed.
-        if (err || !success) {
-            console.log("Error in logging in");
-            done(err || "Login failed");
-            return;
-        } 
-        
-        // Now that we're logged in, let's get a listing of all the apps.
-        service.apps().fetch(function(err, apps) {
-            if (err) {
-                console.log("There was an error retrieving the list of applications:", err);
-                done(err);
-                return;
-            }
-            
-            var appList = apps.list();
-            console.log("Applications:");
-            for(var i = 0; i < appList.length; i++) {
-                var app = appList[i];
-                console.log("  App " + i + ": " + app.name);
-            } 
-            
-            done();
-        });
-    });
-};
-
-if (module === require.main) {
-    exports.main({}, function() {});
-}
-},{"../../../index":23}],4:[function(require,module,exports){
-
-// Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-// This example will login to Splunk, and then retrieve the list of applications,
-// printing each application's name. It is the same as apps.js, except that it 
-// uses the Async library
-
-var splunkjs = require('../../../index');
-var Async  = splunkjs.Async;
-
-exports.main = function(opts, callback) {
-    // This is just for testing - ignore it
-    opts = opts || {};
-    
-    var username = opts.username    || "admin";
-    var password = opts.password    || "changed!";
-    var scheme   = opts.scheme      || "https";
-    var host     = opts.host        || "localhost";
-    var port     = opts.port        || "8089";
-    var version  = opts.version     || "default";
-    
-    var service = new splunkjs.Service({
-        username: username,
-        password: password,
-        scheme: scheme,
-        host: host,
-        port: port,
-        version: version
-    });
-
-    Async.chain([
-            // First, we log in
-            function(done) {
-                service.login(done);
-            },
-            // Retrieve the apps
-            function(success, done) {
-                if (!success) {
-                    done("Error logging in");
-                }
-                
-                service.apps().fetch(done);
-            },
-            // Print them out
-            function(apps, done) {           
-                var appList = apps.list();
-                console.log("Applications:");
-                for(var i = 0; i < appList.length; i++) {
-                    var app = appList[i];
-                    console.log("  App " + i + ": " + app.name);
-                } 
-                done();
-            }
-        ],
-        function(err) {
-            callback(err);        
-        }
-    );
-};
-
-if (module === require.main) {
-    exports.main({}, function() {});
-}
-},{"../../../index":23}],5:[function(require,module,exports){
-
-// Copyright 2015 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-var splunkjs = require('../../../index');
-
-// This example will show you how to add a new REST API endpoint
-// to the Splunk SDK for JavaScript.
-//
-// The JavaScript SDK has the authorization roles REST API endpoint
-// path defined, but doesn't implement it.
-// To add a new path, we would add the following:
-//
-// `splunkjs.Paths.roles = "authorization/roles";`
-//
-// Be sure to avoid naming collisions!
-//
-// Depending on the endpoint, you may need to prepend `/services/`
-// when defining the path.
-// For example the server info REST API endpoint path is defined as:
-//
-// `"/services/server/info"`
-//
-// For more information, please refer to the REST API documentation
-// at http://docs.splunk.com/Documentation/Splunk/latest/RESTREF/RESTprolog
-
-// Here we're adding a new entity to splunkjs, which will be
-// used by the collection we'll add below.
-splunkjs.Service.Role = splunkjs.Service.Entity.extend({
-    path: function() {
-        return splunkjs.Paths.roles + "/" + encodeURIComponent(this.name);
-    },
-
-    init: function(service, name, namespace) {
-        this.name = name;
-        this._super(service, this.path(), namespace);
-    }
-});
-
-// Here we're adding a new collection to splunkjs, which
-// uses the Role entity we just defined.
-// See the `instantiateEntity()` function.
-splunkjs.Service.Roles = splunkjs.Service.Collection.extend({
-    fetchOnEntityCreation: true,
-    
-    path: function() {
-        return splunkjs.Paths.roles;
-    },
-
-    instantiateEntity: function(props) {
-        var entityNamespace = splunkjs.Utils.namespaceFromProperties(props);
-        return new splunkjs.Service.Role(this.service, props.name, entityNamespace);
-    },
-
-    init: function(service, namespace) {
-        this._super(service, this.path(), namespace);
-    }
-});
-
-// To finish off integrating the new endpoint,
-// we need to add a function to the service object
-// which will retrieve the Roles collection.
-splunkjs.Service.prototype.roles = function(namespace) {
-    return new splunkjs.Service.Roles(this, namespace);
-};
-
-exports.main = function(opts, done) {
-    // This is just for testing - ignore it
-    opts = opts || {};
-    
-    var username = opts.username    || "admin";
-    var password = opts.password    || "changed!";
-    var scheme   = opts.scheme      || "https";
-    var host     = opts.host        || "localhost";
-    var port     = opts.port        || "8089";
-    var version  = opts.version     || "default";
-    
-    var service = new splunkjs.Service({
-        username: username,
-        password: password,
-        scheme: scheme,
-        host: host,
-        port: port,
-        version: version
-    });
-
-    // First, we log in
-    service.login(function(err, success) {
-        // We check for both errors in the connection as well
-        // as if the login itself failed.
-        if (err || !success) {
-            console.log("Error in logging in");
-            done(err || "Login failed");
-            return;
-        }
-
-        // Now that we're logged in, we can just retrieve system roles!
-        service.roles({user:"admin", app: "search"}).fetch(function(rolesErr, roles) {
-            if (rolesErr) {
-                console.log("There was an error retrieving the list of roles:", err);
-                done(err);
-                return;
-            }
-
-            console.log("System roles:");
-            var rolesList = roles.list();
-            for (var i = 0; i < rolesList.length; i++) {
-                console.log("  " + i + " " + rolesList[i].name);
-            }
-            done();
-        });
-    });
-};
-
-if (module === require.main) {
-    exports.main({}, function() {});
-}
-},{"../../../index":23}],6:[function(require,module,exports){
-// Copyright 2014 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-// This example will login to Splunk, and then retrieve the list of fired alerts,
-// printing each alert's name and properties.
-
-var splunkjs = require('../../../index');
-
-exports.main = function(opts, done) {
-    // This is just for testing - ignore it
-    opts = opts || {};
-    
-    var username = opts.username    || "admin";
-    var password = opts.password    || "changed!";
-    var scheme   = opts.scheme      || "https";
-    var host     = opts.host        || "localhost";
-    var port     = opts.port        || "8089";
-    var version  = opts.version     || "default";
-    
-    var service = new splunkjs.Service({
-        username: username,
-        password: password,
-        scheme: scheme,
-        host: host,
-        port: port,
-        version: version
-    });
-
-    // First, we log in.
-    service.login(function(err, success) {
-        // We check for both errors in the connection as well
-        // as if the login itself failed.
-        if (err || !success) {
-            console.log("Error in logging in");
-            done(err || "Login failed");
-            return;
-        } 
-
-        // Now that we're logged in, let's get a listing of all the fired alert groups
-        service.firedAlertGroups().fetch(function(err, firedAlertGroups) {
-            if (err) {
-                console.log("ERROR", err);
-                done(err);
-                return;
-            }
-
-            // Get the list of all fired alert groups, including the all group (represented by "-")
-            var groups = firedAlertGroups.list();
-            console.log("Fired alert groups:");
-
-            var listGroupCallback = function(err, firedAlerts, firedAlertGroup) {
-                // How many times was this alert fired?
-                console.log(firedAlertGroup.name, "(Count:", firedAlertGroup.count(), ")");
-                // Print the properties for each fired alert (default of 30 per alert group)
-                for(var i = 0; i < firedAlerts.length; i++) {
-                    var firedAlert = firedAlerts[i];
-                    for(var key in firedAlert.properties()) {
-                        if (firedAlert.properties().hasOwnProperty(key)) {
-                           console.log("\t", key, ":", firedAlert.properties()[key]);
-                        }
-                    }
-                    console.log();
-                }
-                console.log("======================================");
-            };
-
-            for(var a in groups) {
-                if (groups.hasOwnProperty(a)) {
-                    var firedAlertGroup = groups[a];
-                    firedAlertGroup.list(listGroupCallback);
-                }
-            }
-
-            done();
-        });
-    });
-};
-
-if (module === require.main) {
-    exports.main({}, function() {});
-}
-
-},{"../../../index":23}],7:[function(require,module,exports){
-// Copyright 2014 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-// This example will login to Splunk, and then retrieve the list of fired alerts,
-// printing each alert's name and properties. It is the same as firedalerts.js, 
-// except that it uses the Async library
-
-var splunkjs = require('../../../index');
-var Async  = splunkjs.Async;
-
-exports.main = function(opts, callback) {
-    // This is just for testing - ignore it.
-    opts = opts || {};
-    
-    var username = opts.username    || "admin";
-    var password = opts.password    || "changed!";
-    var scheme   = opts.scheme      || "https";
-    var host     = opts.host        || "localhost";
-    var port     = opts.port        || "8089";
-    var version  = opts.version     || "default";
-    
-    var service = new splunkjs.Service({
-        username: username,
-        password: password,
-        scheme: scheme,
-        host: host,
-        port: port,
-        version: version
-    });
-
-    Async.chain([
-            // First, we log in.
-            function(done) {
-                service.login(done);
-            },
-            
-            function(success, done) {
-                if (!success) {
-                    done("Error logging in");
-                }
-
-                // Now that we're logged in, let's get a listing of all the fired alert groups.
-                service.firedAlertGroups().fetch(done);
-            },
-            // Print them out.
-            function(firedAlertGroups, done) {
-                // Get the list of all fired alert groups, including the all group (represented by "-").
-                var groups = firedAlertGroups.list();
-
-                console.log("Fired alert groups:");
-                Async.seriesEach(
-                    groups,
-                    function(firedAlertGroup, index, seriescallback) {
-                        firedAlertGroup.list(function(err, firedAlerts){
-                            // How many times was this alert fired?
-                            console.log(firedAlertGroup.name, "(Count:", firedAlertGroup.count(), ")");
-                            // Print the properties for each fired alert (default of 30 per alert group).
-                            for(var i = 0; i < firedAlerts.length; i++) {
-                                var firedAlert = firedAlerts[i];
-                                for (var key in firedAlert.properties()) {
-                                    if (firedAlert.properties().hasOwnProperty(key)) {
-                                        console.log("\t", key, ":", firedAlert.properties()[key]);
-                                    }
-                                }
-                                console.log();
-                            }
-                            console.log("======================================");
-                        });
-                        seriescallback();
-                    },
-                    function(err) {
-                        if (err) {
-                            done(err);
-                        }
-                        done();
-                    }
-                );
-            }
-        ],
-        function(err) {
-            if (err) {
-                console.log("ERROR", err);
-                callback(err);
-            }
-            callback(err);
-        }
-    );
-};
-
-if (module === require.main) {
-    exports.main({}, function() {});
-}
-
-},{"../../../index":23}],8:[function(require,module,exports){
-// Copyright 2014 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-// This example will login to Splunk, and then create an alert.
-
-var splunkjs = require('../../../index');
-
-exports.main = function(opts, done) {
-    // This is just for testing - ignore it.
-    opts = opts || {};
-    
-    var username = opts.username    || "admin";
-    var password = opts.password    || "changed!";
-    var scheme   = opts.scheme      || "https";
-    var host     = opts.host        || "localhost";
-    var port     = opts.port        || "8089";
-    var version  = opts.version     || "default";
-    
-    var service = new splunkjs.Service({
-        username: username,
-        password: password,
-        scheme: scheme,
-        host: host,
-        port: port,
-        version: version
-    });
-
-    // First, we log in.
-    service.login(function(err, success) {
-        // We check for both errors in the connection as well
-        // as if the login itself failed.
-        if (err || !success) {
-            console.log("Error in logging in");
-            done(err || "Login failed");
-            return;
-        } 
-        
-        var alertOptions = {
-            name: "My Awesome Alert",
-            search: "index=_internal error sourcetype=splunkd* | head 10",
-            "alert_type": "always",
-            "alert.severity": "2",
-            "alert.suppress": "0",
-            "alert.track": "1",
-            "dispatch.earliest_time": "-1h",
-            "dispatch.latest_time": "now",
-            "is_scheduled": "1",
-            "cron_schedule": "* * * * *"
-        };
-        
-        // Now that we're logged in, let's create a saved search.
-        service.savedSearches().create(alertOptions, function(err, alert) {
-            if (err && err.status === 409) {
-                console.error("ERROR: A saved search with the name '" + alertOptions.name + "' already exists");
-                done();
-                return;
-            }
-            else if (err) {
-                console.error("There was an error creating the saved search:", err);
-                done(err);
-                return;
-            }
-            
-            console.log("Created saved search as alert: " + alert.name);            
-            done();
-        });
-    });
-};
-
-if (module === require.main) {
-    exports.main({}, function() {});
-}
-
-},{"../../../index":23}],9:[function(require,module,exports){
-// Copyright 2014 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-// This example will login to Splunk, and then try to delete the alert
-// that was created in savedsearches_create.js
-
-var splunkjs = require('../../../index');
-
-exports.main = function(opts, done) {
-    // This is just for testing - ignore it.
-    opts = opts || {};
-    
-    var username = opts.username    || "admin";
-    var password = opts.password    || "changed!";
-    var scheme   = opts.scheme      || "https";
-    var host     = opts.host        || "localhost";
-    var port     = opts.port        || "8089";
-    var version  = opts.version     || "default";
-    
-    var service = new splunkjs.Service({
-        username: username,
-        password: password,
-        scheme: scheme,
-        host: host,
-        port: port,
-        version: version
-    });
-
-    // First, we log in.
-    service.login(function(err, success) {
-        // We check for both errors in the connection as well
-        // as whether the login itself failed.
-        if (err || !success) {
-            console.log("Error in logging in");
-            done(err || "Login failed");
-            return;
-        } 
-        
-        var name = "My Awesome Alert";
-        
-        // Now that we're logged in, let's delete the alert.
-        service.savedSearches().fetch(function(err, firedAlertGroups) {
-            if (err) {
-                console.log("There was an error in fetching the alerts");
-                done(err);
-                return;
-            }
-
-            var alertToDelete = firedAlertGroups.item(name);
-            if (!alertToDelete) {
-                console.log("Can't delete '" + name + "' because it doesn't exist!");
-                done();
-            }
-            else {
-                alertToDelete.remove();
-                console.log("Deleted alert: " + name + "");
-                done();
-            }
-        });
-    });
-};
-
-if (module === require.main) {
-    exports.main({}, function() {});
-}
-
-},{"../../../index":23}],10:[function(require,module,exports){
-
-// Copyright 2015 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-// This example will show how to get a `Job` by it's sid without
-// fetching a collection of `Job`s.
-
-var splunkjs = require('../../../index');
-var Async  = splunkjs.Async;
-
-exports.main = function(opts, callback) {
-    // This is just for testing - ignore it
-    opts = opts || {};
-    
-    var username = opts.username    || "admin";
-    var password = opts.password    || "changed!";
-    var scheme   = opts.scheme      || "https";
-    var host     = opts.host        || "localhost";
-    var port     = opts.port        || "8089";
-    var version  = opts.version     || "default";
-    
-    var service = new splunkjs.Service({
-        username: username,
-        password: password,
-        scheme: scheme,
-        host: host,
-        port: port,
-        version: version
-    });
-
-    var sid;
-
-    Async.chain([
-            // First, we log in
-            function(done) {
-                service.login(done);
-            },
-            // Perform the search
-            function(success, done) {
-                if (!success) {
-                    done("Error logging in");
-                }
-                
-                service.search("search index=_internal | head 1", {}, done);
-            },
-            function(job, done) {
-                // Store the sid for later use
-                sid = job.sid;
-                console.log("Created a search job with sid: " + job.sid);
-                done();
-            }
-        ],
-        function(err) {
-            if (err || !sid) {
-                if (err.hasOwnProperty("data") && err.data.hasOwnProperty("messages")) {
-                    console.log(err.data.messages[0].text);
-                }
-                else {
-                    console.log(err);
-                }
-                if (!sid) {
-                    console.log("Couldn't create search.");
-                }
-                callback(err);
-            }
-            else {
-                Async.chain([
-                        function(done) {
-                            // Since we have the job sid, we can get that job directly
-                            service.getJob(sid, done);
-                        },
-                        function(job, done) {
-                            console.log("Got the job with sid: " + job.sid);
-                            done();
-                        }
-                    ],
-                    function(err) {
-                        callback(err);
-                    }
-                );
-            }
-        }
-    );
-};
-
-if (module === require.main) {
-    exports.main({}, function() {});
-}
-},{"../../../index":23}],11:[function(require,module,exports){
-
-// Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-// This example shows a simple log handler that will print to the console
-// as well as log the information to a Splunk instance.
-
-var splunkjs = require('../../../index');
-
-var Logger = splunkjs.Class.extend({
-    init: function(service, opts) {
-        this.service = service;
-        
-        opts = opts || {};
-        
-        this.params = {};
-        if (opts.index)      { this.params.index      = opts.index; }
-        if (opts.host)       { this.params.host       = opts.host; }
-        if (opts.source)     { this.params.source     = opts.source; }
-        if (opts.sourcetype) { this.params.sourcetype = opts.sourcetype || "demo-logger"; }
-        
-        if (!this.service) {
-            throw new Error("Must supply a valid service");
-        }
-    },
-    
-    log: function(data) {
-        var message = {
-            __time: (new Date()).toUTCString(),
-            level: "LOG",
-            data: data
-        };
-        
-        this.service.log(message, this.params);
-        console.log(data);
-    },
-    
-    error: function(data) {
-        var message = {
-            __time: (new Date()).toUTCString(),
-            level: "ERROR",
-            data: data
-        };
-        
-        this.service.log(message, this.params);
-        console.error(data);
-    },
-    
-    info: function(data) {
-        var message = {
-            __time: (new Date()).toUTCString(),
-            level: "INFO",
-            data: data
-        };
-        
-        this.service.log(message, this.params);
-        console.info(data);
-    },
-    
-    warn: function(data) {
-        var message = {
-            __time: (new Date()).toUTCString(),
-            level: "WARN",
-            data: data
-        };
-        
-        this.service.log(message, this.params);
-        console.warn(data);
-    }
-});
-
-exports.main = function(opts, done) {
-    // This is just for testing - ignore it
-    opts = opts || {};
-    
-    var username = opts.username    || "admin";
-    var password = opts.password    || "changed!";
-    var scheme   = opts.scheme      || "https";
-    var host     = opts.host        || "localhost";
-    var port     = opts.port        || "8089";
-    var version  = opts.version     || "default";
-    
-    var service = new splunkjs.Service({
-        username: username,
-        password: password,
-        scheme: scheme,
-        host: host,
-        port: port,
-        version: version
-    });
-
-    // First, we log in
-    service.login(function(err, success) {
-        // We check for both errors in the connection as well
-        // as if the login itself failed.
-        if (err || !success) {
-            console.log("Error in logging in");
-            done(err || "Login failed");
-            return;
-        } 
-        
-        // Create our logger
-        var logger = new Logger(service, { sourcetype: "mylogger", source: "test" });
-        
-        // Log the various types of messages. Note how we are sending
-        // both strings and JSON objects, which will be auto-encoded and
-        // understood by Splunk 4.3+
-        logger.log({hello: "world"});
-        logger.error("ERROR HAPPENED");
-        logger.info(["useful", "info"]);
-        logger.warn({"this": {"is": ["a", "warning"]}});
-        
-        // Say we are done with this sample.
-        done();
-    });
-};
-
-if (module === require.main) {
-    exports.main({}, function() {});
-}
-},{"../../../index":23}],12:[function(require,module,exports){
-// Copyright 2014 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-/* 
- * This example will login to Splunk, and then retrieve the list of data models,
- * get the "internal_audit_logs", then get the "searches" data model object.
- * Then start a search on the "searches" data model object, track the
- * job until it's done. Then get and print out the results.
- * 
- * Then create a pivot specification and retrieve the pivot searches from
- * the Splunk server, run the search job for that pivot report, track
- * the job until it's done. Then get and print out the results.
- * At the end, the search job is cancelled.
- */
-
-var splunkjs = require('../../../index');
-var Async  = splunkjs.Async;
-
-exports.main = function(opts, callback) {
-    // This is just for testing - ignore it.
-    opts = opts || {};
-    
-    var username = opts.username    || "admin";
-    var password = opts.password    || "changed!";
-    var scheme   = opts.scheme      || "https";
-    var host     = opts.host        || "localhost";
-    var port     = opts.port        || "8089";
-    var version  = opts.version     || "default";
-    
-    var service = new splunkjs.Service({
-        username: username,
-        password: password,
-        scheme: scheme,
-        host: host,
-        port: port,
-        version: version
-    });
-
-    var searches; // We'll use this later
-
-    Async.chain([
-            // First, we log in.
-            function(done) {
-                service.login(done);
-            },
-            
-            function(success, done) {
-                if (!success) {
-                    done("Error logging in");
-                }
-
-                // Now that we're logged in, let's get the data models collection
-                service.dataModels().fetch(done);
-            },
-            function(dataModels, done) {
-                // ...and the specific data model we're concerned with
-                var dm = dataModels.item("internal_audit_logs");
-                // Get the "searches" object out of the "internal_audit_logs" data model
-                searches = dm.objectByName("searches");
-
-                console.log("Working with object", searches.displayName,
-                    "in model", dm.displayName);
-
-                console.log("\t Lineage:", searches.lineage.join(" -> "));
-                console.log("\t Internal name: " + searches.name);
-
-                // Run a data model search query, getting the first 5 results
-                searches.startSearch({}, "| head 5", done);
-            },
-            function(job, done) {
-                job.track({}, function(job) {
-                    job.results({}, done);
-                });
-            },
-            function(results, job, done) {
-                // Print out the results
-                console.log("Results:");
-                for (var i = 0; i < results.rows.length; i++) {
-                    var rowString = " result " + i + ":  ";
-                    var row = results.rows[i];
-                    for (var j = 0; j < results.fields.length; j++) {
-                        if (row[j] !== null && row[j] !== undefined) {
-                            rowString += results.fields[j] + "=" + row[j] + ", ";
-                        }
-                    }
-                    console.log(rowString);
-                    console.log("------------------------------");
-                }
-                
-                var pivotSpecification = searches.createPivotSpecification();
-                // Each function call here returns a pivotSpecification so we can chain them
-                pivotSpecification
-                    .addRowSplit("user", "Executing user")
-                    .addRangeColumnSplit("exec_time", {limit: 4})
-                    .addCellValue("search", "Search Query", "values")
-                    .run(done);
-            },
-            function(job, pivot, done) {
-                console.log("Query for binning search queries by execution time and executing user:");
-                console.log("\t", pivot.prettyQuery);
-                job.track({}, function(job) {
-                    job.results({}, done);
-                });
-            },
-            function(results, job, done) {
-                // Print out the results
-                console.log("Results:");
-                for (var i = 0; i < results.rows.length; i++) {
-                    var rowString = " result " + i + ":  ";
-                    var row = results.rows[i];
-                    for (var j = 0; j < results.fields.length; j++) {
-                        if (row[j] !== null && row[j] !== undefined) {
-                            rowString += results.fields[j] + "=" + row[j] + ", ";
-                        }
-                    }
-                    console.log(rowString);
-                    console.log("------------------------------");
-                }
-                job.cancel(done);
-            }
-        ],
-        function(err) {
-            if (err) {
-                console.log("ERROR", err);
-                callback(err);
-            }
-            callback(err);
-        }
-    );
-};
-
-if (module === require.main) {
-    exports.main({}, function() {});
-}
-
-},{"../../../index":23}],13:[function(require,module,exports){
-
-// Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-// This example will login to Splunk, and then retrieve the list of saved searchs,
-// printing each saved search's name and search query.
-
-var splunkjs = require('../../../index');
-
-exports.main = function(opts, done) {
-    // This is just for testing - ignore it
-    opts = opts || {};
-    
-    var username = opts.username    || "admin";
-    var password = opts.password    || "changed!";
-    var scheme   = opts.scheme      || "https";
-    var host     = opts.host        || "localhost";
-    var port     = opts.port        || "8089";
-    var version  = opts.version     || "default";
-    
-    var service = new splunkjs.Service({
-        username: username,
-        password: password,
-        scheme: scheme,
-        host: host,
-        port: port,
-        version: version
-    });
-
-    // First, we log in
-    service.login(function(err, success) {
-        // We check for both errors in the connection as well
-        // as if the login itself failed.
-        if (err || !success) {
-            console.log("Error in logging in");
-            done(err || "Login failed");
-            return;
-        }
-        
-        // Now that we're logged in, let's get a listing of all the saved searches.
-        service.savedSearches().fetch(function(err, searches) {
-            if (err) {
-                console.log("There was an error retrieving the list of saved searches:", err);
-                done(err);
-                return;
-            }
-            
-            var searchList = searches.list();
-            console.log("Saved searches:");
-            for(var i = 0; i < searchList.length; i++) {
-                var search = searchList[i];
-                console.log("  Search " + i + ": " + search.name);
-                console.log("    " + search.properties().search);
-            } 
-            
-            done();
-        });
-    });
-};
-
-if (module === require.main) {
-    exports.main({}, function() {});
-}
-},{"../../../index":23}],14:[function(require,module,exports){
-
-// Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-// This example will login to Splunk, and then retrieve the list of saved searchs,
-// printing each saved search's name and search query. It is the same as savedsearches.js, 
-// except that it uses the Async library
-
-var splunkjs = require('../../../index');
-var Async  = splunkjs.Async;
-
-exports.main = function(opts, callback) {
-    // This is just for testing - ignore it
-    opts = opts || {};
-    
-    var username = opts.username    || "admin";
-    var password = opts.password    || "changed!";
-    var scheme   = opts.scheme      || "https";
-    var host     = opts.host        || "localhost";
-    var port     = opts.port        || "8089";
-    var version  = opts.version     || "default";
-    
-    var service = new splunkjs.Service({
-        username: username,
-        password: password,
-        scheme: scheme,
-        host: host,
-        port: port,
-        version: version
-    });
-
-    Async.chain([
-            // First, we log in
-            function(done) {
-                service.login(done);
-            },
-            // Retrieve the saved searches
-            function(success, done) {
-                if (!success) {
-                    done("Error logging in");
-                }
-                
-                service.savedSearches().fetch(done);
-            },
-            // Print them out
-            function(searches, done) {
-                var searchList = searches.list();
-                console.log("Saved searches:");
-                for(var i = 0; i < searchList.length; i++) {
-                    var search = searchList[i];
-                    console.log("  Search " + i + ": " + search.name);
-                    console.log("    " + search.properties().search);
-                }
-                
-                done();
-            }
-        ],
-        function(err) {
-            callback(err);        
-        }
-    );
-};
-
-if (module === require.main) {
-    exports.main({}, function() {});
-}
-},{"../../../index":23}],15:[function(require,module,exports){
-
-// Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-// This example will login to Splunk, and create a saved search.
-
-var splunkjs = require('../../../index');
-
-exports.main = function(opts, done) {
-    // This is just for testing - ignore it
-    opts = opts || {};
-    
-    var username = opts.username    || "admin";
-    var password = opts.password    || "changed!";
-    var scheme   = opts.scheme      || "https";
-    var host     = opts.host        || "localhost";
-    var port     = opts.port        || "8089";
-    var version  = opts.version     || "default";
-    
-    var service = new splunkjs.Service({
-        username: username,
-        password: password,
-        scheme: scheme,
-        host: host,
-        port: port,
-        version: version
-    });
-
-    // First, we log in
-    service.login(function(err, success) {
-        // We check for both errors in the connection as well
-        // as if the login itself failed.
-        if (err || !success) {
-            console.log("Error in logging in");
-            done(err || "Login failed");
-            return;
-        } 
-        
-        var savedSearchOptions = {
-            name: "My Awesome Saved Search",
-            search: "index=_internal error sourcetype=splunkd* | head 10"
-        };
-        
-        // Now that we're logged in, Let's create a saved search
-        service.savedSearches().create(savedSearchOptions, function(err, savedSearch) {
-            if (err && err.status === 409) {
-                console.error("ERROR: A saved search with the name '" + savedSearchOptions.name + "' already exists");
-                done();
-                return;
-            }
-            else if (err) {
-                console.error("There was an error creating the saved search:", err);
-                done(err);
-                return;
-            }
-            
-            console.log("Created saved search: " + savedSearch.name);            
-            done();
-        });
-    });
-};
-
-if (module === require.main) {
-    exports.main({}, function() {});
-}
-},{"../../../index":23}],16:[function(require,module,exports){
-
-// Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-// This example will login to Splunk, and then try to delete the 
-// saved search that was created in savedsearches_create.js
-
-var splunkjs = require('../../../index');
-
-exports.main = function(opts, done) {
-    // This is just for testing - ignore it
-    opts = opts || {};
-    
-    var username = opts.username    || "admin";
-    var password = opts.password    || "changed!";
-    var scheme   = opts.scheme      || "https";
-    var host     = opts.host        || "localhost";
-    var port     = opts.port        || "8089";
-    var version  = opts.version     || "default";
-    
-    var service = new splunkjs.Service({
-        username: username,
-        password: password,
-        scheme: scheme,
-        host: host,
-        port: port,
-        version: version
-    });
-
-    // First, we log in
-    service.login(function(err, success) {
-        // We check for both errors in the connection as well
-        // as if the login itself failed.
-        if (err || !success) {
-            console.log("Error in logging in");
-            done(err || "Login failed");
-            return;
-        } 
-        
-        var name = "My Awesome Saved Search";
-        
-        // Now that we're logged in, Let's create a saved search
-        service.savedSearches().fetch(function(err, savedSearches) {
-            if (err) {
-                console.log("There was an error in fetching the saved searches");
-                done(err);
-                return;
-            } 
-            
-            var savedSearchToDelete = savedSearches.item(name);
-            if (!savedSearchToDelete) {
-                console.log("Can't delete '" + name + "' because it doesn't exist!");
-                done();
-            }
-            else {                
-                savedSearchToDelete.remove();
-                console.log("Deleted saved search: " + name + "");
-                done();
-            }
-        });
-    });
-};
-
-if (module === require.main) {
-    exports.main({}, function() {});
-}
-},{"../../../index":23}],17:[function(require,module,exports){
-
-// Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-// This example will login to Splunk, perform a blocking search, and then print 
-// out the raw results and some key-value pairs. A blocking search is one that 
-// won't return until the search is complete.
-
-var splunkjs = require('../../../index');
-var Async  = splunkjs.Async;
-
-exports.main = function(opts, callback) {
-    // This is just for testing - ignore it
-    opts = opts || {};
-    
-    var username = opts.username    || "admin";
-    var password = opts.password    || "changed!";
-    var scheme   = opts.scheme      || "https";
-    var host     = opts.host        || "localhost";
-    var port     = opts.port        || "8089";
-    var version  = opts.version     || "default";
-    
-    var service = new splunkjs.Service({
-        username: username,
-        password: password,
-        scheme: scheme,
-        host: host,
-        port: port,
-        version: version
-    });
-
-    Async.chain([
-            // First, we log in
-            function(done) {
-                service.login(done);
-            },
-            // Perform the search
-            function(success, done) {
-                if (!success) {
-                    done("Error logging in");
-                }
-                
-                service.search("search index=_internal | head 3", {exec_mode: "blocking"}, done);
-            },
-            // The job is done, but let's some statistics from the server.
-            function(job, done) {
-                job.fetch(done);
-            },
-            // Print out the statistics and get the results
-            function(job, done) {
-                // Print out the statics
-                console.log("Job Statistics: ");
-                console.log("  Event Count: " + job.properties().eventCount);
-                console.log("  Disk Usage: " + job.properties().diskUsage + " bytes");
-                console.log("  Priority: " + job.properties().priority);
-                
-                // Ask the server for the results
-                job.results({}, done);
-            },
-            // Print the raw results out
-            function(results, job, done) {
-                // Find the index of the fields we want
-                var rawIndex = results.fields.indexOf("_raw");
-                var sourcetypeIndex = results.fields.indexOf("sourcetype");
-                var userIndex = results.fields.indexOf("user");
-                
-                // Print out each result and the key-value pairs we want
-                console.log("Results: ");
-                for(var i = 0; i < results.rows.length; i++) {
-                    console.log("  Result " + i + ": ");
-                    console.log("    sourcetype: " + results.rows[i][sourcetypeIndex]);
-                    console.log("    user: " + results.rows[i][userIndex]);
-                    console.log("    _raw: " + results.rows[i][rawIndex]);
-                }
-                
-                // Once we're done, cancel the job.
-                job.cancel(done);
-            }
-        ],
-        function(err) {
-            callback(err);        
-        }
-    );
-};
-
-if (module === require.main) {
-    exports.main({}, function() {});
-}
-},{"../../../index":23}],18:[function(require,module,exports){
-
-// Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-// This example will login to Splunk, perform a regular search, wait until
-// it is done, and then print out the raw results and some key-value pairs
-
-var splunkjs = require('../../../index');
-var Async  = splunkjs.Async;
-
-exports.main = function(opts, callback) {
-    // This is just for testing - ignore it
-    opts = opts || {};
-    
-    var username = opts.username    || "admin";
-    var password = opts.password    || "changed!";
-    var scheme   = opts.scheme      || "https";
-    var host     = opts.host        || "localhost";
-    var port     = opts.port        || "8089";
-    var version  = opts.version     || "default";
-    
-    var service = new splunkjs.Service({
-        username: username,
-        password: password,
-        scheme: scheme,
-        host: host,
-        port: port,
-        version: version
-    });
-
-    Async.chain([
-            // First, we log in
-            function(done) {
-                service.login(done);
-            },
-            // Perform the search
-            function(success, done) {
-                if (!success) {
-                    done("Error logging in");
-                }
-                
-                service.search("search index=_internal | head 3", {}, done);
-            },
-            // Wait until the job is done
-            function(job, done) {
-                job.track({}, function(job) {
-                    // Ask the server for the results
-                    job.results({}, done);
-                });
-            },
-            // Print out the statistics and get the results
-            function(results, job, done) {
-                // Print out the statics
-                console.log("Job Statistics: ");
-                console.log("  Event Count: " + job.properties().eventCount);
-                console.log("  Disk Usage: " + job.properties().diskUsage + " bytes");
-                console.log("  Priority: " + job.properties().priority);
-
-                // Find the index of the fields we want
-                var rawIndex = results.fields.indexOf("_raw");
-                var sourcetypeIndex = results.fields.indexOf("sourcetype");
-                var userIndex = results.fields.indexOf("user");
-                
-                // Print out each result and the key-value pairs we want
-                console.log("Results: ");
-                for(var i = 0; i < results.rows.length; i++) {
-                    console.log("  Result " + i + ": ");
-                    console.log("    sourcetype: " + results.rows[i][sourcetypeIndex]);
-                    console.log("    user: " + results.rows[i][userIndex]);
-                    console.log("    _raw: " + results.rows[i][rawIndex]);
-                }
-                
-                // Once we're done, cancel the job.
-                job.cancel(done);
-            }
-        ],
-        function(err) {
-            callback(err);        
-        }
-    );
-};
-
-if (module === require.main) {
-    exports.main({}, function() {});
-}
-},{"../../../index":23}],19:[function(require,module,exports){
-
-// Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-// This example will login to Splunk, perform a oneshot search, and then print 
-// out the raw results and some key-value pairs. A one search is one that 
-// won't return until the search is complete and return all the search
-// results in the response.
-
-var splunkjs = require('../../../index');
-var Async  = splunkjs.Async;
-
-exports.main = function(opts, callback) {
-    // This is just for testing - ignore it
-    opts = opts || {};
-    
-    var username = opts.username    || "admin";
-    var password = opts.password    || "changed!";
-    var scheme   = opts.scheme      || "https";
-    var host     = opts.host        || "localhost";
-    var port     = opts.port        || "8089";
-    var version  = opts.version     || "default";
-    
-    var service = new splunkjs.Service({
-        username: username,
-        password: password,
-        scheme: scheme,
-        host: host,
-        port: port,
-        version: version
-    });
-
-    Async.chain([
-            // First, we log in
-            function(done) {
-                service.login(done);
-            },
-            // Perform the search
-            function(success, done) {
-                if (!success) {
-                    done("Error logging in");
-                }
-                
-                service.oneshotSearch("search index=_internal | head 3", {}, done);
-            },
-            // The job is done, and the results are returned inline
-            function(results, done) {
-                // Find the index of the fields we want
-                var rawIndex = results.fields.indexOf("_raw");
-                var sourcetypeIndex = results.fields.indexOf("sourcetype");
-                var userIndex = results.fields.indexOf("user");
-                
-                // Print out each result and the key-value pairs we want
-                console.log("Results: ");
-                for(var i = 0; i < results.rows.length; i++) {
-                    console.log("  Result " + i + ": ");
-                    console.log("    sourcetype: " + results.rows[i][sourcetypeIndex]);
-                    console.log("    user: " + results.rows[i][userIndex]);
-                    console.log("    _raw: " + results.rows[i][rawIndex]);
-                }
-                
-                done();
-            }
-        ],
-        function(err) {
-            callback(err);        
-        }
-    );
-};
-
-if (module === require.main) {
-    exports.main({}, function() {});
-}
-},{"../../../index":23}],20:[function(require,module,exports){
-
-// Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-// This example will login to Splunk and perform a realtime search that counts
-// how many events of each sourcetype we have seen. It will then print out
-// this information every 1 second for a set number of iterations.
-
-var splunkjs = require('../../../index');
-var Async  = splunkjs.Async;
-
-exports.main = function(opts, callback) {
-    // This is just for testing - ignore it
-    opts = opts || {};
-    
-    var username = opts.username    || "admin";
-    var password = opts.password    || "changed!";
-    var scheme   = opts.scheme      || "https";
-    var host     = opts.host        || "localhost";
-    var port     = opts.port        || "8089";
-    var version  = opts.version     || "default";
-    
-    var service = new splunkjs.Service({
-        username: username,
-        password: password,
-        scheme: scheme,
-        host: host,
-        port: port,
-        version: version
-    });
-
-    Async.chain([
-            // First, we log in
-            function(done) {
-                service.login(done);
-            },
-            // Perform the search
-            function(success, done) {
-                if (!success) {
-                    done("Error logging in");
-                }
-                
-                service.search(
-                    "search index=_internal | stats count by sourcetype", 
-                    {earliest_time: "rt", latest_time: "rt"}, 
-                    done);
-            },
-            // The search is never going to be done, so we simply poll it every second to get
-            // more results
-            function(job, done) {
-                var MAX_COUNT = 5;
-                var count = 0;
-                
-                Async.whilst(
-                    // Loop for N times
-                    function() { return MAX_COUNT > count; },
-                    // Every second, ask for preview results
-                    function(iterationDone) {
-                        Async.sleep(1000, function() {
-                            job.preview({}, function(err, results) {
-                                if (err) {
-                                    iterationDone(err);
-                                    return;
-                                }
-                                
-                                // Only do something if we have results
-                                if (results && results.rows) {
-                                    // Up the iteration counter
-                                    count++;
-                                    
-                                    console.log("========== Iteration " + count + " ==========");
-                                    var sourcetypeIndex = results.fields.indexOf("sourcetype");
-                                    var countIndex = results.fields.indexOf("count");
-                                    
-                                    for(var i = 0; i < results.rows.length; i++) {
-                                        var row = results.rows[i];
-                                        
-                                        // This is a hacky "padding" solution
-                                        var stat = ("  " + row[sourcetypeIndex] + "                         ").slice(0, 30);
-                                        
-                                        // Print out the sourcetype and the count of the sourcetype so far
-                                        console.log(stat + row[countIndex]);   
-                                    }
-                                    
-                                    console.log("=================================");
-                                }
-                                    
-                                // And we're done with this iteration
-                                iterationDone();
-                            });
-                        });
-                    },
-                    // When we're done looping, just cancel the job
-                    function(err) {
-                        job.cancel(done);
-                    }
-                );
-            }
-        ],
-        function(err) {
-            callback(err);        
-        }
-    );
-};
-
-if (module === require.main) {
-    exports.main({}, function() {});
-}
-},{"../../../index":23}],21:[function(require,module,exports){
-(function (process){(function (){
-
-// Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-(function() {
-    var splunkjs        = require('../../index');
-    var Class           = splunkjs.Class;
-    var utils           = splunkjs.Utils;
-    var Async           = splunkjs.Async;
-    var options         = require('./cmdline');
-
-    var FLAGS_CREATE = [
-        "search", "earliest_time", "latest_time", "now", "time_format",
-        "exec_mode", "search_mode", "rt_blocking", "rt_queue_size",
-        "rt_maxblocksecs", "rt_indexfilter", "id", "status_buckets",
-        "max_count", "max_time", "timeout", "auto_finalize_ec", "enable_lookups",
-        "reload_macros", "reduce_freq", "spawn_process", "required_field_list",
-        "rf", "auto_cancel", "auto_pause"
-    ];
-    var FLAGS_EVENTS = [
-        "offset", "count", "earliest_time", "latest_time", "search",
-        "time_format", "output_time_format", "field_list", "f", "max_lines",
-        "truncation_mode", "output_mode", "segmentation"
-    ];
-    var FLAGS_RESULTS = [
-        "offset", "count", "search", "field_list", "f", "output_mode"
-    ];
-    
-    var printRows = function(data) {
-        var fields = data.fields;
-        var rows = data.rows;
-        for(var i = 0; i < rows.length; i++) {
-            var values = rows[i];
-            console.log("Row " + i + ": ");
-            for(var j = 0; j < values.length; j++) {
-                var field = fields[j];
-                var value = values[j];
-                console.log("  " + field + ": " + value);
-            }
-        }
-    };
-    
-    var printCols = function(data) {
-        var fields = data.fields;
-        var columns = data.columns;
-        for(var i = 0; i < columns.length; i++) {
-            var values = columns[i];
-            var field = fields[i];
-            console.log("Column " + field + " (" + i + "): ");
-            for(var j = 0; j < values.length; j++) {
-                var value = values[j];
-                console.log("  " + value);
-            }
-        }
-    };
-
-    var _check_sids = function(command, sids) {
-        if (!sids || sids.length === 0) {
-            throw new Error("'" + command + "' requires at least one SID");
-        }
-    };
-
-    var Program = Class.extend({
-        init: function(service) {
-            this.service = service; 
-            
-            this.run        = utils.bind(this, this.run);
-            this.cancel     = utils.bind(this, this.cancel);
-            this.create     = utils.bind(this, this.create);
-            this.events     = utils.bind(this, this.events);
-            this.list       = utils.bind(this, this.list);   
-            this.preview    = utils.bind(this, this.preview);  
-            this.results    = utils.bind(this, this.results);   
-        },
-
-        _foreach: function(sids, fn, callback) {
-            sids = sids || [];
-            // We get a list of the current jobs, and for each of them,
-            // we check whether it is the job we're looking for.
-            // If it is, we wrap it up in a splunkjs.Job object, and invoke
-            // our function on it.
-            var jobsList = [];
-            this.service.jobs().fetch(function(err, jobs) {
-                var list = jobs.list() || [];
-                for(var i = 0; i < list.length; i++) {
-                    if (utils.contains(sids, list[i].sid)) {
-                        var job = list[i];
-                        jobsList.push(job);
-                    }
-                }
-                
-                Async.parallelMap(jobsList, fn, callback);
-            });
-        },
-
-        run: function(command, args, options, callback) {
-            var commands = {
-                'cancel':       this.cancel,
-                'create':       this.create,
-                'events':       this.events,
-                'list':         this.list,
-                'preview':      this.preview,
-                'results':      this.results
-            };
-
-            // If we don't have any command, notify the user.
-            if (!command) {
-                console.error("You must supply a command to run. Options are:");
-                for(var key in commands) {
-                    if (commands.hasOwnProperty(key)) {
-                        console.error("  " + key);
-                    }
-                }
-                
-                callback("No command was specified.");
-                return;
-            }
-
-            // Get the handler
-            var handler = commands[command];
-
-            // If there is no handler (because the user specified an invalid command,
-            // then we notify the user as an error.
-            if (!handler) {
-                callback("Unrecognized command: " + command);
-                return;
-            }
-
-            // Invoke the command
-            handler(args, options, callback);
-        },
-
-        // Cancel the specified search jobs
-        cancel: function(sids, options, callback) {
-            _check_sids('cancel', sids);
-
-            // For each of the supplied sids, cancel the job.
-            this._foreach(sids, function(job, idx, done) {
-                job.cancel(function (err) { 
-                    if (err) {
-                        done(err);
-                        return;
-                    }
-                    
-                    console.log("  Job " + job.sid + " cancelled"); 
-                    done(); 
-                });
-            }, callback);
-        },
-
-        // Retrieve events for the specified search jobs
-        events: function(sids, options, callback) {
-            // For each of the passed in sids, get the relevant events
-            this._foreach(sids, function(job, idx, done) {
-                job.events(options, function(err, data) {
-                    console.log("===== EVENTS @ " + job.sid + " ====="); 
-                    if (err) {
-                        done(err);
-                        return;
-                    }
-                    
-                    var output_mode = options.output_mode || "rows";
-                    if (output_mode === "json_rows") {
-                        printRows(data);
-                    }
-                    else if (output_mode === "json_cols") {
-                        console.log(data);
-                        printCols(data);
-                    }
-                    else {
-                        console.log(data);
-                    }
-
-                    done(null, data);
-                });
-            }, callback);
-        },
-
-        // Create a search job
-        create: function(args, options, callback) {
-            // Get the query and parameters, and remove the extraneous
-            // search parameter
-            var query = options.search;
-            var params = options;
-            delete params.search;
-
-            // Create the job
-            this.service.jobs().create(query, params, function(err, job) {
-                if (err) {
-                    callback(err);
-                    return;
-                }
-                
-                console.log("Created job " + job.sid);
-                callback(null, job);
-            });
-        },
-
-        // List all current search jobs if no jobs specified, otherwise
-        // list the properties of the specified jobs.
-        list: function(sids, options, callback) {
-            sids = sids || [];
-
-            if (sids.length === 0) {
-                // If no job SIDs are provided, we list all jobs.
-                var jobs = this.service.jobs();
-                jobs.fetch(function(err, jobs) {
-                    if (err) {
-                        callback(err);
-                        return;
-                    }
-                    
-                    var list = jobs.list() || [];
-                    for(var i = 0; i < list.length; i++) {
-                        console.log("  Job " + (i + 1) + " sid: "+ list[i].sid);
-                    }
-
-                    callback(null, list);
-                });
-            }
-            else {
-                // If certain job SIDs are provided,
-                // then we simply read the properties of those jobs
-                this._foreach(sids, function(job, idx, done) {
-                    job.fetch(function(err, job) {
-                        if (err) {
-                            done(err);
-                            return;
-                        }
-                        
-                        console.log("Job " + job.sid + ": ");
-                        var properties = job.properties();
-                        for(var key in properties) {
-                            // Skip some keys that make the output hard to read
-                            if (utils.contains(["performance"], key)) {
-                                continue;
-                            }
-
-                            console.log("  " + key + ": ", properties[key]);
-                        }
-                        
-                        done(null, properties);
-                    });
-                }, callback);
-            }
-        },
-
-        // Retrieve events for the specified search jobs
-        preview: function(sids, options, callback) {
-            // For each of the passed in sids, get the relevant results
-            this._foreach(sids, function(job, idx, done) {
-                job.preview(options, function(err, data) {
-                    console.log("===== PREVIEW @ " + job.sid + " ====="); 
-                    if (err) {
-                        done(err);
-                        return;
-                    }
-
-                    var output_mode = options.output_mode || "rows";
-                    if (output_mode === "json_rows") {
-                        printRows(data);
-                    }
-                    else if (output_mode === "json_cols") {
-                        console.log(data);
-                        printCols(data);
-                    }
-                    else {
-                        console.log(data);
-                    }
-
-                    done(null, data);
-                });
-            }, callback);
-        },
-
-        // Retrieve events for the specified search jobs
-        results: function(sids, options, callback) {
-            // For each of the passed in sids, get the relevant results
-            this._foreach(sids, function(job, idx, done) {
-                job.track({}, {
-                    'done': function(job) {
-                        job.results(options, function(err, data) {
-                            console.log("===== RESULTS @ " + job.sid + " ====="); 
-                            if (err) {
-                                done(err);
-                                return;
-                            }
-                            
-                            var output_mode = options.output_mode || "rows";
-                            if (output_mode === "json_rows") {
-                                printRows(data);
-                            }
-                            else if (output_mode === "json_cols") {
-                                console.log(data);
-                                printCols(data);
-                            }
-                            else {
-                                console.log(data);
-                            }
-        
-                            done(null, data);
-                        });
-                    },
-                    'failed': function(job) {
-                        done('failed');
-                    },
-                    'error': function(err) {
-                        done(err);
-                    }
-                });
-            }, callback);
-        }
-    });
-
-
-    exports.main = function(argv, callback) {     
-        var cmdline = options.create();
-        
-        callback = callback || function(err) { 
-            if (err) {
-                console.log(err);
-            }
-            else {
-                console.log("=============="); 
-            }
-        };
-        
-        var run = function(name) {  
-            var options = arguments[arguments.length - 1];
-                    
-            // Create our service context using the information from the command line
-            var svc = new splunkjs.Service({ 
-                scheme: cmdline.opts.scheme,
-                host: cmdline.opts.host,
-                port: cmdline.opts.port,
-                username: cmdline.opts.username,
-                password: cmdline.opts.password,
-                version: cmdline.opts.version
-            });
-            
-            svc.login(function(err, success) {
-               if (err) {
-                   console.log("Error: " + err);
-                   callback(err);
-                   return;
-               }
-               
-               var program = new Program(svc);
-               
-               program.run(name, cmdline.args, options.opts, function(err) {
-                   if (err) {
-                       callback(err);
-                       return;
-                   }
-                   callback.apply(null, arguments);
-               });
-            });
-        };
-        
-        cmdline.name = "jobs";
-        cmdline.description("List, create and manage search jobs");
-        
-        cmdline.add("create",  "Create a new search job",                                "",             FLAGS_CREATE,   ["search"], run);
-        cmdline.add("results", "Fetch results for the specified search jobs",            "<sids...>",    FLAGS_RESULTS,  [],         run);
-        cmdline.add("preview", "Fetch preview results for the specified search jobs",    "<sids...>",    FLAGS_RESULTS,  [],         run);
-        cmdline.add("events",  "Fetch events for the specified search jobs",             "<sids...>",    FLAGS_EVENTS,   [],         run);
-        cmdline.add("cancel",  "Cancel the specify search jobs",                         "<sids...>",    [],             [],         run);
-        cmdline.add("list",    "List all search jobs or properties for those specified", "[sids...]",    [],             [],         run);
-        
-        cmdline.parse(argv);
-        
-        // Try and parse the command line
-        if (!cmdline.executedCommand) {
-            console.log(cmdline.helpInformation());
-            callback("You must specify a command to run.");
-            return;
-        }
-    };
-    
-    if (module === require.main) {
-        exports.main(process.argv);
-    }
-})();
-}).call(this)}).call(this,require('_process'))
-},{"../../index":23,"./cmdline":2,"_process":281}],22:[function(require,module,exports){
-(function (process){(function (){
-
-// Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-(function() {
-    var splunkjs        = require('../../index');
-    var Class           = splunkjs.Class;
-    var utils           = splunkjs.Utils;
-    var Async           = splunkjs.Async;
-    var options         = require('./cmdline');
-    
-    var FLAGS_CREATE = [
-        "search", "earliest_time", "latest_time", "now", "time_format",
-        "exec_mode", "search_mode", "rt_blocking", "rt_queue_size",
-        "rt_maxblocksecs", "rt_indexfilter", "id", "status_buckets",
-        "max_count", "max_time", "timeout", "auto_finalize_ec", "enable_lookups",
-        "reload_macros", "reduce_freq", "spawn_process", "required_field_list",
-        "rf", "auto_cancel", "auto_pause"
-    ];
-
-    var createService = function(options) {
-        return new splunkjs.Service({
-            scheme:     options.scheme,
-            host:       options.host,
-            port:       options.port,
-            username:   options.username,
-            password:   options.password,
-            version:    options.version
-        });
-    };
-    
-    var search = function(service, options, callback) {
-        // Extract the options we care about and delete them
-        // the object
-        var query = options.search;
-        var isVerbose = options.verbose;
-        var count = options.count || 0;
-        var mode = options.mode || "row";
-        delete options.search;
-        delete options.verbose;
-        delete options.count;
-        delete options.mode;
-        
-        Async.chain([
-                // Create a search
-                function(done) {
-                    service.search(query, options, done);
-                },
-                // Poll until the search is complete
-                function(job, done) {
-                    Async.whilst(
-                        function() { return !job.properties().isDone; },
-                        function(iterationDone) {
-                            job.fetch(function(err, job) {
-                                if (err) {
-                                    callback(err);
-                                }
-                                else {
-                                    // If the user asked for verbose output,
-                                    // then write out the status of the search
-                                    var properties = job.properties();
-                                    if (isVerbose) {
-                                        var progress    = (properties.doneProgress * 100.0) + "%";
-                                        var scanned     = properties.scanCount;
-                                        var matched     = properties.eventCount;
-                                        var results     = properties.resultCount;
-                                        var stats = "-- " +
-                                            progress + " done | " +
-                                            scanned  + " scanned | " +
-                                            matched  + " matched | " +
-                                            results  + " results";
-                                        console.log("\r" + stats + "                                          ");
-                                    }
-                                    
-                                    Async.sleep(1000, iterationDone);
-                                }
-                            });
-                        },
-                        function(err) {
-                            if (isVerbose) {
-                                console.log("\r");
-                            }
-                            done(err, job);
-                        }
-                    );
-                },
-                // Once the search is done, get the results
-                function(job, done) {
-                    job.results({count: count, json_mode: mode}, done);
-                },
-                // Print them out (as JSON), and cancel the job
-                function(results, job, done) {
-                    process.stdout.write(JSON.stringify(results));
-                    job.cancel(done);
-                }
-            ],
-            function(err) {
-                callback(err);
-            }
-        );
-    };
-    
-    var oneshotSearch = function(service, options, callback) {
-        var query = options.search;
-        delete options.search;
-        
-        // Oneshot searches don't have a job associated with them, so we
-        // simply execute it and print out the results.
-        service.oneshotSearch(query, options, function(err, results) {
-            if (err) {
-                callback(err);
-            }
-            else { 
-                console.log(JSON.stringify(results));
-                callback();
-            }
-        });
-    };
-
-    exports.main = function(argv, callback) {     
-        splunkjs.Logger.setLevel("NONE");
-        
-        callback = callback || function(err) { 
-            if (err) {
-                console.log(err);
-            }
-        };
-        var cmdline = options.create();
-        
-        cmdline.name = "search";
-        cmdline.description("Create a search and print the results to stdout");
-        cmdline.option("--verbose", "Output job progress as we wait for completion");
-        cmdline.option("--count <count>", "How many results to fetch");
-        cmdline.option("--mode <mode>", "Row or column mode [row|column]");
-        
-        // For each of the flags, add an option to the parser
-        var flags = FLAGS_CREATE;
-        var required_flags = ["search"];
-        
-        for(var i = 0; i < flags.length; i++) {
-            var required = required_flags.indexOf(flags[i]) >= 0;
-            var option = "<" + flags[i] + ">";
-            cmdline.option("--" + flags[i] + " " + option, "", undefined, required);
-        }
-        
-        cmdline.on('--help', function(){
-            console.log("  Examples:");
-            console.log("  ");
-            console.log("  Create a regular search:");
-            console.log("  > node search.js --search 'search index=_internal | head 10'");
-            console.log("  ");
-            console.log("  Create a oneshot search:");
-            console.log("  > node search.js --search 'search index=_internal | head 10' --exec_mode oneshot");
-            console.log("  ");
-            console.log("  Create a regular search and only return 10 results:");
-            console.log("  > node search.js --search 'search index=_internal | head 20' --count 10");
-            console.log("  ");
-            console.log("  Create a regular search and output the progress while the search is running");
-            console.log("  > node search.js --search 'search index=_internal | head 20' --verbose");
-            console.log("  ");
-        });
-        
-        cmdline.parse(argv);
-        
-        var service = createService(cmdline.opts);
-        service.login(function(err, success) {
-            if (err || !success) {
-                callback("Error logging in");
-                return;
-            }
-            
-            delete cmdline.username;
-            delete cmdline.password;
-            delete cmdline.scheme;
-            delete cmdline.host;
-            delete cmdline.port;
-            delete cmdline.namespace;
-            delete cmdline.version;
-            
-            if (cmdline.opts.exec_mode === "oneshot") {
-                oneshotSearch(service, cmdline.opts, callback);
-            }
-            else {
-                search(service, cmdline.opts, callback);
-            }
-        });
-    };
-    
-    if (module === require.main) {
-        exports.main(process.argv);
-    }
-})();
-}).call(this)}).call(this,require('_process'))
-},{"../../index":23,"./cmdline":2,"_process":281}],23:[function(require,module,exports){
+},{"_process":260,"buffer":79,"events":166,"fs":77,"path":252,"tty":307,"util":314}],2:[function(require,module,exports){
 (function (process){(function (){
 
 // Copyright 2011 Splunk, Inc.
@@ -3605,7 +1161,7 @@ if (module === require.main) {
     }
 })();
 }).call(this)}).call(this,require('_process'))
-},{"./lib/async":24,"./lib/context":25,"./lib/http":27,"./lib/jquery.class":28,"./lib/log":29,"./lib/modularinputs":33,"./lib/paths":40,"./lib/platform/node/node_http":41,"./lib/service":42,"./lib/utils":43,"_process":281,"dotenv":160}],24:[function(require,module,exports){
+},{"./lib/async":3,"./lib/context":4,"./lib/http":6,"./lib/jquery.class":7,"./lib/log":8,"./lib/modularinputs":12,"./lib/paths":19,"./lib/platform/node/node_http":20,"./lib/service":21,"./lib/utils":22,"_process":260,"dotenv":137}],3:[function(require,module,exports){
 /*!*/
 // Copyright 2012 Splunk, Inc.
 //
@@ -4148,7 +1704,7 @@ if (module === require.main) {
         };
     };
 })();
-},{"./utils":43}],25:[function(require,module,exports){
+},{"./utils":22}],4:[function(require,module,exports){
 /*!*/
 // Copyright 2012 Splunk, Inc.
 //
@@ -4658,7 +2214,7 @@ if (module === require.main) {
     };
 })();
 
-},{"./http":27,"./jquery.class":28,"./paths":40,"./platform/node/node_http":41,"./utils":43}],26:[function(require,module,exports){
+},{"./http":6,"./jquery.class":7,"./paths":19,"./platform/node/node_http":20,"./utils":22}],5:[function(require,module,exports){
 
 // Copyright 2011 Splunk, Inc.
 //
@@ -4683,10 +2239,9 @@ window.SplunkTest = {
     Async    : require('../../tests/test_async'),
     Http     : require('../../tests/test_http'),
     Context  : require('../../tests/test_context'),
-    Service  : require('../../tests/test_service'),
-    Examples : require('../../tests/test_examples')
+    Service  : require('../../tests/test_service')
 };
-},{"../../tests/test_async":358,"../../tests/test_context":359,"../../tests/test_examples":360,"../../tests/test_http":361,"../../tests/test_service":362,"../../tests/test_utils":363}],27:[function(require,module,exports){
+},{"../../tests/test_async":338,"../../tests/test_context":339,"../../tests/test_http":340,"../../tests/test_service":341,"../../tests/test_utils":342}],6:[function(require,module,exports){
 /*!*/
 // Copyright 2012 Splunk, Inc.
 //
@@ -5081,7 +2636,7 @@ window.SplunkTest = {
     };
 })();
 
-},{"./jquery.class":28,"./log":29,"./utils":43,"cookie":138}],28:[function(require,module,exports){
+},{"./jquery.class":7,"./log":8,"./utils":22,"cookie":117}],7:[function(require,module,exports){
 /*! Simple JavaScript Inheritance
  * By John Resig http://ejohn.org/
  * MIT Licensed.
@@ -5148,7 +2703,7 @@ window.SplunkTest = {
       return Class;
     };
 })();
-},{}],29:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 (function (process){(function (){
 /*!*/
 // Copyright 2012 Splunk, Inc.
@@ -5338,7 +2893,7 @@ window.SplunkTest = {
 })();
 
 }).call(this)}).call(this,require('_process'))
-},{"./utils":43,"_process":281}],30:[function(require,module,exports){
+},{"./utils":22,"_process":260}],9:[function(require,module,exports){
 /*!*/
 // Copyright 2014 Splunk, Inc.
 //
@@ -5441,7 +2996,7 @@ window.SplunkTest = {
     
     module.exports = Argument;
 })();
-},{"./utils":38,"elementtree":163}],31:[function(require,module,exports){
+},{"./utils":17,"elementtree":140}],10:[function(require,module,exports){
 /*!*/
 // Copyright 2014 Splunk, Inc.
 //
@@ -5637,7 +3192,7 @@ window.SplunkTest = {
     module.exports = Event;
 })();
 
-},{"./utils":38,"elementtree":163}],32:[function(require,module,exports){
+},{"./utils":17,"elementtree":140}],11:[function(require,module,exports){
 (function (process){(function (){
 /*!*/
 // Copyright 2014 Splunk, Inc.
@@ -5733,7 +3288,7 @@ window.SplunkTest = {
 })();
 
 }).call(this)}).call(this,require('_process'))
-},{"../async":24,"./logger":35,"./utils":38,"_process":281,"elementtree":163,"stream":322}],33:[function(require,module,exports){
+},{"../async":3,"./logger":14,"./utils":17,"_process":260,"elementtree":140,"stream":301}],12:[function(require,module,exports){
 (function (process){(function (){
 
 // Copyright 2014 Splunk, Inc.
@@ -5825,7 +3380,7 @@ ModularInputs.execute = function(exports, module) {
 module.exports = ModularInputs;
 
 }).call(this)}).call(this,require('_process'))
-},{"../async":24,"./argument":30,"./event":31,"./eventwriter":32,"./inputdefinition":34,"./logger":35,"./modularinput":36,"./scheme":37,"./utils":38,"./validationdefinition":39,"_process":281}],34:[function(require,module,exports){
+},{"../async":3,"./argument":9,"./event":10,"./eventwriter":11,"./inputdefinition":13,"./logger":14,"./modularinput":15,"./scheme":16,"./utils":17,"./validationdefinition":18,"_process":260}],13:[function(require,module,exports){
 /*!*/
 // Copyright 2014 Splunk, Inc.
 //
@@ -5918,7 +3473,7 @@ module.exports = ModularInputs;
 
     module.exports = InputDefinition;
 })();
-},{"./utils":38,"elementtree":163}],35:[function(require,module,exports){
+},{"./utils":17,"elementtree":140}],14:[function(require,module,exports){
 (function (process){(function (){
 /*!*/
 // Copyright 2014 Splunk, Inc.
@@ -6060,7 +3615,7 @@ module.exports = ModularInputs;
 }());
 
 }).call(this)}).call(this,require('_process'))
-},{"./utils":38,"_process":281}],36:[function(require,module,exports){
+},{"./utils":17,"_process":260}],15:[function(require,module,exports){
 (function (Buffer){(function (){
 /*!*/
 // Copyright 2014 Splunk, Inc.
@@ -6367,7 +3922,7 @@ module.exports = ModularInputs;
 })();
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"../async":24,"../service":42,"./eventwriter":32,"./inputdefinition":34,"./logger":35,"./scheme":37,"./utils":38,"./validationdefinition":39,"buffer":100,"elementtree":163,"url":330}],37:[function(require,module,exports){
+},{"../async":3,"../service":21,"./eventwriter":11,"./inputdefinition":13,"./logger":14,"./scheme":16,"./utils":17,"./validationdefinition":18,"buffer":79,"elementtree":140,"url":309}],16:[function(require,module,exports){
 /*!*/
 // Copyright 2014 Splunk, Inc.
 //
@@ -6480,7 +4035,7 @@ module.exports = ModularInputs;
     module.exports = Scheme;
 })();
 
-},{"./argument":30,"./utils":38,"elementtree":163}],38:[function(require,module,exports){
+},{"./argument":9,"./utils":17,"elementtree":140}],17:[function(require,module,exports){
 /*!*/
 // Copyright 2014 Splunk, Inc.
 //
@@ -6580,7 +4135,7 @@ utils.parseXMLData = function(parentNode, childNodeTag) {
 
 module.exports = utils;
 
-},{"../utils":43}],39:[function(require,module,exports){
+},{"../utils":22}],18:[function(require,module,exports){
 /*!*/
 // Copyright 2014 Splunk, Inc.
 //
@@ -6661,7 +4216,7 @@ module.exports = utils;
     
     module.exports = ValidationDefinition;
 })();
-},{"./utils":38,"elementtree":163}],40:[function(require,module,exports){
+},{"./utils":17,"elementtree":140}],19:[function(require,module,exports){
 /*!*/
 // Copyright 2012 Splunk, Inc.
 //
@@ -6724,7 +4279,7 @@ module.exports = utils;
     };
 })();
 
-},{}],41:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 (function (Buffer){(function (){
 
 // Copyright 2011 Splunk, Inc.
@@ -6845,7 +4400,7 @@ module.exports = utils;
 })();
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"../../../package.json":338,"../../http":27,"../../utils":43,"buffer":100,"needle":250}],42:[function(require,module,exports){
+},{"../../../package.json":317,"../../http":6,"../../utils":22,"buffer":79,"needle":227}],21:[function(require,module,exports){
 /*!*/
 // Copyright 2014 Splunk, Inc.
 //
@@ -12664,7 +10219,7 @@ module.exports = utils;
         }
     });
 })();
-},{"./async":24,"./context":25,"./http":27,"./jquery.class":28,"./paths":40,"./utils":43}],43:[function(require,module,exports){
+},{"./async":3,"./context":4,"./http":6,"./jquery.class":7,"./paths":19,"./utils":22}],22:[function(require,module,exports){
 /*!*/
 // Copyright 2012 Splunk, Inc.
 //
@@ -13145,7 +10700,7 @@ module.exports = utils;
     };
 
 })();
-},{"fs":98,"path":273}],44:[function(require,module,exports){
+},{"fs":77,"path":252}],23:[function(require,module,exports){
 'use strict';
 
 const asn1 = exports;
@@ -13158,7 +10713,7 @@ asn1.constants = require('./asn1/constants');
 asn1.decoders = require('./asn1/decoders');
 asn1.encoders = require('./asn1/encoders');
 
-},{"./asn1/api":45,"./asn1/base":47,"./asn1/constants":51,"./asn1/decoders":53,"./asn1/encoders":56,"bn.js":58}],45:[function(require,module,exports){
+},{"./asn1/api":24,"./asn1/base":26,"./asn1/constants":30,"./asn1/decoders":32,"./asn1/encoders":35,"bn.js":37}],24:[function(require,module,exports){
 'use strict';
 
 const encoders = require('./encoders');
@@ -13217,7 +10772,7 @@ Entity.prototype.encode = function encode(data, enc, /* internal */ reporter) {
   return this._getEncoder(enc).encode(data, reporter);
 };
 
-},{"./decoders":53,"./encoders":56,"inherits":235}],46:[function(require,module,exports){
+},{"./decoders":32,"./encoders":35,"inherits":212}],25:[function(require,module,exports){
 'use strict';
 
 const inherits = require('inherits');
@@ -13372,7 +10927,7 @@ EncoderBuffer.prototype.join = function join(out, offset) {
   return out;
 };
 
-},{"../base/reporter":49,"inherits":235,"safer-buffer":312}],47:[function(require,module,exports){
+},{"../base/reporter":28,"inherits":212,"safer-buffer":291}],26:[function(require,module,exports){
 'use strict';
 
 const base = exports;
@@ -13382,7 +10937,7 @@ base.DecoderBuffer = require('./buffer').DecoderBuffer;
 base.EncoderBuffer = require('./buffer').EncoderBuffer;
 base.Node = require('./node');
 
-},{"./buffer":46,"./node":48,"./reporter":49}],48:[function(require,module,exports){
+},{"./buffer":25,"./node":27,"./reporter":28}],27:[function(require,module,exports){
 'use strict';
 
 const Reporter = require('../base/reporter').Reporter;
@@ -14022,7 +11577,7 @@ Node.prototype._isPrintstr = function isPrintstr(str) {
   return /^[A-Za-z0-9 '()+,-./:=?]*$/.test(str);
 };
 
-},{"../base/buffer":46,"../base/reporter":49,"minimalistic-assert":243}],49:[function(require,module,exports){
+},{"../base/buffer":25,"../base/reporter":28,"minimalistic-assert":220}],28:[function(require,module,exports){
 'use strict';
 
 const inherits = require('inherits');
@@ -14147,7 +11702,7 @@ ReporterError.prototype.rethrow = function rethrow(msg) {
   return this;
 };
 
-},{"inherits":235}],50:[function(require,module,exports){
+},{"inherits":212}],29:[function(require,module,exports){
 'use strict';
 
 // Helper
@@ -14207,7 +11762,7 @@ exports.tag = {
 };
 exports.tagByName = reverse(exports.tag);
 
-},{}],51:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 'use strict';
 
 const constants = exports;
@@ -14230,7 +11785,7 @@ constants._reverse = function reverse(map) {
 
 constants.der = require('./der');
 
-},{"./der":50}],52:[function(require,module,exports){
+},{"./der":29}],31:[function(require,module,exports){
 'use strict';
 
 const inherits = require('inherits');
@@ -14567,7 +12122,7 @@ function derDecodeLen(buf, primitive, fail) {
   return len;
 }
 
-},{"../base/buffer":46,"../base/node":48,"../constants/der":50,"bn.js":58,"inherits":235}],53:[function(require,module,exports){
+},{"../base/buffer":25,"../base/node":27,"../constants/der":29,"bn.js":37,"inherits":212}],32:[function(require,module,exports){
 'use strict';
 
 const decoders = exports;
@@ -14575,7 +12130,7 @@ const decoders = exports;
 decoders.der = require('./der');
 decoders.pem = require('./pem');
 
-},{"./der":52,"./pem":54}],54:[function(require,module,exports){
+},{"./der":31,"./pem":33}],33:[function(require,module,exports){
 'use strict';
 
 const inherits = require('inherits');
@@ -14628,7 +12183,7 @@ PEMDecoder.prototype.decode = function decode(data, options) {
   return DERDecoder.prototype.decode.call(this, input, options);
 };
 
-},{"./der":52,"inherits":235,"safer-buffer":312}],55:[function(require,module,exports){
+},{"./der":31,"inherits":212,"safer-buffer":291}],34:[function(require,module,exports){
 'use strict';
 
 const inherits = require('inherits');
@@ -14925,7 +12480,7 @@ function encodeTag(tag, primitive, cls, reporter) {
   return res;
 }
 
-},{"../base/node":48,"../constants/der":50,"inherits":235,"safer-buffer":312}],56:[function(require,module,exports){
+},{"../base/node":27,"../constants/der":29,"inherits":212,"safer-buffer":291}],35:[function(require,module,exports){
 'use strict';
 
 const encoders = exports;
@@ -14933,7 +12488,7 @@ const encoders = exports;
 encoders.der = require('./der');
 encoders.pem = require('./pem');
 
-},{"./der":55,"./pem":57}],57:[function(require,module,exports){
+},{"./der":34,"./pem":36}],36:[function(require,module,exports){
 'use strict';
 
 const inherits = require('inherits');
@@ -14958,7 +12513,7 @@ PEMEncoder.prototype.encode = function encode(data, options) {
   return out.join('\n');
 };
 
-},{"./der":55,"inherits":235}],58:[function(require,module,exports){
+},{"./der":34,"inherits":212}],37:[function(require,module,exports){
 (function (module, exports) {
   'use strict';
 
@@ -18406,7 +15961,7 @@ PEMEncoder.prototype.encode = function encode(data, options) {
   };
 })(typeof module === 'undefined' || module, this);
 
-},{"buffer":68}],59:[function(require,module,exports){
+},{"buffer":47}],38:[function(require,module,exports){
 (function (global){(function (){
 'use strict';
 
@@ -18916,7 +16471,7 @@ var objectKeys = Object.keys || function (obj) {
 };
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"object-assign":255,"util/":62}],60:[function(require,module,exports){
+},{"object-assign":234,"util/":41}],39:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -18941,14 +16496,14 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],61:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],62:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 (function (process,global){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -19538,7 +17093,7 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":61,"_process":281,"inherits":60}],63:[function(require,module,exports){
+},{"./support/isBuffer":40,"_process":260,"inherits":39}],42:[function(require,module,exports){
 /*!
  * assertion-error
  * Copyright(c) 2013 Jake Luer <jake@qualiancy.com>
@@ -19656,7 +17211,7 @@ AssertionError.prototype.toJSON = function (stack) {
   return props;
 };
 
-},{}],64:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 (function (global){(function (){
 'use strict';
 
@@ -19685,7 +17240,7 @@ module.exports = function availableTypedArrays() {
 };
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],65:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 'use strict'
 
 exports.byteLength = byteLength
@@ -19837,7 +17392,7 @@ function fromByteArray (uint8) {
   return parts.join('')
 }
 
-},{}],66:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 (function (module, exports) {
   'use strict';
 
@@ -23386,7 +20941,7 @@ function fromByteArray (uint8) {
   };
 })(typeof module === 'undefined' || module, this);
 
-},{"buffer":68}],67:[function(require,module,exports){
+},{"buffer":47}],46:[function(require,module,exports){
 var r;
 
 module.exports = function rand(len) {
@@ -23453,9 +21008,9 @@ if (typeof self === 'object') {
   }
 }
 
-},{"crypto":68}],68:[function(require,module,exports){
+},{"crypto":47}],47:[function(require,module,exports){
 
-},{}],69:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 // based on the aes implimentation in triple sec
 // https://github.com/keybase/triplesec
 // which is in turn based on the one from crypto-js
@@ -23685,7 +21240,7 @@ AES.prototype.scrub = function () {
 
 module.exports.AES = AES
 
-},{"safe-buffer":311}],70:[function(require,module,exports){
+},{"safe-buffer":290}],49:[function(require,module,exports){
 var aes = require('./aes')
 var Buffer = require('safe-buffer').Buffer
 var Transform = require('cipher-base')
@@ -23804,7 +21359,7 @@ StreamCipher.prototype.setAAD = function setAAD (buf) {
 
 module.exports = StreamCipher
 
-},{"./aes":69,"./ghash":74,"./incr32":75,"buffer-xor":99,"cipher-base":137,"inherits":235,"safe-buffer":311}],71:[function(require,module,exports){
+},{"./aes":48,"./ghash":53,"./incr32":54,"buffer-xor":78,"cipher-base":116,"inherits":212,"safe-buffer":290}],50:[function(require,module,exports){
 var ciphers = require('./encrypter')
 var deciphers = require('./decrypter')
 var modes = require('./modes/list.json')
@@ -23819,7 +21374,7 @@ exports.createDecipher = exports.Decipher = deciphers.createDecipher
 exports.createDecipheriv = exports.Decipheriv = deciphers.createDecipheriv
 exports.listCiphers = exports.getCiphers = getCiphers
 
-},{"./decrypter":72,"./encrypter":73,"./modes/list.json":83}],72:[function(require,module,exports){
+},{"./decrypter":51,"./encrypter":52,"./modes/list.json":62}],51:[function(require,module,exports){
 var AuthCipher = require('./authCipher')
 var Buffer = require('safe-buffer').Buffer
 var MODES = require('./modes')
@@ -23945,7 +21500,7 @@ function createDecipher (suite, password) {
 exports.createDecipher = createDecipher
 exports.createDecipheriv = createDecipheriv
 
-},{"./aes":69,"./authCipher":70,"./modes":82,"./streamCipher":85,"cipher-base":137,"evp_bytestokey":190,"inherits":235,"safe-buffer":311}],73:[function(require,module,exports){
+},{"./aes":48,"./authCipher":49,"./modes":61,"./streamCipher":64,"cipher-base":116,"evp_bytestokey":167,"inherits":212,"safe-buffer":290}],52:[function(require,module,exports){
 var MODES = require('./modes')
 var AuthCipher = require('./authCipher')
 var Buffer = require('safe-buffer').Buffer
@@ -24061,7 +21616,7 @@ function createCipher (suite, password) {
 exports.createCipheriv = createCipheriv
 exports.createCipher = createCipher
 
-},{"./aes":69,"./authCipher":70,"./modes":82,"./streamCipher":85,"cipher-base":137,"evp_bytestokey":190,"inherits":235,"safe-buffer":311}],74:[function(require,module,exports){
+},{"./aes":48,"./authCipher":49,"./modes":61,"./streamCipher":64,"cipher-base":116,"evp_bytestokey":167,"inherits":212,"safe-buffer":290}],53:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var ZEROES = Buffer.alloc(16, 0)
 
@@ -24152,7 +21707,7 @@ GHASH.prototype.final = function (abl, bl) {
 
 module.exports = GHASH
 
-},{"safe-buffer":311}],75:[function(require,module,exports){
+},{"safe-buffer":290}],54:[function(require,module,exports){
 function incr32 (iv) {
   var len = iv.length
   var item
@@ -24169,7 +21724,7 @@ function incr32 (iv) {
 }
 module.exports = incr32
 
-},{}],76:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 var xor = require('buffer-xor')
 
 exports.encrypt = function (self, block) {
@@ -24188,7 +21743,7 @@ exports.decrypt = function (self, block) {
   return xor(out, pad)
 }
 
-},{"buffer-xor":99}],77:[function(require,module,exports){
+},{"buffer-xor":78}],56:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var xor = require('buffer-xor')
 
@@ -24223,7 +21778,7 @@ exports.encrypt = function (self, data, decrypt) {
   return out
 }
 
-},{"buffer-xor":99,"safe-buffer":311}],78:[function(require,module,exports){
+},{"buffer-xor":78,"safe-buffer":290}],57:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 
 function encryptByte (self, byteParam, decrypt) {
@@ -24267,7 +21822,7 @@ exports.encrypt = function (self, chunk, decrypt) {
   return out
 }
 
-},{"safe-buffer":311}],79:[function(require,module,exports){
+},{"safe-buffer":290}],58:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 
 function encryptByte (self, byteParam, decrypt) {
@@ -24294,7 +21849,7 @@ exports.encrypt = function (self, chunk, decrypt) {
   return out
 }
 
-},{"safe-buffer":311}],80:[function(require,module,exports){
+},{"safe-buffer":290}],59:[function(require,module,exports){
 var xor = require('buffer-xor')
 var Buffer = require('safe-buffer').Buffer
 var incr32 = require('../incr32')
@@ -24326,7 +21881,7 @@ exports.encrypt = function (self, chunk) {
   return xor(chunk, pad)
 }
 
-},{"../incr32":75,"buffer-xor":99,"safe-buffer":311}],81:[function(require,module,exports){
+},{"../incr32":54,"buffer-xor":78,"safe-buffer":290}],60:[function(require,module,exports){
 exports.encrypt = function (self, block) {
   return self._cipher.encryptBlock(block)
 }
@@ -24335,7 +21890,7 @@ exports.decrypt = function (self, block) {
   return self._cipher.decryptBlock(block)
 }
 
-},{}],82:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 var modeModules = {
   ECB: require('./ecb'),
   CBC: require('./cbc'),
@@ -24355,7 +21910,7 @@ for (var key in modes) {
 
 module.exports = modes
 
-},{"./cbc":76,"./cfb":77,"./cfb1":78,"./cfb8":79,"./ctr":80,"./ecb":81,"./list.json":83,"./ofb":84}],83:[function(require,module,exports){
+},{"./cbc":55,"./cfb":56,"./cfb1":57,"./cfb8":58,"./ctr":59,"./ecb":60,"./list.json":62,"./ofb":63}],62:[function(require,module,exports){
 module.exports={
   "aes-128-ecb": {
     "cipher": "AES",
@@ -24548,7 +22103,7 @@ module.exports={
   }
 }
 
-},{}],84:[function(require,module,exports){
+},{}],63:[function(require,module,exports){
 (function (Buffer){(function (){
 var xor = require('buffer-xor')
 
@@ -24568,7 +22123,7 @@ exports.encrypt = function (self, chunk) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":100,"buffer-xor":99}],85:[function(require,module,exports){
+},{"buffer":79,"buffer-xor":78}],64:[function(require,module,exports){
 var aes = require('./aes')
 var Buffer = require('safe-buffer').Buffer
 var Transform = require('cipher-base')
@@ -24597,7 +22152,7 @@ StreamCipher.prototype._final = function () {
 
 module.exports = StreamCipher
 
-},{"./aes":69,"cipher-base":137,"inherits":235,"safe-buffer":311}],86:[function(require,module,exports){
+},{"./aes":48,"cipher-base":116,"inherits":212,"safe-buffer":290}],65:[function(require,module,exports){
 var DES = require('browserify-des')
 var aes = require('browserify-aes/browser')
 var aesModes = require('browserify-aes/modes')
@@ -24666,7 +22221,7 @@ exports.createDecipher = exports.Decipher = createDecipher
 exports.createDecipheriv = exports.Decipheriv = createDecipheriv
 exports.listCiphers = exports.getCiphers = getCiphers
 
-},{"browserify-aes/browser":71,"browserify-aes/modes":82,"browserify-des":87,"browserify-des/modes":88,"evp_bytestokey":190}],87:[function(require,module,exports){
+},{"browserify-aes/browser":50,"browserify-aes/modes":61,"browserify-des":66,"browserify-des/modes":67,"evp_bytestokey":167}],66:[function(require,module,exports){
 var CipherBase = require('cipher-base')
 var des = require('des.js')
 var inherits = require('inherits')
@@ -24718,7 +22273,7 @@ DES.prototype._final = function () {
   return Buffer.from(this._des.final())
 }
 
-},{"cipher-base":137,"des.js":149,"inherits":235,"safe-buffer":311}],88:[function(require,module,exports){
+},{"cipher-base":116,"des.js":126,"inherits":212,"safe-buffer":290}],67:[function(require,module,exports){
 exports['des-ecb'] = {
   key: 8,
   iv: 0
@@ -24744,7 +22299,7 @@ exports['des-ede'] = {
   iv: 0
 }
 
-},{}],89:[function(require,module,exports){
+},{}],68:[function(require,module,exports){
 (function (Buffer){(function (){
 var BN = require('bn.js')
 var randomBytes = require('randombytes')
@@ -24783,10 +22338,10 @@ crt.getr = getr
 module.exports = crt
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"bn.js":66,"buffer":100,"randombytes":293}],90:[function(require,module,exports){
+},{"bn.js":45,"buffer":79,"randombytes":272}],69:[function(require,module,exports){
 module.exports = require('./browser/algorithms.json')
 
-},{"./browser/algorithms.json":91}],91:[function(require,module,exports){
+},{"./browser/algorithms.json":70}],70:[function(require,module,exports){
 module.exports={
   "sha224WithRSAEncryption": {
     "sign": "rsa",
@@ -24940,7 +22495,7 @@ module.exports={
   }
 }
 
-},{}],92:[function(require,module,exports){
+},{}],71:[function(require,module,exports){
 module.exports={
   "1.3.132.0.10": "secp256k1",
   "1.3.132.0.33": "p224",
@@ -24950,7 +22505,7 @@ module.exports={
   "1.3.132.0.35": "p521"
 }
 
-},{}],93:[function(require,module,exports){
+},{}],72:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var createHash = require('create-hash')
 var stream = require('readable-stream')
@@ -25044,7 +22599,7 @@ module.exports = {
   createVerify: createVerify
 }
 
-},{"./algorithms.json":91,"./sign":94,"./verify":95,"create-hash":141,"inherits":235,"readable-stream":309,"safe-buffer":311}],94:[function(require,module,exports){
+},{"./algorithms.json":70,"./sign":73,"./verify":74,"create-hash":120,"inherits":212,"readable-stream":288,"safe-buffer":290}],73:[function(require,module,exports){
 // much of this based on https://github.com/indutny/self-signed/blob/gh-pages/lib/rsa.js
 var Buffer = require('safe-buffer').Buffer
 var createHmac = require('create-hmac')
@@ -25189,7 +22744,7 @@ module.exports = sign
 module.exports.getKey = getKey
 module.exports.makeKey = makeKey
 
-},{"./curves.json":92,"bn.js":66,"browserify-rsa":89,"create-hmac":143,"elliptic":171,"parse-asn1":272,"safe-buffer":311}],95:[function(require,module,exports){
+},{"./curves.json":71,"bn.js":45,"browserify-rsa":68,"create-hmac":122,"elliptic":148,"parse-asn1":251,"safe-buffer":290}],74:[function(require,module,exports){
 // much of this based on https://github.com/indutny/self-signed/blob/gh-pages/lib/rsa.js
 var Buffer = require('safe-buffer').Buffer
 var BN = require('bn.js')
@@ -25275,7 +22830,7 @@ function checkValue (b, q) {
 
 module.exports = verify
 
-},{"./curves.json":92,"bn.js":66,"elliptic":171,"parse-asn1":272,"safe-buffer":311}],96:[function(require,module,exports){
+},{"./curves.json":71,"bn.js":45,"elliptic":148,"parse-asn1":251,"safe-buffer":290}],75:[function(require,module,exports){
 (function (process,Buffer){(function (){
 'use strict';
 /* eslint camelcase: "off" */
@@ -25687,7 +23242,7 @@ Zlib.prototype._reset = function () {
 
 exports.Zlib = Zlib;
 }).call(this)}).call(this,require('_process'),require("buffer").Buffer)
-},{"_process":281,"assert":59,"buffer":100,"pako/lib/zlib/constants":259,"pako/lib/zlib/deflate.js":261,"pako/lib/zlib/inflate.js":263,"pako/lib/zlib/zstream":267}],97:[function(require,module,exports){
+},{"_process":260,"assert":38,"buffer":79,"pako/lib/zlib/constants":238,"pako/lib/zlib/deflate.js":240,"pako/lib/zlib/inflate.js":242,"pako/lib/zlib/zstream":246}],76:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -26299,9 +23854,9 @@ util.inherits(DeflateRaw, Zlib);
 util.inherits(InflateRaw, Zlib);
 util.inherits(Unzip, Zlib);
 }).call(this)}).call(this,require('_process'))
-},{"./binding":96,"_process":281,"assert":59,"buffer":100,"stream":322,"util":335}],98:[function(require,module,exports){
-arguments[4][68][0].apply(exports,arguments)
-},{"dup":68}],99:[function(require,module,exports){
+},{"./binding":75,"_process":260,"assert":38,"buffer":79,"stream":301,"util":314}],77:[function(require,module,exports){
+arguments[4][47][0].apply(exports,arguments)
+},{"dup":47}],78:[function(require,module,exports){
 (function (Buffer){(function (){
 module.exports = function xor (a, b) {
   var length = Math.min(a.length, b.length)
@@ -26315,7 +23870,7 @@ module.exports = function xor (a, b) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":100}],100:[function(require,module,exports){
+},{"buffer":79}],79:[function(require,module,exports){
 (function (Buffer){(function (){
 /*!
  * The buffer module from node.js, for the browser.
@@ -28096,7 +25651,7 @@ function numberIsNaN (obj) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"base64-js":65,"buffer":100,"ieee754":234}],101:[function(require,module,exports){
+},{"base64-js":44,"buffer":79,"ieee754":211}],80:[function(require,module,exports){
 module.exports = {
   "100": "Continue",
   "101": "Switching Protocols",
@@ -28162,7 +25717,7 @@ module.exports = {
   "511": "Network Authentication Required"
 }
 
-},{}],102:[function(require,module,exports){
+},{}],81:[function(require,module,exports){
 'use strict';
 
 var GetIntrinsic = require('get-intrinsic');
@@ -28179,7 +25734,7 @@ module.exports = function callBoundIntrinsic(name, allowMissing) {
 	return intrinsic;
 };
 
-},{"./":103,"get-intrinsic":195}],103:[function(require,module,exports){
+},{"./":82,"get-intrinsic":172}],82:[function(require,module,exports){
 'use strict';
 
 var bind = require('function-bind');
@@ -28228,10 +25783,10 @@ if ($defineProperty) {
 	module.exports.apply = applyBind;
 }
 
-},{"function-bind":193,"get-intrinsic":195}],104:[function(require,module,exports){
+},{"function-bind":170,"get-intrinsic":172}],83:[function(require,module,exports){
 module.exports = require('./lib/chai');
 
-},{"./lib/chai":105}],105:[function(require,module,exports){
+},{"./lib/chai":84}],84:[function(require,module,exports){
 /*!
  * chai
  * Copyright(c) 2011-2014 Jake Luer <jake@alogicalparadox.com>
@@ -28325,7 +25880,7 @@ exports.use(should);
 var assert = require('./chai/interface/assert');
 exports.use(assert);
 
-},{"./chai/assertion":106,"./chai/config":107,"./chai/core/assertions":108,"./chai/interface/assert":109,"./chai/interface/expect":110,"./chai/interface/should":111,"./chai/utils":125,"assertion-error":63}],106:[function(require,module,exports){
+},{"./chai/assertion":85,"./chai/config":86,"./chai/core/assertions":87,"./chai/interface/assert":88,"./chai/interface/expect":89,"./chai/interface/should":90,"./chai/utils":104,"assertion-error":42}],85:[function(require,module,exports){
 /*!
  * chai
  * http://chaijs.com
@@ -28502,7 +26057,7 @@ module.exports = function (_chai, util) {
   });
 };
 
-},{"./config":107}],107:[function(require,module,exports){
+},{"./config":86}],86:[function(require,module,exports){
 module.exports = {
 
   /**
@@ -28598,7 +26153,7 @@ module.exports = {
   proxyExcludedKeys: ['then', 'catch', 'inspect', 'toJSON']
 };
 
-},{}],108:[function(require,module,exports){
+},{}],87:[function(require,module,exports){
 /*!
  * chai
  * http://chaijs.com
@@ -32453,7 +30008,7 @@ module.exports = function (chai, _) {
   });
 };
 
-},{}],109:[function(require,module,exports){
+},{}],88:[function(require,module,exports){
 /*!
  * chai
  * Copyright(c) 2011-2014 Jake Luer <jake@alogicalparadox.com>
@@ -35568,7 +33123,7 @@ module.exports = function (chai, util) {
   ('isNotEmpty', 'notEmpty');
 };
 
-},{}],110:[function(require,module,exports){
+},{}],89:[function(require,module,exports){
 /*!
  * chai
  * Copyright(c) 2011-2014 Jake Luer <jake@alogicalparadox.com>
@@ -35617,7 +33172,7 @@ module.exports = function (chai, util) {
   };
 };
 
-},{}],111:[function(require,module,exports){
+},{}],90:[function(require,module,exports){
 /*!
  * chai
  * Copyright(c) 2011-2014 Jake Luer <jake@alogicalparadox.com>
@@ -35838,7 +33393,7 @@ module.exports = function (chai, util) {
   chai.Should = loadShould;
 };
 
-},{}],112:[function(require,module,exports){
+},{}],91:[function(require,module,exports){
 /*!
  * Chai - addChainingMethod utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -35992,7 +33547,7 @@ module.exports = function addChainableMethod(ctx, name, method, chainingBehavior
   });
 };
 
-},{"../../chai":105,"./addLengthGuard":113,"./flag":118,"./proxify":133,"./transferFlags":135}],113:[function(require,module,exports){
+},{"../../chai":84,"./addLengthGuard":92,"./flag":97,"./proxify":112,"./transferFlags":114}],92:[function(require,module,exports){
 var fnLengthDesc = Object.getOwnPropertyDescriptor(function () {}, 'length');
 
 /*!
@@ -36054,7 +33609,7 @@ module.exports = function addLengthGuard (fn, assertionName, isChainable) {
   return fn;
 };
 
-},{}],114:[function(require,module,exports){
+},{}],93:[function(require,module,exports){
 /*!
  * Chai - addMethod utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -36124,7 +33679,7 @@ module.exports = function addMethod(ctx, name, method) {
   ctx[name] = proxify(methodWrapper, name);
 };
 
-},{"../../chai":105,"./addLengthGuard":113,"./flag":118,"./proxify":133,"./transferFlags":135}],115:[function(require,module,exports){
+},{"../../chai":84,"./addLengthGuard":92,"./flag":97,"./proxify":112,"./transferFlags":114}],94:[function(require,module,exports){
 /*!
  * Chai - addProperty utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -36198,7 +33753,7 @@ module.exports = function addProperty(ctx, name, getter) {
   });
 };
 
-},{"../../chai":105,"./flag":118,"./isProxyEnabled":128,"./transferFlags":135}],116:[function(require,module,exports){
+},{"../../chai":84,"./flag":97,"./isProxyEnabled":107,"./transferFlags":114}],95:[function(require,module,exports){
 /*!
  * Chai - compareByInspect utility
  * Copyright(c) 2011-2016 Jake Luer <jake@alogicalparadox.com>
@@ -36231,7 +33786,7 @@ module.exports = function compareByInspect(a, b) {
   return inspect(a) < inspect(b) ? -1 : 1;
 };
 
-},{"./inspect":126}],117:[function(require,module,exports){
+},{"./inspect":105}],96:[function(require,module,exports){
 /*!
  * Chai - expectTypes utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -36284,7 +33839,7 @@ module.exports = function expectTypes(obj, types) {
   }
 };
 
-},{"./flag":118,"assertion-error":63,"type-detect":329}],118:[function(require,module,exports){
+},{"./flag":97,"assertion-error":42,"type-detect":308}],97:[function(require,module,exports){
 /*!
  * Chai - flag utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -36319,7 +33874,7 @@ module.exports = function flag(obj, key, value) {
   }
 };
 
-},{}],119:[function(require,module,exports){
+},{}],98:[function(require,module,exports){
 /*!
  * Chai - getActual utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -36341,7 +33896,7 @@ module.exports = function getActual(obj, args) {
   return args.length > 4 ? args[4] : obj._obj;
 };
 
-},{}],120:[function(require,module,exports){
+},{}],99:[function(require,module,exports){
 /*!
  * Chai - message composition utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -36393,7 +33948,7 @@ module.exports = function getMessage(obj, args) {
   return flagMsg ? flagMsg + ': ' + msg : msg;
 };
 
-},{"./flag":118,"./getActual":119,"./objDisplay":129}],121:[function(require,module,exports){
+},{"./flag":97,"./getActual":98,"./objDisplay":108}],100:[function(require,module,exports){
 var type = require('type-detect');
 
 var flag = require('./flag');
@@ -36450,7 +34005,7 @@ module.exports = function getOperator(obj, args) {
   return isObject ? 'deepStrictEqual' : 'strictEqual';
 };
 
-},{"./flag":118,"type-detect":329}],122:[function(require,module,exports){
+},{"./flag":97,"type-detect":308}],101:[function(require,module,exports){
 /*!
  * Chai - getOwnEnumerableProperties utility
  * Copyright(c) 2011-2016 Jake Luer <jake@alogicalparadox.com>
@@ -36481,7 +34036,7 @@ module.exports = function getOwnEnumerableProperties(obj) {
   return Object.keys(obj).concat(getOwnEnumerablePropertySymbols(obj));
 };
 
-},{"./getOwnEnumerablePropertySymbols":123}],123:[function(require,module,exports){
+},{"./getOwnEnumerablePropertySymbols":102}],102:[function(require,module,exports){
 /*!
  * Chai - getOwnEnumerablePropertySymbols utility
  * Copyright(c) 2011-2016 Jake Luer <jake@alogicalparadox.com>
@@ -36510,7 +34065,7 @@ module.exports = function getOwnEnumerablePropertySymbols(obj) {
   });
 };
 
-},{}],124:[function(require,module,exports){
+},{}],103:[function(require,module,exports){
 /*!
  * Chai - getProperties utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -36548,7 +34103,7 @@ module.exports = function getProperties(object) {
   return result;
 };
 
-},{}],125:[function(require,module,exports){
+},{}],104:[function(require,module,exports){
 /*!
  * chai
  * Copyright(c) 2011 Jake Luer <jake@alogicalparadox.com>
@@ -36727,7 +34282,7 @@ exports.isNaN = require('./isNaN');
  */
 
 exports.getOperator = require('./getOperator');
-},{"./addChainableMethod":112,"./addLengthGuard":113,"./addMethod":114,"./addProperty":115,"./compareByInspect":116,"./expectTypes":117,"./flag":118,"./getActual":119,"./getMessage":120,"./getOperator":121,"./getOwnEnumerableProperties":122,"./getOwnEnumerablePropertySymbols":123,"./inspect":126,"./isNaN":127,"./isProxyEnabled":128,"./objDisplay":129,"./overwriteChainableMethod":130,"./overwriteMethod":131,"./overwriteProperty":132,"./proxify":133,"./test":134,"./transferFlags":135,"check-error":136,"deep-eql":148,"get-func-name":194,"pathval":274,"type-detect":329}],126:[function(require,module,exports){
+},{"./addChainableMethod":91,"./addLengthGuard":92,"./addMethod":93,"./addProperty":94,"./compareByInspect":95,"./expectTypes":96,"./flag":97,"./getActual":98,"./getMessage":99,"./getOperator":100,"./getOwnEnumerableProperties":101,"./getOwnEnumerablePropertySymbols":102,"./inspect":105,"./isNaN":106,"./isProxyEnabled":107,"./objDisplay":108,"./overwriteChainableMethod":109,"./overwriteMethod":110,"./overwriteProperty":111,"./proxify":112,"./test":113,"./transferFlags":114,"check-error":115,"deep-eql":125,"get-func-name":171,"pathval":253,"type-detect":308}],105:[function(require,module,exports){
 // This is (almost) directly from Node.js utils
 // https://github.com/joyent/node/blob/f8c335d0caf47f16d31413f89aa28eda3878e3aa/lib/util.js
 
@@ -36762,7 +34317,7 @@ function inspect(obj, showHidden, depth, colors) {
   return loupe.inspect(obj, options);
 }
 
-},{"../config":107,"get-func-name":194,"loupe":239}],127:[function(require,module,exports){
+},{"../config":86,"get-func-name":171,"loupe":216}],106:[function(require,module,exports){
 /*!
  * Chai - isNaN utility
  * Copyright(c) 2012-2015 Sakthipriyan Vairamani <thechargingvolcano@gmail.com>
@@ -36790,7 +34345,7 @@ function isNaN(value) {
 // If ECMAScript 6's Number.isNaN is present, prefer that.
 module.exports = Number.isNaN || isNaN;
 
-},{}],128:[function(require,module,exports){
+},{}],107:[function(require,module,exports){
 var config = require('../config');
 
 /*!
@@ -36816,7 +34371,7 @@ module.exports = function isProxyEnabled() {
     typeof Reflect !== 'undefined';
 };
 
-},{"../config":107}],129:[function(require,module,exports){
+},{"../config":86}],108:[function(require,module,exports){
 /*!
  * Chai - flag utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -36868,7 +34423,7 @@ module.exports = function objDisplay(obj) {
   }
 };
 
-},{"../config":107,"./inspect":126}],130:[function(require,module,exports){
+},{"../config":86,"./inspect":105}],109:[function(require,module,exports){
 /*!
  * Chai - overwriteChainableMethod utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -36939,7 +34494,7 @@ module.exports = function overwriteChainableMethod(ctx, name, method, chainingBe
   };
 };
 
-},{"../../chai":105,"./transferFlags":135}],131:[function(require,module,exports){
+},{"../../chai":84,"./transferFlags":114}],110:[function(require,module,exports){
 /*!
  * Chai - overwriteMethod utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -37033,7 +34588,7 @@ module.exports = function overwriteMethod(ctx, name, method) {
   ctx[name] = proxify(overwritingMethodWrapper, name);
 };
 
-},{"../../chai":105,"./addLengthGuard":113,"./flag":118,"./proxify":133,"./transferFlags":135}],132:[function(require,module,exports){
+},{"../../chai":84,"./addLengthGuard":92,"./flag":97,"./proxify":112,"./transferFlags":114}],111:[function(require,module,exports){
 /*!
  * Chai - overwriteProperty utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -37127,7 +34682,7 @@ module.exports = function overwriteProperty(ctx, name, getter) {
   });
 };
 
-},{"../../chai":105,"./flag":118,"./isProxyEnabled":128,"./transferFlags":135}],133:[function(require,module,exports){
+},{"../../chai":84,"./flag":97,"./isProxyEnabled":107,"./transferFlags":114}],112:[function(require,module,exports){
 var config = require('../config');
 var flag = require('./flag');
 var getProperties = require('./getProperties');
@@ -37276,7 +34831,7 @@ function stringDistanceCapped(strA, strB, cap) {
   return memo[strA.length][strB.length];
 }
 
-},{"../config":107,"./flag":118,"./getProperties":124,"./isProxyEnabled":128}],134:[function(require,module,exports){
+},{"../config":86,"./flag":97,"./getProperties":103,"./isProxyEnabled":107}],113:[function(require,module,exports){
 /*!
  * Chai - test utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -37306,7 +34861,7 @@ module.exports = function test(obj, args) {
   return negate ? !expr : expr;
 };
 
-},{"./flag":118}],135:[function(require,module,exports){
+},{"./flag":97}],114:[function(require,module,exports){
 /*!
  * Chai - transferFlags utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -37353,7 +34908,7 @@ module.exports = function transferFlags(assertion, object, includeAll) {
   }
 };
 
-},{}],136:[function(require,module,exports){
+},{}],115:[function(require,module,exports){
 'use strict';
 
 /* !
@@ -37527,7 +35082,7 @@ module.exports = {
   getConstructorName: getConstructorName,
 };
 
-},{}],137:[function(require,module,exports){
+},{}],116:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var Transform = require('stream').Transform
 var StringDecoder = require('string_decoder').StringDecoder
@@ -37628,7 +35183,7 @@ CipherBase.prototype._toString = function (value, enc, fin) {
 
 module.exports = CipherBase
 
-},{"inherits":235,"safe-buffer":311,"stream":322,"string_decoder":327}],138:[function(require,module,exports){
+},{"inherits":212,"safe-buffer":290,"stream":301,"string_decoder":306}],117:[function(require,module,exports){
 /*!
  * cookie
  * Copyright(c) 2012-2014 Roman Shtylman
@@ -37832,7 +35387,7 @@ function tryDecode(str, decode) {
   }
 }
 
-},{}],139:[function(require,module,exports){
+},{}],118:[function(require,module,exports){
 (function (Buffer){(function (){
 var elliptic = require('elliptic')
 var BN = require('bn.js')
@@ -37960,9 +35515,9 @@ function formatReturnValue (bn, enc, len) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"bn.js":140,"buffer":100,"elliptic":171}],140:[function(require,module,exports){
-arguments[4][58][0].apply(exports,arguments)
-},{"buffer":68,"dup":58}],141:[function(require,module,exports){
+},{"bn.js":119,"buffer":79,"elliptic":148}],119:[function(require,module,exports){
+arguments[4][37][0].apply(exports,arguments)
+},{"buffer":47,"dup":37}],120:[function(require,module,exports){
 'use strict'
 var inherits = require('inherits')
 var MD5 = require('md5.js')
@@ -37994,14 +35549,14 @@ module.exports = function createHash (alg) {
   return new Hash(sha(alg))
 }
 
-},{"cipher-base":137,"inherits":235,"md5.js":240,"ripemd160":310,"sha.js":315}],142:[function(require,module,exports){
+},{"cipher-base":116,"inherits":212,"md5.js":217,"ripemd160":289,"sha.js":294}],121:[function(require,module,exports){
 var MD5 = require('md5.js')
 
 module.exports = function (buffer) {
   return new MD5().update(buffer).digest()
 }
 
-},{"md5.js":240}],143:[function(require,module,exports){
+},{"md5.js":217}],122:[function(require,module,exports){
 'use strict'
 var inherits = require('inherits')
 var Legacy = require('./legacy')
@@ -38065,7 +35620,7 @@ module.exports = function createHmac (alg, key) {
   return new Hmac(alg, key)
 }
 
-},{"./legacy":144,"cipher-base":137,"create-hash/md5":142,"inherits":235,"ripemd160":310,"safe-buffer":311,"sha.js":315}],144:[function(require,module,exports){
+},{"./legacy":123,"cipher-base":116,"create-hash/md5":121,"inherits":212,"ripemd160":289,"safe-buffer":290,"sha.js":294}],123:[function(require,module,exports){
 'use strict'
 var inherits = require('inherits')
 var Buffer = require('safe-buffer').Buffer
@@ -38113,7 +35668,7 @@ Hmac.prototype._final = function () {
 }
 module.exports = Hmac
 
-},{"cipher-base":137,"inherits":235,"safe-buffer":311}],145:[function(require,module,exports){
+},{"cipher-base":116,"inherits":212,"safe-buffer":290}],124:[function(require,module,exports){
 'use strict'
 
 exports.randomBytes = exports.rng = exports.pseudoRandomBytes = exports.prng = require('randombytes')
@@ -38212,442 +35767,7 @@ exports.constants = {
   'POINT_CONVERSION_HYBRID': 6
 }
 
-},{"browserify-cipher":86,"browserify-sign":93,"browserify-sign/algos":90,"create-ecdh":139,"create-hash":141,"create-hmac":143,"diffie-hellman":155,"pbkdf2":275,"public-encrypt":282,"randombytes":293,"randomfill":294}],146:[function(require,module,exports){
-(function (process){(function (){
-"use strict";
-
-function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
-
-/* eslint-env browser */
-
-/**
- * This is the web browser implementation of `debug()`.
- */
-exports.log = log;
-exports.formatArgs = formatArgs;
-exports.save = save;
-exports.load = load;
-exports.useColors = useColors;
-exports.storage = localstorage();
-/**
- * Colors.
- */
-
-exports.colors = ['#0000CC', '#0000FF', '#0033CC', '#0033FF', '#0066CC', '#0066FF', '#0099CC', '#0099FF', '#00CC00', '#00CC33', '#00CC66', '#00CC99', '#00CCCC', '#00CCFF', '#3300CC', '#3300FF', '#3333CC', '#3333FF', '#3366CC', '#3366FF', '#3399CC', '#3399FF', '#33CC00', '#33CC33', '#33CC66', '#33CC99', '#33CCCC', '#33CCFF', '#6600CC', '#6600FF', '#6633CC', '#6633FF', '#66CC00', '#66CC33', '#9900CC', '#9900FF', '#9933CC', '#9933FF', '#99CC00', '#99CC33', '#CC0000', '#CC0033', '#CC0066', '#CC0099', '#CC00CC', '#CC00FF', '#CC3300', '#CC3333', '#CC3366', '#CC3399', '#CC33CC', '#CC33FF', '#CC6600', '#CC6633', '#CC9900', '#CC9933', '#CCCC00', '#CCCC33', '#FF0000', '#FF0033', '#FF0066', '#FF0099', '#FF00CC', '#FF00FF', '#FF3300', '#FF3333', '#FF3366', '#FF3399', '#FF33CC', '#FF33FF', '#FF6600', '#FF6633', '#FF9900', '#FF9933', '#FFCC00', '#FFCC33'];
-/**
- * Currently only WebKit-based Web Inspectors, Firefox >= v31,
- * and the Firebug extension (any Firefox version) are known
- * to support "%c" CSS customizations.
- *
- * TODO: add a `localStorage` variable to explicitly enable/disable colors
- */
-// eslint-disable-next-line complexity
-
-function useColors() {
-  // NB: In an Electron preload script, document will be defined but not fully
-  // initialized. Since we know we're in Chrome, we'll just detect this case
-  // explicitly
-  if (typeof window !== 'undefined' && window.process && (window.process.type === 'renderer' || window.process.__nwjs)) {
-    return true;
-  } // Internet Explorer and Edge do not support colors.
-
-
-  if (typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.toLowerCase().match(/(edge|trident)\/(\d+)/)) {
-    return false;
-  } // Is webkit? http://stackoverflow.com/a/16459606/376773
-  // document is undefined in react-native: https://github.com/facebook/react-native/pull/1632
-
-
-  return typeof document !== 'undefined' && document.documentElement && document.documentElement.style && document.documentElement.style.WebkitAppearance || // Is firebug? http://stackoverflow.com/a/398120/376773
-  typeof window !== 'undefined' && window.console && (window.console.firebug || window.console.exception && window.console.table) || // Is firefox >= v31?
-  // https://developer.mozilla.org/en-US/docs/Tools/Web_Console#Styling_messages
-  typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.toLowerCase().match(/firefox\/(\d+)/) && parseInt(RegExp.$1, 10) >= 31 || // Double check webkit in userAgent just in case we are in a worker
-  typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.toLowerCase().match(/applewebkit\/(\d+)/);
-}
-/**
- * Colorize log arguments if enabled.
- *
- * @api public
- */
-
-
-function formatArgs(args) {
-  args[0] = (this.useColors ? '%c' : '') + this.namespace + (this.useColors ? ' %c' : ' ') + args[0] + (this.useColors ? '%c ' : ' ') + '+' + module.exports.humanize(this.diff);
-
-  if (!this.useColors) {
-    return;
-  }
-
-  var c = 'color: ' + this.color;
-  args.splice(1, 0, c, 'color: inherit'); // The final "%c" is somewhat tricky, because there could be other
-  // arguments passed either before or after the %c, so we need to
-  // figure out the correct index to insert the CSS into
-
-  var index = 0;
-  var lastC = 0;
-  args[0].replace(/%[a-zA-Z%]/g, function (match) {
-    if (match === '%%') {
-      return;
-    }
-
-    index++;
-
-    if (match === '%c') {
-      // We only are interested in the *last* %c
-      // (the user may have provided their own)
-      lastC = index;
-    }
-  });
-  args.splice(lastC, 0, c);
-}
-/**
- * Invokes `console.log()` when available.
- * No-op when `console.log` is not a "function".
- *
- * @api public
- */
-
-
-function log() {
-  var _console;
-
-  // This hackery is required for IE8/9, where
-  // the `console.log` function doesn't have 'apply'
-  return (typeof console === "undefined" ? "undefined" : _typeof(console)) === 'object' && console.log && (_console = console).log.apply(_console, arguments);
-}
-/**
- * Save `namespaces`.
- *
- * @param {String} namespaces
- * @api private
- */
-
-
-function save(namespaces) {
-  try {
-    if (namespaces) {
-      exports.storage.setItem('debug', namespaces);
-    } else {
-      exports.storage.removeItem('debug');
-    }
-  } catch (error) {// Swallow
-    // XXX (@Qix-) should we be logging these?
-  }
-}
-/**
- * Load `namespaces`.
- *
- * @return {String} returns the previously persisted debug modes
- * @api private
- */
-
-
-function load() {
-  var r;
-
-  try {
-    r = exports.storage.getItem('debug');
-  } catch (error) {} // Swallow
-  // XXX (@Qix-) should we be logging these?
-  // If debug isn't set in LS, and we're in Electron, try to load $DEBUG
-
-
-  if (!r && typeof process !== 'undefined' && 'env' in process) {
-    r = process.env.DEBUG;
-  }
-
-  return r;
-}
-/**
- * Localstorage attempts to return the localstorage.
- *
- * This is necessary because safari throws
- * when a user disables cookies/localstorage
- * and you attempt to access it.
- *
- * @return {LocalStorage}
- * @api private
- */
-
-
-function localstorage() {
-  try {
-    // TVMLKit (Apple TV JS Runtime) does not have a window object, just localStorage in the global context
-    // The Browser also has localStorage in the global context.
-    return localStorage;
-  } catch (error) {// Swallow
-    // XXX (@Qix-) should we be logging these?
-  }
-}
-
-module.exports = require('./common')(exports);
-var formatters = module.exports.formatters;
-/**
- * Map %j to `JSON.stringify()`, since no Web Inspectors do that by default.
- */
-
-formatters.j = function (v) {
-  try {
-    return JSON.stringify(v);
-  } catch (error) {
-    return '[UnexpectedJSONParseError]: ' + error.message;
-  }
-};
-
-
-}).call(this)}).call(this,require('_process'))
-},{"./common":147,"_process":281}],147:[function(require,module,exports){
-"use strict";
-
-/**
- * This is the common logic for both the Node.js and web browser
- * implementations of `debug()`.
- */
-function setup(env) {
-  createDebug.debug = createDebug;
-  createDebug.default = createDebug;
-  createDebug.coerce = coerce;
-  createDebug.disable = disable;
-  createDebug.enable = enable;
-  createDebug.enabled = enabled;
-  createDebug.humanize = require('ms');
-  Object.keys(env).forEach(function (key) {
-    createDebug[key] = env[key];
-  });
-  /**
-  * Active `debug` instances.
-  */
-
-  createDebug.instances = [];
-  /**
-  * The currently active debug mode names, and names to skip.
-  */
-
-  createDebug.names = [];
-  createDebug.skips = [];
-  /**
-  * Map of special "%n" handling functions, for the debug "format" argument.
-  *
-  * Valid key names are a single, lower or upper-case letter, i.e. "n" and "N".
-  */
-
-  createDebug.formatters = {};
-  /**
-  * Selects a color for a debug namespace
-  * @param {String} namespace The namespace string for the for the debug instance to be colored
-  * @return {Number|String} An ANSI color code for the given namespace
-  * @api private
-  */
-
-  function selectColor(namespace) {
-    var hash = 0;
-
-    for (var i = 0; i < namespace.length; i++) {
-      hash = (hash << 5) - hash + namespace.charCodeAt(i);
-      hash |= 0; // Convert to 32bit integer
-    }
-
-    return createDebug.colors[Math.abs(hash) % createDebug.colors.length];
-  }
-
-  createDebug.selectColor = selectColor;
-  /**
-  * Create a debugger with the given `namespace`.
-  *
-  * @param {String} namespace
-  * @return {Function}
-  * @api public
-  */
-
-  function createDebug(namespace) {
-    var prevTime;
-
-    function debug() {
-      // Disabled?
-      if (!debug.enabled) {
-        return;
-      }
-
-      for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
-        args[_key] = arguments[_key];
-      }
-
-      var self = debug; // Set `diff` timestamp
-
-      var curr = Number(new Date());
-      var ms = curr - (prevTime || curr);
-      self.diff = ms;
-      self.prev = prevTime;
-      self.curr = curr;
-      prevTime = curr;
-      args[0] = createDebug.coerce(args[0]);
-
-      if (typeof args[0] !== 'string') {
-        // Anything else let's inspect with %O
-        args.unshift('%O');
-      } // Apply any `formatters` transformations
-
-
-      var index = 0;
-      args[0] = args[0].replace(/%([a-zA-Z%])/g, function (match, format) {
-        // If we encounter an escaped % then don't increase the array index
-        if (match === '%%') {
-          return match;
-        }
-
-        index++;
-        var formatter = createDebug.formatters[format];
-
-        if (typeof formatter === 'function') {
-          var val = args[index];
-          match = formatter.call(self, val); // Now we need to remove `args[index]` since it's inlined in the `format`
-
-          args.splice(index, 1);
-          index--;
-        }
-
-        return match;
-      }); // Apply env-specific formatting (colors, etc.)
-
-      createDebug.formatArgs.call(self, args);
-      var logFn = self.log || createDebug.log;
-      logFn.apply(self, args);
-    }
-
-    debug.namespace = namespace;
-    debug.enabled = createDebug.enabled(namespace);
-    debug.useColors = createDebug.useColors();
-    debug.color = selectColor(namespace);
-    debug.destroy = destroy;
-    debug.extend = extend; // Debug.formatArgs = formatArgs;
-    // debug.rawLog = rawLog;
-    // env-specific initialization logic for debug instances
-
-    if (typeof createDebug.init === 'function') {
-      createDebug.init(debug);
-    }
-
-    createDebug.instances.push(debug);
-    return debug;
-  }
-
-  function destroy() {
-    var index = createDebug.instances.indexOf(this);
-
-    if (index !== -1) {
-      createDebug.instances.splice(index, 1);
-      return true;
-    }
-
-    return false;
-  }
-
-  function extend(namespace, delimiter) {
-    return createDebug(this.namespace + (typeof delimiter === 'undefined' ? ':' : delimiter) + namespace);
-  }
-  /**
-  * Enables a debug mode by namespaces. This can include modes
-  * separated by a colon and wildcards.
-  *
-  * @param {String} namespaces
-  * @api public
-  */
-
-
-  function enable(namespaces) {
-    createDebug.save(namespaces);
-    createDebug.names = [];
-    createDebug.skips = [];
-    var i;
-    var split = (typeof namespaces === 'string' ? namespaces : '').split(/[\s,]+/);
-    var len = split.length;
-
-    for (i = 0; i < len; i++) {
-      if (!split[i]) {
-        // ignore empty strings
-        continue;
-      }
-
-      namespaces = split[i].replace(/\*/g, '.*?');
-
-      if (namespaces[0] === '-') {
-        createDebug.skips.push(new RegExp('^' + namespaces.substr(1) + '$'));
-      } else {
-        createDebug.names.push(new RegExp('^' + namespaces + '$'));
-      }
-    }
-
-    for (i = 0; i < createDebug.instances.length; i++) {
-      var instance = createDebug.instances[i];
-      instance.enabled = createDebug.enabled(instance.namespace);
-    }
-  }
-  /**
-  * Disable debug output.
-  *
-  * @api public
-  */
-
-
-  function disable() {
-    createDebug.enable('');
-  }
-  /**
-  * Returns true if the given mode name is enabled, false otherwise.
-  *
-  * @param {String} name
-  * @return {Boolean}
-  * @api public
-  */
-
-
-  function enabled(name) {
-    if (name[name.length - 1] === '*') {
-      return true;
-    }
-
-    var i;
-    var len;
-
-    for (i = 0, len = createDebug.skips.length; i < len; i++) {
-      if (createDebug.skips[i].test(name)) {
-        return false;
-      }
-    }
-
-    for (i = 0, len = createDebug.names.length; i < len; i++) {
-      if (createDebug.names[i].test(name)) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-  /**
-  * Coerce `val`.
-  *
-  * @param {Mixed} val
-  * @return {Mixed}
-  * @api private
-  */
-
-
-  function coerce(val) {
-    if (val instanceof Error) {
-      return val.stack || val.message;
-    }
-
-    return val;
-  }
-
-  createDebug.enable(createDebug.load());
-  return createDebug;
-}
-
-module.exports = setup;
-
-
-},{"ms":245}],148:[function(require,module,exports){
+},{"browserify-cipher":65,"browserify-sign":72,"browserify-sign/algos":69,"create-ecdh":118,"create-hash":120,"create-hmac":122,"diffie-hellman":132,"pbkdf2":254,"public-encrypt":261,"randombytes":272,"randomfill":273}],125:[function(require,module,exports){
 'use strict';
 /* globals Symbol: false, Uint8Array: false, WeakMap: false */
 /*!
@@ -39104,7 +36224,7 @@ function isPrimitive(value) {
   return value === null || typeof value !== 'object';
 }
 
-},{"type-detect":329}],149:[function(require,module,exports){
+},{"type-detect":308}],126:[function(require,module,exports){
 'use strict';
 
 exports.utils = require('./des/utils');
@@ -39113,7 +36233,7 @@ exports.DES = require('./des/des');
 exports.CBC = require('./des/cbc');
 exports.EDE = require('./des/ede');
 
-},{"./des/cbc":150,"./des/cipher":151,"./des/des":152,"./des/ede":153,"./des/utils":154}],150:[function(require,module,exports){
+},{"./des/cbc":127,"./des/cipher":128,"./des/des":129,"./des/ede":130,"./des/utils":131}],127:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -39180,7 +36300,7 @@ proto._update = function _update(inp, inOff, out, outOff) {
   }
 };
 
-},{"inherits":235,"minimalistic-assert":243}],151:[function(require,module,exports){
+},{"inherits":212,"minimalistic-assert":220}],128:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -39323,7 +36443,7 @@ Cipher.prototype._finalDecrypt = function _finalDecrypt() {
   return this._unpad(out);
 };
 
-},{"minimalistic-assert":243}],152:[function(require,module,exports){
+},{"minimalistic-assert":220}],129:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -39467,7 +36587,7 @@ DES.prototype._decrypt = function _decrypt(state, lStart, rStart, out, off) {
   utils.rip(l, r, out, off);
 };
 
-},{"./cipher":151,"./utils":154,"inherits":235,"minimalistic-assert":243}],153:[function(require,module,exports){
+},{"./cipher":128,"./utils":131,"inherits":212,"minimalistic-assert":220}],130:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -39523,7 +36643,7 @@ EDE.prototype._update = function _update(inp, inOff, out, outOff) {
 EDE.prototype._pad = DES.prototype._pad;
 EDE.prototype._unpad = DES.prototype._unpad;
 
-},{"./cipher":151,"./des":152,"inherits":235,"minimalistic-assert":243}],154:[function(require,module,exports){
+},{"./cipher":128,"./des":129,"inherits":212,"minimalistic-assert":220}],131:[function(require,module,exports){
 'use strict';
 
 exports.readUInt32BE = function readUInt32BE(bytes, off) {
@@ -39781,7 +36901,7 @@ exports.padSplit = function padSplit(num, size, group) {
   return out.join(' ');
 };
 
-},{}],155:[function(require,module,exports){
+},{}],132:[function(require,module,exports){
 (function (Buffer){(function (){
 var generatePrime = require('./lib/generatePrime')
 var primes = require('./lib/primes.json')
@@ -39827,7 +36947,7 @@ exports.DiffieHellmanGroup = exports.createDiffieHellmanGroup = exports.getDiffi
 exports.createDiffieHellman = exports.DiffieHellman = createDiffieHellman
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"./lib/dh":156,"./lib/generatePrime":157,"./lib/primes.json":158,"buffer":100}],156:[function(require,module,exports){
+},{"./lib/dh":133,"./lib/generatePrime":134,"./lib/primes.json":135,"buffer":79}],133:[function(require,module,exports){
 (function (Buffer){(function (){
 var BN = require('bn.js');
 var MillerRabin = require('miller-rabin');
@@ -39995,7 +37115,7 @@ function formatReturnValue(bn, enc) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"./generatePrime":157,"bn.js":159,"buffer":100,"miller-rabin":241,"randombytes":293}],157:[function(require,module,exports){
+},{"./generatePrime":134,"bn.js":136,"buffer":79,"miller-rabin":218,"randombytes":272}],134:[function(require,module,exports){
 var randomBytes = require('randombytes');
 module.exports = findPrime;
 findPrime.simpleSieve = simpleSieve;
@@ -40102,7 +37222,7 @@ function findPrime(bits, gen) {
 
 }
 
-},{"bn.js":159,"miller-rabin":241,"randombytes":293}],158:[function(require,module,exports){
+},{"bn.js":136,"miller-rabin":218,"randombytes":272}],135:[function(require,module,exports){
 module.exports={
     "modp1": {
         "gen": "02",
@@ -40137,9 +37257,9 @@ module.exports={
         "prime": "ffffffffffffffffc90fdaa22168c234c4c6628b80dc1cd129024e088a67cc74020bbea63b139b22514a08798e3404ddef9519b3cd3a431b302b0a6df25f14374fe1356d6d51c245e485b576625e7ec6f44c42e9a637ed6b0bff5cb6f406b7edee386bfb5a899fa5ae9f24117c4b1fe649286651ece45b3dc2007cb8a163bf0598da48361c55d39a69163fa8fd24cf5f83655d23dca3ad961c62f356208552bb9ed529077096966d670c354e4abc9804f1746c08ca18217c32905e462e36ce3be39e772c180e86039b2783a2ec07a28fb5c55df06f4c52c9de2bcbf6955817183995497cea956ae515d2261898fa051015728e5a8aaac42dad33170d04507a33a85521abdf1cba64ecfb850458dbef0a8aea71575d060c7db3970f85a6e1e4c7abf5ae8cdb0933d71e8c94e04a25619dcee3d2261ad2ee6bf12ffa06d98a0864d87602733ec86a64521f2b18177b200cbbe117577a615d6c770988c0bad946e208e24fa074e5ab3143db5bfce0fd108e4b82d120a92108011a723c12a787e6d788719a10bdba5b2699c327186af4e23c1a946834b6150bda2583e9ca2ad44ce8dbbbc2db04de8ef92e8efc141fbecaa6287c59474e6bc05d99b2964fa090c3a2233ba186515be7ed1f612970cee2d7afb81bdd762170481cd0069127d5b05aa993b4ea988d8fddc186ffb7dc90a6c08f4df435c93402849236c3fab4d27c7026c1d4dcb2602646dec9751e763dba37bdf8ff9406ad9e530ee5db382f413001aeb06a53ed9027d831179727b0865a8918da3edbebcf9b14ed44ce6cbaced4bb1bdb7f1447e6cc254b332051512bd7af426fb8f401378cd2bf5983ca01c64b92ecf032ea15d1721d03f482d7ce6e74fef6d55e702f46980c82b5a84031900b1c9e59e7c97fbec7e8f323a97a7e36cc88be0f1d45b7ff585ac54bd407b22b4154aacc8f6d7ebf48e1d814cc5ed20f8037e0a79715eef29be32806a1d58bb7c5da76f550aa3d8a1fbff0eb19ccb1a313d55cda56c9ec2ef29632387fe8d76e3c0468043e8f663f4860ee12bf2d5b0b7474d6e694f91e6dbe115974a3926f12fee5e438777cb6a932df8cd8bec4d073b931ba3bc832b68d9dd300741fa7bf8afc47ed2576f6936ba424663aab639c5ae4f5683423b4742bf1c978238f16cbe39d652de3fdb8befc848ad922222e04a4037c0713eb57a81a23f0c73473fc646cea306b4bcbc8862f8385ddfa9d4b7fa2c087e879683303ed5bdd3a062b3cf5b3a278a66d2a13f83f44f82ddf310ee074ab6a364597e899a0255dc164f31cc50846851df9ab48195ded7ea1b1d510bd7ee74d73faf36bc31ecfa268359046f4eb879f924009438b481c6cd7889a002ed5ee382bc9190da6fc026e479558e4475677e9aa9e3050e2765694dfc81f56e880b96e7160c980dd98edd3dfffffffffffffffff"
     }
 }
-},{}],159:[function(require,module,exports){
-arguments[4][58][0].apply(exports,arguments)
-},{"buffer":68,"dup":58}],160:[function(require,module,exports){
+},{}],136:[function(require,module,exports){
+arguments[4][37][0].apply(exports,arguments)
+},{"buffer":47,"dup":37}],137:[function(require,module,exports){
 (function (process){(function (){
 const fs = require('fs')
 const path = require('path')
@@ -40252,7 +37372,7 @@ module.exports.parse = DotenvModule.parse
 module.exports = DotenvModule
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":281,"fs":98,"os":256,"path":273}],161:[function(require,module,exports){
+},{"_process":260,"fs":77,"os":235,"path":252}],138:[function(require,module,exports){
 /*
  *  Copyright 2011 Rackspace
  *
@@ -40274,7 +37394,7 @@ var DEFAULT_PARSER = 'sax';
 
 exports.DEFAULT_PARSER = DEFAULT_PARSER;
 
-},{}],162:[function(require,module,exports){
+},{}],139:[function(require,module,exports){
 /**
  *  Copyright 2011 Rackspace
  *
@@ -40619,7 +37739,7 @@ exports.find = find;
 exports.findall = findall;
 exports.findtext = findtext;
 
-},{"./errors":164,"./sprintf":168,"./utils":170}],163:[function(require,module,exports){
+},{"./errors":141,"./sprintf":145,"./utils":147}],140:[function(require,module,exports){
 /**
  *  Copyright 2011 Rackspace
  *
@@ -41232,7 +38352,7 @@ exports.parse = parse;
 exports.register_namespace = register_namespace;
 exports.tostring = tostring;
 
-},{"./constants":161,"./elementpath":162,"./parser":165,"./sprintf":168,"./treebuilder":169,"./utils":170}],164:[function(require,module,exports){
+},{"./constants":138,"./elementpath":139,"./parser":142,"./sprintf":145,"./treebuilder":146,"./utils":147}],141:[function(require,module,exports){
 /**
  *  Copyright 2011 Rackspace
  *
@@ -41265,7 +38385,7 @@ util.inherits(SyntaxError, Error);
 
 exports.SyntaxError = SyntaxError;
 
-},{"./sprintf":168,"util":335}],165:[function(require,module,exports){
+},{"./sprintf":145,"util":314}],142:[function(require,module,exports){
 /*
  *  Copyright 2011 Rackspace
  *
@@ -41300,10 +38420,10 @@ function get_parser(name) {
 
 exports.get_parser = get_parser;
 
-},{"./parsers/index":166,"util":335}],166:[function(require,module,exports){
+},{"./parsers/index":143,"util":314}],143:[function(require,module,exports){
 exports.sax = require('./sax');
 
-},{"./sax":167}],167:[function(require,module,exports){
+},{"./sax":144}],144:[function(require,module,exports){
 var util = require('util');
 
 var sax = require('sax');
@@ -41361,7 +38481,7 @@ XMLParser.prototype.close = function() {
 
 exports.XMLParser = XMLParser;
 
-},{"./../treebuilder":169,"sax":313,"util":335}],168:[function(require,module,exports){
+},{"./../treebuilder":146,"sax":292,"util":314}],145:[function(require,module,exports){
 /*
  *  Copyright 2011 Rackspace
  *
@@ -41449,7 +38569,7 @@ exports.sprintf = function(formatter, var_args) {
   return cache[formatter].apply(null, arguments);
 };
 
-},{}],169:[function(require,module,exports){
+},{}],146:[function(require,module,exports){
 function TreeBuilder(element_factory) {
   this._data = [];
   this._elem = [];
@@ -41511,7 +38631,7 @@ TreeBuilder.prototype.end = function(tag) {
 
 exports.TreeBuilder = TreeBuilder;
 
-},{"./elementtree":163}],170:[function(require,module,exports){
+},{"./elementtree":140}],147:[function(require,module,exports){
 /**
  *  Copyright 2011 Rackspace
  *
@@ -41585,7 +38705,7 @@ exports.items = items;
 exports.findall = findall;
 exports.merge = merge;
 
-},{}],171:[function(require,module,exports){
+},{}],148:[function(require,module,exports){
 'use strict';
 
 var elliptic = exports;
@@ -41600,7 +38720,7 @@ elliptic.curves = require('./elliptic/curves');
 elliptic.ec = require('./elliptic/ec');
 elliptic.eddsa = require('./elliptic/eddsa');
 
-},{"../package.json":187,"./elliptic/curve":174,"./elliptic/curves":177,"./elliptic/ec":178,"./elliptic/eddsa":181,"./elliptic/utils":185,"brorand":67}],172:[function(require,module,exports){
+},{"../package.json":164,"./elliptic/curve":151,"./elliptic/curves":154,"./elliptic/ec":155,"./elliptic/eddsa":158,"./elliptic/utils":162,"brorand":46}],149:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -41983,7 +39103,7 @@ BasePoint.prototype.dblp = function dblp(k) {
   return r;
 };
 
-},{"../utils":185,"bn.js":186}],173:[function(require,module,exports){
+},{"../utils":162,"bn.js":163}],150:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -42420,7 +39540,7 @@ Point.prototype.eqXToP = function eqXToP(x) {
 Point.prototype.toP = Point.prototype.normalize;
 Point.prototype.mixedAdd = Point.prototype.add;
 
-},{"../utils":185,"./base":172,"bn.js":186,"inherits":235}],174:[function(require,module,exports){
+},{"../utils":162,"./base":149,"bn.js":163,"inherits":212}],151:[function(require,module,exports){
 'use strict';
 
 var curve = exports;
@@ -42430,7 +39550,7 @@ curve.short = require('./short');
 curve.mont = require('./mont');
 curve.edwards = require('./edwards');
 
-},{"./base":172,"./edwards":173,"./mont":175,"./short":176}],175:[function(require,module,exports){
+},{"./base":149,"./edwards":150,"./mont":152,"./short":153}],152:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -42610,7 +39730,7 @@ Point.prototype.getX = function getX() {
   return this.x.fromRed();
 };
 
-},{"../utils":185,"./base":172,"bn.js":186,"inherits":235}],176:[function(require,module,exports){
+},{"../utils":162,"./base":149,"bn.js":163,"inherits":212}],153:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -43550,7 +40670,7 @@ JPoint.prototype.isInfinity = function isInfinity() {
   return this.z.cmpn(0) === 0;
 };
 
-},{"../utils":185,"./base":172,"bn.js":186,"inherits":235}],177:[function(require,module,exports){
+},{"../utils":162,"./base":149,"bn.js":163,"inherits":212}],154:[function(require,module,exports){
 'use strict';
 
 var curves = exports;
@@ -43758,7 +40878,7 @@ defineCurve('secp256k1', {
   ],
 });
 
-},{"./curve":174,"./precomputed/secp256k1":184,"./utils":185,"hash.js":201}],178:[function(require,module,exports){
+},{"./curve":151,"./precomputed/secp256k1":161,"./utils":162,"hash.js":178}],155:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -44003,7 +41123,7 @@ EC.prototype.getKeyRecoveryParam = function(e, signature, Q, enc) {
   throw new Error('Unable to find valid recovery factor');
 };
 
-},{"../curves":177,"../utils":185,"./key":179,"./signature":180,"bn.js":186,"brorand":67,"hmac-drbg":213}],179:[function(require,module,exports){
+},{"../curves":154,"../utils":162,"./key":156,"./signature":157,"bn.js":163,"brorand":46,"hmac-drbg":190}],156:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -44126,7 +41246,7 @@ KeyPair.prototype.inspect = function inspect() {
          ' pub: ' + (this.pub && this.pub.inspect()) + ' >';
 };
 
-},{"../utils":185,"bn.js":186}],180:[function(require,module,exports){
+},{"../utils":162,"bn.js":163}],157:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -44294,7 +41414,7 @@ Signature.prototype.toDER = function toDER(enc) {
   return utils.encode(res, enc);
 };
 
-},{"../utils":185,"bn.js":186}],181:[function(require,module,exports){
+},{"../utils":162,"bn.js":163}],158:[function(require,module,exports){
 'use strict';
 
 var hash = require('hash.js');
@@ -44414,7 +41534,7 @@ EDDSA.prototype.isPoint = function isPoint(val) {
   return val instanceof this.pointClass;
 };
 
-},{"../curves":177,"../utils":185,"./key":182,"./signature":183,"hash.js":201}],182:[function(require,module,exports){
+},{"../curves":154,"../utils":162,"./key":159,"./signature":160,"hash.js":178}],159:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -44511,7 +41631,7 @@ KeyPair.prototype.getPublic = function getPublic(enc) {
 
 module.exports = KeyPair;
 
-},{"../utils":185}],183:[function(require,module,exports){
+},{"../utils":162}],160:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -44578,7 +41698,7 @@ Signature.prototype.toHex = function toHex() {
 
 module.exports = Signature;
 
-},{"../utils":185,"bn.js":186}],184:[function(require,module,exports){
+},{"../utils":162,"bn.js":163}],161:[function(require,module,exports){
 module.exports = {
   doubles: {
     step: 4,
@@ -45360,7 +42480,7 @@ module.exports = {
   },
 };
 
-},{}],185:[function(require,module,exports){
+},{}],162:[function(require,module,exports){
 'use strict';
 
 var utils = exports;
@@ -45481,14 +42601,14 @@ function intFromLE(bytes) {
 utils.intFromLE = intFromLE;
 
 
-},{"bn.js":186,"minimalistic-assert":243,"minimalistic-crypto-utils":244}],186:[function(require,module,exports){
-arguments[4][58][0].apply(exports,arguments)
-},{"buffer":68,"dup":58}],187:[function(require,module,exports){
+},{"bn.js":163,"minimalistic-assert":220,"minimalistic-crypto-utils":221}],163:[function(require,module,exports){
+arguments[4][37][0].apply(exports,arguments)
+},{"buffer":47,"dup":37}],164:[function(require,module,exports){
 module.exports={
   "_args": [
     [
       "elliptic@6.5.4",
-      "/Users/abhis/Documents/GitHub/splunk-sdk-javascript"
+      "C:\\Users\\akaila.SPLUNKCORP\\Documents\\Data\\Projects\\Splunk SDKs\\JS SDK\\Updated-js-sdk\\splunk-sdk-javascript"
     ]
   ],
   "_development": true,
@@ -45514,7 +42634,7 @@ module.exports={
   ],
   "_resolved": "https://registry.npmjs.org/elliptic/-/elliptic-6.5.4.tgz",
   "_spec": "6.5.4",
-  "_where": "/Users/abhis/Documents/GitHub/splunk-sdk-javascript",
+  "_where": "C:\\Users\\akaila.SPLUNKCORP\\Documents\\Data\\Projects\\Splunk SDKs\\JS SDK\\Updated-js-sdk\\splunk-sdk-javascript",
   "author": {
     "name": "Fedor Indutny",
     "email": "fedor@indutny.com"
@@ -45574,7 +42694,7 @@ module.exports={
   "version": "6.5.4"
 }
 
-},{}],188:[function(require,module,exports){
+},{}],165:[function(require,module,exports){
 'use strict';
 
 var GetIntrinsic = require('get-intrinsic');
@@ -45591,7 +42711,7 @@ if ($gOPD) {
 
 module.exports = $gOPD;
 
-},{"get-intrinsic":195}],189:[function(require,module,exports){
+},{"get-intrinsic":172}],166:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -46090,7 +43210,7 @@ function eventTargetAgnosticAddListener(emitter, name, listener, flags) {
   }
 }
 
-},{}],190:[function(require,module,exports){
+},{}],167:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var MD5 = require('md5.js')
 
@@ -46137,7 +43257,7 @@ function EVP_BytesToKey (password, salt, keyBits, ivLen) {
 
 module.exports = EVP_BytesToKey
 
-},{"md5.js":240,"safe-buffer":311}],191:[function(require,module,exports){
+},{"md5.js":217,"safe-buffer":290}],168:[function(require,module,exports){
 
 var hasOwn = Object.prototype.hasOwnProperty;
 var toString = Object.prototype.toString;
@@ -46161,7 +43281,7 @@ module.exports = function forEach (obj, fn, ctx) {
 };
 
 
-},{}],192:[function(require,module,exports){
+},{}],169:[function(require,module,exports){
 'use strict';
 
 /* eslint no-invalid-this: 1 */
@@ -46215,14 +43335,14 @@ module.exports = function bind(that) {
     return bound;
 };
 
-},{}],193:[function(require,module,exports){
+},{}],170:[function(require,module,exports){
 'use strict';
 
 var implementation = require('./implementation');
 
 module.exports = Function.prototype.bind || implementation;
 
-},{"./implementation":192}],194:[function(require,module,exports){
+},{"./implementation":169}],171:[function(require,module,exports){
 'use strict';
 
 /* !
@@ -46268,7 +43388,7 @@ function getFuncName(aFunc) {
 
 module.exports = getFuncName;
 
-},{}],195:[function(require,module,exports){
+},{}],172:[function(require,module,exports){
 'use strict';
 
 var undefined;
@@ -46600,7 +43720,7 @@ module.exports = function GetIntrinsic(name, allowMissing) {
 	return value;
 };
 
-},{"function-bind":193,"has":199,"has-symbols":196}],196:[function(require,module,exports){
+},{"function-bind":170,"has":176,"has-symbols":173}],173:[function(require,module,exports){
 'use strict';
 
 var origSymbol = typeof Symbol !== 'undefined' && Symbol;
@@ -46615,7 +43735,7 @@ module.exports = function hasNativeSymbols() {
 	return hasSymbolSham();
 };
 
-},{"./shams":197}],197:[function(require,module,exports){
+},{"./shams":174}],174:[function(require,module,exports){
 'use strict';
 
 /* eslint complexity: [2, 18], max-statements: [2, 33] */
@@ -46659,7 +43779,7 @@ module.exports = function hasSymbols() {
 	return true;
 };
 
-},{}],198:[function(require,module,exports){
+},{}],175:[function(require,module,exports){
 'use strict';
 
 var hasSymbols = require('has-symbols/shams');
@@ -46668,14 +43788,14 @@ module.exports = function hasToStringTagShams() {
 	return hasSymbols() && !!Symbol.toStringTag;
 };
 
-},{"has-symbols/shams":197}],199:[function(require,module,exports){
+},{"has-symbols/shams":174}],176:[function(require,module,exports){
 'use strict';
 
 var bind = require('function-bind');
 
 module.exports = bind.call(Function.call, Object.prototype.hasOwnProperty);
 
-},{"function-bind":193}],200:[function(require,module,exports){
+},{"function-bind":170}],177:[function(require,module,exports){
 'use strict'
 var Buffer = require('safe-buffer').Buffer
 var Transform = require('readable-stream').Transform
@@ -46772,7 +43892,7 @@ HashBase.prototype._digest = function () {
 
 module.exports = HashBase
 
-},{"inherits":235,"readable-stream":309,"safe-buffer":311}],201:[function(require,module,exports){
+},{"inherits":212,"readable-stream":288,"safe-buffer":290}],178:[function(require,module,exports){
 var hash = exports;
 
 hash.utils = require('./hash/utils');
@@ -46789,7 +43909,7 @@ hash.sha384 = hash.sha.sha384;
 hash.sha512 = hash.sha.sha512;
 hash.ripemd160 = hash.ripemd.ripemd160;
 
-},{"./hash/common":202,"./hash/hmac":203,"./hash/ripemd":204,"./hash/sha":205,"./hash/utils":212}],202:[function(require,module,exports){
+},{"./hash/common":179,"./hash/hmac":180,"./hash/ripemd":181,"./hash/sha":182,"./hash/utils":189}],179:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -46883,7 +44003,7 @@ BlockHash.prototype._pad = function pad() {
   return res;
 };
 
-},{"./utils":212,"minimalistic-assert":243}],203:[function(require,module,exports){
+},{"./utils":189,"minimalistic-assert":220}],180:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -46932,7 +44052,7 @@ Hmac.prototype.digest = function digest(enc) {
   return this.outer.digest(enc);
 };
 
-},{"./utils":212,"minimalistic-assert":243}],204:[function(require,module,exports){
+},{"./utils":189,"minimalistic-assert":220}],181:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -47080,7 +44200,7 @@ var sh = [
   8, 5, 12, 9, 12, 5, 14, 6, 8, 13, 6, 5, 15, 13, 11, 11
 ];
 
-},{"./common":202,"./utils":212}],205:[function(require,module,exports){
+},{"./common":179,"./utils":189}],182:[function(require,module,exports){
 'use strict';
 
 exports.sha1 = require('./sha/1');
@@ -47089,7 +44209,7 @@ exports.sha256 = require('./sha/256');
 exports.sha384 = require('./sha/384');
 exports.sha512 = require('./sha/512');
 
-},{"./sha/1":206,"./sha/224":207,"./sha/256":208,"./sha/384":209,"./sha/512":210}],206:[function(require,module,exports){
+},{"./sha/1":183,"./sha/224":184,"./sha/256":185,"./sha/384":186,"./sha/512":187}],183:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -47165,7 +44285,7 @@ SHA1.prototype._digest = function digest(enc) {
     return utils.split32(this.h, 'big');
 };
 
-},{"../common":202,"../utils":212,"./common":211}],207:[function(require,module,exports){
+},{"../common":179,"../utils":189,"./common":188}],184:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -47197,7 +44317,7 @@ SHA224.prototype._digest = function digest(enc) {
 };
 
 
-},{"../utils":212,"./256":208}],208:[function(require,module,exports){
+},{"../utils":189,"./256":185}],185:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -47304,7 +44424,7 @@ SHA256.prototype._digest = function digest(enc) {
     return utils.split32(this.h, 'big');
 };
 
-},{"../common":202,"../utils":212,"./common":211,"minimalistic-assert":243}],209:[function(require,module,exports){
+},{"../common":179,"../utils":189,"./common":188,"minimalistic-assert":220}],186:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -47341,7 +44461,7 @@ SHA384.prototype._digest = function digest(enc) {
     return utils.split32(this.h.slice(0, 12), 'big');
 };
 
-},{"../utils":212,"./512":210}],210:[function(require,module,exports){
+},{"../utils":189,"./512":187}],187:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -47673,7 +44793,7 @@ function g1_512_lo(xh, xl) {
   return r;
 }
 
-},{"../common":202,"../utils":212,"minimalistic-assert":243}],211:[function(require,module,exports){
+},{"../common":179,"../utils":189,"minimalistic-assert":220}],188:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -47724,7 +44844,7 @@ function g1_256(x) {
 }
 exports.g1_256 = g1_256;
 
-},{"../utils":212}],212:[function(require,module,exports){
+},{"../utils":189}],189:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -48004,7 +45124,7 @@ function shr64_lo(ah, al, num) {
 }
 exports.shr64_lo = shr64_lo;
 
-},{"inherits":235,"minimalistic-assert":243}],213:[function(require,module,exports){
+},{"inherits":212,"minimalistic-assert":220}],190:[function(require,module,exports){
 'use strict';
 
 var hash = require('hash.js');
@@ -48119,7 +45239,7 @@ HmacDRBG.prototype.generate = function generate(len, enc, add, addEnc) {
   return utils.encode(res, enc);
 };
 
-},{"hash.js":201,"minimalistic-assert":243,"minimalistic-crypto-utils":244}],214:[function(require,module,exports){
+},{"hash.js":178,"minimalistic-assert":220,"minimalistic-crypto-utils":221}],191:[function(require,module,exports){
 var http = require('http')
 var url = require('url')
 
@@ -48152,7 +45272,7 @@ function validateParams (params) {
   return params
 }
 
-},{"http":323,"url":330}],215:[function(require,module,exports){
+},{"http":302,"url":309}],192:[function(require,module,exports){
 "use strict";
 var Buffer = require("safer-buffer").Buffer;
 
@@ -48709,7 +45829,7 @@ function findIdx(table, val) {
 }
 
 
-},{"safer-buffer":312}],216:[function(require,module,exports){
+},{"safer-buffer":291}],193:[function(require,module,exports){
 "use strict";
 
 // Description of supported double byte encodings and aliases.
@@ -48887,7 +46007,7 @@ module.exports = {
     'xxbig5': 'big5hkscs',
 };
 
-},{"./tables/big5-added.json":222,"./tables/cp936.json":223,"./tables/cp949.json":224,"./tables/cp950.json":225,"./tables/eucjp.json":226,"./tables/gb18030-ranges.json":227,"./tables/gbk-added.json":228,"./tables/shiftjis.json":229}],217:[function(require,module,exports){
+},{"./tables/big5-added.json":199,"./tables/cp936.json":200,"./tables/cp949.json":201,"./tables/cp950.json":202,"./tables/eucjp.json":203,"./tables/gb18030-ranges.json":204,"./tables/gbk-added.json":205,"./tables/shiftjis.json":206}],194:[function(require,module,exports){
 "use strict";
 
 // Update this array if you add/rename/remove files in this directory.
@@ -48911,7 +46031,7 @@ for (var i = 0; i < modules.length; i++) {
             exports[enc] = module[enc];
 }
 
-},{"./dbcs-codec":215,"./dbcs-data":216,"./internal":218,"./sbcs-codec":219,"./sbcs-data":221,"./sbcs-data-generated":220,"./utf16":230,"./utf7":231}],218:[function(require,module,exports){
+},{"./dbcs-codec":192,"./dbcs-data":193,"./internal":195,"./sbcs-codec":196,"./sbcs-data":198,"./sbcs-data-generated":197,"./utf16":207,"./utf7":208}],195:[function(require,module,exports){
 "use strict";
 var Buffer = require("safer-buffer").Buffer;
 
@@ -49101,7 +46221,7 @@ InternalDecoderCesu8.prototype.end = function() {
     return res;
 }
 
-},{"safer-buffer":312,"string_decoder":327}],219:[function(require,module,exports){
+},{"safer-buffer":291,"string_decoder":306}],196:[function(require,module,exports){
 "use strict";
 var Buffer = require("safer-buffer").Buffer;
 
@@ -49175,7 +46295,7 @@ SBCSDecoder.prototype.write = function(buf) {
 SBCSDecoder.prototype.end = function() {
 }
 
-},{"safer-buffer":312}],220:[function(require,module,exports){
+},{"safer-buffer":291}],197:[function(require,module,exports){
 "use strict";
 
 // Generated data for sbcs codec. Don't edit manually. Regenerate using generation/gen-sbcs.js script.
@@ -49627,7 +46747,7 @@ module.exports = {
     "chars": "���������������������������������กขฃคฅฆงจฉชซฌญฎฏฐฑฒณดตถทธนบปผฝพฟภมยรฤลฦวศษสหฬอฮฯะัาำิีึืฺุู����฿เแโใไๅๆ็่้๊๋์ํ๎๏๐๑๒๓๔๕๖๗๘๙๚๛����"
   }
 }
-},{}],221:[function(require,module,exports){
+},{}],198:[function(require,module,exports){
 "use strict";
 
 // Manually added data to be used by sbcs codec in addition to generated one.
@@ -49803,7 +46923,7 @@ module.exports = {
 };
 
 
-},{}],222:[function(require,module,exports){
+},{}],199:[function(require,module,exports){
 module.exports=[
 ["8740","䏰䰲䘃䖦䕸𧉧䵷䖳𧲱䳢𧳅㮕䜶䝄䱇䱀𤊿𣘗𧍒𦺋𧃒䱗𪍑䝏䗚䲅𧱬䴇䪤䚡𦬣爥𥩔𡩣𣸆𣽡晍囻"],
 ["8767","綕夝𨮹㷴霴𧯯寛𡵞媤㘥𩺰嫑宷峼杮薓𩥅瑡璝㡵𡵓𣚞𦀡㻬"],
@@ -49927,7 +47047,7 @@ module.exports=[
 ["fea1","𤅟𤩹𨮏孆𨰃𡢞瓈𡦈甎瓩甞𨻙𡩋寗𨺬鎅畍畊畧畮𤾂㼄𤴓疎瑝疞疴瘂瘬癑癏癯癶𦏵皐臯㟸𦤑𦤎皡皥皷盌𦾟葢𥂝𥅽𡸜眞眦着撯𥈠睘𣊬瞯𨥤𨥨𡛁矴砉𡍶𤨒棊碯磇磓隥礮𥗠磗礴碱𧘌辸袄𨬫𦂃𢘜禆褀椂禀𥡗禝𧬹礼禩渪𧄦㺨秆𩄍秔"]
 ]
 
-},{}],223:[function(require,module,exports){
+},{}],200:[function(require,module,exports){
 module.exports=[
 ["0","\u0000",127,"€"],
 ["8140","丂丄丅丆丏丒丗丟丠両丣並丩丮丯丱丳丵丷丼乀乁乂乄乆乊乑乕乗乚乛乢乣乤乥乧乨乪",5,"乲乴",9,"乿",6,"亇亊"],
@@ -50193,7 +47313,7 @@ module.exports=[
 ["fe40","兀嗀﨎﨏﨑﨓﨔礼﨟蘒﨡﨣﨤﨧﨨﨩"]
 ]
 
-},{}],224:[function(require,module,exports){
+},{}],201:[function(require,module,exports){
 module.exports=[
 ["0","\u0000",127],
 ["8141","갂갃갅갆갋",4,"갘갞갟갡갢갣갥",6,"갮갲갳갴"],
@@ -50468,7 +47588,7 @@ module.exports=[
 ["fda1","爻肴酵驍侯候厚后吼喉嗅帿後朽煦珝逅勛勳塤壎焄熏燻薰訓暈薨喧暄煊萱卉喙毁彙徽揮暉煇諱輝麾休携烋畦虧恤譎鷸兇凶匈洶胸黑昕欣炘痕吃屹紇訖欠欽歆吸恰洽翕興僖凞喜噫囍姬嬉希憙憘戱晞曦熙熹熺犧禧稀羲詰"]
 ]
 
-},{}],225:[function(require,module,exports){
+},{}],202:[function(require,module,exports){
 module.exports=[
 ["0","\u0000",127],
 ["a140","　，、。．‧；：？！︰…‥﹐﹑﹒·﹔﹕﹖﹗｜–︱—︳╴︴﹏（）︵︶｛｝︷︸〔〕︹︺【】︻︼《》︽︾〈〉︿﹀「」﹁﹂『』﹃﹄﹙﹚"],
@@ -50647,7 +47767,7 @@ module.exports=[
 ["f9a1","龤灨灥糷虪蠾蠽蠿讞貜躩軉靋顳顴飌饡馫驤驦驧鬤鸕鸗齈戇欞爧虌躨钂钀钁驩驨鬮鸙爩虋讟钃鱹麷癵驫鱺鸝灩灪麤齾齉龘碁銹裏墻恒粧嫺╔╦╗╠╬╣╚╩╝╒╤╕╞╪╡╘╧╛╓╥╖╟╫╢╙╨╜║═╭╮╰╯▓"]
 ]
 
-},{}],226:[function(require,module,exports){
+},{}],203:[function(require,module,exports){
 module.exports=[
 ["0","\u0000",127],
 ["8ea1","｡",62],
@@ -50831,9 +47951,9 @@ module.exports=[
 ["8feda1","黸黿鼂鼃鼉鼏鼐鼑鼒鼔鼖鼗鼙鼚鼛鼟鼢鼦鼪鼫鼯鼱鼲鼴鼷鼹鼺鼼鼽鼿齁齃",4,"齓齕齖齗齘齚齝齞齨齩齭",4,"齳齵齺齽龏龐龑龒龔龖龗龞龡龢龣龥"]
 ]
 
-},{}],227:[function(require,module,exports){
+},{}],204:[function(require,module,exports){
 module.exports={"uChars":[128,165,169,178,184,216,226,235,238,244,248,251,253,258,276,284,300,325,329,334,364,463,465,467,469,471,473,475,477,506,594,610,712,716,730,930,938,962,970,1026,1104,1106,8209,8215,8218,8222,8231,8241,8244,8246,8252,8365,8452,8454,8458,8471,8482,8556,8570,8596,8602,8713,8720,8722,8726,8731,8737,8740,8742,8748,8751,8760,8766,8777,8781,8787,8802,8808,8816,8854,8858,8870,8896,8979,9322,9372,9548,9588,9616,9622,9634,9652,9662,9672,9676,9680,9702,9735,9738,9793,9795,11906,11909,11913,11917,11928,11944,11947,11951,11956,11960,11964,11979,12284,12292,12312,12319,12330,12351,12436,12447,12535,12543,12586,12842,12850,12964,13200,13215,13218,13253,13263,13267,13270,13384,13428,13727,13839,13851,14617,14703,14801,14816,14964,15183,15471,15585,16471,16736,17208,17325,17330,17374,17623,17997,18018,18212,18218,18301,18318,18760,18811,18814,18820,18823,18844,18848,18872,19576,19620,19738,19887,40870,59244,59336,59367,59413,59417,59423,59431,59437,59443,59452,59460,59478,59493,63789,63866,63894,63976,63986,64016,64018,64021,64025,64034,64037,64042,65074,65093,65107,65112,65127,65132,65375,65510,65536],"gbChars":[0,36,38,45,50,81,89,95,96,100,103,104,105,109,126,133,148,172,175,179,208,306,307,308,309,310,311,312,313,341,428,443,544,545,558,741,742,749,750,805,819,820,7922,7924,7925,7927,7934,7943,7944,7945,7950,8062,8148,8149,8152,8164,8174,8236,8240,8262,8264,8374,8380,8381,8384,8388,8390,8392,8393,8394,8396,8401,8406,8416,8419,8424,8437,8439,8445,8482,8485,8496,8521,8603,8936,8946,9046,9050,9063,9066,9076,9092,9100,9108,9111,9113,9131,9162,9164,9218,9219,11329,11331,11334,11336,11346,11361,11363,11366,11370,11372,11375,11389,11682,11686,11687,11692,11694,11714,11716,11723,11725,11730,11736,11982,11989,12102,12336,12348,12350,12384,12393,12395,12397,12510,12553,12851,12962,12973,13738,13823,13919,13933,14080,14298,14585,14698,15583,15847,16318,16434,16438,16481,16729,17102,17122,17315,17320,17402,17418,17859,17909,17911,17915,17916,17936,17939,17961,18664,18703,18814,18962,19043,33469,33470,33471,33484,33485,33490,33497,33501,33505,33513,33520,33536,33550,37845,37921,37948,38029,38038,38064,38065,38066,38069,38075,38076,38078,39108,39109,39113,39114,39115,39116,39265,39394,189000]}
-},{}],228:[function(require,module,exports){
+},{}],205:[function(require,module,exports){
 module.exports=[
 ["a140","",62],
 ["a180","",32],
@@ -50890,7 +48010,7 @@ module.exports=[
 ["fe80","䜣䜩䝼䞍⻊䥇䥺䥽䦂䦃䦅䦆䦟䦛䦷䦶䲣䲟䲠䲡䱷䲢䴓",6,"䶮",93]
 ]
 
-},{}],229:[function(require,module,exports){
+},{}],206:[function(require,module,exports){
 module.exports=[
 ["0","\u0000",128],
 ["a1","｡",62],
@@ -51017,7 +48137,7 @@ module.exports=[
 ["fc40","髜魵魲鮏鮱鮻鰀鵰鵫鶴鸙黑"]
 ]
 
-},{}],230:[function(require,module,exports){
+},{}],207:[function(require,module,exports){
 "use strict";
 var Buffer = require("safer-buffer").Buffer;
 
@@ -51196,7 +48316,7 @@ function detectEncoding(buf, defaultEncoding) {
 
 
 
-},{"safer-buffer":312}],231:[function(require,module,exports){
+},{"safer-buffer":291}],208:[function(require,module,exports){
 "use strict";
 var Buffer = require("safer-buffer").Buffer;
 
@@ -51488,7 +48608,7 @@ Utf7IMAPDecoder.prototype.end = function() {
 
 
 
-},{"safer-buffer":312}],232:[function(require,module,exports){
+},{"safer-buffer":291}],209:[function(require,module,exports){
 "use strict";
 
 var BOMChar = '\uFEFF';
@@ -51542,7 +48662,7 @@ StripBOMWrapper.prototype.end = function() {
 }
 
 
-},{}],233:[function(require,module,exports){
+},{}],210:[function(require,module,exports){
 (function (process){(function (){
 "use strict";
 
@@ -51699,7 +48819,7 @@ if ("Ā" != "\u0100") {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"../encodings":217,"./bom-handling":232,"./extend-node":68,"./streams":68,"_process":281,"safer-buffer":312}],234:[function(require,module,exports){
+},{"../encodings":194,"./bom-handling":209,"./extend-node":47,"./streams":47,"_process":260,"safer-buffer":291}],211:[function(require,module,exports){
 /*! ieee754. BSD-3-Clause License. Feross Aboukhadijeh <https://feross.org/opensource> */
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
@@ -51786,7 +48906,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
-},{}],235:[function(require,module,exports){
+},{}],212:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -51815,7 +48935,7 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],236:[function(require,module,exports){
+},{}],213:[function(require,module,exports){
 'use strict';
 
 var hasToStringTag = require('has-tostringtag/shams')();
@@ -51850,7 +48970,7 @@ isStandardArguments.isLegacyArguments = isLegacyArguments; // for tests
 
 module.exports = supportsStandardArguments ? isStandardArguments : isLegacyArguments;
 
-},{"call-bind/callBound":102,"has-tostringtag/shams":198}],237:[function(require,module,exports){
+},{"call-bind/callBound":81,"has-tostringtag/shams":175}],214:[function(require,module,exports){
 'use strict';
 
 var toStr = Object.prototype.toString;
@@ -51890,7 +49010,7 @@ module.exports = function isGeneratorFunction(fn) {
 	return getProto(fn) === GeneratorFunction;
 };
 
-},{"has-tostringtag/shams":198}],238:[function(require,module,exports){
+},{"has-tostringtag/shams":175}],215:[function(require,module,exports){
 (function (global){(function (){
 'use strict';
 
@@ -51953,7 +49073,7 @@ module.exports = function isTypedArray(value) {
 };
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"available-typed-arrays":64,"call-bind/callBound":102,"es-abstract/helpers/getOwnPropertyDescriptor":188,"foreach":191,"has-tostringtag/shams":198}],239:[function(require,module,exports){
+},{"available-typed-arrays":43,"call-bind/callBound":81,"es-abstract/helpers/getOwnPropertyDescriptor":165,"foreach":168,"has-tostringtag/shams":175}],216:[function(require,module,exports){
 (function (process,Buffer){(function (){
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
@@ -52809,7 +49929,7 @@ module.exports = function isTypedArray(value) {
 })));
 
 }).call(this)}).call(this,require('_process'),require("buffer").Buffer)
-},{"_process":281,"buffer":100,"util":68}],240:[function(require,module,exports){
+},{"_process":260,"buffer":79,"util":47}],217:[function(require,module,exports){
 'use strict'
 var inherits = require('inherits')
 var HashBase = require('hash-base')
@@ -52957,7 +50077,7 @@ function fnI (a, b, c, d, m, k, s) {
 
 module.exports = MD5
 
-},{"hash-base":200,"inherits":235,"safe-buffer":311}],241:[function(require,module,exports){
+},{"hash-base":177,"inherits":212,"safe-buffer":290}],218:[function(require,module,exports){
 var bn = require('bn.js');
 var brorand = require('brorand');
 
@@ -53074,9 +50194,9 @@ MillerRabin.prototype.getDivisor = function getDivisor(n, k) {
   return false;
 };
 
-},{"bn.js":242,"brorand":67}],242:[function(require,module,exports){
-arguments[4][58][0].apply(exports,arguments)
-},{"buffer":68,"dup":58}],243:[function(require,module,exports){
+},{"bn.js":219,"brorand":46}],219:[function(require,module,exports){
+arguments[4][37][0].apply(exports,arguments)
+},{"buffer":47,"dup":37}],220:[function(require,module,exports){
 module.exports = assert;
 
 function assert(val, msg) {
@@ -53089,7 +50209,7 @@ assert.equal = function assertEqual(l, r, msg) {
     throw new Error(msg || ('Assertion failed: ' + l + ' != ' + r));
 };
 
-},{}],244:[function(require,module,exports){
+},{}],221:[function(require,module,exports){
 'use strict';
 
 var utils = exports;
@@ -53149,7 +50269,7 @@ utils.encode = function encode(arr, enc) {
     return arr;
 };
 
-},{}],245:[function(require,module,exports){
+},{}],222:[function(require,module,exports){
 /**
  * Helpers.
  */
@@ -53313,7 +50433,7 @@ function plural(ms, msAbs, n, name) {
   return Math.round(ms / n) + ' ' + name + (isPlural ? 's' : '');
 }
 
-},{}],246:[function(require,module,exports){
+},{}],223:[function(require,module,exports){
 (function (Buffer){(function (){
 var createHash = require('crypto').createHash;
 
@@ -53429,7 +50549,7 @@ module.exports = {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":100,"crypto":145}],247:[function(require,module,exports){
+},{"buffer":79,"crypto":124}],224:[function(require,module,exports){
 
 //  Simple cookie handling implementation based on the standard RFC 6265.
 //
@@ -53510,7 +50630,7 @@ exports.read = parseSetCookieHeader;
 // writes a cookie string header
 exports.write = writeCookieString;
 
-},{"querystring":292}],248:[function(require,module,exports){
+},{"querystring":271}],225:[function(require,module,exports){
 var iconv,
     inherits  = require('util').inherits,
     stream    = require('stream');
@@ -53565,7 +50685,7 @@ module.exports = function(charset) {
     return new stream.PassThrough;
 }
 
-},{"iconv-lite":233,"stream":322,"util":335}],249:[function(require,module,exports){
+},{"iconv-lite":210,"stream":301,"util":314}],226:[function(require,module,exports){
 (function (Buffer){(function (){
 var readFile = require('fs').readFile,
     basename = require('path').basename;
@@ -53667,7 +50787,7 @@ function flatten(object, into, prefix) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":100,"fs":98,"path":273}],250:[function(require,module,exports){
+},{"buffer":79,"fs":77,"path":252}],227:[function(require,module,exports){
 (function (process,Buffer){(function (){
 //////////////////////////////////////////
 // Needle -- HTTP Client for Node.js
@@ -54550,7 +51670,7 @@ module.exports.request = function(method, uri, data, opts, callback) {
 };
 
 }).call(this)}).call(this,require('_process'),require("buffer").Buffer)
-},{"../package.json":254,"./auth":246,"./cookies":247,"./decoder":248,"./multipart":249,"./parsers":251,"./querystring":252,"_process":281,"buffer":100,"debug":146,"fs":98,"http":323,"https":214,"stream":322,"url":330,"util":335,"zlib":97}],251:[function(require,module,exports){
+},{"../package.json":233,"./auth":223,"./cookies":224,"./decoder":225,"./multipart":226,"./parsers":228,"./querystring":229,"_process":260,"buffer":79,"debug":230,"fs":77,"http":302,"https":191,"stream":301,"url":309,"util":314,"zlib":76}],228:[function(require,module,exports){
 (function (Buffer){(function (){
 //////////////////////////////////////////
 // Defines mappings between content-type
@@ -54675,7 +51795,7 @@ module.exports = parsers;
 module.exports.use = buildParser;
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":100,"sax":253,"stream":322}],252:[function(require,module,exports){
+},{"buffer":79,"sax":232,"stream":301}],229:[function(require,module,exports){
 // based on the qs module, but handles null objects as expected
 // fixes by Tomas Pollak.
 
@@ -54726,7 +51846,442 @@ function stringifyObject(obj, prefix) {
 
 exports.build = stringify;
 
-},{}],253:[function(require,module,exports){
+},{}],230:[function(require,module,exports){
+(function (process){(function (){
+"use strict";
+
+function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+/* eslint-env browser */
+
+/**
+ * This is the web browser implementation of `debug()`.
+ */
+exports.log = log;
+exports.formatArgs = formatArgs;
+exports.save = save;
+exports.load = load;
+exports.useColors = useColors;
+exports.storage = localstorage();
+/**
+ * Colors.
+ */
+
+exports.colors = ['#0000CC', '#0000FF', '#0033CC', '#0033FF', '#0066CC', '#0066FF', '#0099CC', '#0099FF', '#00CC00', '#00CC33', '#00CC66', '#00CC99', '#00CCCC', '#00CCFF', '#3300CC', '#3300FF', '#3333CC', '#3333FF', '#3366CC', '#3366FF', '#3399CC', '#3399FF', '#33CC00', '#33CC33', '#33CC66', '#33CC99', '#33CCCC', '#33CCFF', '#6600CC', '#6600FF', '#6633CC', '#6633FF', '#66CC00', '#66CC33', '#9900CC', '#9900FF', '#9933CC', '#9933FF', '#99CC00', '#99CC33', '#CC0000', '#CC0033', '#CC0066', '#CC0099', '#CC00CC', '#CC00FF', '#CC3300', '#CC3333', '#CC3366', '#CC3399', '#CC33CC', '#CC33FF', '#CC6600', '#CC6633', '#CC9900', '#CC9933', '#CCCC00', '#CCCC33', '#FF0000', '#FF0033', '#FF0066', '#FF0099', '#FF00CC', '#FF00FF', '#FF3300', '#FF3333', '#FF3366', '#FF3399', '#FF33CC', '#FF33FF', '#FF6600', '#FF6633', '#FF9900', '#FF9933', '#FFCC00', '#FFCC33'];
+/**
+ * Currently only WebKit-based Web Inspectors, Firefox >= v31,
+ * and the Firebug extension (any Firefox version) are known
+ * to support "%c" CSS customizations.
+ *
+ * TODO: add a `localStorage` variable to explicitly enable/disable colors
+ */
+// eslint-disable-next-line complexity
+
+function useColors() {
+  // NB: In an Electron preload script, document will be defined but not fully
+  // initialized. Since we know we're in Chrome, we'll just detect this case
+  // explicitly
+  if (typeof window !== 'undefined' && window.process && (window.process.type === 'renderer' || window.process.__nwjs)) {
+    return true;
+  } // Internet Explorer and Edge do not support colors.
+
+
+  if (typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.toLowerCase().match(/(edge|trident)\/(\d+)/)) {
+    return false;
+  } // Is webkit? http://stackoverflow.com/a/16459606/376773
+  // document is undefined in react-native: https://github.com/facebook/react-native/pull/1632
+
+
+  return typeof document !== 'undefined' && document.documentElement && document.documentElement.style && document.documentElement.style.WebkitAppearance || // Is firebug? http://stackoverflow.com/a/398120/376773
+  typeof window !== 'undefined' && window.console && (window.console.firebug || window.console.exception && window.console.table) || // Is firefox >= v31?
+  // https://developer.mozilla.org/en-US/docs/Tools/Web_Console#Styling_messages
+  typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.toLowerCase().match(/firefox\/(\d+)/) && parseInt(RegExp.$1, 10) >= 31 || // Double check webkit in userAgent just in case we are in a worker
+  typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.toLowerCase().match(/applewebkit\/(\d+)/);
+}
+/**
+ * Colorize log arguments if enabled.
+ *
+ * @api public
+ */
+
+
+function formatArgs(args) {
+  args[0] = (this.useColors ? '%c' : '') + this.namespace + (this.useColors ? ' %c' : ' ') + args[0] + (this.useColors ? '%c ' : ' ') + '+' + module.exports.humanize(this.diff);
+
+  if (!this.useColors) {
+    return;
+  }
+
+  var c = 'color: ' + this.color;
+  args.splice(1, 0, c, 'color: inherit'); // The final "%c" is somewhat tricky, because there could be other
+  // arguments passed either before or after the %c, so we need to
+  // figure out the correct index to insert the CSS into
+
+  var index = 0;
+  var lastC = 0;
+  args[0].replace(/%[a-zA-Z%]/g, function (match) {
+    if (match === '%%') {
+      return;
+    }
+
+    index++;
+
+    if (match === '%c') {
+      // We only are interested in the *last* %c
+      // (the user may have provided their own)
+      lastC = index;
+    }
+  });
+  args.splice(lastC, 0, c);
+}
+/**
+ * Invokes `console.log()` when available.
+ * No-op when `console.log` is not a "function".
+ *
+ * @api public
+ */
+
+
+function log() {
+  var _console;
+
+  // This hackery is required for IE8/9, where
+  // the `console.log` function doesn't have 'apply'
+  return (typeof console === "undefined" ? "undefined" : _typeof(console)) === 'object' && console.log && (_console = console).log.apply(_console, arguments);
+}
+/**
+ * Save `namespaces`.
+ *
+ * @param {String} namespaces
+ * @api private
+ */
+
+
+function save(namespaces) {
+  try {
+    if (namespaces) {
+      exports.storage.setItem('debug', namespaces);
+    } else {
+      exports.storage.removeItem('debug');
+    }
+  } catch (error) {// Swallow
+    // XXX (@Qix-) should we be logging these?
+  }
+}
+/**
+ * Load `namespaces`.
+ *
+ * @return {String} returns the previously persisted debug modes
+ * @api private
+ */
+
+
+function load() {
+  var r;
+
+  try {
+    r = exports.storage.getItem('debug');
+  } catch (error) {} // Swallow
+  // XXX (@Qix-) should we be logging these?
+  // If debug isn't set in LS, and we're in Electron, try to load $DEBUG
+
+
+  if (!r && typeof process !== 'undefined' && 'env' in process) {
+    r = process.env.DEBUG;
+  }
+
+  return r;
+}
+/**
+ * Localstorage attempts to return the localstorage.
+ *
+ * This is necessary because safari throws
+ * when a user disables cookies/localstorage
+ * and you attempt to access it.
+ *
+ * @return {LocalStorage}
+ * @api private
+ */
+
+
+function localstorage() {
+  try {
+    // TVMLKit (Apple TV JS Runtime) does not have a window object, just localStorage in the global context
+    // The Browser also has localStorage in the global context.
+    return localStorage;
+  } catch (error) {// Swallow
+    // XXX (@Qix-) should we be logging these?
+  }
+}
+
+module.exports = require('./common')(exports);
+var formatters = module.exports.formatters;
+/**
+ * Map %j to `JSON.stringify()`, since no Web Inspectors do that by default.
+ */
+
+formatters.j = function (v) {
+  try {
+    return JSON.stringify(v);
+  } catch (error) {
+    return '[UnexpectedJSONParseError]: ' + error.message;
+  }
+};
+
+
+}).call(this)}).call(this,require('_process'))
+},{"./common":231,"_process":260}],231:[function(require,module,exports){
+"use strict";
+
+/**
+ * This is the common logic for both the Node.js and web browser
+ * implementations of `debug()`.
+ */
+function setup(env) {
+  createDebug.debug = createDebug;
+  createDebug.default = createDebug;
+  createDebug.coerce = coerce;
+  createDebug.disable = disable;
+  createDebug.enable = enable;
+  createDebug.enabled = enabled;
+  createDebug.humanize = require('ms');
+  Object.keys(env).forEach(function (key) {
+    createDebug[key] = env[key];
+  });
+  /**
+  * Active `debug` instances.
+  */
+
+  createDebug.instances = [];
+  /**
+  * The currently active debug mode names, and names to skip.
+  */
+
+  createDebug.names = [];
+  createDebug.skips = [];
+  /**
+  * Map of special "%n" handling functions, for the debug "format" argument.
+  *
+  * Valid key names are a single, lower or upper-case letter, i.e. "n" and "N".
+  */
+
+  createDebug.formatters = {};
+  /**
+  * Selects a color for a debug namespace
+  * @param {String} namespace The namespace string for the for the debug instance to be colored
+  * @return {Number|String} An ANSI color code for the given namespace
+  * @api private
+  */
+
+  function selectColor(namespace) {
+    var hash = 0;
+
+    for (var i = 0; i < namespace.length; i++) {
+      hash = (hash << 5) - hash + namespace.charCodeAt(i);
+      hash |= 0; // Convert to 32bit integer
+    }
+
+    return createDebug.colors[Math.abs(hash) % createDebug.colors.length];
+  }
+
+  createDebug.selectColor = selectColor;
+  /**
+  * Create a debugger with the given `namespace`.
+  *
+  * @param {String} namespace
+  * @return {Function}
+  * @api public
+  */
+
+  function createDebug(namespace) {
+    var prevTime;
+
+    function debug() {
+      // Disabled?
+      if (!debug.enabled) {
+        return;
+      }
+
+      for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+        args[_key] = arguments[_key];
+      }
+
+      var self = debug; // Set `diff` timestamp
+
+      var curr = Number(new Date());
+      var ms = curr - (prevTime || curr);
+      self.diff = ms;
+      self.prev = prevTime;
+      self.curr = curr;
+      prevTime = curr;
+      args[0] = createDebug.coerce(args[0]);
+
+      if (typeof args[0] !== 'string') {
+        // Anything else let's inspect with %O
+        args.unshift('%O');
+      } // Apply any `formatters` transformations
+
+
+      var index = 0;
+      args[0] = args[0].replace(/%([a-zA-Z%])/g, function (match, format) {
+        // If we encounter an escaped % then don't increase the array index
+        if (match === '%%') {
+          return match;
+        }
+
+        index++;
+        var formatter = createDebug.formatters[format];
+
+        if (typeof formatter === 'function') {
+          var val = args[index];
+          match = formatter.call(self, val); // Now we need to remove `args[index]` since it's inlined in the `format`
+
+          args.splice(index, 1);
+          index--;
+        }
+
+        return match;
+      }); // Apply env-specific formatting (colors, etc.)
+
+      createDebug.formatArgs.call(self, args);
+      var logFn = self.log || createDebug.log;
+      logFn.apply(self, args);
+    }
+
+    debug.namespace = namespace;
+    debug.enabled = createDebug.enabled(namespace);
+    debug.useColors = createDebug.useColors();
+    debug.color = selectColor(namespace);
+    debug.destroy = destroy;
+    debug.extend = extend; // Debug.formatArgs = formatArgs;
+    // debug.rawLog = rawLog;
+    // env-specific initialization logic for debug instances
+
+    if (typeof createDebug.init === 'function') {
+      createDebug.init(debug);
+    }
+
+    createDebug.instances.push(debug);
+    return debug;
+  }
+
+  function destroy() {
+    var index = createDebug.instances.indexOf(this);
+
+    if (index !== -1) {
+      createDebug.instances.splice(index, 1);
+      return true;
+    }
+
+    return false;
+  }
+
+  function extend(namespace, delimiter) {
+    return createDebug(this.namespace + (typeof delimiter === 'undefined' ? ':' : delimiter) + namespace);
+  }
+  /**
+  * Enables a debug mode by namespaces. This can include modes
+  * separated by a colon and wildcards.
+  *
+  * @param {String} namespaces
+  * @api public
+  */
+
+
+  function enable(namespaces) {
+    createDebug.save(namespaces);
+    createDebug.names = [];
+    createDebug.skips = [];
+    var i;
+    var split = (typeof namespaces === 'string' ? namespaces : '').split(/[\s,]+/);
+    var len = split.length;
+
+    for (i = 0; i < len; i++) {
+      if (!split[i]) {
+        // ignore empty strings
+        continue;
+      }
+
+      namespaces = split[i].replace(/\*/g, '.*?');
+
+      if (namespaces[0] === '-') {
+        createDebug.skips.push(new RegExp('^' + namespaces.substr(1) + '$'));
+      } else {
+        createDebug.names.push(new RegExp('^' + namespaces + '$'));
+      }
+    }
+
+    for (i = 0; i < createDebug.instances.length; i++) {
+      var instance = createDebug.instances[i];
+      instance.enabled = createDebug.enabled(instance.namespace);
+    }
+  }
+  /**
+  * Disable debug output.
+  *
+  * @api public
+  */
+
+
+  function disable() {
+    createDebug.enable('');
+  }
+  /**
+  * Returns true if the given mode name is enabled, false otherwise.
+  *
+  * @param {String} name
+  * @return {Boolean}
+  * @api public
+  */
+
+
+  function enabled(name) {
+    if (name[name.length - 1] === '*') {
+      return true;
+    }
+
+    var i;
+    var len;
+
+    for (i = 0, len = createDebug.skips.length; i < len; i++) {
+      if (createDebug.skips[i].test(name)) {
+        return false;
+      }
+    }
+
+    for (i = 0, len = createDebug.names.length; i < len; i++) {
+      if (createDebug.names[i].test(name)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+  /**
+  * Coerce `val`.
+  *
+  * @param {Mixed} val
+  * @return {Mixed}
+  * @api private
+  */
+
+
+  function coerce(val) {
+    if (val instanceof Error) {
+      return val.stack || val.message;
+    }
+
+    return val;
+  }
+
+  createDebug.enable(createDebug.load());
+  return createDebug;
+}
+
+module.exports = setup;
+
+
+},{"ms":222}],232:[function(require,module,exports){
 (function (Buffer){(function (){
 ;(function (sax) { // wrapper for non-node envs
   sax.parser = function (strict, opt) { return new SAXParser(strict, opt) }
@@ -56295,12 +53850,12 @@ exports.build = stringify;
 })(typeof exports === 'undefined' ? this.sax = {} : exports)
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":100,"stream":322,"string_decoder":327}],254:[function(require,module,exports){
+},{"buffer":79,"stream":301,"string_decoder":306}],233:[function(require,module,exports){
 module.exports={
   "_args": [
     [
       "needle@3.0.0",
-      "/Users/abhis/Documents/GitHub/splunk-sdk-javascript"
+      "C:\\Users\\akaila.SPLUNKCORP\\Documents\\Data\\Projects\\Splunk SDKs\\JS SDK\\Updated-js-sdk\\splunk-sdk-javascript"
     ]
   ],
   "_from": "needle@3.0.0",
@@ -56324,13 +53879,13 @@ module.exports={
   ],
   "_resolved": "https://registry.npmjs.org/needle/-/needle-3.0.0.tgz",
   "_spec": "3.0.0",
-  "_where": "/Users/abhis/Documents/GitHub/splunk-sdk-javascript",
+  "_where": "C:\\Users\\akaila.SPLUNKCORP\\Documents\\Data\\Projects\\Splunk SDKs\\JS SDK\\Updated-js-sdk\\splunk-sdk-javascript",
   "author": {
     "name": "Tomás Pollak",
     "email": "tomas@forkhq.com"
   },
   "bin": {
-    "needle": "./bin/needle"
+    "needle": "bin/needle"
   },
   "bugs": {
     "url": "https://github.com/tomas/needle/issues"
@@ -56403,7 +53958,7 @@ module.exports={
   "version": "3.0.0"
 }
 
-},{}],255:[function(require,module,exports){
+},{}],234:[function(require,module,exports){
 /*
 object-assign
 (c) Sindre Sorhus
@@ -56495,7 +54050,7 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 	return to;
 };
 
-},{}],256:[function(require,module,exports){
+},{}],235:[function(require,module,exports){
 exports.endianness = function () { return 'LE' };
 
 exports.hostname = function () {
@@ -56546,7 +54101,7 @@ exports.homedir = function () {
 	return '/'
 };
 
-},{}],257:[function(require,module,exports){
+},{}],236:[function(require,module,exports){
 'use strict';
 
 
@@ -56653,7 +54208,7 @@ exports.setTyped = function (on) {
 
 exports.setTyped(TYPED_OK);
 
-},{}],258:[function(require,module,exports){
+},{}],237:[function(require,module,exports){
 'use strict';
 
 // Note: adler32 takes 12% for level 0 and 2% for level 6.
@@ -56706,7 +54261,7 @@ function adler32(adler, buf, len, pos) {
 
 module.exports = adler32;
 
-},{}],259:[function(require,module,exports){
+},{}],238:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -56776,7 +54331,7 @@ module.exports = {
   //Z_NULL:                 null // Use -1 or null inline, depending on var type
 };
 
-},{}],260:[function(require,module,exports){
+},{}],239:[function(require,module,exports){
 'use strict';
 
 // Note: we can't get significant speed boost here.
@@ -56837,7 +54392,7 @@ function crc32(crc, buf, len, pos) {
 
 module.exports = crc32;
 
-},{}],261:[function(require,module,exports){
+},{}],240:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -58713,7 +56268,7 @@ exports.deflatePrime = deflatePrime;
 exports.deflateTune = deflateTune;
 */
 
-},{"../utils/common":257,"./adler32":258,"./crc32":260,"./messages":265,"./trees":266}],262:[function(require,module,exports){
+},{"../utils/common":236,"./adler32":237,"./crc32":239,"./messages":244,"./trees":245}],241:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -59060,7 +56615,7 @@ module.exports = function inflate_fast(strm, start) {
   return;
 };
 
-},{}],263:[function(require,module,exports){
+},{}],242:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -60618,7 +58173,7 @@ exports.inflateSyncPoint = inflateSyncPoint;
 exports.inflateUndermine = inflateUndermine;
 */
 
-},{"../utils/common":257,"./adler32":258,"./crc32":260,"./inffast":262,"./inftrees":264}],264:[function(require,module,exports){
+},{"../utils/common":236,"./adler32":237,"./crc32":239,"./inffast":241,"./inftrees":243}],243:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -60963,7 +58518,7 @@ module.exports = function inflate_table(type, lens, lens_index, codes, table, ta
   return 0;
 };
 
-},{"../utils/common":257}],265:[function(require,module,exports){
+},{"../utils/common":236}],244:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -60997,7 +58552,7 @@ module.exports = {
   '-6':   'incompatible version' /* Z_VERSION_ERROR (-6) */
 };
 
-},{}],266:[function(require,module,exports){
+},{}],245:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -62221,7 +59776,7 @@ exports._tr_flush_block  = _tr_flush_block;
 exports._tr_tally = _tr_tally;
 exports._tr_align = _tr_align;
 
-},{"../utils/common":257}],267:[function(require,module,exports){
+},{"../utils/common":236}],246:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -62270,7 +59825,7 @@ function ZStream() {
 
 module.exports = ZStream;
 
-},{}],268:[function(require,module,exports){
+},{}],247:[function(require,module,exports){
 module.exports={"2.16.840.1.101.3.4.1.1": "aes-128-ecb",
 "2.16.840.1.101.3.4.1.2": "aes-128-cbc",
 "2.16.840.1.101.3.4.1.3": "aes-128-ofb",
@@ -62284,7 +59839,7 @@ module.exports={"2.16.840.1.101.3.4.1.1": "aes-128-ecb",
 "2.16.840.1.101.3.4.1.43": "aes-256-ofb",
 "2.16.840.1.101.3.4.1.44": "aes-256-cfb"
 }
-},{}],269:[function(require,module,exports){
+},{}],248:[function(require,module,exports){
 // from https://github.com/indutny/self-signed/blob/gh-pages/lib/asn1.js
 // Fedor, you are amazing.
 'use strict'
@@ -62408,7 +59963,7 @@ exports.signature = asn1.define('signature', function () {
   )
 })
 
-},{"./certificate":270,"asn1.js":44}],270:[function(require,module,exports){
+},{"./certificate":249,"asn1.js":23}],249:[function(require,module,exports){
 // from https://github.com/Rantanen/node-dtls/blob/25a7dc861bda38cfeac93a723500eea4f0ac2e86/Certificate.js
 // thanks to @Rantanen
 
@@ -62499,7 +60054,7 @@ var X509Certificate = asn.define('X509Certificate', function () {
 
 module.exports = X509Certificate
 
-},{"asn1.js":44}],271:[function(require,module,exports){
+},{"asn1.js":23}],250:[function(require,module,exports){
 // adapted from https://github.com/apatil/pemstrip
 var findProc = /Proc-Type: 4,ENCRYPTED[\n\r]+DEK-Info: AES-((?:128)|(?:192)|(?:256))-CBC,([0-9A-H]+)[\n\r]+([0-9A-z\n\r+/=]+)[\n\r]+/m
 var startRegex = /^-----BEGIN ((?:.*? KEY)|CERTIFICATE)-----/m
@@ -62532,7 +60087,7 @@ module.exports = function (okey, password) {
   }
 }
 
-},{"browserify-aes":71,"evp_bytestokey":190,"safe-buffer":311}],272:[function(require,module,exports){
+},{"browserify-aes":50,"evp_bytestokey":167,"safe-buffer":290}],251:[function(require,module,exports){
 var asn1 = require('./asn1')
 var aesid = require('./aesid.json')
 var fixProc = require('./fixProc')
@@ -62641,7 +60196,7 @@ function decrypt (data, password) {
   return Buffer.concat(out)
 }
 
-},{"./aesid.json":268,"./asn1":269,"./fixProc":271,"browserify-aes":71,"pbkdf2":275,"safe-buffer":311}],273:[function(require,module,exports){
+},{"./aesid.json":247,"./asn1":248,"./fixProc":250,"browserify-aes":50,"pbkdf2":254,"safe-buffer":290}],252:[function(require,module,exports){
 (function (process){(function (){
 // 'path' module extracted from Node.js v8.11.1 (only the posix part)
 // transplited with Babel
@@ -63174,7 +60729,7 @@ posix.posix = posix;
 module.exports = posix;
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":281}],274:[function(require,module,exports){
+},{"_process":260}],253:[function(require,module,exports){
 'use strict';
 
 /* !
@@ -63477,11 +61032,11 @@ module.exports = {
   setPathValue: setPathValue,
 };
 
-},{}],275:[function(require,module,exports){
+},{}],254:[function(require,module,exports){
 exports.pbkdf2 = require('./lib/async')
 exports.pbkdf2Sync = require('./lib/sync')
 
-},{"./lib/async":276,"./lib/sync":279}],276:[function(require,module,exports){
+},{"./lib/async":255,"./lib/sync":258}],255:[function(require,module,exports){
 (function (global){(function (){
 var Buffer = require('safe-buffer').Buffer
 
@@ -63603,7 +61158,7 @@ module.exports = function (password, salt, iterations, keylen, digest, callback)
 }
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./default-encoding":277,"./precondition":278,"./sync":279,"./to-buffer":280,"safe-buffer":311}],277:[function(require,module,exports){
+},{"./default-encoding":256,"./precondition":257,"./sync":258,"./to-buffer":259,"safe-buffer":290}],256:[function(require,module,exports){
 (function (process,global){(function (){
 var defaultEncoding
 /* istanbul ignore next */
@@ -63619,7 +61174,7 @@ if (global.process && global.process.browser) {
 module.exports = defaultEncoding
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":281}],278:[function(require,module,exports){
+},{"_process":260}],257:[function(require,module,exports){
 var MAX_ALLOC = Math.pow(2, 30) - 1 // default in iojs
 
 module.exports = function (iterations, keylen) {
@@ -63640,7 +61195,7 @@ module.exports = function (iterations, keylen) {
   }
 }
 
-},{}],279:[function(require,module,exports){
+},{}],258:[function(require,module,exports){
 var md5 = require('create-hash/md5')
 var RIPEMD160 = require('ripemd160')
 var sha = require('sha.js')
@@ -63747,7 +61302,7 @@ function pbkdf2 (password, salt, iterations, keylen, digest) {
 
 module.exports = pbkdf2
 
-},{"./default-encoding":277,"./precondition":278,"./to-buffer":280,"create-hash/md5":142,"ripemd160":310,"safe-buffer":311,"sha.js":315}],280:[function(require,module,exports){
+},{"./default-encoding":256,"./precondition":257,"./to-buffer":259,"create-hash/md5":121,"ripemd160":289,"safe-buffer":290,"sha.js":294}],259:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 
 module.exports = function (thing, encoding, name) {
@@ -63762,7 +61317,7 @@ module.exports = function (thing, encoding, name) {
   }
 }
 
-},{"safe-buffer":311}],281:[function(require,module,exports){
+},{"safe-buffer":290}],260:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -63948,7 +61503,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],282:[function(require,module,exports){
+},{}],261:[function(require,module,exports){
 exports.publicEncrypt = require('./publicEncrypt')
 exports.privateDecrypt = require('./privateDecrypt')
 
@@ -63960,7 +61515,7 @@ exports.publicDecrypt = function publicDecrypt (key, buf) {
   return exports.privateDecrypt(key, buf, true)
 }
 
-},{"./privateDecrypt":285,"./publicEncrypt":286}],283:[function(require,module,exports){
+},{"./privateDecrypt":264,"./publicEncrypt":265}],262:[function(require,module,exports){
 var createHash = require('create-hash')
 var Buffer = require('safe-buffer').Buffer
 
@@ -63981,9 +61536,9 @@ function i2ops (c) {
   return out
 }
 
-},{"create-hash":141,"safe-buffer":311}],284:[function(require,module,exports){
-arguments[4][58][0].apply(exports,arguments)
-},{"buffer":68,"dup":58}],285:[function(require,module,exports){
+},{"create-hash":120,"safe-buffer":290}],263:[function(require,module,exports){
+arguments[4][37][0].apply(exports,arguments)
+},{"buffer":47,"dup":37}],264:[function(require,module,exports){
 var parseKeys = require('parse-asn1')
 var mgf = require('./mgf')
 var xor = require('./xor')
@@ -64090,7 +61645,7 @@ function compare (a, b) {
   return dif
 }
 
-},{"./mgf":283,"./withPublic":287,"./xor":288,"bn.js":284,"browserify-rsa":89,"create-hash":141,"parse-asn1":272,"safe-buffer":311}],286:[function(require,module,exports){
+},{"./mgf":262,"./withPublic":266,"./xor":267,"bn.js":263,"browserify-rsa":68,"create-hash":120,"parse-asn1":251,"safe-buffer":290}],265:[function(require,module,exports){
 var parseKeys = require('parse-asn1')
 var randomBytes = require('randombytes')
 var createHash = require('create-hash')
@@ -64180,7 +61735,7 @@ function nonZero (len) {
   return out
 }
 
-},{"./mgf":283,"./withPublic":287,"./xor":288,"bn.js":284,"browserify-rsa":89,"create-hash":141,"parse-asn1":272,"randombytes":293,"safe-buffer":311}],287:[function(require,module,exports){
+},{"./mgf":262,"./withPublic":266,"./xor":267,"bn.js":263,"browserify-rsa":68,"create-hash":120,"parse-asn1":251,"randombytes":272,"safe-buffer":290}],266:[function(require,module,exports){
 var BN = require('bn.js')
 var Buffer = require('safe-buffer').Buffer
 
@@ -64194,7 +61749,7 @@ function withPublic (paddedMsg, key) {
 
 module.exports = withPublic
 
-},{"bn.js":284,"safe-buffer":311}],288:[function(require,module,exports){
+},{"bn.js":263,"safe-buffer":290}],267:[function(require,module,exports){
 module.exports = function xor (a, b) {
   var len = a.length
   var i = -1
@@ -64204,7 +61759,7 @@ module.exports = function xor (a, b) {
   return a
 }
 
-},{}],289:[function(require,module,exports){
+},{}],268:[function(require,module,exports){
 (function (global){(function (){
 /*! https://mths.be/punycode v1.4.1 by @mathias */
 ;(function(root) {
@@ -64741,7 +62296,7 @@ module.exports = function xor (a, b) {
 }(this));
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],290:[function(require,module,exports){
+},{}],269:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -64827,7 +62382,7 @@ var isArray = Array.isArray || function (xs) {
   return Object.prototype.toString.call(xs) === '[object Array]';
 };
 
-},{}],291:[function(require,module,exports){
+},{}],270:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -64914,13 +62469,13 @@ var objectKeys = Object.keys || function (obj) {
   return res;
 };
 
-},{}],292:[function(require,module,exports){
+},{}],271:[function(require,module,exports){
 'use strict';
 
 exports.decode = exports.parse = require('./decode');
 exports.encode = exports.stringify = require('./encode');
 
-},{"./decode":290,"./encode":291}],293:[function(require,module,exports){
+},{"./decode":269,"./encode":270}],272:[function(require,module,exports){
 (function (process,global){(function (){
 'use strict'
 
@@ -64974,7 +62529,7 @@ function randomBytes (size, cb) {
 }
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":281,"safe-buffer":311}],294:[function(require,module,exports){
+},{"_process":260,"safe-buffer":290}],273:[function(require,module,exports){
 (function (process,global){(function (){
 'use strict'
 
@@ -65086,7 +62641,7 @@ function randomFillSync (buf, offset, size) {
 }
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":281,"randombytes":293,"safe-buffer":311}],295:[function(require,module,exports){
+},{"_process":260,"randombytes":272,"safe-buffer":290}],274:[function(require,module,exports){
 'use strict';
 
 function _inheritsLoose(subClass, superClass) { subClass.prototype = Object.create(superClass.prototype); subClass.prototype.constructor = subClass; subClass.__proto__ = superClass; }
@@ -65215,7 +62770,7 @@ createErrorType('ERR_UNKNOWN_ENCODING', function (arg) {
 createErrorType('ERR_STREAM_UNSHIFT_AFTER_END_EVENT', 'stream.unshift() after end event');
 module.exports.codes = codes;
 
-},{}],296:[function(require,module,exports){
+},{}],275:[function(require,module,exports){
 (function (process){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -65357,7 +62912,7 @@ Object.defineProperty(Duplex.prototype, 'destroyed', {
   }
 });
 }).call(this)}).call(this,require('_process'))
-},{"./_stream_readable":298,"./_stream_writable":300,"_process":281,"inherits":235}],297:[function(require,module,exports){
+},{"./_stream_readable":277,"./_stream_writable":279,"_process":260,"inherits":212}],276:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -65397,7 +62952,7 @@ function PassThrough(options) {
 PassThrough.prototype._transform = function (chunk, encoding, cb) {
   cb(null, chunk);
 };
-},{"./_stream_transform":299,"inherits":235}],298:[function(require,module,exports){
+},{"./_stream_transform":278,"inherits":212}],277:[function(require,module,exports){
 (function (process,global){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -66524,7 +64079,7 @@ function indexOf(xs, x) {
   return -1;
 }
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../errors":295,"./_stream_duplex":296,"./internal/streams/async_iterator":301,"./internal/streams/buffer_list":302,"./internal/streams/destroy":303,"./internal/streams/from":305,"./internal/streams/state":307,"./internal/streams/stream":308,"_process":281,"buffer":100,"events":189,"inherits":235,"string_decoder/":327,"util":68}],299:[function(require,module,exports){
+},{"../errors":274,"./_stream_duplex":275,"./internal/streams/async_iterator":280,"./internal/streams/buffer_list":281,"./internal/streams/destroy":282,"./internal/streams/from":284,"./internal/streams/state":286,"./internal/streams/stream":287,"_process":260,"buffer":79,"events":166,"inherits":212,"string_decoder/":306,"util":47}],278:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -66726,7 +64281,7 @@ function done(stream, er, data) {
   if (stream._transformState.transforming) throw new ERR_TRANSFORM_ALREADY_TRANSFORMING();
   return stream.push(null);
 }
-},{"../errors":295,"./_stream_duplex":296,"inherits":235}],300:[function(require,module,exports){
+},{"../errors":274,"./_stream_duplex":275,"inherits":212}],279:[function(require,module,exports){
 (function (process,global){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -67426,7 +64981,7 @@ Writable.prototype._destroy = function (err, cb) {
   cb(err);
 };
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../errors":295,"./_stream_duplex":296,"./internal/streams/destroy":303,"./internal/streams/state":307,"./internal/streams/stream":308,"_process":281,"buffer":100,"inherits":235,"util-deprecate":332}],301:[function(require,module,exports){
+},{"../errors":274,"./_stream_duplex":275,"./internal/streams/destroy":282,"./internal/streams/state":286,"./internal/streams/stream":287,"_process":260,"buffer":79,"inherits":212,"util-deprecate":311}],280:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -67636,7 +65191,7 @@ var createReadableStreamAsyncIterator = function createReadableStreamAsyncIterat
 
 module.exports = createReadableStreamAsyncIterator;
 }).call(this)}).call(this,require('_process'))
-},{"./end-of-stream":304,"_process":281}],302:[function(require,module,exports){
+},{"./end-of-stream":283,"_process":260}],281:[function(require,module,exports){
 'use strict';
 
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
@@ -67847,7 +65402,7 @@ function () {
 
   return BufferList;
 }();
-},{"buffer":100,"util":68}],303:[function(require,module,exports){
+},{"buffer":79,"util":47}],282:[function(require,module,exports){
 (function (process){(function (){
 'use strict'; // undocumented cb() API, needed for core, not for public API
 
@@ -67955,7 +65510,7 @@ module.exports = {
   errorOrDestroy: errorOrDestroy
 };
 }).call(this)}).call(this,require('_process'))
-},{"_process":281}],304:[function(require,module,exports){
+},{"_process":260}],283:[function(require,module,exports){
 // Ported from https://github.com/mafintosh/end-of-stream with
 // permission from the author, Mathias Buus (@mafintosh).
 'use strict';
@@ -68060,12 +65615,12 @@ function eos(stream, opts, callback) {
 }
 
 module.exports = eos;
-},{"../../../errors":295}],305:[function(require,module,exports){
+},{"../../../errors":274}],284:[function(require,module,exports){
 module.exports = function () {
   throw new Error('Readable.from is not available in the browser')
 };
 
-},{}],306:[function(require,module,exports){
+},{}],285:[function(require,module,exports){
 // Ported from https://github.com/mafintosh/pump with
 // permission from the author, Mathias Buus (@mafintosh).
 'use strict';
@@ -68163,7 +65718,7 @@ function pipeline() {
 }
 
 module.exports = pipeline;
-},{"../../../errors":295,"./end-of-stream":304}],307:[function(require,module,exports){
+},{"../../../errors":274,"./end-of-stream":283}],286:[function(require,module,exports){
 'use strict';
 
 var ERR_INVALID_OPT_VALUE = require('../../../errors').codes.ERR_INVALID_OPT_VALUE;
@@ -68191,10 +65746,10 @@ function getHighWaterMark(state, options, duplexKey, isDuplex) {
 module.exports = {
   getHighWaterMark: getHighWaterMark
 };
-},{"../../../errors":295}],308:[function(require,module,exports){
+},{"../../../errors":274}],287:[function(require,module,exports){
 module.exports = require('events').EventEmitter;
 
-},{"events":189}],309:[function(require,module,exports){
+},{"events":166}],288:[function(require,module,exports){
 exports = module.exports = require('./lib/_stream_readable.js');
 exports.Stream = exports;
 exports.Readable = exports;
@@ -68205,7 +65760,7 @@ exports.PassThrough = require('./lib/_stream_passthrough.js');
 exports.finished = require('./lib/internal/streams/end-of-stream.js');
 exports.pipeline = require('./lib/internal/streams/pipeline.js');
 
-},{"./lib/_stream_duplex.js":296,"./lib/_stream_passthrough.js":297,"./lib/_stream_readable.js":298,"./lib/_stream_transform.js":299,"./lib/_stream_writable.js":300,"./lib/internal/streams/end-of-stream.js":304,"./lib/internal/streams/pipeline.js":306}],310:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":275,"./lib/_stream_passthrough.js":276,"./lib/_stream_readable.js":277,"./lib/_stream_transform.js":278,"./lib/_stream_writable.js":279,"./lib/internal/streams/end-of-stream.js":283,"./lib/internal/streams/pipeline.js":285}],289:[function(require,module,exports){
 'use strict'
 var Buffer = require('buffer').Buffer
 var inherits = require('inherits')
@@ -68370,7 +65925,7 @@ function fn5 (a, b, c, d, e, m, k, s) {
 
 module.exports = RIPEMD160
 
-},{"buffer":100,"hash-base":200,"inherits":235}],311:[function(require,module,exports){
+},{"buffer":79,"hash-base":177,"inherits":212}],290:[function(require,module,exports){
 /*! safe-buffer. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
 /* eslint-disable node/no-deprecated-api */
 var buffer = require('buffer')
@@ -68437,7 +65992,7 @@ SafeBuffer.allocUnsafeSlow = function (size) {
   return buffer.SlowBuffer(size)
 }
 
-},{"buffer":100}],312:[function(require,module,exports){
+},{"buffer":79}],291:[function(require,module,exports){
 (function (process){(function (){
 /* eslint-disable node/no-deprecated-api */
 
@@ -68518,7 +66073,7 @@ if (!safer.constants) {
 module.exports = safer
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":281,"buffer":100}],313:[function(require,module,exports){
+},{"_process":260,"buffer":79}],292:[function(require,module,exports){
 (function (Buffer){(function (){
 ;(function (sax) { // wrapper for non-node envs
   sax.parser = function (strict, opt) { return new SAXParser(strict, opt) }
@@ -70085,7 +67640,7 @@ module.exports = safer
 })(typeof exports === 'undefined' ? this.sax = {} : exports)
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":100,"stream":322,"string_decoder":327}],314:[function(require,module,exports){
+},{"buffer":79,"stream":301,"string_decoder":306}],293:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 
 // prototype class for hash functions
@@ -70168,7 +67723,7 @@ Hash.prototype._update = function () {
 
 module.exports = Hash
 
-},{"safe-buffer":311}],315:[function(require,module,exports){
+},{"safe-buffer":290}],294:[function(require,module,exports){
 var exports = module.exports = function SHA (algorithm) {
   algorithm = algorithm.toLowerCase()
 
@@ -70185,7 +67740,7 @@ exports.sha256 = require('./sha256')
 exports.sha384 = require('./sha384')
 exports.sha512 = require('./sha512')
 
-},{"./sha":316,"./sha1":317,"./sha224":318,"./sha256":319,"./sha384":320,"./sha512":321}],316:[function(require,module,exports){
+},{"./sha":295,"./sha1":296,"./sha224":297,"./sha256":298,"./sha384":299,"./sha512":300}],295:[function(require,module,exports){
 /*
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-0, as defined
  * in FIPS PUB 180-1
@@ -70281,7 +67836,7 @@ Sha.prototype._hash = function () {
 
 module.exports = Sha
 
-},{"./hash":314,"inherits":235,"safe-buffer":311}],317:[function(require,module,exports){
+},{"./hash":293,"inherits":212,"safe-buffer":290}],296:[function(require,module,exports){
 /*
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-1, as defined
  * in FIPS PUB 180-1
@@ -70382,7 +67937,7 @@ Sha1.prototype._hash = function () {
 
 module.exports = Sha1
 
-},{"./hash":314,"inherits":235,"safe-buffer":311}],318:[function(require,module,exports){
+},{"./hash":293,"inherits":212,"safe-buffer":290}],297:[function(require,module,exports){
 /**
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-256, as defined
  * in FIPS 180-2
@@ -70437,7 +67992,7 @@ Sha224.prototype._hash = function () {
 
 module.exports = Sha224
 
-},{"./hash":314,"./sha256":319,"inherits":235,"safe-buffer":311}],319:[function(require,module,exports){
+},{"./hash":293,"./sha256":298,"inherits":212,"safe-buffer":290}],298:[function(require,module,exports){
 /**
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-256, as defined
  * in FIPS 180-2
@@ -70574,7 +68129,7 @@ Sha256.prototype._hash = function () {
 
 module.exports = Sha256
 
-},{"./hash":314,"inherits":235,"safe-buffer":311}],320:[function(require,module,exports){
+},{"./hash":293,"inherits":212,"safe-buffer":290}],299:[function(require,module,exports){
 var inherits = require('inherits')
 var SHA512 = require('./sha512')
 var Hash = require('./hash')
@@ -70633,7 +68188,7 @@ Sha384.prototype._hash = function () {
 
 module.exports = Sha384
 
-},{"./hash":314,"./sha512":321,"inherits":235,"safe-buffer":311}],321:[function(require,module,exports){
+},{"./hash":293,"./sha512":300,"inherits":212,"safe-buffer":290}],300:[function(require,module,exports){
 var inherits = require('inherits')
 var Hash = require('./hash')
 var Buffer = require('safe-buffer').Buffer
@@ -70895,7 +68450,7 @@ Sha512.prototype._hash = function () {
 
 module.exports = Sha512
 
-},{"./hash":314,"inherits":235,"safe-buffer":311}],322:[function(require,module,exports){
+},{"./hash":293,"inherits":212,"safe-buffer":290}],301:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -71026,7 +68581,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":189,"inherits":235,"readable-stream/lib/_stream_duplex.js":296,"readable-stream/lib/_stream_passthrough.js":297,"readable-stream/lib/_stream_readable.js":298,"readable-stream/lib/_stream_transform.js":299,"readable-stream/lib/_stream_writable.js":300,"readable-stream/lib/internal/streams/end-of-stream.js":304,"readable-stream/lib/internal/streams/pipeline.js":306}],323:[function(require,module,exports){
+},{"events":166,"inherits":212,"readable-stream/lib/_stream_duplex.js":275,"readable-stream/lib/_stream_passthrough.js":276,"readable-stream/lib/_stream_readable.js":277,"readable-stream/lib/_stream_transform.js":278,"readable-stream/lib/_stream_writable.js":279,"readable-stream/lib/internal/streams/end-of-stream.js":283,"readable-stream/lib/internal/streams/pipeline.js":285}],302:[function(require,module,exports){
 (function (global){(function (){
 var ClientRequest = require('./lib/request')
 var response = require('./lib/response')
@@ -71114,7 +68669,7 @@ http.METHODS = [
 	'UNSUBSCRIBE'
 ]
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./lib/request":325,"./lib/response":326,"builtin-status-codes":101,"url":330,"xtend":337}],324:[function(require,module,exports){
+},{"./lib/request":304,"./lib/response":305,"builtin-status-codes":80,"url":309,"xtend":316}],303:[function(require,module,exports){
 (function (global){(function (){
 exports.fetch = isFunction(global.fetch) && isFunction(global.ReadableStream)
 
@@ -71177,7 +68732,7 @@ function isFunction (value) {
 xhr = null // Help gc
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],325:[function(require,module,exports){
+},{}],304:[function(require,module,exports){
 (function (process,global,Buffer){(function (){
 var capability = require('./capability')
 var inherits = require('inherits')
@@ -71533,7 +69088,7 @@ var unsafeHeaders = [
 ]
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer)
-},{"./capability":324,"./response":326,"_process":281,"buffer":100,"inherits":235,"readable-stream":309}],326:[function(require,module,exports){
+},{"./capability":303,"./response":305,"_process":260,"buffer":79,"inherits":212,"readable-stream":288}],305:[function(require,module,exports){
 (function (process,global,Buffer){(function (){
 var capability = require('./capability')
 var inherits = require('inherits')
@@ -71748,7 +69303,7 @@ IncomingMessage.prototype._onXHRProgress = function (resetTimers) {
 }
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer)
-},{"./capability":324,"_process":281,"buffer":100,"inherits":235,"readable-stream":309}],327:[function(require,module,exports){
+},{"./capability":303,"_process":260,"buffer":79,"inherits":212,"readable-stream":288}],306:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -72045,7 +69600,7 @@ function simpleWrite(buf) {
 function simpleEnd(buf) {
   return buf && buf.length ? this.write(buf) : '';
 }
-},{"safe-buffer":311}],328:[function(require,module,exports){
+},{"safe-buffer":290}],307:[function(require,module,exports){
 exports.isatty = function () { return false; };
 
 function ReadStream() {
@@ -72058,7 +69613,7 @@ function WriteStream() {
 }
 exports.WriteStream = WriteStream;
 
-},{}],329:[function(require,module,exports){
+},{}],308:[function(require,module,exports){
 (function (global){(function (){
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
@@ -72450,7 +70005,7 @@ return typeDetect;
 })));
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],330:[function(require,module,exports){
+},{}],309:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -73184,7 +70739,7 @@ Url.prototype.parseHost = function() {
   if (host) this.hostname = host;
 };
 
-},{"./util":331,"punycode":289,"querystring":292}],331:[function(require,module,exports){
+},{"./util":310,"punycode":268,"querystring":271}],310:[function(require,module,exports){
 'use strict';
 
 module.exports = {
@@ -73202,7 +70757,7 @@ module.exports = {
   }
 };
 
-},{}],332:[function(require,module,exports){
+},{}],311:[function(require,module,exports){
 (function (global){(function (){
 
 /**
@@ -73273,9 +70828,14 @@ function config (name) {
 }
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],333:[function(require,module,exports){
-arguments[4][61][0].apply(exports,arguments)
-},{"dup":61}],334:[function(require,module,exports){
+},{}],312:[function(require,module,exports){
+module.exports = function isBuffer(arg) {
+  return arg && typeof arg === 'object'
+    && typeof arg.copy === 'function'
+    && typeof arg.fill === 'function'
+    && typeof arg.readUInt8 === 'function';
+}
+},{}],313:[function(require,module,exports){
 // Currently in sync with Node.js lib/internal/util/types.js
 // https://github.com/nodejs/node/commit/112cc7c27551254aa2b17098fb774867f05ed0d9
 
@@ -73611,7 +71171,7 @@ exports.isAnyArrayBuffer = isAnyArrayBuffer;
   });
 });
 
-},{"is-arguments":236,"is-generator-function":237,"is-typed-array":238,"which-typed-array":336}],335:[function(require,module,exports){
+},{"is-arguments":213,"is-generator-function":214,"is-typed-array":215,"which-typed-array":315}],314:[function(require,module,exports){
 (function (process){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -74330,7 +71890,7 @@ function callbackify(original) {
 exports.callbackify = callbackify;
 
 }).call(this)}).call(this,require('_process'))
-},{"./support/isBuffer":333,"./support/types":334,"_process":281,"inherits":235}],336:[function(require,module,exports){
+},{"./support/isBuffer":312,"./support/types":313,"_process":260,"inherits":212}],315:[function(require,module,exports){
 (function (global){(function (){
 'use strict';
 
@@ -74388,7 +71948,7 @@ module.exports = function whichTypedArray(value) {
 };
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"available-typed-arrays":64,"call-bind/callBound":102,"es-abstract/helpers/getOwnPropertyDescriptor":188,"foreach":191,"has-tostringtag/shams":198,"is-typed-array":238}],337:[function(require,module,exports){
+},{"available-typed-arrays":43,"call-bind/callBound":81,"es-abstract/helpers/getOwnPropertyDescriptor":165,"foreach":168,"has-tostringtag/shams":175,"is-typed-array":215}],316:[function(require,module,exports){
 module.exports = extend
 
 var hasOwnProperty = Object.prototype.hasOwnProperty;
@@ -74409,7 +71969,7 @@ function extend() {
     return target
 }
 
-},{}],338:[function(require,module,exports){
+},{}],317:[function(require,module,exports){
 module.exports={
     "name": "splunk-sdk",
     "version": "1.11.0",
@@ -74417,7 +71977,6 @@ module.exports={
     "homepage": "http://dev.splunk.com",
     "main": "index.js",
     "directories": {
-        "example": "examples",
         "lib": "lib",
         "test": "tests"
     },
@@ -74445,7 +72004,7 @@ module.exports={
         "browserify": "^17.0.0",
         "chai": "^4.3.6",
         "jshint": "2.13.4",
-        "mocha": "7.2.0",
+        "mocha": "^7.2.0",
         "mochawesome": "7.1.0",
         "mustache": "4.2.0",
         "nyc": "^15.1.0",
@@ -74463,7 +72022,118 @@ module.exports={
     }
 }
 
-},{}],339:[function(require,module,exports){
+},{}],318:[function(require,module,exports){
+(function (process,__dirname){(function (){
+// Copyright 2011 Splunk, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
+(function() {
+    var path         = require('path');
+    var fs           = require('fs');
+    var commander    = require('../contrib/commander');
+    var utils        = require('../lib/utils');
+    
+    var DEFAULTS_PATHS = [
+        process.env.HOME || process.env.HOMEPATH,
+        path.resolve(__dirname, "..")
+    ];
+    
+    var readDefaultsFile = function(path, defaults) {
+        var contents = fs.readFileSync(path, "utf8") || "";
+        var lines = contents.split("\n") || [];
+        
+        for(var i = 0; i < lines.length; i++) {
+            var line = lines[i].trim();
+            if (line !== "" && !utils.startsWith(line, "#")) {
+                var parts = line.split("=");
+                var key = parts[0].trim();
+                var value = parts[1].trim();
+                defaults[key] = value;
+            }
+        }
+    };
+    
+    var getDefaults = function() {
+        var defaults = {};
+        for(var i = 0; i < DEFAULTS_PATHS.length; i++) {
+            var defaultsPath = path.join(DEFAULTS_PATHS[i], ".splunkrc");
+            if (fs.existsSync(defaultsPath)) {
+                readDefaultsFile(defaultsPath, defaults);
+            }
+        }
+        
+        return defaults;
+    };
+    
+    module.exports.create = function() {
+        var parser = new commander.Command();
+        var parse = parser.parse;
+    
+        parser.password = undefined;
+    
+        parser
+            .option('-u, --username <username>', "Username to login with", undefined, true)
+            .option('--password <password>', "Username to login with", undefined, false)
+            .option('--scheme <scheme>', "Scheme to use", "https", false)
+            .option('--host <host>', "Hostname to use", "localhost", false)
+            .option('--port <port>', "Port to use", 8089, false)
+            .option('--version <version>', "Which version to use", "4", false);
+        
+        parser.parse = function(argv) {
+            argv = (argv || []).slice(2);
+            var defaults = getDefaults();
+            for(var key in defaults) {
+                if (defaults.hasOwnProperty(key) && argv.indexOf("--" + key) < 0) {
+                    var value = defaults[key];
+                    argv.unshift(value);
+                    argv.unshift("--" + key.trim());
+                }
+            }
+            
+            argv.unshift("");
+            argv.unshift("");
+            
+            var cmdline = parse.call(parser, argv);
+            
+            return cmdline;
+        };
+        
+        parser.add = function(commandName, description, args, flags, required_flags, onAction) {
+            var opts = {};
+            flags = flags || [];
+            
+            var command = parser.command(commandName + (args ? " " + args : "")).description(description || "");
+            
+            // For each of the flags, add an option to the parser
+            for(var i = 0; i < flags.length; i++) {
+                var required = required_flags.indexOf(flags[i]) >= 0;
+                var option = "<" + flags[i] + ">";
+                command.option("--" + flags[i] + " " + option, "", undefined, required);
+            }
+            
+            command.action(function() {
+                var args = utils.toArray(arguments);
+                args.unshift(commandName);
+                onAction.apply(null, args);
+            });
+        };
+        
+        return parser;
+    };
+})();
+}).call(this)}).call(this,require('_process'),"/tests")
+},{"../contrib/commander":1,"../lib/utils":22,"_process":260,"fs":77,"path":252}],319:[function(require,module,exports){
 (function (process,__filename){(function (){
 var assert = require('chai').assert;
 
@@ -74648,7 +72318,7 @@ exports.setup = function (svc) {
 
 if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
-    var options = require('../../examples/node/cmdline');
+    var options = require('../cmdline');
 
     var cmdline = options.create().parse(process.argv);
 
@@ -74678,7 +72348,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/app.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],340:[function(require,module,exports){
+},{"../../index":2,"../cmdline":318,"_process":260,"chai":83}],320:[function(require,module,exports){
 (function (process,__filename){(function (){
 var assert = require('chai').assert;
 
@@ -74745,7 +72415,7 @@ exports.setup = function (svc, loggedOutSvc) {
 
 if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
-    var options = require('../../examples/node/cmdline');
+    var options = require('../cmdline');
 
     var cmdline = options.create().parse(process.argv);
 
@@ -74784,7 +72454,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/collection.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],341:[function(require,module,exports){
+},{"../../index":2,"../cmdline":318,"_process":260,"chai":83}],321:[function(require,module,exports){
 (function (process,__filename){(function (){
 var assert = require('chai').assert;
 
@@ -75057,7 +72727,7 @@ exports.setup = function (svc) {
 
 if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
-    var options = require('../../examples/node/cmdline');
+    var options = require('../cmdline');
 
     var cmdline = options.create().parse(process.argv);
 
@@ -75087,7 +72757,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/configuration.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],342:[function(require,module,exports){
+},{"../../index":2,"../cmdline":318,"_process":260,"chai":83}],322:[function(require,module,exports){
 (function (process,__filename){(function (){
 var assert = require('chai').assert;
 
@@ -76170,7 +73840,7 @@ exports.setup = function (svc) {
 
 if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
-    var options = require('../../examples/node/cmdline');
+    var options = require('../cmdline');
 
     var cmdline = options.create().parse(process.argv);
 
@@ -76200,7 +73870,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/datamodels.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"../utils":364,"_process":281,"chai":104}],343:[function(require,module,exports){
+},{"../../index":2,"../cmdline":318,"../utils":343,"_process":260,"chai":83}],323:[function(require,module,exports){
 (function (process,__filename){(function (){
 var assert = require('chai').assert;
 
@@ -76245,7 +73915,7 @@ exports.setup = function (svc) {
 
 if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
-    var options = require('../../examples/node/cmdline');
+    var options = require('../cmdline');
 
     var cmdline = options.create().parse(process.argv);
 
@@ -76275,7 +73945,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/endpoint.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],344:[function(require,module,exports){
+},{"../../index":2,"../cmdline":318,"_process":260,"chai":83}],324:[function(require,module,exports){
 (function (process,__filename){(function (){
 var assert = require('chai').assert;
 
@@ -76396,7 +74066,7 @@ exports.setup = function (svc, loggedOutSvc) {
 
 if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
-    var options = require('../../examples/node/cmdline');
+    var options = require('../cmdline');
 
     var cmdline = options.create().parse(process.argv);
 
@@ -76435,7 +74105,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/entity.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],345:[function(require,module,exports){
+},{"../../index":2,"../cmdline":318,"_process":260,"chai":83}],325:[function(require,module,exports){
 (function (process,__filename){(function (){
 var assert = require('chai').assert;
 
@@ -76710,7 +74380,7 @@ exports.setup = function (svc, loggedOutSvc) {
 
 if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
-    var options = require('../../examples/node/cmdline');
+    var options = require('../cmdline');
 
     var cmdline = options.create().parse(process.argv);
 
@@ -76749,7 +74419,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/firedalerts.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],346:[function(require,module,exports){
+},{"../../index":2,"../cmdline":318,"_process":260,"chai":83}],326:[function(require,module,exports){
 (function (process,Buffer,__filename){(function (){
 var assert = require('chai').assert;
 
@@ -77187,7 +74857,7 @@ exports.setup = function (svc, loggedOutSvc) {
 
 if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
-    var options = require('../../examples/node/cmdline');
+    var options = require('../cmdline');
 
     var cmdline = options.create().parse(process.argv);
 
@@ -77226,7 +74896,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),require("buffer").Buffer,"/tests/service_tests/indexes.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"buffer":100,"chai":104}],347:[function(require,module,exports){
+},{"../../index":2,"../cmdline":318,"_process":260,"buffer":79,"chai":83}],327:[function(require,module,exports){
 (function (process,__filename){(function (){
 exports.setup = function (svc) {
     var assert = require('chai').assert;
@@ -78278,7 +75948,7 @@ exports.setup = function (svc) {
 
 if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
-    var options = require('../../examples/node/cmdline');
+    var options = require('../cmdline');
 
     var cmdline = options.create().parse(process.argv);
 
@@ -78312,7 +75982,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/job.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"../../lib/log":29,"../utils":364,"_process":281,"chai":104,"path":273}],348:[function(require,module,exports){
+},{"../../index":2,"../../lib/log":8,"../cmdline":318,"../utils":343,"_process":260,"chai":83,"path":252}],328:[function(require,module,exports){
 (function (process,__filename){(function (){
 var assert = require('chai').assert;
 
@@ -78573,7 +76243,7 @@ exports.setup = function (svc) {
 
 if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
-    var options = require('../../examples/node/cmdline');
+    var options = require('../cmdline');
 
     var cmdline = options.create().parse(process.argv);
 
@@ -78603,7 +76273,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/namespace.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"../../lib/log":29,"_process":281,"chai":104}],349:[function(require,module,exports){
+},{"../../index":2,"../../lib/log":8,"../cmdline":318,"_process":260,"chai":83}],329:[function(require,module,exports){
 (function (process,__filename){(function (){
 exports.setup = function (svc) {
     var assert = require('chai').assert;
@@ -78640,7 +76310,7 @@ exports.setup = function (svc) {
 
 if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
-    var options = require('../../examples/node/cmdline');
+    var options = require('../cmdline');
 
     var cmdline = options.create().parse(process.argv);
 
@@ -78670,7 +76340,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/parser.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],350:[function(require,module,exports){
+},{"../../index":2,"../cmdline":318,"_process":260,"chai":83}],330:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 exports.setup = function (svc) {
@@ -80244,7 +77914,7 @@ exports.setup = function (svc) {
 
 if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
-    var options = require('../../examples/node/cmdline');
+    var options = require('../cmdline');
 
     var cmdline = options.create().parse(process.argv);
 
@@ -80274,7 +77944,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/pivot.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"../utils":364,"_process":281,"chai":104}],351:[function(require,module,exports){
+},{"../../index":2,"../cmdline":318,"../utils":343,"_process":260,"chai":83}],331:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 exports.setup = function (svc) {
@@ -80411,7 +78081,7 @@ exports.setup = function (svc) {
 
 if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
-    var options = require('../../examples/node/cmdline');
+    var options = require('../cmdline');
 
     var cmdline = options.create().parse(process.argv);
 
@@ -80442,7 +78112,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/properties.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],352:[function(require,module,exports){
+},{"../../index":2,"../cmdline":318,"_process":260,"chai":83}],332:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 exports.setup = function (svc, loggedOutSvc) {
@@ -80905,7 +78575,7 @@ exports.setup = function (svc, loggedOutSvc) {
 
 if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
-    var options = require('../../examples/node/cmdline');
+    var options = require('../cmdline');
 
     var cmdline = options.create().parse(process.argv);
 
@@ -80944,7 +78614,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/savedsearch.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"../utils":364,"_process":281,"chai":104}],353:[function(require,module,exports){
+},{"../../index":2,"../cmdline":318,"../utils":343,"_process":260,"chai":83}],333:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 exports.setup = function (svc) {
@@ -80976,7 +78646,7 @@ exports.setup = function (svc) {
 
 if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
-    var options = require('../../examples/node/cmdline');
+    var options = require('../cmdline');
 
     var cmdline = options.create().parse(process.argv);
 
@@ -81006,7 +78676,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/serverinfo.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],354:[function(require,module,exports){
+},{"../../index":2,"../cmdline":318,"_process":260,"chai":83}],334:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 exports.setup = function (svc) {
@@ -81624,7 +79294,7 @@ exports.setup = function (svc) {
 
 if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
-    var options = require('../../examples/node/cmdline');
+    var options = require('../cmdline');
 
     var cmdline = options.create().parse(process.argv);
 
@@ -81654,7 +79324,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/storagepasswords.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],355:[function(require,module,exports){
+},{"../../index":2,"../cmdline":318,"_process":260,"chai":83}],335:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 exports.setup = function (svc, loggedOutSvc) {
@@ -81701,7 +79371,7 @@ exports.setup = function (svc, loggedOutSvc) {
 
 if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
-    var options = require('../../examples/node/cmdline');
+    var options = require('../cmdline');
 
     var cmdline = options.create().parse(process.argv);
 
@@ -81740,7 +79410,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/typeahead.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],356:[function(require,module,exports){
+},{"../../index":2,"../cmdline":318,"_process":260,"chai":83}],336:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 exports.setup = function (svc, loggedOutSvc) {
@@ -81996,7 +79666,7 @@ exports.setup = function (svc, loggedOutSvc) {
 
 if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
-    var options = require('../../examples/node/cmdline');
+    var options = require('../cmdline');
 
     var cmdline = options.create().parse(process.argv);
 
@@ -82035,7 +79705,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/user.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],357:[function(require,module,exports){
+},{"../../index":2,"../cmdline":318,"_process":260,"chai":83}],337:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 exports.setup = function (svc) {
@@ -82106,7 +79776,7 @@ exports.setup = function (svc) {
 
 if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
-    var options = require('../../examples/node/cmdline');
+    var options = require('../cmdline');
 
     var cmdline = options.create().parse(process.argv);
 
@@ -82136,7 +79806,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/view.js")
-},{"../../examples/node/cmdline":2,"../../index":23,"_process":281,"chai":104}],358:[function(require,module,exports){
+},{"../../index":2,"../cmdline":318,"_process":260,"chai":83}],338:[function(require,module,exports){
 (function (__filename){(function (){
 
 // Copyright 2011 Splunk, Inc.
@@ -82677,7 +80347,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,"/tests/test_async.js")
-},{"../index":23,"chai":104}],359:[function(require,module,exports){
+},{"../index":2,"chai":83}],339:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 // Copyright 2011 Splunk, Inc.
@@ -83756,7 +81426,7 @@ exports.setup = function (svc) {
 // Run the individual test suite
 if (module.id === __filename && module.parent.id.includes('mocha')) {
 
-    var options = require('../examples/node/cmdline');
+    var options = require('./cmdline');
     var splunkjs = require('../index');
 
     var cmdline = new options.create().parse(process.argv);
@@ -83787,517 +81457,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/test_context.js")
-},{"../examples/node/cmdline":2,"../index":23,"./utils":364,"_process":281,"chai":104}],360:[function(require,module,exports){
-(function (process,__filename){(function (){
-// Copyright 2011 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-exports.setup = function (svc, opts) {
-    var assert = require('chai').assert;
-    var splunkjs = require('../index');
-    var Async = splunkjs.Async;
-    var idCounter = 0;
-    var argv = ["program", "script"];
-
-    var getNextId = function () {
-        return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
-    };
-
-    splunkjs.Logger.setLevel("ALL");
-
-    return (
-        describe("Hello World Tests", function (done) {
-            it("Apps", function (done) {
-                var main = require("../examples/node/helloworld/apps").main;
-                main(opts, done);
-            });
-
-            it("Apps#Async", function (done) {
-                var main = require("../examples/node/helloworld/apps_async").main;
-                main(opts, done);
-            });
-
-            it("Pivot#Async", function (done) {
-                var main = require("../examples/node/helloworld/pivot_async").main;
-                main(opts, done);
-            });
-
-            it("Fired Alerts", function (done) {
-                var main = require("../examples/node/helloworld/firedalerts").main;
-                main(opts, done);
-            });
-
-            it("Fired Alerts#Async", function (done) {
-                var main = require("../examples/node/helloworld/firedalerts_async").main;
-                main(opts, done);
-            });
-
-            it("Fired Alerts#Create", function (done) {
-                var main = require("../examples/node/helloworld/firedalerts_create").main;
-                main(opts, done);
-            });
-
-            it("Fired Alerts#Delete", function (done) {
-                var main = require("../examples/node/helloworld/firedalerts_delete").main;
-                main(opts, done);
-            });
-
-            it("Get Job by sid", function (done) {
-                var main = require("../examples/node/helloworld/get_job").main;
-                main(opts, done);
-            });
-
-            it("Endpoint Instantiation", function (done) {
-                var main = require("../examples/node/helloworld/endpoint_instantiation").main;
-                main(opts, done);
-            });
-
-            it("Saved Searches", function (done) {
-                var main = require("../examples/node/helloworld/savedsearches").main;
-                main(opts, done);
-            });
-
-            it("Saved Searches#Async", function (done) {
-                var main = require("../examples/node/helloworld/savedsearches_async").main;
-                main(opts, done);
-            });
-
-            it("Saved Searches#Delete", function (done) {
-                var main = require("../examples/node/helloworld/savedsearches_delete").main;
-                main(opts, done);
-            });
-
-            it("Saved Searches#Create", function (done) {
-                var main = require("../examples/node/helloworld/savedsearches_create").main;
-                main(opts, done);
-            });
-
-            it("Saved Searches#Delete Again", function (done) {
-                var main = require("../examples/node/helloworld/savedsearches_delete").main;
-                main(opts, done);
-            });
-
-            it("Search#normal", function (done) {
-                var main = require("../examples/node/helloworld/search_normal").main;
-                main(opts, done);
-            });
-
-            it("Search#blocking", function (done) {
-                var main = require("../examples/node/helloworld/search_blocking").main;
-                main(opts, done);
-            });
-
-            it("Search#oneshot", function (done) {
-                var main = require("../examples/node/helloworld/search_oneshot").main;
-                main(opts, done);
-            });
-
-            it("Search#realtime", function (done) {
-
-                this.timeout(40000)
-                var main = require("../examples/node/helloworld/search_realtime").main;
-                main(opts, done);
-            });
-
-            it("Logging", function (done) {
-                var main = require("../examples/node/helloworld/log").main;
-                main(opts, done);
-            })
-        }),
-
-        describe("Jobs Example Tests", function (done) {
-            beforeEach(function (done) {
-                var context = this;
-
-                this.main = require("../examples/node/jobs").main;
-                this.run = function (command, args, options, callback) {
-                    var combinedArgs = argv.slice();
-                    if (command) {
-                        combinedArgs.push(command);
-                    }
-
-                    if (args) {
-                        for (var i = 0; i < args.length; i++) {
-                            combinedArgs.push(args[i]);
-                        }
-                    }
-
-                    if (options) {
-                        for (var key in options) {
-                            if (options.hasOwnProperty(key)) {
-                                combinedArgs.push("--" + key);
-                                combinedArgs.push(options[key]);
-                            }
-                        }
-                    }
-
-                    return context.main(combinedArgs, callback);
-                };
-
-                done();
-            });
-
-            it("help", function (done) {
-                this.run(null, null, null, function (err) {
-                    assert.ok(!!err);
-                    done();
-                });
-            });
-
-            it("List jobs", function (done) {
-                this.run("list", null, null, function (err) {
-                    assert.ok(!err);
-                    done();
-                });
-            });
-
-            it("Create job", function (done) {
-                var create = {
-                    search: "search index=_internal | head 1",
-                    id: getNextId()
-                };
-
-                var context = this;
-                context.run("create", [], create, function (err) {
-                    assert.ok(!err);
-                    context.run("cancel", [create.id], null, function (err) {
-                        assert.ok(!err);
-                        done();
-                    });
-                });
-            });
-
-            it("Cancel job", function (done) {
-                var create = {
-                    search: "search index=_internal | head 1",
-                    id: getNextId()
-                };
-
-                var context = this;
-                context.run("create", [], create, function (err) {
-                    assert.ok(!err);
-                    context.run("cancel", [create.id], null, function (err) {
-                        assert.ok(!err);
-                        done();
-                    });
-                });
-            });
-
-            it("List job properties", function (done) {
-                var create = {
-                    search: "search index=_internal | head 1",
-                    id: getNextId()
-                };
-
-                var context = this;
-                context.run("create", [], create, function (err) {
-                    assert.ok(!err);
-                    context.run("list", [create.id], null, function (err) {
-                        assert.ok(!err);
-                        context.run("cancel", [create.id], null, function (err) {
-                            assert.ok(!err);
-                            done();
-                        });
-                    });
-                });
-            });
-
-            it("List job events", function (done) {
-                var create = {
-                    search: "search index=_internal | head 1",
-                    id: getNextId()
-                };
-
-                var context = this;
-                context.run("create", [], create, function (err) {
-                    assert.ok(!err);
-                    context.run("events", [create.id], null, function (err) {
-                        assert.ok(!err);
-                        context.run("cancel", [create.id], null, function (err) {
-                            assert.ok(!err);
-                            done();
-                        });
-                    });
-                });
-            });
-
-            it("List job preview", function (done) {
-                var create = {
-                    search: "search index=_internal | head 1",
-                    id: getNextId()
-                };
-
-                var context = this;
-                context.run("create", [], create, function (err) {
-                    assert.ok(!err);
-                    context.run("preview", [create.id], null, function (err) {
-                        assert.ok(!err);
-                        context.run("cancel", [create.id], null, function (err) {
-                            assert.ok(!err);
-                            done();
-                        });
-                    });
-                });
-            });
-
-            it("List job results", function (done) {
-                var create = {
-                    search: "search index=_internal | head 1",
-                    id: getNextId()
-                };
-
-                var context = this;
-                context.run("create", [], create, function (err) {
-                    assert.ok(!err);
-                    context.run("results", [create.id], null, function (err) {
-                        assert.ok(!err);
-                        context.run("cancel", [create.id], null, function (err) {
-                            assert.ok(!err);
-                            done();
-                        });
-                    });
-                });
-            });
-
-            it("List job results, by column", function (done) {
-                var create = {
-                    search: "search index=_internal | head 1",
-                    id: getNextId()
-                };
-
-                var context = this;
-                context.run("create", [], create, function (err) {
-                    assert.ok(!err);
-                    context.run("results", [create.id], { output_mode: "json_cols" }, function (err) {
-                        assert.ok(!err);
-                        context.run("cancel", [create.id], null, function (err) {
-                            assert.ok(!err);
-                            done();
-                        });
-                    });
-                });
-            });
-
-            it("Create+list multiple jobs", function (done) {
-                var creates = [];
-                for (var i = 0; i < 3; i++) {
-                    creates[i] = {
-                        search: "search index=_internal | head 1",
-                        id: getNextId()
-                    };
-                }
-                var sids = creates.map(function (create) { return create.id; });
-
-                var context = this;
-                Async.parallelMap(
-                    creates,
-                    function (create, idx, done) {
-                        context.run("create", [], create, function (err, job) {
-                            assert.ok(!err);
-                            assert.ok(job);
-                            assert.strictEqual(job.sid, create.id);
-                            done(null, job);
-                        });
-                    },
-                    function (err, created) {
-                        for (var i = 0; i < created.length; i++) {
-                            assert.strictEqual(creates[i].id, created[i].sid);
-                        }
-
-                        context.run("list", sids, null, function (err) {
-                            assert.ok(!err);
-                            context.run("cancel", sids, null, function (err) {
-                                assert.ok(!err);
-                                done();
-                            });
-                        });
-
-                    }
-                );
-            })
-        }),
-
-        describe("Search Example Tests", function (done) {
-            beforeEach(function (done) {
-                var context = this;
-
-                this.main = require("../examples/node/search").main;
-                this.run = function (command, args, options, callback) {
-                    var combinedArgs = argv.slice();
-                    if (command) {
-                        combinedArgs.push(command);
-                    }
-
-                    if (args) {
-                        for (var i = 0; i < args.length; i++) {
-                            combinedArgs.push(args[i]);
-                        }
-                    }
-
-                    if (options) {
-                        for (var key in options) {
-                            if (options.hasOwnProperty(key)) {
-                                combinedArgs.push("--" + key);
-                                combinedArgs.push(options[key]);
-                            }
-                        }
-                    }
-
-                    return context.main(combinedArgs, callback);
-                };
-
-                done();
-            });
-
-            it("Create regular search", function (done) {
-                var options = {
-                    search: "search index=_internal | head 5"
-                };
-
-                this.run(null, null, options, function (err) {
-                    assert.ok(!err);
-                    done();
-                });
-            });
-
-            it("Create regular search with verbose", function (done) {
-                var options = {
-                    search: "search index=_internal | head 5"
-                };
-
-                this.run(null, ["--verbose"], options, function (err) {
-                    assert.ok(!err);
-                    done();
-                });
-            });
-
-            it("Create oneshot search", function (done) {
-                var options = {
-                    search: "search index=_internal | head 5",
-                    exec_mode: "oneshot"
-                };
-
-                this.run(null, ["--verbose"], options, function (err) {
-                    assert.ok(!err);
-                    done();
-                });
-            });
-
-            it("Create normal search with reduced count", function (done) {
-                var options = {
-                    search: "search index=_internal | head 20",
-                    count: 10
-                };
-
-                this.run(null, ["--verbose"], options, function (err) {
-                    assert.ok(!err);
-                    done();
-                });
-            })
-        })
-
-        // This test is commented out because it causes a failure/hang on
-        // Node >0.6. We need to revisit this test, so disabling it for now.
-        /*"Results Example Tests": {
-            
-            "Parse row results": function(done) {
-                var main = require("../examples/node/results").main;
-                
-                svc.search(
-                    "search index=_internal | head 1 | stats count by sourcetype", 
-                    {exec_mode: "blocking"}, 
-                    function(err, job) {
-                        assert.ok(!err);
-                        job.results({output_mode: "json_rows"}, function(err, results) {
-                            assert.ok(!err);
-                            process.stdin.emit("data", JSON.stringify(results));
-                            process.stdin.emit("end");
-                        });
-                    }
-                );
-                
-                main([], function(err) {
-                    assert.ok(!err);
-                    done();
-                });
-            },
-            
-            "Parse column results": function(done) {
-                var main = require("../examples/node/results").main;
-                
-                svc.search(
-                    "search index=_internal | head 10 | stats count by sourcetype", 
-                    {exec_mode: "blocking"}, 
-                    function(err, job) {
-                        assert.ok(!err);
-                        job.results({output_mode: "json_cols"}, function(err, results) {
-                            assert.ok(!err);
-                            process.stdin.emit("data", JSON.stringify(results));
-                            process.stdin.emit("end");
-                        });    
-                    }
-                );
-                
-                main([], function(err) {
-                    assert.ok(!err);
-                    done();
-                });
-            },
-            
-            "Close stdin": function(done) {
-                process.stdin.destroy();
-                done();
-            }
-        }*/
-    )
-};
-
-// Run the individual test suite
-if (module.id === __filename && module.parent.id.includes('mocha')) {
-
-    var splunkjs = require('../index');
-    var options = require('../examples/node/cmdline');
-
-    var cmdline = options.create().parse(process.argv);
-
-    // If there is no command line, we should return
-    if (!cmdline) {
-        throw new Error("Error in parsing command line parameters");
-    }
-
-    var svc = new splunkjs.Service({
-        scheme: cmdline.opts.scheme,
-        host: cmdline.opts.host,
-        port: cmdline.opts.port,
-        username: cmdline.opts.username,
-        password: cmdline.opts.password,
-        version: cmdline.opts.version
-    });
-
-    // Exports tests on a successful login
-    module.exports = new Promise((resolve, reject) => {
-        svc.login(function (err, success) {
-            if (err || !success) {
-                throw new Error("Login failed - not running tests", err || "");
-            }
-            return resolve(exports.setup(svc, cmdline.opts));
-        });
-    });
-}
-
-}).call(this)}).call(this,require('_process'),"/tests/test_examples.js")
-},{"../examples/node/cmdline":2,"../examples/node/helloworld/apps":3,"../examples/node/helloworld/apps_async":4,"../examples/node/helloworld/endpoint_instantiation":5,"../examples/node/helloworld/firedalerts":6,"../examples/node/helloworld/firedalerts_async":7,"../examples/node/helloworld/firedalerts_create":8,"../examples/node/helloworld/firedalerts_delete":9,"../examples/node/helloworld/get_job":10,"../examples/node/helloworld/log":11,"../examples/node/helloworld/pivot_async":12,"../examples/node/helloworld/savedsearches":13,"../examples/node/helloworld/savedsearches_async":14,"../examples/node/helloworld/savedsearches_create":15,"../examples/node/helloworld/savedsearches_delete":16,"../examples/node/helloworld/search_blocking":17,"../examples/node/helloworld/search_normal":18,"../examples/node/helloworld/search_oneshot":19,"../examples/node/helloworld/search_realtime":20,"../examples/node/jobs":21,"../examples/node/search":22,"../index":23,"_process":281,"chai":104}],361:[function(require,module,exports){
+},{"../index":2,"./cmdline":318,"./utils":343,"_process":260,"chai":83}],340:[function(require,module,exports){
 (function (__filename){(function (){
 
 // Copyright 2011 Splunk, Inc.
@@ -84615,7 +81775,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,"/tests/test_http.js")
-},{"../index":23,"chai":104}],362:[function(require,module,exports){
+},{"../index":2,"chai":83}],341:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 // Copyright 2011 Splunk, Inc.
@@ -84660,7 +81820,7 @@ exports.setup = function (svc, loggedOutSvc) {
 
 if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../index');
-    var options = require('../examples/node/cmdline');
+    var options = require('./cmdline');
 
     var cmdline = options.create().parse(process.argv);
 
@@ -84703,7 +81863,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/test_service.js")
-},{"../examples/node/cmdline":2,"../index":23,"./service_tests/app":339,"./service_tests/collection":340,"./service_tests/configuration":341,"./service_tests/datamodels":342,"./service_tests/endpoint":343,"./service_tests/entity":344,"./service_tests/firedalerts":345,"./service_tests/indexes":346,"./service_tests/job":347,"./service_tests/namespace":348,"./service_tests/parser":349,"./service_tests/pivot":350,"./service_tests/properties":351,"./service_tests/savedsearch":352,"./service_tests/serverinfo":353,"./service_tests/storagepasswords":354,"./service_tests/typeahead":355,"./service_tests/user":356,"./service_tests/view":357,"_process":281}],363:[function(require,module,exports){
+},{"../index":2,"./cmdline":318,"./service_tests/app":319,"./service_tests/collection":320,"./service_tests/configuration":321,"./service_tests/datamodels":322,"./service_tests/endpoint":323,"./service_tests/entity":324,"./service_tests/firedalerts":325,"./service_tests/indexes":326,"./service_tests/job":327,"./service_tests/namespace":328,"./service_tests/parser":329,"./service_tests/pivot":330,"./service_tests/properties":331,"./service_tests/savedsearch":332,"./service_tests/serverinfo":333,"./service_tests/storagepasswords":334,"./service_tests/typeahead":335,"./service_tests/user":336,"./service_tests/view":337,"_process":260}],342:[function(require,module,exports){
 (function (__filename){(function (){
 
 // Copyright 2011 Splunk, Inc.
@@ -84975,7 +82135,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,"/tests/test_utils.js")
-},{"../index":23,"chai":104}],364:[function(require,module,exports){
+},{"../index":2,"chai":83}],343:[function(require,module,exports){
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -85030,7 +82190,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 
 })();
 
-},{"../lib/async":24,"chai":104}]},{},[26]);
+},{"../lib/async":3,"chai":83}]},{},[5]);
 
 
 })();
