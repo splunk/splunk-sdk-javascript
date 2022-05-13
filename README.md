@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.org/splunk/splunk-sdk-javascript.svg?branch=master)](https://travis-ci.org/splunk/splunk-sdk-javascript)
 # The Splunk Enterprise Software Development Kit for JavaScript
 
-#### Version 1.10.0
+#### Version 1.11.0
 
 The Splunk Enterprise Software Development Kit (SDK) for JavaScript contains library code and examples designed to enable developers to build applications using the Splunk platform and JavaScript. This SDK supports server-side and client-side JavaScript.
 
@@ -260,6 +260,7 @@ All development activities are managed by a helper script called `sdkdo`. For a 
 ### Compile the browser files
 
 To rebuild and minify the browser files, open a command prompt in the **splunk-sdk-javascript** directory and enter:
+Note:- If any TypeError is encountered, please run "npm install" before running the below command.
 
     node sdkdo compile
 
