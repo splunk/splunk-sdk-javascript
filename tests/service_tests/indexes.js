@@ -434,7 +434,7 @@ exports.setup = function (svc, loggedOutSvc) {
 
 if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
-    var options = require('../../examples/node/cmdline');
+    var options = require('../cmdline');
 
     var cmdline = options.create().parse(process.argv);
 

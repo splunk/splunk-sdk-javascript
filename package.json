@@ -5,7 +5,6 @@
     "homepage": "http://dev.splunk.com",
     "main": "index.js",
     "directories": {
-        "example": "examples",
         "lib": "lib",
         "test": "tests"
     },
