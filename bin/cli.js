@@ -45,7 +45,7 @@
     var SDK_VERSION = JSON.parse(fs.readFileSync(path.resolve(__dirname, "../package.json")).toString("utf-8")).version;
     var DOC_DIRECTORY = "docs-" + SDK_VERSION;
     var DOC_ASSETS_DIRECTORY = "assets";
-    var DOC_DIRECTORY_ASSETS = path.join("bin", DOC_ASSETS_DIRECTORY);
+    var DOC_DIRECTORY_ASSETS = path.join("bin/assets", DOC_ASSETS_DIRECTORY);
     var GENERATED_DOC_ASSETS = path.join(DOC_DIRECTORY, DOC_ASSETS_DIRECTORY);
     var IGNORED_MODULES = [
         "../contrib/nodeunit/test_reporter",
