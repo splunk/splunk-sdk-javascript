@@ -32,7 +32,6 @@
      * Constants
      */
     var DEFAULT_PORT = 6969;
-    var DOC_DIRECTORY = "docs";
     var REFDOC_DIRECTORY = "refs";
     var CLIENT_DIRECTORY = "client";
     var TEST_DIRECTORY = "tests";
@@ -44,6 +43,10 @@
     var DOC_FILE = "index.html";
     var BUILD_CACHE_FILE = ".buildcache";
     var SDK_VERSION = JSON.parse(fs.readFileSync(path.resolve(__dirname, "../package.json")).toString("utf-8")).version;
+    var DOC_DIRECTORY = "docs-" + SDK_VERSION;
+    var DOC_ASSETS_DIRECTORY = "assets";
+    var DOC_DIRECTORY_ASSETS = path.join("bin/docs", DOC_ASSETS_DIRECTORY);
+    var GENERATED_DOC_ASSETS = path.join(DOC_DIRECTORY, DOC_ASSETS_DIRECTORY);
     var IGNORED_MODULES = [
         "../contrib/nodeunit/test_reporter",
         "../contrib/nodeunit/junit_reporter",
@@ -634,11 +637,12 @@
             }
 
             ensureDirectoryExists(DOC_DIRECTORY);
-            ensureDirectoryExists(path.join(DOC_DIRECTORY, SDK_VERSION));
-            ensureDirectoryExists(path.join(DOC_DIRECTORY, SDK_VERSION, REFDOC_DIRECTORY));
+
+            // copy static assets directory
+            copyDirectoryRecursiveSync(DOC_DIRECTORY_ASSETS, GENERATED_DOC_ASSETS);
 
             for (var name in data) {
-                var htmlPath = path.join(DOC_DIRECTORY, SDK_VERSION, REFDOC_DIRECTORY, name + ".html");
+                var htmlPath = path.join(DOC_DIRECTORY, name + ".html");
                 fs.writeFileSync(htmlPath, data[name]);
             }
 
