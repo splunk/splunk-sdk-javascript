@@ -1114,7 +1114,7 @@ function outputHelpIfNecessary(cmd, options) {
 }
 
 }).call(this)}).call(this,require('_process'),require("buffer").Buffer)
-},{"_process":260,"buffer":79,"events":166,"fs":77,"path":252,"tty":307,"util":314}],2:[function(require,module,exports){
+},{"_process":240,"buffer":69,"events":148,"fs":67,"path":232,"tty":286,"util":293}],2:[function(require,module,exports){
 (function (process){(function (){
 
 // Copyright 2011 Splunk, Inc.
@@ -1152,8 +1152,7 @@ function outputHelpIfNecessary(cmd, options) {
         Utils           : require('./lib/utils'),
         Async           : require('./lib/async'),
         Paths           : require('./lib/paths').Paths,
-        Class           : require('./lib/jquery.class').Class,
-        ModularInputs   : require('./lib/modularinputs')
+        Class           : require('./lib/jquery.class').Class
     };
     
     if (typeof(window) === 'undefined') {
@@ -1161,7 +1160,7 @@ function outputHelpIfNecessary(cmd, options) {
     }
 })();
 }).call(this)}).call(this,require('_process'))
-},{"./lib/async":3,"./lib/context":4,"./lib/http":6,"./lib/jquery.class":7,"./lib/log":8,"./lib/modularinputs":12,"./lib/paths":19,"./lib/platform/node/node_http":20,"./lib/service":21,"./lib/utils":22,"_process":260,"dotenv":137}],3:[function(require,module,exports){
+},{"./lib/async":3,"./lib/context":4,"./lib/http":6,"./lib/jquery.class":7,"./lib/log":8,"./lib/paths":9,"./lib/platform/node/node_http":10,"./lib/service":11,"./lib/utils":12,"_process":240,"dotenv":129}],3:[function(require,module,exports){
 /*!*/
 // Copyright 2012 Splunk, Inc.
 //
@@ -1704,7 +1703,7 @@ function outputHelpIfNecessary(cmd, options) {
         };
     };
 })();
-},{"./utils":22}],4:[function(require,module,exports){
+},{"./utils":12}],4:[function(require,module,exports){
 /*!*/
 // Copyright 2012 Splunk, Inc.
 //
@@ -2214,7 +2213,7 @@ function outputHelpIfNecessary(cmd, options) {
     };
 })();
 
-},{"./http":6,"./jquery.class":7,"./paths":19,"./platform/node/node_http":20,"./utils":22}],5:[function(require,module,exports){
+},{"./http":6,"./jquery.class":7,"./paths":9,"./platform/node/node_http":10,"./utils":12}],5:[function(require,module,exports){
 
 // Copyright 2011 Splunk, Inc.
 //
@@ -2241,7 +2240,7 @@ window.SplunkTest = {
     Context  : require('../../tests/test_context'),
     Service  : require('../../tests/test_service')
 };
-},{"../../tests/test_async":338,"../../tests/test_context":339,"../../tests/test_http":340,"../../tests/test_service":341,"../../tests/test_utils":342}],6:[function(require,module,exports){
+},{"../../tests/test_async":317,"../../tests/test_context":318,"../../tests/test_http":319,"../../tests/test_service":320,"../../tests/test_utils":321}],6:[function(require,module,exports){
 /*!*/
 // Copyright 2012 Splunk, Inc.
 //
@@ -2636,7 +2635,7 @@ window.SplunkTest = {
     };
 })();
 
-},{"./jquery.class":7,"./log":8,"./utils":22,"cookie":117}],7:[function(require,module,exports){
+},{"./jquery.class":7,"./log":8,"./utils":12,"cookie":107}],7:[function(require,module,exports){
 /*! Simple JavaScript Inheritance
  * By John Resig http://ejohn.org/
  * MIT Licensed.
@@ -2893,1330 +2892,7 @@ window.SplunkTest = {
 })();
 
 }).call(this)}).call(this,require('_process'))
-},{"./utils":22,"_process":260}],9:[function(require,module,exports){
-/*!*/
-// Copyright 2014 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-(function() {
-    var ET = require("elementtree");
-    var utils = require("./utils");
-
-    /**
-     * Class representing an argument to a modular input kind.
-     *
-     * `Argument` is meant to be used with `Scheme` to generate an XML 
-     * definition of the modular input kind that Splunk understands.
-     *
-     * `name` is the only required parameter for the constructor.
-     *
-     * @example
-     *      
-     *      // Example with minimal parameters
-     *      var myArg1 = new Argument({name: "arg1"});
-     *
-     *      // Example with all parameters
-     *      var myArg2 = new Argument({
-     *          name: "arg1",
-     *          description: "This an argument with lots of parameters",
-     *          validation: "is_pos_int('some_name')",
-     *          dataType: Argument.dataTypeNumber,
-     *          requiredOnEdit: true,
-     *          requiredOnCreate: true
-     *      });
-     *
-     * @param {Object} argumentConfig An object containing at least the name property to configure this Argument
-     * @class splunkjs.ModularInputs.Argument
-     */
-    function Argument(argumentConfig) {
-        if (!argumentConfig) {
-            argumentConfig = {};
-        }
-
-        this.name = utils.isUndefined(argumentConfig.name) ? "" : argumentConfig.name;
-        this.description = utils.isUndefined(argumentConfig.description) ? null : argumentConfig.description;
-        this.validation = utils.isUndefined(argumentConfig.validation) ? null : argumentConfig.validation;
-        this.dataType = utils.isUndefined(argumentConfig.dataType) ? Argument.dataTypeString : argumentConfig.dataType;
-        this.requiredOnEdit = utils.isUndefined(argumentConfig.requiredOnEdit) ? false : argumentConfig.requiredOnEdit;
-        this.requiredOnCreate = utils.isUndefined(argumentConfig.requiredOnCreate) ? false : argumentConfig.requiredOnCreate;
-    }
-
-    // Constant values, do not change
-    // These should be used for setting the value of an Argument object's dataType field.
-    Argument.dataTypeBoolean = "BOOLEAN";
-    Argument.dataTypeNumber = "NUMBER";
-    Argument.dataTypeString = "STRING";
-
-    /**
-     * Adds an `Argument` object the passed in elementtree object.
-     * 
-     * Adds an <arg> subelement to the parent element, typically <args>,
-     * and sets up its subelements with their respective text.
-     *
-     * @param {Object} parent An elementtree element object to be the parent of a new <arg> subelement
-     * @return {Object} An elementtree element object representing this argument.
-     * @function splunkjs.ModularInputs.Argument
-     */
-    Argument.prototype.addToDocument = function (parent) {
-        var arg = ET.SubElement(parent, "arg");
-        arg.set("name", this.name);
-
-        if (this.description) {
-            ET.SubElement(arg, "description").text = this.description;
-        }
-
-        if (this.validation) {
-            ET.SubElement(arg, "validation").text = this.validation;
-        }
-
-        // Add all other subelements to this <arg>, represented by (tag, text)
-        var subElements = [
-            {tag: "data_type", value: this.dataType},
-            {tag: "required_on_edit", value: this.requiredOnEdit},
-            {tag: "required_on_create", value: this.requiredOnCreate}
-        ];
-
-        for (var i = 0; i < subElements.length; i++) {
-            ET.SubElement(arg, subElements[i].tag).text = subElements[i].value.toString().toLowerCase();
-        }
-
-        return arg;
-    }; 
-    
-    module.exports = Argument;
-})();
-},{"./utils":17,"elementtree":140}],10:[function(require,module,exports){
-/*!*/
-// Copyright 2014 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-(function() {
-    var ET      = require("elementtree");
-    var utils   = require("./utils");
-
-    /**
-     * `Event` represents an event or fragment of an event to be written by this
-     * modular input to Splunk.
-     *
-     * @example
-     *      
-     *      // Minimal configuration
-     *      var myEvent =  new Event({
-     *          data: "This is a test of my new event.",
-     *          stanza: "myStanzaName",
-     *          time: parseFloat("1372187084.000")
-     *      });
-     *
-     *      // Full configuration
-     *      var myBetterEvent =  new Event({
-     *          data: "This is a test of my better event.",
-     *          stanza: "myStanzaName",
-     *          time: parseFloat("1372187084.000"),
-     *          host: "localhost",
-     *          index: "main",
-     *          source: "Splunk",
-     *          sourcetype: "misc",
-     *          done: true,
-     *          unbroken: true
-     *      });
-     *
-     * @param {Object} eventConfig An object containing the configuration for an `Event`.
-     * @class splunkjs.ModularInputs.Event
-     */
-    function Event(eventConfig) {
-        eventConfig = utils.isUndefined(eventConfig) ? {} : eventConfig;
-
-        this.data = utils.isUndefined(eventConfig.data) ? null : eventConfig.data;
-        this.done = utils.isUndefined(eventConfig.done) ? true : eventConfig.done;
-        this.host = utils.isUndefined(eventConfig.host) ? null : eventConfig.host;
-        this.index = utils.isUndefined(eventConfig.index) ? null : eventConfig.index;
-        this.source = utils.isUndefined(eventConfig.source) ? null : eventConfig.source;
-        this.sourcetype = utils.isUndefined(eventConfig.sourcetype) ? null : eventConfig.sourcetype;
-        this.stanza = utils.isUndefined(eventConfig.stanza) ? null : eventConfig.stanza;
-        this.unbroken = utils.isUndefined(eventConfig.unbroken) ? true : eventConfig.unbroken;
-
-        // eventConfig.time can be of type Date, Number, or String.
-        this.time = utils.isUndefined(eventConfig.time) ? null : eventConfig.time;
-    }
-
-    /** 
-    * Formats a time for Splunk, should be something like `1372187084.000`.
-    *
-    * @example
-    *
-    *   // When the time parameter is a string.
-    *   var stringTime = "1372187084";
-    *   var stringTimeFormatted = Event.formatTime(stringTime);
-    *
-    *   // When the time parameter is a number, no decimals.
-    *   var numericalTime = 1372187084;
-    *   var numericalTimeFormatted = Event.formatTime(numericalTime);
-    *
-    *   // When the time parameter is a number, with decimals.
-    *   var decimalTime = 1372187084.424;
-    *   var decimalTimeFormatted = Event.formatTime(decimalTime);
-    *
-    *   // When the time parameter is a Date object.
-    *   var dateObjectTime = Date.now();
-    *   var dateObjectTimeFormatted = Event.formatTime(dateObjectTime);
-    *
-    * @param {Anything} time The unformatted time in seconds or milliseconds, typically a String, Number, or `Date` Object.
-    * @return {Number} The formatted time in seconds.
-    * @function splunkjs.ModularInputs.Event
-    */
-    Event.formatTime = function(time) {
-        var cleanTime;
-        
-        // If time is a Date object, return its value.
-        if (time instanceof Date) {
-            time = time.valueOf();
-        }
-
-        if (!time || time === null) {
-            return null;
-        }
-
-        // Values with decimals
-        if (time.toString().indexOf(".") !== -1) {
-            time = parseFloat(time).toFixed(3); // Clean up the extra decimals right away.
-
-            // A perfect time in milliseconds, with the decimal in the right spot.
-            if (time.toString().indexOf(".") >= 10) {
-                cleanTime = parseFloat(time.toString().substring(0,14)).toFixed(3);
-            }
-            // A time with fewer than expected digits, or with a decimal too far to the left.
-            else if (time.toString().length <= 13 || time.toString().indexOf(".") < 10) {
-                cleanTime = parseFloat(time).toFixed(3);
-            }
-            // Any other value has more digits than the expected time format, get the first 15.
-            else {
-                cleanTime = (parseFloat(time.toString().substring(0,14))/1000).toFixed(3);
-            }
-        }
-        // Values without decimals
-        else {
-            // A time in milliseconds, no decimal (ex: Date.now()).
-            if (time.toString().length === 13) {
-                cleanTime = (parseFloat(time)/1000).toFixed(3);
-            }
-            // A time with fewer than expected digits.
-            else if (time.toString().length <= 12) {
-                cleanTime = parseFloat(time).toFixed(3);
-            }
-            // Any other value has more digits than the expected time format, get the first 14.
-            else {
-                cleanTime = parseFloat(time.toString().substring(0, 13)/1000).toFixed(3);
-            }
-        }
-        return cleanTime;
-    };
-
-    /** 
-    * Writes an XML representation of this, and Event object to the provided `Stream`,
-    * starting at the provided offset.
-    *
-    * If this.data is undefined, or if there is an error writing to the provided `Stream`,
-    * an error will be thrown.
-    *
-    * @param {Object} stream A `Stream` object to write this `Event` to.
-    * @function splunkjs.ModularInputs.Event
-    */
-    Event.prototype._writeTo = function(stream) {
-        if (!this.data) {
-            throw new Error("Events must have at least the data field set to be written to XML.");
-        }
-        
-        var xmlEvent = ET.Element("event");
-
-        if (this.stanza) {
-            xmlEvent.set("stanza", this.stanza);
-        }
-        // Convert this.unbroken (a boolean) to a number (0 or 1), then to a string
-        xmlEvent.set("unbroken", (+this.unbroken).toString());
-        
-        if (!utils.isUndefined(this.time) && this.time !== null) {
-            ET.SubElement(xmlEvent, "time").text = Event.formatTime(this.time).toString();
-        }
-
-        // If this.data is a JS object, stringify it
-        if (typeof this.data === "object") {
-            this.data = JSON.stringify(this.data);
-        }
-
-        var subElements = [
-            {tag: "source", text: this.source},
-            {tag: "sourcetype", text: this.sourcetype},
-            {tag: "index", text: this.index},
-            {tag: "host", text: this.host},
-            {tag: "data", text: this.data}
-        ];
-        for (var i = 0; i < subElements.length; i++) {
-            var node = subElements[i];
-            if (node.text) {
-                ET.SubElement(xmlEvent, node.tag).text = node.text;
-            }
-        }
-
-        if (this.done || !utils.isUndefined(this.done)) {
-            ET.SubElement(xmlEvent, "done");
-        }
-
-        var eventString = ET.tostring(xmlEvent, {"xml_declaration": false});
-
-        // Throws an exception if there's an error writing to the stream.
-        stream.write(eventString);
-    };
-
-    module.exports = Event;
-})();
-
-},{"./utils":17,"elementtree":140}],11:[function(require,module,exports){
-(function (process){(function (){
-/*!*/
-// Copyright 2014 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-(function() {
-    var ET      = require("elementtree");
-    var utils   = require("./utils");
-    var Logger  = require("./logger");
-    var stream  = require("stream");
-    var Async   = require("../async");
-    /**
-     * `EventWriter` writes events and error messages to Splunk from a modular input.
-     *
-     * Its two important methods are `writeEvent`, which takes an `Event` object,
-     * and `log`, which takes a severity and an error message.
-     *
-     * @param {Object} output A stream to output data, defaults to `process.stdout`
-     * @param {Object} error A stream to output errors, defaults to `process.stderr`
-     * @class splunkjs.ModularInputs.EventWriter
-     */
-    function EventWriter(output, error) {
-        this._out = utils.isUndefined(output) ? process.stdout : output;
-        this._err = utils.isUndefined(error) ? process.stderr : error;
-
-        // Has the opening <stream> tag been written yet?
-        this._headerWritten = false;
-    }
-
-    /**
-    * Writes an `Event` object to the output stream specified
-    * in the constructor.
-    *
-    * @param {Object} event An `Event` Object.
-    * @function splunkjs.ModularInputs.EventWriter
-    */
-    EventWriter.prototype.writeEvent = function(event) {        
-        if (!this._headerWritten) {
-            this._out.write("<stream>");
-            this._headerWritten = true;
-        }
-
-        try {
-            event._writeTo(this._out);
-        }
-        catch (e) {
-            if (e.message === "Events must have at least the data field set to be written to XML.") {
-                Logger.warn("", e.message, this._err);
-                throw e;
-            }
-            Logger.error("", e.message, this._err);
-            throw e;
-        }
-    };
-
-    /**
-    * Writes a string representation of an `Elementtree` Object to the 
-    * output stream specified in the constructor.
-    *
-    * This function will throw an exception if there is an error
-    * while making a string from `xmlDocument`, or
-    * while writing the string created from `xmlDocument`.
-    *
-    * @param {Object} xmlDocument An `Elementtree` Object representing an XML document.
-    * @function splunkjs.ModularInputs.EventWriter
-    */
-    EventWriter.prototype.writeXMLDocument = function(xmlDocument) {
-        var xmlString = ET.tostring(xmlDocument, {"xml_declaration": false});
-        this._out.write(xmlString);
-    };
-
-    /**
-    * Writes the closing </stream> tag to make the XML well formed.
-    *
-    * @function splunkjs.ModularInputs.EventWriter
-    */
-    EventWriter.prototype.close = function() {
-        this._out.write("</stream>");
-    };
-
-    module.exports = EventWriter;
-})();
-
-}).call(this)}).call(this,require('_process'))
-},{"../async":3,"./logger":14,"./utils":17,"_process":260,"elementtree":140,"stream":301}],12:[function(require,module,exports){
-(function (process){(function (){
-
-// Copyright 2014 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-var Async = require('../async');
-
-var ModularInputs = {
-    utils: require("./utils"),
-    ValidationDefinition: require('./validationdefinition'),
-    InputDefinition: require('./inputdefinition'),
-    Event: require('./event'),
-    EventWriter: require('./eventwriter'),
-    Argument: require('./argument'),
-    Scheme: require('./scheme'),
-    ModularInput: require('./modularinput'),
-    Logger: require('./logger')
-};
-
-/**
- * Executes a modular input script.
- *
- * @param {Object} exports An instance of ModularInput representing a modular input.
- * @param {Object} module The module object, used for determining if it's the main module (`require.main`).
- */
-ModularInputs.execute = function(exports, module) {
-    if (require.main === module) {
-        // Slice process.argv ignoring the first argument as it is the path to the node executable.
-        var args = process.argv.slice(1);
-
-        // Default empty functions for life cycle events.
-        exports.setup       = exports.setup     || ModularInputs.ModularInput.prototype.setup;
-        exports.start       = exports.start     || ModularInputs.ModularInput.prototype.start;
-        exports.end         = exports.end       || ModularInputs.ModularInput.prototype.end;
-        exports.teardown    = exports.teardown  || ModularInputs.ModularInput.prototype.teardown;
-
-        // Setup the default values.
-        exports._inputDefinition = exports._inputDefinition || null;
-        exports._service         = exports._service         || null;
-
-        // We will call close() on this EventWriter after streaming events, which is handled internally
-        // by ModularInput.runScript().
-        var ew = new this.EventWriter();
-
-        // In order to ensure that everything that is written to stdout/stderr is flushed before we exit,
-        // set the file handles to blocking. This ensures we exit properly in a timely fashion.
-        // https://github.com/nodejs/node/issues/6456
-        [process.stdout, process.stderr].forEach(function(s) {
-            if (s && s.isTTY && s._handle && s._handle.setBlocking) {
-                s._handle.setBlocking(true);
-            }
-        });
-
-        var scriptStatus;
-        Async.chain([
-                function(done) {
-                    exports.setup(done);
-                },
-                function(done) {
-                    ModularInputs.ModularInput.runScript(exports, args, ew, process.stdin, done);
-                },
-                function(status, done) {
-                    scriptStatus = status;
-                    exports.teardown(done);
-                }
-            ],
-            function(err) {
-                if (err) {
-                    ModularInputs.Logger.error('', err, ew._err);
-                }
-
-                process.exit(scriptStatus || err ? 1 : 0);
-            }
-        );
-    }
-};
-
-module.exports = ModularInputs;
-
-}).call(this)}).call(this,require('_process'))
-},{"../async":3,"./argument":9,"./event":10,"./eventwriter":11,"./inputdefinition":13,"./logger":14,"./modularinput":15,"./scheme":16,"./utils":17,"./validationdefinition":18,"_process":260}],13:[function(require,module,exports){
-/*!*/
-// Copyright 2014 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-(function() {
-    var ET      = require("elementtree");
-    var utils   = require("./utils");
-
-    /**
-     * `InputDefinition` encodes the XML defining inputs that Splunk passes to
-     * a modular input script.
-     *
-     * @example
-     *
-     *      var i =  new InputDefinition();
-     *
-     * @class splunkjs.ModularInputs.InputDefinition
-     */
-    function InputDefinition() {
-        this.metadata = {};
-        this.inputs = {};
-    }
-
-    /**
-     * Parse a string containing XML into an `InputDefinition`.
-     *
-     * This function will throw an exception if `str`
-     * contains unexpected XML.
-     *
-     * The XML typically will look like this:
-     * 
-     * `<input>`
-     *   `<server_host>tiny</server_host>`
-     *   `<server_uri>https://127.0.0.1:8089</server_uri>`
-     *   `<checkpoint_dir>/opt/splunk/var/lib/splunk/modinputs</checkpoint_dir>`
-     *   `<session_key>123102983109283019283</session_key>`
-     *   `<configuration>`
-     *     `<stanza name="foobar://aaa">`
-     *       `<param name="param1">value1</param>`
-     *       `<param name="param2">value2</param>`
-     *       `<param name="disabled">0</param>`
-     *       `<param name="index">default</param>`
-     *     `</stanza>`
-     *     `<stanza name="foobar://bbb">`
-     *       `<param name="param1">value11</param>`
-     *       `<param name="param2">value22</param>`
-     *       `<param name="disabled">0</param>`
-     *       `<param name="index">default</param>`
-     *       `<param_list name="multiValue">`
-     *         `<value>value1</value>`
-     *         `<value>value2</value>`
-     *       `</param_list>`
-     *       `<param_list name="multiValue2">`
-     *         `<value>value3</value>`
-     *         `<value>value4</value>`
-     *       `</param_list>`
-     *     `</stanza>`
-     *   `</configuration>`
-     * `</input>`
-     *
-     * @param {String} str A string containing XML to parse.
-     * @return {Object} An InputDefiniion object.
-     * @function splunkjs.ModularInputs.InputDefinition
-     */
-    InputDefinition.parse = function(str) {
-        var definition = new InputDefinition();
-        var rootChildren = ET.parse(str).getroot().getchildren();
-        for (var i = 0; i < rootChildren.length; i++) {
-            var node = rootChildren[i];
-            if (node.tag === "configuration") {
-                definition.inputs = utils.parseXMLData(node, "stanza");
-            }
-            else {
-                definition.metadata[node.tag] = node.text;
-            }
-        }
-        return definition;
-    };
-
-    module.exports = InputDefinition;
-})();
-},{"./utils":17,"elementtree":140}],14:[function(require,module,exports){
-(function (process){(function (){
-/*!*/
-// Copyright 2014 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-(function () {
-    "use strict";
-    var utils   = require("./utils");
-    var root = exports || this;
-
-    /**
-     * `Logger` logs messages to Splunk's internal logs.
-     *
-     * @class splunkjs.ModularInputs.Logger
-     */
-
-    // Severities that Splunk understands for log messages from modular inputs.
-    // DO NOT CHANGE THESE
-    root.DEBUG = "DEBUG";
-    root.INFO  = "INFO";
-    root.WARN  = "WARN";
-    root.ERROR = "ERROR";
-    root.FATAL = "FATAL";
-
-    root._log = function(severity, name, message, logStream) {
-        logStream = logStream || process.stderr;
-
-        // Prevent a double space if name isn't passed.
-        if (name && name.length > 0) {
-            name = name + " ";
-        }
-
-        var msg = severity + " Modular input " + name + message + "\n";
-        logStream.write(msg);
-    };
-
-    /**
-     * Logs messages about the state of this modular input to Splunk.
-     * These messages will show up in Splunk's internal logs.
-     *
-     * @param {String} name The name of this modular input.
-     * @param {String} message The message to log.
-     * @param {Object} stream (Optional) A stream to write log messages to, defaults to process.stderr.
-     * @function splunkjs.ModularInputs.Logger
-     */
-    root.debug = function (name, message, stream) {
-        try {
-            root._log(root.DEBUG, name, message, stream);
-        }
-        catch (e) {
-            throw e;
-        }
-    };
-
-    /**
-     * Logs messages about the state of this modular input to Splunk.
-     * These messages will show up in Splunk's internal logs.
-     *
-     * @param {String} name The name of this modular input.
-     * @param {String} message The message to log.
-     * @param {Object} stream (Optional) A stream to write log messages to, defaults to process.stderr.
-     * @function splunkjs.ModularInputs.Logger
-     */
-    root.info = function (name, message, stream) {
-        try {
-            root._log(root.INFO, name, message, stream);
-        }
-        catch (e) {
-            throw e;
-        }
-    };
-
-    /**
-     * Logs messages about the state of this modular input to Splunk.
-     * These messages will show up in Splunk's internal logs.
-     *
-     * @param {String} name The name of this modular input.
-     * @param {String} message The message to log.
-     * @param {Object} stream (Optional) A stream to write log messages to, defaults to process.stderr.
-     * @function splunkjs.ModularInputs.Logger
-     */
-    root.warn = function (name, message, stream) {
-        try {
-            root._log(root.WARN, name, message, stream);
-        }
-        catch (e) {
-            throw e;
-        }
-    };
-
-    /**
-     * Logs messages about the state of this modular input to Splunk.
-     * These messages will show up in Splunk's internal logs.
-     *
-     * @param {String} name The name of this modular input.
-     * @param {String} message The message to log.
-     * @param {Object} stream (Optional) A stream to write log messages to, defaults to process.stderr.
-     * @function splunkjs.ModularInputs.Logger
-     */
-    root.error = function (name, message, stream) {
-        try {
-            root._log(root.ERROR, name, message, stream);
-        }
-        catch (e) {
-            throw e;
-        }
-    };
-
-    /**
-     * Logs messages about the state of this modular input to Splunk.
-     * These messages will show up in Splunk's internal logs.
-     *
-     * @param {String} name The name of this modular input.
-     * @param {String} message The message to log.
-     * @param {Object} stream (Optional) A stream to write log messages to, defaults to process.stderr.
-     * @function splunkjs.ModularInputs.Logger
-     */
-    root.fatal = function (name, message, stream) {
-        try {
-            root._log(root.FATAL, name, message, stream);
-        }
-        catch (e) {
-            throw e;
-        }
-    };
-
-    module.exports = root;
-}());
-
-}).call(this)}).call(this,require('_process'))
-},{"./utils":17,"_process":260}],15:[function(require,module,exports){
-(function (Buffer){(function (){
-/*!*/
-// Copyright 2014 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-(function() {
-    var ET = require("elementtree");
-    var url = require("url");
-    var utils = require("./utils");
-    var Async = require("../async");
-    var ValidationDefinition = require("./validationdefinition");
-    var InputDefinition = require("./inputdefinition");
-    var EventWriter = require("./eventwriter");
-    var Scheme = require("./scheme");
-    var Service = require("../service");
-    var Logger = require("./logger");
-
-    /**
-     * A base class for implementing modular inputs.
-     *
-     * Subclasses should implement `getScheme` and `streamEvents`,
-     * and optionally `validateInput` if the modular input uses 
-     * external validation.
-     * 
-     * The `run` function is used to run modular inputs; it typically
-     * should not be overridden.
-     * @class splunkjs.ModularInputs.ModularInput
-     */
-    function ModularInput() {
-        this._inputDefinition = null;
-        this._service = null;
-    }
-
-    /**
-     * Handles all the specifics of running a modular input.
-     *
-     * @param {Object} exports An object representing a modular input script.
-     * @param {Array} args A list of command line arguments passed to this script.
-     * @param {Object} eventWriter An `EventWriter` object for writing event.
-     * @param {Object} inputStream A `Stream` object for reading inputs.
-     * @param {Function} callback The function to call after running this script: `(err, status)`.
-     * @function splunkjs.ModularInputs.ModularInput
-     */
-    ModularInput.runScript = function(exports, args, eventWriter, inputStream, callback) {
-        // Default empty functions for life cycle events, this is mostly used for the unit tests
-        exports.setup       = exports.setup     || ModularInput.prototype.setup;
-        exports.start       = exports.start     || ModularInput.prototype.start;
-        exports.end         = exports.end       || ModularInput.prototype.end;
-        exports.teardown    = exports.teardown  || ModularInput.prototype.teardown;
-
-        var that = this;
-
-        // Resume streams before trying to read their data.
-        // If the inputStream is a TTY, we don't want to open the stream as it will hold the process open.
-        if (inputStream.resume && !inputStream.isTTY) {
-            inputStream.resume();
-        }
-        var bigBuff = Buffer.alloc(0);
-
-        // When streaming events...
-        if (args.length === 1) {
-            // After waiting 30.5 seconds for input definitions, assume something bad happened
-            var inputDefintionsReceivedTimer = setTimeout(function() {
-                callback(new Error("Receiving input definitions prior to streaming timed out."), 1);
-            }, 30500);
-
-            // Listen for data on inputStream.
-            inputStream.on("data", function(chunk) {
-                // Chunk will be a Buffer when interacting with Splunk.
-                bigBuff = Buffer.concat([bigBuff, chunk]);
-
-                // Remove any trailing whitespace.
-                var bufferString = bigBuff.toString("utf8", 0, bigBuff.length).trim();
-                
-                if (utils.endsWith(bufferString, "</input>")) {
-                    // If we've received all of the input definitions, clear the timeout timer
-                    clearTimeout(inputDefintionsReceivedTimer);
-
-                    var found = InputDefinition.parse(bufferString);
-                    exports._inputDefinition = found;
-                    that._inputDefinition = found;
-
-                    Async.chain([
-                            function(done) {
-                                Async.parallelEach(
-                                    Object.keys(exports._inputDefinition.inputs),
-                                    function (name, index, doneEach) {
-                                        var input = exports._inputDefinition.inputs[name];
-                                        
-                                        Async.chain([
-                                                function(innerDone) {
-                                                    exports.start(name, input, innerDone);
-                                                },
-                                                function(innerDone) {
-                                                    exports.streamEvents(name, input, eventWriter, innerDone);
-                                                },
-                                                function(innerDone) {
-                                                    // end() will only be called if streamEvents doesn't fail.
-                                                    exports.end(name, input, innerDone);
-                                                }
-                                            ],
-                                            function(innerErr) {
-                                                doneEach(innerErr, innerErr ? 1 : 0);
-                                            }
-                                        );
-                                    }, 
-                                    function (streamErr) {
-                                        done(streamErr, streamErr ? 1 : 0);
-                                    }
-                                );
-                            }
-                        ],
-                        function(err) {
-                            // Write the closing </stream> tag.
-                            if (eventWriter._headerWritten) {
-                                eventWriter.close();
-                            }
-                            callback(err, err ? 1 : 0);
-                        }
-                    );
-                }
-            });
-        }
-        // When getting the scheme...
-        else if (args.length >= 2 && args[1].toString().toLowerCase() === "--scheme") {
-            var scheme = exports.getScheme();
-
-            if (!scheme) {
-                Logger.fatal("", "script returned a null scheme.", eventWriter._err);
-                callback(null, 1);
-            }
-            else {
-                try {
-                    eventWriter.writeXMLDocument(scheme.toXML());
-                    callback(null, 0);
-                }
-                catch (e) {
-                    Logger.fatal("", "script could not return the scheme, error: " + e, eventWriter._err);
-                    callback(e, 1);
-                }
-            }
-        }
-        // When validating arguments...
-        else if (args.length >= 2 && args[1].toString().toLowerCase() === "--validate-arguments") {
-            // After waiting 30.5 seconds for a validation definition, assume something bad happened
-            var validationDefintionReceivedTimer = setTimeout(function() {
-                callback(new Error("Receiving validation definition prior to validating timed out."), 1);
-            }, 30500);
-
-            // Listen for data on inputStream.
-            inputStream.on("data", function(chunk) {
-                bigBuff = Buffer.concat([bigBuff, chunk]);
-                
-                // Remove any trailing whitespace.
-                var bufferString = bigBuff.toString("utf8", 0, bigBuff.length).trim();
-
-                if (utils.endsWith(bufferString, "</items>")) {
-                    // If we've received all of the validation definition, clear the timeout timer
-                    clearTimeout(validationDefintionReceivedTimer);
-                    Async.chain([
-                            function (done) {
-                                try {
-                                    // If there is no validateInput method set, accept all input.
-                                    if (utils.isUndefined(exports.validateInput)) {
-                                        done();
-                                    }
-                                    else {
-                                        // If exports.validateInput doesn't throw an error, we assume validation succeeded.
-                                        var definition = ValidationDefinition.parse(bigBuff.toString("utf8", 0, bigBuff.length));
-                                        exports.validateInput(definition, done);
-                                    }
-                                }
-                                catch (e) {
-                                    // If exports.validateInput throws an error, we assume validation failed.
-                                    done(e);
-                                }
-                            }
-                        ],
-                        function (err) {
-                            if (err) {
-                                Logger.error("", err.message);
-                                Logger.error("", "Stack trace for a modular input error: " + err.stack);
-
-                                try {
-                                    var errorRoot = ET.Element("error");
-                                    ET.SubElement(errorRoot, "message").text = err.message;
-                                    eventWriter.writeXMLDocument(errorRoot);
-                                    callback(err, 1); // Some error while validating the input.
-                                }
-                                catch (e) {
-                                    callback(e, 1); // Error trying to write the error.
-                                }
-                            }
-                            else {
-                                callback(null, 0); // No error
-                            }
-                        }
-                    );
-                }
-            });
-        }
-        // When we get unexpected args...
-        else {
-            var msg = "Invalid arguments to modular input script: " + args.join() + "\n";
-            Logger.error("", msg, eventWriter._err);
-            callback(msg, 1);
-        }
-    };
-
-    /**
-     * Returns a `splunkjs.Service` object for this script invocation.
-     *
-     * The service object is created from the Splunkd URI and session key
-     * passed to the command invocation on the modular input stream. It is
-     * available as soon as the `ModularInput.streamEvents` function is called.
-     *
-     * @return {Object} A `Splunkjs.Service` Object, or null if you call this function before the `ModularInput.streamEvents` function is called.
-     * @function splunkjs.ModularInputs.ModularInput
-     */
-    ModularInput.service = function() {
-        if (this._service) {
-            return this._service;
-        }
-
-        if (!this._inputDefinition) {
-            return null;
-        }
-
-        var splunkdURI = this._inputDefinition.metadata["server_uri"];
-        var sessionKey = this._inputDefinition.metadata["session_key"];
-
-        var urlParts = url.parse(splunkdURI);
-
-        // urlParts.protocol will have a trailing colon; remove it.
-        var scheme = urlParts.protocol.replace(":", "");
-        var splunkdHost = urlParts.hostname;
-        var splunkdPort = urlParts.port;
-
-        this._service = new Service({
-            scheme: scheme,
-            host: splunkdHost,
-            port: splunkdPort,
-            token: sessionKey
-        });
-
-        return this._service;
-    };
-
-    // Default to empty functions for life cycle events.
-
-    /**
-     * Runs before streaming begins.
-     *
-     * @param {Function} done The function to call when done: `(err)`.
-     * @function splunkjs.ModularInputs.ModularInput
-     */
-    ModularInput.prototype.setup = function(done) {
-        done();
-    };
-    /**
-     * Runs once the streaming starts, for an input.
-     *
-     * @param {String} name The name of this modular input.
-     * @param {Object} definition An InputDefinition object.
-     * @param {Function} done The function to call when done: `(err)`.
-     * @function splunkjs.ModularInputs.ModularInput
-     */
-    ModularInput.prototype.start = function(name, definition, done) {
-        done();
-    };
-    /**
-     * Runs once the streaming ends, for an input (upon successfully streaming all events).
-     *
-     * @param {String} name The name of this modular input.
-     * @param {Object} definition An InputDefinition object.
-     * @param {Function} done The function to call when done: `(err)`.
-     * @function splunkjs.ModularInputs.ModularInput
-     */
-    ModularInput.prototype.end = function(name, definition, done) {
-        done();
-    };
-    /**
-     * Runs after all streaming is done for all inputs definitions.
-     *
-     * @param {Function} done The function to call when done: `(err)`.
-     * @function splunkjs.ModularInputs.ModularInput
-     */
-    ModularInput.prototype.teardown = function(done) {
-        done();
-    };
-
-    module.exports = ModularInput;
-})();
-
-}).call(this)}).call(this,require("buffer").Buffer)
-},{"../async":3,"../service":21,"./eventwriter":11,"./inputdefinition":13,"./logger":14,"./scheme":16,"./utils":17,"./validationdefinition":18,"buffer":79,"elementtree":140,"url":309}],16:[function(require,module,exports){
-/*!*/
-// Copyright 2014 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-(function() {
-    var ET = require("elementtree");
-    var utils = require("./utils");
-    var Argument = require("./argument");
-
-    /**
-     * Class representing the metadata for a modular input kind.
-     *
-     * A `Scheme` specifies a title, description, several options of how Splunk 
-     * should run modular inputs of this kind, and a set of arguments that define
-     * a particular modular input's properties.
-     * The primary use of `Scheme` is to abstract away the construction of XML
-     * to feed to Splunk.
-     *
-     * @example
-     *
-     *      var s =  new Scheme();
-     *
-     *      var myFullScheme = new Scheme("fullScheme");
-     *      myFullScheme.description = "This is how you set the other properties";
-     *      myFullScheme.useExternalValidation = true;
-     *      myFullScheme.useSingleInstance = false;
-     *      myFullScheme.streamingMode = Scheme.streamingModeSimple;
-     *
-     * @param {String} The identifier for this Scheme in Splunk.
-     * @class splunkjs.ModularInputs.Scheme
-     */
-    function Scheme(title) {
-        this.title = utils.isUndefined(title) ? "" : title;
-
-        // Set the defaults.
-        this.description = null;
-        this.useExternalValidation = true;
-        this.useSingleInstance = false;
-        this.streamingMode = Scheme.streamingModeXML;
-
-        // List of Argument objects, each to be represented by an <arg> tag.
-        this.args = [];
-    }
-
-    // Constant values, do not change.
-    // These should be used for setting the value of a Scheme object's streamingMode field.
-    Scheme.streamingModeSimple = "SIMPLE";
-    Scheme.streamingModeXML = "XML";
-
-    /**
-     * Add the provided argument, `arg`, to the `this.arguments` Array.
-     *
-     * @param {Object} arg An Argument object to add to this Scheme's argument list.
-     * @function splunkjs.ModularInputs.Scheme
-     */
-    Scheme.prototype.addArgument = function (arg) {
-        if (arg) {
-            this.args.push(arg);
-        }
-    };
-
-    /**
-     * Creates an elementtree Element representing this Scheme, then returns it.
-     *
-     * @return {Object} An elementtree Element object representing this Scheme.
-     * @function splunkjs.ModularInputs.Scheme
-     */
-    Scheme.prototype.toXML = function () {
-        var root = ET.Element("scheme");
-
-        ET.SubElement(root, "title").text = this.title;
-
-        if (this.description) {
-            ET.SubElement(root, "description").text = this.description;
-        }
-
-        // Add all subelements to this <scheme>, represented by (tag, text).
-        var subElements = [
-            {tag: "use_external_validation", value: this.useExternalValidation},
-            {tag: "use_single_instance", value: this.useSingleInstance},
-            {tag: "streaming_mode", value: this.streamingMode}
-        ];
-        
-        for (var i = 0; i < subElements.length; i++) {
-            ET.SubElement(root, subElements[i].tag).text = subElements[i].value.toString().toLowerCase();
-        }
-
-        // Create an <endpoint> subelement in root, then an <args> subelement in endpoint.
-        var argsElement = ET.SubElement(ET.SubElement(root, "endpoint"), "args");
-
-        // Add arguments as subelements to <args>.
-        for (var j = 0; j < this.args.length; j++) {
-            this.args[j].addToDocument(argsElement);
-        }
-
-        return root;
-    };
-    
-    module.exports = Scheme;
-})();
-
-},{"./argument":9,"./utils":17,"elementtree":140}],17:[function(require,module,exports){
-/*!*/
-// Copyright 2014 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-var utils   = require('../utils'); // Get all of the existing utils
-
-/**
- * Parse the parameters from an `InputDefinition` or `ValidationDefinition`.
- *
- * This is a helper function for `parseXMLData`.
- *
- * The XML typically will look like this:
- * 
- *   `<configuration>`
- *     `<stanza name="foobar://aaa">`
- *       `<param name="param1">value1</param>`
- *       `<param name="param2">value2</param>`
- *       `<param name="disabled">0</param>`
- *       `<param name="index">default</param>`
- *     `</stanza>`
- *     `<stanza name="foobar://bbb">`
- *       `<param name="param1">value11</param>`
- *       `<param name="param2">value22</param>`
- *       `<param name="disabled">0</param>`
- *       `<param name="index">default</param>`
- *       `<param_list name="multiValue">`
- *         `<value>value1</value>`
- *         `<value>value2</value>`
- *       `</param_list>`
- *       `<param_list name="multiValue2">`
- *         `<value>value3</value>`
- *         `<value>value4</value>`
- *       `</param_list>`
- *     `</stanza>`
- *   `</configuration>`
- *
- * @param {Object} an `Elementree` object representing the `<configuration>` XML node.
- * @return {Object} an `Elementree` object representing the parameters of node passed in.
- */
-utils.parseParameters = function(paramNode) {
-    switch (paramNode.tag) {
-        case "param":
-            return paramNode.text;
-        case "param_list":
-            var parameters = [];
-            var paramChildren = paramNode.getchildren();
-            for (var i = 0; i < paramChildren.length; i++) {
-                var mvp = paramChildren[i];
-                parameters.push(mvp.text);
-            }
-            return parameters;
-        default:
-            throw new Error("Invalid configuration scheme, <" + paramNode.tag + "> tag unexpected.");
-    }
-};
-
-/**
- * Parses the parameters from `Elementtree` representations of XML for
- * `InputDefinition` and `ValidationDefinition` objects.
- *
- * @param {Object} a parent `Elementtree` element object.
- * @param {String} the name of the child element to parse parameters from.
- * @return {Object} an object of the parameters parsed.
- */
-utils.parseXMLData = function(parentNode, childNodeTag) {
-    var data = {};
-    var children = parentNode.getchildren();
-    for (var i = 0; i < children.length; i++) {
-        var child = children[i];
-        if (child.tag === childNodeTag) {
-            if (childNodeTag === "stanza") {
-                data[child.get("name")] = {};
-                var stanzaChildren = child.getchildren();
-                for (var p = 0; p < stanzaChildren.length; p++) {
-                    var param = stanzaChildren[p];
-                    data[child.get("name")][param.get("name")] = utils.parseParameters(param);
-                }
-            }
-        }
-        else if ("item" === parentNode.tag) {
-            data[child.get("name")] = utils.parseParameters(child);
-        }
-    }
-    return data;
-};
-
-module.exports = utils;
-
-},{"../utils":22}],18:[function(require,module,exports){
-/*!*/
-// Copyright 2014 Splunk, Inc.
-//
-// Licensed under the Apache License, Version 2.0 (the "License"): you may
-// not use this file except in compliance with the License. You may obtain
-// a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
-// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
-// License for the specific language governing permissions and limitations
-// under the License.
-
-(function() {
-    var ET      = require("elementtree");
-    var utils   = require("./utils");
-
-    /**
-     * This class represents the XML sent by Splunk for external validation of a
-     * new modular input.
-     *
-     * @example
-     *
-     *      var v =  new ValidationDefinition();
-     *
-     * @class splunkjs.ModularInputs.ValidationDefinition
-     */
-    function ValidationDefinition() {
-        this.metadata = {};
-        this.parameters = {};
-    }
-
-    /**
-     * Creates a `ValidationDefinition` from a provided string containing XML.
-     *
-     * This function will throw an exception if `str`
-     * contains unexpected XML.
-     *
-     * The XML typically will look like this:
-     * 
-     * `<items>`
-     * `   <server_host>myHost</server_host>`
-     * `     <server_uri>https://127.0.0.1:8089</server_uri>`
-     * `     <session_key>123102983109283019283</session_key>`
-     * `     <checkpoint_dir>/opt/splunk/var/lib/splunk/modinputs</checkpoint_dir>`
-     * `     <item name="myScheme">`
-     * `       <param name="param1">value1</param>`
-     * `       <param_list name="param2">`
-     * `         <value>value2</value>`
-     * `         <value>value3</value>`
-     * `         <value>value4</value>`
-     * `       </param_list>`
-     * `     </item>`
-     * `</items>`
-     *
-     * @param {String} str A string containing XML to parse.
-     *
-     * @function splunkjs.ModularInputs.ValidationDefinition
-     */
-    ValidationDefinition.parse = function(str) {
-        var definition = new ValidationDefinition();
-        var rootChildren = ET.parse(str).getroot().getchildren();
-
-        for (var i = 0; i < rootChildren.length; i++) {
-            var node = rootChildren[i];            
-            if (node.tag === "item") {
-                definition.metadata["name"] = node.get("name");
-                definition.parameters = utils.parseXMLData(node, "");
-            }
-            else {
-                definition.metadata[node.tag] = node.text;
-            }
-        }
-        return definition;
-    };
-    
-    module.exports = ValidationDefinition;
-})();
-},{"./utils":17,"elementtree":140}],19:[function(require,module,exports){
+},{"./utils":12,"_process":240}],9:[function(require,module,exports){
 /*!*/
 // Copyright 2012 Splunk, Inc.
 //
@@ -4279,7 +2955,7 @@ module.exports = utils;
     };
 })();
 
-},{}],20:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 (function (Buffer){(function (){
 
 // Copyright 2011 Splunk, Inc.
@@ -4400,7 +3076,7 @@ module.exports = utils;
 })();
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"../../../package.json":317,"../../http":6,"../../utils":22,"buffer":79,"needle":227}],21:[function(require,module,exports){
+},{"../../../package.json":296,"../../http":6,"../../utils":12,"buffer":69,"needle":209}],11:[function(require,module,exports){
 /*!*/
 // Copyright 2014 Splunk, Inc.
 //
@@ -10219,7 +8895,7 @@ module.exports = utils;
         }
     });
 })();
-},{"./async":3,"./context":4,"./http":6,"./jquery.class":7,"./paths":19,"./utils":22}],22:[function(require,module,exports){
+},{"./async":3,"./context":4,"./http":6,"./jquery.class":7,"./paths":9,"./utils":12}],12:[function(require,module,exports){
 /*!*/
 // Copyright 2012 Splunk, Inc.
 //
@@ -10700,7 +9376,7 @@ module.exports = utils;
     };
 
 })();
-},{"fs":77,"path":252}],23:[function(require,module,exports){
+},{"fs":67,"path":232}],13:[function(require,module,exports){
 'use strict';
 
 const asn1 = exports;
@@ -10713,7 +9389,7 @@ asn1.constants = require('./asn1/constants');
 asn1.decoders = require('./asn1/decoders');
 asn1.encoders = require('./asn1/encoders');
 
-},{"./asn1/api":24,"./asn1/base":26,"./asn1/constants":30,"./asn1/decoders":32,"./asn1/encoders":35,"bn.js":37}],24:[function(require,module,exports){
+},{"./asn1/api":14,"./asn1/base":16,"./asn1/constants":20,"./asn1/decoders":22,"./asn1/encoders":25,"bn.js":27}],14:[function(require,module,exports){
 'use strict';
 
 const encoders = require('./encoders');
@@ -10772,7 +9448,7 @@ Entity.prototype.encode = function encode(data, enc, /* internal */ reporter) {
   return this._getEncoder(enc).encode(data, reporter);
 };
 
-},{"./decoders":32,"./encoders":35,"inherits":212}],25:[function(require,module,exports){
+},{"./decoders":22,"./encoders":25,"inherits":194}],15:[function(require,module,exports){
 'use strict';
 
 const inherits = require('inherits');
@@ -10927,7 +9603,7 @@ EncoderBuffer.prototype.join = function join(out, offset) {
   return out;
 };
 
-},{"../base/reporter":28,"inherits":212,"safer-buffer":291}],26:[function(require,module,exports){
+},{"../base/reporter":18,"inherits":194,"safer-buffer":271}],16:[function(require,module,exports){
 'use strict';
 
 const base = exports;
@@ -10937,7 +9613,7 @@ base.DecoderBuffer = require('./buffer').DecoderBuffer;
 base.EncoderBuffer = require('./buffer').EncoderBuffer;
 base.Node = require('./node');
 
-},{"./buffer":25,"./node":27,"./reporter":28}],27:[function(require,module,exports){
+},{"./buffer":15,"./node":17,"./reporter":18}],17:[function(require,module,exports){
 'use strict';
 
 const Reporter = require('../base/reporter').Reporter;
@@ -11577,7 +10253,7 @@ Node.prototype._isPrintstr = function isPrintstr(str) {
   return /^[A-Za-z0-9 '()+,-./:=?]*$/.test(str);
 };
 
-},{"../base/buffer":25,"../base/reporter":28,"minimalistic-assert":220}],28:[function(require,module,exports){
+},{"../base/buffer":15,"../base/reporter":18,"minimalistic-assert":202}],18:[function(require,module,exports){
 'use strict';
 
 const inherits = require('inherits');
@@ -11702,7 +10378,7 @@ ReporterError.prototype.rethrow = function rethrow(msg) {
   return this;
 };
 
-},{"inherits":212}],29:[function(require,module,exports){
+},{"inherits":194}],19:[function(require,module,exports){
 'use strict';
 
 // Helper
@@ -11762,7 +10438,7 @@ exports.tag = {
 };
 exports.tagByName = reverse(exports.tag);
 
-},{}],30:[function(require,module,exports){
+},{}],20:[function(require,module,exports){
 'use strict';
 
 const constants = exports;
@@ -11785,7 +10461,7 @@ constants._reverse = function reverse(map) {
 
 constants.der = require('./der');
 
-},{"./der":29}],31:[function(require,module,exports){
+},{"./der":19}],21:[function(require,module,exports){
 'use strict';
 
 const inherits = require('inherits');
@@ -12122,7 +10798,7 @@ function derDecodeLen(buf, primitive, fail) {
   return len;
 }
 
-},{"../base/buffer":25,"../base/node":27,"../constants/der":29,"bn.js":37,"inherits":212}],32:[function(require,module,exports){
+},{"../base/buffer":15,"../base/node":17,"../constants/der":19,"bn.js":27,"inherits":194}],22:[function(require,module,exports){
 'use strict';
 
 const decoders = exports;
@@ -12130,7 +10806,7 @@ const decoders = exports;
 decoders.der = require('./der');
 decoders.pem = require('./pem');
 
-},{"./der":31,"./pem":33}],33:[function(require,module,exports){
+},{"./der":21,"./pem":23}],23:[function(require,module,exports){
 'use strict';
 
 const inherits = require('inherits');
@@ -12183,7 +10859,7 @@ PEMDecoder.prototype.decode = function decode(data, options) {
   return DERDecoder.prototype.decode.call(this, input, options);
 };
 
-},{"./der":31,"inherits":212,"safer-buffer":291}],34:[function(require,module,exports){
+},{"./der":21,"inherits":194,"safer-buffer":271}],24:[function(require,module,exports){
 'use strict';
 
 const inherits = require('inherits');
@@ -12480,7 +11156,7 @@ function encodeTag(tag, primitive, cls, reporter) {
   return res;
 }
 
-},{"../base/node":27,"../constants/der":29,"inherits":212,"safer-buffer":291}],35:[function(require,module,exports){
+},{"../base/node":17,"../constants/der":19,"inherits":194,"safer-buffer":271}],25:[function(require,module,exports){
 'use strict';
 
 const encoders = exports;
@@ -12488,7 +11164,7 @@ const encoders = exports;
 encoders.der = require('./der');
 encoders.pem = require('./pem');
 
-},{"./der":34,"./pem":36}],36:[function(require,module,exports){
+},{"./der":24,"./pem":26}],26:[function(require,module,exports){
 'use strict';
 
 const inherits = require('inherits');
@@ -12513,7 +11189,7 @@ PEMEncoder.prototype.encode = function encode(data, options) {
   return out.join('\n');
 };
 
-},{"./der":34,"inherits":212}],37:[function(require,module,exports){
+},{"./der":24,"inherits":194}],27:[function(require,module,exports){
 (function (module, exports) {
   'use strict';
 
@@ -15961,7 +14637,7 @@ PEMEncoder.prototype.encode = function encode(data, options) {
   };
 })(typeof module === 'undefined' || module, this);
 
-},{"buffer":47}],38:[function(require,module,exports){
+},{"buffer":37}],28:[function(require,module,exports){
 (function (global){(function (){
 'use strict';
 
@@ -16471,7 +15147,7 @@ var objectKeys = Object.keys || function (obj) {
 };
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"object-assign":234,"util/":41}],39:[function(require,module,exports){
+},{"object-assign":214,"util/":31}],29:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -16496,14 +15172,14 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],40:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 module.exports = function isBuffer(arg) {
   return arg && typeof arg === 'object'
     && typeof arg.copy === 'function'
     && typeof arg.fill === 'function'
     && typeof arg.readUInt8 === 'function';
 }
-},{}],41:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 (function (process,global){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -17093,7 +15769,7 @@ function hasOwnProperty(obj, prop) {
 }
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./support/isBuffer":40,"_process":260,"inherits":39}],42:[function(require,module,exports){
+},{"./support/isBuffer":30,"_process":240,"inherits":29}],32:[function(require,module,exports){
 /*!
  * assertion-error
  * Copyright(c) 2013 Jake Luer <jake@qualiancy.com>
@@ -17211,7 +15887,7 @@ AssertionError.prototype.toJSON = function (stack) {
   return props;
 };
 
-},{}],43:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 (function (global){(function (){
 'use strict';
 
@@ -17240,7 +15916,7 @@ module.exports = function availableTypedArrays() {
 };
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],44:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 'use strict'
 
 exports.byteLength = byteLength
@@ -17392,7 +16068,7 @@ function fromByteArray (uint8) {
   return parts.join('')
 }
 
-},{}],45:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 (function (module, exports) {
   'use strict';
 
@@ -20941,7 +19617,7 @@ function fromByteArray (uint8) {
   };
 })(typeof module === 'undefined' || module, this);
 
-},{"buffer":47}],46:[function(require,module,exports){
+},{"buffer":37}],36:[function(require,module,exports){
 var r;
 
 module.exports = function rand(len) {
@@ -21008,9 +19684,9 @@ if (typeof self === 'object') {
   }
 }
 
-},{"crypto":47}],47:[function(require,module,exports){
+},{"crypto":37}],37:[function(require,module,exports){
 
-},{}],48:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
 // based on the aes implimentation in triple sec
 // https://github.com/keybase/triplesec
 // which is in turn based on the one from crypto-js
@@ -21240,7 +19916,7 @@ AES.prototype.scrub = function () {
 
 module.exports.AES = AES
 
-},{"safe-buffer":290}],49:[function(require,module,exports){
+},{"safe-buffer":270}],39:[function(require,module,exports){
 var aes = require('./aes')
 var Buffer = require('safe-buffer').Buffer
 var Transform = require('cipher-base')
@@ -21359,7 +20035,7 @@ StreamCipher.prototype.setAAD = function setAAD (buf) {
 
 module.exports = StreamCipher
 
-},{"./aes":48,"./ghash":53,"./incr32":54,"buffer-xor":78,"cipher-base":116,"inherits":212,"safe-buffer":290}],50:[function(require,module,exports){
+},{"./aes":38,"./ghash":43,"./incr32":44,"buffer-xor":68,"cipher-base":106,"inherits":194,"safe-buffer":270}],40:[function(require,module,exports){
 var ciphers = require('./encrypter')
 var deciphers = require('./decrypter')
 var modes = require('./modes/list.json')
@@ -21374,7 +20050,7 @@ exports.createDecipher = exports.Decipher = deciphers.createDecipher
 exports.createDecipheriv = exports.Decipheriv = deciphers.createDecipheriv
 exports.listCiphers = exports.getCiphers = getCiphers
 
-},{"./decrypter":51,"./encrypter":52,"./modes/list.json":62}],51:[function(require,module,exports){
+},{"./decrypter":41,"./encrypter":42,"./modes/list.json":52}],41:[function(require,module,exports){
 var AuthCipher = require('./authCipher')
 var Buffer = require('safe-buffer').Buffer
 var MODES = require('./modes')
@@ -21500,7 +20176,7 @@ function createDecipher (suite, password) {
 exports.createDecipher = createDecipher
 exports.createDecipheriv = createDecipheriv
 
-},{"./aes":48,"./authCipher":49,"./modes":61,"./streamCipher":64,"cipher-base":116,"evp_bytestokey":167,"inherits":212,"safe-buffer":290}],52:[function(require,module,exports){
+},{"./aes":38,"./authCipher":39,"./modes":51,"./streamCipher":54,"cipher-base":106,"evp_bytestokey":149,"inherits":194,"safe-buffer":270}],42:[function(require,module,exports){
 var MODES = require('./modes')
 var AuthCipher = require('./authCipher')
 var Buffer = require('safe-buffer').Buffer
@@ -21616,7 +20292,7 @@ function createCipher (suite, password) {
 exports.createCipheriv = createCipheriv
 exports.createCipher = createCipher
 
-},{"./aes":48,"./authCipher":49,"./modes":61,"./streamCipher":64,"cipher-base":116,"evp_bytestokey":167,"inherits":212,"safe-buffer":290}],53:[function(require,module,exports){
+},{"./aes":38,"./authCipher":39,"./modes":51,"./streamCipher":54,"cipher-base":106,"evp_bytestokey":149,"inherits":194,"safe-buffer":270}],43:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var ZEROES = Buffer.alloc(16, 0)
 
@@ -21707,7 +20383,7 @@ GHASH.prototype.final = function (abl, bl) {
 
 module.exports = GHASH
 
-},{"safe-buffer":290}],54:[function(require,module,exports){
+},{"safe-buffer":270}],44:[function(require,module,exports){
 function incr32 (iv) {
   var len = iv.length
   var item
@@ -21724,7 +20400,7 @@ function incr32 (iv) {
 }
 module.exports = incr32
 
-},{}],55:[function(require,module,exports){
+},{}],45:[function(require,module,exports){
 var xor = require('buffer-xor')
 
 exports.encrypt = function (self, block) {
@@ -21743,7 +20419,7 @@ exports.decrypt = function (self, block) {
   return xor(out, pad)
 }
 
-},{"buffer-xor":78}],56:[function(require,module,exports){
+},{"buffer-xor":68}],46:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var xor = require('buffer-xor')
 
@@ -21778,7 +20454,7 @@ exports.encrypt = function (self, data, decrypt) {
   return out
 }
 
-},{"buffer-xor":78,"safe-buffer":290}],57:[function(require,module,exports){
+},{"buffer-xor":68,"safe-buffer":270}],47:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 
 function encryptByte (self, byteParam, decrypt) {
@@ -21822,7 +20498,7 @@ exports.encrypt = function (self, chunk, decrypt) {
   return out
 }
 
-},{"safe-buffer":290}],58:[function(require,module,exports){
+},{"safe-buffer":270}],48:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 
 function encryptByte (self, byteParam, decrypt) {
@@ -21849,7 +20525,7 @@ exports.encrypt = function (self, chunk, decrypt) {
   return out
 }
 
-},{"safe-buffer":290}],59:[function(require,module,exports){
+},{"safe-buffer":270}],49:[function(require,module,exports){
 var xor = require('buffer-xor')
 var Buffer = require('safe-buffer').Buffer
 var incr32 = require('../incr32')
@@ -21881,7 +20557,7 @@ exports.encrypt = function (self, chunk) {
   return xor(chunk, pad)
 }
 
-},{"../incr32":54,"buffer-xor":78,"safe-buffer":290}],60:[function(require,module,exports){
+},{"../incr32":44,"buffer-xor":68,"safe-buffer":270}],50:[function(require,module,exports){
 exports.encrypt = function (self, block) {
   return self._cipher.encryptBlock(block)
 }
@@ -21890,7 +20566,7 @@ exports.decrypt = function (self, block) {
   return self._cipher.decryptBlock(block)
 }
 
-},{}],61:[function(require,module,exports){
+},{}],51:[function(require,module,exports){
 var modeModules = {
   ECB: require('./ecb'),
   CBC: require('./cbc'),
@@ -21910,7 +20586,7 @@ for (var key in modes) {
 
 module.exports = modes
 
-},{"./cbc":55,"./cfb":56,"./cfb1":57,"./cfb8":58,"./ctr":59,"./ecb":60,"./list.json":62,"./ofb":63}],62:[function(require,module,exports){
+},{"./cbc":45,"./cfb":46,"./cfb1":47,"./cfb8":48,"./ctr":49,"./ecb":50,"./list.json":52,"./ofb":53}],52:[function(require,module,exports){
 module.exports={
   "aes-128-ecb": {
     "cipher": "AES",
@@ -22103,7 +20779,7 @@ module.exports={
   }
 }
 
-},{}],63:[function(require,module,exports){
+},{}],53:[function(require,module,exports){
 (function (Buffer){(function (){
 var xor = require('buffer-xor')
 
@@ -22123,7 +20799,7 @@ exports.encrypt = function (self, chunk) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":79,"buffer-xor":78}],64:[function(require,module,exports){
+},{"buffer":69,"buffer-xor":68}],54:[function(require,module,exports){
 var aes = require('./aes')
 var Buffer = require('safe-buffer').Buffer
 var Transform = require('cipher-base')
@@ -22152,7 +20828,7 @@ StreamCipher.prototype._final = function () {
 
 module.exports = StreamCipher
 
-},{"./aes":48,"cipher-base":116,"inherits":212,"safe-buffer":290}],65:[function(require,module,exports){
+},{"./aes":38,"cipher-base":106,"inherits":194,"safe-buffer":270}],55:[function(require,module,exports){
 var DES = require('browserify-des')
 var aes = require('browserify-aes/browser')
 var aesModes = require('browserify-aes/modes')
@@ -22221,7 +20897,7 @@ exports.createDecipher = exports.Decipher = createDecipher
 exports.createDecipheriv = exports.Decipheriv = createDecipheriv
 exports.listCiphers = exports.getCiphers = getCiphers
 
-},{"browserify-aes/browser":50,"browserify-aes/modes":61,"browserify-des":66,"browserify-des/modes":67,"evp_bytestokey":167}],66:[function(require,module,exports){
+},{"browserify-aes/browser":40,"browserify-aes/modes":51,"browserify-des":56,"browserify-des/modes":57,"evp_bytestokey":149}],56:[function(require,module,exports){
 var CipherBase = require('cipher-base')
 var des = require('des.js')
 var inherits = require('inherits')
@@ -22273,7 +20949,7 @@ DES.prototype._final = function () {
   return Buffer.from(this._des.final())
 }
 
-},{"cipher-base":116,"des.js":126,"inherits":212,"safe-buffer":290}],67:[function(require,module,exports){
+},{"cipher-base":106,"des.js":118,"inherits":194,"safe-buffer":270}],57:[function(require,module,exports){
 exports['des-ecb'] = {
   key: 8,
   iv: 0
@@ -22299,7 +20975,7 @@ exports['des-ede'] = {
   iv: 0
 }
 
-},{}],68:[function(require,module,exports){
+},{}],58:[function(require,module,exports){
 (function (Buffer){(function (){
 var BN = require('bn.js')
 var randomBytes = require('randombytes')
@@ -22338,10 +21014,10 @@ crt.getr = getr
 module.exports = crt
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"bn.js":45,"buffer":79,"randombytes":272}],69:[function(require,module,exports){
+},{"bn.js":35,"buffer":69,"randombytes":252}],59:[function(require,module,exports){
 module.exports = require('./browser/algorithms.json')
 
-},{"./browser/algorithms.json":70}],70:[function(require,module,exports){
+},{"./browser/algorithms.json":60}],60:[function(require,module,exports){
 module.exports={
   "sha224WithRSAEncryption": {
     "sign": "rsa",
@@ -22495,7 +21171,7 @@ module.exports={
   }
 }
 
-},{}],71:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 module.exports={
   "1.3.132.0.10": "secp256k1",
   "1.3.132.0.33": "p224",
@@ -22505,7 +21181,7 @@ module.exports={
   "1.3.132.0.35": "p521"
 }
 
-},{}],72:[function(require,module,exports){
+},{}],62:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var createHash = require('create-hash')
 var stream = require('readable-stream')
@@ -22599,7 +21275,7 @@ module.exports = {
   createVerify: createVerify
 }
 
-},{"./algorithms.json":70,"./sign":73,"./verify":74,"create-hash":120,"inherits":212,"readable-stream":288,"safe-buffer":290}],73:[function(require,module,exports){
+},{"./algorithms.json":60,"./sign":63,"./verify":64,"create-hash":110,"inherits":194,"readable-stream":268,"safe-buffer":270}],63:[function(require,module,exports){
 // much of this based on https://github.com/indutny/self-signed/blob/gh-pages/lib/rsa.js
 var Buffer = require('safe-buffer').Buffer
 var createHmac = require('create-hmac')
@@ -22744,7 +21420,7 @@ module.exports = sign
 module.exports.getKey = getKey
 module.exports.makeKey = makeKey
 
-},{"./curves.json":71,"bn.js":45,"browserify-rsa":68,"create-hmac":122,"elliptic":148,"parse-asn1":251,"safe-buffer":290}],74:[function(require,module,exports){
+},{"./curves.json":61,"bn.js":35,"browserify-rsa":58,"create-hmac":112,"elliptic":130,"parse-asn1":231,"safe-buffer":270}],64:[function(require,module,exports){
 // much of this based on https://github.com/indutny/self-signed/blob/gh-pages/lib/rsa.js
 var Buffer = require('safe-buffer').Buffer
 var BN = require('bn.js')
@@ -22830,7 +21506,7 @@ function checkValue (b, q) {
 
 module.exports = verify
 
-},{"./curves.json":71,"bn.js":45,"elliptic":148,"parse-asn1":251,"safe-buffer":290}],75:[function(require,module,exports){
+},{"./curves.json":61,"bn.js":35,"elliptic":130,"parse-asn1":231,"safe-buffer":270}],65:[function(require,module,exports){
 (function (process,Buffer){(function (){
 'use strict';
 /* eslint camelcase: "off" */
@@ -23242,7 +21918,7 @@ Zlib.prototype._reset = function () {
 
 exports.Zlib = Zlib;
 }).call(this)}).call(this,require('_process'),require("buffer").Buffer)
-},{"_process":260,"assert":38,"buffer":79,"pako/lib/zlib/constants":238,"pako/lib/zlib/deflate.js":240,"pako/lib/zlib/inflate.js":242,"pako/lib/zlib/zstream":246}],76:[function(require,module,exports){
+},{"_process":240,"assert":28,"buffer":69,"pako/lib/zlib/constants":218,"pako/lib/zlib/deflate.js":220,"pako/lib/zlib/inflate.js":222,"pako/lib/zlib/zstream":226}],66:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -23854,9 +22530,9 @@ util.inherits(DeflateRaw, Zlib);
 util.inherits(InflateRaw, Zlib);
 util.inherits(Unzip, Zlib);
 }).call(this)}).call(this,require('_process'))
-},{"./binding":75,"_process":260,"assert":38,"buffer":79,"stream":301,"util":314}],77:[function(require,module,exports){
-arguments[4][47][0].apply(exports,arguments)
-},{"dup":47}],78:[function(require,module,exports){
+},{"./binding":65,"_process":240,"assert":28,"buffer":69,"stream":280,"util":293}],67:[function(require,module,exports){
+arguments[4][37][0].apply(exports,arguments)
+},{"dup":37}],68:[function(require,module,exports){
 (function (Buffer){(function (){
 module.exports = function xor (a, b) {
   var length = Math.min(a.length, b.length)
@@ -23870,7 +22546,7 @@ module.exports = function xor (a, b) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":79}],79:[function(require,module,exports){
+},{"buffer":69}],69:[function(require,module,exports){
 (function (Buffer){(function (){
 /*!
  * The buffer module from node.js, for the browser.
@@ -25651,7 +24327,7 @@ function numberIsNaN (obj) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"base64-js":44,"buffer":79,"ieee754":211}],80:[function(require,module,exports){
+},{"base64-js":34,"buffer":69,"ieee754":193}],70:[function(require,module,exports){
 module.exports = {
   "100": "Continue",
   "101": "Switching Protocols",
@@ -25717,7 +24393,7 @@ module.exports = {
   "511": "Network Authentication Required"
 }
 
-},{}],81:[function(require,module,exports){
+},{}],71:[function(require,module,exports){
 'use strict';
 
 var GetIntrinsic = require('get-intrinsic');
@@ -25734,7 +24410,7 @@ module.exports = function callBoundIntrinsic(name, allowMissing) {
 	return intrinsic;
 };
 
-},{"./":82,"get-intrinsic":172}],82:[function(require,module,exports){
+},{"./":72,"get-intrinsic":154}],72:[function(require,module,exports){
 'use strict';
 
 var bind = require('function-bind');
@@ -25783,10 +24459,10 @@ if ($defineProperty) {
 	module.exports.apply = applyBind;
 }
 
-},{"function-bind":170,"get-intrinsic":172}],83:[function(require,module,exports){
+},{"function-bind":152,"get-intrinsic":154}],73:[function(require,module,exports){
 module.exports = require('./lib/chai');
 
-},{"./lib/chai":84}],84:[function(require,module,exports){
+},{"./lib/chai":74}],74:[function(require,module,exports){
 /*!
  * chai
  * Copyright(c) 2011-2014 Jake Luer <jake@alogicalparadox.com>
@@ -25880,7 +24556,7 @@ exports.use(should);
 var assert = require('./chai/interface/assert');
 exports.use(assert);
 
-},{"./chai/assertion":85,"./chai/config":86,"./chai/core/assertions":87,"./chai/interface/assert":88,"./chai/interface/expect":89,"./chai/interface/should":90,"./chai/utils":104,"assertion-error":42}],85:[function(require,module,exports){
+},{"./chai/assertion":75,"./chai/config":76,"./chai/core/assertions":77,"./chai/interface/assert":78,"./chai/interface/expect":79,"./chai/interface/should":80,"./chai/utils":94,"assertion-error":32}],75:[function(require,module,exports){
 /*!
  * chai
  * http://chaijs.com
@@ -26057,7 +24733,7 @@ module.exports = function (_chai, util) {
   });
 };
 
-},{"./config":86}],86:[function(require,module,exports){
+},{"./config":76}],76:[function(require,module,exports){
 module.exports = {
 
   /**
@@ -26153,7 +24829,7 @@ module.exports = {
   proxyExcludedKeys: ['then', 'catch', 'inspect', 'toJSON']
 };
 
-},{}],87:[function(require,module,exports){
+},{}],77:[function(require,module,exports){
 /*!
  * chai
  * http://chaijs.com
@@ -30008,7 +28684,7 @@ module.exports = function (chai, _) {
   });
 };
 
-},{}],88:[function(require,module,exports){
+},{}],78:[function(require,module,exports){
 /*!
  * chai
  * Copyright(c) 2011-2014 Jake Luer <jake@alogicalparadox.com>
@@ -33123,7 +31799,7 @@ module.exports = function (chai, util) {
   ('isNotEmpty', 'notEmpty');
 };
 
-},{}],89:[function(require,module,exports){
+},{}],79:[function(require,module,exports){
 /*!
  * chai
  * Copyright(c) 2011-2014 Jake Luer <jake@alogicalparadox.com>
@@ -33172,7 +31848,7 @@ module.exports = function (chai, util) {
   };
 };
 
-},{}],90:[function(require,module,exports){
+},{}],80:[function(require,module,exports){
 /*!
  * chai
  * Copyright(c) 2011-2014 Jake Luer <jake@alogicalparadox.com>
@@ -33393,7 +32069,7 @@ module.exports = function (chai, util) {
   chai.Should = loadShould;
 };
 
-},{}],91:[function(require,module,exports){
+},{}],81:[function(require,module,exports){
 /*!
  * Chai - addChainingMethod utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -33547,7 +32223,7 @@ module.exports = function addChainableMethod(ctx, name, method, chainingBehavior
   });
 };
 
-},{"../../chai":84,"./addLengthGuard":92,"./flag":97,"./proxify":112,"./transferFlags":114}],92:[function(require,module,exports){
+},{"../../chai":74,"./addLengthGuard":82,"./flag":87,"./proxify":102,"./transferFlags":104}],82:[function(require,module,exports){
 var fnLengthDesc = Object.getOwnPropertyDescriptor(function () {}, 'length');
 
 /*!
@@ -33609,7 +32285,7 @@ module.exports = function addLengthGuard (fn, assertionName, isChainable) {
   return fn;
 };
 
-},{}],93:[function(require,module,exports){
+},{}],83:[function(require,module,exports){
 /*!
  * Chai - addMethod utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -33679,7 +32355,7 @@ module.exports = function addMethod(ctx, name, method) {
   ctx[name] = proxify(methodWrapper, name);
 };
 
-},{"../../chai":84,"./addLengthGuard":92,"./flag":97,"./proxify":112,"./transferFlags":114}],94:[function(require,module,exports){
+},{"../../chai":74,"./addLengthGuard":82,"./flag":87,"./proxify":102,"./transferFlags":104}],84:[function(require,module,exports){
 /*!
  * Chai - addProperty utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -33753,7 +32429,7 @@ module.exports = function addProperty(ctx, name, getter) {
   });
 };
 
-},{"../../chai":84,"./flag":97,"./isProxyEnabled":107,"./transferFlags":114}],95:[function(require,module,exports){
+},{"../../chai":74,"./flag":87,"./isProxyEnabled":97,"./transferFlags":104}],85:[function(require,module,exports){
 /*!
  * Chai - compareByInspect utility
  * Copyright(c) 2011-2016 Jake Luer <jake@alogicalparadox.com>
@@ -33786,7 +32462,7 @@ module.exports = function compareByInspect(a, b) {
   return inspect(a) < inspect(b) ? -1 : 1;
 };
 
-},{"./inspect":105}],96:[function(require,module,exports){
+},{"./inspect":95}],86:[function(require,module,exports){
 /*!
  * Chai - expectTypes utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -33839,7 +32515,7 @@ module.exports = function expectTypes(obj, types) {
   }
 };
 
-},{"./flag":97,"assertion-error":42,"type-detect":308}],97:[function(require,module,exports){
+},{"./flag":87,"assertion-error":32,"type-detect":287}],87:[function(require,module,exports){
 /*!
  * Chai - flag utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -33874,7 +32550,7 @@ module.exports = function flag(obj, key, value) {
   }
 };
 
-},{}],98:[function(require,module,exports){
+},{}],88:[function(require,module,exports){
 /*!
  * Chai - getActual utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -33896,7 +32572,7 @@ module.exports = function getActual(obj, args) {
   return args.length > 4 ? args[4] : obj._obj;
 };
 
-},{}],99:[function(require,module,exports){
+},{}],89:[function(require,module,exports){
 /*!
  * Chai - message composition utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -33948,7 +32624,7 @@ module.exports = function getMessage(obj, args) {
   return flagMsg ? flagMsg + ': ' + msg : msg;
 };
 
-},{"./flag":97,"./getActual":98,"./objDisplay":108}],100:[function(require,module,exports){
+},{"./flag":87,"./getActual":88,"./objDisplay":98}],90:[function(require,module,exports){
 var type = require('type-detect');
 
 var flag = require('./flag');
@@ -34005,7 +32681,7 @@ module.exports = function getOperator(obj, args) {
   return isObject ? 'deepStrictEqual' : 'strictEqual';
 };
 
-},{"./flag":97,"type-detect":308}],101:[function(require,module,exports){
+},{"./flag":87,"type-detect":287}],91:[function(require,module,exports){
 /*!
  * Chai - getOwnEnumerableProperties utility
  * Copyright(c) 2011-2016 Jake Luer <jake@alogicalparadox.com>
@@ -34036,7 +32712,7 @@ module.exports = function getOwnEnumerableProperties(obj) {
   return Object.keys(obj).concat(getOwnEnumerablePropertySymbols(obj));
 };
 
-},{"./getOwnEnumerablePropertySymbols":102}],102:[function(require,module,exports){
+},{"./getOwnEnumerablePropertySymbols":92}],92:[function(require,module,exports){
 /*!
  * Chai - getOwnEnumerablePropertySymbols utility
  * Copyright(c) 2011-2016 Jake Luer <jake@alogicalparadox.com>
@@ -34065,7 +32741,7 @@ module.exports = function getOwnEnumerablePropertySymbols(obj) {
   });
 };
 
-},{}],103:[function(require,module,exports){
+},{}],93:[function(require,module,exports){
 /*!
  * Chai - getProperties utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -34103,7 +32779,7 @@ module.exports = function getProperties(object) {
   return result;
 };
 
-},{}],104:[function(require,module,exports){
+},{}],94:[function(require,module,exports){
 /*!
  * chai
  * Copyright(c) 2011 Jake Luer <jake@alogicalparadox.com>
@@ -34282,7 +32958,7 @@ exports.isNaN = require('./isNaN');
  */
 
 exports.getOperator = require('./getOperator');
-},{"./addChainableMethod":91,"./addLengthGuard":92,"./addMethod":93,"./addProperty":94,"./compareByInspect":95,"./expectTypes":96,"./flag":97,"./getActual":98,"./getMessage":99,"./getOperator":100,"./getOwnEnumerableProperties":101,"./getOwnEnumerablePropertySymbols":102,"./inspect":105,"./isNaN":106,"./isProxyEnabled":107,"./objDisplay":108,"./overwriteChainableMethod":109,"./overwriteMethod":110,"./overwriteProperty":111,"./proxify":112,"./test":113,"./transferFlags":114,"check-error":115,"deep-eql":125,"get-func-name":171,"pathval":253,"type-detect":308}],105:[function(require,module,exports){
+},{"./addChainableMethod":81,"./addLengthGuard":82,"./addMethod":83,"./addProperty":84,"./compareByInspect":85,"./expectTypes":86,"./flag":87,"./getActual":88,"./getMessage":89,"./getOperator":90,"./getOwnEnumerableProperties":91,"./getOwnEnumerablePropertySymbols":92,"./inspect":95,"./isNaN":96,"./isProxyEnabled":97,"./objDisplay":98,"./overwriteChainableMethod":99,"./overwriteMethod":100,"./overwriteProperty":101,"./proxify":102,"./test":103,"./transferFlags":104,"check-error":105,"deep-eql":117,"get-func-name":153,"pathval":233,"type-detect":287}],95:[function(require,module,exports){
 // This is (almost) directly from Node.js utils
 // https://github.com/joyent/node/blob/f8c335d0caf47f16d31413f89aa28eda3878e3aa/lib/util.js
 
@@ -34317,7 +32993,7 @@ function inspect(obj, showHidden, depth, colors) {
   return loupe.inspect(obj, options);
 }
 
-},{"../config":86,"get-func-name":171,"loupe":216}],106:[function(require,module,exports){
+},{"../config":76,"get-func-name":153,"loupe":198}],96:[function(require,module,exports){
 /*!
  * Chai - isNaN utility
  * Copyright(c) 2012-2015 Sakthipriyan Vairamani <thechargingvolcano@gmail.com>
@@ -34345,7 +33021,7 @@ function isNaN(value) {
 // If ECMAScript 6's Number.isNaN is present, prefer that.
 module.exports = Number.isNaN || isNaN;
 
-},{}],107:[function(require,module,exports){
+},{}],97:[function(require,module,exports){
 var config = require('../config');
 
 /*!
@@ -34371,7 +33047,7 @@ module.exports = function isProxyEnabled() {
     typeof Reflect !== 'undefined';
 };
 
-},{"../config":86}],108:[function(require,module,exports){
+},{"../config":76}],98:[function(require,module,exports){
 /*!
  * Chai - flag utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -34423,7 +33099,7 @@ module.exports = function objDisplay(obj) {
   }
 };
 
-},{"../config":86,"./inspect":105}],109:[function(require,module,exports){
+},{"../config":76,"./inspect":95}],99:[function(require,module,exports){
 /*!
  * Chai - overwriteChainableMethod utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -34494,7 +33170,7 @@ module.exports = function overwriteChainableMethod(ctx, name, method, chainingBe
   };
 };
 
-},{"../../chai":84,"./transferFlags":114}],110:[function(require,module,exports){
+},{"../../chai":74,"./transferFlags":104}],100:[function(require,module,exports){
 /*!
  * Chai - overwriteMethod utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -34588,7 +33264,7 @@ module.exports = function overwriteMethod(ctx, name, method) {
   ctx[name] = proxify(overwritingMethodWrapper, name);
 };
 
-},{"../../chai":84,"./addLengthGuard":92,"./flag":97,"./proxify":112,"./transferFlags":114}],111:[function(require,module,exports){
+},{"../../chai":74,"./addLengthGuard":82,"./flag":87,"./proxify":102,"./transferFlags":104}],101:[function(require,module,exports){
 /*!
  * Chai - overwriteProperty utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -34682,7 +33358,7 @@ module.exports = function overwriteProperty(ctx, name, getter) {
   });
 };
 
-},{"../../chai":84,"./flag":97,"./isProxyEnabled":107,"./transferFlags":114}],112:[function(require,module,exports){
+},{"../../chai":74,"./flag":87,"./isProxyEnabled":97,"./transferFlags":104}],102:[function(require,module,exports){
 var config = require('../config');
 var flag = require('./flag');
 var getProperties = require('./getProperties');
@@ -34831,7 +33507,7 @@ function stringDistanceCapped(strA, strB, cap) {
   return memo[strA.length][strB.length];
 }
 
-},{"../config":86,"./flag":97,"./getProperties":103,"./isProxyEnabled":107}],113:[function(require,module,exports){
+},{"../config":76,"./flag":87,"./getProperties":93,"./isProxyEnabled":97}],103:[function(require,module,exports){
 /*!
  * Chai - test utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -34861,7 +33537,7 @@ module.exports = function test(obj, args) {
   return negate ? !expr : expr;
 };
 
-},{"./flag":97}],114:[function(require,module,exports){
+},{"./flag":87}],104:[function(require,module,exports){
 /*!
  * Chai - transferFlags utility
  * Copyright(c) 2012-2014 Jake Luer <jake@alogicalparadox.com>
@@ -34908,7 +33584,7 @@ module.exports = function transferFlags(assertion, object, includeAll) {
   }
 };
 
-},{}],115:[function(require,module,exports){
+},{}],105:[function(require,module,exports){
 'use strict';
 
 /* !
@@ -35082,7 +33758,7 @@ module.exports = {
   getConstructorName: getConstructorName,
 };
 
-},{}],116:[function(require,module,exports){
+},{}],106:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var Transform = require('stream').Transform
 var StringDecoder = require('string_decoder').StringDecoder
@@ -35183,7 +33859,7 @@ CipherBase.prototype._toString = function (value, enc, fin) {
 
 module.exports = CipherBase
 
-},{"inherits":212,"safe-buffer":290,"stream":301,"string_decoder":306}],117:[function(require,module,exports){
+},{"inherits":194,"safe-buffer":270,"stream":280,"string_decoder":285}],107:[function(require,module,exports){
 /*!
  * cookie
  * Copyright(c) 2012-2014 Roman Shtylman
@@ -35387,7 +34063,7 @@ function tryDecode(str, decode) {
   }
 }
 
-},{}],118:[function(require,module,exports){
+},{}],108:[function(require,module,exports){
 (function (Buffer){(function (){
 var elliptic = require('elliptic')
 var BN = require('bn.js')
@@ -35515,9 +34191,9 @@ function formatReturnValue (bn, enc, len) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"bn.js":119,"buffer":79,"elliptic":148}],119:[function(require,module,exports){
-arguments[4][37][0].apply(exports,arguments)
-},{"buffer":47,"dup":37}],120:[function(require,module,exports){
+},{"bn.js":109,"buffer":69,"elliptic":130}],109:[function(require,module,exports){
+arguments[4][27][0].apply(exports,arguments)
+},{"buffer":37,"dup":27}],110:[function(require,module,exports){
 'use strict'
 var inherits = require('inherits')
 var MD5 = require('md5.js')
@@ -35549,14 +34225,14 @@ module.exports = function createHash (alg) {
   return new Hash(sha(alg))
 }
 
-},{"cipher-base":116,"inherits":212,"md5.js":217,"ripemd160":289,"sha.js":294}],121:[function(require,module,exports){
+},{"cipher-base":106,"inherits":194,"md5.js":199,"ripemd160":269,"sha.js":273}],111:[function(require,module,exports){
 var MD5 = require('md5.js')
 
 module.exports = function (buffer) {
   return new MD5().update(buffer).digest()
 }
 
-},{"md5.js":217}],122:[function(require,module,exports){
+},{"md5.js":199}],112:[function(require,module,exports){
 'use strict'
 var inherits = require('inherits')
 var Legacy = require('./legacy')
@@ -35620,7 +34296,7 @@ module.exports = function createHmac (alg, key) {
   return new Hmac(alg, key)
 }
 
-},{"./legacy":123,"cipher-base":116,"create-hash/md5":121,"inherits":212,"ripemd160":289,"safe-buffer":290,"sha.js":294}],123:[function(require,module,exports){
+},{"./legacy":113,"cipher-base":106,"create-hash/md5":111,"inherits":194,"ripemd160":269,"safe-buffer":270,"sha.js":273}],113:[function(require,module,exports){
 'use strict'
 var inherits = require('inherits')
 var Buffer = require('safe-buffer').Buffer
@@ -35668,7 +34344,7 @@ Hmac.prototype._final = function () {
 }
 module.exports = Hmac
 
-},{"cipher-base":116,"inherits":212,"safe-buffer":290}],124:[function(require,module,exports){
+},{"cipher-base":106,"inherits":194,"safe-buffer":270}],114:[function(require,module,exports){
 'use strict'
 
 exports.randomBytes = exports.rng = exports.pseudoRandomBytes = exports.prng = require('randombytes')
@@ -35767,7 +34443,442 @@ exports.constants = {
   'POINT_CONVERSION_HYBRID': 6
 }
 
-},{"browserify-cipher":65,"browserify-sign":72,"browserify-sign/algos":69,"create-ecdh":118,"create-hash":120,"create-hmac":122,"diffie-hellman":132,"pbkdf2":254,"public-encrypt":261,"randombytes":272,"randomfill":273}],125:[function(require,module,exports){
+},{"browserify-cipher":55,"browserify-sign":62,"browserify-sign/algos":59,"create-ecdh":108,"create-hash":110,"create-hmac":112,"diffie-hellman":124,"pbkdf2":234,"public-encrypt":241,"randombytes":252,"randomfill":253}],115:[function(require,module,exports){
+(function (process){(function (){
+"use strict";
+
+function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
+
+/* eslint-env browser */
+
+/**
+ * This is the web browser implementation of `debug()`.
+ */
+exports.log = log;
+exports.formatArgs = formatArgs;
+exports.save = save;
+exports.load = load;
+exports.useColors = useColors;
+exports.storage = localstorage();
+/**
+ * Colors.
+ */
+
+exports.colors = ['#0000CC', '#0000FF', '#0033CC', '#0033FF', '#0066CC', '#0066FF', '#0099CC', '#0099FF', '#00CC00', '#00CC33', '#00CC66', '#00CC99', '#00CCCC', '#00CCFF', '#3300CC', '#3300FF', '#3333CC', '#3333FF', '#3366CC', '#3366FF', '#3399CC', '#3399FF', '#33CC00', '#33CC33', '#33CC66', '#33CC99', '#33CCCC', '#33CCFF', '#6600CC', '#6600FF', '#6633CC', '#6633FF', '#66CC00', '#66CC33', '#9900CC', '#9900FF', '#9933CC', '#9933FF', '#99CC00', '#99CC33', '#CC0000', '#CC0033', '#CC0066', '#CC0099', '#CC00CC', '#CC00FF', '#CC3300', '#CC3333', '#CC3366', '#CC3399', '#CC33CC', '#CC33FF', '#CC6600', '#CC6633', '#CC9900', '#CC9933', '#CCCC00', '#CCCC33', '#FF0000', '#FF0033', '#FF0066', '#FF0099', '#FF00CC', '#FF00FF', '#FF3300', '#FF3333', '#FF3366', '#FF3399', '#FF33CC', '#FF33FF', '#FF6600', '#FF6633', '#FF9900', '#FF9933', '#FFCC00', '#FFCC33'];
+/**
+ * Currently only WebKit-based Web Inspectors, Firefox >= v31,
+ * and the Firebug extension (any Firefox version) are known
+ * to support "%c" CSS customizations.
+ *
+ * TODO: add a `localStorage` variable to explicitly enable/disable colors
+ */
+// eslint-disable-next-line complexity
+
+function useColors() {
+  // NB: In an Electron preload script, document will be defined but not fully
+  // initialized. Since we know we're in Chrome, we'll just detect this case
+  // explicitly
+  if (typeof window !== 'undefined' && window.process && (window.process.type === 'renderer' || window.process.__nwjs)) {
+    return true;
+  } // Internet Explorer and Edge do not support colors.
+
+
+  if (typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.toLowerCase().match(/(edge|trident)\/(\d+)/)) {
+    return false;
+  } // Is webkit? http://stackoverflow.com/a/16459606/376773
+  // document is undefined in react-native: https://github.com/facebook/react-native/pull/1632
+
+
+  return typeof document !== 'undefined' && document.documentElement && document.documentElement.style && document.documentElement.style.WebkitAppearance || // Is firebug? http://stackoverflow.com/a/398120/376773
+  typeof window !== 'undefined' && window.console && (window.console.firebug || window.console.exception && window.console.table) || // Is firefox >= v31?
+  // https://developer.mozilla.org/en-US/docs/Tools/Web_Console#Styling_messages
+  typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.toLowerCase().match(/firefox\/(\d+)/) && parseInt(RegExp.$1, 10) >= 31 || // Double check webkit in userAgent just in case we are in a worker
+  typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.toLowerCase().match(/applewebkit\/(\d+)/);
+}
+/**
+ * Colorize log arguments if enabled.
+ *
+ * @api public
+ */
+
+
+function formatArgs(args) {
+  args[0] = (this.useColors ? '%c' : '') + this.namespace + (this.useColors ? ' %c' : ' ') + args[0] + (this.useColors ? '%c ' : ' ') + '+' + module.exports.humanize(this.diff);
+
+  if (!this.useColors) {
+    return;
+  }
+
+  var c = 'color: ' + this.color;
+  args.splice(1, 0, c, 'color: inherit'); // The final "%c" is somewhat tricky, because there could be other
+  // arguments passed either before or after the %c, so we need to
+  // figure out the correct index to insert the CSS into
+
+  var index = 0;
+  var lastC = 0;
+  args[0].replace(/%[a-zA-Z%]/g, function (match) {
+    if (match === '%%') {
+      return;
+    }
+
+    index++;
+
+    if (match === '%c') {
+      // We only are interested in the *last* %c
+      // (the user may have provided their own)
+      lastC = index;
+    }
+  });
+  args.splice(lastC, 0, c);
+}
+/**
+ * Invokes `console.log()` when available.
+ * No-op when `console.log` is not a "function".
+ *
+ * @api public
+ */
+
+
+function log() {
+  var _console;
+
+  // This hackery is required for IE8/9, where
+  // the `console.log` function doesn't have 'apply'
+  return (typeof console === "undefined" ? "undefined" : _typeof(console)) === 'object' && console.log && (_console = console).log.apply(_console, arguments);
+}
+/**
+ * Save `namespaces`.
+ *
+ * @param {String} namespaces
+ * @api private
+ */
+
+
+function save(namespaces) {
+  try {
+    if (namespaces) {
+      exports.storage.setItem('debug', namespaces);
+    } else {
+      exports.storage.removeItem('debug');
+    }
+  } catch (error) {// Swallow
+    // XXX (@Qix-) should we be logging these?
+  }
+}
+/**
+ * Load `namespaces`.
+ *
+ * @return {String} returns the previously persisted debug modes
+ * @api private
+ */
+
+
+function load() {
+  var r;
+
+  try {
+    r = exports.storage.getItem('debug');
+  } catch (error) {} // Swallow
+  // XXX (@Qix-) should we be logging these?
+  // If debug isn't set in LS, and we're in Electron, try to load $DEBUG
+
+
+  if (!r && typeof process !== 'undefined' && 'env' in process) {
+    r = process.env.DEBUG;
+  }
+
+  return r;
+}
+/**
+ * Localstorage attempts to return the localstorage.
+ *
+ * This is necessary because safari throws
+ * when a user disables cookies/localstorage
+ * and you attempt to access it.
+ *
+ * @return {LocalStorage}
+ * @api private
+ */
+
+
+function localstorage() {
+  try {
+    // TVMLKit (Apple TV JS Runtime) does not have a window object, just localStorage in the global context
+    // The Browser also has localStorage in the global context.
+    return localStorage;
+  } catch (error) {// Swallow
+    // XXX (@Qix-) should we be logging these?
+  }
+}
+
+module.exports = require('./common')(exports);
+var formatters = module.exports.formatters;
+/**
+ * Map %j to `JSON.stringify()`, since no Web Inspectors do that by default.
+ */
+
+formatters.j = function (v) {
+  try {
+    return JSON.stringify(v);
+  } catch (error) {
+    return '[UnexpectedJSONParseError]: ' + error.message;
+  }
+};
+
+
+}).call(this)}).call(this,require('_process'))
+},{"./common":116,"_process":240}],116:[function(require,module,exports){
+"use strict";
+
+/**
+ * This is the common logic for both the Node.js and web browser
+ * implementations of `debug()`.
+ */
+function setup(env) {
+  createDebug.debug = createDebug;
+  createDebug.default = createDebug;
+  createDebug.coerce = coerce;
+  createDebug.disable = disable;
+  createDebug.enable = enable;
+  createDebug.enabled = enabled;
+  createDebug.humanize = require('ms');
+  Object.keys(env).forEach(function (key) {
+    createDebug[key] = env[key];
+  });
+  /**
+  * Active `debug` instances.
+  */
+
+  createDebug.instances = [];
+  /**
+  * The currently active debug mode names, and names to skip.
+  */
+
+  createDebug.names = [];
+  createDebug.skips = [];
+  /**
+  * Map of special "%n" handling functions, for the debug "format" argument.
+  *
+  * Valid key names are a single, lower or upper-case letter, i.e. "n" and "N".
+  */
+
+  createDebug.formatters = {};
+  /**
+  * Selects a color for a debug namespace
+  * @param {String} namespace The namespace string for the for the debug instance to be colored
+  * @return {Number|String} An ANSI color code for the given namespace
+  * @api private
+  */
+
+  function selectColor(namespace) {
+    var hash = 0;
+
+    for (var i = 0; i < namespace.length; i++) {
+      hash = (hash << 5) - hash + namespace.charCodeAt(i);
+      hash |= 0; // Convert to 32bit integer
+    }
+
+    return createDebug.colors[Math.abs(hash) % createDebug.colors.length];
+  }
+
+  createDebug.selectColor = selectColor;
+  /**
+  * Create a debugger with the given `namespace`.
+  *
+  * @param {String} namespace
+  * @return {Function}
+  * @api public
+  */
+
+  function createDebug(namespace) {
+    var prevTime;
+
+    function debug() {
+      // Disabled?
+      if (!debug.enabled) {
+        return;
+      }
+
+      for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+        args[_key] = arguments[_key];
+      }
+
+      var self = debug; // Set `diff` timestamp
+
+      var curr = Number(new Date());
+      var ms = curr - (prevTime || curr);
+      self.diff = ms;
+      self.prev = prevTime;
+      self.curr = curr;
+      prevTime = curr;
+      args[0] = createDebug.coerce(args[0]);
+
+      if (typeof args[0] !== 'string') {
+        // Anything else let's inspect with %O
+        args.unshift('%O');
+      } // Apply any `formatters` transformations
+
+
+      var index = 0;
+      args[0] = args[0].replace(/%([a-zA-Z%])/g, function (match, format) {
+        // If we encounter an escaped % then don't increase the array index
+        if (match === '%%') {
+          return match;
+        }
+
+        index++;
+        var formatter = createDebug.formatters[format];
+
+        if (typeof formatter === 'function') {
+          var val = args[index];
+          match = formatter.call(self, val); // Now we need to remove `args[index]` since it's inlined in the `format`
+
+          args.splice(index, 1);
+          index--;
+        }
+
+        return match;
+      }); // Apply env-specific formatting (colors, etc.)
+
+      createDebug.formatArgs.call(self, args);
+      var logFn = self.log || createDebug.log;
+      logFn.apply(self, args);
+    }
+
+    debug.namespace = namespace;
+    debug.enabled = createDebug.enabled(namespace);
+    debug.useColors = createDebug.useColors();
+    debug.color = selectColor(namespace);
+    debug.destroy = destroy;
+    debug.extend = extend; // Debug.formatArgs = formatArgs;
+    // debug.rawLog = rawLog;
+    // env-specific initialization logic for debug instances
+
+    if (typeof createDebug.init === 'function') {
+      createDebug.init(debug);
+    }
+
+    createDebug.instances.push(debug);
+    return debug;
+  }
+
+  function destroy() {
+    var index = createDebug.instances.indexOf(this);
+
+    if (index !== -1) {
+      createDebug.instances.splice(index, 1);
+      return true;
+    }
+
+    return false;
+  }
+
+  function extend(namespace, delimiter) {
+    return createDebug(this.namespace + (typeof delimiter === 'undefined' ? ':' : delimiter) + namespace);
+  }
+  /**
+  * Enables a debug mode by namespaces. This can include modes
+  * separated by a colon and wildcards.
+  *
+  * @param {String} namespaces
+  * @api public
+  */
+
+
+  function enable(namespaces) {
+    createDebug.save(namespaces);
+    createDebug.names = [];
+    createDebug.skips = [];
+    var i;
+    var split = (typeof namespaces === 'string' ? namespaces : '').split(/[\s,]+/);
+    var len = split.length;
+
+    for (i = 0; i < len; i++) {
+      if (!split[i]) {
+        // ignore empty strings
+        continue;
+      }
+
+      namespaces = split[i].replace(/\*/g, '.*?');
+
+      if (namespaces[0] === '-') {
+        createDebug.skips.push(new RegExp('^' + namespaces.substr(1) + '$'));
+      } else {
+        createDebug.names.push(new RegExp('^' + namespaces + '$'));
+      }
+    }
+
+    for (i = 0; i < createDebug.instances.length; i++) {
+      var instance = createDebug.instances[i];
+      instance.enabled = createDebug.enabled(instance.namespace);
+    }
+  }
+  /**
+  * Disable debug output.
+  *
+  * @api public
+  */
+
+
+  function disable() {
+    createDebug.enable('');
+  }
+  /**
+  * Returns true if the given mode name is enabled, false otherwise.
+  *
+  * @param {String} name
+  * @return {Boolean}
+  * @api public
+  */
+
+
+  function enabled(name) {
+    if (name[name.length - 1] === '*') {
+      return true;
+    }
+
+    var i;
+    var len;
+
+    for (i = 0, len = createDebug.skips.length; i < len; i++) {
+      if (createDebug.skips[i].test(name)) {
+        return false;
+      }
+    }
+
+    for (i = 0, len = createDebug.names.length; i < len; i++) {
+      if (createDebug.names[i].test(name)) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+  /**
+  * Coerce `val`.
+  *
+  * @param {Mixed} val
+  * @return {Mixed}
+  * @api private
+  */
+
+
+  function coerce(val) {
+    if (val instanceof Error) {
+      return val.stack || val.message;
+    }
+
+    return val;
+  }
+
+  createDebug.enable(createDebug.load());
+  return createDebug;
+}
+
+module.exports = setup;
+
+
+},{"ms":204}],117:[function(require,module,exports){
 'use strict';
 /* globals Symbol: false, Uint8Array: false, WeakMap: false */
 /*!
@@ -36224,7 +35335,7 @@ function isPrimitive(value) {
   return value === null || typeof value !== 'object';
 }
 
-},{"type-detect":308}],126:[function(require,module,exports){
+},{"type-detect":287}],118:[function(require,module,exports){
 'use strict';
 
 exports.utils = require('./des/utils');
@@ -36233,7 +35344,7 @@ exports.DES = require('./des/des');
 exports.CBC = require('./des/cbc');
 exports.EDE = require('./des/ede');
 
-},{"./des/cbc":127,"./des/cipher":128,"./des/des":129,"./des/ede":130,"./des/utils":131}],127:[function(require,module,exports){
+},{"./des/cbc":119,"./des/cipher":120,"./des/des":121,"./des/ede":122,"./des/utils":123}],119:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -36300,7 +35411,7 @@ proto._update = function _update(inp, inOff, out, outOff) {
   }
 };
 
-},{"inherits":212,"minimalistic-assert":220}],128:[function(require,module,exports){
+},{"inherits":194,"minimalistic-assert":202}],120:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -36443,7 +35554,7 @@ Cipher.prototype._finalDecrypt = function _finalDecrypt() {
   return this._unpad(out);
 };
 
-},{"minimalistic-assert":220}],129:[function(require,module,exports){
+},{"minimalistic-assert":202}],121:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -36587,7 +35698,7 @@ DES.prototype._decrypt = function _decrypt(state, lStart, rStart, out, off) {
   utils.rip(l, r, out, off);
 };
 
-},{"./cipher":128,"./utils":131,"inherits":212,"minimalistic-assert":220}],130:[function(require,module,exports){
+},{"./cipher":120,"./utils":123,"inherits":194,"minimalistic-assert":202}],122:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -36643,7 +35754,7 @@ EDE.prototype._update = function _update(inp, inOff, out, outOff) {
 EDE.prototype._pad = DES.prototype._pad;
 EDE.prototype._unpad = DES.prototype._unpad;
 
-},{"./cipher":128,"./des":129,"inherits":212,"minimalistic-assert":220}],131:[function(require,module,exports){
+},{"./cipher":120,"./des":121,"inherits":194,"minimalistic-assert":202}],123:[function(require,module,exports){
 'use strict';
 
 exports.readUInt32BE = function readUInt32BE(bytes, off) {
@@ -36901,7 +36012,7 @@ exports.padSplit = function padSplit(num, size, group) {
   return out.join(' ');
 };
 
-},{}],132:[function(require,module,exports){
+},{}],124:[function(require,module,exports){
 (function (Buffer){(function (){
 var generatePrime = require('./lib/generatePrime')
 var primes = require('./lib/primes.json')
@@ -36947,7 +36058,7 @@ exports.DiffieHellmanGroup = exports.createDiffieHellmanGroup = exports.getDiffi
 exports.createDiffieHellman = exports.DiffieHellman = createDiffieHellman
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"./lib/dh":133,"./lib/generatePrime":134,"./lib/primes.json":135,"buffer":79}],133:[function(require,module,exports){
+},{"./lib/dh":125,"./lib/generatePrime":126,"./lib/primes.json":127,"buffer":69}],125:[function(require,module,exports){
 (function (Buffer){(function (){
 var BN = require('bn.js');
 var MillerRabin = require('miller-rabin');
@@ -37115,7 +36226,7 @@ function formatReturnValue(bn, enc) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"./generatePrime":134,"bn.js":136,"buffer":79,"miller-rabin":218,"randombytes":272}],134:[function(require,module,exports){
+},{"./generatePrime":126,"bn.js":128,"buffer":69,"miller-rabin":200,"randombytes":252}],126:[function(require,module,exports){
 var randomBytes = require('randombytes');
 module.exports = findPrime;
 findPrime.simpleSieve = simpleSieve;
@@ -37222,7 +36333,7 @@ function findPrime(bits, gen) {
 
 }
 
-},{"bn.js":136,"miller-rabin":218,"randombytes":272}],135:[function(require,module,exports){
+},{"bn.js":128,"miller-rabin":200,"randombytes":252}],127:[function(require,module,exports){
 module.exports={
     "modp1": {
         "gen": "02",
@@ -37257,9 +36368,9 @@ module.exports={
         "prime": "ffffffffffffffffc90fdaa22168c234c4c6628b80dc1cd129024e088a67cc74020bbea63b139b22514a08798e3404ddef9519b3cd3a431b302b0a6df25f14374fe1356d6d51c245e485b576625e7ec6f44c42e9a637ed6b0bff5cb6f406b7edee386bfb5a899fa5ae9f24117c4b1fe649286651ece45b3dc2007cb8a163bf0598da48361c55d39a69163fa8fd24cf5f83655d23dca3ad961c62f356208552bb9ed529077096966d670c354e4abc9804f1746c08ca18217c32905e462e36ce3be39e772c180e86039b2783a2ec07a28fb5c55df06f4c52c9de2bcbf6955817183995497cea956ae515d2261898fa051015728e5a8aaac42dad33170d04507a33a85521abdf1cba64ecfb850458dbef0a8aea71575d060c7db3970f85a6e1e4c7abf5ae8cdb0933d71e8c94e04a25619dcee3d2261ad2ee6bf12ffa06d98a0864d87602733ec86a64521f2b18177b200cbbe117577a615d6c770988c0bad946e208e24fa074e5ab3143db5bfce0fd108e4b82d120a92108011a723c12a787e6d788719a10bdba5b2699c327186af4e23c1a946834b6150bda2583e9ca2ad44ce8dbbbc2db04de8ef92e8efc141fbecaa6287c59474e6bc05d99b2964fa090c3a2233ba186515be7ed1f612970cee2d7afb81bdd762170481cd0069127d5b05aa993b4ea988d8fddc186ffb7dc90a6c08f4df435c93402849236c3fab4d27c7026c1d4dcb2602646dec9751e763dba37bdf8ff9406ad9e530ee5db382f413001aeb06a53ed9027d831179727b0865a8918da3edbebcf9b14ed44ce6cbaced4bb1bdb7f1447e6cc254b332051512bd7af426fb8f401378cd2bf5983ca01c64b92ecf032ea15d1721d03f482d7ce6e74fef6d55e702f46980c82b5a84031900b1c9e59e7c97fbec7e8f323a97a7e36cc88be0f1d45b7ff585ac54bd407b22b4154aacc8f6d7ebf48e1d814cc5ed20f8037e0a79715eef29be32806a1d58bb7c5da76f550aa3d8a1fbff0eb19ccb1a313d55cda56c9ec2ef29632387fe8d76e3c0468043e8f663f4860ee12bf2d5b0b7474d6e694f91e6dbe115974a3926f12fee5e438777cb6a932df8cd8bec4d073b931ba3bc832b68d9dd300741fa7bf8afc47ed2576f6936ba424663aab639c5ae4f5683423b4742bf1c978238f16cbe39d652de3fdb8befc848ad922222e04a4037c0713eb57a81a23f0c73473fc646cea306b4bcbc8862f8385ddfa9d4b7fa2c087e879683303ed5bdd3a062b3cf5b3a278a66d2a13f83f44f82ddf310ee074ab6a364597e899a0255dc164f31cc50846851df9ab48195ded7ea1b1d510bd7ee74d73faf36bc31ecfa268359046f4eb879f924009438b481c6cd7889a002ed5ee382bc9190da6fc026e479558e4475677e9aa9e3050e2765694dfc81f56e880b96e7160c980dd98edd3dfffffffffffffffff"
     }
 }
-},{}],136:[function(require,module,exports){
-arguments[4][37][0].apply(exports,arguments)
-},{"buffer":47,"dup":37}],137:[function(require,module,exports){
+},{}],128:[function(require,module,exports){
+arguments[4][27][0].apply(exports,arguments)
+},{"buffer":37,"dup":27}],129:[function(require,module,exports){
 (function (process){(function (){
 const fs = require('fs')
 const path = require('path')
@@ -37372,1340 +36483,7 @@ module.exports.parse = DotenvModule.parse
 module.exports = DotenvModule
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":260,"fs":77,"os":235,"path":252}],138:[function(require,module,exports){
-/*
- *  Copyright 2011 Rackspace
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *
- */
-
-var DEFAULT_PARSER = 'sax';
-
-exports.DEFAULT_PARSER = DEFAULT_PARSER;
-
-},{}],139:[function(require,module,exports){
-/**
- *  Copyright 2011 Rackspace
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *
- */
-
-var sprintf = require('./sprintf').sprintf;
-
-var utils = require('./utils');
-var SyntaxError = require('./errors').SyntaxError;
-
-var _cache = {};
-
-var RE = new RegExp(
-  "(" +
-  "'[^']*'|\"[^\"]*\"|" +
-  "::|" +
-  "//?|" +
-  "\\.\\.|" +
-  "\\(\\)|" +
-  "[/.*:\\[\\]\\(\\)@=])|" +
-  "((?:\\{[^}]+\\})?[^/\\[\\]\\(\\)@=\\s]+)|" +
-  "\\s+", 'g'
-);
-
-var xpath_tokenizer = utils.findall.bind(null, RE);
-
-function prepare_tag(next, token) {
-  var tag = token[0];
-
-  function select(context, result) {
-    var i, len, elem, rv = [];
-
-    for (i = 0, len = result.length; i < len; i++) {
-      elem = result[i];
-      elem._children.forEach(function(e) {
-        if (e.tag === tag) {
-          rv.push(e);
-        }
-      });
-    }
-
-    return rv;
-  }
-
-  return select;
-}
-
-function prepare_star(next, token) {
-  function select(context, result) {
-    var i, len, elem, rv = [];
-
-    for (i = 0, len = result.length; i < len; i++) {
-      elem = result[i];
-      elem._children.forEach(function(e) {
-        rv.push(e);
-      });
-    }
-
-    return rv;
-  }
-
-  return select;
-}
-
-function prepare_dot(next, token) {
-  function select(context, result) {
-    var i, len, elem, rv = [];
-
-    for (i = 0, len = result.length; i < len; i++) {
-      elem = result[i];
-      rv.push(elem);
-    }
-
-    return rv;
-  }
-
-  return select;
-}
-
-function prepare_iter(next, token) {
-  var tag;
-  token = next();
-
-  if (token[1] === '*') {
-    tag = '*';
-  }
-  else if (!token[1]) {
-    tag = token[0] || '';
-  }
-  else {
-    throw new SyntaxError(token);
-  }
-
-  function select(context, result) {
-    var i, len, elem, rv = [];
-
-    for (i = 0, len = result.length; i < len; i++) {
-      elem = result[i];
-      elem.iter(tag, function(e) {
-        if (e !== elem) {
-          rv.push(e);
-        }
-      });
-    }
-
-    return rv;
-  }
-
-  return select;
-}
-
-function prepare_dot_dot(next, token) {
-  function select(context, result) {
-    var i, len, elem, rv = [], parent_map = context.parent_map;
-
-    if (!parent_map) {
-      context.parent_map = parent_map = {};
-
-      context.root.iter(null, function(p) {
-        p._children.forEach(function(e) {
-          parent_map[e] = p;
-        });
-      });
-    }
-
-    for (i = 0, len = result.length; i < len; i++) {
-      elem = result[i];
-
-      if (parent_map.hasOwnProperty(elem)) {
-        rv.push(parent_map[elem]);
-      }
-    }
-
-    return rv;
-  }
-
-  return select;
-}
-
-
-function prepare_predicate(next, token) {
-  var tag, key, value, select;
-  token = next();
-
-  if (token[1] === '@') {
-    // attribute
-    token = next();
-
-    if (token[1]) {
-      throw new SyntaxError(token, 'Invalid attribute predicate');
-    }
-
-    key = token[0];
-    token = next();
-
-    if (token[1] === ']') {
-      select = function(context, result) {
-        var i, len, elem, rv = [];
-
-        for (i = 0, len = result.length; i < len; i++) {
-          elem = result[i];
-
-          if (elem.get(key)) {
-            rv.push(elem);
-          }
-        }
-
-        return rv;
-      };
-    }
-    else if (token[1] === '=') {
-      value = next()[1];
-
-      if (value[0] === '"' || value[value.length - 1] === '\'') {
-        value = value.slice(1, value.length - 1);
-      }
-      else {
-        throw new SyntaxError(token, 'Ivalid comparison target');
-      }
-
-      token = next();
-      select = function(context, result) {
-        var i, len, elem, rv = [];
-
-        for (i = 0, len = result.length; i < len; i++) {
-          elem = result[i];
-
-          if (elem.get(key) === value) {
-            rv.push(elem);
-          }
-        }
-
-        return rv;
-      };
-    }
-
-    if (token[1] !== ']') {
-      throw new SyntaxError(token, 'Invalid attribute predicate');
-    }
-  }
-  else if (!token[1]) {
-    tag = token[0] || '';
-    token = next();
-
-    if (token[1] !== ']') {
-      throw new SyntaxError(token, 'Invalid node predicate');
-    }
-
-    select = function(context, result) {
-      var i, len, elem, rv = [];
-
-      for (i = 0, len = result.length; i < len; i++) {
-        elem = result[i];
-
-        if (elem.find(tag)) {
-          rv.push(elem);
-        }
-      }
-
-      return rv;
-    };
-  }
-  else {
-    throw new SyntaxError(null, 'Invalid predicate');
-  }
-
-  return select;
-}
-
-
-
-var ops = {
-  "": prepare_tag,
-  "*": prepare_star,
-  ".": prepare_dot,
-  "..": prepare_dot_dot,
-  "//": prepare_iter,
-  "[": prepare_predicate,
-};
-
-function _SelectorContext(root) {
-  this.parent_map = null;
-  this.root = root;
-}
-
-function findall(elem, path) {
-  var selector, result, i, len, token, value, select, context;
-
-  if (_cache.hasOwnProperty(path)) {
-    selector = _cache[path];
-  }
-  else {
-    // TODO: Use smarter cache purging approach
-    if (Object.keys(_cache).length > 100) {
-      _cache = {};
-    }
-
-    if (path.charAt(0) === '/') {
-      throw new SyntaxError(null, 'Cannot use absolute path on element');
-    }
-
-    result = xpath_tokenizer(path);
-    selector = [];
-
-    function getToken() {
-      return result.shift();
-    }
-
-    token = getToken();
-    while (true) {
-      var c = token[1] || '';
-      value = ops[c](getToken, token);
-
-      if (!value) {
-        throw new SyntaxError(null, sprintf('Invalid path: %s', path));
-      }
-
-      selector.push(value);
-      token = getToken();
-
-      if (!token) {
-        break;
-      }
-      else if (token[1] === '/') {
-        token = getToken();
-      }
-
-      if (!token) {
-        break;
-      }
-    }
-
-    _cache[path] = selector;
-  }
-
-  // Execute slector pattern
-  result = [elem];
-  context = new _SelectorContext(elem);
-
-  for (i = 0, len = selector.length; i < len; i++) {
-    select = selector[i];
-    result = select(context, result);
-  }
-
-  return result || [];
-}
-
-function find(element, path) {
-  var resultElements = findall(element, path);
-
-  if (resultElements && resultElements.length > 0) {
-    return resultElements[0];
-  }
-
-  return null;
-}
-
-function findtext(element, path, defvalue) {
-  var resultElements = findall(element, path);
-
-  if (resultElements && resultElements.length > 0) {
-    return resultElements[0].text;
-  }
-
-  return defvalue;
-}
-
-
-exports.find = find;
-exports.findall = findall;
-exports.findtext = findtext;
-
-},{"./errors":141,"./sprintf":145,"./utils":147}],140:[function(require,module,exports){
-/**
- *  Copyright 2011 Rackspace
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *
- */
-
-var sprintf = require('./sprintf').sprintf;
-
-var utils = require('./utils');
-var ElementPath = require('./elementpath');
-var TreeBuilder = require('./treebuilder').TreeBuilder;
-var get_parser = require('./parser').get_parser;
-var constants = require('./constants');
-
-var element_ids = 0;
-
-function Element(tag, attrib)
-{
-  this._id = element_ids++;
-  this.tag = tag;
-  this.attrib = {};
-  this.text = null;
-  this.tail = null;
-  this._children = [];
-
-  if (attrib) {
-    this.attrib = utils.merge(this.attrib, attrib);
-  }
-}
-
-Element.prototype.toString = function()
-{
-  return sprintf("<Element %s at %s>", this.tag, this._id);
-};
-
-Element.prototype.makeelement = function(tag, attrib)
-{
-  return new Element(tag, attrib);
-};
-
-Element.prototype.len = function()
-{
-  return this._children.length;
-};
-
-Element.prototype.getItem = function(index)
-{
-  return this._children[index];
-};
-
-Element.prototype.setItem = function(index, element)
-{
-  this._children[index] = element;
-};
-
-Element.prototype.delItem = function(index)
-{
-  this._children.splice(index, 1);
-};
-
-Element.prototype.getSlice = function(start, stop)
-{
-  return this._children.slice(start, stop);
-};
-
-Element.prototype.setSlice = function(start, stop, elements)
-{
-  var i;
-  var k = 0;
-  for (i = start; i < stop; i++, k++) {
-    this._children[i] = elements[k];
-  }
-};
-
-Element.prototype.delSlice = function(start, stop)
-{
-  this._children.splice(start, stop - start);
-};
-
-Element.prototype.append = function(element)
-{
-  this._children.push(element);
-};
-
-Element.prototype.extend = function(elements)
-{
-  this._children.concat(elements);
-};
-
-Element.prototype.insert = function(index, element)
-{
-  this._children[index] = element;
-};
-
-Element.prototype.remove = function(element)
-{
-  this._children = this._children.filter(function(e) {
-    /* TODO: is this the right way to do this? */
-    if (e._id === element._id) {
-      return false;
-    }
-    return true;
-  });
-};
-
-Element.prototype.getchildren = function() {
-  return this._children;
-};
-
-Element.prototype.find = function(path)
-{
-  return ElementPath.find(this, path);
-};
-
-Element.prototype.findtext = function(path, defvalue)
-{
-  return ElementPath.findtext(this, path, defvalue);
-};
-
-Element.prototype.findall = function(path, defvalue)
-{
-  return ElementPath.findall(this, path, defvalue);
-};
-
-Element.prototype.clear = function()
-{
-  this.attrib = {};
-  this._children = [];
-  this.text = null;
-  this.tail = null;
-};
-
-Element.prototype.get = function(key, defvalue)
-{
-  if (this.attrib[key] !== undefined) {
-    return this.attrib[key];
-  }
-  else {
-    return defvalue;
-  }
-};
-
-Element.prototype.set = function(key, value)
-{
-  this.attrib[key] = value;
-};
-
-Element.prototype.keys = function()
-{
-  return Object.keys(this.attrib);
-};
-
-Element.prototype.items = function()
-{
-  return utils.items(this.attrib);
-};
-
-/*
- * In python this uses a generator, but in v8 we don't have em,
- * so we use a callback instead.
- **/
-Element.prototype.iter = function(tag, callback)
-{
-  var self = this;
-  var i, child;
-
-  if (tag === "*") {
-    tag = null;
-  }
-
-  if (tag === null || this.tag === tag) {
-    callback(self);
-  }
-
-  for (i = 0; i < this._children.length; i++) {
-    child = this._children[i];
-    child.iter(tag, function(e) {
-      callback(e);
-    });
-  }
-};
-
-Element.prototype.itertext = function(callback)
-{
-  this.iter(null, function(e) {
-    if (e.text) {
-      callback(e.text);
-    }
-
-    if (e.tail) {
-      callback(e.tail);
-    }
-  });
-};
-
-
-function SubElement(parent, tag, attrib) {
-  var element = parent.makeelement(tag, attrib);
-  parent.append(element);
-  return element;
-}
-
-function Comment(text) {
-  var element = new Element(Comment);
-  if (text) {
-    element.text = text;
-  }
-  return element;
-}
-
-function CData(text) {
-  var element = new Element(CData);
-  if (text) {
-    element.text = text;
-  }
-  return element;
-}
-
-function ProcessingInstruction(target, text)
-{
-  var element = new Element(ProcessingInstruction);
-  element.text = target;
-  if (text) {
-    element.text = element.text + " " + text;
-  }
-  return element;
-}
-
-function QName(text_or_uri, tag)
-{
-  if (tag) {
-    text_or_uri = sprintf("{%s}%s", text_or_uri, tag);
-  }
-  this.text = text_or_uri;
-}
-
-QName.prototype.toString = function() {
-  return this.text;
-};
-
-function ElementTree(element)
-{
-  this._root = element;
-}
-
-ElementTree.prototype.getroot = function() {
-  return this._root;
-};
-
-ElementTree.prototype._setroot = function(element) {
-  this._root = element;
-};
-
-ElementTree.prototype.parse = function(source, parser) {
-  if (!parser) {
-    parser = get_parser(constants.DEFAULT_PARSER);
-    parser = new parser.XMLParser(new TreeBuilder());
-  }
-
-  parser.feed(source);
-  this._root = parser.close();
-  return this._root;
-};
-
-ElementTree.prototype.iter = function(tag, callback) {
-  this._root.iter(tag, callback);
-};
-
-ElementTree.prototype.find = function(path) {
-  return this._root.find(path);
-};
-
-ElementTree.prototype.findtext = function(path, defvalue) {
-  return this._root.findtext(path, defvalue);
-};
-
-ElementTree.prototype.findall = function(path) {
-  return this._root.findall(path);
-};
-
-/**
- * Unlike ElementTree, we don't write to a file, we return you a string.
- */
-ElementTree.prototype.write = function(options) {
-  var sb = [];
-  options = utils.merge({
-    encoding: 'utf-8',
-    xml_declaration: null,
-    default_namespace: null,
-    method: 'xml'}, options);
-
-  if (options.xml_declaration !== false) {
-    sb.push("<?xml version='1.0' encoding='"+options.encoding +"'?>\n");
-  }
-
-  if (options.method === "text") {
-    _serialize_text(sb, self._root, encoding);
-  }
-  else {
-    var qnames, namespaces, indent, indent_string;
-    var x = _namespaces(this._root, options.encoding, options.default_namespace);
-    qnames = x[0];
-    namespaces = x[1];
-
-    if (options.hasOwnProperty('indent')) {
-      indent = 0;
-      indent_string = new Array(options.indent + 1).join(' ');
-    }
-    else {
-      indent = false;
-    }
-
-    if (options.method === "xml") {
-      _serialize_xml(function(data) {
-        sb.push(data);
-      }, this._root, options.encoding, qnames, namespaces, indent, indent_string);
-    }
-    else {
-      /* TODO: html */
-      throw new Error("unknown serialization method "+ options.method);
-    }
-  }
-
-  return sb.join("");
-};
-
-var _namespace_map = {
-    /* "well-known" namespace prefixes */
-    "http://www.w3.org/XML/1998/namespace": "xml",
-    "http://www.w3.org/1999/xhtml": "html",
-    "http://www.w3.org/1999/02/22-rdf-syntax-ns#": "rdf",
-    "http://schemas.xmlsoap.org/wsdl/": "wsdl",
-    /* xml schema */
-    "http://www.w3.org/2001/XMLSchema": "xs",
-    "http://www.w3.org/2001/XMLSchema-instance": "xsi",
-    /* dublic core */
-    "http://purl.org/dc/elements/1.1/": "dc",
-};
-
-function register_namespace(prefix, uri) {
-  if (/ns\d+$/.test(prefix)) {
-    throw new Error('Prefix format reserved for internal use');
-  }
-
-  if (_namespace_map.hasOwnProperty(uri) && _namespace_map[uri] === prefix) {
-    delete _namespace_map[uri];
-  }
-
-  _namespace_map[uri] = prefix;
-}
-
-
-function _escape(text, encoding, isAttribute, isText) {
-  if (text) {
-    text = text.toString();
-    text = text.replace(/&/g, '&amp;');
-    text = text.replace(/</g, '&lt;');
-    text = text.replace(/>/g, '&gt;');
-    if (!isText) {
-        text = text.replace(/\n/g, '&#xA;');
-        text = text.replace(/\r/g, '&#xD;');
-    }
-    if (isAttribute) {
-      text = text.replace(/"/g, '&quot;');
-    }
-  }
-  return text;
-}
-
-/* TODO: benchmark single regex */
-function _escape_attrib(text, encoding) {
-  return _escape(text, encoding, true);
-}
-
-function _escape_cdata(text, encoding) {
-  return _escape(text, encoding, false);
-}
-
-function _escape_text(text, encoding) {
-  return _escape(text, encoding, false, true);
-}
-
-function _namespaces(elem, encoding, default_namespace) {
-  var qnames = {};
-  var namespaces = {};
-
-  if (default_namespace) {
-    namespaces[default_namespace] = "";
-  }
-
-  function encode(text) {
-    return text;
-  }
-
-  function add_qname(qname) {
-    if (qname[0] === "{") {
-      var tmp = qname.substring(1).split("}", 2);
-      var uri = tmp[0];
-      var tag = tmp[1];
-      var prefix = namespaces[uri];
-
-      if (prefix === undefined) {
-        prefix = _namespace_map[uri];
-        if (prefix === undefined) {
-          prefix = "ns" + Object.keys(namespaces).length;
-        }
-        if (prefix !== "xml") {
-          namespaces[uri] = prefix;
-        }
-      }
-
-      if (prefix) {
-        qnames[qname] = sprintf("%s:%s", prefix, tag);
-      }
-      else {
-        qnames[qname] = tag;
-      }
-    }
-    else {
-      if (default_namespace) {
-        throw new Error('cannot use non-qualified names with default_namespace option');
-      }
-
-      qnames[qname] = qname;
-    }
-  }
-
-
-  elem.iter(null, function(e) {
-    var i;
-    var tag = e.tag;
-    var text = e.text;
-    var items = e.items();
-
-    if (tag instanceof QName && qnames[tag.text] === undefined) {
-      add_qname(tag.text);
-    }
-    else if (typeof(tag) === "string") {
-      add_qname(tag);
-    }
-    else if (tag !== null && tag !== Comment && tag !== CData && tag !== ProcessingInstruction) {
-      throw new Error('Invalid tag type for serialization: '+ tag);
-    }
-
-    if (text instanceof QName && qnames[text.text] === undefined) {
-      add_qname(text.text);
-    }
-
-    items.forEach(function(item) {
-      var key = item[0],
-          value = item[1];
-      if (key instanceof QName) {
-        key = key.text;
-      }
-
-      if (qnames[key] === undefined) {
-        add_qname(key);
-      }
-
-      if (value instanceof QName && qnames[value.text] === undefined) {
-        add_qname(value.text);
-      }
-    });
-  });
-  return [qnames, namespaces];
-}
-
-function _serialize_xml(write, elem, encoding, qnames, namespaces, indent, indent_string) {
-  var tag = elem.tag;
-  var text = elem.text;
-  var items;
-  var i;
-
-  var newlines = indent || (indent === 0);
-  write(Array(indent + 1).join(indent_string));
-
-  if (tag === Comment) {
-    write(sprintf("<!--%s-->", _escape_cdata(text, encoding)));
-  }
-  else if (tag === ProcessingInstruction) {
-    write(sprintf("<?%s?>", _escape_cdata(text, encoding)));
-  }
-  else if (tag === CData) {
-    text = text || '';
-    write(sprintf("<![CDATA[%s]]>", text));
-  }
-  else {
-    tag = qnames[tag];
-    if (tag === undefined) {
-      if (text) {
-        write(_escape_text(text, encoding));
-      }
-      elem.iter(function(e) {
-        _serialize_xml(write, e, encoding, qnames, null, newlines ? indent + 1 : false, indent_string);
-      });
-    }
-    else {
-      write("<" + tag);
-      items = elem.items();
-
-      if (items || namespaces) {
-        items.sort(); // lexical order
-
-        items.forEach(function(item) {
-          var k = item[0],
-              v = item[1];
-
-            if (k instanceof QName) {
-              k = k.text;
-            }
-
-            if (v instanceof QName) {
-              v = qnames[v.text];
-            }
-            else {
-              v = _escape_attrib(v, encoding);
-            }
-            write(sprintf(" %s=\"%s\"", qnames[k], v));
-        });
-
-        if (namespaces) {
-          items = utils.items(namespaces);
-          items.sort(function(a, b) { return a[1] < b[1]; });
-
-          items.forEach(function(item) {
-            var k = item[1],
-                v = item[0];
-
-            if (k) {
-              k = ':' + k;
-            }
-
-            write(sprintf(" xmlns%s=\"%s\"", k, _escape_attrib(v, encoding)));
-          });
-        }
-      }
-
-      if (text || elem.len()) {
-        if (text && text.toString().match(/^\s*$/)) {
-            text = null;
-        }
-
-        write(">");
-        if (!text && newlines) {
-          write("\n");
-        }
-
-        if (text) {
-          write(_escape_text(text, encoding));
-        }
-        elem._children.forEach(function(e) {
-          _serialize_xml(write, e, encoding, qnames, null, newlines ? indent + 1 : false, indent_string);
-        });
-
-        if (!text && indent) {
-          write(Array(indent + 1).join(indent_string));
-        }
-        write("</" + tag + ">");
-      }
-      else {
-        write(" />");
-      }
-    }
-  }
-
-  if (newlines) {
-    write("\n");
-  }
-}
-
-function parse(source, parser) {
-  var tree = new ElementTree();
-  tree.parse(source, parser);
-  return tree;
-}
-
-function tostring(element, options) {
-  return new ElementTree(element).write(options);
-}
-
-exports.PI = ProcessingInstruction;
-exports.Comment = Comment;
-exports.CData = CData;
-exports.ProcessingInstruction = ProcessingInstruction;
-exports.SubElement = SubElement;
-exports.QName = QName;
-exports.ElementTree = ElementTree;
-exports.ElementPath = ElementPath;
-exports.Element = function(tag, attrib) {
-  return new Element(tag, attrib);
-};
-
-exports.XML = function(data) {
-  var et = new ElementTree();
-  return et.parse(data);
-};
-
-exports.parse = parse;
-exports.register_namespace = register_namespace;
-exports.tostring = tostring;
-
-},{"./constants":138,"./elementpath":139,"./parser":142,"./sprintf":145,"./treebuilder":146,"./utils":147}],141:[function(require,module,exports){
-/**
- *  Copyright 2011 Rackspace
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *
- */
-
-var util = require('util');
-
-var sprintf = require('./sprintf').sprintf;
-
-function SyntaxError(token, msg) {
-  msg = msg || sprintf('Syntax Error at token %s', token.toString());
-  this.token = token;
-  this.message = msg;
-  Error.call(this, msg);
-}
-
-util.inherits(SyntaxError, Error);
-
-exports.SyntaxError = SyntaxError;
-
-},{"./sprintf":145,"util":314}],142:[function(require,module,exports){
-/*
- *  Copyright 2011 Rackspace
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *
- */
-
-/* TODO: support node-expat C++ module optionally */
-
-var util = require('util');
-var parsers = require('./parsers/index');
-
-function get_parser(name) {
-  if (name === 'sax') {
-    return parsers.sax;
-  }
-  else {
-    throw new Error('Invalid parser: ' + name);
-  }
-}
-
-
-exports.get_parser = get_parser;
-
-},{"./parsers/index":143,"util":314}],143:[function(require,module,exports){
-exports.sax = require('./sax');
-
-},{"./sax":144}],144:[function(require,module,exports){
-var util = require('util');
-
-var sax = require('sax');
-
-var TreeBuilder = require('./../treebuilder').TreeBuilder;
-
-function XMLParser(target) {
-  this.parser = sax.parser(true);
-
-  this.target = (target) ? target : new TreeBuilder();
-
-  this.parser.onopentag = this._handleOpenTag.bind(this);
-  this.parser.ontext = this._handleText.bind(this);
-  this.parser.oncdata = this._handleCdata.bind(this);
-  this.parser.ondoctype = this._handleDoctype.bind(this);
-  this.parser.oncomment = this._handleComment.bind(this);
-  this.parser.onclosetag = this._handleCloseTag.bind(this);
-  this.parser.onerror = this._handleError.bind(this);
-}
-
-XMLParser.prototype._handleOpenTag = function(tag) {
-  this.target.start(tag.name, tag.attributes);
-};
-
-XMLParser.prototype._handleText = function(text) {
-  this.target.data(text);
-};
-
-XMLParser.prototype._handleCdata = function(text) {
-  this.target.data(text);
-};
-
-XMLParser.prototype._handleDoctype = function(text) {
-};
-
-XMLParser.prototype._handleComment = function(comment) {
-};
-
-XMLParser.prototype._handleCloseTag = function(tag) {
-  this.target.end(tag);
-};
-
-XMLParser.prototype._handleError = function(err) {
-  throw err;
-};
-
-XMLParser.prototype.feed = function(chunk) {
-  this.parser.write(chunk);
-};
-
-XMLParser.prototype.close = function() {
-  this.parser.close();
-  return this.target.close();
-};
-
-exports.XMLParser = XMLParser;
-
-},{"./../treebuilder":146,"sax":292,"util":314}],145:[function(require,module,exports){
-/*
- *  Copyright 2011 Rackspace
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *
- */
-
-var cache = {};
-
-
-// Do any others need escaping?
-var TO_ESCAPE = {
-  '\'': '\\\'',
-  '\n': '\\n'
-};
-
-
-function populate(formatter) {
-  var i, type,
-      key = formatter,
-      prev = 0,
-      arg = 1,
-      builder = 'return \'';
-
-  for (i = 0; i < formatter.length; i++) {
-    if (formatter[i] === '%') {
-      type = formatter[i + 1];
-
-      switch (type) {
-        case 's':
-          builder += formatter.slice(prev, i) + '\' + arguments[' + arg + '] + \'';
-          prev = i + 2;
-          arg++;
-          break;
-        case 'j':
-          builder += formatter.slice(prev, i) + '\' + JSON.stringify(arguments[' + arg + ']) + \'';
-          prev = i + 2;
-          arg++;
-          break;
-        case '%':
-          builder += formatter.slice(prev, i + 1);
-          prev = i + 2;
-          i++;
-          break;
-      }
-
-
-    } else if (TO_ESCAPE[formatter[i]]) {
-      builder += formatter.slice(prev, i) + TO_ESCAPE[formatter[i]];
-      prev = i + 1;
-    }
-  }
-
-  builder += formatter.slice(prev) + '\';';
-  cache[key] = new Function(builder);
-}
-
-
-/**
- * A fast version of sprintf(), which currently only supports the %s and %j.
- * This caches a formatting function for each format string that is used, so
- * you should only use this sprintf() will be called many times with a single
- * format string and a limited number of format strings will ever be used (in
- * general this means that format strings should be string literals).
- *
- * @param {String} formatter A format string.
- * @param {...String} var_args Values that will be formatted by %s and %j.
- * @return {String} The formatted output.
- */
-exports.sprintf = function(formatter, var_args) {
-  if (!cache[formatter]) {
-    populate(formatter);
-  }
-
-  return cache[formatter].apply(null, arguments);
-};
-
-},{}],146:[function(require,module,exports){
-function TreeBuilder(element_factory) {
-  this._data = [];
-  this._elem = [];
-  this._last = null;
-  this._tail = null;
-  if (!element_factory) {
-    /* evil circular dep */
-    element_factory = require('./elementtree').Element;
-  }
-  this._factory = element_factory;
-}
-
-TreeBuilder.prototype.close = function() {
-  return this._last;
-};
-
-TreeBuilder.prototype._flush = function() {
-  if (this._data) {
-    if (this._last !== null) {
-      var text = this._data.join("");
-      if (this._tail) {
-        this._last.tail = text;
-      }
-      else {
-        this._last.text = text;
-      }
-    }
-    this._data = [];
-  }
-};
-
-TreeBuilder.prototype.data = function(data) {
-  this._data.push(data);
-};
-
-TreeBuilder.prototype.start = function(tag, attrs) {
-  this._flush();
-  var elem = this._factory(tag, attrs);
-  this._last = elem;
-
-  if (this._elem.length) {
-    this._elem[this._elem.length - 1].append(elem);
-  }
-
-  this._elem.push(elem);
-
-  this._tail = null;
-};
-
-TreeBuilder.prototype.end = function(tag) {
-  this._flush();
-  this._last = this._elem.pop();
-  if (this._last.tag !== tag) {
-    throw new Error("end tag mismatch");
-  }
-  this._tail = 1;
-  return this._last;
-};
-
-exports.TreeBuilder = TreeBuilder;
-
-},{"./elementtree":140}],147:[function(require,module,exports){
-/**
- *  Copyright 2011 Rackspace
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- *
- */
-
-/**
- * @param {Object} hash.
- * @param {Array} ignored.
- */
-function items(hash, ignored) {
-  ignored = ignored || null;
-  var k, rv = [];
-
-  function is_ignored(key) {
-    if (!ignored || ignored.length === 0) {
-      return false;
-    }
-
-    return ignored.indexOf(key);
-  }
-
-  for (k in hash) {
-    if (hash.hasOwnProperty(k) && !(is_ignored(ignored))) {
-      rv.push([k, hash[k]]);
-    }
-  }
-
-  return rv;
-}
-
-
-function findall(re, str) {
-  var match, matches = [];
-
-  while ((match = re.exec(str))) {
-      matches.push(match);
-  }
-
-  return matches;
-}
-
-function merge(a, b) {
-  var c = {}, attrname;
-
-  for (attrname in a) {
-    if (a.hasOwnProperty(attrname)) {
-      c[attrname] = a[attrname];
-    }
-  }
-  for (attrname in b) {
-    if (b.hasOwnProperty(attrname)) {
-      c[attrname] = b[attrname];
-    }
-  }
-  return c;
-}
-
-exports.items = items;
-exports.findall = findall;
-exports.merge = merge;
-
-},{}],148:[function(require,module,exports){
+},{"_process":240,"fs":67,"os":215,"path":232}],130:[function(require,module,exports){
 'use strict';
 
 var elliptic = exports;
@@ -38720,7 +36498,7 @@ elliptic.curves = require('./elliptic/curves');
 elliptic.ec = require('./elliptic/ec');
 elliptic.eddsa = require('./elliptic/eddsa');
 
-},{"../package.json":164,"./elliptic/curve":151,"./elliptic/curves":154,"./elliptic/ec":155,"./elliptic/eddsa":158,"./elliptic/utils":162,"brorand":46}],149:[function(require,module,exports){
+},{"../package.json":146,"./elliptic/curve":133,"./elliptic/curves":136,"./elliptic/ec":137,"./elliptic/eddsa":140,"./elliptic/utils":144,"brorand":36}],131:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -39103,7 +36881,7 @@ BasePoint.prototype.dblp = function dblp(k) {
   return r;
 };
 
-},{"../utils":162,"bn.js":163}],150:[function(require,module,exports){
+},{"../utils":144,"bn.js":145}],132:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -39540,7 +37318,7 @@ Point.prototype.eqXToP = function eqXToP(x) {
 Point.prototype.toP = Point.prototype.normalize;
 Point.prototype.mixedAdd = Point.prototype.add;
 
-},{"../utils":162,"./base":149,"bn.js":163,"inherits":212}],151:[function(require,module,exports){
+},{"../utils":144,"./base":131,"bn.js":145,"inherits":194}],133:[function(require,module,exports){
 'use strict';
 
 var curve = exports;
@@ -39550,7 +37328,7 @@ curve.short = require('./short');
 curve.mont = require('./mont');
 curve.edwards = require('./edwards');
 
-},{"./base":149,"./edwards":150,"./mont":152,"./short":153}],152:[function(require,module,exports){
+},{"./base":131,"./edwards":132,"./mont":134,"./short":135}],134:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -39730,7 +37508,7 @@ Point.prototype.getX = function getX() {
   return this.x.fromRed();
 };
 
-},{"../utils":162,"./base":149,"bn.js":163,"inherits":212}],153:[function(require,module,exports){
+},{"../utils":144,"./base":131,"bn.js":145,"inherits":194}],135:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -40670,7 +38448,7 @@ JPoint.prototype.isInfinity = function isInfinity() {
   return this.z.cmpn(0) === 0;
 };
 
-},{"../utils":162,"./base":149,"bn.js":163,"inherits":212}],154:[function(require,module,exports){
+},{"../utils":144,"./base":131,"bn.js":145,"inherits":194}],136:[function(require,module,exports){
 'use strict';
 
 var curves = exports;
@@ -40878,7 +38656,7 @@ defineCurve('secp256k1', {
   ],
 });
 
-},{"./curve":151,"./precomputed/secp256k1":161,"./utils":162,"hash.js":178}],155:[function(require,module,exports){
+},{"./curve":133,"./precomputed/secp256k1":143,"./utils":144,"hash.js":160}],137:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -41123,7 +38901,7 @@ EC.prototype.getKeyRecoveryParam = function(e, signature, Q, enc) {
   throw new Error('Unable to find valid recovery factor');
 };
 
-},{"../curves":154,"../utils":162,"./key":156,"./signature":157,"bn.js":163,"brorand":46,"hmac-drbg":190}],156:[function(require,module,exports){
+},{"../curves":136,"../utils":144,"./key":138,"./signature":139,"bn.js":145,"brorand":36,"hmac-drbg":172}],138:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -41246,7 +39024,7 @@ KeyPair.prototype.inspect = function inspect() {
          ' pub: ' + (this.pub && this.pub.inspect()) + ' >';
 };
 
-},{"../utils":162,"bn.js":163}],157:[function(require,module,exports){
+},{"../utils":144,"bn.js":145}],139:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -41414,7 +39192,7 @@ Signature.prototype.toDER = function toDER(enc) {
   return utils.encode(res, enc);
 };
 
-},{"../utils":162,"bn.js":163}],158:[function(require,module,exports){
+},{"../utils":144,"bn.js":145}],140:[function(require,module,exports){
 'use strict';
 
 var hash = require('hash.js');
@@ -41534,7 +39312,7 @@ EDDSA.prototype.isPoint = function isPoint(val) {
   return val instanceof this.pointClass;
 };
 
-},{"../curves":154,"../utils":162,"./key":159,"./signature":160,"hash.js":178}],159:[function(require,module,exports){
+},{"../curves":136,"../utils":144,"./key":141,"./signature":142,"hash.js":160}],141:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -41631,7 +39409,7 @@ KeyPair.prototype.getPublic = function getPublic(enc) {
 
 module.exports = KeyPair;
 
-},{"../utils":162}],160:[function(require,module,exports){
+},{"../utils":144}],142:[function(require,module,exports){
 'use strict';
 
 var BN = require('bn.js');
@@ -41698,7 +39476,7 @@ Signature.prototype.toHex = function toHex() {
 
 module.exports = Signature;
 
-},{"../utils":162,"bn.js":163}],161:[function(require,module,exports){
+},{"../utils":144,"bn.js":145}],143:[function(require,module,exports){
 module.exports = {
   doubles: {
     step: 4,
@@ -42480,7 +40258,7 @@ module.exports = {
   },
 };
 
-},{}],162:[function(require,module,exports){
+},{}],144:[function(require,module,exports){
 'use strict';
 
 var utils = exports;
@@ -42601,14 +40379,14 @@ function intFromLE(bytes) {
 utils.intFromLE = intFromLE;
 
 
-},{"bn.js":163,"minimalistic-assert":220,"minimalistic-crypto-utils":221}],163:[function(require,module,exports){
-arguments[4][37][0].apply(exports,arguments)
-},{"buffer":47,"dup":37}],164:[function(require,module,exports){
+},{"bn.js":145,"minimalistic-assert":202,"minimalistic-crypto-utils":203}],145:[function(require,module,exports){
+arguments[4][27][0].apply(exports,arguments)
+},{"buffer":37,"dup":27}],146:[function(require,module,exports){
 module.exports={
   "_args": [
     [
       "elliptic@6.5.4",
-      "C:\\Users\\akaila.SPLUNKCORP\\Documents\\Data\\Projects\\Splunk SDKs\\JS SDK\\Updated-js-sdk\\splunk-sdk-javascript"
+      "/Users/abhis/Documents/GitHub/splunk-sdk-javascript"
     ]
   ],
   "_development": true,
@@ -42634,7 +40412,7 @@ module.exports={
   ],
   "_resolved": "https://registry.npmjs.org/elliptic/-/elliptic-6.5.4.tgz",
   "_spec": "6.5.4",
-  "_where": "C:\\Users\\akaila.SPLUNKCORP\\Documents\\Data\\Projects\\Splunk SDKs\\JS SDK\\Updated-js-sdk\\splunk-sdk-javascript",
+  "_where": "/Users/abhis/Documents/GitHub/splunk-sdk-javascript",
   "author": {
     "name": "Fedor Indutny",
     "email": "fedor@indutny.com"
@@ -42694,7 +40472,7 @@ module.exports={
   "version": "6.5.4"
 }
 
-},{}],165:[function(require,module,exports){
+},{}],147:[function(require,module,exports){
 'use strict';
 
 var GetIntrinsic = require('get-intrinsic');
@@ -42711,7 +40489,7 @@ if ($gOPD) {
 
 module.exports = $gOPD;
 
-},{"get-intrinsic":172}],166:[function(require,module,exports){
+},{"get-intrinsic":154}],148:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -43210,7 +40988,7 @@ function eventTargetAgnosticAddListener(emitter, name, listener, flags) {
   }
 }
 
-},{}],167:[function(require,module,exports){
+},{}],149:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 var MD5 = require('md5.js')
 
@@ -43257,7 +41035,7 @@ function EVP_BytesToKey (password, salt, keyBits, ivLen) {
 
 module.exports = EVP_BytesToKey
 
-},{"md5.js":217,"safe-buffer":290}],168:[function(require,module,exports){
+},{"md5.js":199,"safe-buffer":270}],150:[function(require,module,exports){
 
 var hasOwn = Object.prototype.hasOwnProperty;
 var toString = Object.prototype.toString;
@@ -43281,7 +41059,7 @@ module.exports = function forEach (obj, fn, ctx) {
 };
 
 
-},{}],169:[function(require,module,exports){
+},{}],151:[function(require,module,exports){
 'use strict';
 
 /* eslint no-invalid-this: 1 */
@@ -43335,14 +41113,14 @@ module.exports = function bind(that) {
     return bound;
 };
 
-},{}],170:[function(require,module,exports){
+},{}],152:[function(require,module,exports){
 'use strict';
 
 var implementation = require('./implementation');
 
 module.exports = Function.prototype.bind || implementation;
 
-},{"./implementation":169}],171:[function(require,module,exports){
+},{"./implementation":151}],153:[function(require,module,exports){
 'use strict';
 
 /* !
@@ -43388,7 +41166,7 @@ function getFuncName(aFunc) {
 
 module.exports = getFuncName;
 
-},{}],172:[function(require,module,exports){
+},{}],154:[function(require,module,exports){
 'use strict';
 
 var undefined;
@@ -43720,7 +41498,7 @@ module.exports = function GetIntrinsic(name, allowMissing) {
 	return value;
 };
 
-},{"function-bind":170,"has":176,"has-symbols":173}],173:[function(require,module,exports){
+},{"function-bind":152,"has":158,"has-symbols":155}],155:[function(require,module,exports){
 'use strict';
 
 var origSymbol = typeof Symbol !== 'undefined' && Symbol;
@@ -43735,7 +41513,7 @@ module.exports = function hasNativeSymbols() {
 	return hasSymbolSham();
 };
 
-},{"./shams":174}],174:[function(require,module,exports){
+},{"./shams":156}],156:[function(require,module,exports){
 'use strict';
 
 /* eslint complexity: [2, 18], max-statements: [2, 33] */
@@ -43779,7 +41557,7 @@ module.exports = function hasSymbols() {
 	return true;
 };
 
-},{}],175:[function(require,module,exports){
+},{}],157:[function(require,module,exports){
 'use strict';
 
 var hasSymbols = require('has-symbols/shams');
@@ -43788,14 +41566,14 @@ module.exports = function hasToStringTagShams() {
 	return hasSymbols() && !!Symbol.toStringTag;
 };
 
-},{"has-symbols/shams":174}],176:[function(require,module,exports){
+},{"has-symbols/shams":156}],158:[function(require,module,exports){
 'use strict';
 
 var bind = require('function-bind');
 
 module.exports = bind.call(Function.call, Object.prototype.hasOwnProperty);
 
-},{"function-bind":170}],177:[function(require,module,exports){
+},{"function-bind":152}],159:[function(require,module,exports){
 'use strict'
 var Buffer = require('safe-buffer').Buffer
 var Transform = require('readable-stream').Transform
@@ -43892,7 +41670,7 @@ HashBase.prototype._digest = function () {
 
 module.exports = HashBase
 
-},{"inherits":212,"readable-stream":288,"safe-buffer":290}],178:[function(require,module,exports){
+},{"inherits":194,"readable-stream":268,"safe-buffer":270}],160:[function(require,module,exports){
 var hash = exports;
 
 hash.utils = require('./hash/utils');
@@ -43909,7 +41687,7 @@ hash.sha384 = hash.sha.sha384;
 hash.sha512 = hash.sha.sha512;
 hash.ripemd160 = hash.ripemd.ripemd160;
 
-},{"./hash/common":179,"./hash/hmac":180,"./hash/ripemd":181,"./hash/sha":182,"./hash/utils":189}],179:[function(require,module,exports){
+},{"./hash/common":161,"./hash/hmac":162,"./hash/ripemd":163,"./hash/sha":164,"./hash/utils":171}],161:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -44003,7 +41781,7 @@ BlockHash.prototype._pad = function pad() {
   return res;
 };
 
-},{"./utils":189,"minimalistic-assert":220}],180:[function(require,module,exports){
+},{"./utils":171,"minimalistic-assert":202}],162:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -44052,7 +41830,7 @@ Hmac.prototype.digest = function digest(enc) {
   return this.outer.digest(enc);
 };
 
-},{"./utils":189,"minimalistic-assert":220}],181:[function(require,module,exports){
+},{"./utils":171,"minimalistic-assert":202}],163:[function(require,module,exports){
 'use strict';
 
 var utils = require('./utils');
@@ -44200,7 +41978,7 @@ var sh = [
   8, 5, 12, 9, 12, 5, 14, 6, 8, 13, 6, 5, 15, 13, 11, 11
 ];
 
-},{"./common":179,"./utils":189}],182:[function(require,module,exports){
+},{"./common":161,"./utils":171}],164:[function(require,module,exports){
 'use strict';
 
 exports.sha1 = require('./sha/1');
@@ -44209,7 +41987,7 @@ exports.sha256 = require('./sha/256');
 exports.sha384 = require('./sha/384');
 exports.sha512 = require('./sha/512');
 
-},{"./sha/1":183,"./sha/224":184,"./sha/256":185,"./sha/384":186,"./sha/512":187}],183:[function(require,module,exports){
+},{"./sha/1":165,"./sha/224":166,"./sha/256":167,"./sha/384":168,"./sha/512":169}],165:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -44285,7 +42063,7 @@ SHA1.prototype._digest = function digest(enc) {
     return utils.split32(this.h, 'big');
 };
 
-},{"../common":179,"../utils":189,"./common":188}],184:[function(require,module,exports){
+},{"../common":161,"../utils":171,"./common":170}],166:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -44317,7 +42095,7 @@ SHA224.prototype._digest = function digest(enc) {
 };
 
 
-},{"../utils":189,"./256":185}],185:[function(require,module,exports){
+},{"../utils":171,"./256":167}],167:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -44424,7 +42202,7 @@ SHA256.prototype._digest = function digest(enc) {
     return utils.split32(this.h, 'big');
 };
 
-},{"../common":179,"../utils":189,"./common":188,"minimalistic-assert":220}],186:[function(require,module,exports){
+},{"../common":161,"../utils":171,"./common":170,"minimalistic-assert":202}],168:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -44461,7 +42239,7 @@ SHA384.prototype._digest = function digest(enc) {
     return utils.split32(this.h.slice(0, 12), 'big');
 };
 
-},{"../utils":189,"./512":187}],187:[function(require,module,exports){
+},{"../utils":171,"./512":169}],169:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -44793,7 +42571,7 @@ function g1_512_lo(xh, xl) {
   return r;
 }
 
-},{"../common":179,"../utils":189,"minimalistic-assert":220}],188:[function(require,module,exports){
+},{"../common":161,"../utils":171,"minimalistic-assert":202}],170:[function(require,module,exports){
 'use strict';
 
 var utils = require('../utils');
@@ -44844,7 +42622,7 @@ function g1_256(x) {
 }
 exports.g1_256 = g1_256;
 
-},{"../utils":189}],189:[function(require,module,exports){
+},{"../utils":171}],171:[function(require,module,exports){
 'use strict';
 
 var assert = require('minimalistic-assert');
@@ -45124,7 +42902,7 @@ function shr64_lo(ah, al, num) {
 }
 exports.shr64_lo = shr64_lo;
 
-},{"inherits":212,"minimalistic-assert":220}],190:[function(require,module,exports){
+},{"inherits":194,"minimalistic-assert":202}],172:[function(require,module,exports){
 'use strict';
 
 var hash = require('hash.js');
@@ -45239,7 +43017,7 @@ HmacDRBG.prototype.generate = function generate(len, enc, add, addEnc) {
   return utils.encode(res, enc);
 };
 
-},{"hash.js":178,"minimalistic-assert":220,"minimalistic-crypto-utils":221}],191:[function(require,module,exports){
+},{"hash.js":160,"minimalistic-assert":202,"minimalistic-crypto-utils":203}],173:[function(require,module,exports){
 var http = require('http')
 var url = require('url')
 
@@ -45272,7 +43050,7 @@ function validateParams (params) {
   return params
 }
 
-},{"http":302,"url":309}],192:[function(require,module,exports){
+},{"http":281,"url":288}],174:[function(require,module,exports){
 "use strict";
 var Buffer = require("safer-buffer").Buffer;
 
@@ -45829,7 +43607,7 @@ function findIdx(table, val) {
 }
 
 
-},{"safer-buffer":291}],193:[function(require,module,exports){
+},{"safer-buffer":271}],175:[function(require,module,exports){
 "use strict";
 
 // Description of supported double byte encodings and aliases.
@@ -46007,7 +43785,7 @@ module.exports = {
     'xxbig5': 'big5hkscs',
 };
 
-},{"./tables/big5-added.json":199,"./tables/cp936.json":200,"./tables/cp949.json":201,"./tables/cp950.json":202,"./tables/eucjp.json":203,"./tables/gb18030-ranges.json":204,"./tables/gbk-added.json":205,"./tables/shiftjis.json":206}],194:[function(require,module,exports){
+},{"./tables/big5-added.json":181,"./tables/cp936.json":182,"./tables/cp949.json":183,"./tables/cp950.json":184,"./tables/eucjp.json":185,"./tables/gb18030-ranges.json":186,"./tables/gbk-added.json":187,"./tables/shiftjis.json":188}],176:[function(require,module,exports){
 "use strict";
 
 // Update this array if you add/rename/remove files in this directory.
@@ -46031,7 +43809,7 @@ for (var i = 0; i < modules.length; i++) {
             exports[enc] = module[enc];
 }
 
-},{"./dbcs-codec":192,"./dbcs-data":193,"./internal":195,"./sbcs-codec":196,"./sbcs-data":198,"./sbcs-data-generated":197,"./utf16":207,"./utf7":208}],195:[function(require,module,exports){
+},{"./dbcs-codec":174,"./dbcs-data":175,"./internal":177,"./sbcs-codec":178,"./sbcs-data":180,"./sbcs-data-generated":179,"./utf16":189,"./utf7":190}],177:[function(require,module,exports){
 "use strict";
 var Buffer = require("safer-buffer").Buffer;
 
@@ -46221,7 +43999,7 @@ InternalDecoderCesu8.prototype.end = function() {
     return res;
 }
 
-},{"safer-buffer":291,"string_decoder":306}],196:[function(require,module,exports){
+},{"safer-buffer":271,"string_decoder":285}],178:[function(require,module,exports){
 "use strict";
 var Buffer = require("safer-buffer").Buffer;
 
@@ -46295,7 +44073,7 @@ SBCSDecoder.prototype.write = function(buf) {
 SBCSDecoder.prototype.end = function() {
 }
 
-},{"safer-buffer":291}],197:[function(require,module,exports){
+},{"safer-buffer":271}],179:[function(require,module,exports){
 "use strict";
 
 // Generated data for sbcs codec. Don't edit manually. Regenerate using generation/gen-sbcs.js script.
@@ -46747,7 +44525,7 @@ module.exports = {
     "chars": "���������������������������������กขฃคฅฆงจฉชซฌญฎฏฐฑฒณดตถทธนบปผฝพฟภมยรฤลฦวศษสหฬอฮฯะัาำิีึืฺุู����฿เแโใไๅๆ็่้๊๋์ํ๎๏๐๑๒๓๔๕๖๗๘๙๚๛����"
   }
 }
-},{}],198:[function(require,module,exports){
+},{}],180:[function(require,module,exports){
 "use strict";
 
 // Manually added data to be used by sbcs codec in addition to generated one.
@@ -46923,7 +44701,7 @@ module.exports = {
 };
 
 
-},{}],199:[function(require,module,exports){
+},{}],181:[function(require,module,exports){
 module.exports=[
 ["8740","䏰䰲䘃䖦䕸𧉧䵷䖳𧲱䳢𧳅㮕䜶䝄䱇䱀𤊿𣘗𧍒𦺋𧃒䱗𪍑䝏䗚䲅𧱬䴇䪤䚡𦬣爥𥩔𡩣𣸆𣽡晍囻"],
 ["8767","綕夝𨮹㷴霴𧯯寛𡵞媤㘥𩺰嫑宷峼杮薓𩥅瑡璝㡵𡵓𣚞𦀡㻬"],
@@ -47047,7 +44825,7 @@ module.exports=[
 ["fea1","𤅟𤩹𨮏孆𨰃𡢞瓈𡦈甎瓩甞𨻙𡩋寗𨺬鎅畍畊畧畮𤾂㼄𤴓疎瑝疞疴瘂瘬癑癏癯癶𦏵皐臯㟸𦤑𦤎皡皥皷盌𦾟葢𥂝𥅽𡸜眞眦着撯𥈠睘𣊬瞯𨥤𨥨𡛁矴砉𡍶𤨒棊碯磇磓隥礮𥗠磗礴碱𧘌辸袄𨬫𦂃𢘜禆褀椂禀𥡗禝𧬹礼禩渪𧄦㺨秆𩄍秔"]
 ]
 
-},{}],200:[function(require,module,exports){
+},{}],182:[function(require,module,exports){
 module.exports=[
 ["0","\u0000",127,"€"],
 ["8140","丂丄丅丆丏丒丗丟丠両丣並丩丮丯丱丳丵丷丼乀乁乂乄乆乊乑乕乗乚乛乢乣乤乥乧乨乪",5,"乲乴",9,"乿",6,"亇亊"],
@@ -47313,7 +45091,7 @@ module.exports=[
 ["fe40","兀嗀﨎﨏﨑﨓﨔礼﨟蘒﨡﨣﨤﨧﨨﨩"]
 ]
 
-},{}],201:[function(require,module,exports){
+},{}],183:[function(require,module,exports){
 module.exports=[
 ["0","\u0000",127],
 ["8141","갂갃갅갆갋",4,"갘갞갟갡갢갣갥",6,"갮갲갳갴"],
@@ -47588,7 +45366,7 @@ module.exports=[
 ["fda1","爻肴酵驍侯候厚后吼喉嗅帿後朽煦珝逅勛勳塤壎焄熏燻薰訓暈薨喧暄煊萱卉喙毁彙徽揮暉煇諱輝麾休携烋畦虧恤譎鷸兇凶匈洶胸黑昕欣炘痕吃屹紇訖欠欽歆吸恰洽翕興僖凞喜噫囍姬嬉希憙憘戱晞曦熙熹熺犧禧稀羲詰"]
 ]
 
-},{}],202:[function(require,module,exports){
+},{}],184:[function(require,module,exports){
 module.exports=[
 ["0","\u0000",127],
 ["a140","　，、。．‧；：？！︰…‥﹐﹑﹒·﹔﹕﹖﹗｜–︱—︳╴︴﹏（）︵︶｛｝︷︸〔〕︹︺【】︻︼《》︽︾〈〉︿﹀「」﹁﹂『』﹃﹄﹙﹚"],
@@ -47767,7 +45545,7 @@ module.exports=[
 ["f9a1","龤灨灥糷虪蠾蠽蠿讞貜躩軉靋顳顴飌饡馫驤驦驧鬤鸕鸗齈戇欞爧虌躨钂钀钁驩驨鬮鸙爩虋讟钃鱹麷癵驫鱺鸝灩灪麤齾齉龘碁銹裏墻恒粧嫺╔╦╗╠╬╣╚╩╝╒╤╕╞╪╡╘╧╛╓╥╖╟╫╢╙╨╜║═╭╮╰╯▓"]
 ]
 
-},{}],203:[function(require,module,exports){
+},{}],185:[function(require,module,exports){
 module.exports=[
 ["0","\u0000",127],
 ["8ea1","｡",62],
@@ -47951,9 +45729,9 @@ module.exports=[
 ["8feda1","黸黿鼂鼃鼉鼏鼐鼑鼒鼔鼖鼗鼙鼚鼛鼟鼢鼦鼪鼫鼯鼱鼲鼴鼷鼹鼺鼼鼽鼿齁齃",4,"齓齕齖齗齘齚齝齞齨齩齭",4,"齳齵齺齽龏龐龑龒龔龖龗龞龡龢龣龥"]
 ]
 
-},{}],204:[function(require,module,exports){
+},{}],186:[function(require,module,exports){
 module.exports={"uChars":[128,165,169,178,184,216,226,235,238,244,248,251,253,258,276,284,300,325,329,334,364,463,465,467,469,471,473,475,477,506,594,610,712,716,730,930,938,962,970,1026,1104,1106,8209,8215,8218,8222,8231,8241,8244,8246,8252,8365,8452,8454,8458,8471,8482,8556,8570,8596,8602,8713,8720,8722,8726,8731,8737,8740,8742,8748,8751,8760,8766,8777,8781,8787,8802,8808,8816,8854,8858,8870,8896,8979,9322,9372,9548,9588,9616,9622,9634,9652,9662,9672,9676,9680,9702,9735,9738,9793,9795,11906,11909,11913,11917,11928,11944,11947,11951,11956,11960,11964,11979,12284,12292,12312,12319,12330,12351,12436,12447,12535,12543,12586,12842,12850,12964,13200,13215,13218,13253,13263,13267,13270,13384,13428,13727,13839,13851,14617,14703,14801,14816,14964,15183,15471,15585,16471,16736,17208,17325,17330,17374,17623,17997,18018,18212,18218,18301,18318,18760,18811,18814,18820,18823,18844,18848,18872,19576,19620,19738,19887,40870,59244,59336,59367,59413,59417,59423,59431,59437,59443,59452,59460,59478,59493,63789,63866,63894,63976,63986,64016,64018,64021,64025,64034,64037,64042,65074,65093,65107,65112,65127,65132,65375,65510,65536],"gbChars":[0,36,38,45,50,81,89,95,96,100,103,104,105,109,126,133,148,172,175,179,208,306,307,308,309,310,311,312,313,341,428,443,544,545,558,741,742,749,750,805,819,820,7922,7924,7925,7927,7934,7943,7944,7945,7950,8062,8148,8149,8152,8164,8174,8236,8240,8262,8264,8374,8380,8381,8384,8388,8390,8392,8393,8394,8396,8401,8406,8416,8419,8424,8437,8439,8445,8482,8485,8496,8521,8603,8936,8946,9046,9050,9063,9066,9076,9092,9100,9108,9111,9113,9131,9162,9164,9218,9219,11329,11331,11334,11336,11346,11361,11363,11366,11370,11372,11375,11389,11682,11686,11687,11692,11694,11714,11716,11723,11725,11730,11736,11982,11989,12102,12336,12348,12350,12384,12393,12395,12397,12510,12553,12851,12962,12973,13738,13823,13919,13933,14080,14298,14585,14698,15583,15847,16318,16434,16438,16481,16729,17102,17122,17315,17320,17402,17418,17859,17909,17911,17915,17916,17936,17939,17961,18664,18703,18814,18962,19043,33469,33470,33471,33484,33485,33490,33497,33501,33505,33513,33520,33536,33550,37845,37921,37948,38029,38038,38064,38065,38066,38069,38075,38076,38078,39108,39109,39113,39114,39115,39116,39265,39394,189000]}
-},{}],205:[function(require,module,exports){
+},{}],187:[function(require,module,exports){
 module.exports=[
 ["a140","",62],
 ["a180","",32],
@@ -48010,7 +45788,7 @@ module.exports=[
 ["fe80","䜣䜩䝼䞍⻊䥇䥺䥽䦂䦃䦅䦆䦟䦛䦷䦶䲣䲟䲠䲡䱷䲢䴓",6,"䶮",93]
 ]
 
-},{}],206:[function(require,module,exports){
+},{}],188:[function(require,module,exports){
 module.exports=[
 ["0","\u0000",128],
 ["a1","｡",62],
@@ -48137,7 +45915,7 @@ module.exports=[
 ["fc40","髜魵魲鮏鮱鮻鰀鵰鵫鶴鸙黑"]
 ]
 
-},{}],207:[function(require,module,exports){
+},{}],189:[function(require,module,exports){
 "use strict";
 var Buffer = require("safer-buffer").Buffer;
 
@@ -48316,7 +46094,7 @@ function detectEncoding(buf, defaultEncoding) {
 
 
 
-},{"safer-buffer":291}],208:[function(require,module,exports){
+},{"safer-buffer":271}],190:[function(require,module,exports){
 "use strict";
 var Buffer = require("safer-buffer").Buffer;
 
@@ -48608,7 +46386,7 @@ Utf7IMAPDecoder.prototype.end = function() {
 
 
 
-},{"safer-buffer":291}],209:[function(require,module,exports){
+},{"safer-buffer":271}],191:[function(require,module,exports){
 "use strict";
 
 var BOMChar = '\uFEFF';
@@ -48662,7 +46440,7 @@ StripBOMWrapper.prototype.end = function() {
 }
 
 
-},{}],210:[function(require,module,exports){
+},{}],192:[function(require,module,exports){
 (function (process){(function (){
 "use strict";
 
@@ -48819,7 +46597,7 @@ if ("Ā" != "\u0100") {
 }
 
 }).call(this)}).call(this,require('_process'))
-},{"../encodings":194,"./bom-handling":209,"./extend-node":47,"./streams":47,"_process":260,"safer-buffer":291}],211:[function(require,module,exports){
+},{"../encodings":176,"./bom-handling":191,"./extend-node":37,"./streams":37,"_process":240,"safer-buffer":271}],193:[function(require,module,exports){
 /*! ieee754. BSD-3-Clause License. Feross Aboukhadijeh <https://feross.org/opensource> */
 exports.read = function (buffer, offset, isLE, mLen, nBytes) {
   var e, m
@@ -48906,7 +46684,7 @@ exports.write = function (buffer, value, offset, isLE, mLen, nBytes) {
   buffer[offset + i - d] |= s * 128
 }
 
-},{}],212:[function(require,module,exports){
+},{}],194:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -48935,7 +46713,7 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],213:[function(require,module,exports){
+},{}],195:[function(require,module,exports){
 'use strict';
 
 var hasToStringTag = require('has-tostringtag/shams')();
@@ -48970,7 +46748,7 @@ isStandardArguments.isLegacyArguments = isLegacyArguments; // for tests
 
 module.exports = supportsStandardArguments ? isStandardArguments : isLegacyArguments;
 
-},{"call-bind/callBound":81,"has-tostringtag/shams":175}],214:[function(require,module,exports){
+},{"call-bind/callBound":71,"has-tostringtag/shams":157}],196:[function(require,module,exports){
 'use strict';
 
 var toStr = Object.prototype.toString;
@@ -49010,7 +46788,7 @@ module.exports = function isGeneratorFunction(fn) {
 	return getProto(fn) === GeneratorFunction;
 };
 
-},{"has-tostringtag/shams":175}],215:[function(require,module,exports){
+},{"has-tostringtag/shams":157}],197:[function(require,module,exports){
 (function (global){(function (){
 'use strict';
 
@@ -49073,7 +46851,7 @@ module.exports = function isTypedArray(value) {
 };
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"available-typed-arrays":43,"call-bind/callBound":81,"es-abstract/helpers/getOwnPropertyDescriptor":165,"foreach":168,"has-tostringtag/shams":175}],216:[function(require,module,exports){
+},{"available-typed-arrays":33,"call-bind/callBound":71,"es-abstract/helpers/getOwnPropertyDescriptor":147,"foreach":150,"has-tostringtag/shams":157}],198:[function(require,module,exports){
 (function (process,Buffer){(function (){
 (function (global, factory) {
   typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
@@ -49929,7 +47707,7 @@ module.exports = function isTypedArray(value) {
 })));
 
 }).call(this)}).call(this,require('_process'),require("buffer").Buffer)
-},{"_process":260,"buffer":79,"util":47}],217:[function(require,module,exports){
+},{"_process":240,"buffer":69,"util":37}],199:[function(require,module,exports){
 'use strict'
 var inherits = require('inherits')
 var HashBase = require('hash-base')
@@ -50077,7 +47855,7 @@ function fnI (a, b, c, d, m, k, s) {
 
 module.exports = MD5
 
-},{"hash-base":177,"inherits":212,"safe-buffer":290}],218:[function(require,module,exports){
+},{"hash-base":159,"inherits":194,"safe-buffer":270}],200:[function(require,module,exports){
 var bn = require('bn.js');
 var brorand = require('brorand');
 
@@ -50194,9 +47972,9 @@ MillerRabin.prototype.getDivisor = function getDivisor(n, k) {
   return false;
 };
 
-},{"bn.js":219,"brorand":46}],219:[function(require,module,exports){
-arguments[4][37][0].apply(exports,arguments)
-},{"buffer":47,"dup":37}],220:[function(require,module,exports){
+},{"bn.js":201,"brorand":36}],201:[function(require,module,exports){
+arguments[4][27][0].apply(exports,arguments)
+},{"buffer":37,"dup":27}],202:[function(require,module,exports){
 module.exports = assert;
 
 function assert(val, msg) {
@@ -50209,7 +47987,7 @@ assert.equal = function assertEqual(l, r, msg) {
     throw new Error(msg || ('Assertion failed: ' + l + ' != ' + r));
 };
 
-},{}],221:[function(require,module,exports){
+},{}],203:[function(require,module,exports){
 'use strict';
 
 var utils = exports;
@@ -50269,7 +48047,7 @@ utils.encode = function encode(arr, enc) {
     return arr;
 };
 
-},{}],222:[function(require,module,exports){
+},{}],204:[function(require,module,exports){
 /**
  * Helpers.
  */
@@ -50433,7 +48211,7 @@ function plural(ms, msAbs, n, name) {
   return Math.round(ms / n) + ' ' + name + (isPlural ? 's' : '');
 }
 
-},{}],223:[function(require,module,exports){
+},{}],205:[function(require,module,exports){
 (function (Buffer){(function (){
 var createHash = require('crypto').createHash;
 
@@ -50549,7 +48327,7 @@ module.exports = {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":79,"crypto":124}],224:[function(require,module,exports){
+},{"buffer":69,"crypto":114}],206:[function(require,module,exports){
 
 //  Simple cookie handling implementation based on the standard RFC 6265.
 //
@@ -50630,7 +48408,7 @@ exports.read = parseSetCookieHeader;
 // writes a cookie string header
 exports.write = writeCookieString;
 
-},{"querystring":271}],225:[function(require,module,exports){
+},{"querystring":251}],207:[function(require,module,exports){
 var iconv,
     inherits  = require('util').inherits,
     stream    = require('stream');
@@ -50685,7 +48463,7 @@ module.exports = function(charset) {
     return new stream.PassThrough;
 }
 
-},{"iconv-lite":210,"stream":301,"util":314}],226:[function(require,module,exports){
+},{"iconv-lite":192,"stream":280,"util":293}],208:[function(require,module,exports){
 (function (Buffer){(function (){
 var readFile = require('fs').readFile,
     basename = require('path').basename;
@@ -50787,7 +48565,7 @@ function flatten(object, into, prefix) {
 }
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":79,"fs":77,"path":252}],227:[function(require,module,exports){
+},{"buffer":69,"fs":67,"path":232}],209:[function(require,module,exports){
 (function (process,Buffer){(function (){
 //////////////////////////////////////////
 // Needle -- HTTP Client for Node.js
@@ -51670,7 +49448,7 @@ module.exports.request = function(method, uri, data, opts, callback) {
 };
 
 }).call(this)}).call(this,require('_process'),require("buffer").Buffer)
-},{"../package.json":233,"./auth":223,"./cookies":224,"./decoder":225,"./multipart":226,"./parsers":228,"./querystring":229,"_process":260,"buffer":79,"debug":230,"fs":77,"http":302,"https":191,"stream":301,"url":309,"util":314,"zlib":76}],228:[function(require,module,exports){
+},{"../package.json":213,"./auth":205,"./cookies":206,"./decoder":207,"./multipart":208,"./parsers":210,"./querystring":211,"_process":240,"buffer":69,"debug":115,"fs":67,"http":281,"https":173,"stream":280,"url":288,"util":293,"zlib":66}],210:[function(require,module,exports){
 (function (Buffer){(function (){
 //////////////////////////////////////////
 // Defines mappings between content-type
@@ -51795,7 +49573,7 @@ module.exports = parsers;
 module.exports.use = buildParser;
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":79,"sax":232,"stream":301}],229:[function(require,module,exports){
+},{"buffer":69,"sax":212,"stream":280}],211:[function(require,module,exports){
 // based on the qs module, but handles null objects as expected
 // fixes by Tomas Pollak.
 
@@ -51846,442 +49624,7 @@ function stringifyObject(obj, prefix) {
 
 exports.build = stringify;
 
-},{}],230:[function(require,module,exports){
-(function (process){(function (){
-"use strict";
-
-function _typeof(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
-
-/* eslint-env browser */
-
-/**
- * This is the web browser implementation of `debug()`.
- */
-exports.log = log;
-exports.formatArgs = formatArgs;
-exports.save = save;
-exports.load = load;
-exports.useColors = useColors;
-exports.storage = localstorage();
-/**
- * Colors.
- */
-
-exports.colors = ['#0000CC', '#0000FF', '#0033CC', '#0033FF', '#0066CC', '#0066FF', '#0099CC', '#0099FF', '#00CC00', '#00CC33', '#00CC66', '#00CC99', '#00CCCC', '#00CCFF', '#3300CC', '#3300FF', '#3333CC', '#3333FF', '#3366CC', '#3366FF', '#3399CC', '#3399FF', '#33CC00', '#33CC33', '#33CC66', '#33CC99', '#33CCCC', '#33CCFF', '#6600CC', '#6600FF', '#6633CC', '#6633FF', '#66CC00', '#66CC33', '#9900CC', '#9900FF', '#9933CC', '#9933FF', '#99CC00', '#99CC33', '#CC0000', '#CC0033', '#CC0066', '#CC0099', '#CC00CC', '#CC00FF', '#CC3300', '#CC3333', '#CC3366', '#CC3399', '#CC33CC', '#CC33FF', '#CC6600', '#CC6633', '#CC9900', '#CC9933', '#CCCC00', '#CCCC33', '#FF0000', '#FF0033', '#FF0066', '#FF0099', '#FF00CC', '#FF00FF', '#FF3300', '#FF3333', '#FF3366', '#FF3399', '#FF33CC', '#FF33FF', '#FF6600', '#FF6633', '#FF9900', '#FF9933', '#FFCC00', '#FFCC33'];
-/**
- * Currently only WebKit-based Web Inspectors, Firefox >= v31,
- * and the Firebug extension (any Firefox version) are known
- * to support "%c" CSS customizations.
- *
- * TODO: add a `localStorage` variable to explicitly enable/disable colors
- */
-// eslint-disable-next-line complexity
-
-function useColors() {
-  // NB: In an Electron preload script, document will be defined but not fully
-  // initialized. Since we know we're in Chrome, we'll just detect this case
-  // explicitly
-  if (typeof window !== 'undefined' && window.process && (window.process.type === 'renderer' || window.process.__nwjs)) {
-    return true;
-  } // Internet Explorer and Edge do not support colors.
-
-
-  if (typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.toLowerCase().match(/(edge|trident)\/(\d+)/)) {
-    return false;
-  } // Is webkit? http://stackoverflow.com/a/16459606/376773
-  // document is undefined in react-native: https://github.com/facebook/react-native/pull/1632
-
-
-  return typeof document !== 'undefined' && document.documentElement && document.documentElement.style && document.documentElement.style.WebkitAppearance || // Is firebug? http://stackoverflow.com/a/398120/376773
-  typeof window !== 'undefined' && window.console && (window.console.firebug || window.console.exception && window.console.table) || // Is firefox >= v31?
-  // https://developer.mozilla.org/en-US/docs/Tools/Web_Console#Styling_messages
-  typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.toLowerCase().match(/firefox\/(\d+)/) && parseInt(RegExp.$1, 10) >= 31 || // Double check webkit in userAgent just in case we are in a worker
-  typeof navigator !== 'undefined' && navigator.userAgent && navigator.userAgent.toLowerCase().match(/applewebkit\/(\d+)/);
-}
-/**
- * Colorize log arguments if enabled.
- *
- * @api public
- */
-
-
-function formatArgs(args) {
-  args[0] = (this.useColors ? '%c' : '') + this.namespace + (this.useColors ? ' %c' : ' ') + args[0] + (this.useColors ? '%c ' : ' ') + '+' + module.exports.humanize(this.diff);
-
-  if (!this.useColors) {
-    return;
-  }
-
-  var c = 'color: ' + this.color;
-  args.splice(1, 0, c, 'color: inherit'); // The final "%c" is somewhat tricky, because there could be other
-  // arguments passed either before or after the %c, so we need to
-  // figure out the correct index to insert the CSS into
-
-  var index = 0;
-  var lastC = 0;
-  args[0].replace(/%[a-zA-Z%]/g, function (match) {
-    if (match === '%%') {
-      return;
-    }
-
-    index++;
-
-    if (match === '%c') {
-      // We only are interested in the *last* %c
-      // (the user may have provided their own)
-      lastC = index;
-    }
-  });
-  args.splice(lastC, 0, c);
-}
-/**
- * Invokes `console.log()` when available.
- * No-op when `console.log` is not a "function".
- *
- * @api public
- */
-
-
-function log() {
-  var _console;
-
-  // This hackery is required for IE8/9, where
-  // the `console.log` function doesn't have 'apply'
-  return (typeof console === "undefined" ? "undefined" : _typeof(console)) === 'object' && console.log && (_console = console).log.apply(_console, arguments);
-}
-/**
- * Save `namespaces`.
- *
- * @param {String} namespaces
- * @api private
- */
-
-
-function save(namespaces) {
-  try {
-    if (namespaces) {
-      exports.storage.setItem('debug', namespaces);
-    } else {
-      exports.storage.removeItem('debug');
-    }
-  } catch (error) {// Swallow
-    // XXX (@Qix-) should we be logging these?
-  }
-}
-/**
- * Load `namespaces`.
- *
- * @return {String} returns the previously persisted debug modes
- * @api private
- */
-
-
-function load() {
-  var r;
-
-  try {
-    r = exports.storage.getItem('debug');
-  } catch (error) {} // Swallow
-  // XXX (@Qix-) should we be logging these?
-  // If debug isn't set in LS, and we're in Electron, try to load $DEBUG
-
-
-  if (!r && typeof process !== 'undefined' && 'env' in process) {
-    r = process.env.DEBUG;
-  }
-
-  return r;
-}
-/**
- * Localstorage attempts to return the localstorage.
- *
- * This is necessary because safari throws
- * when a user disables cookies/localstorage
- * and you attempt to access it.
- *
- * @return {LocalStorage}
- * @api private
- */
-
-
-function localstorage() {
-  try {
-    // TVMLKit (Apple TV JS Runtime) does not have a window object, just localStorage in the global context
-    // The Browser also has localStorage in the global context.
-    return localStorage;
-  } catch (error) {// Swallow
-    // XXX (@Qix-) should we be logging these?
-  }
-}
-
-module.exports = require('./common')(exports);
-var formatters = module.exports.formatters;
-/**
- * Map %j to `JSON.stringify()`, since no Web Inspectors do that by default.
- */
-
-formatters.j = function (v) {
-  try {
-    return JSON.stringify(v);
-  } catch (error) {
-    return '[UnexpectedJSONParseError]: ' + error.message;
-  }
-};
-
-
-}).call(this)}).call(this,require('_process'))
-},{"./common":231,"_process":260}],231:[function(require,module,exports){
-"use strict";
-
-/**
- * This is the common logic for both the Node.js and web browser
- * implementations of `debug()`.
- */
-function setup(env) {
-  createDebug.debug = createDebug;
-  createDebug.default = createDebug;
-  createDebug.coerce = coerce;
-  createDebug.disable = disable;
-  createDebug.enable = enable;
-  createDebug.enabled = enabled;
-  createDebug.humanize = require('ms');
-  Object.keys(env).forEach(function (key) {
-    createDebug[key] = env[key];
-  });
-  /**
-  * Active `debug` instances.
-  */
-
-  createDebug.instances = [];
-  /**
-  * The currently active debug mode names, and names to skip.
-  */
-
-  createDebug.names = [];
-  createDebug.skips = [];
-  /**
-  * Map of special "%n" handling functions, for the debug "format" argument.
-  *
-  * Valid key names are a single, lower or upper-case letter, i.e. "n" and "N".
-  */
-
-  createDebug.formatters = {};
-  /**
-  * Selects a color for a debug namespace
-  * @param {String} namespace The namespace string for the for the debug instance to be colored
-  * @return {Number|String} An ANSI color code for the given namespace
-  * @api private
-  */
-
-  function selectColor(namespace) {
-    var hash = 0;
-
-    for (var i = 0; i < namespace.length; i++) {
-      hash = (hash << 5) - hash + namespace.charCodeAt(i);
-      hash |= 0; // Convert to 32bit integer
-    }
-
-    return createDebug.colors[Math.abs(hash) % createDebug.colors.length];
-  }
-
-  createDebug.selectColor = selectColor;
-  /**
-  * Create a debugger with the given `namespace`.
-  *
-  * @param {String} namespace
-  * @return {Function}
-  * @api public
-  */
-
-  function createDebug(namespace) {
-    var prevTime;
-
-    function debug() {
-      // Disabled?
-      if (!debug.enabled) {
-        return;
-      }
-
-      for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
-        args[_key] = arguments[_key];
-      }
-
-      var self = debug; // Set `diff` timestamp
-
-      var curr = Number(new Date());
-      var ms = curr - (prevTime || curr);
-      self.diff = ms;
-      self.prev = prevTime;
-      self.curr = curr;
-      prevTime = curr;
-      args[0] = createDebug.coerce(args[0]);
-
-      if (typeof args[0] !== 'string') {
-        // Anything else let's inspect with %O
-        args.unshift('%O');
-      } // Apply any `formatters` transformations
-
-
-      var index = 0;
-      args[0] = args[0].replace(/%([a-zA-Z%])/g, function (match, format) {
-        // If we encounter an escaped % then don't increase the array index
-        if (match === '%%') {
-          return match;
-        }
-
-        index++;
-        var formatter = createDebug.formatters[format];
-
-        if (typeof formatter === 'function') {
-          var val = args[index];
-          match = formatter.call(self, val); // Now we need to remove `args[index]` since it's inlined in the `format`
-
-          args.splice(index, 1);
-          index--;
-        }
-
-        return match;
-      }); // Apply env-specific formatting (colors, etc.)
-
-      createDebug.formatArgs.call(self, args);
-      var logFn = self.log || createDebug.log;
-      logFn.apply(self, args);
-    }
-
-    debug.namespace = namespace;
-    debug.enabled = createDebug.enabled(namespace);
-    debug.useColors = createDebug.useColors();
-    debug.color = selectColor(namespace);
-    debug.destroy = destroy;
-    debug.extend = extend; // Debug.formatArgs = formatArgs;
-    // debug.rawLog = rawLog;
-    // env-specific initialization logic for debug instances
-
-    if (typeof createDebug.init === 'function') {
-      createDebug.init(debug);
-    }
-
-    createDebug.instances.push(debug);
-    return debug;
-  }
-
-  function destroy() {
-    var index = createDebug.instances.indexOf(this);
-
-    if (index !== -1) {
-      createDebug.instances.splice(index, 1);
-      return true;
-    }
-
-    return false;
-  }
-
-  function extend(namespace, delimiter) {
-    return createDebug(this.namespace + (typeof delimiter === 'undefined' ? ':' : delimiter) + namespace);
-  }
-  /**
-  * Enables a debug mode by namespaces. This can include modes
-  * separated by a colon and wildcards.
-  *
-  * @param {String} namespaces
-  * @api public
-  */
-
-
-  function enable(namespaces) {
-    createDebug.save(namespaces);
-    createDebug.names = [];
-    createDebug.skips = [];
-    var i;
-    var split = (typeof namespaces === 'string' ? namespaces : '').split(/[\s,]+/);
-    var len = split.length;
-
-    for (i = 0; i < len; i++) {
-      if (!split[i]) {
-        // ignore empty strings
-        continue;
-      }
-
-      namespaces = split[i].replace(/\*/g, '.*?');
-
-      if (namespaces[0] === '-') {
-        createDebug.skips.push(new RegExp('^' + namespaces.substr(1) + '$'));
-      } else {
-        createDebug.names.push(new RegExp('^' + namespaces + '$'));
-      }
-    }
-
-    for (i = 0; i < createDebug.instances.length; i++) {
-      var instance = createDebug.instances[i];
-      instance.enabled = createDebug.enabled(instance.namespace);
-    }
-  }
-  /**
-  * Disable debug output.
-  *
-  * @api public
-  */
-
-
-  function disable() {
-    createDebug.enable('');
-  }
-  /**
-  * Returns true if the given mode name is enabled, false otherwise.
-  *
-  * @param {String} name
-  * @return {Boolean}
-  * @api public
-  */
-
-
-  function enabled(name) {
-    if (name[name.length - 1] === '*') {
-      return true;
-    }
-
-    var i;
-    var len;
-
-    for (i = 0, len = createDebug.skips.length; i < len; i++) {
-      if (createDebug.skips[i].test(name)) {
-        return false;
-      }
-    }
-
-    for (i = 0, len = createDebug.names.length; i < len; i++) {
-      if (createDebug.names[i].test(name)) {
-        return true;
-      }
-    }
-
-    return false;
-  }
-  /**
-  * Coerce `val`.
-  *
-  * @param {Mixed} val
-  * @return {Mixed}
-  * @api private
-  */
-
-
-  function coerce(val) {
-    if (val instanceof Error) {
-      return val.stack || val.message;
-    }
-
-    return val;
-  }
-
-  createDebug.enable(createDebug.load());
-  return createDebug;
-}
-
-module.exports = setup;
-
-
-},{"ms":222}],232:[function(require,module,exports){
+},{}],212:[function(require,module,exports){
 (function (Buffer){(function (){
 ;(function (sax) { // wrapper for non-node envs
   sax.parser = function (strict, opt) { return new SAXParser(strict, opt) }
@@ -53850,12 +51193,12 @@ module.exports = setup;
 })(typeof exports === 'undefined' ? this.sax = {} : exports)
 
 }).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":79,"stream":301,"string_decoder":306}],233:[function(require,module,exports){
+},{"buffer":69,"stream":280,"string_decoder":285}],213:[function(require,module,exports){
 module.exports={
   "_args": [
     [
       "needle@3.0.0",
-      "C:\\Users\\akaila.SPLUNKCORP\\Documents\\Data\\Projects\\Splunk SDKs\\JS SDK\\Updated-js-sdk\\splunk-sdk-javascript"
+      "/Users/abhis/Documents/GitHub/splunk-sdk-javascript"
     ]
   ],
   "_from": "needle@3.0.0",
@@ -53879,13 +51222,13 @@ module.exports={
   ],
   "_resolved": "https://registry.npmjs.org/needle/-/needle-3.0.0.tgz",
   "_spec": "3.0.0",
-  "_where": "C:\\Users\\akaila.SPLUNKCORP\\Documents\\Data\\Projects\\Splunk SDKs\\JS SDK\\Updated-js-sdk\\splunk-sdk-javascript",
+  "_where": "/Users/abhis/Documents/GitHub/splunk-sdk-javascript",
   "author": {
     "name": "Tomás Pollak",
     "email": "tomas@forkhq.com"
   },
   "bin": {
-    "needle": "bin/needle"
+    "needle": "./bin/needle"
   },
   "bugs": {
     "url": "https://github.com/tomas/needle/issues"
@@ -53958,7 +51301,7 @@ module.exports={
   "version": "3.0.0"
 }
 
-},{}],234:[function(require,module,exports){
+},{}],214:[function(require,module,exports){
 /*
 object-assign
 (c) Sindre Sorhus
@@ -54050,7 +51393,7 @@ module.exports = shouldUseNative() ? Object.assign : function (target, source) {
 	return to;
 };
 
-},{}],235:[function(require,module,exports){
+},{}],215:[function(require,module,exports){
 exports.endianness = function () { return 'LE' };
 
 exports.hostname = function () {
@@ -54101,7 +51444,7 @@ exports.homedir = function () {
 	return '/'
 };
 
-},{}],236:[function(require,module,exports){
+},{}],216:[function(require,module,exports){
 'use strict';
 
 
@@ -54208,7 +51551,7 @@ exports.setTyped = function (on) {
 
 exports.setTyped(TYPED_OK);
 
-},{}],237:[function(require,module,exports){
+},{}],217:[function(require,module,exports){
 'use strict';
 
 // Note: adler32 takes 12% for level 0 and 2% for level 6.
@@ -54261,7 +51604,7 @@ function adler32(adler, buf, len, pos) {
 
 module.exports = adler32;
 
-},{}],238:[function(require,module,exports){
+},{}],218:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -54331,7 +51674,7 @@ module.exports = {
   //Z_NULL:                 null // Use -1 or null inline, depending on var type
 };
 
-},{}],239:[function(require,module,exports){
+},{}],219:[function(require,module,exports){
 'use strict';
 
 // Note: we can't get significant speed boost here.
@@ -54392,7 +51735,7 @@ function crc32(crc, buf, len, pos) {
 
 module.exports = crc32;
 
-},{}],240:[function(require,module,exports){
+},{}],220:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -56268,7 +53611,7 @@ exports.deflatePrime = deflatePrime;
 exports.deflateTune = deflateTune;
 */
 
-},{"../utils/common":236,"./adler32":237,"./crc32":239,"./messages":244,"./trees":245}],241:[function(require,module,exports){
+},{"../utils/common":216,"./adler32":217,"./crc32":219,"./messages":224,"./trees":225}],221:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -56615,7 +53958,7 @@ module.exports = function inflate_fast(strm, start) {
   return;
 };
 
-},{}],242:[function(require,module,exports){
+},{}],222:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -58173,7 +55516,7 @@ exports.inflateSyncPoint = inflateSyncPoint;
 exports.inflateUndermine = inflateUndermine;
 */
 
-},{"../utils/common":236,"./adler32":237,"./crc32":239,"./inffast":241,"./inftrees":243}],243:[function(require,module,exports){
+},{"../utils/common":216,"./adler32":217,"./crc32":219,"./inffast":221,"./inftrees":223}],223:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -58518,7 +55861,7 @@ module.exports = function inflate_table(type, lens, lens_index, codes, table, ta
   return 0;
 };
 
-},{"../utils/common":236}],244:[function(require,module,exports){
+},{"../utils/common":216}],224:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -58552,7 +55895,7 @@ module.exports = {
   '-6':   'incompatible version' /* Z_VERSION_ERROR (-6) */
 };
 
-},{}],245:[function(require,module,exports){
+},{}],225:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -59776,7 +57119,7 @@ exports._tr_flush_block  = _tr_flush_block;
 exports._tr_tally = _tr_tally;
 exports._tr_align = _tr_align;
 
-},{"../utils/common":236}],246:[function(require,module,exports){
+},{"../utils/common":216}],226:[function(require,module,exports){
 'use strict';
 
 // (C) 1995-2013 Jean-loup Gailly and Mark Adler
@@ -59825,7 +57168,7 @@ function ZStream() {
 
 module.exports = ZStream;
 
-},{}],247:[function(require,module,exports){
+},{}],227:[function(require,module,exports){
 module.exports={"2.16.840.1.101.3.4.1.1": "aes-128-ecb",
 "2.16.840.1.101.3.4.1.2": "aes-128-cbc",
 "2.16.840.1.101.3.4.1.3": "aes-128-ofb",
@@ -59839,7 +57182,7 @@ module.exports={"2.16.840.1.101.3.4.1.1": "aes-128-ecb",
 "2.16.840.1.101.3.4.1.43": "aes-256-ofb",
 "2.16.840.1.101.3.4.1.44": "aes-256-cfb"
 }
-},{}],248:[function(require,module,exports){
+},{}],228:[function(require,module,exports){
 // from https://github.com/indutny/self-signed/blob/gh-pages/lib/asn1.js
 // Fedor, you are amazing.
 'use strict'
@@ -59963,7 +57306,7 @@ exports.signature = asn1.define('signature', function () {
   )
 })
 
-},{"./certificate":249,"asn1.js":23}],249:[function(require,module,exports){
+},{"./certificate":229,"asn1.js":13}],229:[function(require,module,exports){
 // from https://github.com/Rantanen/node-dtls/blob/25a7dc861bda38cfeac93a723500eea4f0ac2e86/Certificate.js
 // thanks to @Rantanen
 
@@ -60054,7 +57397,7 @@ var X509Certificate = asn.define('X509Certificate', function () {
 
 module.exports = X509Certificate
 
-},{"asn1.js":23}],250:[function(require,module,exports){
+},{"asn1.js":13}],230:[function(require,module,exports){
 // adapted from https://github.com/apatil/pemstrip
 var findProc = /Proc-Type: 4,ENCRYPTED[\n\r]+DEK-Info: AES-((?:128)|(?:192)|(?:256))-CBC,([0-9A-H]+)[\n\r]+([0-9A-z\n\r+/=]+)[\n\r]+/m
 var startRegex = /^-----BEGIN ((?:.*? KEY)|CERTIFICATE)-----/m
@@ -60087,7 +57430,7 @@ module.exports = function (okey, password) {
   }
 }
 
-},{"browserify-aes":50,"evp_bytestokey":167,"safe-buffer":290}],251:[function(require,module,exports){
+},{"browserify-aes":40,"evp_bytestokey":149,"safe-buffer":270}],231:[function(require,module,exports){
 var asn1 = require('./asn1')
 var aesid = require('./aesid.json')
 var fixProc = require('./fixProc')
@@ -60196,7 +57539,7 @@ function decrypt (data, password) {
   return Buffer.concat(out)
 }
 
-},{"./aesid.json":247,"./asn1":248,"./fixProc":250,"browserify-aes":50,"pbkdf2":254,"safe-buffer":290}],252:[function(require,module,exports){
+},{"./aesid.json":227,"./asn1":228,"./fixProc":230,"browserify-aes":40,"pbkdf2":234,"safe-buffer":270}],232:[function(require,module,exports){
 (function (process){(function (){
 // 'path' module extracted from Node.js v8.11.1 (only the posix part)
 // transplited with Babel
@@ -60729,7 +58072,7 @@ posix.posix = posix;
 module.exports = posix;
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":260}],253:[function(require,module,exports){
+},{"_process":240}],233:[function(require,module,exports){
 'use strict';
 
 /* !
@@ -61032,11 +58375,11 @@ module.exports = {
   setPathValue: setPathValue,
 };
 
-},{}],254:[function(require,module,exports){
+},{}],234:[function(require,module,exports){
 exports.pbkdf2 = require('./lib/async')
 exports.pbkdf2Sync = require('./lib/sync')
 
-},{"./lib/async":255,"./lib/sync":258}],255:[function(require,module,exports){
+},{"./lib/async":235,"./lib/sync":238}],235:[function(require,module,exports){
 (function (global){(function (){
 var Buffer = require('safe-buffer').Buffer
 
@@ -61158,7 +58501,7 @@ module.exports = function (password, salt, iterations, keylen, digest, callback)
 }
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./default-encoding":256,"./precondition":257,"./sync":258,"./to-buffer":259,"safe-buffer":290}],256:[function(require,module,exports){
+},{"./default-encoding":236,"./precondition":237,"./sync":238,"./to-buffer":239,"safe-buffer":270}],236:[function(require,module,exports){
 (function (process,global){(function (){
 var defaultEncoding
 /* istanbul ignore next */
@@ -61174,7 +58517,7 @@ if (global.process && global.process.browser) {
 module.exports = defaultEncoding
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":260}],257:[function(require,module,exports){
+},{"_process":240}],237:[function(require,module,exports){
 var MAX_ALLOC = Math.pow(2, 30) - 1 // default in iojs
 
 module.exports = function (iterations, keylen) {
@@ -61195,7 +58538,7 @@ module.exports = function (iterations, keylen) {
   }
 }
 
-},{}],258:[function(require,module,exports){
+},{}],238:[function(require,module,exports){
 var md5 = require('create-hash/md5')
 var RIPEMD160 = require('ripemd160')
 var sha = require('sha.js')
@@ -61302,7 +58645,7 @@ function pbkdf2 (password, salt, iterations, keylen, digest) {
 
 module.exports = pbkdf2
 
-},{"./default-encoding":256,"./precondition":257,"./to-buffer":259,"create-hash/md5":121,"ripemd160":289,"safe-buffer":290,"sha.js":294}],259:[function(require,module,exports){
+},{"./default-encoding":236,"./precondition":237,"./to-buffer":239,"create-hash/md5":111,"ripemd160":269,"safe-buffer":270,"sha.js":273}],239:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 
 module.exports = function (thing, encoding, name) {
@@ -61317,7 +58660,7 @@ module.exports = function (thing, encoding, name) {
   }
 }
 
-},{"safe-buffer":290}],260:[function(require,module,exports){
+},{"safe-buffer":270}],240:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -61503,7 +58846,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],261:[function(require,module,exports){
+},{}],241:[function(require,module,exports){
 exports.publicEncrypt = require('./publicEncrypt')
 exports.privateDecrypt = require('./privateDecrypt')
 
@@ -61515,7 +58858,7 @@ exports.publicDecrypt = function publicDecrypt (key, buf) {
   return exports.privateDecrypt(key, buf, true)
 }
 
-},{"./privateDecrypt":264,"./publicEncrypt":265}],262:[function(require,module,exports){
+},{"./privateDecrypt":244,"./publicEncrypt":245}],242:[function(require,module,exports){
 var createHash = require('create-hash')
 var Buffer = require('safe-buffer').Buffer
 
@@ -61536,9 +58879,9 @@ function i2ops (c) {
   return out
 }
 
-},{"create-hash":120,"safe-buffer":290}],263:[function(require,module,exports){
-arguments[4][37][0].apply(exports,arguments)
-},{"buffer":47,"dup":37}],264:[function(require,module,exports){
+},{"create-hash":110,"safe-buffer":270}],243:[function(require,module,exports){
+arguments[4][27][0].apply(exports,arguments)
+},{"buffer":37,"dup":27}],244:[function(require,module,exports){
 var parseKeys = require('parse-asn1')
 var mgf = require('./mgf')
 var xor = require('./xor')
@@ -61645,7 +58988,7 @@ function compare (a, b) {
   return dif
 }
 
-},{"./mgf":262,"./withPublic":266,"./xor":267,"bn.js":263,"browserify-rsa":68,"create-hash":120,"parse-asn1":251,"safe-buffer":290}],265:[function(require,module,exports){
+},{"./mgf":242,"./withPublic":246,"./xor":247,"bn.js":243,"browserify-rsa":58,"create-hash":110,"parse-asn1":231,"safe-buffer":270}],245:[function(require,module,exports){
 var parseKeys = require('parse-asn1')
 var randomBytes = require('randombytes')
 var createHash = require('create-hash')
@@ -61735,7 +59078,7 @@ function nonZero (len) {
   return out
 }
 
-},{"./mgf":262,"./withPublic":266,"./xor":267,"bn.js":263,"browserify-rsa":68,"create-hash":120,"parse-asn1":251,"randombytes":272,"safe-buffer":290}],266:[function(require,module,exports){
+},{"./mgf":242,"./withPublic":246,"./xor":247,"bn.js":243,"browserify-rsa":58,"create-hash":110,"parse-asn1":231,"randombytes":252,"safe-buffer":270}],246:[function(require,module,exports){
 var BN = require('bn.js')
 var Buffer = require('safe-buffer').Buffer
 
@@ -61749,7 +59092,7 @@ function withPublic (paddedMsg, key) {
 
 module.exports = withPublic
 
-},{"bn.js":263,"safe-buffer":290}],267:[function(require,module,exports){
+},{"bn.js":243,"safe-buffer":270}],247:[function(require,module,exports){
 module.exports = function xor (a, b) {
   var len = a.length
   var i = -1
@@ -61759,7 +59102,7 @@ module.exports = function xor (a, b) {
   return a
 }
 
-},{}],268:[function(require,module,exports){
+},{}],248:[function(require,module,exports){
 (function (global){(function (){
 /*! https://mths.be/punycode v1.4.1 by @mathias */
 ;(function(root) {
@@ -62296,7 +59639,7 @@ module.exports = function xor (a, b) {
 }(this));
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],269:[function(require,module,exports){
+},{}],249:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -62382,7 +59725,7 @@ var isArray = Array.isArray || function (xs) {
   return Object.prototype.toString.call(xs) === '[object Array]';
 };
 
-},{}],270:[function(require,module,exports){
+},{}],250:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -62469,13 +59812,13 @@ var objectKeys = Object.keys || function (obj) {
   return res;
 };
 
-},{}],271:[function(require,module,exports){
+},{}],251:[function(require,module,exports){
 'use strict';
 
 exports.decode = exports.parse = require('./decode');
 exports.encode = exports.stringify = require('./encode');
 
-},{"./decode":269,"./encode":270}],272:[function(require,module,exports){
+},{"./decode":249,"./encode":250}],252:[function(require,module,exports){
 (function (process,global){(function (){
 'use strict'
 
@@ -62529,7 +59872,7 @@ function randomBytes (size, cb) {
 }
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":260,"safe-buffer":290}],273:[function(require,module,exports){
+},{"_process":240,"safe-buffer":270}],253:[function(require,module,exports){
 (function (process,global){(function (){
 'use strict'
 
@@ -62641,7 +59984,7 @@ function randomFillSync (buf, offset, size) {
 }
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":260,"randombytes":272,"safe-buffer":290}],274:[function(require,module,exports){
+},{"_process":240,"randombytes":252,"safe-buffer":270}],254:[function(require,module,exports){
 'use strict';
 
 function _inheritsLoose(subClass, superClass) { subClass.prototype = Object.create(superClass.prototype); subClass.prototype.constructor = subClass; subClass.__proto__ = superClass; }
@@ -62770,7 +60113,7 @@ createErrorType('ERR_UNKNOWN_ENCODING', function (arg) {
 createErrorType('ERR_STREAM_UNSHIFT_AFTER_END_EVENT', 'stream.unshift() after end event');
 module.exports.codes = codes;
 
-},{}],275:[function(require,module,exports){
+},{}],255:[function(require,module,exports){
 (function (process){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -62912,7 +60255,7 @@ Object.defineProperty(Duplex.prototype, 'destroyed', {
   }
 });
 }).call(this)}).call(this,require('_process'))
-},{"./_stream_readable":277,"./_stream_writable":279,"_process":260,"inherits":212}],276:[function(require,module,exports){
+},{"./_stream_readable":257,"./_stream_writable":259,"_process":240,"inherits":194}],256:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -62952,7 +60295,7 @@ function PassThrough(options) {
 PassThrough.prototype._transform = function (chunk, encoding, cb) {
   cb(null, chunk);
 };
-},{"./_stream_transform":278,"inherits":212}],277:[function(require,module,exports){
+},{"./_stream_transform":258,"inherits":194}],257:[function(require,module,exports){
 (function (process,global){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -64079,7 +61422,7 @@ function indexOf(xs, x) {
   return -1;
 }
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../errors":274,"./_stream_duplex":275,"./internal/streams/async_iterator":280,"./internal/streams/buffer_list":281,"./internal/streams/destroy":282,"./internal/streams/from":284,"./internal/streams/state":286,"./internal/streams/stream":287,"_process":260,"buffer":79,"events":166,"inherits":212,"string_decoder/":306,"util":47}],278:[function(require,module,exports){
+},{"../errors":254,"./_stream_duplex":255,"./internal/streams/async_iterator":260,"./internal/streams/buffer_list":261,"./internal/streams/destroy":262,"./internal/streams/from":264,"./internal/streams/state":266,"./internal/streams/stream":267,"_process":240,"buffer":69,"events":148,"inherits":194,"string_decoder/":285,"util":37}],258:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -64281,7 +61624,7 @@ function done(stream, er, data) {
   if (stream._transformState.transforming) throw new ERR_TRANSFORM_ALREADY_TRANSFORMING();
   return stream.push(null);
 }
-},{"../errors":274,"./_stream_duplex":275,"inherits":212}],279:[function(require,module,exports){
+},{"../errors":254,"./_stream_duplex":255,"inherits":194}],259:[function(require,module,exports){
 (function (process,global){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -64981,7 +62324,7 @@ Writable.prototype._destroy = function (err, cb) {
   cb(err);
 };
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../errors":274,"./_stream_duplex":275,"./internal/streams/destroy":282,"./internal/streams/state":286,"./internal/streams/stream":287,"_process":260,"buffer":79,"inherits":212,"util-deprecate":311}],280:[function(require,module,exports){
+},{"../errors":254,"./_stream_duplex":255,"./internal/streams/destroy":262,"./internal/streams/state":266,"./internal/streams/stream":267,"_process":240,"buffer":69,"inherits":194,"util-deprecate":290}],260:[function(require,module,exports){
 (function (process){(function (){
 'use strict';
 
@@ -65191,7 +62534,7 @@ var createReadableStreamAsyncIterator = function createReadableStreamAsyncIterat
 
 module.exports = createReadableStreamAsyncIterator;
 }).call(this)}).call(this,require('_process'))
-},{"./end-of-stream":283,"_process":260}],281:[function(require,module,exports){
+},{"./end-of-stream":263,"_process":240}],261:[function(require,module,exports){
 'use strict';
 
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); if (enumerableOnly) symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; }); keys.push.apply(keys, symbols); } return keys; }
@@ -65402,7 +62745,7 @@ function () {
 
   return BufferList;
 }();
-},{"buffer":79,"util":47}],282:[function(require,module,exports){
+},{"buffer":69,"util":37}],262:[function(require,module,exports){
 (function (process){(function (){
 'use strict'; // undocumented cb() API, needed for core, not for public API
 
@@ -65510,7 +62853,7 @@ module.exports = {
   errorOrDestroy: errorOrDestroy
 };
 }).call(this)}).call(this,require('_process'))
-},{"_process":260}],283:[function(require,module,exports){
+},{"_process":240}],263:[function(require,module,exports){
 // Ported from https://github.com/mafintosh/end-of-stream with
 // permission from the author, Mathias Buus (@mafintosh).
 'use strict';
@@ -65615,12 +62958,12 @@ function eos(stream, opts, callback) {
 }
 
 module.exports = eos;
-},{"../../../errors":274}],284:[function(require,module,exports){
+},{"../../../errors":254}],264:[function(require,module,exports){
 module.exports = function () {
   throw new Error('Readable.from is not available in the browser')
 };
 
-},{}],285:[function(require,module,exports){
+},{}],265:[function(require,module,exports){
 // Ported from https://github.com/mafintosh/pump with
 // permission from the author, Mathias Buus (@mafintosh).
 'use strict';
@@ -65718,7 +63061,7 @@ function pipeline() {
 }
 
 module.exports = pipeline;
-},{"../../../errors":274,"./end-of-stream":283}],286:[function(require,module,exports){
+},{"../../../errors":254,"./end-of-stream":263}],266:[function(require,module,exports){
 'use strict';
 
 var ERR_INVALID_OPT_VALUE = require('../../../errors').codes.ERR_INVALID_OPT_VALUE;
@@ -65746,10 +63089,10 @@ function getHighWaterMark(state, options, duplexKey, isDuplex) {
 module.exports = {
   getHighWaterMark: getHighWaterMark
 };
-},{"../../../errors":274}],287:[function(require,module,exports){
+},{"../../../errors":254}],267:[function(require,module,exports){
 module.exports = require('events').EventEmitter;
 
-},{"events":166}],288:[function(require,module,exports){
+},{"events":148}],268:[function(require,module,exports){
 exports = module.exports = require('./lib/_stream_readable.js');
 exports.Stream = exports;
 exports.Readable = exports;
@@ -65760,7 +63103,7 @@ exports.PassThrough = require('./lib/_stream_passthrough.js');
 exports.finished = require('./lib/internal/streams/end-of-stream.js');
 exports.pipeline = require('./lib/internal/streams/pipeline.js');
 
-},{"./lib/_stream_duplex.js":275,"./lib/_stream_passthrough.js":276,"./lib/_stream_readable.js":277,"./lib/_stream_transform.js":278,"./lib/_stream_writable.js":279,"./lib/internal/streams/end-of-stream.js":283,"./lib/internal/streams/pipeline.js":285}],289:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":255,"./lib/_stream_passthrough.js":256,"./lib/_stream_readable.js":257,"./lib/_stream_transform.js":258,"./lib/_stream_writable.js":259,"./lib/internal/streams/end-of-stream.js":263,"./lib/internal/streams/pipeline.js":265}],269:[function(require,module,exports){
 'use strict'
 var Buffer = require('buffer').Buffer
 var inherits = require('inherits')
@@ -65925,7 +63268,7 @@ function fn5 (a, b, c, d, e, m, k, s) {
 
 module.exports = RIPEMD160
 
-},{"buffer":79,"hash-base":177,"inherits":212}],290:[function(require,module,exports){
+},{"buffer":69,"hash-base":159,"inherits":194}],270:[function(require,module,exports){
 /*! safe-buffer. MIT License. Feross Aboukhadijeh <https://feross.org/opensource> */
 /* eslint-disable node/no-deprecated-api */
 var buffer = require('buffer')
@@ -65992,7 +63335,7 @@ SafeBuffer.allocUnsafeSlow = function (size) {
   return buffer.SlowBuffer(size)
 }
 
-},{"buffer":79}],291:[function(require,module,exports){
+},{"buffer":69}],271:[function(require,module,exports){
 (function (process){(function (){
 /* eslint-disable node/no-deprecated-api */
 
@@ -66073,1574 +63416,7 @@ if (!safer.constants) {
 module.exports = safer
 
 }).call(this)}).call(this,require('_process'))
-},{"_process":260,"buffer":79}],292:[function(require,module,exports){
-(function (Buffer){(function (){
-;(function (sax) { // wrapper for non-node envs
-  sax.parser = function (strict, opt) { return new SAXParser(strict, opt) }
-  sax.SAXParser = SAXParser
-  sax.SAXStream = SAXStream
-  sax.createStream = createStream
-
-  // When we pass the MAX_BUFFER_LENGTH position, start checking for buffer overruns.
-  // When we check, schedule the next check for MAX_BUFFER_LENGTH - (max(buffer lengths)),
-  // since that's the earliest that a buffer overrun could occur.  This way, checks are
-  // as rare as required, but as often as necessary to ensure never crossing this bound.
-  // Furthermore, buffers are only tested at most once per write(), so passing a very
-  // large string into write() might have undesirable effects, but this is manageable by
-  // the caller, so it is assumed to be safe.  Thus, a call to write() may, in the extreme
-  // edge case, result in creating at most one complete copy of the string passed in.
-  // Set to Infinity to have unlimited buffers.
-  sax.MAX_BUFFER_LENGTH = 64 * 1024
-
-  var buffers = [
-    'comment', 'sgmlDecl', 'textNode', 'tagName', 'doctype',
-    'procInstName', 'procInstBody', 'entity', 'attribName',
-    'attribValue', 'cdata', 'script'
-  ]
-
-  sax.EVENTS = [
-    'text',
-    'processinginstruction',
-    'sgmldeclaration',
-    'doctype',
-    'comment',
-    'attribute',
-    'opentag',
-    'closetag',
-    'opencdata',
-    'cdata',
-    'closecdata',
-    'error',
-    'end',
-    'ready',
-    'script',
-    'opennamespace',
-    'closenamespace'
-  ]
-
-  function SAXParser (strict, opt) {
-    if (!(this instanceof SAXParser)) {
-      return new SAXParser(strict, opt)
-    }
-
-    var parser = this
-    clearBuffers(parser)
-    parser.q = parser.c = ''
-    parser.bufferCheckPosition = sax.MAX_BUFFER_LENGTH
-    parser.opt = opt || {}
-    parser.opt.lowercase = parser.opt.lowercase || parser.opt.lowercasetags
-    parser.looseCase = parser.opt.lowercase ? 'toLowerCase' : 'toUpperCase'
-    parser.tags = []
-    parser.closed = parser.closedRoot = parser.sawRoot = false
-    parser.tag = parser.error = null
-    parser.strict = !!strict
-    parser.noscript = !!(strict || parser.opt.noscript)
-    parser.state = S.BEGIN
-    parser.strictEntities = parser.opt.strictEntities
-    parser.ENTITIES = parser.strictEntities ? Object.create(sax.XML_ENTITIES) : Object.create(sax.ENTITIES)
-    parser.attribList = []
-
-    // namespaces form a prototype chain.
-    // it always points at the current tag,
-    // which protos to its parent tag.
-    if (parser.opt.xmlns) {
-      parser.ns = Object.create(rootNS)
-    }
-
-    // mostly just for error reporting
-    parser.trackPosition = parser.opt.position !== false
-    if (parser.trackPosition) {
-      parser.position = parser.line = parser.column = 0
-    }
-    emit(parser, 'onready')
-  }
-
-  if (!Object.create) {
-    Object.create = function (o) {
-      function F () {}
-      F.prototype = o
-      var newf = new F()
-      return newf
-    }
-  }
-
-  if (!Object.keys) {
-    Object.keys = function (o) {
-      var a = []
-      for (var i in o) if (o.hasOwnProperty(i)) a.push(i)
-      return a
-    }
-  }
-
-  function checkBufferLength (parser) {
-    var maxAllowed = Math.max(sax.MAX_BUFFER_LENGTH, 10)
-    var maxActual = 0
-    for (var i = 0, l = buffers.length; i < l; i++) {
-      var len = parser[buffers[i]].length
-      if (len > maxAllowed) {
-        // Text/cdata nodes can get big, and since they're buffered,
-        // we can get here under normal conditions.
-        // Avoid issues by emitting the text node now,
-        // so at least it won't get any bigger.
-        switch (buffers[i]) {
-          case 'textNode':
-            closeText(parser)
-            break
-
-          case 'cdata':
-            emitNode(parser, 'oncdata', parser.cdata)
-            parser.cdata = ''
-            break
-
-          case 'script':
-            emitNode(parser, 'onscript', parser.script)
-            parser.script = ''
-            break
-
-          default:
-            error(parser, 'Max buffer length exceeded: ' + buffers[i])
-        }
-      }
-      maxActual = Math.max(maxActual, len)
-    }
-    // schedule the next check for the earliest possible buffer overrun.
-    var m = sax.MAX_BUFFER_LENGTH - maxActual
-    parser.bufferCheckPosition = m + parser.position
-  }
-
-  function clearBuffers (parser) {
-    for (var i = 0, l = buffers.length; i < l; i++) {
-      parser[buffers[i]] = ''
-    }
-  }
-
-  function flushBuffers (parser) {
-    closeText(parser)
-    if (parser.cdata !== '') {
-      emitNode(parser, 'oncdata', parser.cdata)
-      parser.cdata = ''
-    }
-    if (parser.script !== '') {
-      emitNode(parser, 'onscript', parser.script)
-      parser.script = ''
-    }
-  }
-
-  SAXParser.prototype = {
-    end: function () { end(this) },
-    write: write,
-    resume: function () { this.error = null; return this },
-    close: function () { return this.write(null) },
-    flush: function () { flushBuffers(this) }
-  }
-
-  var Stream
-  try {
-    Stream = require('stream').Stream
-  } catch (ex) {
-    Stream = function () {}
-  }
-
-  var streamWraps = sax.EVENTS.filter(function (ev) {
-    return ev !== 'error' && ev !== 'end'
-  })
-
-  function createStream (strict, opt) {
-    return new SAXStream(strict, opt)
-  }
-
-  function SAXStream (strict, opt) {
-    if (!(this instanceof SAXStream)) {
-      return new SAXStream(strict, opt)
-    }
-
-    Stream.apply(this)
-
-    this._parser = new SAXParser(strict, opt)
-    this.writable = true
-    this.readable = true
-
-    var me = this
-
-    this._parser.onend = function () {
-      me.emit('end')
-    }
-
-    this._parser.onerror = function (er) {
-      me.emit('error', er)
-
-      // if didn't throw, then means error was handled.
-      // go ahead and clear error, so we can write again.
-      me._parser.error = null
-    }
-
-    this._decoder = null
-
-    streamWraps.forEach(function (ev) {
-      Object.defineProperty(me, 'on' + ev, {
-        get: function () {
-          return me._parser['on' + ev]
-        },
-        set: function (h) {
-          if (!h) {
-            me.removeAllListeners(ev)
-            me._parser['on' + ev] = h
-            return h
-          }
-          me.on(ev, h)
-        },
-        enumerable: true,
-        configurable: false
-      })
-    })
-  }
-
-  SAXStream.prototype = Object.create(Stream.prototype, {
-    constructor: {
-      value: SAXStream
-    }
-  })
-
-  SAXStream.prototype.write = function (data) {
-    if (typeof Buffer === 'function' &&
-      typeof Buffer.isBuffer === 'function' &&
-      Buffer.isBuffer(data)) {
-      if (!this._decoder) {
-        var SD = require('string_decoder').StringDecoder
-        this._decoder = new SD('utf8')
-      }
-      data = this._decoder.write(data)
-    }
-
-    this._parser.write(data.toString())
-    this.emit('data', data)
-    return true
-  }
-
-  SAXStream.prototype.end = function (chunk) {
-    if (chunk && chunk.length) {
-      this.write(chunk)
-    }
-    this._parser.end()
-    return true
-  }
-
-  SAXStream.prototype.on = function (ev, handler) {
-    var me = this
-    if (!me._parser['on' + ev] && streamWraps.indexOf(ev) !== -1) {
-      me._parser['on' + ev] = function () {
-        var args = arguments.length === 1 ? [arguments[0]] : Array.apply(null, arguments)
-        args.splice(0, 0, ev)
-        me.emit.apply(me, args)
-      }
-    }
-
-    return Stream.prototype.on.call(me, ev, handler)
-  }
-
-  // character classes and tokens
-  var whitespace = '\r\n\t '
-
-  // this really needs to be replaced with character classes.
-  // XML allows all manner of ridiculous numbers and digits.
-  var number = '0124356789'
-  var letter = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ'
-
-  // (Letter | "_" | ":")
-  var quote = '\'"'
-  var attribEnd = whitespace + '>'
-  var CDATA = '[CDATA['
-  var DOCTYPE = 'DOCTYPE'
-  var XML_NAMESPACE = 'http://www.w3.org/XML/1998/namespace'
-  var XMLNS_NAMESPACE = 'http://www.w3.org/2000/xmlns/'
-  var rootNS = { xml: XML_NAMESPACE, xmlns: XMLNS_NAMESPACE }
-
-  // turn all the string character sets into character class objects.
-  whitespace = charClass(whitespace)
-  number = charClass(number)
-  letter = charClass(letter)
-
-  // http://www.w3.org/TR/REC-xml/#NT-NameStartChar
-  // This implementation works on strings, a single character at a time
-  // as such, it cannot ever support astral-plane characters (10000-EFFFF)
-  // without a significant breaking change to either this  parser, or the
-  // JavaScript language.  Implementation of an emoji-capable xml parser
-  // is left as an exercise for the reader.
-  var nameStart = /[:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD]/
-
-  var nameBody = /[:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u00B7\u0300-\u036F\u203F-\u2040\.\d-]/
-
-  var entityStart = /[#:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD]/
-  var entityBody = /[#:_A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u02FF\u0370-\u037D\u037F-\u1FFF\u200C-\u200D\u2070-\u218F\u2C00-\u2FEF\u3001-\uD7FF\uF900-\uFDCF\uFDF0-\uFFFD\u00B7\u0300-\u036F\u203F-\u2040\.\d-]/
-
-  quote = charClass(quote)
-  attribEnd = charClass(attribEnd)
-
-  function charClass (str) {
-    return str.split('').reduce(function (s, c) {
-      s[c] = true
-      return s
-    }, {})
-  }
-
-  function isRegExp (c) {
-    return Object.prototype.toString.call(c) === '[object RegExp]'
-  }
-
-  function is (charclass, c) {
-    return isRegExp(charclass) ? !!c.match(charclass) : charclass[c]
-  }
-
-  function not (charclass, c) {
-    return !is(charclass, c)
-  }
-
-  var S = 0
-  sax.STATE = {
-    BEGIN: S++, // leading byte order mark or whitespace
-    BEGIN_WHITESPACE: S++, // leading whitespace
-    TEXT: S++, // general stuff
-    TEXT_ENTITY: S++, // &amp and such.
-    OPEN_WAKA: S++, // <
-    SGML_DECL: S++, // <!BLARG
-    SGML_DECL_QUOTED: S++, // <!BLARG foo "bar
-    DOCTYPE: S++, // <!DOCTYPE
-    DOCTYPE_QUOTED: S++, // <!DOCTYPE "//blah
-    DOCTYPE_DTD: S++, // <!DOCTYPE "//blah" [ ...
-    DOCTYPE_DTD_QUOTED: S++, // <!DOCTYPE "//blah" [ "foo
-    COMMENT_STARTING: S++, // <!-
-    COMMENT: S++, // <!--
-    COMMENT_ENDING: S++, // <!-- blah -
-    COMMENT_ENDED: S++, // <!-- blah --
-    CDATA: S++, // <![CDATA[ something
-    CDATA_ENDING: S++, // ]
-    CDATA_ENDING_2: S++, // ]]
-    PROC_INST: S++, // <?hi
-    PROC_INST_BODY: S++, // <?hi there
-    PROC_INST_ENDING: S++, // <?hi "there" ?
-    OPEN_TAG: S++, // <strong
-    OPEN_TAG_SLASH: S++, // <strong /
-    ATTRIB: S++, // <a
-    ATTRIB_NAME: S++, // <a foo
-    ATTRIB_NAME_SAW_WHITE: S++, // <a foo _
-    ATTRIB_VALUE: S++, // <a foo=
-    ATTRIB_VALUE_QUOTED: S++, // <a foo="bar
-    ATTRIB_VALUE_CLOSED: S++, // <a foo="bar"
-    ATTRIB_VALUE_UNQUOTED: S++, // <a foo=bar
-    ATTRIB_VALUE_ENTITY_Q: S++, // <foo bar="&quot;"
-    ATTRIB_VALUE_ENTITY_U: S++, // <foo bar=&quot
-    CLOSE_TAG: S++, // </a
-    CLOSE_TAG_SAW_WHITE: S++, // </a   >
-    SCRIPT: S++, // <script> ...
-    SCRIPT_ENDING: S++ // <script> ... <
-  }
-
-  sax.XML_ENTITIES = {
-    'amp': '&',
-    'gt': '>',
-    'lt': '<',
-    'quot': '"',
-    'apos': "'"
-  }
-
-  sax.ENTITIES = {
-    'amp': '&',
-    'gt': '>',
-    'lt': '<',
-    'quot': '"',
-    'apos': "'",
-    'AElig': 198,
-    'Aacute': 193,
-    'Acirc': 194,
-    'Agrave': 192,
-    'Aring': 197,
-    'Atilde': 195,
-    'Auml': 196,
-    'Ccedil': 199,
-    'ETH': 208,
-    'Eacute': 201,
-    'Ecirc': 202,
-    'Egrave': 200,
-    'Euml': 203,
-    'Iacute': 205,
-    'Icirc': 206,
-    'Igrave': 204,
-    'Iuml': 207,
-    'Ntilde': 209,
-    'Oacute': 211,
-    'Ocirc': 212,
-    'Ograve': 210,
-    'Oslash': 216,
-    'Otilde': 213,
-    'Ouml': 214,
-    'THORN': 222,
-    'Uacute': 218,
-    'Ucirc': 219,
-    'Ugrave': 217,
-    'Uuml': 220,
-    'Yacute': 221,
-    'aacute': 225,
-    'acirc': 226,
-    'aelig': 230,
-    'agrave': 224,
-    'aring': 229,
-    'atilde': 227,
-    'auml': 228,
-    'ccedil': 231,
-    'eacute': 233,
-    'ecirc': 234,
-    'egrave': 232,
-    'eth': 240,
-    'euml': 235,
-    'iacute': 237,
-    'icirc': 238,
-    'igrave': 236,
-    'iuml': 239,
-    'ntilde': 241,
-    'oacute': 243,
-    'ocirc': 244,
-    'ograve': 242,
-    'oslash': 248,
-    'otilde': 245,
-    'ouml': 246,
-    'szlig': 223,
-    'thorn': 254,
-    'uacute': 250,
-    'ucirc': 251,
-    'ugrave': 249,
-    'uuml': 252,
-    'yacute': 253,
-    'yuml': 255,
-    'copy': 169,
-    'reg': 174,
-    'nbsp': 160,
-    'iexcl': 161,
-    'cent': 162,
-    'pound': 163,
-    'curren': 164,
-    'yen': 165,
-    'brvbar': 166,
-    'sect': 167,
-    'uml': 168,
-    'ordf': 170,
-    'laquo': 171,
-    'not': 172,
-    'shy': 173,
-    'macr': 175,
-    'deg': 176,
-    'plusmn': 177,
-    'sup1': 185,
-    'sup2': 178,
-    'sup3': 179,
-    'acute': 180,
-    'micro': 181,
-    'para': 182,
-    'middot': 183,
-    'cedil': 184,
-    'ordm': 186,
-    'raquo': 187,
-    'frac14': 188,
-    'frac12': 189,
-    'frac34': 190,
-    'iquest': 191,
-    'times': 215,
-    'divide': 247,
-    'OElig': 338,
-    'oelig': 339,
-    'Scaron': 352,
-    'scaron': 353,
-    'Yuml': 376,
-    'fnof': 402,
-    'circ': 710,
-    'tilde': 732,
-    'Alpha': 913,
-    'Beta': 914,
-    'Gamma': 915,
-    'Delta': 916,
-    'Epsilon': 917,
-    'Zeta': 918,
-    'Eta': 919,
-    'Theta': 920,
-    'Iota': 921,
-    'Kappa': 922,
-    'Lambda': 923,
-    'Mu': 924,
-    'Nu': 925,
-    'Xi': 926,
-    'Omicron': 927,
-    'Pi': 928,
-    'Rho': 929,
-    'Sigma': 931,
-    'Tau': 932,
-    'Upsilon': 933,
-    'Phi': 934,
-    'Chi': 935,
-    'Psi': 936,
-    'Omega': 937,
-    'alpha': 945,
-    'beta': 946,
-    'gamma': 947,
-    'delta': 948,
-    'epsilon': 949,
-    'zeta': 950,
-    'eta': 951,
-    'theta': 952,
-    'iota': 953,
-    'kappa': 954,
-    'lambda': 955,
-    'mu': 956,
-    'nu': 957,
-    'xi': 958,
-    'omicron': 959,
-    'pi': 960,
-    'rho': 961,
-    'sigmaf': 962,
-    'sigma': 963,
-    'tau': 964,
-    'upsilon': 965,
-    'phi': 966,
-    'chi': 967,
-    'psi': 968,
-    'omega': 969,
-    'thetasym': 977,
-    'upsih': 978,
-    'piv': 982,
-    'ensp': 8194,
-    'emsp': 8195,
-    'thinsp': 8201,
-    'zwnj': 8204,
-    'zwj': 8205,
-    'lrm': 8206,
-    'rlm': 8207,
-    'ndash': 8211,
-    'mdash': 8212,
-    'lsquo': 8216,
-    'rsquo': 8217,
-    'sbquo': 8218,
-    'ldquo': 8220,
-    'rdquo': 8221,
-    'bdquo': 8222,
-    'dagger': 8224,
-    'Dagger': 8225,
-    'bull': 8226,
-    'hellip': 8230,
-    'permil': 8240,
-    'prime': 8242,
-    'Prime': 8243,
-    'lsaquo': 8249,
-    'rsaquo': 8250,
-    'oline': 8254,
-    'frasl': 8260,
-    'euro': 8364,
-    'image': 8465,
-    'weierp': 8472,
-    'real': 8476,
-    'trade': 8482,
-    'alefsym': 8501,
-    'larr': 8592,
-    'uarr': 8593,
-    'rarr': 8594,
-    'darr': 8595,
-    'harr': 8596,
-    'crarr': 8629,
-    'lArr': 8656,
-    'uArr': 8657,
-    'rArr': 8658,
-    'dArr': 8659,
-    'hArr': 8660,
-    'forall': 8704,
-    'part': 8706,
-    'exist': 8707,
-    'empty': 8709,
-    'nabla': 8711,
-    'isin': 8712,
-    'notin': 8713,
-    'ni': 8715,
-    'prod': 8719,
-    'sum': 8721,
-    'minus': 8722,
-    'lowast': 8727,
-    'radic': 8730,
-    'prop': 8733,
-    'infin': 8734,
-    'ang': 8736,
-    'and': 8743,
-    'or': 8744,
-    'cap': 8745,
-    'cup': 8746,
-    'int': 8747,
-    'there4': 8756,
-    'sim': 8764,
-    'cong': 8773,
-    'asymp': 8776,
-    'ne': 8800,
-    'equiv': 8801,
-    'le': 8804,
-    'ge': 8805,
-    'sub': 8834,
-    'sup': 8835,
-    'nsub': 8836,
-    'sube': 8838,
-    'supe': 8839,
-    'oplus': 8853,
-    'otimes': 8855,
-    'perp': 8869,
-    'sdot': 8901,
-    'lceil': 8968,
-    'rceil': 8969,
-    'lfloor': 8970,
-    'rfloor': 8971,
-    'lang': 9001,
-    'rang': 9002,
-    'loz': 9674,
-    'spades': 9824,
-    'clubs': 9827,
-    'hearts': 9829,
-    'diams': 9830
-  }
-
-  Object.keys(sax.ENTITIES).forEach(function (key) {
-    var e = sax.ENTITIES[key]
-    var s = typeof e === 'number' ? String.fromCharCode(e) : e
-    sax.ENTITIES[key] = s
-  })
-
-  for (var s in sax.STATE) {
-    sax.STATE[sax.STATE[s]] = s
-  }
-
-  // shorthand
-  S = sax.STATE
-
-  function emit (parser, event, data) {
-    parser[event] && parser[event](data)
-  }
-
-  function emitNode (parser, nodeType, data) {
-    if (parser.textNode) closeText(parser)
-    emit(parser, nodeType, data)
-  }
-
-  function closeText (parser) {
-    parser.textNode = textopts(parser.opt, parser.textNode)
-    if (parser.textNode) emit(parser, 'ontext', parser.textNode)
-    parser.textNode = ''
-  }
-
-  function textopts (opt, text) {
-    if (opt.trim) text = text.trim()
-    if (opt.normalize) text = text.replace(/\s+/g, ' ')
-    return text
-  }
-
-  function error (parser, er) {
-    closeText(parser)
-    if (parser.trackPosition) {
-      er += '\nLine: ' + parser.line +
-        '\nColumn: ' + parser.column +
-        '\nChar: ' + parser.c
-    }
-    er = new Error(er)
-    parser.error = er
-    emit(parser, 'onerror', er)
-    return parser
-  }
-
-  function end (parser) {
-    if (parser.sawRoot && !parser.closedRoot) strictFail(parser, 'Unclosed root tag')
-    if ((parser.state !== S.BEGIN) &&
-      (parser.state !== S.BEGIN_WHITESPACE) &&
-      (parser.state !== S.TEXT)) {
-      error(parser, 'Unexpected end')
-    }
-    closeText(parser)
-    parser.c = ''
-    parser.closed = true
-    emit(parser, 'onend')
-    SAXParser.call(parser, parser.strict, parser.opt)
-    return parser
-  }
-
-  function strictFail (parser, message) {
-    if (typeof parser !== 'object' || !(parser instanceof SAXParser)) {
-      throw new Error('bad call to strictFail')
-    }
-    if (parser.strict) {
-      error(parser, message)
-    }
-  }
-
-  function newTag (parser) {
-    if (!parser.strict) parser.tagName = parser.tagName[parser.looseCase]()
-    var parent = parser.tags[parser.tags.length - 1] || parser
-    var tag = parser.tag = { name: parser.tagName, attributes: {} }
-
-    // will be overridden if tag contails an xmlns="foo" or xmlns:foo="bar"
-    if (parser.opt.xmlns) {
-      tag.ns = parent.ns
-    }
-    parser.attribList.length = 0
-  }
-
-  function qname (name, attribute) {
-    var i = name.indexOf(':')
-    var qualName = i < 0 ? [ '', name ] : name.split(':')
-    var prefix = qualName[0]
-    var local = qualName[1]
-
-    // <x "xmlns"="http://foo">
-    if (attribute && name === 'xmlns') {
-      prefix = 'xmlns'
-      local = ''
-    }
-
-    return { prefix: prefix, local: local }
-  }
-
-  function attrib (parser) {
-    if (!parser.strict) {
-      parser.attribName = parser.attribName[parser.looseCase]()
-    }
-
-    if (parser.attribList.indexOf(parser.attribName) !== -1 ||
-      parser.tag.attributes.hasOwnProperty(parser.attribName)) {
-      parser.attribName = parser.attribValue = ''
-      return
-    }
-
-    if (parser.opt.xmlns) {
-      var qn = qname(parser.attribName, true)
-      var prefix = qn.prefix
-      var local = qn.local
-
-      if (prefix === 'xmlns') {
-        // namespace binding attribute. push the binding into scope
-        if (local === 'xml' && parser.attribValue !== XML_NAMESPACE) {
-          strictFail(parser,
-            'xml: prefix must be bound to ' + XML_NAMESPACE + '\n' +
-            'Actual: ' + parser.attribValue)
-        } else if (local === 'xmlns' && parser.attribValue !== XMLNS_NAMESPACE) {
-          strictFail(parser,
-            'xmlns: prefix must be bound to ' + XMLNS_NAMESPACE + '\n' +
-            'Actual: ' + parser.attribValue)
-        } else {
-          var tag = parser.tag
-          var parent = parser.tags[parser.tags.length - 1] || parser
-          if (tag.ns === parent.ns) {
-            tag.ns = Object.create(parent.ns)
-          }
-          tag.ns[local] = parser.attribValue
-        }
-      }
-
-      // defer onattribute events until all attributes have been seen
-      // so any new bindings can take effect. preserve attribute order
-      // so deferred events can be emitted in document order
-      parser.attribList.push([parser.attribName, parser.attribValue])
-    } else {
-      // in non-xmlns mode, we can emit the event right away
-      parser.tag.attributes[parser.attribName] = parser.attribValue
-      emitNode(parser, 'onattribute', {
-        name: parser.attribName,
-        value: parser.attribValue
-      })
-    }
-
-    parser.attribName = parser.attribValue = ''
-  }
-
-  function openTag (parser, selfClosing) {
-    if (parser.opt.xmlns) {
-      // emit namespace binding events
-      var tag = parser.tag
-
-      // add namespace info to tag
-      var qn = qname(parser.tagName)
-      tag.prefix = qn.prefix
-      tag.local = qn.local
-      tag.uri = tag.ns[qn.prefix] || ''
-
-      if (tag.prefix && !tag.uri) {
-        strictFail(parser, 'Unbound namespace prefix: ' +
-          JSON.stringify(parser.tagName))
-        tag.uri = qn.prefix
-      }
-
-      var parent = parser.tags[parser.tags.length - 1] || parser
-      if (tag.ns && parent.ns !== tag.ns) {
-        Object.keys(tag.ns).forEach(function (p) {
-          emitNode(parser, 'onopennamespace', {
-            prefix: p,
-            uri: tag.ns[p]
-          })
-        })
-      }
-
-      // handle deferred onattribute events
-      // Note: do not apply default ns to attributes:
-      //   http://www.w3.org/TR/REC-xml-names/#defaulting
-      for (var i = 0, l = parser.attribList.length; i < l; i++) {
-        var nv = parser.attribList[i]
-        var name = nv[0]
-        var value = nv[1]
-        var qualName = qname(name, true)
-        var prefix = qualName.prefix
-        var local = qualName.local
-        var uri = prefix === '' ? '' : (tag.ns[prefix] || '')
-        var a = {
-          name: name,
-          value: value,
-          prefix: prefix,
-          local: local,
-          uri: uri
-        }
-
-        // if there's any attributes with an undefined namespace,
-        // then fail on them now.
-        if (prefix && prefix !== 'xmlns' && !uri) {
-          strictFail(parser, 'Unbound namespace prefix: ' +
-            JSON.stringify(prefix))
-          a.uri = prefix
-        }
-        parser.tag.attributes[name] = a
-        emitNode(parser, 'onattribute', a)
-      }
-      parser.attribList.length = 0
-    }
-
-    parser.tag.isSelfClosing = !!selfClosing
-
-    // process the tag
-    parser.sawRoot = true
-    parser.tags.push(parser.tag)
-    emitNode(parser, 'onopentag', parser.tag)
-    if (!selfClosing) {
-      // special case for <script> in non-strict mode.
-      if (!parser.noscript && parser.tagName.toLowerCase() === 'script') {
-        parser.state = S.SCRIPT
-      } else {
-        parser.state = S.TEXT
-      }
-      parser.tag = null
-      parser.tagName = ''
-    }
-    parser.attribName = parser.attribValue = ''
-    parser.attribList.length = 0
-  }
-
-  function closeTag (parser) {
-    if (!parser.tagName) {
-      strictFail(parser, 'Weird empty close tag.')
-      parser.textNode += '</>'
-      parser.state = S.TEXT
-      return
-    }
-
-    if (parser.script) {
-      if (parser.tagName !== 'script') {
-        parser.script += '</' + parser.tagName + '>'
-        parser.tagName = ''
-        parser.state = S.SCRIPT
-        return
-      }
-      emitNode(parser, 'onscript', parser.script)
-      parser.script = ''
-    }
-
-    // first make sure that the closing tag actually exists.
-    // <a><b></c></b></a> will close everything, otherwise.
-    var t = parser.tags.length
-    var tagName = parser.tagName
-    if (!parser.strict) {
-      tagName = tagName[parser.looseCase]()
-    }
-    var closeTo = tagName
-    while (t--) {
-      var close = parser.tags[t]
-      if (close.name !== closeTo) {
-        // fail the first time in strict mode
-        strictFail(parser, 'Unexpected close tag')
-      } else {
-        break
-      }
-    }
-
-    // didn't find it.  we already failed for strict, so just abort.
-    if (t < 0) {
-      strictFail(parser, 'Unmatched closing tag: ' + parser.tagName)
-      parser.textNode += '</' + parser.tagName + '>'
-      parser.state = S.TEXT
-      return
-    }
-    parser.tagName = tagName
-    var s = parser.tags.length
-    while (s-- > t) {
-      var tag = parser.tag = parser.tags.pop()
-      parser.tagName = parser.tag.name
-      emitNode(parser, 'onclosetag', parser.tagName)
-
-      var x = {}
-      for (var i in tag.ns) {
-        x[i] = tag.ns[i]
-      }
-
-      var parent = parser.tags[parser.tags.length - 1] || parser
-      if (parser.opt.xmlns && tag.ns !== parent.ns) {
-        // remove namespace bindings introduced by tag
-        Object.keys(tag.ns).forEach(function (p) {
-          var n = tag.ns[p]
-          emitNode(parser, 'onclosenamespace', { prefix: p, uri: n })
-        })
-      }
-    }
-    if (t === 0) parser.closedRoot = true
-    parser.tagName = parser.attribValue = parser.attribName = ''
-    parser.attribList.length = 0
-    parser.state = S.TEXT
-  }
-
-  function parseEntity (parser) {
-    var entity = parser.entity
-    var entityLC = entity.toLowerCase()
-    var num
-    var numStr = ''
-
-    if (parser.ENTITIES[entity]) {
-      return parser.ENTITIES[entity]
-    }
-    if (parser.ENTITIES[entityLC]) {
-      return parser.ENTITIES[entityLC]
-    }
-    entity = entityLC
-    if (entity.charAt(0) === '#') {
-      if (entity.charAt(1) === 'x') {
-        entity = entity.slice(2)
-        num = parseInt(entity, 16)
-        numStr = num.toString(16)
-      } else {
-        entity = entity.slice(1)
-        num = parseInt(entity, 10)
-        numStr = num.toString(10)
-      }
-    }
-    entity = entity.replace(/^0+/, '')
-    if (numStr.toLowerCase() !== entity) {
-      strictFail(parser, 'Invalid character entity')
-      return '&' + parser.entity + ';'
-    }
-
-    return String.fromCodePoint(num)
-  }
-
-  function beginWhiteSpace (parser, c) {
-    if (c === '<') {
-      parser.state = S.OPEN_WAKA
-      parser.startTagPosition = parser.position
-    } else if (not(whitespace, c)) {
-      // have to process this as a text node.
-      // weird, but happens.
-      strictFail(parser, 'Non-whitespace before first tag.')
-      parser.textNode = c
-      parser.state = S.TEXT
-    }
-  }
-
-  function write (chunk) {
-    var parser = this
-    if (this.error) {
-      throw this.error
-    }
-    if (parser.closed) {
-      return error(parser,
-        'Cannot write after close. Assign an onready handler.')
-    }
-    if (chunk === null) {
-      return end(parser)
-    }
-    var i = 0
-    var c = ''
-    while (true) {
-      c = chunk.charAt(i++)
-      parser.c = c
-      if (!c) {
-        break
-      }
-      if (parser.trackPosition) {
-        parser.position++
-        if (c === '\n') {
-          parser.line++
-          parser.column = 0
-        } else {
-          parser.column++
-        }
-      }
-      switch (parser.state) {
-        case S.BEGIN:
-          parser.state = S.BEGIN_WHITESPACE
-          if (c === '\uFEFF') {
-            continue
-          }
-          beginWhiteSpace(parser, c)
-          continue
-
-        case S.BEGIN_WHITESPACE:
-          beginWhiteSpace(parser, c)
-          continue
-
-        case S.TEXT:
-          if (parser.sawRoot && !parser.closedRoot) {
-            var starti = i - 1
-            while (c && c !== '<' && c !== '&') {
-              c = chunk.charAt(i++)
-              if (c && parser.trackPosition) {
-                parser.position++
-                if (c === '\n') {
-                  parser.line++
-                  parser.column = 0
-                } else {
-                  parser.column++
-                }
-              }
-            }
-            parser.textNode += chunk.substring(starti, i - 1)
-          }
-          if (c === '<' && !(parser.sawRoot && parser.closedRoot && !parser.strict)) {
-            parser.state = S.OPEN_WAKA
-            parser.startTagPosition = parser.position
-          } else {
-            if (not(whitespace, c) && (!parser.sawRoot || parser.closedRoot)) {
-              strictFail(parser, 'Text data outside of root node.')
-            }
-            if (c === '&') {
-              parser.state = S.TEXT_ENTITY
-            } else {
-              parser.textNode += c
-            }
-          }
-          continue
-
-        case S.SCRIPT:
-          // only non-strict
-          if (c === '<') {
-            parser.state = S.SCRIPT_ENDING
-          } else {
-            parser.script += c
-          }
-          continue
-
-        case S.SCRIPT_ENDING:
-          if (c === '/') {
-            parser.state = S.CLOSE_TAG
-          } else {
-            parser.script += '<' + c
-            parser.state = S.SCRIPT
-          }
-          continue
-
-        case S.OPEN_WAKA:
-          // either a /, ?, !, or text is coming next.
-          if (c === '!') {
-            parser.state = S.SGML_DECL
-            parser.sgmlDecl = ''
-          } else if (is(whitespace, c)) {
-            // wait for it...
-          } else if (is(nameStart, c)) {
-            parser.state = S.OPEN_TAG
-            parser.tagName = c
-          } else if (c === '/') {
-            parser.state = S.CLOSE_TAG
-            parser.tagName = ''
-          } else if (c === '?') {
-            parser.state = S.PROC_INST
-            parser.procInstName = parser.procInstBody = ''
-          } else {
-            strictFail(parser, 'Unencoded <')
-            // if there was some whitespace, then add that in.
-            if (parser.startTagPosition + 1 < parser.position) {
-              var pad = parser.position - parser.startTagPosition
-              c = new Array(pad).join(' ') + c
-            }
-            parser.textNode += '<' + c
-            parser.state = S.TEXT
-          }
-          continue
-
-        case S.SGML_DECL:
-          if ((parser.sgmlDecl + c).toUpperCase() === CDATA) {
-            emitNode(parser, 'onopencdata')
-            parser.state = S.CDATA
-            parser.sgmlDecl = ''
-            parser.cdata = ''
-          } else if (parser.sgmlDecl + c === '--') {
-            parser.state = S.COMMENT
-            parser.comment = ''
-            parser.sgmlDecl = ''
-          } else if ((parser.sgmlDecl + c).toUpperCase() === DOCTYPE) {
-            parser.state = S.DOCTYPE
-            if (parser.doctype || parser.sawRoot) {
-              strictFail(parser,
-                'Inappropriately located doctype declaration')
-            }
-            parser.doctype = ''
-            parser.sgmlDecl = ''
-          } else if (c === '>') {
-            emitNode(parser, 'onsgmldeclaration', parser.sgmlDecl)
-            parser.sgmlDecl = ''
-            parser.state = S.TEXT
-          } else if (is(quote, c)) {
-            parser.state = S.SGML_DECL_QUOTED
-            parser.sgmlDecl += c
-          } else {
-            parser.sgmlDecl += c
-          }
-          continue
-
-        case S.SGML_DECL_QUOTED:
-          if (c === parser.q) {
-            parser.state = S.SGML_DECL
-            parser.q = ''
-          }
-          parser.sgmlDecl += c
-          continue
-
-        case S.DOCTYPE:
-          if (c === '>') {
-            parser.state = S.TEXT
-            emitNode(parser, 'ondoctype', parser.doctype)
-            parser.doctype = true // just remember that we saw it.
-          } else {
-            parser.doctype += c
-            if (c === '[') {
-              parser.state = S.DOCTYPE_DTD
-            } else if (is(quote, c)) {
-              parser.state = S.DOCTYPE_QUOTED
-              parser.q = c
-            }
-          }
-          continue
-
-        case S.DOCTYPE_QUOTED:
-          parser.doctype += c
-          if (c === parser.q) {
-            parser.q = ''
-            parser.state = S.DOCTYPE
-          }
-          continue
-
-        case S.DOCTYPE_DTD:
-          parser.doctype += c
-          if (c === ']') {
-            parser.state = S.DOCTYPE
-          } else if (is(quote, c)) {
-            parser.state = S.DOCTYPE_DTD_QUOTED
-            parser.q = c
-          }
-          continue
-
-        case S.DOCTYPE_DTD_QUOTED:
-          parser.doctype += c
-          if (c === parser.q) {
-            parser.state = S.DOCTYPE_DTD
-            parser.q = ''
-          }
-          continue
-
-        case S.COMMENT:
-          if (c === '-') {
-            parser.state = S.COMMENT_ENDING
-          } else {
-            parser.comment += c
-          }
-          continue
-
-        case S.COMMENT_ENDING:
-          if (c === '-') {
-            parser.state = S.COMMENT_ENDED
-            parser.comment = textopts(parser.opt, parser.comment)
-            if (parser.comment) {
-              emitNode(parser, 'oncomment', parser.comment)
-            }
-            parser.comment = ''
-          } else {
-            parser.comment += '-' + c
-            parser.state = S.COMMENT
-          }
-          continue
-
-        case S.COMMENT_ENDED:
-          if (c !== '>') {
-            strictFail(parser, 'Malformed comment')
-            // allow <!-- blah -- bloo --> in non-strict mode,
-            // which is a comment of " blah -- bloo "
-            parser.comment += '--' + c
-            parser.state = S.COMMENT
-          } else {
-            parser.state = S.TEXT
-          }
-          continue
-
-        case S.CDATA:
-          if (c === ']') {
-            parser.state = S.CDATA_ENDING
-          } else {
-            parser.cdata += c
-          }
-          continue
-
-        case S.CDATA_ENDING:
-          if (c === ']') {
-            parser.state = S.CDATA_ENDING_2
-          } else {
-            parser.cdata += ']' + c
-            parser.state = S.CDATA
-          }
-          continue
-
-        case S.CDATA_ENDING_2:
-          if (c === '>') {
-            if (parser.cdata) {
-              emitNode(parser, 'oncdata', parser.cdata)
-            }
-            emitNode(parser, 'onclosecdata')
-            parser.cdata = ''
-            parser.state = S.TEXT
-          } else if (c === ']') {
-            parser.cdata += ']'
-          } else {
-            parser.cdata += ']]' + c
-            parser.state = S.CDATA
-          }
-          continue
-
-        case S.PROC_INST:
-          if (c === '?') {
-            parser.state = S.PROC_INST_ENDING
-          } else if (is(whitespace, c)) {
-            parser.state = S.PROC_INST_BODY
-          } else {
-            parser.procInstName += c
-          }
-          continue
-
-        case S.PROC_INST_BODY:
-          if (!parser.procInstBody && is(whitespace, c)) {
-            continue
-          } else if (c === '?') {
-            parser.state = S.PROC_INST_ENDING
-          } else {
-            parser.procInstBody += c
-          }
-          continue
-
-        case S.PROC_INST_ENDING:
-          if (c === '>') {
-            emitNode(parser, 'onprocessinginstruction', {
-              name: parser.procInstName,
-              body: parser.procInstBody
-            })
-            parser.procInstName = parser.procInstBody = ''
-            parser.state = S.TEXT
-          } else {
-            parser.procInstBody += '?' + c
-            parser.state = S.PROC_INST_BODY
-          }
-          continue
-
-        case S.OPEN_TAG:
-          if (is(nameBody, c)) {
-            parser.tagName += c
-          } else {
-            newTag(parser)
-            if (c === '>') {
-              openTag(parser)
-            } else if (c === '/') {
-              parser.state = S.OPEN_TAG_SLASH
-            } else {
-              if (not(whitespace, c)) {
-                strictFail(parser, 'Invalid character in tag name')
-              }
-              parser.state = S.ATTRIB
-            }
-          }
-          continue
-
-        case S.OPEN_TAG_SLASH:
-          if (c === '>') {
-            openTag(parser, true)
-            closeTag(parser)
-          } else {
-            strictFail(parser, 'Forward-slash in opening tag not followed by >')
-            parser.state = S.ATTRIB
-          }
-          continue
-
-        case S.ATTRIB:
-          // haven't read the attribute name yet.
-          if (is(whitespace, c)) {
-            continue
-          } else if (c === '>') {
-            openTag(parser)
-          } else if (c === '/') {
-            parser.state = S.OPEN_TAG_SLASH
-          } else if (is(nameStart, c)) {
-            parser.attribName = c
-            parser.attribValue = ''
-            parser.state = S.ATTRIB_NAME
-          } else {
-            strictFail(parser, 'Invalid attribute name')
-          }
-          continue
-
-        case S.ATTRIB_NAME:
-          if (c === '=') {
-            parser.state = S.ATTRIB_VALUE
-          } else if (c === '>') {
-            strictFail(parser, 'Attribute without value')
-            parser.attribValue = parser.attribName
-            attrib(parser)
-            openTag(parser)
-          } else if (is(whitespace, c)) {
-            parser.state = S.ATTRIB_NAME_SAW_WHITE
-          } else if (is(nameBody, c)) {
-            parser.attribName += c
-          } else {
-            strictFail(parser, 'Invalid attribute name')
-          }
-          continue
-
-        case S.ATTRIB_NAME_SAW_WHITE:
-          if (c === '=') {
-            parser.state = S.ATTRIB_VALUE
-          } else if (is(whitespace, c)) {
-            continue
-          } else {
-            strictFail(parser, 'Attribute without value')
-            parser.tag.attributes[parser.attribName] = ''
-            parser.attribValue = ''
-            emitNode(parser, 'onattribute', {
-              name: parser.attribName,
-              value: ''
-            })
-            parser.attribName = ''
-            if (c === '>') {
-              openTag(parser)
-            } else if (is(nameStart, c)) {
-              parser.attribName = c
-              parser.state = S.ATTRIB_NAME
-            } else {
-              strictFail(parser, 'Invalid attribute name')
-              parser.state = S.ATTRIB
-            }
-          }
-          continue
-
-        case S.ATTRIB_VALUE:
-          if (is(whitespace, c)) {
-            continue
-          } else if (is(quote, c)) {
-            parser.q = c
-            parser.state = S.ATTRIB_VALUE_QUOTED
-          } else {
-            strictFail(parser, 'Unquoted attribute value')
-            parser.state = S.ATTRIB_VALUE_UNQUOTED
-            parser.attribValue = c
-          }
-          continue
-
-        case S.ATTRIB_VALUE_QUOTED:
-          if (c !== parser.q) {
-            if (c === '&') {
-              parser.state = S.ATTRIB_VALUE_ENTITY_Q
-            } else {
-              parser.attribValue += c
-            }
-            continue
-          }
-          attrib(parser)
-          parser.q = ''
-          parser.state = S.ATTRIB_VALUE_CLOSED
-          continue
-
-        case S.ATTRIB_VALUE_CLOSED:
-          if (is(whitespace, c)) {
-            parser.state = S.ATTRIB
-          } else if (c === '>') {
-            openTag(parser)
-          } else if (c === '/') {
-            parser.state = S.OPEN_TAG_SLASH
-          } else if (is(nameStart, c)) {
-            strictFail(parser, 'No whitespace between attributes')
-            parser.attribName = c
-            parser.attribValue = ''
-            parser.state = S.ATTRIB_NAME
-          } else {
-            strictFail(parser, 'Invalid attribute name')
-          }
-          continue
-
-        case S.ATTRIB_VALUE_UNQUOTED:
-          if (not(attribEnd, c)) {
-            if (c === '&') {
-              parser.state = S.ATTRIB_VALUE_ENTITY_U
-            } else {
-              parser.attribValue += c
-            }
-            continue
-          }
-          attrib(parser)
-          if (c === '>') {
-            openTag(parser)
-          } else {
-            parser.state = S.ATTRIB
-          }
-          continue
-
-        case S.CLOSE_TAG:
-          if (!parser.tagName) {
-            if (is(whitespace, c)) {
-              continue
-            } else if (not(nameStart, c)) {
-              if (parser.script) {
-                parser.script += '</' + c
-                parser.state = S.SCRIPT
-              } else {
-                strictFail(parser, 'Invalid tagname in closing tag.')
-              }
-            } else {
-              parser.tagName = c
-            }
-          } else if (c === '>') {
-            closeTag(parser)
-          } else if (is(nameBody, c)) {
-            parser.tagName += c
-          } else if (parser.script) {
-            parser.script += '</' + parser.tagName
-            parser.tagName = ''
-            parser.state = S.SCRIPT
-          } else {
-            if (not(whitespace, c)) {
-              strictFail(parser, 'Invalid tagname in closing tag')
-            }
-            parser.state = S.CLOSE_TAG_SAW_WHITE
-          }
-          continue
-
-        case S.CLOSE_TAG_SAW_WHITE:
-          if (is(whitespace, c)) {
-            continue
-          }
-          if (c === '>') {
-            closeTag(parser)
-          } else {
-            strictFail(parser, 'Invalid characters in closing tag')
-          }
-          continue
-
-        case S.TEXT_ENTITY:
-        case S.ATTRIB_VALUE_ENTITY_Q:
-        case S.ATTRIB_VALUE_ENTITY_U:
-          var returnState
-          var buffer
-          switch (parser.state) {
-            case S.TEXT_ENTITY:
-              returnState = S.TEXT
-              buffer = 'textNode'
-              break
-
-            case S.ATTRIB_VALUE_ENTITY_Q:
-              returnState = S.ATTRIB_VALUE_QUOTED
-              buffer = 'attribValue'
-              break
-
-            case S.ATTRIB_VALUE_ENTITY_U:
-              returnState = S.ATTRIB_VALUE_UNQUOTED
-              buffer = 'attribValue'
-              break
-          }
-
-          if (c === ';') {
-            parser[buffer] += parseEntity(parser)
-            parser.entity = ''
-            parser.state = returnState
-          } else if (is(parser.entity.length ? entityBody : entityStart, c)) {
-            parser.entity += c
-          } else {
-            strictFail(parser, 'Invalid character in entity name')
-            parser[buffer] += '&' + parser.entity + c
-            parser.entity = ''
-            parser.state = returnState
-          }
-
-          continue
-
-        default:
-          throw new Error(parser, 'Unknown state: ' + parser.state)
-      }
-    } // while
-
-    if (parser.position >= parser.bufferCheckPosition) {
-      checkBufferLength(parser)
-    }
-    return parser
-  }
-
-  /*! http://mths.be/fromcodepoint v0.1.0 by @mathias */
-  if (!String.fromCodePoint) {
-    (function () {
-      var stringFromCharCode = String.fromCharCode
-      var floor = Math.floor
-      var fromCodePoint = function () {
-        var MAX_SIZE = 0x4000
-        var codeUnits = []
-        var highSurrogate
-        var lowSurrogate
-        var index = -1
-        var length = arguments.length
-        if (!length) {
-          return ''
-        }
-        var result = ''
-        while (++index < length) {
-          var codePoint = Number(arguments[index])
-          if (
-            !isFinite(codePoint) || // `NaN`, `+Infinity`, or `-Infinity`
-            codePoint < 0 || // not a valid Unicode code point
-            codePoint > 0x10FFFF || // not a valid Unicode code point
-            floor(codePoint) !== codePoint // not an integer
-          ) {
-            throw RangeError('Invalid code point: ' + codePoint)
-          }
-          if (codePoint <= 0xFFFF) { // BMP code point
-            codeUnits.push(codePoint)
-          } else { // Astral code point; split in surrogate halves
-            // http://mathiasbynens.be/notes/javascript-encoding#surrogate-formulae
-            codePoint -= 0x10000
-            highSurrogate = (codePoint >> 10) + 0xD800
-            lowSurrogate = (codePoint % 0x400) + 0xDC00
-            codeUnits.push(highSurrogate, lowSurrogate)
-          }
-          if (index + 1 === length || codeUnits.length > MAX_SIZE) {
-            result += stringFromCharCode.apply(null, codeUnits)
-            codeUnits.length = 0
-          }
-        }
-        return result
-      }
-      if (Object.defineProperty) {
-        Object.defineProperty(String, 'fromCodePoint', {
-          value: fromCodePoint,
-          configurable: true,
-          writable: true
-        })
-      } else {
-        String.fromCodePoint = fromCodePoint
-      }
-    }())
-  }
-})(typeof exports === 'undefined' ? this.sax = {} : exports)
-
-}).call(this)}).call(this,require("buffer").Buffer)
-},{"buffer":79,"stream":301,"string_decoder":306}],293:[function(require,module,exports){
+},{"_process":240,"buffer":69}],272:[function(require,module,exports){
 var Buffer = require('safe-buffer').Buffer
 
 // prototype class for hash functions
@@ -67723,7 +63499,7 @@ Hash.prototype._update = function () {
 
 module.exports = Hash
 
-},{"safe-buffer":290}],294:[function(require,module,exports){
+},{"safe-buffer":270}],273:[function(require,module,exports){
 var exports = module.exports = function SHA (algorithm) {
   algorithm = algorithm.toLowerCase()
 
@@ -67740,7 +63516,7 @@ exports.sha256 = require('./sha256')
 exports.sha384 = require('./sha384')
 exports.sha512 = require('./sha512')
 
-},{"./sha":295,"./sha1":296,"./sha224":297,"./sha256":298,"./sha384":299,"./sha512":300}],295:[function(require,module,exports){
+},{"./sha":274,"./sha1":275,"./sha224":276,"./sha256":277,"./sha384":278,"./sha512":279}],274:[function(require,module,exports){
 /*
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-0, as defined
  * in FIPS PUB 180-1
@@ -67836,7 +63612,7 @@ Sha.prototype._hash = function () {
 
 module.exports = Sha
 
-},{"./hash":293,"inherits":212,"safe-buffer":290}],296:[function(require,module,exports){
+},{"./hash":272,"inherits":194,"safe-buffer":270}],275:[function(require,module,exports){
 /*
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-1, as defined
  * in FIPS PUB 180-1
@@ -67937,7 +63713,7 @@ Sha1.prototype._hash = function () {
 
 module.exports = Sha1
 
-},{"./hash":293,"inherits":212,"safe-buffer":290}],297:[function(require,module,exports){
+},{"./hash":272,"inherits":194,"safe-buffer":270}],276:[function(require,module,exports){
 /**
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-256, as defined
  * in FIPS 180-2
@@ -67992,7 +63768,7 @@ Sha224.prototype._hash = function () {
 
 module.exports = Sha224
 
-},{"./hash":293,"./sha256":298,"inherits":212,"safe-buffer":290}],298:[function(require,module,exports){
+},{"./hash":272,"./sha256":277,"inherits":194,"safe-buffer":270}],277:[function(require,module,exports){
 /**
  * A JavaScript implementation of the Secure Hash Algorithm, SHA-256, as defined
  * in FIPS 180-2
@@ -68129,7 +63905,7 @@ Sha256.prototype._hash = function () {
 
 module.exports = Sha256
 
-},{"./hash":293,"inherits":212,"safe-buffer":290}],299:[function(require,module,exports){
+},{"./hash":272,"inherits":194,"safe-buffer":270}],278:[function(require,module,exports){
 var inherits = require('inherits')
 var SHA512 = require('./sha512')
 var Hash = require('./hash')
@@ -68188,7 +63964,7 @@ Sha384.prototype._hash = function () {
 
 module.exports = Sha384
 
-},{"./hash":293,"./sha512":300,"inherits":212,"safe-buffer":290}],300:[function(require,module,exports){
+},{"./hash":272,"./sha512":279,"inherits":194,"safe-buffer":270}],279:[function(require,module,exports){
 var inherits = require('inherits')
 var Hash = require('./hash')
 var Buffer = require('safe-buffer').Buffer
@@ -68450,7 +64226,7 @@ Sha512.prototype._hash = function () {
 
 module.exports = Sha512
 
-},{"./hash":293,"inherits":212,"safe-buffer":290}],301:[function(require,module,exports){
+},{"./hash":272,"inherits":194,"safe-buffer":270}],280:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -68581,7 +64357,7 @@ Stream.prototype.pipe = function(dest, options) {
   return dest;
 };
 
-},{"events":166,"inherits":212,"readable-stream/lib/_stream_duplex.js":275,"readable-stream/lib/_stream_passthrough.js":276,"readable-stream/lib/_stream_readable.js":277,"readable-stream/lib/_stream_transform.js":278,"readable-stream/lib/_stream_writable.js":279,"readable-stream/lib/internal/streams/end-of-stream.js":283,"readable-stream/lib/internal/streams/pipeline.js":285}],302:[function(require,module,exports){
+},{"events":148,"inherits":194,"readable-stream/lib/_stream_duplex.js":255,"readable-stream/lib/_stream_passthrough.js":256,"readable-stream/lib/_stream_readable.js":257,"readable-stream/lib/_stream_transform.js":258,"readable-stream/lib/_stream_writable.js":259,"readable-stream/lib/internal/streams/end-of-stream.js":263,"readable-stream/lib/internal/streams/pipeline.js":265}],281:[function(require,module,exports){
 (function (global){(function (){
 var ClientRequest = require('./lib/request')
 var response = require('./lib/response')
@@ -68669,7 +64445,7 @@ http.METHODS = [
 	'UNSUBSCRIBE'
 ]
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./lib/request":304,"./lib/response":305,"builtin-status-codes":80,"url":309,"xtend":316}],303:[function(require,module,exports){
+},{"./lib/request":283,"./lib/response":284,"builtin-status-codes":70,"url":288,"xtend":295}],282:[function(require,module,exports){
 (function (global){(function (){
 exports.fetch = isFunction(global.fetch) && isFunction(global.ReadableStream)
 
@@ -68732,7 +64508,7 @@ function isFunction (value) {
 xhr = null // Help gc
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],304:[function(require,module,exports){
+},{}],283:[function(require,module,exports){
 (function (process,global,Buffer){(function (){
 var capability = require('./capability')
 var inherits = require('inherits')
@@ -69088,7 +64864,7 @@ var unsafeHeaders = [
 ]
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer)
-},{"./capability":303,"./response":305,"_process":260,"buffer":79,"inherits":212,"readable-stream":288}],305:[function(require,module,exports){
+},{"./capability":282,"./response":284,"_process":240,"buffer":69,"inherits":194,"readable-stream":268}],284:[function(require,module,exports){
 (function (process,global,Buffer){(function (){
 var capability = require('./capability')
 var inherits = require('inherits')
@@ -69303,7 +65079,7 @@ IncomingMessage.prototype._onXHRProgress = function (resetTimers) {
 }
 
 }).call(this)}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("buffer").Buffer)
-},{"./capability":303,"_process":260,"buffer":79,"inherits":212,"readable-stream":288}],306:[function(require,module,exports){
+},{"./capability":282,"_process":240,"buffer":69,"inherits":194,"readable-stream":268}],285:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -69600,7 +65376,7 @@ function simpleWrite(buf) {
 function simpleEnd(buf) {
   return buf && buf.length ? this.write(buf) : '';
 }
-},{"safe-buffer":290}],307:[function(require,module,exports){
+},{"safe-buffer":270}],286:[function(require,module,exports){
 exports.isatty = function () { return false; };
 
 function ReadStream() {
@@ -69613,7 +65389,7 @@ function WriteStream() {
 }
 exports.WriteStream = WriteStream;
 
-},{}],308:[function(require,module,exports){
+},{}],287:[function(require,module,exports){
 (function (global){(function (){
 (function (global, factory) {
 	typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
@@ -70005,7 +65781,7 @@ return typeDetect;
 })));
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],309:[function(require,module,exports){
+},{}],288:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -70739,7 +66515,7 @@ Url.prototype.parseHost = function() {
   if (host) this.hostname = host;
 };
 
-},{"./util":310,"punycode":268,"querystring":271}],310:[function(require,module,exports){
+},{"./util":289,"punycode":248,"querystring":251}],289:[function(require,module,exports){
 'use strict';
 
 module.exports = {
@@ -70757,7 +66533,7 @@ module.exports = {
   }
 };
 
-},{}],311:[function(require,module,exports){
+},{}],290:[function(require,module,exports){
 (function (global){(function (){
 
 /**
@@ -70828,14 +66604,9 @@ function config (name) {
 }
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],312:[function(require,module,exports){
-module.exports = function isBuffer(arg) {
-  return arg && typeof arg === 'object'
-    && typeof arg.copy === 'function'
-    && typeof arg.fill === 'function'
-    && typeof arg.readUInt8 === 'function';
-}
-},{}],313:[function(require,module,exports){
+},{}],291:[function(require,module,exports){
+arguments[4][30][0].apply(exports,arguments)
+},{"dup":30}],292:[function(require,module,exports){
 // Currently in sync with Node.js lib/internal/util/types.js
 // https://github.com/nodejs/node/commit/112cc7c27551254aa2b17098fb774867f05ed0d9
 
@@ -71171,7 +66942,7 @@ exports.isAnyArrayBuffer = isAnyArrayBuffer;
   });
 });
 
-},{"is-arguments":213,"is-generator-function":214,"is-typed-array":215,"which-typed-array":315}],314:[function(require,module,exports){
+},{"is-arguments":195,"is-generator-function":196,"is-typed-array":197,"which-typed-array":294}],293:[function(require,module,exports){
 (function (process){(function (){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -71890,7 +67661,7 @@ function callbackify(original) {
 exports.callbackify = callbackify;
 
 }).call(this)}).call(this,require('_process'))
-},{"./support/isBuffer":312,"./support/types":313,"_process":260,"inherits":212}],315:[function(require,module,exports){
+},{"./support/isBuffer":291,"./support/types":292,"_process":240,"inherits":194}],294:[function(require,module,exports){
 (function (global){(function (){
 'use strict';
 
@@ -71948,7 +67719,7 @@ module.exports = function whichTypedArray(value) {
 };
 
 }).call(this)}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"available-typed-arrays":43,"call-bind/callBound":81,"es-abstract/helpers/getOwnPropertyDescriptor":165,"foreach":168,"has-tostringtag/shams":175,"is-typed-array":215}],316:[function(require,module,exports){
+},{"available-typed-arrays":33,"call-bind/callBound":71,"es-abstract/helpers/getOwnPropertyDescriptor":147,"foreach":150,"has-tostringtag/shams":157,"is-typed-array":197}],295:[function(require,module,exports){
 module.exports = extend
 
 var hasOwnProperty = Object.prototype.hasOwnProperty;
@@ -71969,7 +67740,7 @@ function extend() {
     return target
 }
 
-},{}],317:[function(require,module,exports){
+},{}],296:[function(require,module,exports){
 module.exports={
     "name": "splunk-sdk",
     "version": "1.11.0",
@@ -72004,7 +67775,7 @@ module.exports={
         "browserify": "^17.0.0",
         "chai": "^4.3.6",
         "jshint": "2.13.4",
-        "mocha": "^7.2.0",
+        "mocha": "7.2.0",
         "mochawesome": "7.1.0",
         "mustache": "4.2.0",
         "nyc": "^15.1.0",
@@ -72022,7 +67793,7 @@ module.exports={
     }
 }
 
-},{}],318:[function(require,module,exports){
+},{}],297:[function(require,module,exports){
 (function (process,__dirname){(function (){
 // Copyright 2011 Splunk, Inc.
 //
@@ -72133,7 +67904,7 @@ module.exports={
     };
 })();
 }).call(this)}).call(this,require('_process'),"/tests")
-},{"../contrib/commander":1,"../lib/utils":22,"_process":260,"fs":77,"path":252}],319:[function(require,module,exports){
+},{"../contrib/commander":1,"../lib/utils":12,"_process":240,"fs":67,"path":232}],298:[function(require,module,exports){
 (function (process,__filename){(function (){
 var assert = require('chai').assert;
 
@@ -72348,7 +68119,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/app.js")
-},{"../../index":2,"../cmdline":318,"_process":260,"chai":83}],320:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"_process":240,"chai":73}],299:[function(require,module,exports){
 (function (process,__filename){(function (){
 var assert = require('chai').assert;
 
@@ -72454,7 +68225,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/collection.js")
-},{"../../index":2,"../cmdline":318,"_process":260,"chai":83}],321:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"_process":240,"chai":73}],300:[function(require,module,exports){
 (function (process,__filename){(function (){
 var assert = require('chai').assert;
 
@@ -72757,7 +68528,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/configuration.js")
-},{"../../index":2,"../cmdline":318,"_process":260,"chai":83}],322:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"_process":240,"chai":73}],301:[function(require,module,exports){
 (function (process,__filename){(function (){
 var assert = require('chai').assert;
 
@@ -73870,7 +69641,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/datamodels.js")
-},{"../../index":2,"../cmdline":318,"../utils":343,"_process":260,"chai":83}],323:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"../utils":322,"_process":240,"chai":73}],302:[function(require,module,exports){
 (function (process,__filename){(function (){
 var assert = require('chai').assert;
 
@@ -73945,7 +69716,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/endpoint.js")
-},{"../../index":2,"../cmdline":318,"_process":260,"chai":83}],324:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"_process":240,"chai":73}],303:[function(require,module,exports){
 (function (process,__filename){(function (){
 var assert = require('chai').assert;
 
@@ -74105,7 +69876,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/entity.js")
-},{"../../index":2,"../cmdline":318,"_process":260,"chai":83}],325:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"_process":240,"chai":73}],304:[function(require,module,exports){
 (function (process,__filename){(function (){
 var assert = require('chai').assert;
 
@@ -74419,7 +70190,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/firedalerts.js")
-},{"../../index":2,"../cmdline":318,"_process":260,"chai":83}],326:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"_process":240,"chai":73}],305:[function(require,module,exports){
 (function (process,Buffer,__filename){(function (){
 var assert = require('chai').assert;
 
@@ -74896,7 +70667,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),require("buffer").Buffer,"/tests/service_tests/indexes.js")
-},{"../../index":2,"../cmdline":318,"_process":260,"buffer":79,"chai":83}],327:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"_process":240,"buffer":69,"chai":73}],306:[function(require,module,exports){
 (function (process,__filename){(function (){
 exports.setup = function (svc) {
     var assert = require('chai').assert;
@@ -75982,7 +71753,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/job.js")
-},{"../../index":2,"../../lib/log":8,"../cmdline":318,"../utils":343,"_process":260,"chai":83,"path":252}],328:[function(require,module,exports){
+},{"../../index":2,"../../lib/log":8,"../cmdline":297,"../utils":322,"_process":240,"chai":73,"path":232}],307:[function(require,module,exports){
 (function (process,__filename){(function (){
 var assert = require('chai').assert;
 
@@ -76273,7 +72044,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/namespace.js")
-},{"../../index":2,"../../lib/log":8,"../cmdline":318,"_process":260,"chai":83}],329:[function(require,module,exports){
+},{"../../index":2,"../../lib/log":8,"../cmdline":297,"_process":240,"chai":73}],308:[function(require,module,exports){
 (function (process,__filename){(function (){
 exports.setup = function (svc) {
     var assert = require('chai').assert;
@@ -76340,7 +72111,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/parser.js")
-},{"../../index":2,"../cmdline":318,"_process":260,"chai":83}],330:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"_process":240,"chai":73}],309:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 exports.setup = function (svc) {
@@ -77944,7 +73715,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/pivot.js")
-},{"../../index":2,"../cmdline":318,"../utils":343,"_process":260,"chai":83}],331:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"../utils":322,"_process":240,"chai":73}],310:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 exports.setup = function (svc) {
@@ -78112,7 +73883,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/properties.js")
-},{"../../index":2,"../cmdline":318,"_process":260,"chai":83}],332:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"_process":240,"chai":73}],311:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 exports.setup = function (svc, loggedOutSvc) {
@@ -78614,7 +74385,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/savedsearch.js")
-},{"../../index":2,"../cmdline":318,"../utils":343,"_process":260,"chai":83}],333:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"../utils":322,"_process":240,"chai":73}],312:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 exports.setup = function (svc) {
@@ -78676,7 +74447,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/serverinfo.js")
-},{"../../index":2,"../cmdline":318,"_process":260,"chai":83}],334:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"_process":240,"chai":73}],313:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 exports.setup = function (svc) {
@@ -79324,7 +75095,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/storagepasswords.js")
-},{"../../index":2,"../cmdline":318,"_process":260,"chai":83}],335:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"_process":240,"chai":73}],314:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 exports.setup = function (svc, loggedOutSvc) {
@@ -79410,7 +75181,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/typeahead.js")
-},{"../../index":2,"../cmdline":318,"_process":260,"chai":83}],336:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"_process":240,"chai":73}],315:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 exports.setup = function (svc, loggedOutSvc) {
@@ -79705,7 +75476,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/user.js")
-},{"../../index":2,"../cmdline":318,"_process":260,"chai":83}],337:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"_process":240,"chai":73}],316:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 exports.setup = function (svc) {
@@ -79806,7 +75577,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/service_tests/view.js")
-},{"../../index":2,"../cmdline":318,"_process":260,"chai":83}],338:[function(require,module,exports){
+},{"../../index":2,"../cmdline":297,"_process":240,"chai":73}],317:[function(require,module,exports){
 (function (__filename){(function (){
 
 // Copyright 2011 Splunk, Inc.
@@ -80347,7 +76118,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,"/tests/test_async.js")
-},{"../index":2,"chai":83}],339:[function(require,module,exports){
+},{"../index":2,"chai":73}],318:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 // Copyright 2011 Splunk, Inc.
@@ -81457,7 +77228,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/test_context.js")
-},{"../index":2,"./cmdline":318,"./utils":343,"_process":260,"chai":83}],340:[function(require,module,exports){
+},{"../index":2,"./cmdline":297,"./utils":322,"_process":240,"chai":73}],319:[function(require,module,exports){
 (function (__filename){(function (){
 
 // Copyright 2011 Splunk, Inc.
@@ -81775,7 +77546,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,"/tests/test_http.js")
-},{"../index":2,"chai":83}],341:[function(require,module,exports){
+},{"../index":2,"chai":73}],320:[function(require,module,exports){
 (function (process,__filename){(function (){
 
 // Copyright 2011 Splunk, Inc.
@@ -81863,7 +77634,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,require('_process'),"/tests/test_service.js")
-},{"../index":2,"./cmdline":318,"./service_tests/app":319,"./service_tests/collection":320,"./service_tests/configuration":321,"./service_tests/datamodels":322,"./service_tests/endpoint":323,"./service_tests/entity":324,"./service_tests/firedalerts":325,"./service_tests/indexes":326,"./service_tests/job":327,"./service_tests/namespace":328,"./service_tests/parser":329,"./service_tests/pivot":330,"./service_tests/properties":331,"./service_tests/savedsearch":332,"./service_tests/serverinfo":333,"./service_tests/storagepasswords":334,"./service_tests/typeahead":335,"./service_tests/user":336,"./service_tests/view":337,"_process":260}],342:[function(require,module,exports){
+},{"../index":2,"./cmdline":297,"./service_tests/app":298,"./service_tests/collection":299,"./service_tests/configuration":300,"./service_tests/datamodels":301,"./service_tests/endpoint":302,"./service_tests/entity":303,"./service_tests/firedalerts":304,"./service_tests/indexes":305,"./service_tests/job":306,"./service_tests/namespace":307,"./service_tests/parser":308,"./service_tests/pivot":309,"./service_tests/properties":310,"./service_tests/savedsearch":311,"./service_tests/serverinfo":312,"./service_tests/storagepasswords":313,"./service_tests/typeahead":314,"./service_tests/user":315,"./service_tests/view":316,"_process":240}],321:[function(require,module,exports){
 (function (__filename){(function (){
 
 // Copyright 2011 Splunk, Inc.
@@ -82135,7 +77906,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 }
 
 }).call(this)}).call(this,"/tests/test_utils.js")
-},{"../index":2,"chai":83}],343:[function(require,module,exports){
+},{"../index":2,"chai":73}],322:[function(require,module,exports){
 // Copyright 2011 Splunk, Inc.
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
@@ -82190,7 +77961,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 
 })();
 
-},{"../lib/async":3,"chai":83}]},{},[5]);
+},{"../lib/async":3,"chai":73}]},{},[5]);
 
 
 })();

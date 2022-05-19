@@ -177,6 +177,9 @@ serviceWithBearerToken.get("search/jobs", { count: 2 }, function (err, res) {
 });
 ```
 
+### Modular inputs examples
+Support for modular inputs is removed from Splunk Enterprise SDK for JavaScript and we recommand to use [Splunk Enterprise SDK for Python](https://github.com/splunk/splunk-sdk-python) for the modular inputs. See the [Python SDK modular inputs example](https://github.com/splunk/splunk-app-examples/tree/master/modularinputs/python) and [PythonSDK modular inputs docs](https://dev.splunk.com/enterprise/docs/devtools/python/sdk-python/howtousesplunkpython/howtocreatemodpy) for reference.
+
 ## SDK examples
 
 The Splunk Enterprise SDK for JavaScript contains several server- and client-based examples, which are located in the [Splunk App Example repo](https://github.com/splunk/splunk-app-examples).
@@ -329,7 +332,7 @@ To learn about our branching model, see [Branching Model](https://github.com/spl
 | [REST API Reference Manual](https://docs.splunk.com/Documentation/Splunk/latest/RESTREF/RESTprolog) | Splunk REST API reference documentation |
 | [Splunk>Docs](https://docs.splunk.com/Documentation) | General documentation for the Splunk platform |
 | [GitHub Wiki](https://github.com/splunk/splunk-sdk-javascript/wiki/) | Documentation for this SDK's repository on GitHub |
-| [Splunk JavaScript SDK Examples](https://github.com/splunk/splunk-app-examples) | modular inputs, server- and client-based examples for the Splunk JavaScript SDK |
+| [Splunk JavaScript SDK Examples](https://github.com/splunk/splunk-app-examples) | server- and client-based examples for the Splunk JavaScript SDK |
 
 
 ## Community
