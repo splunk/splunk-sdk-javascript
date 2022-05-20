@@ -27,15 +27,10 @@ function promise_example() {
         })
 }
 
-function abort_method_example() {
-    var callwithabort = function (promise, delay) {
-        return Promise.race([promise, promise.abort(delay)]);
-    } 
-    
-    var job = serviceWithToken.get("apps/local", { count: 5 });
-    
-    callwithabort(job, 10)
-    .then((res) => {
+function promise_example_with_timeout() {
+    var job = serviceWithToken.get("apps/local", { count: 5 }, response_timeout = 10);
+
+    job.then((res) => {
             console.log("Applications:");
             var appList = res.data.entry;
             for(var i = 0; i < appList.length; i++){
@@ -47,5 +42,5 @@ function abort_method_example() {
         })
 }
 
-promise_example();
-// abort_method_example();
+// promise_example();
+promise_example_with_timeout();
