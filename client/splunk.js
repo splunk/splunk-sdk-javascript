@@ -7152,12 +7152,21 @@ module.exports = utils;
 
             // Default path to v2
             var eventsPath = Paths.jobsV2 + "/" + encodeURIComponent(this.name) + "/events";
-            // Splunk version pre-9.0 doesn't support v2 or the 'search' param is included (which is v1 specific)
-            if (this.versionCompare("9.0") < 0 || params.search) {
+            // Splunk version pre-9.0 doesn't support v2
+            // v1(GET), v2(POST)
+            if (this.versionCompare("9.0") < 0) {
                 eventsPath = Paths.jobs + "/" + encodeURIComponent(this.name) + "/events";
+                return this.get(eventsPath, params, function(err, response) {
+                    if (err) {
+                        callback(err);
+                    }
+                    else {
+                        callback(null, response.data, that);
+                    }
+                });
             }
 
-            return this.get(eventsPath, params, function(err, response) {
+            return this.post(eventsPath, params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
@@ -7165,8 +7174,6 @@ module.exports = utils;
                     callback(null, response.data, that);
                 }
             });
-
-
         },
 
         /**
@@ -7261,12 +7268,20 @@ module.exports = utils;
 
             // Default path to v2
             var resultsPreviewPath = Paths.jobsV2 + "/" + encodeURIComponent(this.name) + "/results_preview";
-            // Splunk version pre-9.0 doesn't support v2 or the 'search' param is included (which is v1 specific)
-            if (this.versionCompare("9.0") < 0 || params.search) {
+            // Splunk version pre-9.0 doesn't support v2
+            // v1(GET), v2(POST)
+            if (this.versionCompare("9.0") < 0) {
                 resultsPreviewPath = Paths.jobs + "/" + encodeURIComponent(this.name) + "/results_preview";
+                return this.get(resultsPreviewPath, params, function(err, response) {
+                    if (err) {
+                        callback(err);
+                    }
+                    else {
+                        callback(null, response.data, that);
+                    }
+                });
             }
-
-            return this.get(resultsPreviewPath, params, function(err, response) {
+            return this.post(resultsPreviewPath, params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
@@ -7274,7 +7289,6 @@ module.exports = utils;
                     callback(null, response.data, that);
                 }
             });
-
         },
 
         /**
@@ -7307,12 +7321,20 @@ module.exports = utils;
 
             // Default path to v2
             var resultsPath = Paths.jobsV2 + "/" + encodeURIComponent(this.name) + "/results";
-            // Splunk version pre-9.0 doesn't support v2 or the 'search' param is included (which is v1 specific)
-            if (this.versionCompare("9.0") < 0 || params.search) {
+            // Splunk version pre-9.0 doesn't support v2
+            // v1(GET), v2(POST)
+            if (this.versionCompare("9.0") < 0) {
                 resultsPath = Paths.jobs + "/" + encodeURIComponent(this.name) + "/results";
+                return this.get(resultsPath, params, function(err, response) {
+                    if (err) {
+                        callback(err);
+                    }
+                    else {
+                        callback(null, response.data, that);
+                    }
+                });
             }
-
-            return this.get(resultsPath, params, function(err, response) {
+            return this.post(resultsPath, params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
