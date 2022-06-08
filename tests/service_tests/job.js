@@ -214,7 +214,7 @@ exports.setup = function (svc) {
                 );
             });
                 
-            it("Callback#job events - fallback to v1 with search params", function(done) {
+            it("Callback#job events - post processing search params", function(done) {
                 var sid = getNextId();
                 var service = this.service;
                 var that = this;
@@ -235,49 +235,11 @@ exports.setup = function (svc) {
                             );
                         },
                         function(job, done) {
-                            job.events({search: "| head 1"}, done);
+                            job.events({ search: "| head 1" }, done);
                         },
                         function (results, job, done) {
                             assert.strictEqual(results.post_process_count, 1);
-                            assert.notEqual(job._state.links.alternate.indexOf("/search/jobs/"), -1);
                             assert.strictEqual(results.rows.length, 1);
-                            assert.strictEqual(results.fields.length, results.rows[0].length);
-                            job.cancel(done);
-                        }
-                    ],
-                    function(err) {
-                        assert.ok(!err);
-                        done();
-                    }
-                );
-            });
-    
-            it("Callback#job events - use v2 endpoints: no search params", function(done) {
-                var sid = getNextId();
-                var service = this.service;
-                var that = this;
-        
-                Async.chain([
-                        function(done) {
-                            that.service.jobs().search('search index=_internal | head 2', {id: sid}, done);
-                        },
-                        function(job, done) {
-                            assert.strictEqual(job.sid, sid);
-                            tutils.pollUntil(
-                                job,
-                                function(j) {
-                                    return job.properties()["isDone"];
-                                },
-                                10,
-                                done
-                            );
-                        },
-                        function(job, done) {
-                            job.events({}, done);
-                        },
-                        function (results, job, done) {
-                            assert.isUndefined(results.post_process_count);
-                            assert.strictEqual(results.rows.length, 2);
                             assert.strictEqual(results.fields.length, results.rows[0].length);
                             job.cancel(done);
                         }
