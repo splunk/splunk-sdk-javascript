@@ -27,11 +27,11 @@
     var url = require('url');
     var needle = require('needle');
 
+
     /**
      * Constants
      */
     var DEFAULT_PORT = 6969;
-    var DOC_DIRECTORY = "docs";
     var REFDOC_DIRECTORY = "refs";
     var CLIENT_DIRECTORY = "client";
     var TEST_DIRECTORY = "tests";
@@ -43,6 +43,10 @@
     var DOC_FILE = "index.html";
     var BUILD_CACHE_FILE = ".buildcache";
     var SDK_VERSION = JSON.parse(fs.readFileSync(path.resolve(__dirname, "../package.json")).toString("utf-8")).version;
+    var DOC_DIRECTORY = "docs-" + SDK_VERSION;
+    var DOC_ASSETS_DIRECTORY = "assets";
+    var DOC_DIRECTORY_ASSETS = path.join("bin/docs", DOC_ASSETS_DIRECTORY);
+    var GENERATED_DOC_ASSETS = path.join(DOC_DIRECTORY, DOC_ASSETS_DIRECTORY);
     var IGNORED_MODULES = [
         "../contrib/nodeunit/test_reporter",
         "../contrib/nodeunit/junit_reporter",
@@ -102,7 +106,8 @@
                     headers: {
                         "Content-Length": req.headers["content-length"] || 0,
                         "Content-Type": req.headers["content-type"] || '',
-                        "Authorization": req.headers["authorization"] || ''
+                        "Authorization": req.headers["authorization"] || '',
+                        "User-Agent": "splunk-sdk-javascript/" + SDK_VERSION
                     },
                     followAllRedirects: true,
                     body: body || '',
@@ -444,11 +449,11 @@
     };
 
     var getDependencies = function (entry) {
-        // Latest browserify API
         var bundle = browserify({
-            entries: entry
+            entry: entry,
+            ignore: IGNORED_MODULES,
+            cache: BUILD_CACHE_FILE
         });
-        bundle.ignore(IGNORED_MODULES)
 
         var dependencies = [entry];
         for (var file in bundle.files) {
@@ -462,6 +467,8 @@
 
     var compile = function (entry, path, shouldUglify, watch, exportName) {
         exportName = exportName || "splunkjs";
+
+        // Compile/combine all the files into the package
         var bundle = browserify();
         bundle.add(entry);
         bundle.ignore(IGNORED_MODULES);
@@ -604,11 +611,6 @@
         launchBrowser("tests/tests.browser.html", port);
     };
 
-    var launchBrowserExamples = function (port) {
-        runServer(port);
-        launchBrowser("examples/browser/index.html", port);
-    };
-
     var generateDocs = function (callback) {
         callback = (callback && utils.isFunction(callback)) ? callback : (function () { });
 
@@ -619,15 +621,6 @@
             "lib/async.js",
             "lib/context.js",
             "lib/service.js",
-            "lib/modularinputs/argument.js",
-            "lib/modularinputs/event.js",
-            "lib/modularinputs/eventwriter.js",
-            "lib/modularinputs/inputdefinition.js",
-            "lib/modularinputs/logger.js",
-            "lib/modularinputs/modularinput.js",
-            "lib/modularinputs/scheme.js",
-            "lib/modularinputs/utils.js",
-            "lib/modularinputs/validationdefinition.js"
         ];
 
         var comments = [];
@@ -644,11 +637,12 @@
             }
 
             ensureDirectoryExists(DOC_DIRECTORY);
-            ensureDirectoryExists(path.join(DOC_DIRECTORY, SDK_VERSION));
-            ensureDirectoryExists(path.join(DOC_DIRECTORY, SDK_VERSION, REFDOC_DIRECTORY));
+
+            // copy static assets directory
+            copyDirectoryRecursiveSync(DOC_DIRECTORY_ASSETS, GENERATED_DOC_ASSETS);
 
             for (var name in data) {
-                var htmlPath = path.join(DOC_DIRECTORY, SDK_VERSION, REFDOC_DIRECTORY, name + ".html");
+                var htmlPath = path.join(DOC_DIRECTORY, name + ".html");
                 fs.writeFileSync(htmlPath, data[name]);
             }
 
@@ -723,14 +717,11 @@
 
         var files = args
             .map(arg => {
-                if (arg.indexOf('modularinputs') >= 0) {
-                    return path.join(TEST_DIRECTORY, 'modularinputs', arg.split('/').reverse()[0]);
-                }
-                else if (arg.indexOf('service_tests') >= 0) {
-                    return path.join(TEST_DIRECTORY, 'service_tests', arg.split('/').reverse()[0]);
+                if (arg.indexOf('service_tests') >= 0) {
+                    return path.join(TEST_DIRECTORY, 'service_tests', arg.split('/')[1] + ".js");
                 }
                 else {
-                    return path.join(TEST_DIRECTORY, arg.split('/').reverse()[0]);
+                    return path.join(TEST_DIRECTORY, TEST_PREFIX + arg + ".js");
                 }
             }).filter(file => fs.existsSync(file));
 
@@ -801,7 +792,7 @@
 
     program
         .command('runserver [port]')
-        .description('Run a local server to serve tests and examples.')
+        .description('Run a local server to serve tests.')
         .action(runServer);
 
     program
@@ -831,11 +822,6 @@
         .command('tests-browser [port]')
         .description('Launch the browser test suite.')
         .action(launchBrowserTests);
-
-    program
-        .command('examples [port]')
-        .description('Launch the browser examples index page.')
-        .action(launchBrowserExamples);
 
     program
         .command('hint')

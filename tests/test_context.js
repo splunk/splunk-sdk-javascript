@@ -1075,7 +1075,7 @@ exports.setup = function (svc) {
 // Run the individual test suite
 if (module.id === __filename && module.parent.id.includes('mocha')) {
 
-    var options = require('../examples/node/cmdline');
+    var options = require('./cmdline');
     var splunkjs = require('../index');
 
     var cmdline = new options.create().parse(process.argv);
