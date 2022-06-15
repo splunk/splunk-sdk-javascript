@@ -16096,12 +16096,10 @@ var possibleNames = [
 	'Uint8ClampedArray'
 ];
 
-var g = typeof globalThis === 'undefined' ? global : globalThis;
-
 module.exports = function availableTypedArrays() {
 	var out = [];
 	for (var i = 0; i < possibleNames.length; i++) {
-		if (typeof g[possibleNames[i]] === 'function') {
+		if (typeof global[possibleNames[i]] === 'function') {
 			out[out.length] = possibleNames[i];
 		}
 	}
@@ -40576,36 +40574,53 @@ utils.intFromLE = intFromLE;
 arguments[4][27][0].apply(exports,arguments)
 },{"buffer":37,"dup":27}],146:[function(require,module,exports){
 module.exports={
-  "name": "elliptic",
-  "version": "6.5.4",
-  "description": "EC cryptography",
-  "main": "lib/elliptic.js",
-  "files": [
-    "lib"
+  "_args": [
+    [
+      "elliptic@6.5.4",
+      "/Users/tpavlik/src/enterprise/semantic-versioning/splunk-sdk-javascript"
+    ]
   ],
-  "scripts": {
-    "lint": "eslint lib test",
-    "lint:fix": "npm run lint -- --fix",
-    "unit": "istanbul test _mocha --reporter=spec test/index.js",
-    "test": "npm run lint && npm run unit",
-    "version": "grunt dist && git add dist/"
+  "_development": true,
+  "_from": "elliptic@6.5.4",
+  "_id": "elliptic@6.5.4",
+  "_inBundle": false,
+  "_integrity": "sha512-iLhC6ULemrljPZb+QutR5TQGB+pdW6KGD5RSegS+8sorOZT+rdQFbsQFJgvN3eRqNALqJer4oQ16YvJHlU8hzQ==",
+  "_location": "/elliptic",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "version",
+    "registry": true,
+    "raw": "elliptic@6.5.4",
+    "name": "elliptic",
+    "escapedName": "elliptic",
+    "rawSpec": "6.5.4",
+    "saveSpec": null,
+    "fetchSpec": "6.5.4"
   },
-  "repository": {
-    "type": "git",
-    "url": "git@github.com:indutny/elliptic"
-  },
-  "keywords": [
-    "EC",
-    "Elliptic",
-    "curve",
-    "Cryptography"
+  "_requiredBy": [
+    "/browserify-sign",
+    "/create-ecdh"
   ],
-  "author": "Fedor Indutny <fedor@indutny.com>",
-  "license": "MIT",
+  "_resolved": "https://registry.npmjs.org/elliptic/-/elliptic-6.5.4.tgz",
+  "_spec": "6.5.4",
+  "_where": "/Users/tpavlik/src/enterprise/semantic-versioning/splunk-sdk-javascript",
+  "author": {
+    "name": "Fedor Indutny",
+    "email": "fedor@indutny.com"
+  },
   "bugs": {
     "url": "https://github.com/indutny/elliptic/issues"
   },
-  "homepage": "https://github.com/indutny/elliptic",
+  "dependencies": {
+    "bn.js": "^4.11.9",
+    "brorand": "^1.1.0",
+    "hash.js": "^1.0.0",
+    "hmac-drbg": "^1.0.1",
+    "inherits": "^2.0.4",
+    "minimalistic-assert": "^1.0.1",
+    "minimalistic-crypto-utils": "^1.0.1"
+  },
+  "description": "EC cryptography",
   "devDependencies": {
     "brfs": "^2.0.2",
     "coveralls": "^3.1.0",
@@ -40621,15 +40636,31 @@ module.exports={
     "istanbul": "^0.4.5",
     "mocha": "^8.0.1"
   },
-  "dependencies": {
-    "bn.js": "^4.11.9",
-    "brorand": "^1.1.0",
-    "hash.js": "^1.0.0",
-    "hmac-drbg": "^1.0.1",
-    "inherits": "^2.0.4",
-    "minimalistic-assert": "^1.0.1",
-    "minimalistic-crypto-utils": "^1.0.1"
-  }
+  "files": [
+    "lib"
+  ],
+  "homepage": "https://github.com/indutny/elliptic",
+  "keywords": [
+    "EC",
+    "Elliptic",
+    "curve",
+    "Cryptography"
+  ],
+  "license": "MIT",
+  "main": "lib/elliptic.js",
+  "name": "elliptic",
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/indutny/elliptic.git"
+  },
+  "scripts": {
+    "lint": "eslint lib test",
+    "lint:fix": "npm run lint -- --fix",
+    "test": "npm run lint && npm run unit",
+    "unit": "istanbul test _mocha --reporter=spec test/index.js",
+    "version": "grunt dist && git add dist/"
+  },
+  "version": "6.5.4"
 }
 
 },{}],147:[function(require,module,exports){
@@ -40637,7 +40668,7 @@ module.exports={
 
 var GetIntrinsic = require('get-intrinsic');
 
-var $gOPD = GetIntrinsic('%Object.getOwnPropertyDescriptor%', true);
+var $gOPD = GetIntrinsic('%Object.getOwnPropertyDescriptor%');
 if ($gOPD) {
 	try {
 		$gOPD([], 'length');
@@ -46959,7 +46990,6 @@ var callBound = require('call-bind/callBound');
 var $toString = callBound('Object.prototype.toString');
 var hasToStringTag = require('has-tostringtag/shams')();
 
-var g = typeof globalThis === 'undefined' ? global : globalThis;
 var typedArrays = availableTypedArrays();
 
 var $indexOf = callBound('Array.prototype.indexOf', true) || function indexOf(array, value) {
@@ -46976,7 +47006,7 @@ var gOPD = require('es-abstract/helpers/getOwnPropertyDescriptor');
 var getPrototypeOf = Object.getPrototypeOf; // require('getprototypeof');
 if (hasToStringTag && gOPD && getPrototypeOf) {
 	forEach(typedArrays, function (typedArray) {
-		var arr = new g[typedArray]();
+		var arr = new global[typedArray]();
 		if (Symbol.toStringTag in arr) {
 			var proto = getPrototypeOf(arr);
 			var descriptor = gOPD(proto, Symbol.toStringTag);
@@ -51356,9 +51386,67 @@ exports.build = stringify;
 }).call(this)}).call(this,require("buffer").Buffer)
 },{"buffer":69,"stream":280,"string_decoder":285}],213:[function(require,module,exports){
 module.exports={
-  "name": "needle",
-  "version": "3.0.0",
+  "_args": [
+    [
+      "needle@3.0.0",
+      "/Users/tpavlik/src/enterprise/semantic-versioning/splunk-sdk-javascript"
+    ]
+  ],
+  "_from": "needle@3.0.0",
+  "_id": "needle@3.0.0",
+  "_inBundle": false,
+  "_integrity": "sha512-eGr0qnfHxAjr+Eptl1zr2lgUQUPC1SZfTkg2kFi0kxr1ChJonHUVYobkug8siBKMlyUVVp56MSkp6CSeXH/jgw==",
+  "_location": "/needle",
+  "_phantomChildren": {},
+  "_requested": {
+    "type": "version",
+    "registry": true,
+    "raw": "needle@3.0.0",
+    "name": "needle",
+    "escapedName": "needle",
+    "rawSpec": "3.0.0",
+    "saveSpec": null,
+    "fetchSpec": "3.0.0"
+  },
+  "_requiredBy": [
+    "/"
+  ],
+  "_resolved": "https://registry.npmjs.org/needle/-/needle-3.0.0.tgz",
+  "_spec": "3.0.0",
+  "_where": "/Users/tpavlik/src/enterprise/semantic-versioning/splunk-sdk-javascript",
+  "author": {
+    "name": "Tomás Pollak",
+    "email": "tomas@forkhq.com"
+  },
+  "bin": {
+    "needle": "bin/needle"
+  },
+  "bugs": {
+    "url": "https://github.com/tomas/needle/issues"
+  },
+  "dependencies": {
+    "debug": "^3.2.6",
+    "iconv-lite": "^0.4.4",
+    "sax": "^1.2.4"
+  },
   "description": "The leanest and most handsome HTTP client in the Nodelands.",
+  "devDependencies": {
+    "JSONStream": "^1.3.5",
+    "jschardet": "^1.6.0",
+    "mocha": "^5.2.0",
+    "pump": "^3.0.0",
+    "q": "^1.5.1",
+    "should": "^13.2.3",
+    "sinon": "^2.3.0",
+    "xml2js": "^0.4.19"
+  },
+  "directories": {
+    "lib": "./lib"
+  },
+  "engines": {
+    "node": ">= 4.4.x"
+  },
+  "homepage": "https://github.com/tomas/needle#readme",
   "keywords": [
     "http",
     "https",
@@ -51375,6 +51463,16 @@ module.exports={
     "cookie",
     "redirect"
   ],
+  "license": "MIT",
+  "main": "./lib/needle",
+  "name": "needle",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tomas/needle.git"
+  },
+  "scripts": {
+    "test": "mocha test"
+  },
   "tags": [
     "http",
     "https",
@@ -51391,40 +51489,7 @@ module.exports={
     "cookie",
     "redirect"
   ],
-  "author": "Tomás Pollak <tomas@forkhq.com>",
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/tomas/needle.git"
-  },
-  "dependencies": {
-    "debug": "^3.2.6",
-    "iconv-lite": "^0.4.4",
-    "sax": "^1.2.4"
-  },
-  "devDependencies": {
-    "JSONStream": "^1.3.5",
-    "jschardet": "^1.6.0",
-    "mocha": "^5.2.0",
-    "pump": "^3.0.0",
-    "q": "^1.5.1",
-    "should": "^13.2.3",
-    "sinon": "^2.3.0",
-    "xml2js": "^0.4.19"
-  },
-  "scripts": {
-    "test": "mocha test"
-  },
-  "directories": {
-    "lib": "./lib"
-  },
-  "main": "./lib/needle",
-  "bin": {
-    "needle": "./bin/needle"
-  },
-  "license": "MIT",
-  "engines": {
-    "node": ">= 4.4.x"
-  }
+  "version": "3.0.0"
 }
 
 },{}],214:[function(require,module,exports){
@@ -67798,7 +67863,6 @@ var callBound = require('call-bind/callBound');
 var $toString = callBound('Object.prototype.toString');
 var hasToStringTag = require('has-tostringtag/shams')();
 
-var g = typeof globalThis === 'undefined' ? global : globalThis;
 var typedArrays = availableTypedArrays();
 
 var $slice = callBound('String.prototype.slice');
@@ -67807,8 +67871,8 @@ var gOPD = require('es-abstract/helpers/getOwnPropertyDescriptor');
 var getPrototypeOf = Object.getPrototypeOf; // require('getprototypeof');
 if (hasToStringTag && gOPD && getPrototypeOf) {
 	forEach(typedArrays, function (typedArray) {
-		if (typeof g[typedArray] === 'function') {
-			var arr = new g[typedArray]();
+		if (typeof global[typedArray] === 'function') {
+			var arr = new global[typedArray]();
 			if (Symbol.toStringTag in arr) {
 				var proto = getPrototypeOf(arr);
 				var descriptor = gOPD(proto, Symbol.toStringTag);
