@@ -154,10 +154,8 @@ exports.setup = function (svc) {
                 );
 
                 service.get("search/jobs", { count: 1 }, function (err, res) {
-                    assert.strictEqual(res.data.paging.offset, 0);
-                    assert.ok(res.data.entry.length <= res.data.paging.total);
-                    assert.strictEqual(res.data.entry.length, 1);
-                    assert.ok(res.data.entry[0].content.sid);
+                    assert.ok(err);
+                    assert.strictEqual(err.status, 401);
                     done();
                 });
             });
@@ -286,8 +284,8 @@ exports.setup = function (svc) {
                 );
 
                 service.post("search/jobs", { search: "search index=_internal | head 1" }, function (err, res) {
-                    var sid = res.data.sid;
-                    assert.ok(sid);
+                    assert.ok(err);
+                    assert.strictEqual(err.status, 401);
                     done();
                 });
             });
@@ -417,7 +415,7 @@ exports.setup = function (svc) {
 
                 service.del("search/jobs/NO_SUCH_SID", {}, function (err, res) {
                     assert.ok(err);
-                    assert.strictEqual(err.status, 404);
+                    assert.strictEqual(err.status, 401);
                     done();
                 });
             });
@@ -583,7 +581,8 @@ exports.setup = function (svc) {
                 var post = null;
                 var body = null;
                 service.request("search/jobs", "GET", get, post, body, { "X-TestHeader": 1 }, function (err, res) {
-                    assert.ok(res);
+                    assert.ok(err);
+                    assert.strictEqual(err.status, 401);
                     done();
                 });
             });
@@ -789,7 +788,7 @@ exports.setup = function (svc) {
         }),
 
         describe("Cookie Tests", function (done) {
-            before(function () {
+            before(function (done) {
                 this.service = svc;
                 this.skip = false;
                 var that = this;
@@ -801,6 +800,7 @@ exports.setup = function (svc) {
                         that.skip = true;
                         splunkjs.Logger.log("Skipping cookie tests...");
                     }
+                    done();
                 });
             });
 
@@ -849,8 +849,8 @@ exports.setup = function (svc) {
 
                 service.login(function (err, success) {
                     // Check that cookies were saved
-                    assert.ok(!utils.isEmpty(that.service.http._cookieStore));
-                    assert.notStrictEqual(that.service.http._getCookieString(), '');
+                    assert.ok(!utils.isEmpty(service.http._cookieStore));
+                    assert.notStrictEqual(service.http._getCookieString(), '');
                     done();
                 });
             });
@@ -1075,7 +1075,7 @@ exports.setup = function (svc) {
 // Run the individual test suite
 if (module.id === __filename && module.parent.id.includes('mocha')) {
 
-    var options = require('./cmdline');
+    var options = require('../examples/node/cmdline');
     var splunkjs = require('../index');
 
     var cmdline = new options.create().parse(process.argv);
