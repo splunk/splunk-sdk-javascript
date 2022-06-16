@@ -25,7 +25,7 @@ describe('Context tests', function() {
     })
     describe('General Context Test', function() {  
         before(function(){
-            console.log(svc);
+            // console.log(svc);
             this.service = svc;
         })
 
@@ -152,9 +152,11 @@ describe('Context tests', function() {
                 }
             );
 
-            service.get("search/jobs", {count: 1}, function(err, res) {
-                assert.ok(err);
-                assert.strictEqual(err.status, 401);
+            service.get("search/jobs", { count: 1 }, function (err, res) {
+                assert.strictEqual(res.data.paging.offset, 0);
+                assert.ok(res.data.entry.length <= res.data.paging.total);
+                assert.strictEqual(res.data.entry.length, 1);
+                assert.ok(res.data.entry[0].content.sid);
                 done();
             });
         });
@@ -282,9 +284,9 @@ describe('Context tests', function() {
                 }
             );
 
-            service.post("search/jobs", {search: "search index=_internal | head 1"}, function(err, res) {
-                assert.ok(err);
-                assert.strictEqual(err.status, 401);
+            service.post("search/jobs", { search: "search index=_internal | head 1" }, function (err, res) {
+                var sid = res.data.sid;
+                assert.ok(sid);
                 done();
             });
         });
@@ -412,9 +414,9 @@ describe('Context tests', function() {
                 }
             );
 
-            service.del("search/jobs/NO_SUCH_SID", {}, function(err, res) {
+            service.del("search/jobs/NO_SUCH_SID", {}, function (err, res) {
                 assert.ok(err);
-                assert.strictEqual(err.status, 401);
+                assert.strictEqual(err.status, 404);
                 done();
             });
         });
@@ -579,9 +581,8 @@ describe('Context tests', function() {
             var get = {count: 1};
             var post = null;
             var body = null;
-            service.request("search/jobs", "GET", get, post, body, {"X-TestHeader": 1}, function(err, res) {
-                assert.ok(err);
-                assert.strictEqual(err.status, 401);
+            service.request("search/jobs", "GET", get, post, body, { "X-TestHeader": 1 }, function (err, res) {
+                assert.ok(res);
                 done();
             });
         });
@@ -799,7 +800,6 @@ describe('Context tests', function() {
                     that.skip = true;
                     splunkjs.Logger.log("Skipping cookie tests...");
                 }
-                done();
             });
         })
 
@@ -827,7 +827,7 @@ describe('Context tests', function() {
             done();
         });
 
-        it("login and store cookie", function(done){
+        it("login and store cookie", function (done) {
             if(this.skip){
                 done();
                 return;

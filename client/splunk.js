@@ -726,6 +726,7 @@ var __exportName = 'splunkjs';
             this.login            = utils.bind(this, this.login);
             this._shouldAutoLogin = utils.bind(this, this._shouldAutoLogin);
             this._requestWrapper  = utils.bind(this, this._requestWrapper);
+            this.getVersion       = utils.bind(this, this.getVersion);
         },
 
         /**
@@ -889,6 +890,41 @@ var __exportName = 'splunkjs';
         },
 
         /**
+         * Get Splunk version during login phase.
+         *
+         * @param {Function} callback The function to call when login has finished: `()`.
+         *
+         * @method splunkjs.Context
+         * @private
+         */
+        getVersion: function (callback) {
+            var that = this;
+            var url = this.paths.info;
+
+            callback = callback || function() {};
+
+            var wrappedCallback = function(err, response) {
+                var hasVersion = !!(!err && response.data && response.data.generator.version);
+
+                if (err || !hasVersion) {
+                    callback(err || "No version found", false);
+                }
+                else {
+                    that.version = response.data.generator.version;
+                    that.http.version = that.version;
+                    callback(null, true);
+                }
+            };
+            return this.http.get(
+                this.urlify(url),
+                this._headers(),
+                "",
+                this.timeout,
+                wrappedCallback
+            );
+        },
+
+        /**
          * Authenticates and logs in to a Splunk instance, then stores the
          * resulting session key.
          *
@@ -907,6 +943,7 @@ var __exportName = 'splunkjs';
             };
 
             callback = callback || function() {};
+
             var wrappedCallback = function(err, response) {
                 // Let's make sure that not only did the request succeed, but
                 // we actually got a non-empty session key back.
@@ -917,10 +954,9 @@ var __exportName = 'splunkjs';
                 }
                 else {
                     that.sessionKey = response.data.sessionKey;
-                    callback(null, true);
+                    that.getVersion(callback);
                 }
             };
-
             return this.http.post(
                 this.urlify(url),
                 this._headers(),
@@ -929,7 +965,6 @@ var __exportName = 'splunkjs';
                 wrappedCallback
             );
         },
-
 
         /**
          * Logs the session out resulting in the removal of all cookies and the
@@ -1076,7 +1111,7 @@ var __exportName = 'splunkjs';
          *
          * @method splunkjs.Context
          */
-        versionCompare: function(otherVersion) {
+        versionCompare: function (otherVersion) {
             var thisVersion = this.version;
             if (thisVersion === "default") {
                 thisVersion = "5.0";
@@ -1920,6 +1955,7 @@ var __exportName = 'splunkjs';
         info: "/services/server/info",
         inputs: null,
         jobs: "search/jobs",
+        jobsV2: "search/v2/jobs",
         licenseGroups: "licenser/groups",
         licenseMessages: "licenser/messages",
         licensePools: "licenser/pools",
@@ -1931,6 +1967,7 @@ var __exportName = 'splunkjs';
         messages: "messages",
         passwords: "admin/passwords",
         parser: "search/parser",
+        parserV2: "search/v2/parser",
         pivot: "datamodel/pivot",
         properties: "properties",
         roles: "authorization/roles",
@@ -2617,7 +2654,7 @@ var __exportName = 'splunkjs';
          * @method splunkjs.Service
          * @see splunkjs.Service.Jobs
          */
-        jobs: function(namespace) {
+        jobs: function (namespace) {
             return new root.Jobs(this, namespace);  
         },
         
@@ -2872,14 +2909,28 @@ var __exportName = 'splunkjs';
             
             params.q = query;
             
-            return this.get(Paths.parser, params, function(err, response) {
+            // Pre-9.0 uses GET and v1 endpoint
+            if (this.versionCompare("9.0") < 0) {
+                return this.get(Paths.parser, params, function(err, response) {
+                    if (err) {
+                        callback(err);
+                    } 
+                    else {
+                        callback(null, response.data);
+                    }
+                });
+            }
+
+            // Post-9.0 uses POST and v2 endpoint
+            return this.post(Paths.parserV2, params, function(err, response) {
                 if (err) {
                     callback(err);
                 } 
-                else {                    
+                else {
                     callback(null, response.data);
                 }
             });
+
         },
         
         /**
@@ -3023,6 +3074,91 @@ var __exportName = 'splunkjs';
         },
 
         /**
+         * Create the URL for the get and post methods
+         * This is to allow v1 fallback if the service was instantiated with v2+ and a relpath v1 was provided
+         *
+         * @example
+         *      // Parameters
+         *      v2 example:
+         *          qualifiedPath = "/servicesNS/admin/foo/search/v2/jobs/id5_1649796951725"
+         *          qualifiedPath = "/services/search/v2/jobs/id5_1649796951725"
+         *          relpath = "search/v2/jobs/id5_1649796951725/events"
+         *          relpath = "events"
+         * 
+         *      // Step 1:
+         *      Specifically for splunkjs.Service.Job method, the service endpoint may be provided
+         *      Retrieve the service prefix and suffix
+         *          servicesNS:
+         *              - servicePrefix = "/servicesNS/admin/foo"
+         *              - serviceSuffix = "foo/v2/jobs/id5_1649796951725"
+         *          services:
+         *              - servicePrefix = "/services"
+         *              - serviceSuffix = "search/v2/jobs/id5_1649796951725"
+         * 
+         *      // Step 2:
+         *      Retrieve Service API version
+         *      If version can't be detected, default to 1 (v1)
+         *          qualifiedPathVersion = 2
+         * 
+         *      // Step 3:
+         *      Retrieve relpath version
+         *      If version can't be detected, default to 1 (v1)
+         *          relpath = "search/v2/jobs/id5_1649796951725/events"
+         *            => relPathVersion = 2
+         * 
+         *      Check if relpath is a one segment relative path, if so, set to -1
+         *          relpath = "events"
+         *            => relPathVersion = -1
+         * 
+         *      // Step 4:
+         *      Create the URL based on set criteria
+         *          url = "/servicesNS/admin/foo/search/v2/jobs/id5_1649796951725/events"
+         *          url = "/services/search/v2/jobs/id5_1649796951725/events"
+         * 
+         * @param {String} qualifiedPath A fully-qualified relative endpoint path (for example, "/services/search/jobs").
+         * @param {String} relpath A relative path to append to the endpoint path.
+         * 
+         * @method splunkjs.Service.Endpoint
+         */
+        createUrl: function (qualifiedPath, relpath) {
+            var url = qualifiedPath,
+                servicePrefix = qualifiedPath.replace(/(\/services|\/servicesNS\/[^/]+\/[^/]+)\/(.*)/, "$1"),
+                serviceSuffix = qualifiedPath.replace(/(\/services|\/servicesNS\/[^/]+\/[^/]+)\/(.*)/, "$2"),
+                qualifiedPathVersionMatch = qualifiedPath.match(/\/(?:servicesNS\/[^/]+\/[^/]+|services)\/[^/]+\/v(\d+)\//),
+                qualifiedPathVersionMatch = qualifiedPathVersionMatch ? qualifiedPathVersionMatch.length : 0,
+                qualifiedPathVersion = qualifiedPathVersionMatch || 1,
+                relPathVersionMatch = relpath.match(/^[^/]+\/v(\d+)\//),
+                relPathVersionMatch = relPathVersionMatch ? relPathVersionMatch.length : 0,
+                relPathVersion = relPathVersionMatch || 1;
+            
+            if (relpath.indexOf('/') == -1) {
+                relPathVersion = -1;
+            }
+
+            /**
+             * Use service v1 and relpath v1 endpoints
+             * Use service v2+ and relpath v1 endpoints
+             * Use service v2+ and relpath v2+ endpoints
+            */
+            if (relPathVersion >= 1) {
+                url = servicePrefix + "/" + relpath;
+            /** 
+             * Use service v1 and one segment relative path
+             * Use service v2+ and one segment relative path
+            */
+            } else if (qualifiedPathVersion >= 1 && relPathVersion == -1) {
+                url = qualifiedPath + "/" + relpath;
+            /** 
+             * Catchall: use as instantiated by the service. 
+            */
+            } else {
+                url = qualifiedPath + "/" + relpath;
+            }
+
+            return url;
+        },
+
+        /**
          * Performs a relative GET request on an endpoint's path,
          * combined with the parameters and a relative path if specified.
          *
@@ -3038,14 +3174,8 @@ var __exportName = 'splunkjs';
          *
          * @method splunkjs.Service.Endpoint
          */
-        get: function(relpath, params, callback, isAsync) {
-            var url = this.qualifiedPath;
-
-            // If we have a relative path, we will append it with a preceding
-            // slash.
-            if (relpath) {
-                url = url + "/" + relpath;    
-            }
+        get: function (relpath, params, callback, isAsync) {
+            var url = this.createUrl(this.qualifiedPath, relpath);
 
             return this.service.get(
                 url,
@@ -3071,14 +3201,8 @@ var __exportName = 'splunkjs';
          *
          * @method splunkjs.Service.Endpoint
          */
-        post: function(relpath, params, callback) {
-            var url = this.qualifiedPath;
-
-            // If we have a relative path, we will append it with a preceding
-            // slash.
-            if (relpath) {
-                url = url + "/" + relpath;    
-            }
+        post: function (relpath, params, callback) {
+            var url = this.createUrl(this.qualifiedPath, relpath);
 
             return this.service.post(
                 url,
@@ -3146,7 +3270,7 @@ var __exportName = 'splunkjs';
          *
          * @method splunkjs.Service.Resource
          */
-        init: function(service, path, namespace) {
+        init: function (service, path, namespace) {
             var fullpath = service.fullpath(path, namespace);
             
             this._super(service, fullpath);
@@ -3575,7 +3699,7 @@ var __exportName = 'splunkjs';
          *
          * @method splunkjs.Service.Collection
          */     
-        init: function(service, path, namespace) {
+        init: function (service, path, namespace) {
             this._super(service, path, namespace);
             
             // We perform the bindings so that every function works 
@@ -5562,8 +5686,13 @@ var __exportName = 'splunkjs';
          *
          * @method splunkjs.Service.Job
          */
-        path: function() {
-            return Paths.jobs + "/" + encodeURIComponent(this.name);
+        path: function () {
+            // Pre-9.0 uses v1 endpoint
+            if (this.versionCompare("9.0") < 0) {
+                return Paths.jobs + "/" + encodeURIComponent(this.name);
+            }
+            // Post-9.0 uses v2 endpoint
+            return Paths.jobsV2 + "/" + encodeURIComponent(this.name);
         },
         
         /**
@@ -5580,7 +5709,11 @@ var __exportName = 'splunkjs';
          *
          * @method splunkjs.Service.Job
          */ 
-        init: function(service, sid, namespace) {
+        init: function (service, sid, namespace) {
+            // Passing the service version and versionCompare to this.path() before instantiating splunkjs.Service.Entity.
+            this.version = service.version;
+            this.versionCompare = service.versionCompare;
+
             this.name = sid;
             this._super(service, this.path(), namespace);
             this.sid = sid;
@@ -5619,7 +5752,7 @@ var __exportName = 'splunkjs';
          * @endpoint search/jobs/{search_id}/control
          * @method splunkjs.Service.Job
          */
-        cancel: function(callback) {
+        cancel: function (callback) {
             var req = this.post("control", {action: "cancel"}, callback);
             
             return req;
@@ -5699,7 +5832,24 @@ var __exportName = 'splunkjs';
             params.output_mode = params.output_mode || "json_rows"; 
             
             var that = this;
-            return this.get("events", params, function(err, response) {
+
+            // Default path to v2
+            var eventsPath = Paths.jobsV2 + "/" + encodeURIComponent(this.name) + "/events";
+            // Splunk version pre-9.0 doesn't support v2
+            // v1(GET), v2(POST)
+            if (this.versionCompare("9.0") < 0) {
+                eventsPath = Paths.jobs + "/" + encodeURIComponent(this.name) + "/events";
+                return this.get(eventsPath, params, function(err, response) {
+                    if (err) {
+                        callback(err);
+                    }
+                    else {
+                        callback(null, response.data, that);
+                    }
+                });
+            }
+
+            return this.post(eventsPath, params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
@@ -5798,7 +5948,23 @@ var __exportName = 'splunkjs';
             params.output_mode = params.output_mode || "json_rows"; 
             
             var that = this;
-            return this.get("results_preview", params, function(err, response) {
+
+            // Default path to v2
+            var resultsPreviewPath = Paths.jobsV2 + "/" + encodeURIComponent(this.name) + "/results_preview";
+            // Splunk version pre-9.0 doesn't support v2
+            // v1(GET), v2(POST)
+            if (this.versionCompare("9.0") < 0) {
+                resultsPreviewPath = Paths.jobs + "/" + encodeURIComponent(this.name) + "/results_preview";
+                return this.get(resultsPreviewPath, params, function(err, response) {
+                    if (err) {
+                        callback(err);
+                    }
+                    else {
+                        callback(null, response.data, that);
+                    }
+                });
+            }
+            return this.post(resultsPreviewPath, params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
@@ -5835,7 +6001,23 @@ var __exportName = 'splunkjs';
             params.output_mode = params.output_mode || "json_rows";
             
             var that = this;
-            return this.get("results", params, function(err, response) {
+
+            // Default path to v2
+            var resultsPath = Paths.jobsV2 + "/" + encodeURIComponent(this.name) + "/results";
+            // Splunk version pre-9.0 doesn't support v2
+            // v1(GET), v2(POST)
+            if (this.versionCompare("9.0") < 0) {
+                resultsPath = Paths.jobs + "/" + encodeURIComponent(this.name) + "/results";
+                return this.get(resultsPath, params, function(err, response) {
+                    if (err) {
+                        callback(err);
+                    }
+                    else {
+                        callback(null, response.data, that);
+                    }
+                });
+            }
+            return this.post(resultsPath, params, function(err, response) {
                 if (err) {
                     callback(err);
                 }
@@ -6163,10 +6345,15 @@ var __exportName = 'splunkjs';
          *
          * @method splunkjs.Service.Jobs
          */
-        path: function() {
-            return Paths.jobs;
+        path: function () {
+            // Pre-9.0 uses v1 endpoint
+            if (this.versionCompare("9.0") < 0) {
+                return Paths.jobs;
+            }
+            // Post-9.0 uses v2 endpoint
+            return Paths.jobsV2;
         },
-        
+
         /**
          * Creates a local instance of a job.
          *
@@ -6194,12 +6381,16 @@ var __exportName = 'splunkjs';
          *
          * @method splunkjs.Service.Jobs
          */  
-        init: function(service, namespace) {
-            this._super(service, this.path(), namespace);
+        init: function (service, namespace) {
+            // Passing the service version and versionCompare to this.path() before instantiating splunkjs.Service.Collection.
+            this.version = service.version;
+            this.versionCompare = service.versionCompare;
 
+            this._super(service, this.path(), namespace);
             // We perform the bindings so that every function works 
             // properly when it is passed as a callback.
-            this.create     = utils.bind(this, this.create);
+            this.create         = utils.bind(this, this.create);
+            
         },
 
         /**
@@ -29754,7 +29945,7 @@ module.exports={
   "_args": [
     [
       "elliptic@6.5.4",
-      "/Users/abhis/Documents/GitHub/splunk-sdk-javascript"
+      "/Users/tpavlik/src/enterprise/semantic-versioning/splunk-sdk-javascript"
     ]
   ],
   "_development": true,
@@ -29780,7 +29971,7 @@ module.exports={
   ],
   "_resolved": "https://registry.npmjs.org/elliptic/-/elliptic-6.5.4.tgz",
   "_spec": "6.5.4",
-  "_where": "/Users/abhis/Documents/GitHub/splunk-sdk-javascript",
+  "_where": "/Users/tpavlik/src/enterprise/semantic-versioning/splunk-sdk-javascript",
   "author": {
     "name": "Fedor Indutny",
     "email": "fedor@indutny.com"
@@ -39664,7 +39855,7 @@ module.exports={
   "_args": [
     [
       "needle@3.0.0",
-      "/Users/abhis/Documents/GitHub/splunk-sdk-javascript"
+      "/Users/tpavlik/src/enterprise/semantic-versioning/splunk-sdk-javascript"
     ]
   ],
   "_from": "needle@3.0.0",
@@ -39688,13 +39879,13 @@ module.exports={
   ],
   "_resolved": "https://registry.npmjs.org/needle/-/needle-3.0.0.tgz",
   "_spec": "3.0.0",
-  "_where": "/Users/abhis/Documents/GitHub/splunk-sdk-javascript",
+  "_where": "/Users/tpavlik/src/enterprise/semantic-versioning/splunk-sdk-javascript",
   "author": {
     "name": "Tomás Pollak",
     "email": "tomas@forkhq.com"
   },
   "bin": {
-    "needle": "./bin/needle"
+    "needle": "bin/needle"
   },
   "bugs": {
     "url": "https://github.com/tomas/needle/issues"

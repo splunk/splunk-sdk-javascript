@@ -19,36 +19,67 @@ exports.setup = function (svc) {
                 done();
             });
 
-            it("Callback#Create+abort job", function (done) {
-                var service = this.service;
-                Async.chain([
-                    function (done) {
-                        var app_name = path.join(process.env.SPLUNK_HOME, ('/etc/apps/sdkappcollection/build/sleep_command.tar'));
-                        // Fix path on Windows if $SPLUNK_HOME contains a space (ex: C:/Program%20Files/Splunk)
-                        app_name = app_name.replace("%20", " ");
-                        // var app_name = "sleep_command";
-                        service.post("apps/local", { update: 1, name: app_name, filename: true }, done);
-                    },
-                    function (done) {
-                        var sid = getNextId();
-                        var options = { id: sid };
-                        var jobs = service.jobs();
-                        var req = jobs.oneshotSearch('search index=_internal | head 1 | sleep 10', options, function (err, job) {
-                            assert.ok(err);
-                            assert.ok(!job);
-                            assert.strictEqual(err.error, "abort");
-                        });
+            // Disabling the test for now because the apps/appinstall endpoint have been deprecated from Splunk 8.2
+            // it("Callback#Create+abort job", function (done) {
+            //     var service = this.service;
+            //     Async.chain([
+            //         function (done) {
+            //             var app_name = path.join(process.env.SPLUNK_HOME, ('/etc/apps/sdkappcollection/build/sleep_command.tar'));
+            //             // Fix path on Windows if $SPLUNK_HOME contains a space (ex: C:/Program%20Files/Splunk)
+            //             app_name = app_name.replace("%20", " ");
+            //             // var app_name = "sleep_command";
+            //             service.post("apps/local", { update: 1, name: app_name, filename: true }, done);
+            //         },
+            //         function (done) {
+            //             var sid = getNextId();
+            //             var options = { id: sid };
+            //             var jobs = service.jobs();
+            //             var req = jobs.oneshotSearch('search index=_internal | head 1 | sleep 10', options, function (err, job) {
+            //                 assert.ok(err);
+            //                 assert.ok(!job);
+            //                 assert.strictEqual(err.error, "abort");
+            //             });
 
-                        Async.sleep(1000, function () {
-                            req.abort();
-                        });
+            //             Async.sleep(1000, function () {
+            //                 req.abort();
+            //             });
+            //         }
+            //     ],
+            //         function (err) {
+            //             assert.ok(!err);
+            //             done();
+            //         });
+            //     done();
+            // });
+
+            it("Job Create Urls validation", function () {
+                var testData = {
+                    "v1_1": {
+                        "qualifiedPath": "/servicesNS/admin/foo/search/jobs/id5_1649796951725",
+                        "relpath": "search/jobs/id5_1649796951725/events",
+                        "expected": "/servicesNS/admin/foo/search/jobs/id5_1649796951725/events"
+                    },
+                    "v1_2": {
+                        "qualifiedPath": "/services/search/jobs/id5_1649796951725",
+                        "relpath": "search/jobs/id5_1649796951725/events",
+                        "expected": "/services/search/jobs/id5_1649796951725/events"
+                    },
+                    "v2_1": {
+                        "qualifiedPath": "/servicesNS/admin/foo/search/v2/jobs/id5_1649796951725",
+                        "relpath": "search/v2/jobs/id5_1649796951725/events",
+                        "expected": "/servicesNS/admin/foo/search/v2/jobs/id5_1649796951725/events"
+                    },
+                    "v2_2": {
+                        "qualifiedPath": "/services/search/v2/jobs/id5_1649796951725",
+                        "relpath": "search/v2/jobs/id5_1649796951725/events",
+                        "expected": "/services/search/v2/jobs/id5_1649796951725/events"
                     }
-                ],
-                    function (err) {
-                        assert.ok(!err);
-                        done();
-                    });
-                done();
+                }
+                
+                for (const [key, value] of Object.entries(testData)) {
+                    createdUrl = this.service.jobs().createUrl(value.qualifiedPath, value.relpath);
+                    assert.strictEqual(value.expected, createdUrl);
+                }
             });
 
             it("Callback#Create+cancel job", function (done) {
@@ -182,6 +213,43 @@ exports.setup = function (svc) {
                     }
                 );
             });
+                
+            it("Callback#job events - post processing search params", function(done) {
+                var sid = getNextId();
+                var service = this.service;
+                var that = this;
+        
+                Async.chain([
+                        function(done) {
+                            that.service.jobs().search('search index=_internal | head 2', {id: sid}, done);
+                        },
+                        function(job, done) {
+                            assert.strictEqual(job.sid, sid);
+                            tutils.pollUntil(
+                                job,
+                                function(j) {
+                                    return job.properties()["isDone"];
+                                },
+                                10,
+                                done
+                            );
+                        },
+                        function(job, done) {
+                            job.events({ search: "| head 1" }, done);
+                        },
+                        function (results, job, done) {
+                            assert.strictEqual(results.post_process_count, 1);
+                            assert.strictEqual(results.rows.length, 1);
+                            assert.strictEqual(results.fields.length, results.rows[0].length);
+                            job.cancel(done);
+                        }
+                    ],
+                    function(err) {
+                        assert.ok(!err);
+                        done();
+                    }
+                );
+            });
 
             it("Callback#job results preview", function (done) {
                 var sid = getNextId();
@@ -273,86 +341,87 @@ exports.setup = function (svc) {
                 );
             });
 
-            it("Callback#Enable + disable preview", function (done) {
-                var that = this;
-                var sid = getNextId();
+            // Disabling the test for now because the apps/appinstall endpoint have been deprecated from Splunk 8.2
+            // it("Callback#Enable + disable preview", function (done) {
+            //     var that = this;
+            //     var sid = getNextId();
 
-                var service = this.service.specialize("nobody", "sdkappcollection");
+            //     var service = this.service.specialize("nobody", "sdkappcollection");
 
-                Async.chain([
-                    function (done) {
-                        service.jobs().search('search index=_internal | head 1 | sleep 60', { id: sid }, done);
-                    },
-                    function (job, done) {
-                        job.enablePreview(done);
+            //     Async.chain([
+            //         function (done) {
+            //             service.jobs().search('search index=_internal | head 1 | sleep 60', { id: sid }, done);
+            //         },
+            //         function (job, done) {
+            //             job.enablePreview(done);
 
-                    },
-                    function (job, done) {
-                        job.disablePreview(done);
-                    },
-                    function (job, done) {
-                        job.cancel(done);
-                    }
-                ],
-                    function (err) {
-                        assert.ok(!err);
-                        done();
-                    }
-                );
-            });
+            //         },
+            //         function (job, done) {
+            //             job.disablePreview(done);
+            //         },
+            //         function (job, done) {
+            //             job.cancel(done);
+            //         }
+            //     ],
+            //         function (err) {
+            //             assert.ok(!err);
+            //             done();
+            //         }
+            //     );
+            // });
 
+            // Disabling the test for now because the apps/appinstall endpoint have been deprecated from Splunk 8.2
+            // it("Callback#Pause + unpause + finalize preview", function (done) {
+            //     var that = this;
+            //     var sid = getNextId();
 
-            it("Callback#Pause + unpause + finalize preview", function (done) {
-                var that = this;
-                var sid = getNextId();
+            //     var service = this.service.specialize("nobody", "sdkappcollection");
 
-                var service = this.service.specialize("nobody", "sdkappcollection");
-
-                Async.chain([
-                    function (done) {
-                        service.jobs().search('search index=_internal | head 1 | sleep 5', { id: sid }, done);
-                    },
-                    function (job, done) {
-                        job.pause(done);
-                    },
-                    function (job, done) {
-                        tutils.pollUntil(
-                            job,
-                            function (j) {
-                                return j.properties()["isPaused"];
-                            },
-                            10,
-                            done
-                        );
-                    },
-                    function (job, done) {
-                        assert.ok(job.properties()["isPaused"]);
-                        job.unpause(done);
-                    },
-                    function (job, done) {
-                        tutils.pollUntil(
-                            job,
-                            function (j) {
-                                return !j.properties()["isPaused"];
-                            },
-                            10,
-                            done
-                        );
-                    },
-                    function (job, done) {
-                        assert.ok(!job.properties()["isPaused"]);
-                        job.finalize(done);
-                    },
-                    function (job, done) {
-                        job.cancel(done);
-                    }
-                ],
-                    function (err) {
-                        assert.ok(!err);
-                        done();
-                    }
-                );
-            });
+            //     Async.chain([
+            //         function (done) {
+            //             service.jobs().search('search index=_internal | head 1 | sleep 5', { id: sid }, done);
+            //         },
+            //         function (job, done) {
+            //             job.pause(done);
+            //         },
+            //         function (job, done) {
+            //             tutils.pollUntil(
+            //                 job,
+            //                 function (j) {
+            //                     return j.properties()["isPaused"];
+            //                 },
+            //                 10,
+            //                 done
+            //             );
+            //         },
+            //         function (job, done) {
+            //             assert.ok(job.properties()["isPaused"]);
+            //             job.unpause(done);
+            //         },
+            //         function (job, done) {
+            //             tutils.pollUntil(
+            //                 job,
+            //                 function (j) {
+            //                     return !j.properties()["isPaused"];
+            //                 },
+            //                 10,
+            //                 done
+            //             );
+            //         },
+            //         function (job, done) {
+            //             assert.ok(!job.properties()["isPaused"]);
+            //             job.finalize(done);
+            //         },
+            //         function (job, done) {
+            //             job.cancel(done);
+            //         }
+            //     ],
+            //         function (err) {
+            //             assert.ok(!err);
+            //             done();
+            //         }
+            //     );
+            // });
 
             it("Callback#Set TTL", function (done) {
                 var sid = getNextId();
@@ -389,42 +458,43 @@ exports.setup = function (svc) {
                 );
             });
 
-            it("Callback#Set priority", function (done) {
-                var sid = getNextId();
-                var originalPriority = 0;
-                var that = this;
+            // Disabling the test for now because the apps/appinstall endpoint have been deprecated from Splunk 8.2
+            // it("Callback#Set priority", function (done) {
+            //     var sid = getNextId();
+            //     var originalPriority = 0;
+            //     var that = this;
 
-                var service = this.service.specialize("nobody", "sdkappcollection");
+            //     var service = this.service.specialize("nobody", "sdkappcollection");
 
-                Async.chain([
-                    function (done) {
-                        service.jobs().search('search index=_internal | head 1 | sleep 5', { id: sid }, done);
-                    },
-                    function (job, done) {
-                        job.track({}, {
-                            ready: function (job) {
-                                done(null, job);
-                            }
-                        });
-                    },
-                    function (job, done) {
-                        var priority = job.properties()["priority"];
-                        assert.ok(priority, 5);
-                        job.setPriority(priority + 1, done);
-                    },
-                    function (job, done) {
-                        job.fetch(done);
-                    },
-                    function (job, done) {
-                        job.cancel(done);
-                    }
-                ],
-                    function (err) {
-                        assert.ok(!err);
-                        done();
-                    }
-                );
-            });
+            //     Async.chain([
+            //         function (done) {
+            //             service.jobs().search('search index=_internal | head 1 | sleep 5', { id: sid }, done);
+            //         },
+            //         function (job, done) {
+            //             job.track({}, {
+            //                 ready: function (job) {
+            //                     done(null, job);
+            //                 }
+            //             });
+            //         },
+            //         function (job, done) {
+            //             var priority = job.properties()["priority"];
+            //             assert.ok(priority, 5);
+            //             job.setPriority(priority + 1, done);
+            //         },
+            //         function (job, done) {
+            //             job.fetch(done);
+            //         },
+            //         function (job, done) {
+            //             job.cancel(done);
+            //         }
+            //     ],
+            //         function (err) {
+            //             assert.ok(!err);
+            //             done();
+            //         }
+            //     );
+            // });
 
             it("Callback#Search log", function (done) {
                 var sid = getNextId();

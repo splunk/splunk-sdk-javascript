@@ -45,3 +45,21 @@ wait_up:
 down:
 	@echo "$(ATTN_COLOR)==> down $(NO_COLOR)"
 	@docker-compose stop
+
+.PHONY: deps
+deps:
+	@echo "$(ATTN_COLOR)==> Checking nodes.js dependencies $(NO_COLOR)"
+	@echo "$(ATTN_COLOR)==> Installing nodes.js 14 $(NO_COLOR)"
+	@source $(HOME)/.nvm/nvm.sh ; nvm install 14
+	@echo "$(ATTN_COLOR)==> npm install $(NO_COLOR)"
+	@npm install
+
+.PHONY: clean
+clean:
+	@echo "$(ATTN_COLOR)==> Cleaning client/ directory $(NO_COLOR)"
+	@rm -rf client/splunk.*.js >/dev/null 2>&1
+
+.PHONY: build
+build: clean deps
+	@echo "$(OK_COLOR)==> Initiating the build... $(NO_COLOR)"
+	@source $(HOME)/.nvm/nvm.sh; nvm run 14 sdkdo compile
