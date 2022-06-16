@@ -13,9 +13,9 @@ For more information, see [Splunk Enterprise SDK for JavaScript](https://dev.spl
 
     The Splunk Enterprise SDK for JavaScript was tested with Node.js v8.17.0, v14. 
 
-* Splunk Enterprise 8.0 or 8.2, or Splunk Cloud
+* Splunk Enterprise 9.0 or 8.2, or Splunk Cloud
 
-    The Splunk Enterprise SDK for JavaScript was tested with Splunk Enterprise 8.0 or 8.2, or Splunk Cloud. 
+    The Splunk Enterprise SDK for JavaScript was tested with Splunk Enterprise 9.0 or 8.2, or Splunk Cloud. 
 
 *  Splunk Enterprise SDK for JavaScript
 
@@ -124,7 +124,7 @@ var serviceWithSessionKey = new splunkjs.Service(
         host: 'localhost',
         port: '8089',
         sessionKey: SESSION_KEY, // Add your sessionKey here
-        version: '8',
+        version: '9.0',
     });
 
 serviceWithSessionKey.get("search/jobs", { count: 1 }, function (err, res) {
@@ -204,7 +204,7 @@ To use this convenience file, create a text file with the following format:
     # Access scheme (default: https)
     scheme=https
     # Your version of Splunk Enterprise
-    version=8.2
+    version=9.0
 
 Save the file as **.splunkrc** in the current user's home directory.
 
