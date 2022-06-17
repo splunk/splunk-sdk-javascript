@@ -1,5 +1,18 @@
 # Splunk Enterprise SDK for JavaScript Changelog
 
+## v1.12.0
+
+### New features and APIs
+* SDK Support for splunkd search API changes, for Splunk 9.0+. ([PR#157](https://github.com/splunk/splunk-sdk-javascript/pull/157))
+
+### Minor changes
+* Added assets directory to be included while generating docs ([PR#154](https://github.com/splunk/splunk-sdk-javascript/pull/154))
+* Removed support for Modular Inputs from the SDK ([PR#153](https://github.com/splunk/splunk-sdk-javascript/pull/153))
+* Removed examples and it's references from sdk ([PR#152](https://github.com/splunk/splunk-sdk-javascript/pull/152))
+* Added 'User-Agent' header in REST API calls for the telemetry ([PR#151](https://github.com/splunk/splunk-sdk-javascript/pull/151))
+* changes corresponding to API changes in the dependency library browserify ([PR#149](https://github.com/splunk/splunk-sdk-javascript/pull/149))
+* JS SDK upload artifact script added for api docs ([PR#148](https://github.com/splunk/splunk-sdk-javascript/pull/148))
+
 ## v1.11.0
 
 ### Major changes

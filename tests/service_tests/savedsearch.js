@@ -172,7 +172,7 @@ exports.setup = function (svc, loggedOutSvc) {
                 var name = "jssdk_savedsearch_" + getNextId();
                 var originalSearch = "search index=_internal | head 1";
 
-                var searches = this.service.savedSearches({ owner: this.service.username, app: "sdkappcollection" });
+                var searches = this.service.savedSearches({ owner: this.service.username, app: "sdk-app-collection" });
 
                 Async.chain(
                     [function (done) {
@@ -459,7 +459,7 @@ exports.setup = function (svc, loggedOutSvc) {
 
 if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
-    var options = require('../../examples/node/cmdline');
+    var options = require('../cmdline');
 
     var cmdline = options.create().parse(process.argv);
 
