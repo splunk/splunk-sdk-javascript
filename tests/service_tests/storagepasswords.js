@@ -2,6 +2,9 @@
 exports.setup = function (svc) {
     var assert = require('chai').assert;
     var splunkjs = require('../../index');
+    var options = require('../cmdline');
+    var parser = new options.create();
+    var cmdline = parser.parse(process.argv);
     var Async = splunkjs.Async;
     var idCounter = 0;
     var getNextId = function () {
@@ -220,6 +223,24 @@ exports.setup = function (svc) {
                 );
             })
 
+            it("Callback#Create should fail if app or owner have wildcard", function (done) {
+                var service = new splunkjs.Service({
+                    scheme: cmdline.opts.scheme,
+                    host: cmdline.opts.host,
+                    port: cmdline.opts.port,
+                    username: cmdline.opts.username,
+                    password: cmdline.opts.password,
+                    version: cmdline.opts.version,
+                    app:'-',
+                    owner:'-'
+                });
+                var storagePasswords = service.storagePasswords();
+                assert.throws(function (){
+                    storagePasswords.create({ name: "delete-me-" + getNextId(), password: 'changed!' })
+                });
+                done();
+            })
+            
             it("Callback#Create with colons", function (done) {
                 var startcount = -1;
                 var name = ":delete-me-" + getNextId();
