@@ -8,19 +8,14 @@ exports.setup = function (svc) {
                 done();
             })
 
-            it("Callback#Basic", function (done) {
-                var service = this.service;
-
-                service.serverInfo(function (err, info) {
-                    assert.ok(!err);
-                    assert.ok(info);
-                    assert.strictEqual(info.name, "server-info");
-                    assert.ok(info.properties().hasOwnProperty("version"));
-                    assert.ok(info.properties().hasOwnProperty("serverName"));
-                    assert.ok(info.properties().hasOwnProperty("os_version"));
-
-                    done();
-                });
+            it("Basic", async function () {
+                let service = this.service;
+                const info = await service.serverInfo();
+                assert.ok(info);
+                assert.strictEqual(info.name, "server-info");
+                assert.ok(info.properties().hasOwnProperty("version"));
+                assert.ok(info.properties().hasOwnProperty("serverName"));
+                assert.ok(info.properties().hasOwnProperty("os_version"));
             })
         })
     );
@@ -30,14 +25,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    var cmdline = options.create().parse(process.argv);
+    const cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    var svc = new splunkjs.Service({
+    const svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,

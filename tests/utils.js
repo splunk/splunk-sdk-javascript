@@ -12,28 +12,28 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
+const { utils } = require('mocha');
+
 (function () {
     "use strict";
-    var Async = require('../lib/async');
-    var assert = require('chai').assert;
+    var utils = require('../lib/utils');
 
     var root = exports || this;
 
-    root.pollUntil = function (obj, condition, iterations, callback) {
-        callback = callback || function () { };
+    root.pollUntil = async function (obj, condition, iterations) {
 
-        var i = 0;
-        Async.whilst(
-            function () { return !condition(obj) && (i++ < iterations); },
-            function (done) {
-                Async.sleep(500, function () {
-                    obj.fetch(done);
-                });
-            },
-            function (err) {
-                callback(err, obj);
-            }
-        );
+        let i = 0;
+        try {
+            await utils.whilst(
+                function () { return !condition(obj) && (i++ < iterations); },
+                async function () {
+                    await utils.sleep(500);
+                    obj.fetch();
+                }
+            );
+        } catch (error) {
+            return [error, obj];
+        }
     };
 
     // Minimal Http implementation that is designed to pass the tests

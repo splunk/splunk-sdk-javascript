@@ -2,40 +2,34 @@
 exports.setup = function (svc, loggedOutSvc) {
     var assert = require('chai').assert;
     return (
-        describe("Typeahad Tests", function () {
+        describe("Typeahead Tests", function () {
             beforeEach(function (done) {
                 this.service = svc;
                 this.loggedOutService = loggedOutSvc;
                 done();
             })
 
-            it("Callback#Typeahead failure", function (done) {
-                var service = this.loggedOutService;
-                service.typeahead("index=", 1, function (err, options) {
+            it("Typeahead failure", async function () {
+                let service = this.loggedOutService;
+                try {
+                    await service.typeahead("index=", 1);
+                } catch (err) {
                     assert.ok(err);
-                    done();
-                });
+                }
             })
 
-            it("Callback#Basic typeahead", function (done) {
-                var service = this.service;
-
-                service.typeahead("index=", 1, function (err, options) {
-                    assert.ok(!err);
-                    assert.ok(options);
-                    assert.strictEqual(options.length, 1);
-                    assert.ok(options[0]);
-                    done();
-                });
+            it("Typeahead basic", async function () {
+                let service = this.service;
+                const options = await service.typeahead("index=", 1);
+                assert.ok(options);
+                assert.strictEqual(options.length, 1);
+                assert.ok(options[0]);
             })
 
-            it("Typeahead with omitted optional arguments", function (done) {
-                var service = this.service;
-                service.typeahead("index=", function (err, options) {
-                    assert.ok(!err);
-                    assert.ok(options);
-                    done();
-                });
+            it("Typeahead with omitted optional arguments", async function () {
+                let service = this.service;
+                const options = await service.typeahead("index=");
+                assert.ok(options);
             })
         })
     );
@@ -45,14 +39,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    var cmdline = options.create().parse(process.argv);
+    const cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    var svc = new splunkjs.Service({
+    const svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -61,7 +55,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
         version: cmdline.opts.version
     });
 
-    var loggedOutSvc = new splunkjs.Service({
+    const loggedOutSvc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,

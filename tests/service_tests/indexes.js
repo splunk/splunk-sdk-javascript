@@ -1,8 +1,9 @@
 var assert = require('chai').assert;
 
+//const { utils } = require('mocha');
 var splunkjs = require('../../index');
+var utils = splunkjs.Utils;
 
-var Async = splunkjs.Async;
 var idCounter = 0;
 
 var getNextId = function () {
@@ -12,20 +13,20 @@ var getNextId = function () {
 exports.setup = function (svc, loggedOutSvc) {
     return (
         describe("Indexes tests", function (done) {
-            beforeEach(function (done) {
+            beforeEach(async function () {
                 this.service = svc;
                 this.loggedOutService = loggedOutSvc;
 
                 // Create the index for everyone to use
-                var name = this.indexName = "sdk-tests";
-                var indexes = this.service.indexes();
-                indexes.create(name, {}, function (err, index) {
-                    if (err && err.status !== 409) {
+                let name = this.indexName = "sdk-tests";
+                let indexes = this.service.indexes();
+                try {
+                    await indexes.create(name, {});
+                } catch (err) {
+                    if (err.status !== 409) {
                         throw new Error("Index creation failed for an unknown reason");
                     }
-
-                    done();
-                });
+                }
             });
 
             // it("Callback#remove index fails on Splunk 4.x", function(done) {
@@ -88,181 +89,90 @@ exports.setup = function (svc, loggedOutSvc) {
             //     );
             // });
 
-            it("Callback#list indexes", function (done) {
-                var indexes = this.service.indexes();
-                indexes.fetch(function (err, indexes) {
-                    var indexList = indexes.list();
-                    assert.ok(indexList.length > 0);
-                    done();
-                });
+            it("list indexes", async function () {
+                let indexes = this.service.indexes();
+                indexes = await indexes.fetch();
+                let indexList = indexes.list();
+                assert.ok(indexList.length > 0);
             });
 
-            it("Callback#contains index", function (done) {
-                var indexes = this.service.indexes();
-                var indexName = this.indexName;
+            it("Contains index", async function () {
+                let indexes = this.service.indexes();
+                let indexName = this.indexName;
 
-                indexes.fetch(function (err, indexes) {
-                    var index = indexes.item(indexName);
-                    assert.ok(index);
-                    done();
-                });
+                indexes = await indexes.fetch();
+                let index = indexes.item(indexName);
+                assert.ok(index);
             });
 
-            it("Callback#modify index", function (done) {
+            it("Modify index", async function () {
+                let name = this.indexName;
+                let indexes = this.service.indexes();
+                let originalSyncMeta = false;
+                indexes = await indexes.fetch();
+                let index = indexes.item(name);
+                assert.ok(index);
 
-                var name = this.indexName;
-                var indexes = this.service.indexes();
-                var originalSyncMeta = false;
-
-                Async.chain([
-                    function (callback) {
-                        indexes.fetch(callback);
-                    },
-                    function (indexes, callback) {
-                        var index = indexes.item(name);
-                        assert.ok(index);
-
-                        originalSyncMeta = index.properties().syncMeta;
-                        index.update({
-                            syncMeta: !originalSyncMeta
-                        }, callback);
-                    },
-                    function (index, callback) {
-                        assert.ok(index);
-                        var properties = index.properties();
-
-                        assert.strictEqual(!originalSyncMeta, properties.syncMeta);
-
-                        index.update({
-                            syncMeta: !properties.syncMeta
-                        }, callback);
-                    },
-                    function (index, callback) {
-                        assert.ok(index);
-                        var properties = index.properties();
-
-                        assert.strictEqual(originalSyncMeta, properties.syncMeta);
-                        callback();
-                    }
-                ],
-                    function (err) {
-                        assert.ok(!err);
-                        done();
-                    }
-                );
+                originalSyncMeta = index.properties().syncMeta;
+                index = await index.update({ syncMeta: !originalSyncMeta });
+                assert.ok(index);
+                let properties = index.properties();
+                assert.strictEqual(!originalSyncMeta, properties.syncMeta);
+                index = await index.update({ syncMeta: !properties.syncMeta });
+                assert.ok(index);
+                properties = index.properties();
+                assert.strictEqual(originalSyncMeta, properties.syncMeta);
             });
 
-            it("Callback#Enable+disable index", function (done) {
-
+            it("Enable/disable index", async function () {
                 this.timeout(40000);
-                var name = this.indexName;
-                var indexes = this.service.indexes();
+                let name = this.indexName;
+                let indexes = this.service.indexes();
 
-                Async.chain([
-                    function (callback) {
-                        indexes.fetch(callback);
-                    },
-                    function (indexes, callback) {
-                        var index = indexes.item(name);
-                        assert.ok(index);
+                indexes = await indexes.fetch();
+                let index = indexes.item(name);
+                assert.ok(index);
+                index = await index.disable();
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                assert.ok(index);
+                index = await index.fetch();
+                assert.ok(index);
+                assert.ok(index.properties().disabled);
 
-                        index.disable(callback);
-                    },
-                    function (index, callback) {
-                        Async.sleep(5000, function () {
-                            callback(null, index);
-                        });
-                    },
-                    function (index, callback) {
-                        assert.ok(index);
-                        index.fetch(callback);
-                    },
-                    function (index, callback) {
-                        assert.ok(index);
-                        assert.ok(index.properties().disabled);
-
-                        index.enable(callback);
-                    },
-                    function (index, callback) {
-                        Async.sleep(5000, function () {
-                            callback(null, index);
-                        });
-                    },
-                    function (index, callback) {
-                        assert.ok(index);
-                        index.fetch(callback);
-                    },
-                    function (index, callback) {
-                        assert.ok(index);
-                        assert.ok(!index.properties().disabled);
-
-                        callback();
-                    }
-                ],
-                    function (err) {
-                        assert.ok(!err, JSON.stringify(err));
-                        done();
-                    }
-                );
+                index = await index.enable();
+                await new Promise(resolve => setTimeout(resolve, 5000));
+                assert.ok(index);
+                index = await index.fetch();
+                assert.ok(index);
+                assert.ok(!index.properties().disabled);
             });
 
-            it("Callback#Service submit event", function (done) {
-                var message = "Hello World -- " + getNextId();
-                var sourcetype = "sdk-tests";
+            it("Service submit event", async function () {
+                let message = "Hello World -- " + getNextId();
+                let sourcetype = "sdk-tests";
 
-                var service = this.service;
-                var indexName = this.indexName;
-                Async.chain(
-                    function (done) {
-                        service.log(message, { sourcetype: sourcetype, index: indexName }, done);
-                    },
-                    function (eventInfo, done) {
-                        assert.ok(eventInfo);
-                        assert.strictEqual(eventInfo.sourcetype, sourcetype);
-                        assert.strictEqual(eventInfo.bytes, message.length);
-                        assert.strictEqual(eventInfo.index, indexName);
-
-                        // We could poll to make sure the index has eaten up the event,
-                        // but unfortunately this can take an unbounded amount of time.
-                        // As such, since we got a good response, we'll just be done with it.
-                        done();
-                    },
-                    function (err) {
-                        assert.ok(!err);
-                        done();
-                    }
-                );
+                let service = this.service;
+                let indexName = this.indexName;
+                let eventInfo = await service.log(message, { sourcetype: sourcetype, index: indexName });
+                assert.ok(eventInfo);
+                assert.strictEqual(eventInfo.sourcetype, sourcetype);
+                assert.strictEqual(eventInfo.bytes, message.length);
+                assert.strictEqual(eventInfo.index, indexName);
             });
 
-            it("Callback#Service submit event, omitting optional arguments", function (done) {
-                var message = "Hello World -- " + getNextId();
-                var sourcetype = "sdk-tests";
+            it("Service submit event, omitting optional arguments", async function () {
+                let message = "Hello World -- " + getNextId();
 
-                var service = this.service;
-                var indexName = this.indexName;
-                Async.chain(
-                    function (done) {
-                        service.log(message, done);
-                    },
-                    function (eventInfo, done) {
-                        assert.ok(eventInfo);
-                        assert.strictEqual(eventInfo.bytes, message.length);
+                let service = this.service;
+                let eventInfo = await service.log(message);
+                assert.ok(eventInfo);
+                assert.strictEqual(eventInfo.bytes, message.length);
 
-                        // We could poll to make sure the index has eaten up the event,
-                        // but unfortunately this can take an unbounded amount of time.
-                        // As such, since we got a good response, we'll just be done with it.
-                        done();
-                    },
-                    function (err) {
-                        assert.ok(!err);
-                        done();
-                    }
-                );
             });
 
-            it("Callback#Service submit events with multi-byte chars", function (done) {
-                var service = this.service;
-                var messages = [
+            it("Service submit events with multi-byte chars", async function () {
+                let service = this.service;
+                let messages = [
                     "Ummelner Straße 6",
                     "Ümmelner Straße 6",
                     "Iԉｔéｒԉáｔíòлåɭìƶåｔｉòл",
@@ -294,139 +204,89 @@ exports.setup = function (svc, loggedOutSvc) {
                     " ìｄ ｃòлѕèｑûâｔ ｌàƅ߀ｒìｓ."
                 ];
 
-                var counter = 0;
-                Async.seriesMap(
+                let counter = 0;
+                let [err, vals] = await utils.seriesMap(
                     messages,
-                    function (val, idx, done) {
+                    function (val, idx) {
                         counter++;
-                        service.log(val, done);
-                    },
-                    function (err, vals) {
-                        assert.ok(!err);
-                        assert.strictEqual(counter, messages.length);
-
-                        // Verify that the full byte-length was sent for each message
-                        for (var m in messages) {
-                            assert.notStrictEqual(messages[m].length, vals[m].bytes);
-                            try {
-                                assert.strictEqual(Buffer.byteLength(messages[m]), vals[m].bytes);
-                            }
-                            catch (err) {
-                                // Assume Buffer isn't defined, we're probably in the browser
-                                assert.strictEqual(decodeURI(encodeURIComponent(messages[m])).length, vals[m].bytes);
-                            }
-                        }
-
-                        done();
+                        service.log(val);
                     }
                 );
+                assert.ok(!err);
+                assert.strictEqual(counter, messages.length);
+
+                // Verify that the full byte-length was sent for each message
+                for (let m in messages) {
+                    assert.notStrictEqual(messages[m].length, vals[m].bytes);
+                    try {
+                        assert.strictEqual(Buffer.byteLength(messages[m]), vals[m].bytes);
+                    }
+                    catch (err) {
+                        // Assume Buffer isn't defined, we're probably in the browser
+                        assert.strictEqual(decodeURI(encodeURIComponent(messages[m])).length, vals[m].bytes);
+                    }
+                }
             });
 
-            it("Callback#Service submit event, failure", function (done) {
-                var message = "Hello World -- " + getNextId();
-                var sourcetype = "sdk-tests";
+            it("Service submit event, failure", async function () {
+                let message = "Hello World -- " + getNextId();
 
-                var service = this.loggedOutService;
-                var indexName = this.indexName;
-                Async.chain(
-                    function (done) {
-                        assert.ok(service);
-                        service.log(message, done);
-                    },
-                    function (err) {
-                        assert.ok(err);
-                        done();
-                    }
-                );
+                let service = this.loggedOutService;
+                try {
+                    assert.ok(service);
+                    await service.log(message);
+                } catch (error) {
+                    assert.ok(error);
+                }
             });
 
-            it("Callback#remove throws an error", function (done) {
-                var index = this.service.indexes().item("_internal");
-                assert.throws(function () {
-                    index.remove();
-                });
-                done();
+            it("Remove throws an error1", async function () {
+                let index = this.service.indexes().item("_internal");
+                assert.isNull(index);
+                assert.throws(function () { index.remove(); });
             });
 
-            it("Callback#create an index with alternate argument format", function (done) {
-                var indexes = this.service.indexes();
-                indexes.create(
-                    { name: "_internal" },
-                    function (err, newIndex) {
-                        assert.ok(err.data.messages[0].text.match("name=_internal already exists"));
-                        done();
-                    }
-                );
+            it("Create an index with alternate argument format", async function () {
+                let indexes = this.service.indexes();
+                try {
+                    await indexes.create({ name: "_internal" });
+                } catch (error) {
+                    assert.ok(error.data.messages[0].text.match("name=_internal already exists"));
+                }
             });
 
-            it("Callback#Index submit event with omitted optional arguments", function (done) {
-                var message = "Hello world -- " + getNextId();
+            it("Index submit event with omitted optional arguments", async function () {
+                let message = "Hello world -- " + getNextId();
+                let indexName = this.indexName;
+                let indexes = this.service.indexes();
 
-                var indexName = this.indexName;
-                var indexes = this.service.indexes();
-
-                Async.chain(
-                    [
-                        function (done) {
-                            indexes.fetch(done);
-                        },
-                        function (indexes, done) {
-                            var index = indexes.item(indexName);
-                            assert.ok(index);
-                            assert.strictEqual(index.name, indexName);
-                            index.submitEvent(message, done);
-                        },
-                        function (eventInfo, index, done) {
-                            assert.ok(eventInfo);
-                            assert.strictEqual(eventInfo.bytes, message.length);
-                            assert.strictEqual(eventInfo.index, indexName);
-
-                            // We could poll to make sure the index has eaten up the event,
-                            // but unfortunately this can take an unbounded amount of time.
-                            // As such, since we got a good response, we'll just be done with it.
-                            done();
-                        }
-                    ],
-                    function (err) {
-                        assert.ok(!err);
-                        done();
-                    }
-                );
+                indexes = await indexes.fetch();
+                let index = indexes.item(indexName);
+                assert.ok(index);
+                assert.strictEqual(index.name, indexName);
+                let response = await index.submitEvent(message);
+                let eventInfo = response[0];
+                assert.ok(eventInfo);
+                assert.strictEqual(eventInfo.bytes, message.length);
+                assert.strictEqual(eventInfo.index, indexName);
             });
 
-            it("Callback#Index submit event", function (done) {
-                var message = "Hello World -- " + getNextId();
-                var sourcetype = "sdk-tests";
+            it("Index submit event", async function () {
+                let message = "Hello World -- " + getNextId();
+                let sourcetype = "sdk-tests";
 
-                var indexName = this.indexName;
-                var indexes = this.service.indexes();
-                Async.chain([
-                    function (done) {
-                        indexes.fetch(done);
-                    },
-                    function (indexes, done) {
-                        var index = indexes.item(indexName);
-                        assert.ok(index);
-                        assert.strictEqual(index.name, indexName);
-                        index.submitEvent(message, { sourcetype: sourcetype }, done);
-                    },
-                    function (eventInfo, index, done) {
-                        assert.ok(eventInfo);
-                        assert.strictEqual(eventInfo.sourcetype, sourcetype);
-                        assert.strictEqual(eventInfo.bytes, message.length);
-                        assert.strictEqual(eventInfo.index, indexName);
-
-                        // We could poll to make sure the index has eaten up the event,
-                        // but unfortunately this can take an unbounded amount of time.
-                        // As such, since we got a good response, we'll just be done with it.
-                        done();
-                    }
-                ],
-                    function (err) {
-                        assert.ok(!err);
-                        done();
-                    }
-                );
+                let indexName = this.indexName;
+                let indexes = this.service.indexes();
+                indexes = await indexes.fetch();
+                let index = indexes.item(indexName);
+                assert.ok(index);
+                assert.strictEqual(index.name, indexName);
+                let response = await index.submitEvent(message, { sourcetype: sourcetype });
+                let eventInfo = response[0];
+                assert.ok(eventInfo);
+                assert.strictEqual(eventInfo.sourcetype, sourcetype);
+                assert.strictEqual(eventInfo.bytes, message.length);
+                assert.strictEqual(eventInfo.index, indexName);
             })
         })
     )

@@ -43,7 +43,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../index');
     var options = require('./cmdline');
 
-    var cmdline = options.create().parse(process.argv);
+    let cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
@@ -54,7 +54,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
         throw new Error("$PATH variable SPLUNK_HOME is not set. Please export SPLUNK_HOME to the splunk instance.");
     }
 
-    var svc = new splunkjs.Service({
+    let svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -63,7 +63,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
         version: cmdline.opts.version
     });
 
-    var loggedOutSvc = new splunkjs.Service({
+    let loggedOutSvc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -74,6 +74,13 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
 
     // Exports tests on a successful login
     module.exports = new Promise((resolve, reject) => {
+        // try {
+        //     await svc.login();
+        //     return exports.setup(svc, loggedOutSvc)
+        // } catch (error) {
+        //     throw new Error("Login failed - not running tests", error || "");
+        // }
+
         svc.login(function (err, success) {
             if (err || !success) {
                 throw new Error("Login failed - not running tests", err || "");

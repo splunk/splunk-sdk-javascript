@@ -1,8 +1,7 @@
 var assert = require('chai').assert;
 
 var splunkjs = require('../../index');
-
-var Async = splunkjs.Async;
+var utils = splunkjs.Utils;
 var utils = splunkjs.Utils;
 var idCounter = 0;
 
@@ -20,11 +19,10 @@ exports.setup = function (svc, loggedOutSvc) {
                 done();
             });
 
-            it("Callback#create + verify emptiness + delete new alert group", function (done) {
-
-                var searches = this.service.savedSearches({ owner: this.service.username });
-                var name = "jssdk_savedsearch_alert_" + getNextId();
-                var searchConfig = {
+            it("create, verify emptiness and delete new alert group", async function () {
+                let searches = this.service.savedSearches({ owner: this.service.username });
+                let name = "jssdk_savedsearch_alert_" + getNextId();
+                let searchConfig = {
                     "name": name,
                     "search": "index=_internal | head 1",
                     "alert_type": "always",
@@ -36,34 +34,18 @@ exports.setup = function (svc, loggedOutSvc) {
                     "is_scheduled": "1",
                     "cron_schedule": "* * * * *"
                 };
-
-                Async.chain([
-                    function (done) {
-                        searches.create(searchConfig, done);
-                    },
-                    function (search, done) {
-                        assert.ok(search);
-                        assert.strictEqual(search.alertCount(), 0);
-                        search.history(done);
-                    },
-                    function (jobs, search, done) {
-                        assert.strictEqual(jobs.length, 0);
-                        assert.strictEqual(search.firedAlertGroup().count(), 0);
-                        searches.service.firedAlertGroups().fetch(Async.augment(done, search));
-                    },
-                    function (firedAlertGroups, originalSearch, done) {
-                        assert.strictEqual(firedAlertGroups.list().indexOf(originalSearch.name), -1);
-                        done(null, originalSearch);
-                    },
-                    function (originalSearch, done) {
-                        originalSearch.remove(done);
-                    }
-                ],
-                    function (err) {
-                        assert.ok(!err);
-                        done();
-                    }
-                );
+                let search = await searches.create(searchConfig);
+                assert.ok(search);
+                assert.strictEqual(search.alertCount(), 0);
+                let response = await search.history();
+                let jobs = response[0];
+                search = response[1];
+                assert.strictEqual(jobs.length, 0);
+                assert.strictEqual(search.firedAlertGroup().count(), 0);
+                let firedAlertGroups = await searches.service.firedAlertGroups().fetch();
+                let originalSearch = search;
+                assert.strictEqual(firedAlertGroups.list().indexOf(originalSearch.name), -1);
+                await originalSearch.remove();
             });
 
             // This test is not stable, commenting it out until we figure it out
@@ -245,23 +227,16 @@ exports.setup = function (svc, loggedOutSvc) {
             //     );
             // });
 
-            it("Callback#delete all alerts", function (done) {
-                var namePrefix = "jssdk_savedsearch_alert_";
-                var alertList = this.service.savedSearches().list();
-
-                Async.parallelEach(
+            it("Delete all alerts", async function () {
+                let namePrefix = "jssdk_savedsearch_alert_";
+                let alertList = this.service.savedSearches().list();
+                await utils.parallelEach(
                     alertList,
-                    function (alert, idx, callback) {
+                    async function (alert, idx) {
                         if (utils.startsWith(alert.name, namePrefix)) {
                             splunkjs.Logger.log("ALERT ---", alert.name);
-                            alert.remove(callback);
+                            await alert.remove();
                         }
-                        else {
-                            callback();
-                        }
-                    }, function (err) {
-                        assert.ok(!err);
-                        done();
                     }
                 );
             })
@@ -273,14 +248,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    var cmdline = options.create().parse(process.argv);
+    const cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    var svc = new splunkjs.Service({
+    const svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -289,7 +264,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
         version: cmdline.opts.version
     });
 
-    var loggedOutSvc = new splunkjs.Service({
+    const loggedOutSvc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,

@@ -13,23 +13,28 @@ exports.setup = function (svc) {
             it("Throws on null arguments to init", function (done) {
                 var service = this.service;
                 assert.throws(function () {
-                    var endpoint = new splunkjs.Service.Endpoint(null, "a/b");
+                    let endpoint = new splunkjs.Service.Endpoint(null, "a/b");
                 });
                 assert.throws(function () {
-                    var endpoint = new splunkjs.Service.Endpoint(service, null);
+                    let endpoint = new splunkjs.Service.Endpoint(service, null);
                 });
                 done();
             });
 
-            it("Endpoint delete on a relative path", function (done) {
+            it("Endpoint delete on a relative path", async function () {
                 var service = this.service;
-                var endpoint = new splunkjs.Service.Endpoint(service, "/search/jobs/12345");
-                endpoint.del("search/jobs/12345", {}, function () { done(); });
+                let endpoint = new splunkjs.Service.Endpoint(service, "/search/jobs/12345");
+                try {
+                    let res = endpoint.del("search/jobs/12345", {});
+                    assert.ok(res);
+                } catch (error) {
+                    assert.ok(error);
+                }
             });
 
             it("Methods of Resource to be overridden", function (done) {
                 var service = this.service;
-                var resource = new splunkjs.Service.Resource(service, "/search/jobs/12345");
+                let resource = new splunkjs.Service.Resource(service, "/search/jobs/12345");
                 assert.throws(function () { resource.path(); });
                 assert.throws(function () { resource.fetch(); });
                 assert.ok(splunkjs.Utils.isEmpty(resource.state()));
@@ -50,7 +55,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    var svc = new splunkjs.Service({
+    let svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,

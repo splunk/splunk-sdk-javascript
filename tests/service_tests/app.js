@@ -2,7 +2,6 @@ var assert = require('chai').assert;
 
 var splunkjs = require('../../index');
 
-var Async = splunkjs.Async;
 var utils = splunkjs.Utils;
 var idCounter = 0;
 
@@ -19,161 +18,110 @@ exports.setup = function (svc) {
                 done();
             });
 
-            it("Callback#list applications", function (done) {
-                var apps = this.service.apps();
-                apps.fetch(function (err, apps) {
-                    var appList = apps.list();
-                    assert.ok(appList.length > 0);
-                    done();
-                });
+            it("List applications", async function () {
+                let apps = this.service.apps();
+                let response = await apps.fetch();
+                let appList = response.list()
+                assert.ok(appList.length > 0);
             });
 
-            it("Callback#contains applications", function (done) {
-                var apps = this.service.apps();
-                apps.fetch(function (err, apps) {
-                    var app = apps.item("search");
-                    assert.ok(app);
-                    done();
-                });
+            it("Contains applications", async function () {
+                let apps = this.service.apps();
+                let response = await apps.fetch();
+                let app = response.item("search");
+                assert.ok(app);
             });
 
-            it("Callback#create + contains app", function (done) {
-                var name = "jssdk_testapp_" + getNextId();
-                var apps = this.service.apps();
-
-                apps.create({ name: name }, function (err, app) {
-                    var appName = app.name;
-                    apps.fetch(function (err, apps) {
-                        var entity = apps.item(appName);
-                        assert.ok(entity);
-                        app.remove(function () {
-                            done();
-                        });
-                    });
-                });
+            it("Create, contains app", async function () {
+                let name = "jssdk_testapp_" + getNextId();
+                let apps = this.service.apps();
+                let app = await apps.create({ name: name });
+                let appName = app.name;
+                let response = await apps.fetch();
+                let entity = response.item(appName);
+                assert.ok(entity);
+                await app.remove();
             });
 
-            it("Callback#create + modify app", function (done) {
-                var DESCRIPTION = "TEST DESCRIPTION";
-                var VERSION = "1.1.0";
+            it("Create, modify app", async function () {
+                let DESCRIPTION = "TEST DESCRIPTION";
+                let VERSION = "1.1.0";
 
-                var name = "jssdk_testapp_" + getNextId();
-                var apps = this.service.apps();
+                let name = "jssdk_testapp_" + getNextId();
+                let apps = this.service.apps();
 
-                Async.chain([
-                    function (callback) {
-                        apps.create({ name: name }, callback);
-                    },
-                    function (app, callback) {
-                        assert.ok(app);
-                        assert.strictEqual(app.name, name);
-                        var versionMatches = app.properties().version === "1.0" ||
-                            app.properties().version === "1.0.0";
-                        assert.ok(versionMatches);
-
-                        app.update({
-                            description: DESCRIPTION,
-                            version: VERSION
-                        }, callback);
-                    },
-                    function (app, callback) {
-                        assert.ok(app);
-                        var properties = app.properties();
-
-                        assert.strictEqual(properties.description, DESCRIPTION);
-                        assert.strictEqual(properties.version, VERSION);
-
-                        app.remove(callback);
-                    }
-                ], function (err) {
-                    assert.ok(!err);
-                    done();
+                let app = await apps.create({ name: name });
+                assert.ok(app);
+                assert.strictEqual(app.name, name);
+                let versionMatches = app.properties().version === "1.0" ||
+                    app.properties().version === "1.0.0";
+                assert.ok(versionMatches);
+                app = await app.update({
+                    description: DESCRIPTION,
+                    version: VERSION
                 });
+                assert.ok(app);
+                let properties = app.properties();
+
+                assert.strictEqual(properties.description, DESCRIPTION);
+                assert.strictEqual(properties.version, VERSION);
+                await app.remove();
             });
 
-            it("Callback#delete test applications", function (done) {
-
-                var apps = this.service.apps();
-                apps.fetch(function (err, apps) {
-
-                    var appList = apps.list();
-
-                    Async.parallelEach(appList,
-
-                        function (app, idx, callback) {
-                            if (utils.startsWith(app.name, "jssdk_")) {
-                                app.remove(callback);
-                            }
-                            else {
-                                callback();
-                            }
-                        }, function (err) {
-                            assert.ok(!err);
-                            done();
+            it("Delete test applications", async function () {
+                let apps = this.service.apps();
+                let response = await apps.fetch();
+                let appList = response.list();
+                await utils.parallelEach(
+                    appList,
+                    async function (app, idx) {
+                        if (utils.startsWith(app.name, "jssdk_")) {
+                            await app.remove();
                         }
-                    );
-                });
+                    }
+                );
             });
 
-            it("list applications with cookies as authentication", function (done) {
-                this.service.serverInfo(function (err, info) {
-                    // Cookie authentication was added in splunk 6.2
-                    var majorVersion = parseInt(info.properties().version.split(".")[0], 10);
-                    var minorVersion = parseInt(info.properties().version.split(".")[1], 10);
-                    // Skip cookie test if Splunk older than 6.2
-                    if (majorVersion < 6 || (majorVersion === 6 && minorVersion < 2)) {
-                        splunkjs.Logger.log("Skipping cookie test...");
-                        done();
-                        return;
-                    }
+            it("list applications with cookies as authentication", async function () {
+                let info = await this.service.serverInfo();
+                let majorVersion = parseInt(info.properties().version.split(".")[0], 10);
+                let minorVersion = parseInt(info.properties().version.split(".")[1], 10);
+                // Skip cookie test if Splunk older than 6.2
+                if (majorVersion < 6 || (majorVersion === 6 && minorVersion < 2)) {
+                    splunkjs.Logger.log("Skipping cookie test...");
+                    return;
+                }
+                var service = new splunkjs.Service({
+                    scheme: svc.scheme,
+                    host: svc.host,
+                    port: svc.port,
+                    username: svc.username,
+                    password: svc.password,
+                    version: svc.version
+                });
+                var service2 = new splunkjs.Service({
+                    scheme: svc.scheme,
+                    host: svc.host,
+                    port: svc.port,
+                    version: svc.version
+                });
 
-                    var service = new splunkjs.Service(
-                        {
-                            scheme: svc.scheme,
-                            host: svc.host,
-                            port: svc.port,
-                            username: svc.username,
-                            password: svc.password,
-                            version: svc.version
-                        });
+                await service.login();
+                // Save the cookie store
+                let cookieStore = service.http._cookieStore;
+                // Test that there are cookies
+                assert.ok(!utils.isEmpty(cookieStore));
 
-                    var service2 = new splunkjs.Service(
-                        {
-                            scheme: svc.scheme,
-                            host: svc.host,
-                            port: svc.port,
-                            version: svc.version
-                        });
+                // Add the cookies to a service with no other authenitcation information
+                service2.http._cookieStore = cookieStore;
 
-                    Async.chain([
-                        function (done) {
-                            service.login(done);
-                        },
-                        function (job, done) {
-                            // Save the cookie store
-                            var cookieStore = service.http._cookieStore;
-                            // Test that there are cookies
-                            assert.ok(!utils.isEmpty(cookieStore));
+                let apps = service2.apps();
+                let response = await apps.fetch();
 
-                            // Add the cookies to a service with no other authenitcation information
-                            service2.http._cookieStore = cookieStore;
+                let appList = response.list();
+                assert.ok(appList.length > 0);
+                assert.ok(!utils.isEmpty(service2.http._cookieStore));
 
-                            var apps = service2.apps();
-                            apps.fetch(done);
-                        },
-                        function (apps, done) {
-                            var appList = apps.list();
-                            assert.ok(appList.length > 0);
-                            assert.ok(!utils.isEmpty(service2.http._cookieStore));
-                            done();
-                        }
-                    ],
-                        function (err) {
-                            // Test that no errors were returned
-                            assert.ok(!err);
-                            done();
-                        });
-                })
             })
         })
     )
@@ -190,7 +138,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    var svc = new splunkjs.Service({
+    let svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,

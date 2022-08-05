@@ -1,8 +1,7 @@
 
 exports.setup = function (svc) {
     var assert = require('chai').assert;
-    var splunkjs = require('../../index');
-    var Async = splunkjs.Async;
+
     return (
         describe("Views ", function () {
 
@@ -11,55 +10,36 @@ exports.setup = function (svc) {
                 done();
             })
 
-            it("Callback#List views", function (done) {
+            it("List views", async function () {
                 var service = this.service;
+                const views = await service.views({ owner: "admin", app: "search" }).fetch();
+                assert.ok(views);
 
-                service.views({ owner: "admin", app: "search" }).fetch(function (err, views) {
-                    assert.ok(!err);
-                    assert.ok(views);
+                const viewsList = views.list();
+                assert.ok(viewsList);
+                assert.ok(viewsList.length > 0);
 
-                    var viewsList = views.list();
-                    assert.ok(viewsList);
-                    assert.ok(viewsList.length > 0);
-
-                    for (var i = 0; i < viewsList.length; i++) {
-                        assert.ok(viewsList[i]);
-                    }
-
-                    done();
-                });
+                for (let i = 0; i < viewsList.length; i++) {
+                    assert.ok(viewsList[i]);
+                }
             })
 
-            it("Callback#Create + update + delete view", function (done) {
+            it("Views - Create, update and delete view", async function () {
                 var service = this.service;
-                var name = "jssdk_testview";
-                var originalData = "<view/>";
-                var newData = "<view isVisible='false'></view>";
+                const name = "jssdk_testview";
+                const originalData = "<view/>";
+                const newData = "<view isVisible='false'></view>";
 
-                Async.chain([
-                    function (done) {
-                        service.views({ owner: "admin", app: "sdkappcollection" }).create({ name: name, "eai:data": originalData }, done);
-                    },
-                    function (view, done) {
-                        assert.ok(view);
+                const view = await service.views({ owner: "admin", app: "sdkappcollection" }).create({ name: name, "eai:data": originalData });
+                assert.ok(view);
+                assert.strictEqual(view.name, name);
+                assert.strictEqual(view.properties()["eai:data"], originalData);
 
-                        assert.strictEqual(view.name, name);
-                        assert.strictEqual(view.properties()["eai:data"], originalData);
+                const updatedView = await view.update({ "eai:data": newData });
+                assert.ok(updatedView);
+                assert.strictEqual(updatedView.properties()["eai:data"], newData);
 
-                        view.update({ "eai:data": newData }, done);
-                    },
-                    function (view, done) {
-                        assert.ok(view);
-                        assert.strictEqual(view.properties()["eai:data"], newData);
-
-                        view.remove(done);
-                    }
-                ],
-                    function (err) {
-                        assert.ok(!err);
-                        done();
-                    }
-                );
+                await updatedView.remove();
             })
         })
     );

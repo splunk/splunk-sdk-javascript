@@ -13,7 +13,7 @@ exports.setup = function (svc, loggedOutSvc) {
             });
 
             it("Methods to be overridden throw", function (done) {
-                var coll = new splunkjs.Service.Collection(
+                let coll = new splunkjs.Service.Collection(
                     this.service,
                     "/data/indexes",
                     {
@@ -29,7 +29,7 @@ exports.setup = function (svc, loggedOutSvc) {
             });
 
             it("Accessors work", function (done) {
-                var coll = new splunkjs.Service.Collection(
+                let coll = new splunkjs.Service.Collection(
                     this.service,
                     "/data/indexes",
                     {
@@ -45,7 +45,7 @@ exports.setup = function (svc, loggedOutSvc) {
             });
 
             it("Contains throws without a good id", function (done) {
-                var coll = new splunkjs.Service.Collection(
+                let coll = new splunkjs.Service.Collection(
                     this.service,
                     "/data/indexes",
                     {
@@ -72,7 +72,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    var svc = new splunkjs.Service({
+    let svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -81,7 +81,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
         version: cmdline.opts.version
     });
 
-    var loggedOutSvc = new splunkjs.Service({
+    let loggedOutSvc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
