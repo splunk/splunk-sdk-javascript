@@ -207,14 +207,18 @@ exports.setup = function (svc, loggedOutSvc) {
                 let counter = 0;
                 let [err, vals] = await utils.seriesMap(
                     messages,
-                    function (val, idx) {
+                    async function (val, idx) {
                         counter++;
-                        service.log(val);
+                        try {
+                            let res = await service.log(val);
+                            return [null, res];
+                        } catch (error) {
+                            return [error];
+                        }
                     }
                 );
                 assert.ok(!err);
                 assert.strictEqual(counter, messages.length);
-
                 // Verify that the full byte-length was sent for each message
                 for (let m in messages) {
                     assert.notStrictEqual(messages[m].length, vals[m].bytes);

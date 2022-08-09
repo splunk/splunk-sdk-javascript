@@ -118,19 +118,18 @@
                 };
 
                 try {
-                    needle.request(options.method, options.url, options.body, options, function (err, response, body) {
-                        try {
-                            var statusCode = (response ? response.statusCode : 500) || 500;
-                            var headers = (response ? response.headers : {}) || {};
-
-                            res.writeHead(statusCode, headers);
-                            res.write(body || JSON.stringify(err));
-                            res.end();
-                        }
-                        catch (ex) {
-                            writeError();
-                        }
-                    });
+                    needle(options.method, options.url, options.body, options)
+                    .then((response) => {
+                        var statusCode = (response ? response.statusCode : 500) || 500;
+                        var headers = (response ? response.headers : {}) || {};
+                        res.writeHead(statusCode, headers);
+                        res.write(response.body);
+                        res.end();
+                    }).catch((err)=>{
+                        console.log(err);
+                        res.write(JSON.stringify(err));
+                        writeError();
+                });
 
                 }
                 catch (ex) {
@@ -362,7 +361,6 @@
                 }
             });
         },
-
         add: function (filename, callback) {
             var program = git.execute(["add", filename], callback);
 
@@ -473,6 +471,7 @@
         bundle.add(entry);
         bundle.ignore(IGNORED_MODULES);
         bundle.bundle(function (err,src){
+            console.log("PAth",path)
             var code = [
                             "(function() {",
                             "",
@@ -489,7 +488,7 @@
                 var UglifyJS = require("uglify-js");
                 code = UglifyJS.minify({"file1.js":code},{toplevel:true}).code;
             }
-            fs.writeFileSync(path,code);
+            fs.writeFileSync(path,code||"");
             console.log("Compiled " + path);
         });
 

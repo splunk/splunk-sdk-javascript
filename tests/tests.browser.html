@@ -11,21 +11,20 @@
       var options={};
       var svc;
       var loggedOutSvc;
-        pollUntil = function(obj, condition, iterations, callback) {
-          callback = callback || function() {};
-          
-          var i = 0;
-          Async.whilst(
-              function() { return !condition(obj) && (i++ < iterations); },
-              function(done) {
-                  Async.sleep(500, function() {
-                      obj.fetch(done); 
-                  });
-              },
-              function(err) {
-                  callback(err, obj);
+      pollUntil = async function (obj, condition, iterations) {
+
+          let i = 0;
+          try {
+            await utils.whilst(
+              function () { return !condition(obj) && (i++ < iterations); },
+              async function () {
+                await utils.sleep(500);
+                obj.fetch();
               }
-          );
+            );
+          } catch (error) {
+            return [error, obj];
+          }
         };
 
         DummyHttp = {
@@ -36,7 +35,7 @@
         };
 
       $(function() {
-        $("#run-button").click(function(e) {
+        $("#run-button").click(async function(e) {
           e.preventDefault();
                     
           var scheme   = $("#server-scheme").val() || "https";
@@ -65,13 +64,12 @@
           });
           
           svc = new splunkjs.Service(http, options);
-          svc.login(function(err, success) {
-            if (err || !success) {
-              if (err) throw err;
-              alert("Cannot run tests - login failed");
-            }
+          try {
+            await svc.login();
             mocha.run();
-          });
+          } catch (error) {
+            alert("Cannot run tests - login failed");
+          }
         });
       });
     </script>
@@ -119,7 +117,6 @@
       mocha.timeout('10s');
     </script>
     <script src="../client/browser_utils.js"></script>
-    <script src="../client/browser_async.js"></script>
     <script src="../client/browser_service.js"></script>
     <script src="../client/browser_context.js"></script>
     <!-- Note that we cannot run the following tests in the browser,
