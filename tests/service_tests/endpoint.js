@@ -27,9 +27,8 @@ exports.setup = function (svc) {
                 try {
                     res = await endpoint.del("search/jobs/12345", {});
                 } catch (error) {
-                    assert.ok(!error);
+                    assert.ok(error);
                 }
-                assert.ok(res);
             });
 
             it("Methods of Resource to be overridden", function (done) {
