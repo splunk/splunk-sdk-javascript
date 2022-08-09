@@ -2,25 +2,26 @@
 exports.setup = function (svc, loggedOutSvc) {
     var assert = require('chai').assert;
     return (
-        describe("Typeahead Tests", function () {
-            beforeEach(function (done) {
+        describe("Typeahead Tests", () => {
+            beforeEach(function () {
                 this.service = svc;
                 this.loggedOutService = loggedOutSvc;
-                done();
             })
 
             it("Typeahead failure", async function () {
                 let service = this.loggedOutService;
+                let res;
                 try {
-                    await service.typeahead("index=", 1);
+                    res = await service.typeahead("index=", 1);
                 } catch (err) {
                     assert.ok(err);
                 }
+                assert.ok(!res);
             })
 
             it("Typeahead basic", async function () {
                 let service = this.service;
-                const options = await service.typeahead("index=", 1);
+                let options = await service.typeahead("index=", 1);
                 assert.ok(options);
                 assert.strictEqual(options.length, 1);
                 assert.ok(options[0]);
@@ -28,7 +29,7 @@ exports.setup = function (svc, loggedOutSvc) {
 
             it("Typeahead with omitted optional arguments", async function () {
                 let service = this.service;
-                const options = await service.typeahead("index=");
+                let options = await service.typeahead("index=");
                 assert.ok(options);
             })
         })
@@ -39,14 +40,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    const cmdline = options.create().parse(process.argv);
+    let cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    const svc = new splunkjs.Service({
+    let svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -55,7 +56,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
         version: cmdline.opts.version
     });
 
-    const loggedOutSvc = new splunkjs.Service({
+    let loggedOutSvc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -65,12 +66,12 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise((resolve, reject) => {
-        svc.login(function (err, success) {
-            if (err || !success) {
-                throw new Error("Login failed - not running tests", err || "");
-            }
-            return resolve(exports.setup(svc, loggedOutSvc));
-        });
+    module.exports = new Promise(async (resolve, reject) => {
+        try {
+            await svc.login();
+            return resolve(exports.setup(svc,loggedOutSvc))
+        } catch (error) {
+            throw new Error("Login failed - not running tests", error || "");
+        }
     });
 }

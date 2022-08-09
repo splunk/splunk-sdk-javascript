@@ -1,19 +1,14 @@
-const { utils } = require('mocha');
-
 exports.setup = function (svc) {
     var assert = require('chai').assert;
     var splunkjs = require('../../index');
-    var utils = splunkjs.Utils;
-    var Async = splunkjs.Async;
     var idCounter = 0;
     var getNextId = function () {
         return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
     };
     return (
-        describe("Storage Password Tests", function () {
-            beforeEach(function (done) {
+        describe("Storage Password Tests", () => {
+            beforeEach(function () {
                 this.service = svc;
-                done();
             });
 
             it("Create", async function () {
@@ -357,7 +352,7 @@ exports.setup = function (svc) {
                 }
                 assert.ok(found);
                 if (!found) {
-                    done(new Error("Didn't find the created password"));
+                    throw new Error("Didn't find the created password");
                 }
                 else {
                     await list[index].remove();
@@ -390,12 +385,12 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise((resolve, reject) => {
-        svc.login(function (err, success) {
-            if (err || !success) {
-                throw new Error("Login failed - not running tests", err || "");
-            }
-            return resolve(exports.setup(svc));
-        });
+    module.exports = new Promise(async (resolve, reject) => {
+        try {
+            await svc.login();
+            return resolve(exports.setup(svc))
+        } catch (error) {
+            throw new Error("Login failed - not running tests", error || "");
+        }
     });
 }

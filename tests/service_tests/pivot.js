@@ -5,7 +5,6 @@ exports.setup = function (svc) {
     var splunkjs = require('../../index');
     var tutils = require('../utils');
 
-    var Async = splunkjs.Async;
     var utils = splunkjs.Utils;
     var idCounter = 0;
 
@@ -13,7 +12,7 @@ exports.setup = function (svc) {
         return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
     };
     return (
-        describe("Pivot Tests", function () {
+        describe("Pivot Tests", () => {
             beforeEach(async function () {
                 this.service = svc;
                 this.dataModels = svc.dataModels({ owner: "nobody", app: "search" });
@@ -299,7 +298,7 @@ exports.setup = function (svc) {
                 let obj = dataModel.objectByName("test_data");
                 assert.ok(obj);
 
-                var pivotSpecification = obj.createPivotSpecification();
+                let pivotSpecification = obj.createPivotSpecification();
                 try {
                     pivotSpecification.addFilter("host", "string", "contains", "abc");
                     assert.strictEqual(1, pivotSpecification.filters.length);
@@ -335,14 +334,13 @@ exports.setup = function (svc) {
                 catch (err) {
                     // Fail if we can't read the file, likely to occur in the browser
                     assert.ok(!err);
-                    //TODO done();
                 }
                 var that = this;
                 let dataModel = await that.dataModels.create(name, args);
                 let obj = dataModel.objectByName("test_data");
                 assert.ok(obj);
 
-                var pivotSpecification = obj.createPivotSpecification();
+                let pivotSpecification = obj.createPivotSpecification();
                 try {
                     pivotSpecification.addFilter("hostip", "ipv4", "startsWith", "192.168");
                     assert.strictEqual(1, pivotSpecification.filters.length);
@@ -384,13 +382,13 @@ exports.setup = function (svc) {
                 let obj = dataModel.objectByName("test_data");
                 assert.ok(obj);
 
-                var pivotSpecification = obj.createPivotSpecification();
+                let pivotSpecification = obj.createPivotSpecification();
                 try {
                     pivotSpecification.addFilter("epsilon", "number", ">=", 2.3);
                     assert.strictEqual(1, pivotSpecification.filters.length);
 
                     //Test the individual parts of the filter
-                    var filter = pivotSpecification.filters[0];
+                    let filter = pivotSpecification.filters[0];
 
                     assert.ok(filter.hasOwnProperty("fieldName"));
                     assert.ok(filter.hasOwnProperty("type"));
@@ -485,7 +483,7 @@ exports.setup = function (svc) {
                     assert.ok(e);
                     assert.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number or string.");
                 }
-                var field = getNextId();
+                let field = getNextId();
                 try {
 
                     pivotSpecification.addRowSplit(field, "Break Me!");
@@ -500,7 +498,7 @@ exports.setup = function (svc) {
                 pivotSpecification.addRowSplit("epsilon", "My Label");
                 assert.strictEqual(1, pivotSpecification.rows.length);
 
-                var row = pivotSpecification.rows[0];
+                let row = pivotSpecification.rows[0];
                 assert.ok(row.hasOwnProperty("fieldName"));
                 assert.ok(row.hasOwnProperty("owner"));
                 assert.ok(row.hasOwnProperty("type"));
@@ -579,7 +577,7 @@ exports.setup = function (svc) {
                 assert.strictEqual("My Label", row.label);
                 assert.strictEqual("ranges", row.display);
 
-                var ranges = {
+                let ranges = {
                     start: 0,
                     end: 100,
                     size: 20,
@@ -720,7 +718,7 @@ exports.setup = function (svc) {
                     assert.ok(e);
                     assert.strictEqual(e.message, "Field was of type " + obj.fieldByName("has_boris").type + ", expected number or string.");
                 }
-                var field = getNextId();
+                let field = getNextId();
                 try {
 
                     pivotSpecification.addColumnSplit(field, "Break Me!");
@@ -735,7 +733,7 @@ exports.setup = function (svc) {
                 pivotSpecification.addColumnSplit("epsilon");
                 assert.strictEqual(1, pivotSpecification.columns.length);
 
-                var col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
+                let col = pivotSpecification.columns[pivotSpecification.columns.length - 1];
                 assert.ok(col.hasOwnProperty("fieldName"));
                 assert.ok(col.hasOwnProperty("owner"));
                 assert.ok(col.hasOwnProperty("type"));
@@ -805,7 +803,7 @@ exports.setup = function (svc) {
                 assert.strictEqual("test_data", col.owner);
                 assert.strictEqual("number", col.type);
                 assert.strictEqual("ranges", col.display);
-                var ranges = {
+                let ranges = {
                     start: 0,
                     end: 100,
                     size: 20,
@@ -955,7 +953,7 @@ exports.setup = function (svc) {
                 pivotSpecification.addCellValue("source", "Source Value", "dc");
                 assert.strictEqual(1, pivotSpecification.cells.length);
 
-                var cell = pivotSpecification.cells[pivotSpecification.cells.length - 1];
+                let cell = pivotSpecification.cells[pivotSpecification.cells.length - 1];
                 assert.ok(cell.hasOwnProperty("fieldName"));
                 assert.ok(cell.hasOwnProperty("owner"));
                 assert.ok(cell.hasOwnProperty("type"));
@@ -1164,7 +1162,7 @@ exports.setup = function (svc) {
                     assert.ok(false);
                 } catch (err) {
                     assert.ok(err);
-                    var expectedErr = "In handler 'datamodelpivot': Error in 'PivotReport': Must have non-empty cells or non-empty rows.";
+                    let expectedErr = "In handler 'datamodelpivot': Error in 'PivotReport': Must have non-empty cells or non-empty rows.";
                     assert.ok(utils.endsWith(err.message, expectedErr));
                 }
             })
@@ -1281,9 +1279,7 @@ exports.setup = function (svc) {
                 pivotSpecification.addRangeColumnSplit("exec_time", { start: 0, end: 12, step: 5, limit: 4 });
                 pivotSpecification.addCellValue("search", "Search Query", "values");
 
-                let response = await pivotSpecification.run({});
-                let job = response[0];
-                let pivot = response[1];
+                [job, pivot] = await pivotSpecification.run({});
                 job = await job.track({}, function (job) {
                     assert.strictEqual(pivot.tstatsSearch || pivot.pivotSearch, job.properties().request.search);
                     return job;
@@ -1312,14 +1308,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    var cmdline = options.create().parse(process.argv);
+    let cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    var svc = new splunkjs.Service({
+    let svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -1329,12 +1325,12 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise((resolve, reject) => {
-        svc.login(function (err, success) {
-            if (err || !success) {
-                throw new Error("Login failed - not running tests", err || "");
-            }
-            return resolve(exports.setup(svc));
-        });
+    module.exports = new Promise(async (resolve, reject) => {
+        try {
+            await svc.login();
+            return resolve(exports.setup(svc))
+        } catch (error) {
+            throw new Error("Login failed - not running tests", error || "");
+        }
     });
 }

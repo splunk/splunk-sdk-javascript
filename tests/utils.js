@@ -28,11 +28,11 @@ const { utils } = require('mocha');
                 function () { return !condition(obj) && (i++ < iterations); },
                 async function () {
                     await utils.sleep(500);
-                    obj.fetch();
+                    await obj.fetch();
                 }
             );
         } catch (error) {
-            return [error, obj];
+            throw error;
         }
     };
 

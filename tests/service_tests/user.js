@@ -9,12 +9,11 @@ exports.setup = function (svc, loggedOutSvc) {
         return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
     };
     return (
-        describe("User Tests", function () {
+        describe("User Tests", () => {
 
-            beforeEach(function (done) {
+            beforeEach(function () {
                 this.service = svc;
                 this.loggedOutService = loggedOutSvc;
-                done();
             })
 
             afterEach(async function () {
@@ -23,49 +22,53 @@ exports.setup = function (svc, loggedOutSvc) {
 
             it("Current user", async function () {
                 var service = this.service;
-                const user = await service.currentUser();
+                let user = await service.currentUser();
                 assert.ok(user);
                 assert.strictEqual(user.name, service.username);
             })
 
             it("Current user fails", async function () {
                 var service = this.loggedOutService;
+                let res
                 try {
-                    await service.currentUser();
+                    res = await service.currentUser();
                 } catch (err) {
                     assert.ok(err);
                 }
+                assert.ok(!res);
             })
 
             it("List users", async function () {
                 var service = this.service;
-                const users = await service.users().fetch();
-                const userList = users.list();
+                let users = await service.users().fetch();
+                let userList = users.list();
                 assert.ok(users);
                 assert.ok(userList);
                 assert.ok(userList.length > 0);
             })
 
             it("Create user failure", async function () {
+                let res;
                 try {
-                    const response = await this.loggedOutService.users().create(
+                    res = await this.loggedOutService.users().create(
                         { name: "jssdk_testuser", password: "abcdefg!", roles: "user" });
                 } catch (err) {
                     assert.ok(err);
                 }
+                assert.ok(!res);
             })
 
             it("User - Create, update and delete user", async function () {
                 var service = this.service;
-                const name = "jssdk_testuser";
-                const users = service.users();
-                const user = await users.create({ name: "jssdk_testuser", password: "abcdefg!", roles: "user" });
+                let name = "jssdk_testuser";
+                let users = service.users();
+                let user = await users.create({ name: "jssdk_testuser", password: "abcdefg!", roles: "user" });
                 assert.ok(user);
                 assert.strictEqual(user.name, name);
                 assert.strictEqual(user.properties().roles.length, 1);
                 assert.strictEqual(user.properties().roles[0], "user");
 
-                const updatedUser = await user.update({ realname: "JS SDK", roles: ["admin", "user"] });
+                let updatedUser = await user.update({ realname: "JS SDK", roles: ["admin", "user"] });
                 assert.ok(updatedUser);
                 assert.strictEqual(updatedUser.properties().realname, "JS SDK");
                 assert.strictEqual(updatedUser.properties().roles.length, 2);
@@ -95,12 +98,14 @@ exports.setup = function (svc, loggedOutSvc) {
                 assert.ok(user);
                 assert.strictEqual(user.properties().roles.length, 1);
                 assert.strictEqual(user.properties().roles[0], "user");
+                let res;
                 try {
-                    await user.update({ roles: "__unknown__" });
+                    res = await user.update({ roles: "__unknown__" });
                 } catch (error) {
                     assert.ok(error);
                     assert.strictEqual(error[0].status, 400);
                 }
+                assert.ok(!res);
             })
 
             it("User - Passwords", async function () {
@@ -128,7 +133,7 @@ exports.setup = function (svc, loggedOutSvc) {
                 assert.strictEqual(user.properties().roles.length, 1);
                 assert.strictEqual(user.properties().roles[0], "user");
 
-                const newService = new splunkjs.Service(service.http, {
+                let newService = new splunkjs.Service(service.http, {
                     username: name,
                     password: firstPassword,
                     host: service.host,
@@ -167,7 +172,7 @@ exports.setup = function (svc, loggedOutSvc) {
                 let users = this.service.users();
                 users = await users.fetch();
                 let userList = users.list();
-                await utils.parallelEach(
+                let err = await utils.parallelEach(
                     userList,
                     async function (user, idx) {
                         if (utils.startsWith(user.name, "jssdk_")) {
@@ -175,6 +180,7 @@ exports.setup = function (svc, loggedOutSvc) {
                         }
                     }
                 );
+                assert.ok(!err);
             })
         })
     );
@@ -184,14 +190,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    var cmdline = options.create().parse(process.argv);
+    let cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    var svc = new splunkjs.Service({
+    let svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -200,7 +206,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
         version: cmdline.opts.version
     });
 
-    var loggedOutSvc = new splunkjs.Service({
+    let loggedOutSvc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -210,12 +216,12 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise((resolve, reject) => {
-        svc.login(function (err, success) {
-            if (err || !success) {
-                throw new Error("Login failed - not running tests", err || "");
-            }
-            return resolve(exports.setup(svc, loggedOutSvc));
-        });
+    module.exports = new Promise(async (resolve, reject) => {
+        try {
+            await svc.login();
+            return resolve(exports.setup(svc, loggedOutSvc))
+        } catch (error) {
+            throw new Error("Login failed - not running tests", error || "");
+        }
     });
 }

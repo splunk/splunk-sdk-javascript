@@ -1,29 +1,14 @@
-// var tutils      = require('./utils');
-var Async       = splunkjs.Async;
+
 var utils       = splunkjs.Utils;
 
 splunkjs.Logger.setLevel("ALL");
-var isBrowser = typeof window !== "undefined";
-
-// (function() {
-//     "use strict";
-//     var Async = require('../lib/async');
-    
-//     var root = exports || this;
-
-//     root.DummyHttp = {
-//         // Required by Context.init()
-//         _setSplunkVersion: function(version) {
-//             // nothing
-//         }
-// };
-// })();
+const isBrowser = typeof window !== "undefined";
 
 describe('Context tests', function() {
     before(function(){
         this.service = svc;
     })
-    describe("General Context Test", function (done) {
+    describe("General Context Test", () => {
         before(function (done) {
             this.service = svc;
             done();
@@ -607,11 +592,9 @@ describe('Context tests', function() {
         it("Abort", async function () {
             try {
                 let res = await this.service.get("search/jobs", { count: 1 }, response_timeout = 1);
-                console.log("ab",res)
                 assert.ok(!res);
             } catch (error) {
                 assert.ok(error);
-                console.log("cd",error)
                 assert.strictEqual(error.error, "abort");
                 assert.strictEqual(error.status, "abort");
             }
@@ -744,7 +727,7 @@ describe('Context tests', function() {
         });
     }),
 
-    describe("Cookie Tests", function (done) {
+    describe("Cookie Tests", () => {
         before(async function () {
             this.service = svc;
             this.skip = false;

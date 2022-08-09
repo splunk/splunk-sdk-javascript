@@ -23,10 +23,9 @@ exports.setup = function (svc) {
     var isBrowser = typeof window !== "undefined";
 
     var suite = (
-        describe("General Context Test", function (done) {
-            before(function (done) {
+        describe("General Context Test", () => {
+            before(function () {
                 this.service = svc;
-                done();
             });
 
             it("Service exists", function (done) {
@@ -69,12 +68,13 @@ exports.setup = function (svc) {
                     version: svc.version
                 });
                 if (!isBrowser) {
+                    let res;
                     try {
-                        let res = await newService.login();
-                        assert.ok(!res);
+                        res = await newService.login();
                     } catch (error) {
                         assert.ok(error);
                     }
+                    assert.ok(!res);
                 }
             });
 
@@ -87,12 +87,13 @@ exports.setup = function (svc) {
             });
 
             it("Get error", async function () {
+                let res;
                 try {
-                    let res = await this.service.get("search/jobs/1234_nosuchjob", {});
-                    assert.ok(!res);
+                    res = await this.service.get("search/jobs/1234_nosuchjob", {});
                 } catch (error) {
                     assert.strictEqual(error.status, 404);
                 }
+                assert.ok(!res);
             });
 
             it("Get autologin - success", async function () {
@@ -120,15 +121,15 @@ exports.setup = function (svc) {
                     username: this.service.username,
                     password: this.service.password + "ABC",
                     version: svc.version
-                }
-                );
+                });
+                let res;
                 try {
-                    let res = await service.get("search/jobs", { count: 1 });
-                    assert.ok(!res);
+                    res = await service.get("search/jobs", { count: 1 });
                 } catch (error) {
                     assert.ok(error);
                     assert.strictEqual(error.status, 401);
                 }
+                assert.ok(!res);
             });
 
             it("Get autologin - disabled", async function () {
@@ -140,16 +141,15 @@ exports.setup = function (svc) {
                     password: this.service.password,
                     autologin: false,
                     version: svc.version
-                }
-                );
-
+                });
+                let res;
                 try {
-                    let res = await service.get("search/jobs", { count: 1 });
-                    assert.ok(!res);
+                    res = await service.get("search/jobs", { count: 1 });
                 } catch (error) {
                     assert.ok(error);
                     assert.strictEqual(error.status, 401);
                 }
+                assert.ok(!res);
             });
 
             it("Get relogin - success", async function () {
@@ -161,8 +161,7 @@ exports.setup = function (svc) {
                     password: this.service.password,
                     sessionKey: "ABCDEF-not-real",
                     version: svc.version
-                }
-                );
+                });
 
                 let res = await service.get("search/jobs", { count: 1 });
 
@@ -181,15 +180,15 @@ exports.setup = function (svc) {
                     password: this.service.password + "ABC",
                     sessionKey: "ABCDEF-not-real",
                     version: svc.version
-                }
-                );
+                });
+                let res;
                 try {
-                    let res = await service.get("search/jobs", { count: 1 });
-                    assert.ok(!res);
+                    res = await service.get("search/jobs", { count: 1 });
                 } catch (error) {
                     assert.ok(error);
                     assert.strictEqual(error.status, 401);
                 }
+                assert.ok(!res);
             });
 
             it("Post", async function () {
@@ -197,20 +196,20 @@ exports.setup = function (svc) {
                 let res = await this.service.post("search/jobs", { search: "search index=_internal | head 1" });
                 let sid = res.data.sid;
                 assert.ok(sid);
-
                 let endpoint = "search/jobs/" + sid + "/control";
                 res = await service.post(endpoint, { action: "cancel" });
-
+                assert.ok(res);
             });
 
             it("Post error", async function () {
+                let res;
                 try {
-                    let res = await this.service.post("search/jobs", { search: "index_internal | head 1" });
-                    assert.ok(!res);
+                    res = await this.service.post("search/jobs", { search: "index_internal | head 1" });
                 } catch (error) {
                     assert.ok(error);
                     assert.strictEqual(error.status, 400);
                 }
+                assert.ok(!res);
             });
 
             it("Post autologin - success", async function () {
@@ -221,16 +220,13 @@ exports.setup = function (svc) {
                     username: this.service.username,
                     password: this.service.password,
                     version: svc.version
-                }
-                );
+                });
 
                 let res = await service.post("search/jobs", { search: "search index=_internal | head 1" });
                 let sid = res.data.sid;
                 assert.ok(sid);
-
                 let endpoint = "search/jobs/" + sid + "/control";
                 res = await service.post(endpoint, { action: "cancel" });
-
             });
 
             it("Post autologin - error", async function () {
@@ -241,19 +237,19 @@ exports.setup = function (svc) {
                     username: this.service.username,
                     password: this.service.password + "ABC",
                     version: svc.version
-                }
-                );
+                });
+                let res ;
                 try {
-                    let res = await service.post("search/jobs", { search: "search index=_internal | head 1" });
-                    assert.ok(!res);
+                    res = await service.post("search/jobs", { search: "search index=_internal | head 1" });
                 } catch (error) {
                     assert.ok(error);
                     assert.strictEqual(error.status, 401);
                 }
+                assert.ok(!res);
             });
 
             it("Post autologin - disabled", async function () {
-                var service = new splunkjs.Service({
+                let service = new splunkjs.Service({
                     scheme: this.service.scheme,
                     host: this.service.host,
                     port: this.service.port,
@@ -261,15 +257,15 @@ exports.setup = function (svc) {
                     password: this.service.password,
                     autologin: false,
                     version: svc.version
-                }
-                );
+                });
+                let res;
                 try {
-                    let res = await service.post("search/jobs", { search: "search index=_internal | head 1" });
-                    assert.ok(res);
+                    res = await service.post("search/jobs", { search: "search index=_internal | head 1" });
                 } catch (error) {
                     assert.ok(error);
                     assert.strictEqual(error.status, 401);
                 }
+                assert.ok(!res);
             });
 
             it("Post relogin - success", async function () {
@@ -301,15 +297,15 @@ exports.setup = function (svc) {
                     password: this.service.password + "ABC",
                     sessionKey: "ABCDEF-not-real",
                     version: svc.version
-                }
-                );
+                });
+                let res
                 try {
-                    let res = await service.post("search/jobs", { search: "search index=_internal | head 1" });
-                    assert.ok(res);
+                    res = await service.post("search/jobs", { search: "search index=_internal | head 1" });
                 } catch (error) {
                     assert.ok(error);
                     assert.strictEqual(error.status, 401);
                 }
+                assert.ok(!res);
             });
 
             it("Delete", async function () {
@@ -323,13 +319,14 @@ exports.setup = function (svc) {
             });
 
             it("Delete error", async function () {
+                let res;
                 try {
-                    let res = await this.service.del("search/jobs/1234_nosuchjob", {});
-                    assert.ok(res);
+                    res = await this.service.del("search/jobs/1234_nosuchjob", {});
                 } catch (error) {
                     assert.ok(error);
                     assert.strictEqual(error.status, 404);
                 }
+                assert.ok(!res);
             });
 
             it("Delete autologin - success", async function () {
@@ -340,8 +337,7 @@ exports.setup = function (svc) {
                     username: this.service.username,
                     password: this.service.password,
                     version: svc.version
-                }
-                );
+                });
 
                 let res = await service.post("search/jobs", { search: "search index=_internal | head 1" });
                 let sid = res.data.sid;
@@ -360,19 +356,19 @@ exports.setup = function (svc) {
                     username: this.service.username,
                     password: this.service.password + "ABC",
                     version: svc.version
-                }
-                );
+                });
+                let res;
                 try {
-                    let res = await service.del("search/jobs/NO_SUCH_SID", {});
-                    assert.ok(res);
+                    res = await service.del("search/jobs/NO_SUCH_SID", {});
                 } catch (error) {
                     assert.ok(error);
                     assert.strictEqual(error.status, 401);
                 }
+                assert.ok(!res);
             });
 
             it("Delete autologin - disabled", async function () {
-                var service = new splunkjs.Service({
+                let service = new splunkjs.Service({
                     scheme: this.service.scheme,
                     host: this.service.host,
                     port: this.service.port,
@@ -380,15 +376,15 @@ exports.setup = function (svc) {
                     password: this.service.password,
                     autologin: false,
                     version: svc.version
-                }
-                );
+                });
+                let res;
                 try {
-                    let res = await service.del("search/jobs/NO_SUCH_SID", {});
-                    assert.ok(res);
+                    res = await service.del("search/jobs/NO_SUCH_SID", {});
                 } catch (error) {
                     assert.ok(error);
                     assert.strictEqual(error.status, 401);
                 }
+                assert.ok(!res);
             });
 
             it("Delete relogin - success", async function () {
@@ -400,8 +396,7 @@ exports.setup = function (svc) {
                     password: this.service.password,
                     sessionKey: "ABCDEF-not-real",
                     version: svc.version
-                }
-                );
+                });
 
                 let res = await service.post("search/jobs", { search: "search index=_internal | head 1" });
                 var sid = res.data.sid;
@@ -421,15 +416,15 @@ exports.setup = function (svc) {
                     password: this.service.password + "ABC",
                     sessionKey: "ABCDEF-not-real",
                     version: svc.version
-                }
-                );
+                });
+                let res;
                 try {
-                    let res = await service.del("search/jobs/NO_SUCH_SID", {});
-                    assert.ok(res);
+                    res = await service.del("search/jobs/NO_SUCH_SID", {});
                 } catch (error) {
                     assert.ok(error);
                     assert.strictEqual(error.status, 401);
                 }
+                assert.ok(!res);
             });
 
             it("Request get", async function () {
@@ -464,15 +459,16 @@ exports.setup = function (svc) {
             });
 
             it("Request error", async function () {
+                let res;
                 try {
-                    let res = await this.service.request("search/jobs/1234_nosuchjob", "GET", null, null, null, { "X-TestHeader": 1 });
-                    assert.ok(!res);
+                    res = await this.service.request("search/jobs/1234_nosuchjob", "GET", null, null, null, { "X-TestHeader": 1 });
                 } catch (error) {
                     if (error.response.request) {
                         assert.strictEqual(res.response.request.headers["X-TestHeader"], 1);
                     }
                     assert.strictEqual(error.status, 404);
                 }
+                assert.ok(!res);
             });
 
             it("Request autologin - success", async function () {
@@ -483,8 +479,7 @@ exports.setup = function (svc) {
                     username: this.service.username,
                     password: this.service.password,
                     version: svc.version
-                }
-                );
+                });
 
                 let get = { count: 1 };
                 let post = null;
@@ -509,19 +504,19 @@ exports.setup = function (svc) {
                     username: this.service.username,
                     password: this.service.password + "ABC",
                     version: svc.version
-                }
-                );
+                });
 
                 let get = { count: 1 };
                 let post = null;
                 let body = null;
+                let res;
                 try {
-                    let res = await service.request("search/jobs", "GET", get, post, body, { "X-TestHeader": 1 });
-                    assert.ok(!res);
+                    res = await service.request("search/jobs", "GET", get, post, body, { "X-TestHeader": 1 });
                 } catch (error) {
                     assert.ok(error);
                     assert.strictEqual(error.status, 401);
                 }
+                assert.ok(!res);
             });
 
             it("Request autologin - disabled", async function () {
@@ -533,19 +528,19 @@ exports.setup = function (svc) {
                     password: this.service.password,
                     autologin: false,
                     version: svc.version
-                }
-                );
+                });
 
                 let get = { count: 1 };
                 let post = null;
                 let body = null;
+                let res;
                 try {
-                    let res = await service.request("search/jobs", "GET", get, post, body, { "X-TestHeader": 1 });
-                    assert.ok(!res);
+                    res = await service.request("search/jobs", "GET", get, post, body, { "X-TestHeader": 1 });
                 } catch (error) {
                     assert.ok(error);
                     assert.strictEqual(error.status, 401);
                 }
+                assert.ok(!res);
             });
 
             it("Request relogin - success", async function () {
@@ -557,8 +552,7 @@ exports.setup = function (svc) {
                     password: this.service.password,
                     sessionKey: "ABCDEF-not-real",
                     version: svc.version
-                }
-                );
+                });
 
                 let get = { count: 1 };
                 let post = null;
@@ -590,24 +584,26 @@ exports.setup = function (svc) {
                 let get = { count: 1 };
                 let post = null;
                 let body = null;
+                let res;
                 try {
-                    let res = await service.request("search/jobs", "GET", get, post, body, { "X-TestHeader": 1 });
-                    assert.ok(!res);
+                    res = await service.request("search/jobs", "GET", get, post, body, { "X-TestHeader": 1 });
                 } catch (error) {
                     assert.ok(error);
                     assert.strictEqual(error.status, 401);
                 }
+                assert.ok(!res);
             });
 
             it("Abort", async function () {
+                let res;
                 try {
-                    let res = await this.service.get("search/jobs", { count: 1 }, response_timeout = 1);
-                    assert.ok(!res);
+                    res = await this.service.get("search/jobs", { count: 1 }, response_timeout = 1);
                 } catch (error) {
                     assert.ok(error);
                     assert.strictEqual(error.error, "abort");
                     assert.strictEqual(error.status, "abort");
                 }
+                assert.ok(!res);
             });
 
             it("Timeout default test", async function () {
@@ -618,8 +614,7 @@ exports.setup = function (svc) {
                     username: this.service.username,
                     password: this.service.password,
                     version: svc.version
-                }
-                );
+                });
 
                 assert.strictEqual(0, service.timeout);
                 let res = await service.request("search/jobs", "GET", { count: 1 }, null, null, { "X-TestHeader": 1 });
@@ -635,8 +630,7 @@ exports.setup = function (svc) {
                     password: this.service.password,
                     version: svc.version,
                     timeout: 10000
-                }
-                );
+                });
 
                 assert.strictEqual(service.timeout, 10000);
                 let res = await service.request("search/jobs", "GET", { count: 1 }, null, null, { "X-TestHeader": 1 });
@@ -670,20 +664,20 @@ exports.setup = function (svc) {
 
             it("Cancel test search", async function () {
                 // Here, the search created for several of the previous tests is terminated, it is no longer necessary
-                var endpoint = "search/jobs/DELETEME_JSSDK_UNITTEST/control";
+                let endpoint = "search/jobs/DELETEME_JSSDK_UNITTEST/control";
                 await this.service.post(endpoint, { action: "cancel" });
             });
 
             it("Fullpath gets its owner/app from the right places", function (done) {
-                var http = tutils.DummyHttp;
-                var ctx = new splunkjs.Context(http, { /*nothing*/ });
+                let http = tutils.DummyHttp;
+                let ctx = new splunkjs.Context(http, { /*nothing*/ });
 
                 // Absolute paths are unchanged
                 assert.strictEqual(ctx.fullpath("/a/b/c"), "/a/b/c");
                 // Fall through to /services if there is no app
                 assert.strictEqual(ctx.fullpath("meep"), "/services/meep");
                 // Are username and app set properly?
-                var ctx2 = new splunkjs.Context(http, { owner: "alpha", app: "beta" });
+                let ctx2 = new splunkjs.Context(http, { owner: "alpha", app: "beta" });
                 assert.strictEqual(ctx2.fullpath("meep"), "/servicesNS/alpha/beta/meep");
                 assert.strictEqual(ctx2.fullpath("meep", { owner: "boris" }), "/servicesNS/boris/beta/meep");
                 assert.strictEqual(ctx2.fullpath("meep", { app: "factory" }), "/servicesNS/alpha/factory/meep");
@@ -693,14 +687,14 @@ exports.setup = function (svc) {
                 assert.strictEqual(ctx2.fullpath("meep", { sharing: "global" }), "/servicesNS/nobody/beta/meep");
                 assert.strictEqual(ctx2.fullpath("meep", { sharing: "system" }), "/servicesNS/nobody/system/meep");
                 // Do special characters get encoded?
-                var ctx3 = new splunkjs.Context(http, { owner: "alpha@beta.com", app: "beta" });
+                let ctx3 = new splunkjs.Context(http, { owner: "alpha@beta.com", app: "beta" });
                 assert.strictEqual(ctx3.fullpath("meep"), "/servicesNS/alpha%40beta.com/beta/meep");
                 done();
             });
 
             it("Version check", function (done) {
-                var http = tutils.DummyHttp;
-                var ctx;
+                let http = tutils.DummyHttp;
+                let ctx;
 
                 ctx = new splunkjs.Context(http, { "version": "4.0" });
                 assert.ok(ctx.version === "4.0");
@@ -851,15 +845,16 @@ exports.setup = function (svc) {
                 service.http._cookieStore = { "bad": "cookie" };
 
                 // Try requesting something that requires authentication
+                let resp;
                 try {
-                    let resp = await service.get("search/jobs", { count: 1 });
-                    assert.ok(!resp);
+                    resp = await service.get("search/jobs", { count: 1 });
                 } catch (err) {
                     // Test if an error is returned
                     assert.ok(err);
                     // Check that it is an unauthorized error
                     assert.strictEqual(err.status, 401);
                 }
+                assert.ok(!resp);
             });
 
             it("Autologin with cookie", async function () {
@@ -899,13 +894,14 @@ exports.setup = function (svc) {
                 assert.strictEqual(service.sessionKey, '');
                 assert.ok(!service.username);
                 assert.ok(!service.password);
+                let res;
                 try {
-                    let res = await service.get("search/jobs", { count: 1 });
-                    assert.ok(!res);
+                    res = await service.get("search/jobs", { count: 1 });
                 } catch (error) {
                     // Test if an error is returned
                     assert.ok(error);
                 }
+                assert.ok(!res);
             });
 
             it("Login with multiple cookies", async function () {
@@ -929,6 +925,7 @@ exports.setup = function (svc) {
                 });
 
                 // Login to service to get a valid cookie
+                let res;
                 try {
                     await service.login();
                     // Save the cookie store
@@ -943,12 +940,12 @@ exports.setup = function (svc) {
                     service2.http._cookieStore = cookieStore;
 
                     // Make a request that requires authentication
-                    let res = await service2.get("search/jobs", { count: 1 });
+                    res = await service2.get("search/jobs", { count: 1 });
                     // Test that a response was returned
-                    assert.ok(res);
                 } catch (error) {
                     assert.ok(!error);
                 }
+                assert.ok(res);
             });
 
             it("Autologin with cookie and bad sessionKey", async function () {
@@ -987,14 +984,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var options = require('./cmdline');
     var splunkjs = require('../index');
 
-    const cmdline = new options.create().parse(process.argv);
+    let cmdline = new options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    const svc = new splunkjs.Service({
+    let svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -1004,12 +1001,12 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise((resolve, reject) => {
-        svc.login(function (err, success) {
-            if (err || !success) {
-                throw new Error("Login failed - not running tests", err || "");
-            }
-            return resolve(exports.setup(svc));
-        });
+    module.exports = new Promise(async (resolve, reject) => {
+        try {
+            await svc.login();
+            return resolve(exports.setup(svc))
+        } catch (error) {
+            throw new Error("Login failed - not running tests", error || "");
+        }
     });
 }

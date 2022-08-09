@@ -1,6 +1,5 @@
 var assert = require('chai').assert;
 
-//const { utils } = require('mocha');
 var splunkjs = require('../../index');
 var utils = splunkjs.Utils;
 
@@ -12,7 +11,7 @@ var getNextId = function () {
 
 exports.setup = function (svc, loggedOutSvc) {
     return (
-        describe("Indexes tests", function (done) {
+        describe("Indexes tests", () => {
             beforeEach(async function () {
                 this.service = svc;
                 this.loggedOutService = loggedOutSvc;
@@ -133,14 +132,14 @@ exports.setup = function (svc, loggedOutSvc) {
                 let index = indexes.item(name);
                 assert.ok(index);
                 index = await index.disable();
-                await new Promise(resolve => setTimeout(resolve, 5000));
+                await utils.sleep(5000);
                 assert.ok(index);
                 index = await index.fetch();
                 assert.ok(index);
                 assert.ok(index.properties().disabled);
 
                 index = await index.enable();
-                await new Promise(resolve => setTimeout(resolve, 5000));
+                await utils.sleep(5000);
                 assert.ok(index);
                 index = await index.fetch();
                 assert.ok(index);
@@ -244,7 +243,7 @@ exports.setup = function (svc, loggedOutSvc) {
                 }
             });
 
-            it("Remove throws an error1", async function () {
+            it("Remove throws an error", async function () {
                 let index = this.service.indexes().item("_internal");
                 assert.isNull(index);
                 assert.throws(function () { index.remove(); });
@@ -300,14 +299,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    var cmdline = options.create().parse(process.argv);
+    let cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    var svc = new splunkjs.Service({
+    let svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -316,7 +315,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
         version: cmdline.opts.version
     });
 
-    var loggedOutSvc = new splunkjs.Service({
+    let loggedOutSvc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -326,12 +325,12 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise((resolve, reject) => {
-        svc.login(function (err, success) {
-            if (err || !success) {
-                throw new Error("Login failed - not running tests", err || "");
-            }
-            return resolve(exports.setup(svc, loggedOutSvc));
-        });
+    module.exports = new Promise(async (resolve, reject) => {
+        try {
+            await svc.login();
+            return resolve(exports.setup(svc, loggedOutSvc))
+        } catch (error) {
+            throw new Error("Login failed - not running tests", error || "");
+        }
     });
 }

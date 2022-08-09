@@ -3,19 +3,18 @@ exports.setup = function (svc) {
     var assert = require('chai').assert;
 
     return (
-        describe("Views ", function () {
+        describe("Views ", () => {
 
-            beforeEach(function (done) {
+            beforeEach(function () {
                 this.service = svc;
-                done();
             })
 
             it("List views", async function () {
                 var service = this.service;
-                const views = await service.views({ owner: "admin", app: "search" }).fetch();
+                let views = await service.views({ owner: "admin", app: "search" }).fetch();
                 assert.ok(views);
 
-                const viewsList = views.list();
+                let viewsList = views.list();
                 assert.ok(viewsList);
                 assert.ok(viewsList.length > 0);
 
@@ -26,16 +25,16 @@ exports.setup = function (svc) {
 
             it("Views - Create, update and delete view", async function () {
                 var service = this.service;
-                const name = "jssdk_testview";
-                const originalData = "<view/>";
-                const newData = "<view isVisible='false'></view>";
+                let name = "jssdk_testview";
+                let originalData = "<view/>";
+                let newData = "<view isVisible='false'></view>";
 
-                const view = await service.views({ owner: "admin", app: "sdkappcollection" }).create({ name: name, "eai:data": originalData });
+                let view = await service.views({ owner: "admin", app: "sdkappcollection" }).create({ name: name, "eai:data": originalData });
                 assert.ok(view);
                 assert.strictEqual(view.name, name);
                 assert.strictEqual(view.properties()["eai:data"], originalData);
 
-                const updatedView = await view.update({ "eai:data": newData });
+                let updatedView = await view.update({ "eai:data": newData });
                 assert.ok(updatedView);
                 assert.strictEqual(updatedView.properties()["eai:data"], newData);
 
@@ -49,14 +48,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    var cmdline = options.create().parse(process.argv);
+    let cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    var svc = new splunkjs.Service({
+    let svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -66,12 +65,12 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise((resolve, reject) => {
-        svc.login(function (err, success) {
-            if (err || !success) {
-                throw new Error("Login failed - not running tests", err || "");
-            }
-            return resolve(exports.setup(svc));
-        });
+    module.exports = new Promise(async (resolve, reject) => {
+        try {
+            await svc.login();
+            return resolve(exports.setup(svc))
+        } catch (error) {
+            throw new Error("Login failed - not running tests", error || "");
+        }
     });
 }

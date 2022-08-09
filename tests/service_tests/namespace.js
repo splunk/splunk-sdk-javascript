@@ -170,7 +170,7 @@ exports.setup = function (svc) {
                 let users = this.service.users();
                 users = await users.fetch();
                 let userList = users.list();
-                await utils.parallelEach(
+                let err = await utils.parallelEach(
                     userList,
                     async function (user, idx) {
                         if (utils.startsWith(user.name, "jssdk_")) {
@@ -178,7 +178,23 @@ exports.setup = function (svc) {
                         }
                     }
                 );
-            })
+                assert.ok(!err);
+            });
+
+            it("Delete test applications", async function () {
+                let apps = this.service.apps();
+                let response = await apps.fetch();
+                let appList = response.list();
+                let err = await utils.parallelEach(
+                    appList,
+                    async function (app, idx) {
+                        if (utils.startsWith(app.name, "jssdk_")) {
+                            await app.remove();
+                        }
+                    }
+                );
+                assert.ok(!err);
+            });
         })
     )
 };
@@ -187,7 +203,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    const cmdline = options.create().parse(process.argv);
+    let cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
@@ -204,12 +220,12 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise((resolve, reject) => {
-        svc.login(function (err, success) {
-            if (err || !success) {
-                throw new Error("Login failed - not running tests", err || "");
-            }
-            return resolve(exports.setup(svc));
-        });
+    module.exports = new Promise(async (resolve, reject) => {
+        try {
+            await svc.login();
+            return resolve(exports.setup(svc))
+        } catch (error) {
+            throw new Error("Login failed - not running tests", error || "");
+        }
     });
 }

@@ -10,16 +10,14 @@ var getNextId = function () {
 exports.setup = function (svc) {
 
     return (
-        describe("Configuration tests", function (done) {
-            beforeEach(function (done) {
+        describe("Configuration tests", () => {
+            beforeEach(function () {
                 this.service = svc;
-                done();
             });
 
             it("List configurations", async function () {
                 var that = this;
                 let namespace = { owner: "admin", app: "search" };
-
                 let props = await that.service.configurations(namespace).fetch();
                 let files = props.list();
                 assert.ok(files.length > 0);
@@ -51,14 +49,17 @@ exports.setup = function (svc) {
                 assert.ok(stanza.properties().hasOwnProperty("httpport"));
             });
 
-            it("Configurations init", function (done) {
-                assert.throws(function () {
-                    let confs = new splunkjs.Service.Configurations(
+            it("Configurations init", async function () {
+                let res
+                try {
+                    res = new splunkjs.Service.Configurations(
                         this.service,
                         { owner: "-", app: "-", sharing: "system" }
                     );
-                });
-                done();
+                } catch (error) {
+                    assert.ok(error);
+                }
+                assert.ok(!res);
             });
 
             it("Create file, create stanza, update stanza", async function () {
@@ -67,10 +68,10 @@ exports.setup = function (svc) {
                 let value = "barfoo_" + getNextId();
 
                 let configs = svc.configurations(namespace);
-                configs = await configs.fetch(done);
+                configs = await configs.fetch();
                 let file = await configs.create({ __conf: fileName });
                 if (file.item("stanza")) {
-                    file.item("stanza").remove();
+                    await file.item("stanza").remove();
                 }
                 let stanza = await file.create("stanza");
                 let stanzaUpdated = await stanza.update({ "jssdk_foobar": value });
@@ -131,7 +132,7 @@ exports.setup = function (svc) {
                 let file = props.item("savedsearches");
                 assert.strictEqual(namespace, file.namespace);
                 assert.ok(file);
-                file = await file.fetch(done);
+                file = await file.fetch();
                 assert.strictEqual(namespace, file.namespace);
                 let stanza = await file.getDefaultStanza().fetch();
                 assert.strictEqual(stanza.name, "default");
@@ -171,7 +172,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    var cmdline = options.create().parse(process.argv);
+    let cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
@@ -188,12 +189,12 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise((resolve, reject) => {
-        svc.login(function (err, success) {
-            if (err || !success) {
-                throw new Error("Login failed - not running tests", err || "");
-            }
-            return resolve(exports.setup(svc));
-        });
+    module.exports = new Promise(async (resolve, reject) => {
+        try {
+            await svc.login();
+            return resolve(exports.setup(svc))
+        } catch (error) {
+            throw new Error("Login failed - not running tests", error || "");
+        }
     });
 }

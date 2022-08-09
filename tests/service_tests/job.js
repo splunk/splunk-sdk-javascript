@@ -6,7 +6,6 @@ exports.setup = function (svc) {
     var tutils = require('../utils');
     const { Logger } = require('../../lib/log');
 
-    var Async = splunkjs.Async;
     var utils = splunkjs.Utils;
     var idCounter = 0;
 
@@ -14,10 +13,9 @@ exports.setup = function (svc) {
         return "id" + (idCounter++) + "_" + ((new Date()).valueOf());
     };
     return (
-        describe("Job tests", function (done) {
-            beforeEach(function (done) {
+        describe("Job tests", () => {
+            beforeEach(function () {
                 this.service = svc;
-                done();
             });
 
             // Disabling the test for now because the apps/appinstall endpoint have been deprecated from Splunk 8.2
@@ -115,7 +113,6 @@ exports.setup = function (svc) {
             });
 
             it("Contains job", async function () {
-                var that = this;
                 let sid = getNextId();
                 let jobs = this.service.jobs();
 
@@ -132,7 +129,6 @@ exports.setup = function (svc) {
 
             it("Job results", async function () {
                 let sid = getNextId();
-                let service = this.service;
                 let that = this;
                 let job = await that.service.jobs().search('search index=_internal | head 1 | stats count', { id: sid });
                 assert.strictEqual(job.sid, sid);
@@ -153,7 +149,6 @@ exports.setup = function (svc) {
 
             it("Job events", async function () {
                 let sid = getNextId();
-                let service = this.service;
                 let that = this;
                 let job = await that.service.jobs().search('search index=_internal | head 1', { id: sid });
                 assert.strictEqual(job.sid, sid);
@@ -172,7 +167,6 @@ exports.setup = function (svc) {
 
             it("Job events - post processing search params", async function () {
                 let sid = getNextId();
-                let service = this.service;
                 let that = this;
                 let job = await that.service.jobs().search('search index=_internal | head 2', { id: sid });
                 assert.strictEqual(job.sid, sid);
@@ -192,7 +186,6 @@ exports.setup = function (svc) {
 
             it("Job results preview", async function () {
                 let sid = getNextId();
-                let service = this.service;
                 let that = this;
                 let job = await that.service.jobs().search('search index=_internal | head 1 | stats count', { id: sid });
                 assert.strictEqual(job.sid, sid);
@@ -222,9 +215,7 @@ exports.setup = function (svc) {
                     10
                 );
                 let iterator = job.iterator("results", { pagesize: 4 });
-                console.log(iterator);
                 let hasMore = true;
-                let numElements = 0;
                 let pageSizes = [];
                 await utils.whilst(
                     function () { return hasMore; },
@@ -383,9 +374,7 @@ exports.setup = function (svc) {
                 let sid = getNextId();
                 var that = this;
                 let job = await that.service.jobs().search('search index=_internal | head 1', { id: sid, exec_mode: "blocking" });
-                let response = await job.searchlog();
-                let log = response[0];
-                job = response[1];
+                [log, job] = await job.searchlog();
                 assert.ok(job);
                 assert.ok(log);
                 assert.ok(log.length > 0);
@@ -406,9 +395,7 @@ exports.setup = function (svc) {
                 // Let's sleep for 2 second so
                 // we let the server catch up
                 await utils.sleep(2000);
-                let response = await job.summary({});
-                let summary = response[0];
-                job = response[1];
+                [summary, job] = await job.summary({});
                 assert.ok(job);
                 assert.ok(summary);
                 assert.strictEqual(summary.event_count, 1);
@@ -433,9 +420,7 @@ exports.setup = function (svc) {
                         rf: ["foo"],
                         exec_mode: "blocking"
                     });
-                let response = await job.timeline({});
-                let timeline = response[0];
-                job = response[1];
+                [timeline, job] = await job.timeline({});
                 assert.ok(job);
                 assert.ok(timeline);
                 assert.strictEqual(timeline.buckets.length, 1);
@@ -468,28 +453,29 @@ exports.setup = function (svc) {
                 let originalSearch = "search index=_internal | head 1";
 
                 let jobs = this.service.jobs();
+                let res;
                 try {
-                    let res = await jobs.create({ search: originalSearch, name: name, exec_mode: "oneshot" });
-                    assert.ok(!res);
+                    res = await jobs.create({ search: originalSearch, name: name, exec_mode: "oneshot" });
                 } catch (error) {
                     assert.ok(error);
                 }
+                assert.ok(!res);
             });
 
             it("Create fails with no search string", async function () {
                 let jobs = this.service.jobs();
+                let res;
                 try {
-                    let res = await jobs.create("", {});
-                    assert.ok(!res);
+                    res = await jobs.create("", {});
                 } catch (error) {
                     assert.ok(error);
                 }
+                assert.ok(!res);
             });
 
             it("Oneshot search", async function () {
                 let sid = getNextId();
                 var that = this;
-                let originalTime = "";
                 let results = await that.service.jobs().oneshotSearch('search index=_internal | head 1 | stats count', { id: sid });
                 assert.ok(results);
                 assert.ok(results.fields);
@@ -656,7 +642,6 @@ exports.setup = function (svc) {
 
             it("Service search", async function () {
                 let sid = getNextId();
-                let service = this.service;
                 let that = this;
                 let namespace = { owner: "admin", app: "search" };
                 let job = await that.service.search('search index=_internal | head 1 | stats count', { id: sid }, namespace);
@@ -766,31 +751,36 @@ exports.setup = function (svc) {
                 let numJobs = 20;
                 let numJobsLeft = numJobs;
                 let gotJobNotImmediatelyReady = false;
+                let taskList = []
+                let service = this.service;
                 for (let i = 0; i < numJobs; i++) {
-                    this.service.search('search index=_internal | head 10000', {}).then(async (job) => {
-                        await job.track({}, {
-                            _preready: function (job) {
-                                gotJobNotImmediatelyReady = true;
-                            },
-
-                            ready: function (job) {
-                                numJobsLeft--;
-
-                                if (numJobsLeft === 0) {
-                                    if (!gotJobNotImmediatelyReady) {
-                                        splunkjs.Logger.error("", "WARNING: Couldn't test code path in track() where job wasn't ready immediately.");
+                    taskList.push(async function(){
+                        let job = await service.search('search index=_internal | head 10000', {});
+                            await job.track({}, {
+                                _preready: function (job) {
+                                    gotJobNotImmediatelyReady = true;
+                                },
+    
+                                ready: function (job) {
+                                    numJobsLeft--;
+                                    if (numJobsLeft === 0) {
+                                        if (!gotJobNotImmediatelyReady) {
+                                            splunkjs.Logger.error("", "WARNING: Couldn't test code path in track() where job wasn't ready immediately.");
+                                        }
+                                        
+                                        assert.ok(true);
                                     }
-                                    assert.ok(true);
                                 }
-                            }
-                        });
-                    });
+                            });
+                    })
                 }
+                let [err, resp] = await utils.parallel(taskList);
+                assert.ok(!err);
             });
 
             it("Service.getJob() works", async function () {
                 var that = this;
-                var sidsMatch = false;
+                let sidsMatch = false;
                 let job = await this.service.search('search index=_internal | head 1', {});
                 let sid = job.sid;
                 let innerJob = await that.service.getJob(sid);
@@ -806,7 +796,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    var cmdline = options.create().parse(process.argv);
+    let cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
@@ -817,7 +807,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
         throw new Error("$PATH variable SPLUNK_HOME is not set. Please export SPLUNK_HOME to the splunk instance.");
     }
 
-    var svc = new splunkjs.Service({
+    let svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -827,12 +817,12 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise((resolve, reject) => {
-        svc.login(function (err, success) {
-            if (err || !success) {
-                throw new Error("Login failed - not running tests", err || "");
-            }
-            return resolve(exports.setup(svc));
-        });
+    module.exports = new Promise(async (resolve, reject) => {
+        try {
+            await svc.login();
+            return resolve(exports.setup(svc))
+        } catch (error) {
+            throw new Error("Login failed - not running tests", error || "");
+        }
     });
 }

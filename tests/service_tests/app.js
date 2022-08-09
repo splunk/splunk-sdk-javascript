@@ -12,10 +12,9 @@ var getNextId = function () {
 exports.setup = function (svc) {
 
     return (
-        describe("App tests", function (done) {
-            beforeEach(function (done) {
+        describe("App tests", () => {
+            beforeEach(function (){
                 this.service = svc;
-                done();
             });
 
             it("List applications", async function () {
@@ -72,7 +71,7 @@ exports.setup = function (svc) {
                 let apps = this.service.apps();
                 let response = await apps.fetch();
                 let appList = response.list();
-                await utils.parallelEach(
+                let err = await utils.parallelEach(
                     appList,
                     async function (app, idx) {
                         if (utils.startsWith(app.name, "jssdk_")) {
@@ -80,6 +79,7 @@ exports.setup = function (svc) {
                         }
                     }
                 );
+                assert.ok(!err);
             });
 
             it("list applications with cookies as authentication", async function () {
@@ -91,7 +91,7 @@ exports.setup = function (svc) {
                     splunkjs.Logger.log("Skipping cookie test...");
                     return;
                 }
-                var service = new splunkjs.Service({
+                let service = new splunkjs.Service({
                     scheme: svc.scheme,
                     host: svc.host,
                     port: svc.port,
@@ -99,7 +99,7 @@ exports.setup = function (svc) {
                     password: svc.password,
                     version: svc.version
                 });
-                var service2 = new splunkjs.Service({
+                let service2 = new splunkjs.Service({
                     scheme: svc.scheme,
                     host: svc.host,
                     port: svc.port,
@@ -131,7 +131,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    var cmdline = options.create().parse(process.argv);
+    let cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
@@ -148,12 +148,12 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise((resolve, reject) => {
-        svc.login(function (err, success) {
-            if (err || !success) {
-                throw new Error("Login failed - not running tests", err || "");
-            }
-            return resolve(exports.setup(svc));
-        });
+    module.exports = new Promise(async (resolve, reject) => {
+        try {
+            await svc.login();
+            return resolve(exports.setup(svc))
+        } catch (error) {
+            throw new Error("Login failed - not running tests", error || "");
+        }
     });
 }

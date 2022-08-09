@@ -4,10 +4,9 @@ var splunkjs = require('../../index');
 
 exports.setup = function (svc) {
     return (
-        describe("Endpoint tests", function (done) {
-            beforeEach(function (done) {
+        describe("Endpoint tests",  () => {
+            beforeEach(function () {
                 this.service = svc;
-                done();
             });
 
             it("Throws on null arguments to init", function (done) {
@@ -24,12 +23,13 @@ exports.setup = function (svc) {
             it("Endpoint delete on a relative path", async function () {
                 var service = this.service;
                 let endpoint = new splunkjs.Service.Endpoint(service, "/search/jobs/12345");
+                let res;
                 try {
-                    let res = endpoint.del("search/jobs/12345", {});
-                    assert.ok(res);
+                    res = await endpoint.del("search/jobs/12345", {});
                 } catch (error) {
-                    assert.ok(error);
+                    assert.ok(!error);
                 }
+                assert.ok(res);
             });
 
             it("Methods of Resource to be overridden", function (done) {
@@ -48,7 +48,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    var cmdline = options.create().parse(process.argv);
+    let cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
@@ -65,12 +65,12 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise((resolve, reject) => {
-        svc.login(function (err, success) {
-            if (err || !success) {
-                throw new Error("Login failed - not running tests", err || "");
-            }
-            return resolve(exports.setup(svc));
-        });
+    module.exports = new Promise(async (resolve, reject) => {
+        try {
+            await svc.login();
+            return resolve(exports.setup(svc))
+        } catch (error) {
+            throw new Error("Login failed - not running tests", error || "");
+        }
     });
 }

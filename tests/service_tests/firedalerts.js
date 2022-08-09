@@ -2,7 +2,6 @@ var assert = require('chai').assert;
 
 var splunkjs = require('../../index');
 var utils = splunkjs.Utils;
-var utils = splunkjs.Utils;
 var idCounter = 0;
 
 var getNextId = function () {
@@ -12,11 +11,9 @@ var getNextId = function () {
 exports.setup = function (svc, loggedOutSvc) {
     return (
         describe("Fired alerts tests", () => {
-            beforeEach(function (done) {
+            beforeEach(function () {
                 this.service = svc;
                 this.loggedOutService = loggedOutSvc;
-                var indexes = this.service.indexes();
-                done();
             });
 
             it("create, verify emptiness and delete new alert group", async function () {
@@ -37,9 +34,7 @@ exports.setup = function (svc, loggedOutSvc) {
                 let search = await searches.create(searchConfig);
                 assert.ok(search);
                 assert.strictEqual(search.alertCount(), 0);
-                let response = await search.history();
-                let jobs = response[0];
-                search = response[1];
+                [jobs, search] = await search.history();
                 assert.strictEqual(jobs.length, 0);
                 assert.strictEqual(search.firedAlertGroup().count(), 0);
                 let firedAlertGroups = await searches.service.firedAlertGroups().fetch();
@@ -230,7 +225,7 @@ exports.setup = function (svc, loggedOutSvc) {
             it("Delete all alerts", async function () {
                 let namePrefix = "jssdk_savedsearch_alert_";
                 let alertList = this.service.savedSearches().list();
-                await utils.parallelEach(
+                let err = await utils.parallelEach(
                     alertList,
                     async function (alert, idx) {
                         if (utils.startsWith(alert.name, namePrefix)) {
@@ -239,6 +234,7 @@ exports.setup = function (svc, loggedOutSvc) {
                         }
                     }
                 );
+                assert.ok(!err);
             })
         })
     )
@@ -248,14 +244,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    const cmdline = options.create().parse(process.argv);
+    let cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    const svc = new splunkjs.Service({
+    let svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -264,7 +260,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
         version: cmdline.opts.version
     });
 
-    const loggedOutSvc = new splunkjs.Service({
+    let loggedOutSvc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -274,12 +270,12 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise((resolve, reject) => {
-        svc.login(function (err, success) {
-            if (err || !success) {
-                throw new Error("Login failed - not running tests", err || "");
-            }
-            return resolve(exports.setup(svc, loggedOutSvc));
-        });
+    module.exports = new Promise(async (resolve, reject) => {
+        try {
+            await svc.login();
+            return resolve(exports.setup(svc, loggedOutSvc))
+        } catch (error) {
+            throw new Error("Login failed - not running tests", error || "");
+        }
     });
 }

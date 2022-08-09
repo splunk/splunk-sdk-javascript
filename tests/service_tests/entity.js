@@ -2,7 +2,6 @@ var assert = require('chai').assert;
 
 var splunkjs = require('../../index');
 
-var Async = splunkjs.Async;
 var idCounter = 0;
 
 var getNextId = function () {
@@ -11,12 +10,11 @@ var getNextId = function () {
 
 exports.setup = function (svc, loggedOutSvc) {
     return (
-        describe("Entity tests", function () {
+        describe("Entity tests", () => {
 
-            beforeEach(function (done) {
+            beforeEach(function () {
                 this.service = svc;
                 this.loggedOutService = loggedOutSvc;
-                done();
             });
 
             it("Accessors function properly", function (done) {
@@ -64,26 +62,28 @@ exports.setup = function (svc, loggedOutSvc) {
                     "/search/jobs/12345",
                     { owner: "boris", app: "factory", sharing: "app" }
                 );
+                let res;
                 try {
-                    let res = await entity.disable();
-                    assert.ok(!res);
+                    res = await entity.disable();
                 } catch (error) {
                     assert.ok(error);
                 }
+                assert.ok(!res);
             });
 
             it("Enable throws error correctly", async function () {
-                var entity = new splunkjs.Service.Entity(
+                let entity = new splunkjs.Service.Entity(
                     this.loggedOutService,
                     "/search/jobs/12345",
                     { owner: "boris", app: "factory", sharing: "app" }
                 );
+                let res;
                 try {
-                    let res = await entity.enable();
-                    assert.ok(!res);
+                    res = await entity.enable();
                 } catch (error) {
                     assert.ok(error);
                 }
+                assert.ok(!res);
             });
 
             it("Does reload work?", async function () {
@@ -109,14 +109,14 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     var splunkjs = require('../../index');
     var options = require('../cmdline');
 
-    var cmdline = options.create().parse(process.argv);
+    let cmdline = options.create().parse(process.argv);
 
     // If there is no command line, we should return
     if (!cmdline) {
         throw new Error("Error in parsing command line parameters");
     }
 
-    var svc = new splunkjs.Service({
+    let svc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -125,7 +125,7 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
         version: cmdline.opts.version
     });
 
-    var loggedOutSvc = new splunkjs.Service({
+    let loggedOutSvc = new splunkjs.Service({
         scheme: cmdline.opts.scheme,
         host: cmdline.opts.host,
         port: cmdline.opts.port,
@@ -135,12 +135,12 @@ if (module.id === __filename && module.parent.id.includes('mocha')) {
     });
 
     // Exports tests on a successful login
-    module.exports = new Promise((resolve, reject) => {
-        svc.login(function (err, success) {
-            if (err || !success) {
-                throw new Error("Login failed - not running tests", err || "");
-            }
-            return resolve(exports.setup(svc, loggedOutSvc));
-        });
+    module.exports = new Promise(async (resolve, reject) => {
+        try {
+            await svc.login();
+            return resolve(exports.setup(svc, loggedOutSvc))
+        } catch (error) {
+            throw new Error("Login failed - not running tests", error || "");
+        }
     });
 }

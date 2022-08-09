@@ -387,9 +387,7 @@ describe("Service Tests ", function(){
                 10
             );
             let iterator = job.iterator("results", { pagesize: 4 });
-            console.log(iterator);
             let hasMore = true;
-            let numElements = 0;
             let pageSizes = [];
             await utils.whilst(
                 function () { return hasMore; },
@@ -965,7 +963,7 @@ describe("Service Tests ", function(){
         });
     });
 
-    describe("Datamodels test", function (done) {
+    describe("Datamodels test", () => {
         beforeEach(async function () {
             this.service = svc;
             this.dataModels = svc.dataModels();
@@ -1656,7 +1654,7 @@ describe("Service Tests ", function(){
         })
     });
 
-    describe("Pivot Tests", function () {
+    describe("Pivot Tests", () => {
         beforeEach(async function () {
             this.service = svc;
             this.dataModels = svc.dataModels({ owner: "nobody", app: "search" });
@@ -2949,7 +2947,7 @@ describe("Service Tests ", function(){
         })
     });
 
-    describe("App tests", function (done) {
+    describe("App tests", () => {
         beforeEach(function (done) {
             this.service = svc;
             done();
@@ -3047,7 +3045,6 @@ describe("Service Tests ", function(){
             // Save the cookie store
             let cookieStore = service1.http._cookieStore;
             // Test that there are cookies
-            console.log(cookieStore);
             assert.ok(!utils.isEmpty(cookieStore));
 
             // Add the cookies to a service with no other authenitcation information
@@ -3063,7 +3060,7 @@ describe("Service Tests ", function(){
         })
     });
 
-    describe("Saved Search Tests", function () {
+    describe("Saved Search Tests", () => {
         beforeEach(function (done) {
             this.service = svc;
             this.loggedOutService = loggedOutSvc;
@@ -3627,7 +3624,7 @@ describe("Service Tests ", function(){
         })
     });
 
-    describe("Properties Tests", function () {
+    describe("Properties Tests", () => {
 
         beforeEach(function (done) {
             this.service = svc;
@@ -3840,7 +3837,7 @@ describe("Service Tests ", function(){
         })
     });
 
-    describe("Storage Password Tests", function () {
+    describe("Storage Password Tests", () => {
         beforeEach(function (done) {
             this.service = svc;
             done();
@@ -4197,7 +4194,7 @@ describe("Service Tests ", function(){
         })
     });
 
-    describe("Indexes tests", function (done) {
+    describe("Indexes tests", () => {
         beforeEach(async function () {
             this.service = svc;
             this.loggedOutService = loggedOutSvc;
@@ -4317,18 +4314,14 @@ describe("Service Tests ", function(){
             indexes = await indexes.fetch();
             let index = indexes.item(name);
             assert.ok(index);
-            console.log(1);
             index = await index.disable();
             await utils.sleep(5000);
-            console.log(2);
             assert.ok(index);
             index = await index.fetch();
-            console.log(3);
             assert.ok(index);
             assert.ok(index.properties().disabled);
 
             index = await index.enable();
-            console.log(4);
             await utils.sleep(5000);
             assert.ok(index);
             index = await index.fetch();
@@ -4484,7 +4477,7 @@ describe("Service Tests ", function(){
         })
     });
 
-    describe("User Tests", function () {
+    describe("User Tests", () => {
 
         beforeEach(function (done) {
             this.service = svc;
@@ -4653,7 +4646,7 @@ describe("Service Tests ", function(){
         })
     });
 
-    describe("Server Info Test", function () {
+    describe("Server Info Test", () => {
         beforeEach(function (done) {
             this.service = svc;
             done();
@@ -4670,7 +4663,7 @@ describe("Service Tests ", function(){
         })
     });
 
-    describe("View Info Test ", function () {
+    describe("View Info Test ", () => {
 
         beforeEach(function (done) {
             this.service = svc;
@@ -4710,7 +4703,7 @@ describe("Service Tests ", function(){
         })
     });
 
-    describe("Parser Tests", function () {
+    describe("Parser Tests", () => {
         beforeEach(function (done) {
             this.service = svc;
             done();
@@ -4734,7 +4727,7 @@ describe("Service Tests ", function(){
         });
     });
 
-    describe("Typeahead Tests", function () {
+    describe("Typeahead Tests", () => {
         beforeEach(function (done) {
             this.service = svc;
             this.loggedOutService = loggedOutSvc;
@@ -4765,7 +4758,7 @@ describe("Service Tests ", function(){
         })
     });
 
-    describe("Endpoint tests", function (done) {
+    describe("Endpoint tests", () => {
         beforeEach(function (done) {
             this.service = svc;
             done();
@@ -4803,7 +4796,7 @@ describe("Service Tests ", function(){
         })
     });
 
-    describe("Entity tests", function () {
+    describe("Entity tests", () => {
 
         beforeEach(function (done) {
             this.service = svc;
@@ -4895,7 +4888,7 @@ describe("Service Tests ", function(){
         })
     });
 
-    describe("Collection tests", function (done) {
+    describe("Collection tests", () => {
         beforeEach(function (done) {
             this.service = svc;
             this.loggedOutService = loggedOutSvc;

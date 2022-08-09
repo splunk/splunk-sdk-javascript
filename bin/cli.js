@@ -710,11 +710,11 @@
         );
     };
 
-    var runTests = function (tests, cmdline) {
+    var runTests = async function (tests, cmdline) {
         cmdline = cmdline || { opts: {} };
-        var args = (tests || "").split(",").map(function (arg) { return arg.trim(); });
+        let args = (tests || "").split(",").map(function (arg) { return arg.trim(); });
 
-        var files = args
+        let files = args
             .map(arg => {
                 if (arg.indexOf('service_tests') >= 0) {
                     return path.join(TEST_DIRECTORY, 'service_tests', arg.split('/')[1] + ".js");
@@ -732,7 +732,7 @@
             files.push(path.join(TEST_DIRECTORY, ALL_TESTS));
         }
 
-        var cmdlineArgs = []
+        let cmdlineArgs = []
             .concat(cmdline.opts.username ? makeOption("username", cmdline.opts.username) : "")
             .concat(cmdline.opts.scheme ? makeOption("scheme", cmdline.opts.scheme) : "")
             .concat(cmdline.opts.host ? makeOption("host", cmdline.opts.host) : "")
@@ -747,13 +747,13 @@
             .concat(cmdline.opts.exit ? "--exit" : "--exit")
             .concat(cmdline.opts.quiet ? "--quiet" : "");
 
-        var testFunctions = files.map(function (file) {
+        let testFunctions = files.map(function (file) {
             return function (done) {
                 launch(file, cmdlineArgs, done);
             };
         });
 
-        Async.series(testFunctions);
+        await utils.series(testFunctions);
     };
 
     var hint = function () {

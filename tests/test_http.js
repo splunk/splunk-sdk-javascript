@@ -20,10 +20,9 @@ exports.setup = function (http) {
     splunkjs.Logger.setLevel("ALL");
 
     return (
-        describe("HTTP GET Tests", function (done) {
-            before(function (done) {
+        describe("HTTP GET Tests", () => {
+            before(function () {
                 this.http = http;
-                done();
             });
 
             it("Timeout simple", async function () {
@@ -99,10 +98,8 @@ exports.setup = function (http) {
                 let res = await this.http.get("https://httpbin.org/get", { "X-Test1": 1, "X-Test2": "a/b/c" }, {}, 0);
                 let returnedHeaders = res.data.headers;
                 for (let headerName in headers) {
-                    if (headers.hasOwnProperty(headerName)) {
-                        // We have to make the header values into strings
-                        assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
-                    }
+                    // We have to make the header values into strings
+                    assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
                 }
 
                 assert.strictEqual(res.data.url, "https://httpbin.org/get");
@@ -114,10 +111,8 @@ exports.setup = function (http) {
                 let res = await this.http.get("https://httpbin.org/get", { "X-Test1": 1, "X-Test2": "a/b/c" }, { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0);
                 let returnedHeaders = res.data.headers;
                 for (let headerName in headers) {
-                    if (headers.hasOwnProperty(headerName)) {
-                        // We have to make the header values into strings
-                        assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
-                    }
+                    // We have to make the header values into strings
+                    assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
                 }
 
                 let args = res.data.args;
@@ -129,10 +124,9 @@ exports.setup = function (http) {
             });
         }),
 
-        describe("HTTP POST Tests", function (done) {
-            before(function (done) {
+        describe("HTTP POST Tests", () => {
+            before(function () {
                 this.http = http;
-                done();
             });
 
             it("No args", async function () {
@@ -174,10 +168,8 @@ exports.setup = function (http) {
                 let res = await this.http.post("https://httpbin.org/post", { "X-Test1": 1, "X-Test2": "a/b/c" }, {}, 0);
                 let returnedHeaders = res.data.headers;
                 for (let headerName in headers) {
-                    if (headers.hasOwnProperty(headerName)) {
-                        // We have to make the header values into strings
-                        assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
-                    }
+                    // We have to make the header values into strings
+                    assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
                 }
                 assert.strictEqual(res.data.url, "https://httpbin.org/post");
             });
@@ -188,10 +180,8 @@ exports.setup = function (http) {
                 let res = await this.http.post("https://httpbin.org/post", { "X-Test1": 1, "X-Test2": "a/b/c" }, { a: 1, b: 2, c: [1, 2, 3], d: "a/b" }, 0);
                 let returnedHeaders = res.data.headers;
                 for (let headerName in headers) {
-                    if (headers.hasOwnProperty(headerName)) {
-                        // We have to make the header values into strings
+                    // We have to make the header values into strings
                         assert.strictEqual(headers[headerName] + "", returnedHeaders[headerName]);
-                    }
                 }
 
                 let args = res.data.form;
@@ -203,10 +193,9 @@ exports.setup = function (http) {
             })
         }),
 
-        describe("HTTP DELETE Tests", function (done) {
-            before(function (done) {
+        describe("HTTP DELETE Tests", () => {
+            before(function () {
                 this.http = http;
-                done();
             });
 
             it("No args", async function () {
