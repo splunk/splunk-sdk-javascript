@@ -43,6 +43,7 @@ exports.setup = function (svc) {
                 let user2 = users.create({ name: userName2, password: "abcdefg!", roles: ["user"] });
                 that.user2 = user2;
                 that.userName2 = userName2;
+                await utils.sleep(2000);
             });
 
             it("Namespace protection", async function () {

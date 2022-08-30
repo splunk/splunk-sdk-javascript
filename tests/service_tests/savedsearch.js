@@ -129,7 +129,7 @@ exports.setup = function (svc, loggedOutSvc) {
                 let name = "jssdk_savedsearch_" + getNextId();
                 let originalSearch = "search index=_internal | head 1";
 
-                let searches = this.service.savedSearches({ owner: this.service.username, app: "sdk-app-collection" });
+                let searches = this.service.savedSearches({ owner: this.service.username, app: "sdkappcollection" });
                 let search = await searches.create({ search: originalSearch, name: name });
                 assert.ok(search);
                 assert.strictEqual(search.name, name);
