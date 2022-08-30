@@ -597,18 +597,6 @@ exports.setup = function () {
                 assert.ok(!err);
                 assert.strictEqual(total, 6);
             });
-
-            it("Augment callback", async function () {
-                var callback = async function () {
-                    return 1;
-                };
-
-                var [a, b] = await utils.augment(callback, 2);
-                assert.ok(a);
-                assert.ok(b);
-                assert.strictEqual(a, 1);
-                assert.strictEqual(b, 2);
-            });
         })
     );
 }
