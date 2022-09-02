@@ -2910,7 +2910,7 @@ var __exportName = 'splunkjs';
             params.q = query;
             
             // Pre-9.0 uses GET and v1 endpoint
-            if (this.versionCompare("9.0") < 0) {
+            if (this.versionCompare("9.0.2") < 0) {
                 return this.get(Paths.parser, params, function(err, response) {
                     if (err) {
                         callback(err);
@@ -4433,6 +4433,12 @@ var __exportName = 'splunkjs';
          */     
         init: function(service, namespace) {
             this._super(service, this.path(), namespace);
+        },
+        create: function(params, callback){
+            if(this.service.app == '-' || this.service.owner == '-'){
+                throw new Error("While creating StoragePasswords, namespace cannot have wildcards.");
+            }
+            this._super(params,callback);
         }
     });
 
@@ -5688,7 +5694,7 @@ var __exportName = 'splunkjs';
          */
         path: function () {
             // Pre-9.0 uses v1 endpoint
-            if (this.versionCompare("9.0") < 0) {
+            if (this.versionCompare("9.0.2") < 0) {
                 return Paths.jobs + "/" + encodeURIComponent(this.name);
             }
             // Post-9.0 uses v2 endpoint
@@ -5837,7 +5843,7 @@ var __exportName = 'splunkjs';
             var eventsPath = Paths.jobsV2 + "/" + encodeURIComponent(this.name) + "/events";
             // Splunk version pre-9.0 doesn't support v2
             // v1(GET), v2(POST)
-            if (this.versionCompare("9.0") < 0) {
+            if (this.versionCompare("9.0.2") < 0) {
                 eventsPath = Paths.jobs + "/" + encodeURIComponent(this.name) + "/events";
                 return this.get(eventsPath, params, function(err, response) {
                     if (err) {
@@ -5953,7 +5959,7 @@ var __exportName = 'splunkjs';
             var resultsPreviewPath = Paths.jobsV2 + "/" + encodeURIComponent(this.name) + "/results_preview";
             // Splunk version pre-9.0 doesn't support v2
             // v1(GET), v2(POST)
-            if (this.versionCompare("9.0") < 0) {
+            if (this.versionCompare("9.0.2") < 0) {
                 resultsPreviewPath = Paths.jobs + "/" + encodeURIComponent(this.name) + "/results_preview";
                 return this.get(resultsPreviewPath, params, function(err, response) {
                     if (err) {
@@ -6006,7 +6012,7 @@ var __exportName = 'splunkjs';
             var resultsPath = Paths.jobsV2 + "/" + encodeURIComponent(this.name) + "/results";
             // Splunk version pre-9.0 doesn't support v2
             // v1(GET), v2(POST)
-            if (this.versionCompare("9.0") < 0) {
+            if (this.versionCompare("9.0.2") < 0) {
                 resultsPath = Paths.jobs + "/" + encodeURIComponent(this.name) + "/results";
                 return this.get(resultsPath, params, function(err, response) {
                     if (err) {
@@ -6347,7 +6353,7 @@ var __exportName = 'splunkjs';
          */
         path: function () {
             // Pre-9.0 uses v1 endpoint
-            if (this.versionCompare("9.0") < 0) {
+            if (this.versionCompare("9.0.2") < 0) {
                 return Paths.jobs;
             }
             // Post-9.0 uses v2 endpoint
@@ -29945,7 +29951,7 @@ module.exports={
   "_args": [
     [
       "elliptic@6.5.4",
-      "/Users/tpavlik/src/enterprise/semantic-versioning/splunk-sdk-javascript"
+      "/Users/abhis/Documents/JS/splunk-sdk-javascript"
     ]
   ],
   "_development": true,
@@ -29971,7 +29977,7 @@ module.exports={
   ],
   "_resolved": "https://registry.npmjs.org/elliptic/-/elliptic-6.5.4.tgz",
   "_spec": "6.5.4",
-  "_where": "/Users/tpavlik/src/enterprise/semantic-versioning/splunk-sdk-javascript",
+  "_where": "/Users/abhis/Documents/JS/splunk-sdk-javascript",
   "author": {
     "name": "Fedor Indutny",
     "email": "fedor@indutny.com"
@@ -39855,7 +39861,7 @@ module.exports={
   "_args": [
     [
       "needle@3.0.0",
-      "/Users/tpavlik/src/enterprise/semantic-versioning/splunk-sdk-javascript"
+      "/Users/abhis/Documents/JS/splunk-sdk-javascript"
     ]
   ],
   "_from": "needle@3.0.0",
@@ -39879,13 +39885,13 @@ module.exports={
   ],
   "_resolved": "https://registry.npmjs.org/needle/-/needle-3.0.0.tgz",
   "_spec": "3.0.0",
-  "_where": "/Users/tpavlik/src/enterprise/semantic-versioning/splunk-sdk-javascript",
+  "_where": "/Users/abhis/Documents/JS/splunk-sdk-javascript",
   "author": {
     "name": "Tomás Pollak",
     "email": "tomas@forkhq.com"
   },
   "bin": {
-    "needle": "bin/needle"
+    "needle": "./bin/needle"
   },
   "bugs": {
     "url": "https://github.com/tomas/needle/issues"
@@ -55692,7 +55698,7 @@ function extend() {
 },{}],259:[function(require,module,exports){
 module.exports={
     "name": "splunk-sdk",
-    "version": "1.11.0",
+    "version": "1.12.0",
     "description": "SDK for usage with the Splunk REST API",
     "homepage": "http://dev.splunk.com",
     "main": "index.js",
