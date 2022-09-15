@@ -1788,6 +1788,7 @@ function outputHelpIfNecessary(cmd, options) {
             this.version       = params.version || "default";
             this.timeout       = params.timeout || 0;
             this.autologin     = true;
+            this.instanceType  = "";
 
             // Initialize autologin
             // The reason we explicitly check to see if 'autologin'
@@ -1822,16 +1823,17 @@ function outputHelpIfNecessary(cmd, options) {
 
             // We perform the bindings so that every function works
             // properly when it is passed as a callback.
-            this._headers         = utils.bind(this, this._headers);
-            this.fullpath         = utils.bind(this, this.fullpath);
-            this.urlify           = utils.bind(this, this.urlify);
-            this.get              = utils.bind(this, this.get);
-            this.del              = utils.bind(this, this.del);
-            this.post             = utils.bind(this, this.post);
-            this.login            = utils.bind(this, this.login);
-            this._shouldAutoLogin = utils.bind(this, this._shouldAutoLogin);
-            this._requestWrapper  = utils.bind(this, this._requestWrapper);
-            this.getVersion       = utils.bind(this, this.getVersion);
+            this._headers           = utils.bind(this, this._headers);
+            this.fullpath           = utils.bind(this, this.fullpath);
+            this.urlify             = utils.bind(this, this.urlify);
+            this.get                = utils.bind(this, this.get);
+            this.del                = utils.bind(this, this.del);
+            this.post               = utils.bind(this, this.post);
+            this.login              = utils.bind(this, this.login);
+            this._shouldAutoLogin   = utils.bind(this, this._shouldAutoLogin);
+            this._requestWrapper    = utils.bind(this, this._requestWrapper);
+            this.getInfo            = utils.bind(this, this.getInfo);
+            this.disableV2SearchApi = utils.bind(this, this.disableV2SearchApi);
         },
 
         /**
@@ -2002,7 +2004,7 @@ function outputHelpIfNecessary(cmd, options) {
          * @method splunkjs.Context
          * @private
          */
-        getVersion: function (callback) {
+        getInfo: function (callback) {
             var that = this;
             var url = this.paths.info;
 
@@ -2010,11 +2012,13 @@ function outputHelpIfNecessary(cmd, options) {
 
             var wrappedCallback = function(err, response) {
                 var hasVersion = !!(!err && response.data && response.data.generator.version);
+                let hasInstanceType = !!(!err && response.data && response.data.generator["instance_type"]);
 
                 if (err || !hasVersion) {
                     callback(err || "No version found", false);
                 }
                 else {
+                    that.instanceType = hasInstanceType ? response.data.generator["instance_type"] : "";
                     that.version = response.data.generator.version;
                     that.http.version = that.version;
                     callback(null, true);
@@ -2059,7 +2063,7 @@ function outputHelpIfNecessary(cmd, options) {
                 }
                 else {
                     that.sessionKey = response.data.sessionKey;
-                    that.getVersion(callback);
+                    that.getInfo(callback);
                 }
             };
             return this.http.post(
@@ -2236,6 +2240,16 @@ function outputHelpIfNecessary(cmd, options) {
                 }
             }
             return 0;
+        },
+
+        disableV2SearchApi: function(){
+            let val;
+            if(this.instanceType.toLowerCase() == "cloud"){
+                val = this.versionCompare("9.0.2209");
+            }else{
+                val = this.versionCompare("9.0.2")
+            }
+            return val < 0;
         }
     });
 
@@ -3668,7 +3682,7 @@ window.SplunkTest = {
             params.q = query;
             
             // Pre-9.0 uses GET and v1 endpoint
-            if (this.versionCompare("9.0.2") < 0) {
+            if (this.disableV2SearchApi()) {
                 return this.get(Paths.parser, params, function(err, response) {
                     if (err) {
                         callback(err);
@@ -6452,7 +6466,7 @@ window.SplunkTest = {
          */
         path: function () {
             // Pre-9.0 uses v1 endpoint
-            if (this.versionCompare("9.0.2") < 0) {
+            if (this.disableV2SearchApi()) {
                 return Paths.jobs + "/" + encodeURIComponent(this.name);
             }
             // Post-9.0 uses v2 endpoint
@@ -6477,6 +6491,7 @@ window.SplunkTest = {
             // Passing the service version and versionCompare to this.path() before instantiating splunkjs.Service.Entity.
             this.version = service.version;
             this.versionCompare = service.versionCompare;
+            this.disableV2SearchApi = service.disableV2SearchApi;
 
             this.name = sid;
             this._super(service, this.path(), namespace);
@@ -6601,7 +6616,7 @@ window.SplunkTest = {
             var eventsPath = Paths.jobsV2 + "/" + encodeURIComponent(this.name) + "/events";
             // Splunk version pre-9.0 doesn't support v2
             // v1(GET), v2(POST)
-            if (this.versionCompare("9.0.2") < 0) {
+            if (this.disableV2SearchApi()) {
                 eventsPath = Paths.jobs + "/" + encodeURIComponent(this.name) + "/events";
                 return this.get(eventsPath, params, function(err, response) {
                     if (err) {
@@ -6717,7 +6732,7 @@ window.SplunkTest = {
             var resultsPreviewPath = Paths.jobsV2 + "/" + encodeURIComponent(this.name) + "/results_preview";
             // Splunk version pre-9.0 doesn't support v2
             // v1(GET), v2(POST)
-            if (this.versionCompare("9.0.2") < 0) {
+            if (this.disableV2SearchApi()) {
                 resultsPreviewPath = Paths.jobs + "/" + encodeURIComponent(this.name) + "/results_preview";
                 return this.get(resultsPreviewPath, params, function(err, response) {
                     if (err) {
@@ -6770,7 +6785,7 @@ window.SplunkTest = {
             var resultsPath = Paths.jobsV2 + "/" + encodeURIComponent(this.name) + "/results";
             // Splunk version pre-9.0 doesn't support v2
             // v1(GET), v2(POST)
-            if (this.versionCompare("9.0.2") < 0) {
+            if (this.disableV2SearchApi()) {
                 resultsPath = Paths.jobs + "/" + encodeURIComponent(this.name) + "/results";
                 return this.get(resultsPath, params, function(err, response) {
                     if (err) {
@@ -7111,7 +7126,7 @@ window.SplunkTest = {
          */
         path: function () {
             // Pre-9.0 uses v1 endpoint
-            if (this.versionCompare("9.0.2") < 0) {
+            if (this.disableV2SearchApi()) {
                 return Paths.jobs;
             }
             // Post-9.0 uses v2 endpoint
@@ -7149,6 +7164,7 @@ window.SplunkTest = {
             // Passing the service version and versionCompare to this.path() before instantiating splunkjs.Service.Collection.
             this.version = service.version;
             this.versionCompare = service.versionCompare;
+            this.disableV2SearchApi = service.disableV2SearchApi;
 
             this._super(service, this.path(), namespace);
             // We perform the bindings so that every function works 
@@ -70981,6 +70997,7 @@ exports.setup = function (svc) {
                     for (var i = 0; i < jobsList.length; i++) {
                         assert.ok(jobsList[i]);
                     }
+
                     done();
                 });
             });
@@ -74676,6 +74693,17 @@ exports.setup = function (svc) {
 
                     done();
                 });
+            })
+
+            it("V2 Search APIs Enable/Disabled", function (done) {
+                let service = this.service;
+                let flag = service.disableV2SearchApi();
+                if(service.instanceType == "cloud"){
+                    service.versionCompare("9.0.2209") < 0  ? assert.isTrue(flag) : assert.isFalse(flag);
+                }else{
+                    service.versionCompare("9.0.2") < 0 ? assert.isTrue(flag) : assert.isFalse(flag);
+                }
+                done();
             })
         })
     );
