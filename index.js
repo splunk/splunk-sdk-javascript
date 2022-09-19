@@ -32,7 +32,6 @@
         Service         : require('./lib/service'),
         Http            : require('./lib/http'),
         Utils           : require('./lib/utils'),
-        Async           : require('./lib/async'),
         Paths           : require('./lib/paths').Paths,
         Class           : require('./lib/jquery.class').Class
     };

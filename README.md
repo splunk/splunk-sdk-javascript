@@ -276,9 +276,9 @@ To run all tests, enter:
 
     node sdkdo tests
 
-To run the HTTP and the Async tests, enter:
+To run the HTTP and the utils tests, enter:
 
-    node sdkdo tests http,async
+    node sdkdo tests http,utils
 
 To run tests containing a particular string, enter:
 

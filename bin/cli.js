@@ -14,7 +14,6 @@
 
 (function () {
     var utils = require('../lib/utils');
-    var Async = require('../lib/async');
     var staticResource = require('../contrib/static-resource/index');
     var dox = require('../contrib/dox/dox');
     var doc_builder = require('../contrib/dox/doc_builder');
@@ -54,7 +53,8 @@
         "../../contrib/commander",
         "./platform/node/node_http",
         "./lib/platform/node/node_http",
-        "../lib/platform/node/node_http"
+        "../lib/platform/node/node_http",
+        "mocha"
     ];
 
     /**
@@ -126,7 +126,6 @@
                         res.write(response.body);
                         res.end();
                     }).catch((err)=>{
-                        console.log(err);
                         res.write(JSON.stringify(err));
                         writeError();
                 });
@@ -471,7 +470,9 @@
         bundle.add(entry);
         bundle.ignore(IGNORED_MODULES);
         bundle.bundle(function (err,src){
-            console.log("PAth",path)
+            if(err){
+                throw err;
+            }
             var code = [
                             "(function() {",
                             "",
@@ -481,14 +482,11 @@
                             "",
                             "})();"
                         ].join("\n");
-            if(err){
-                throw err;
-            }
             if (shouldUglify){
                 var UglifyJS = require("uglify-js");
                 code = UglifyJS.minify({"file1.js":code},{toplevel:true}).code;
             }
-            fs.writeFileSync(path,code||"");
+            fs.writeFileSync(path,code);
             console.log("Compiled " + path);
         });
 
@@ -617,7 +615,6 @@
             "lib/log.js",
             "lib/http.js",
             "lib/utils.js",
-            "lib/async.js",
             "lib/context.js",
             "lib/service.js",
         ];
