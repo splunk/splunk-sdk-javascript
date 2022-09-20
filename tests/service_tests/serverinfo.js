@@ -16,6 +16,17 @@ exports.setup = function (svc) {
                 assert.ok(info.properties().hasOwnProperty("serverName"));
                 assert.ok(info.properties().hasOwnProperty("os_version"));
             })
+
+            it("V2 Search APIs Enable/Disabled", function (done) {
+                let service = this.service;
+                let flag = service.disableV2SearchApi();
+                if(service.instanceType == "cloud"){
+                    service.versionCompare("9.0.2209") < 0  ? assert.isTrue(flag) : assert.isFalse(flag);
+                }else{
+                    service.versionCompare("9.0.2") < 0 ? assert.isTrue(flag) : assert.isFalse(flag);
+                }
+                done();
+            })
         })
     );
 };
