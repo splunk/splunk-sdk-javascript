@@ -1,5 +1,12 @@
 # Splunk Enterprise SDK for JavaScript Changelog
 
+## v1.12.1
+
+### Minor changes
+* Special handling related to the semantic versioning of specific Search APIs functional in Splunk Enterprise 9.0.2 and (Splunk Cloud 9.0.2209). These SDK changes will enable seamless transition between the APIs based on the version of the Splunk Enterprise in use ([PR#163](https://github.com/splunk/splunk-sdk-javascript/pull/163))
+* added checks for wildcards in StoragePasswords ([PR#156](https://github.com/splunk/splunk-sdk-javascript/pull/156))
+* Update release docs path in release.yml ([PR#161](https://github.com/splunk/splunk-sdk-javascript/pull/161))
+
 ## v1.12.0
 
 ### New features and APIs
