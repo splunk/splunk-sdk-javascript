@@ -1,8 +1,6 @@
-name: Create Release
+name: Doc generation test
 
-on:
-  release:
-    types: [published]
+on: [push]
 
 jobs:
   publish-npm:
@@ -12,22 +10,20 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: 14
-          registry-url: https://registry.npmjs.org/
-      - run: npm publish
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+      #     registry-url: https://registry.npmjs.org/
+      # - run: npm publish
+      #   env:
+      #     NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Package JSON Info
         uses: myrotvorets/info-from-package-json-action@1.1.0
         id: pkgjson
 
       - name: Generate docs
-        run: |
-          node sdkdo docs
-          zip -r docs.zip docs-${{ steps.pkgjson.outputs.packageVersion }}
+        run: node sdkdo docs
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
         with:
-          name: apidocs
-          path: docs.zip
+          name: JS_SDK_docs
+          path: docs-${{ steps.pkgjson.outputs.packageVersion }}/
