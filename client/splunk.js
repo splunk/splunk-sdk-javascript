@@ -1429,6 +1429,10 @@ var __exportName = 'splunkjs';
 
         makeRequest: function(url, message) {
             message.headers["Splunk-Client"] = "splunk-sdk-javascript/" + SDK_VERSION;
+            if(message.response_timeout != undefined){
+                message.headers["Response-Timeout"] = message.response_timeout;
+            }
+            
             var that = this;
             var complete_response;
             var params = {
@@ -1448,6 +1452,13 @@ var __exportName = 'splunkjs';
                     return Promise.resolve(complete_response)
                 }),
                 error: function(res, data, error) {
+                    // Format abort response
+                    if(res.status === 600){
+                        data = JSON.parse(res.responseText).statusCode;
+                        let response = JSON.parse(res.responseText);
+                        complete_response = that._buildResponse("abort",response,{});
+                        return Promise.reject(complete_response);
+                    }
                     var response = {
                         statusCode: res.status,
                         headers: getHeaders(res.getAllResponseHeaders())
@@ -1466,7 +1477,9 @@ var __exportName = 'splunkjs';
             
             return $.ajax(params).then((xhr)=>{
                 return complete_response;
-            })
+            }).catch((err)=>{
+                return complete_response;
+            });
         },
 
         parseJson: function(json) {
@@ -1564,6 +1577,9 @@ var __exportName = 'splunkjs';
             // use this.
             message.headers["X-ProxyDestination"] = url;
             message.headers["Splunk-Client"] = "splunk-sdk-javascript/" + SDK_VERSION;
+            if(message.response_timeout != undefined){
+                message.headers["Response-Timeout"] = message.response_timeout;
+            }
             
             // Need to remove the hostname from the URL
             var parsed = parseUri(url);
@@ -1572,7 +1588,6 @@ var __exportName = 'splunkjs';
             
             // Now, we prepend the prefix
             url = this.prefix + url;
-            
             var that = this;
             var complete_response;
             var params = {
@@ -1592,7 +1607,13 @@ var __exportName = 'splunkjs';
                     return Promise.resolve(complete_response);
                 },
                 error: function(res, data, error) {
-                    
+                    // Format abort response
+                    if(res.status === 600){
+                        data = JSON.parse(res.responseText).statusCode;
+                        let response = JSON.parse(res.responseText);
+                        complete_response = that._buildResponse("abort",response,{});
+                        return Promise.reject(complete_response);
+                    }
                     var response = {
                         statusCode: res.status,
                         headers: getHeaders(res.getAllResponseHeaders())
@@ -1612,7 +1633,9 @@ var __exportName = 'splunkjs';
             
             return $.ajax(params).then((xhr)=>{
                 return complete_response;
-            })
+            }).catch((err)=>{
+                return complete_response;
+            });
         },
 
         makeRequestAsync: function(url, message) {
@@ -1621,7 +1644,10 @@ var __exportName = 'splunkjs';
             // use this.
             message.headers["X-ProxyDestination"] = url;
             message.headers["Splunk-Client"] = "splunk-sdk-javascript/" + SDK_VERSION;
-            
+            if(message.response_timeout != undefined){
+                message.headers["Response-Timeout"] = message.response_timeout;
+            }
+
             // Need to remove the hostname from the URL
             var parsed = parseUri(url);
             var prefixToRemove = "" + (parsed.protocol ? parsed.protocol : "") + "://" + parsed.authority;
@@ -1649,6 +1675,13 @@ var __exportName = 'splunkjs';
                     return Promise.resolve(complete_response);
                 },
                 error: function(res, data, error) {
+                    // Format abort response
+                    if(res.status === 600){
+                        data = JSON.parse(res.responseText).statusCode;
+                        let response = JSON.parse(res.responseText);
+                        complete_response = that._buildResponse("abort",response,{});
+                        return Promise.reject(complete_response);
+                    }
                     var response = {
                         statusCode: res.status,
                         headers: getHeaders(res.getAllResponseHeaders()),
@@ -1667,7 +1700,9 @@ var __exportName = 'splunkjs';
             
             return $.ajax(params).then((xhr)=>{
                 return complete_response;
-            })
+            }).catch((err)=>{
+                return complete_response;
+            });
         },
 
         parseJson: function(json) {
@@ -29365,7 +29400,7 @@ module.exports={
   "_args": [
     [
       "elliptic@6.5.4",
-      "/Users/abhis/Documents/JS/splunk-sdk-javascript"
+      "/Users/abhis/Documents/GitHub/splunk-sdk-javascript"
     ]
   ],
   "_development": true,
@@ -29391,7 +29426,7 @@ module.exports={
   ],
   "_resolved": "https://registry.npmjs.org/elliptic/-/elliptic-6.5.4.tgz",
   "_spec": "6.5.4",
-  "_where": "/Users/abhis/Documents/JS/splunk-sdk-javascript",
+  "_where": "/Users/abhis/Documents/GitHub/splunk-sdk-javascript",
   "author": {
     "name": "Fedor Indutny",
     "email": "fedor@indutny.com"
@@ -39275,7 +39310,7 @@ module.exports={
   "_args": [
     [
       "needle@3.0.0",
-      "/Users/abhis/Documents/JS/splunk-sdk-javascript"
+      "/Users/abhis/Documents/GitHub/splunk-sdk-javascript"
     ]
   ],
   "_from": "needle@3.0.0",
@@ -39299,7 +39334,7 @@ module.exports={
   ],
   "_resolved": "https://registry.npmjs.org/needle/-/needle-3.0.0.tgz",
   "_spec": "3.0.0",
-  "_where": "/Users/abhis/Documents/JS/splunk-sdk-javascript",
+  "_where": "/Users/abhis/Documents/GitHub/splunk-sdk-javascript",
   "author": {
     "name": "Tomás Pollak",
     "email": "tomas@forkhq.com"
