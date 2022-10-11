@@ -453,11 +453,11 @@ describe('Context tests', function() {
         });
 
         it("Request error", async function () {
-            let res
+            let res;
             try {
                 res = await this.service.request("search/jobs/1234_nosuchjob", "GET", null, null, null, { "X-TestHeader": 1 });
             } catch (error) {
-                if (error.response) {
+                if (error.response.request) {
                     assert.strictEqual(error.response.request.headers["X-TestHeader"], 1);
                 }
                 assert.strictEqual(error.status, 404);
@@ -840,16 +840,17 @@ describe('Context tests', function() {
             // Put a bad cookie into the service
             service.http._cookieStore = { "bad": "cookie" };
 
+            let resp;
             // Try requesting something that requires authentication
             try {
-                let resp = await service.get("search/jobs", { count: 1 });
-                assert.ok(!resp);
+                resp = await service.get("search/jobs", { count: 1 });
             } catch (err) {
                 // Test if an error is returned
                 assert.ok(err);
                 // Check that it is an unauthorized error
                 assert.strictEqual(err.status, 401);
             }
+            assert.ok(!resp);
         });
 
         it("Autologin with cookie", async function () {

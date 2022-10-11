@@ -116,6 +116,10 @@
                     rejectUnauthorized: false,
                     parse_response: false
                 };
+                
+                if(req.headers["Response-Timeout".toLowerCase()] != undefined){
+                    options.response_timeout = parseInt(req.headers["Response-Timeout".toLowerCase()])
+                }
 
                 try {
                     needle(options.method, options.url, options.body, options)
@@ -126,8 +130,16 @@
                         res.write(response.body);
                         res.end();
                     }).catch((err)=>{
-                        res.write(JSON.stringify(err));
-                        writeError();
+                        if(err.code == 'ECONNRESET' && options.response_timeout != undefined){
+                            let resp = { headers: {}, statusCode: "abort", body: {}};
+                            res.writeHead(600, resp.headers);
+                            res.write(JSON.stringify(resp));
+                            res.end();
+                        }
+                        else {
+                            res.write(JSON.stringify(err));
+                            res.end();
+                        }
                 });
 
                 }
