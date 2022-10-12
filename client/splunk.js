@@ -3767,6 +3767,12 @@ var __exportName = 'splunkjs';
          */     
         init: function(service, namespace) {
             this._super(service, this.path(), namespace);
+        },
+        create: function(params, response_timeout){
+            if(this.service.app == '-' || this.service.owner == '-'){
+                throw new Error("While creating StoragePasswords, namespace cannot have wildcards.");
+            }
+            return this._super(params,response_timeout);
         }
     });
 
