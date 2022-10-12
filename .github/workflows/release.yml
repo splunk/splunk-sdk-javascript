@@ -24,7 +24,7 @@ jobs:
       - name: Generate docs
         run: |
           node sdkdo docs
-          zip -r docs.zip docs-${{ steps.pkgjson.outputs.packageVersion }}
+          zip -r docs.zip docs/${{ steps.pkgjson.outputs.packageVersion }}
 
       - name: Upload Artifact
         uses: actions/upload-artifact@v3
