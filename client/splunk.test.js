@@ -2665,7 +2665,7 @@ window.SplunkTest = {
          *
          *      // List all properties in the 'props.conf' file
          *      let files = svc.configurations();
-         *      let propsFile = await files.item();
+         *      let propsFile = await files.item("props");
          *      let props = await propsFile.fetch();
          *      console.log(props.properties());
          * 

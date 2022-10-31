@@ -1429,10 +1429,6 @@ var __exportName = 'splunkjs';
 
         makeRequest: function(url, message) {
             message.headers["Splunk-Client"] = "splunk-sdk-javascript/" + SDK_VERSION;
-            if(message.response_timeout != undefined){
-                message.headers["Response-Timeout"] = message.response_timeout;
-            }
-            
             var that = this;
             var complete_response;
             var params = {
@@ -1440,7 +1436,7 @@ var __exportName = 'splunkjs';
                 type: message.method,
                 headers: message.headers,
                 data: message.body || "",
-                timeout: message.timeout || 0,
+                timeout: message.response_timeout || 0,
                 dataType: "json",
                 success: utils.bind(this, function(data, error, res) {
                     var response = {
@@ -1577,9 +1573,6 @@ var __exportName = 'splunkjs';
             // use this.
             message.headers["X-ProxyDestination"] = url;
             message.headers["Splunk-Client"] = "splunk-sdk-javascript/" + SDK_VERSION;
-            if(message.response_timeout != undefined){
-                message.headers["Response-Timeout"] = message.response_timeout;
-            }
             
             // Need to remove the hostname from the URL
             var parsed = parseUri(url);
@@ -1594,7 +1587,10 @@ var __exportName = 'splunkjs';
                 url: url,
                 type: message.method,
                 headers: message.headers,
-                data: message.body || "",
+                data: {
+                    request_body:message.body || "",
+                    response_timeout:message.response_timeout || null
+                },
                 timeout: message.timeout || 0,
                 dataType: "text",
                 success: function(data, error, res) {
@@ -1608,7 +1604,7 @@ var __exportName = 'splunkjs';
                 },
                 error: function(res, data, error) {
                     // Format abort response
-                    if(res.status === 600){
+                    if(res.status === 504){
                         data = JSON.parse(res.responseText).statusCode;
                         let response = JSON.parse(res.responseText);
                         complete_response = that._buildResponse("abort",response,{});
@@ -1644,9 +1640,6 @@ var __exportName = 'splunkjs';
             // use this.
             message.headers["X-ProxyDestination"] = url;
             message.headers["Splunk-Client"] = "splunk-sdk-javascript/" + SDK_VERSION;
-            if(message.response_timeout != undefined){
-                message.headers["Response-Timeout"] = message.response_timeout;
-            }
 
             // Need to remove the hostname from the URL
             var parsed = parseUri(url);
@@ -1662,7 +1655,10 @@ var __exportName = 'splunkjs';
                 url: url,
                 type: message.method,
                 headers: message.headers,
-                data: message.body || "",
+                data: {
+                    request_body:message.body || "",
+                    response_timeout:message.response_timeout || null
+                },
                 timeout: message.timeout || 0,
                 dataType: "text",
                 success: function(data, error, res) {
@@ -1676,7 +1672,7 @@ var __exportName = 'splunkjs';
                 },
                 error: function(res, data, error) {
                     // Format abort response
-                    if(res.status === 600){
+                    if(res.status === 504){
                         data = JSON.parse(res.responseText).statusCode;
                         let response = JSON.parse(res.responseText);
                         complete_response = that._buildResponse("abort",response,{});
@@ -1988,7 +1984,7 @@ var __exportName = 'splunkjs';
          *
          *      // List all properties in the 'props.conf' file
          *      let files = svc.configurations();
-         *      let propsFile = await files.item();
+         *      let propsFile = await files.item("props");
          *      let props = await propsFile.fetch();
          *      console.log(props.properties());
          * 
