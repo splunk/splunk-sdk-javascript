@@ -100,6 +100,11 @@
             req.on('end', function () {
                 var destination = req.headers["X-ProxyDestination".toLowerCase()];
 
+                if (req.method === "POST"){
+                    body = Object.fromEntries(new URLSearchParams(body));
+                } else {
+                    body = url.parse(req.url, true).query;
+                }
                 var options = {
                     url: destination,
                     method: req.method,
@@ -110,15 +115,15 @@
                         "User-Agent": "splunk-sdk-javascript/" + SDK_VERSION
                     },
                     followAllRedirects: true,
-                    body: body || '',
+                    body: body.request_body || '',
                     jar: false,
                     strictSSL: false,
                     rejectUnauthorized: false,
                     parse_response: false
                 };
-                
-                if(req.headers["Response-Timeout".toLowerCase()] != undefined){
-                    options.response_timeout = parseInt(req.headers["Response-Timeout".toLowerCase()])
+
+                if(body.response_timeout){
+                    options.response_timeout = parseInt(body.response_timeout);
                 }
 
                 try {
@@ -132,7 +137,7 @@
                     }).catch((err)=>{
                         if(err.code == 'ECONNRESET' && options.response_timeout != undefined){
                             let resp = { headers: {}, statusCode: "abort", body: {}};
-                            res.writeHead(600, resp.headers);
+                            res.writeHead(504, resp.headers);
                             res.write(JSON.stringify(resp));
                             res.end();
                         }
@@ -146,7 +151,7 @@
                 catch (ex) {
                     writeError();
                 }
-
+                
             });
         }
         catch (ex) {
