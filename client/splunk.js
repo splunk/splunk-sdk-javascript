@@ -1436,7 +1436,7 @@ var __exportName = 'splunkjs';
                 type: message.method,
                 headers: message.headers,
                 data: message.body || "",
-                timeout: message.response_timeout || 0,
+                timeout: Math.max(message.timeout, message.response_timeout) || 0,
                 dataType: "json",
                 success: utils.bind(this, function(data, error, res) {
                     var response = {
@@ -1449,9 +1449,8 @@ var __exportName = 'splunkjs';
                 }),
                 error: function(res, data, error) {
                     // Format abort response
-                    if(res.status === 600){
-                        data = JSON.parse(res.responseText).statusCode;
-                        let response = JSON.parse(res.responseText);
+                    if(data === "timeout"){
+                        let response = { headers: {}, statusCode: "abort", body: {}};
                         complete_response = that._buildResponse("abort",response,{});
                         return Promise.reject(complete_response);
                     }
@@ -1587,11 +1586,8 @@ var __exportName = 'splunkjs';
                 url: url,
                 type: message.method,
                 headers: message.headers,
-                data: {
-                    request_body:message.body || "",
-                    response_timeout:message.response_timeout || null
-                },
-                timeout: message.timeout || 0,
+                data: message.body || "",
+                timeout: Math.max(message.timeout, message.response_timeout) || 0,
                 dataType: "text",
                 success: function(data, error, res) {
                     var response = {
@@ -1604,9 +1600,8 @@ var __exportName = 'splunkjs';
                 },
                 error: function(res, data, error) {
                     // Format abort response
-                    if(res.status === 504){
-                        data = JSON.parse(res.responseText).statusCode;
-                        let response = JSON.parse(res.responseText);
+                    if(data === "timeout"){
+                        let response = { headers: {}, statusCode: "abort", body: {}};
                         complete_response = that._buildResponse("abort",response,{});
                         return Promise.reject(complete_response);
                     }
@@ -1655,11 +1650,8 @@ var __exportName = 'splunkjs';
                 url: url,
                 type: message.method,
                 headers: message.headers,
-                data: {
-                    request_body:message.body || "",
-                    response_timeout:message.response_timeout || null
-                },
-                timeout: message.timeout || 0,
+                data: message.body || "",
+                timeout: Math.max(message.timeout,message.response_timeout) || 0,
                 dataType: "text",
                 success: function(data, error, res) {
                     var response = {
@@ -1672,9 +1664,8 @@ var __exportName = 'splunkjs';
                 },
                 error: function(res, data, error) {
                     // Format abort response
-                    if(res.status === 504){
-                        data = JSON.parse(res.responseText).statusCode;
-                        let response = JSON.parse(res.responseText);
+                    if(data === "timeout"){
+                        let response = { headers: {}, statusCode: "abort", body: {}};
                         complete_response = that._buildResponse("abort",response,{});
                         return Promise.reject(complete_response);
                     }
